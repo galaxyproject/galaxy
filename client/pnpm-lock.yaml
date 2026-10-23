@@ -213,7 +213,7 @@ importers:
         version: 0.344.0(vue@3.5.43(typescript@5.8.3))
       markdown-it:
         specifier: ^14.1.1
-        version: 14.2.0
+        version: 14.3.3
       markdown-it-regexp:
         specifier: ^0.4.0
         version: 0.4.0
@@ -548,7 +548,7 @@ importers:
         version: '@fortawesome/free-solid-svg-icons@6.7.2'
       markdown-it:
         specifier: ^14.1.0
-        version: 14.2.0
+        version: 14.3.3
       typescript-eslint:
         specifier: ^8.0.0
         version: 8.71.1(eslint@10.12.0)(typescript@5.8.3)
@@ -3914,8 +3914,8 @@ packages:
     peerDependencies:
       linkifyjs: '==4.3.3'
 
-  linkify-it@5.0.1:
-    resolution: {integrity: sha512-wVoTjP4Q6R0NW5hiZkVJaFZPWgtXfoGF+6LucL3/FtiNjmcHhYjEr5f1Kqjirc1nBW07J/ZuRFumqr2oqccEWg==}
+  linkify-it@5.0.2:
+    resolution: {integrity: sha512-ONTm2jCMAVZjgQa/Fy1kScXsuOoF5NPTsoFBdE1KVIZ2vAh/r9+Bqo+0jINCBYnavTPQZz38QzFTme79ENoN3Q==}
 
   linkifyjs@4.3.3:
     resolution: {integrity: sha512-P8aEP5U/D1/IlTY2OeYsErdwh9bGuLE30NcXtKEjgdHcahveQoQwM2yZNsioQHsWFz0P7KKudisbrzCgR0sDHg==}
@@ -4000,8 +4000,8 @@ packages:
   markdown-it-regexp@0.4.0:
     resolution: {integrity: sha512-0XQmr46K/rMKnI93Y3CLXsHj4jIioRETTAiVnJnjrZCEkGaDOmUxTbZj/aZ17G5NlRcVpWBYjqpwSlQ9lj+Kxw==}
 
-  markdown-it@14.2.0:
-    resolution: {integrity: sha512-1TGiQiJVRQ3NPmZH6sx5Cfnmg6GQm9jvC1ch4TK511NjSJvjzKLzn5pPfZRNZkRPZP0HqCioSndqH8v2nRaWVQ==}
+  markdown-it@14.3.3:
+    resolution: {integrity: sha512-L//tDAkjTjJCU6pBUSBTgs3Kg4InVaZuUZog/b6V12UKhcDQ7S78877ibbCanRExwPuYP1CZD7Gd2dxSy1GXRg==}
     hasBin: true
 
   math-intrinsics@1.1.0:
@@ -9104,7 +9104,7 @@ snapshots:
     dependencies:
       linkifyjs: 4.3.3
 
-  linkify-it@5.0.1:
+  linkify-it@5.0.2:
     dependencies:
       uc.micro: 2.1.0
 
@@ -9192,11 +9192,11 @@ snapshots:
 
   markdown-it-regexp@0.4.0: {}
 
-  markdown-it@14.2.0:
+  markdown-it@14.3.3:
     dependencies:
       argparse: 2.0.1
       entities: 4.5.0
-      linkify-it: 5.0.1
+      linkify-it: 5.0.2
       mdurl: 2.0.0
       punycode.js: 2.3.1
       uc.micro: 2.1.0
