@@ -218,8 +218,10 @@ class CachedToolboxSearch(ToolBoxSearch):
             if complete:
                 self._mark_built(cached_toolbox)
             else:
-                # The other writer may hold an older corpus: leave the index
-                # stale so the next rebuild_toolbox_search_index retries.
+                # The lock holder is a previous config watcher, which builds
+                # from the same confs and store and so normally commits the
+                # same corpus. Leave the index stale so the next toolbox
+                # reload rebuilds in case it committed an older one.
                 self.indexed_reload_count = None
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
