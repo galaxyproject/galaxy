@@ -3,7 +3,9 @@
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_history,
+    requires_new_library,
 )
+from galaxy_test.base.populators import LibraryPopulator
 from .framework import (
     managed_history,
     selenium_test,
@@ -139,19 +141,37 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
     @selenium_test
     @managed_history
     @requires_admin
+    @requires_new_library
     def test_upload_from_data_library(self):
         """Upload Activity can import a selected dataset from a data library."""
         library_name = self._create_and_populate_library()
 
-        self.upload_context("data-library").stage_data_library_dataset(library_name, "1.bed").start()
+        item = self.upload_context("data-library").stage_data_library_dataset(library_name, "1.bed")
+        self._screenshot_when_startable("upload_activity_data_library_staged")
+        item.start()
 
         self.history_panel_wait_for_hid_ok(1)
         self.history_panel_click_item_title(hid=1, wait=True)
         self.assert_item_name(1, "1.bed")
 
-    def _create_and_populate_library(self):
+    def _screenshot_when_startable(self, label):
+        self.components.upload_activity.start_button_enabled.wait_for_visible()
+        # let the button's enable color transition finish so the screenshot doesn't show it greyed out
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot(label)
+
+    def _create_and_populate_library(self, filenames=("1.bed",)):
         self.logout_if_needed()
         self.admin_login()
-        library_name = self.create_new_library()
-        self.populate_library_folder_from_import_dir(library_name, ["1.bed"])
-        return library_name
+        library_populator = LibraryPopulator(self.api_interactor_for_logged_in_user())
+        library = library_populator.new_library(self._get_random_name(prefix="upload_library"))
+        items = []
+        for filename in filenames:
+            with open(self.get_filename(filename)) as f:
+                items.append({"src": "pasted", "paste_content": f.read(), "name": filename, "ext": "bed"})
+        library_populator.fetch_to_folder(library["root_folder_id"], items)
+        # library uploads are restricted to the uploader's private role
+        for entry in library_populator.get_library_contents(library["id"]):
+            if entry["type"] == "file":
+                library_populator.remove_library_dataset_restrictions(entry["id"])
+        return library["name"]

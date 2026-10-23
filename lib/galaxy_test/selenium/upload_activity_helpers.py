@@ -356,13 +356,17 @@ class UploadContext(_UploadStaging):
         return items
 
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
+        return self.stage_data_library_datasets(library_label, [dataset_label])[0]
+
+    def stage_data_library_datasets(self, library_label: str, dataset_labels: list[str]) -> list[DataLibraryUploadItem]:
         if self._current_method_id != "data-library":
-            raise AssertionError("stage_data_library_dataset is only available for the data-library method")
+            raise AssertionError("stage_data_library_datasets is only available for the data-library method")
 
         self.components.upload_activity.data_library_library_label(label=library_label).wait_for_and_click()
-        self.components.upload_activity.data_library_item_label(label=dataset_label).wait_for_and_click()
+        for dataset_label in dataset_labels:
+            self.components.upload_activity.data_library_item_label(label=dataset_label).wait_for_and_click()
         self.components.upload_activity.data_library_add_selected.wait_for_and_click()
-        return self._create_item(DataLibraryUploadItem)
+        return [self._create_item(DataLibraryUploadItem) for _ in dataset_labels]
 
     def select_composite(self, composite_type: str) -> "UploadContext":
         if self._current_method_id != "composite-file":

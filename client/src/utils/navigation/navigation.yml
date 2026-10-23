@@ -1702,6 +1702,7 @@ upload_activity:
     composite_type_options_visible: '#composite-type-selector .single-item-selector.multiselect--active [data-test-id="single-item-selector-option"]'
     composite_first_slot: '.composite-file-upload .composite-slot-row:nth-of-type(1)'
     start_button: '[data-test-id="start-upload"]'
+    start_button_enabled: '[data-test-id="start-upload"]:not([aria-disabled])'
     cancel_button:
       type: xpath
       selector: '//button[normalize-space() = "Cancel"]'
