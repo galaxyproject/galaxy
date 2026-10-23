@@ -3,6 +3,20 @@ from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.datatypes.text import Json
 
 
+def test_fastq_upload_warnings_preserve_compression_and_choices():
+    registry = example_datatype_registry_for_sample()
+    details = {datatype["extension"]: datatype for datatype in registry.datatype_info_dicts}
+    for suffix in ("", ".gz", ".bz2"):
+        for extension in ("fastq", "fastqillumina", "fastqsolexa", "fastqcssanger"):
+            datatype = details[f"{extension}{suffix}"]
+            assert datatype["display_in_upload"]
+            assert f"{extension}{suffix}" in registry.upload_file_formats
+            assert f"fastqsanger{suffix}" in datatype["upload_warning"]
+            assert "${auto_compressed_type}" not in datatype["upload_warning"]
+        assert f"fastqsanger{suffix}" in registry.upload_file_formats
+        assert not details[f"fastqsanger{suffix}"]["upload_warning"]
+
+
 def test_matches_any():
     datatypes_registry = example_datatype_registry_for_sample()
     data_datatype = datatypes_registry.get_datatype_by_extension("data")
