@@ -140,7 +140,9 @@ export default defineConfig(({ command }) => ({
         emptyOutDir: true,
         // Generate manifest.json for production
         manifest: true,
-        // Disable CSS code splitting - combine all CSS into one file
+        // Disable CSS code splitting - combine all CSS into one file. Every page loads
+        // base.css, and that's how galaxy-ui's tokens (imported by the analysis entry)
+        // reach pages built on other entries; splitting would drop them there.
         cssCodeSplit: false,
         // Generate sourcemaps when GXY_BUILD_SOURCEMAPS is set
         sourcemap: !!process.env.GXY_BUILD_SOURCEMAPS,
