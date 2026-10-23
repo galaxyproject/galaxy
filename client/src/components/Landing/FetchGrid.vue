@@ -214,7 +214,7 @@ function handleDataUpdated(event: any) {
                 </GAlert>
                 <DataFetchRequestParameter :parameter-value="props.target" />
             </div>
-            <div v-else-if="viewMode === 'table'" :class="[theme]">
+            <div v-else-if="viewMode === 'table'" :class="[theme]" data-description="fetch grid">
                 <GAlert v-if="modified" show dismissible variant="info">
                     You have modified the import data from the initial request, these modifications will be reflected in
                     the final data import.

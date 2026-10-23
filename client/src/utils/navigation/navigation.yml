@@ -543,6 +543,13 @@ collection_builders:
         link_button: '${_} .paired-action-icon.fa-link'
         unlink_button: '${_} .paired-action-icon.fa-unlink'
 
+data_landing:
+  selectors:
+    cell: '[data-description="fetch grid"] [aria-rowindex="${row_index}"] [col-id="${column_identifier}"]'
+    cell_input: '[data-description="fetch grid"] [aria-rowindex="${row_index}"] [col-id="${column_identifier}"] input'
+    execute: 'button#execute'
+    success: '[data-description="fetch landing success"]'
+
 histories:
   selectors:
     activity: '#activity-histories'

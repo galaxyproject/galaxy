@@ -410,6 +410,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.navigate_to(self.build_url(path))
         self.components.workflow_run.run_workflow.wait_for_visible()
 
+    def go_to_tool_landing(
+        self, uuid: str, public: Literal["false", "true"] = "true", client_secret: str | None = None
+    ):
+        path = f"tool_landings/{uuid}?public={public}"
+        if client_secret:
+            path = f"{path}&client_secret={client_secret}"
+        self.navigate_to(self.build_url(path))
+
     def go_to_trs_search(self) -> None:
         self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
@@ -2866,11 +2874,16 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def list_wizard_click_cell_and_send_keys(self, column_identifier: str, row_index: int, text: str):
         self.ag_grid_edit_cell(self.components.collection_builders.list_wizard, column_identifier, row_index, text)
 
-    def ag_grid_edit_cell(self, grid: SmartComponent, column_identifier: str, row_index: int, text: str):
+    def ag_grid_edit_cell(
+        self, grid: SmartComponent, column_identifier: str, row_index: int, text: str, clear: bool = False
+    ):
         """Edit a cell of ``grid``, a component with ``cell`` and ``cell_input`` selectors."""
         grid.cell(row_index=row_index, column_identifier=column_identifier).wait_for_and_double_click()
         input = grid.cell_input(row_index=row_index, column_identifier=column_identifier)
-        input.wait_for_and_send_keys(text)
+        if clear:
+            input.wait_for_and_clear_and_send_keys(text)
+        else:
+            input.wait_for_and_send_keys(text)
         self.send_enter(input.wait_for_present())
 
     def collection_builder_set_name(self, name):
