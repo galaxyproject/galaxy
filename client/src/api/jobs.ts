@@ -42,24 +42,28 @@ export const NON_TERMINAL_STATES = [
 export const ERROR_STATES = ["error", "deleted", "failed"];
 export const TERMINAL_STATES = ["ok", "skipped", "stop"].concat(ERROR_STATES);
 
+/** Every job state, keyed in display order; `satisfies` fails typecheck when the schema adds one. */
+const JOB_STATE_ORDER = {
+    new: true,
+    resubmitted: true,
+    upload: true,
+    waiting: true,
+    queued: true,
+    running: true,
+    finishing: true,
+    paused: true,
+    stop: true,
+    stopped: true,
+    ok: true,
+    skipped: true,
+    error: true,
+    failed: true,
+    deleting: true,
+    deleted: true,
+} satisfies Record<JobState, true>;
+
 /** All the states a job can be in, ordered from "just created" to "done", for display in filters. */
-export const JOB_STATES: JobState[] = [
-    "new",
-    "resubmitted",
-    "upload",
-    "waiting",
-    "queued",
-    "running",
-    "paused",
-    "stop",
-    "stopped",
-    "ok",
-    "skipped",
-    "error",
-    "failed",
-    "deleting",
-    "deleted",
-];
+export const JOB_STATES = Object.keys(JOB_STATE_ORDER) as JobState[];
 
 export interface JobResponse {
     produces_entry_points?: boolean;
