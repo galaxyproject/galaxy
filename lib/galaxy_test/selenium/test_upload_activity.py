@@ -177,8 +177,8 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
         """Select-all in a library subfolder builds a list in the picked target history, not the current one."""
         library_name = self._create_and_populate_library(["3.bed"], subfolders={"list folder": ["1.bed", "2.bed"]})
         current_history_id = self.current_history_id()
-        # the long managed history name pushes the target history change link out of view
-        self.dataset_populator.rename_history(current_history_id, "library list current")
+        # a long unbroken name must not push the target history change link out of view
+        self.dataset_populator.rename_history(current_history_id, "library_list_current_" + "x" * 60)
         target_history_id = self.dataset_populator.new_history(name="library list target")
         # reload so the target history selector sees the new history
         self.home()
@@ -187,7 +187,9 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
         context.stage_data_library_datasets(
             library_name, ["1.bed", "2.bed"], folder_label="list folder", select_all=True
         )
-        context.to_list("library list").select_target_history(target_history_id)
+        context.to_list("library list")
+        self._assert_target_history_change_link_in_banner()
+        context.select_target_history(target_history_id)
         # collection config is applied by start(), so this shows the staged items and target history
         self._screenshot_when_startable("upload_activity_data_library_target_history_staged")
         context.start()
@@ -203,6 +205,17 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
         assert hdca["collection_type"] == "list"
         assert [e["element_identifier"] for e in hdca["elements"]] == ["1.bed", "2.bed"]
         assert self.history_contents(current_history_id) == []
+
+    def _assert_target_history_change_link_in_banner(self):
+        upload_activity = self.components.upload_activity
+        banner = upload_activity.target_history_banner.wait_for_present()
+        link = upload_activity.target_history_change_link.wait_for_present()
+        overflow = self.execute_script(
+            "return arguments[1].getBoundingClientRect().right - arguments[0].getBoundingClientRect().right;",
+            banner,
+            link,
+        )
+        assert overflow <= 0, f"target history change link overflows the banner by {overflow}px"
 
     def _screenshot_when_startable(self, label):
         self.components.upload_activity.start_button_enabled.wait_for_visible()

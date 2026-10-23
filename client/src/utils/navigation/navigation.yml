@@ -1715,6 +1715,7 @@ upload_activity:
     paste_links_row_deferred_checkbox: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"]'
     paste_links_row_deferred_label: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] + label'
     # Target-history selectors (TargetHistorySelector inside UploadMethodView)
+    target_history_banner: '.target-history-banner'
     target_history_change_link: '.target-history-banner .change-history-link'
     history_selector_modal: '.g-dialog'
     history_selector_modal_item: '.g-dialog [data-pk="${history_id}"]'
