@@ -36,8 +36,10 @@ import { isArchivedHistory, isMyHistory } from "@/api/histories";
 import { useHistoryCardActions } from "@/components/History/useHistoryCardActions";
 import { useHistoryCardBadges } from "@/components/History/useHistoryCardBadges";
 import { useHistoryCardIndicators } from "@/components/History/useHistoryCardIndicators";
+import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExportRecordDOILink from "@/components/Common/ExportRecordDOILink.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -198,14 +200,51 @@ const { historyCardTitleBadges } = useHistoryCardBadges(
     (k, v) => emit("updateFilter", k, v),
 );
 
+const history = computed(() => props.history);
+
+/** Tag saves run one after another, so an older tag list never lands after a newer one. */
+let tagsSaved: Promise<void> = Promise.resolve();
+let pendingTagSaves = 0;
+let lastSavedTags: string[] | undefined;
+let lastTagSaveFailed = false;
+
 /**
  * Handles updating tags for a history
  * @param {string} historyId - The ID of the history to update
  * @param {string[]} tags - The new array of tags to set
  */
-async function onTagsUpdate(historyId: string, tags: string[]) {
-    await historyStore.updateHistory(historyId, { tags: tags });
-    emit("refreshList", true, true);
+function onTagsUpdate(historyId: string, tags: string[]) {
+    // updated in place: a list reload re-sorts the list and moves the card away from the open tag editor
+    history.value.tags = tags;
+    pendingTagSaves++;
+    tagsSaved = tagsSaved.then(async () => {
+        try {
+            await historyStore.updateHistory(historyId, { tags });
+            lastSavedTags = tags;
+            lastTagSaveFailed = false;
+        } catch (error) {
+            Toast.error(`Failed to save tags: ${errorMessageAsString(error)}`);
+            lastTagSaveFailed = true;
+        } finally {
+            pendingTagSaves--;
+            if (pendingTagSaves === 0) {
+                onTagSavesDone();
+            }
+        }
+    });
+}
+
+function onTagSavesDone() {
+    if (lastTagSaveFailed) {
+        emit("refreshList", true, true);
+    } else if (lastSavedTags && !sameTags(history.value.tags, lastSavedTags)) {
+        // a list load that ran during the saves can hold the tags from before them
+        history.value.tags = lastSavedTags;
+    }
+}
+
+function sameTags(a: string[], b: string[]) {
+    return a.length === b.length && a.every((tag, index) => tag === b[index]);
 }
 
 function onClick(event: Event) {

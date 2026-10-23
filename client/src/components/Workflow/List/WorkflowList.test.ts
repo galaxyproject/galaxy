@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { loadWorkflows } from "@/api/workflows";
+import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
 import { generateRandomWorkflowList } from "../testUtils";
@@ -20,6 +21,8 @@ const { server, http } = useServerMock();
 vi.mock("@/api/workflows", () => ({
     loadWorkflows: vi.fn(),
 }));
+
+vi.mock("@/composables/toast");
 
 const mockedLoadWorkflows = loadWorkflows as ReturnType<typeof vi.fn>;
 
@@ -133,5 +136,53 @@ describe("WorkflowList", () => {
 
         expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("");
         await flushPromises();
+    });
+
+    it("keeps the newest list when an older load finishes last", async () => {
+        const OLD_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 2);
+        const NEW_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 3);
+        NEW_WORKFLOWS.forEach((w) => (w.deleted = true));
+        let resolveFirstLoad!: (value: unknown) => void;
+        mockedLoadWorkflows
+            .mockImplementationOnce(() => new Promise((resolve) => (resolveFirstLoad = resolve)))
+            .mockResolvedValueOnce({ data: NEW_WORKFLOWS, totalMatches: 3 });
+        const wrapper = await mountWorkflowList();
+
+        await wrapper.find("#show-deleted").trigger("click");
+        await flushPromises();
+        expect(wrapper.findAll(".workflow-card")).toHaveLength(3);
+
+        resolveFirstLoad({ data: OLD_WORKFLOWS, totalMatches: 2 });
+        await flushPromises();
+
+        expect(mockedLoadWorkflows).toHaveBeenCalledTimes(2);
+        expect(wrapper.findAll(".workflow-card")).toHaveLength(3);
+    });
+
+    it("ignores an older load that fails while a newer one is still running", async () => {
+        const NEW_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 3);
+        NEW_WORKFLOWS.forEach((w) => (w.deleted = true));
+        let rejectFirstLoad!: (reason: unknown) => void;
+        let resolveSecondLoad!: (value: unknown) => void;
+        mockedLoadWorkflows
+            .mockImplementationOnce(() => new Promise((_resolve, reject) => (rejectFirstLoad = reject)))
+            .mockImplementationOnce(() => new Promise((resolve) => (resolveSecondLoad = resolve)));
+        const wrapper = await mountWorkflowList();
+
+        await wrapper.find("#show-deleted").trigger("click");
+        await flushPromises();
+        expect(mockedLoadWorkflows).toHaveBeenCalledTimes(2);
+
+        rejectFirstLoad(new Error("load failed"));
+        await flushPromises();
+        expect(Toast.error).not.toHaveBeenCalled();
+        // the newer load is still running, so the list keeps showing that it is loading
+        expect(wrapper.findComponent(LoadingSpan).exists()).toBe(true);
+
+        resolveSecondLoad({ data: NEW_WORKFLOWS, totalMatches: 3 });
+        await flushPromises();
+        expect(wrapper.findComponent(LoadingSpan).exists()).toBe(false);
+        expect(wrapper.findAll(".workflow-card")).toHaveLength(3);
+        expect(Toast.error).not.toHaveBeenCalled();
     });
 });
