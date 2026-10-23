@@ -551,6 +551,7 @@ def _matching_case_for_value(
             for name, _, selected in static_options:
                 if selected:
                     default_option = name
+                    break
             else:
                 first_option = static_options[0]
                 first_option_value = first_option[1]
