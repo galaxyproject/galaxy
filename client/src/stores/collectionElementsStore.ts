@@ -254,11 +254,8 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     }
 
     function initWithPlaceholderElements(collection: CollectionEntry): ContentPlaceholder[] {
-        const totalElements = collection.element_count ?? 0;
-        const placeholderElements = new Array<ContentPlaceholder>(totalElements);
-        for (let i = 0; i < totalElements; i++) {
-            placeholderElements[i] = { element_index: i };
-        }
+        const placeholderElements: ContentPlaceholder[] = [];
+        addMissingPlaceholderElements(placeholderElements, collection);
         return placeholderElements;
     }
 
