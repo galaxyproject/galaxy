@@ -15,6 +15,7 @@ from typing import (
     Union,
 )
 
+from cwl_utils.errors import WorkflowException
 from packaging.version import Version
 
 from galaxy import model
@@ -54,7 +55,11 @@ from galaxy.tool_util_models.tool_source import (
     YamlTemplateConfigFile,
 )
 from galaxy.tools.actions import determine_output_format
-from galaxy.tools.expressions import do_eval
+from galaxy.tools.expressions import (
+    do_eval,
+    expression_error_message,
+    ExpressionTemplateError,
+)
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -129,6 +134,16 @@ class ToolTemplatingException(Exception):
 def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool: "Tool"):
     try:
         return func()
+    except ExpressionTemplateError as e:
+        # The job runner reports these to the user as they are; wrapping would hide the message.
+        global_tool_errors.add_error(config_file, action_str, e)
+        raise
+    except WorkflowException as e:
+        # A JavaScript expression in the tool failed: the error names the user's mistake.
+        global_tool_errors.add_error(config_file, action_str, e)
+        raise ExpressionTemplateError(
+            f"Error occurred while {action_str.lower()} for tool '{tool.id}': {expression_error_message(e)}"
+        ) from e
     except Exception as e:
         # capture and log parsing errors
         global_tool_errors.add_error(config_file, action_str, e)

@@ -1,6 +1,7 @@
 from .evaluation import (
     do_eval,
     evaluate,
+    expression_error_message,
     ExpressionTemplateError,
     validate_expression_template,
 )
@@ -18,6 +19,7 @@ from .util import find_engine
 __all__ = (
     "do_eval",
     "evaluate",
+    "expression_error_message",
     "EXPRESSION_SCRIPT_CALL",
     "EXPRESSION_SCRIPT_NAME",
     "ExpressionTemplateError",

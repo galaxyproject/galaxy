@@ -199,6 +199,27 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
                 dynamic_tool["uuid"] == t["uuid"] for t in dynamic_tools
             ), f"Dynamic tool {dynamic_tool['uuid']} still in dynamic tools list {dynamic_tools}"
 
+    def test_run_reports_expression_error(self):
+        representation = dict(TOOL_WITH_SHELL_COMMAND)
+        representation["shell_command"] = "cat '$(inputs.input.missing[0].path)' > output.fastq"
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**representation))
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc")
+            self._run(
+                history_id=history_id,
+                tool_uuid=dynamic_tool["uuid"],
+                inputs={"input": {"src": "hda", "id": dataset["id"]}},
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+            output = self.dataset_populator.get_history_dataset_details(history_id, assert_ok=False)
+            assert output["state"] == "error"
+            # The JavaScript error, not just "Error occurred while building command line".
+            assert "Error occurred while building command line" in output["misc_info"], output["misc_info"]
+            assert ": TypeError" in output["misc_info"], output["misc_info"]
+
     def test_create_unprivileged_rejects_unparseable_shell_command(self):
         """A shell_command with an unbalanced '$(' is refused at create time.
 

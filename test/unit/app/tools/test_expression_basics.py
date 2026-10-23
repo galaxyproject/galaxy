@@ -16,6 +16,7 @@ from cwl_utils.errors import (
 from galaxy.tools.expressions import (
     do_eval,
     evaluate,
+    expression_error_message,
     ExpressionTemplateError,
     js_engine,
     validate_expression_template,
@@ -428,6 +429,14 @@ def test_unterminated_expression_is_rejected_before_evaluation():
 def test_unterminated_expression_reports_a_description():
     with pytest.raises(ExpressionTemplateError, match="in tool shell_command at line 1"):
         validate_expression_template('echo "$(date"', "shell_command")
+
+
+def test_expression_error_message_names_the_javascript_error():
+    with pytest.raises(WorkflowException) as exc:
+        do_eval("cat '$(inputs.x.elements[0].path)' > out.txt", {"x": []})
+    message = expression_error_message(exc.value)
+    assert message.startswith("TypeError"), message
+    assert "<input>" not in message  # script positions are left out
 
 
 def test_escaped_command_substitution_survives_evaluation():
