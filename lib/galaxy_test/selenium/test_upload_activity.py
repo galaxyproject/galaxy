@@ -217,13 +217,7 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
         library = library_populator.new_library(self._get_random_name(prefix="upload_library"))
         items = self._library_items(filenames)
         for folder_name, folder_filenames in (subfolders or {}).items():
-            # folder contents API 500s on a fetch-created folder without a description
-            folder = {
-                "name": folder_name,
-                "description": folder_name,
-                "elements": self._library_items(folder_filenames),
-            }
-            items.append(folder)
+            items.append({"name": folder_name, "elements": self._library_items(folder_filenames)})
         library_populator.fetch_to_folder(library["root_folder_id"], items)
         # library uploads are restricted to the uploader's private role
         for entry in library_populator.get_library_contents(library["id"]):
