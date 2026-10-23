@@ -9,6 +9,7 @@ from galaxy.files.templates.models import (
     FileSourceTemplateCatalog,
     FtpFileSourceConfiguration,
     GithubFileSourceConfiguration,
+    HALFileSourceConfiguration,
     PosixFileSourceConfiguration,
     S3FSFileSourceConfiguration,
     template_to_configuration,
@@ -371,6 +372,23 @@ def test_production_github_oauth_with_branch_and_writable():
     assert configuration_obj.branch == "main"
     assert configuration_obj.writable is True
     assert configuration_obj.oauth2_access_token == "gho_token"
+
+
+def test_production_hal():
+    template = _get_example_template("production_hal.yml")
+    configuration = template_to_configuration(template, {}, {}, user_details={}, environment={})
+    assert isinstance(configuration, HALFileSourceConfiguration)
+    assert configuration.api_url == "https://api.hal.science/search/"
+    assert configuration.writable is False
+    configuration = template_to_configuration(
+        template,
+        {"api_url": "https://api.hal.science/search/FRANCE-GRILLES/"},
+        {},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration, HALFileSourceConfiguration)
+    assert configuration.api_url == "https://api.hal.science/search/FRANCE-GRILLES/"
 
 
 def _ftp_production_template_variables(host, root=None, **extra):
