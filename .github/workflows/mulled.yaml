@@ -38,7 +38,7 @@ jobs:
         shell: bash
         run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
       - name: Install Apptainer's singularity
-        uses: eWaterCycle/setup-apptainer@v2
+        uses: './galaxy root/.github/actions/install_apptainer'
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run tests
