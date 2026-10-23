@@ -11,4 +11,8 @@
     <columns>value, dbkey, name, path</columns>
     <file path="${__HERE__}/fasta_indexes.loc" />
   </table>
+  <table name="test_duplicate_values" comment_char="#">
+    <columns>value, name, version</columns>
+    <file path="${__HERE__}/duplicate_values.loc" />
+  </table>
 </tables>

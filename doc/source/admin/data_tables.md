@@ -86,16 +86,17 @@ base name is checked (many tools use something like `tool-data/xyz.loc` and
 store example `loc` files in a `tool-data/` directory in the tool repository).
 Currently also `.loc.sample` may be used in case the specified `.loc` is absent.
 
-Galaxy uses two tool data table config files:
+Galaxy uses two settings for tool data table config files:
 
-- `tool_data_table_config_path`: by default `tool_data_table_conf.xml` in Galaxy's `config/` directory.
+- `tool_data_table_config_path`: one or more comma-separated config paths; by default
+  `tool_data_table_conf.xml` in Galaxy's `config/` directory.
 - `shed_tool_data_table_config`: by default `shed_tool_data_table_conf.xml` in
 Galaxy's `config/` directory. This file lists all tool data tables of tools
 installed from a toolshed. Note that the entries are versioned, i.e. there is a
 separate entry for each tool and tool version.
 
 The tool data table config files can (and do) contain multiple entries for the same data table
-(identified by the same name). These content of the corresponding `loc` files are merged when
+(identified by the same name). The contents of the corresponding `loc` files are merged when
 they are loaded.
 
 When a new tool is installed that uses a data table a new entry is added to
@@ -103,6 +104,41 @@ When a new tool is installed that uses a data table a new entry is added to
 subdirectory in `tool_data_path` (in a subdirectory that has the name of the
 toolshed). By default this is `tool-data/toolshed.g2.bx.psu.edu/`. Note that
 these directories will also contain tool data table config files, but they are unused.
+
+### Load order and duplicate values
+
+At startup, Galaxy loads data table entries in this order:
+
+1. Files in `tool_data_table_config_path`, in the order configured.
+2. The file in `shed_tool_data_table_config`, after all of the above.
+
+Within each config file, table definitions and their `<file>` elements are read in XML
+order. Rows in each `.loc` file retain their file order. Later definitions of the same
+table append their rows, skipping identical incoming rows. Rows that share a `value`
+but differ in another column are retained so tools can filter them, for example by
+index version. Reloading a table preserves the order of its loaded definitions.
+
+For a tool select, the tool's filters, including any sorting filters, run before Galaxy
+resolves a submitted value. If several rows still match, field lookup uses the first
+one and logs a warning. The submitted value comes from the select's configured `value`
+column, which may override the table's column mapping. Table-backed dropdowns show
+one choice per submitted string value, keeping the first label after filtering;
+dataset-backed choices remain separate. The data-table field API has no tool-specific
+filters and returns the first raw match.
+
+There is no inherent preference for local data, CVMFS, or IDC. For example, if two
+rows submit `hg38`, with paths `/local/hg38.fa` and `/idc/hg38.fa`, loading the local
+row first keeps `/local/hg38.fa` as the resolved path when both survive the tool's
+filters in that order. Adding the IDC row afterward makes the reference available without changing
+that existing selection. This precedence allows references to be deployed to IDC
+while local copies still exist.
+
+Appending an IDC config to `tool_data_table_config_path` places it after the other
+files in that setting, but **before** `shed_tool_data_table_config`. Check where local
+entries are defined when choosing the order. Reordering configs or rows, or removing
+the first matching row, can change the reference used when rerunning a job with the
+same submitted value. Keep this precedence stable when reproducibility depends on
+which reference copy is selected.
 
 ## The `huggingface` shared data table
 

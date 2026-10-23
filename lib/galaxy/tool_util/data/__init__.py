@@ -539,37 +539,9 @@ class TabularToolDataTable(ToolDataTable):
             )
             self.allow_duplicate_entries = False
             self._deduplicate_data()
-        # The value column identifies an entry, so a second row for the same value
-        # (e.g. a reference genome provided by both a local loc file and a mounted
-        # reference data repository) would only make lookups ambiguous. Keep the
-        # entry that was loaded first and ignore the incoming one.
-        value_index = self.columns["value"]
-        known_entries = {fields[value_index]: fields for fields in self.data}
-        entries = []
-        for fields in other_table.data:
-            value = fields[value_index]
-            known_fields = known_entries.get(value)
-            if known_fields is None:
-                known_entries[value] = fields
-                entries.append(fields)
-            elif known_fields != fields:
-                log.error(
-                    "Ignoring entry %s for data table '%s' loaded from %s: an entry with value '%s' is already registered (%s).",
-                    fields,
-                    self.name,
-                    list(other_table.filenames.keys()),
-                    value,
-                    known_fields,
-                )
-            else:
-                log.warning(
-                    "Ignoring duplicate entry %s for data table '%s' loaded from %s.",
-                    fields,
-                    self.name,
-                    list(other_table.filenames.keys()),
-                )
-        # add data entries and return current data table version
-        return self.add_entries(entries, allow_duplicates=allow_duplicates, persist=persist, **kwd)
+        # Rows sharing a value can differ by version or other tool-specific filters.
+        # Let add_entries apply the duplicate policy to complete rows so those filters can run later.
+        return self.add_entries(other_table.data, allow_duplicates=allow_duplicates, persist=persist, **kwd)
 
     def handle_found_index_file(self, filename):
         self.missing_index_file = None
@@ -580,11 +552,10 @@ class TabularToolDataTable(ToolDataTable):
         return self.data.copy()
 
     def get_field(self, value):
-        rval = None
         for i in self.get_named_fields_list():
             if i["value"] == value:
-                rval = TabularToolDataField(i)
-        return rval
+                return TabularToolDataField(i)
+        return None
 
     # This method is used in tools, so need to keep its API stable
     def get_named_fields_list(self) -> List[Dict[Union[str, int], str]]:
@@ -1206,7 +1177,7 @@ class ToolDataTableManager(Dictifiable):
                         table.name,
                         config_filename,
                     )
-                    # only merge content, do not persist to disk, ignore entries whose value is already present
+                    # Merge without persisting to disk, skipping only identical rows.
                     self.data_tables[table.name].merge_tool_data_table(table, allow_duplicates=False)
         return table_elems
 

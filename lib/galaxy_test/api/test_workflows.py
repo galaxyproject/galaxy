@@ -9347,6 +9347,27 @@ steps:
         assert len(options) == 1
         assert options[0] == ["hg19", "hg19_value", False]
 
+    @skip_without_tool("select_from_duplicate_value_table")
+    def test_value_restriction_collapses_duplicate_table_values(self):
+        expected = [["Human old", "hg38", False], ["Mouse", "mm10", False]]
+        with self.dataset_populator.test_history() as history_id:
+            tool_state = self.dataset_populator.build_tool_state("select_from_duplicate_value_table", history_id)
+            assert tool_state["inputs"][0]["options"] == expected
+            workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  select_text:
+     type: text
+     restrictOnConnections: true
+steps:
+  select:
+    tool_id: select_from_duplicate_value_table
+    in:
+      ref: select_text
+""")
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        assert run_workflow["steps"][0]["inputs"][0]["options"] == expected
+
     def test_value_restriction_with_select_and_text_param(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow

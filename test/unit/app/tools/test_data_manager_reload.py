@@ -48,7 +48,7 @@ def _data_manager(tool_data_tables: ToolDataTableManager) -> tuple[DataManager, 
     return DataManager(DataManagers(app)), queue_worker
 
 
-def test_reload_resolves_duplicate_values_like_other_processes(tmp_path):
+def test_reload_matches_other_processes_with_duplicate_values(tmp_path):
     """A data manager adding a value that a later loaded table already provides must
     end up with the same entry order as processes reloading the table from files."""
     config_path = _write_local_and_idc_tables(tmp_path)
@@ -65,7 +65,10 @@ def test_reload_resolves_duplicate_values_like_other_processes(tmp_path):
 
     peer_tool_data_tables = ToolDataTableManager(tmp_path, config_path)
     assert table.data == peer_tool_data_tables["all_fasta"].data
-    assert table.data == [["hg38", "Human (hg38)", "/local/hg38.fa"]]
+    assert table.data == [
+        ["hg38", "Human (hg38)", "/local/hg38.fa"],
+        ["hg38", "Human (hg38)", "/idc/hg38.fa"],
+    ]
     assert queue_worker.control_tasks == [("reload_tool_data_tables", True, {"table_name": "all_fasta"})]
 
 

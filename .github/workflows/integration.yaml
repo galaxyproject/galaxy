@@ -81,7 +81,8 @@ jobs:
   test:
     name: Test
     needs: prepare-mulled-cache
-    runs-on: ubuntu-latest
+    # Apptainer 1.3.6 requires libfuse3-3, which Ubuntu 26.04 no longer provides.
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:

@@ -89,7 +89,18 @@ def test_merging_tables(merged_tdt_manager):
     assert len(merged_tdt_manager["testbeta"].data) == 2
 
 
-def test_merging_tables_ignores_entries_with_known_value(tmp_path, caplog):
+def test_get_field_uses_first_entry_for_duplicate_values(tdt_manager):
+    table = tdt_manager["testalpha"]
+    first_entry = table.get_named_fields_list()[0]
+    table.add_entry(["data1", "Another data1", "/other/data1.txt"])
+
+    field = table.get_field("data1")
+    assert field is not None
+    assert field.data == first_entry
+    assert table.get_field("unknown") is None
+
+
+def test_merging_tables_preserves_distinct_rows_with_known_value(tmp_path, caplog):
     (tmp_path / "local.loc").write_text("hg38\tHuman (hg38)\t/local/hg38.fa\nmm10\tMouse (mm10)\t/local/mm10.fa\n")
     (tmp_path / "idc.loc").write_text(
         "hg38\tHuman (hg38)\t/idc/hg38.fa\nmm10\tMouse (mm10)\t/local/mm10.fa\ndm6\tFly (dm6)\t/idc/dm6.fa\n"
@@ -111,16 +122,15 @@ def test_merging_tables_ignores_entries_with_known_value(tmp_path, caplog):
     expected_data = [
         ["hg38", "Human (hg38)", "/local/hg38.fa"],
         ["mm10", "Mouse (mm10)", "/local/mm10.fa"],
+        ["hg38", "Human (hg38)", "/idc/hg38.fa"],
         ["dm6", "Fly (dm6)", "/idc/dm6.fa"],
     ]
     assert table.data == expected_data
-    # the conflicting hg38 entry is an error, the identical mm10 entry only a warning
     errors = [r.getMessage() for r in caplog.records if r.levelno == logging.ERROR]
-    assert len(errors) == 1
-    assert "/idc/hg38.fa" in errors[0]
+    assert not errors
     warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
     assert len(warnings) == 1
-    assert "Ignoring duplicate entry ['mm10'" in warnings[0]
+    assert "this entry already exists and allow_duplicates is False" in warnings[0]
     # reloading re-applies the same merge rules
     table.reload_from_files()
     assert table.data == expected_data
