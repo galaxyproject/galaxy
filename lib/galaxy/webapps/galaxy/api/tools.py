@@ -639,9 +639,12 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 io_details   - if true, parameters and inputs are returned
                 link_details - if true, hyperlink to the tool is returned
                 tool_version - if provided return this tool version
+                exact        - if true, 404 unless the tool found is the requested id and
+                               tool_version (by default another version of the tool is returned)
         """
         io_details = util.string_as_bool(kwd.get("io_details", False))
         link_details = util.string_as_bool(kwd.get("link_details", False))
+        exact = util.string_as_bool(kwd.get("exact", False))
         tool_version = kwd.get("tool_version")
         tool_uuid = kwd.get("tool_uuid")
         tool = self.service._get_materialized_tool(
@@ -652,6 +655,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             tool_uuid=tool_uuid,
             materialization_reason="detail",
         )
+        if exact and not tool_uuid and (tool.id != id or (tool_version and tool.version != str(tool_version))):
+            raise exceptions.ObjectNotFound(
+                f"Tool '{id}'{f' version {tool_version}' if tool_version else ''} is not installed; "
+                f"the closest match is '{tool.id}' version {tool.version}."
+            )
         return tool.to_dict(trans, io_details=io_details, link_details=link_details)
 
     @expose_api_anonymous

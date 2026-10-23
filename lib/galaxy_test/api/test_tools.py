@@ -2166,6 +2166,18 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert output1_content.strip() == "Cat1Testlistified"
 
     @skip_without_tool("multiple_versions")
+    def test_show_exact_version(self):
+        # Without exact, a version that is not installed falls back to another version of the tool.
+        response = self._get("tools/multiple_versions", data={"tool_version": "0.3"})
+        self._assert_status_code_is(response, 200)
+        assert response.json()["version"] != "0.3"
+        response = self._get("tools/multiple_versions", data={"tool_version": "0.3", "exact": True})
+        self._assert_status_code_is(response, 404)
+        response = self._get("tools/multiple_versions", data={"tool_version": "0.1", "exact": True})
+        self._assert_status_code_is(response, 200)
+        assert response.json()["version"] == "0.1"
+
+    @skip_without_tool("multiple_versions")
     def test_run_by_versions(self):
         with self.dataset_populator.test_history_for(self.test_run_by_versions) as history_id:
             for version in ["0.1", "0.2"]:
