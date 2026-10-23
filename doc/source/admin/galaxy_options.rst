@@ -2915,6 +2915,22 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``widgets_allowed_origins``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Comma-separated list of origins, besides Galaxy's own, that may
+    embed Galaxy Widgets (`/widgets/`) in a frame, e.g.
+    `https://example.org`. Widgets are served with
+    `Content-Security-Policy: frame-ancestors 'self'` followed by
+    these origins, instead of the `X-Frame-Options` header. Allowing
+    an origin to embed widgets does not grant it access to any private
+    resource.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``nginx_upload_store``
 ~~~~~~~~~~~~~~~~~~~~~~

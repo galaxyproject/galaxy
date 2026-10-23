@@ -50,6 +50,7 @@ from galaxy.structured_app import (
 )
 from galaxy.util import (
     asbool,
+    listify,
     safe_makedirs,
     unicodify,
 )
@@ -283,6 +284,16 @@ def _is_embed_request(path: str, query_string: str) -> bool:
     return path.startswith("/published/") and "embed=true" in query_string
 
 
+def _is_widget_request(path: str) -> bool:
+    return path.startswith("/widgets/")
+
+
+def _widgets_frame_ancestors(config) -> str:
+    return " ".join(
+        ["frame-ancestors", "'self'", *listify(getattr(config, "widgets_allowed_origins", None), do_strip=True)]
+    )
+
+
 def config_allows_origin(origin_raw, config):
     # boil origin header down to hostname
     origin = urlparse(origin_raw).hostname
@@ -328,7 +339,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         super().__init__(environ)
         config = self.app.config
         self.debug = asbool(config.get("debug", False))
-        if x_frame_options := getattr(config, "x_frame_options", None):
+        if _is_widget_request(self.request.path_info):
+            self.response.headers["Content-Security-Policy"] = _widgets_frame_ancestors(config)
+        elif x_frame_options := getattr(config, "x_frame_options", None):
             if not _is_embed_request(self.request.path_info, self.environ.get("QUERY_STRING", "")):
                 self.response.headers["X-Frame-Options"] = x_frame_options
         # Flag indicating whether we are in workflow building mode (means

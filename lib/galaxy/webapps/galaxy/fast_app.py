@@ -63,6 +63,10 @@ api_tags_metadata = [
     {"name": "datasets", "description": "Operations on datasets."},
     {"name": "dataset collections"},
     {
+        "name": "widgets",
+        "description": "Galaxy Widgets: views of single Galaxy resources served without chrome under `/widgets/`.",
+    },
+    {
         "name": "datatypes",
         "description": "Operations with supported data types.",
     },
@@ -139,6 +143,14 @@ class GalaxyCORSMiddleware(CORSMiddleware):
         return config_allows_origin(origin, self.config)
 
 
+def _sets_frame_ancestors(headers: MutableHeaders) -> bool:
+    return any(
+        directive.split()[:1] == ["frame-ancestors"]
+        for policy in headers.getlist("content-security-policy")
+        for directive in policy.lower().split(";")
+    )
+
+
 class XFrameOptionsMiddleware:
     def __init__(self, app, x_frame_options: str):
         self.app = app
@@ -153,8 +165,11 @@ class XFrameOptionsMiddleware:
 
         async def send_with_header(message):
             if message["type"] == "http.response.start":
-                if not _is_embed_request(request.url.path, str(request.url.query)):
-                    headers = MutableHeaders(scope=message)
+                headers = MutableHeaders(scope=message)
+                # A response's own frame-ancestors directive supersedes X-Frame-Options.
+                if not _is_embed_request(request.url.path, str(request.url.query)) and not _sets_frame_ancestors(
+                    headers
+                ):
                     # Don't override a header the wrapped app (e.g. the mounted WSGI app) already set
                     headers.setdefault("X-Frame-Options", self.x_frame_options)
             await send(message)
