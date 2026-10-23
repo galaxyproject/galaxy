@@ -185,6 +185,18 @@ describe("JobPanel", () => {
         expect(wrapper.find("#g-card-job-goneJob .job-card-title-text").text()).toBe("uninstalled_tool");
     });
 
+    it("shows an invalid filter error with a clear-search hint", async () => {
+        const wrapper = mountJobPanel();
+        await flushPromises();
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "xx:ss");
+        await flushPromises();
+        await scrollOnce();
+
+        const alert = wrapper.find(".alert-danger");
+        expect(alert.text()).toContain("Invalid filter(s) in query: xx");
+        expect(alert.text()).toContain("Clear your search or click the button at the bottom of the list to retry.");
+    });
+
     it("drops a page that resolves after the filter changed", async () => {
         let releaseStalePage: () => void = () => {};
         const stalePage = new Promise<void>((resolve) => {

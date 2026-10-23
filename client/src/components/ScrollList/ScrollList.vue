@@ -15,8 +15,6 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
 
-const CLICK_TO_RETRY_MSG = "Clear your search or click the button at the bottom of the list to retry." as const;
-
 interface LoaderResult<T> {
     items: T[];
     total: number;
@@ -48,6 +46,8 @@ interface Props<T> {
     scrollTopResetKey?: string;
     /** Whether to use grid view (div instead of `BListGroup` for better flex/grid support) */
     gridView?: boolean;
+    /** Hint shown after a load error, e.g. to suggest clearing a search. */
+    retryMessage?: string;
 }
 
 // TODO: In Vue 3, we'll be able to use generic types directly in the template, so we can remove this type assertion
@@ -68,6 +68,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     showCountInFooter: false,
     scrollTopResetKey: undefined,
     gridView: false,
+    retryMessage: "Click on the button at the bottom of the list to retry.",
 });
 
 const emit = defineEmits<{
@@ -160,7 +161,7 @@ async function loadItems(clearError = false) {
             errorMessage.value = errorMessageAsString(e);
             if (items.value.length > 0 || msgCleared) {
                 const errMsg = errorMessage.value;
-                const toastedMsg = `${errMsg}${errMsg.endsWith(".") ? "" : ". "}${CLICK_TO_RETRY_MSG}`;
+                const toastedMsg = `${errMsg}${errMsg.endsWith(".") ? "" : ". "}${props.retryMessage}`;
                 Toast.error(toastedMsg, `Failed to load ${props.namePlural}`);
             }
         } finally {
@@ -237,7 +238,7 @@ watch(
                 <template v-if="items.length === 0">
                     <GAlert v-if="errorMessage" variant="danger">
                         <p>{{ errorMessage }}</p>
-                        <strong>{{ CLICK_TO_RETRY_MSG }}</strong>
+                        <strong>{{ props.retryMessage }}</strong>
                     </GAlert>
                     <slot name="loading">
                         <GAlert v-if="busy" variant="info">
