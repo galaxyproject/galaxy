@@ -1744,7 +1744,7 @@ upload_activity:
     # Data-library selectors
     data_library_library_label: '[data-test-id="data-library-browser-library-label"][data-label="${label}"]'
     data_library_item_label: '[data-test-id="data-library-browser-item-label"][data-label="${label}"]'
-    data_library_select_all: '[data-test-id="data-library-select-all"] input[type="checkbox"]'
+    data_library_select_all: '.custom-control:has(> [data-test-id="data-library-select-all"])'
     data_library_item_checkbox:
       type: xpath
       selector: '//span[contains(@data-test-id, "data-library-browser-item-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'

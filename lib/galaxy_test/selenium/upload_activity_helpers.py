@@ -358,14 +358,31 @@ class UploadContext(_UploadStaging):
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
         return self.stage_data_library_datasets(library_label, [dataset_label])[0]
 
-    def stage_data_library_datasets(self, library_label: str, dataset_labels: list[str]) -> list[DataLibraryUploadItem]:
+    def stage_data_library_datasets(
+        self,
+        library_label: str,
+        dataset_labels: list[str],
+        folder_label: str | None = None,
+        select_all: bool = False,
+    ) -> list[DataLibraryUploadItem]:
+        """Stage datasets from a library root or ``folder_label``; ``select_all`` expects exactly ``dataset_labels``."""
         if self._current_method_id != "data-library":
             raise AssertionError("stage_data_library_datasets is only available for the data-library method")
 
-        self.components.upload_activity.data_library_library_label(label=library_label).wait_for_and_click()
-        for dataset_label in dataset_labels:
-            self.components.upload_activity.data_library_item_label(label=dataset_label).wait_for_and_click()
-        self.components.upload_activity.data_library_add_selected.wait_for_and_click()
+        upload_activity = self.components.upload_activity
+        upload_activity.data_library_library_label(label=library_label).wait_for_and_click()
+        if folder_label is not None:
+            upload_activity.data_library_item_label(label=folder_label).wait_for_and_click()
+        datasets = [upload_activity.data_library_item_label(label=label) for label in dataset_labels]
+        if select_all:
+            # wait for the folder to load so select-all doesn't hit the previous view
+            for dataset in datasets:
+                dataset.wait_for_visible()
+            upload_activity.data_library_select_all.wait_for_and_click()
+        else:
+            for dataset in datasets:
+                dataset.wait_for_and_click()
+        upload_activity.data_library_add_selected.wait_for_and_click()
         return [self._create_item(DataLibraryUploadItem) for _ in dataset_labels]
 
     def select_composite(self, composite_type: str) -> "UploadContext":
@@ -773,8 +790,14 @@ class DataLibraryContext(BaseUploadContext):
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
         return self._context.stage_data_library_dataset(library_label, dataset_label)
 
-    def stage_data_library_datasets(self, library_label: str, dataset_labels: list[str]) -> "DataLibraryContext":
-        self._context.stage_data_library_datasets(library_label, dataset_labels)
+    def stage_data_library_datasets(
+        self,
+        library_label: str,
+        dataset_labels: list[str],
+        folder_label: str | None = None,
+        select_all: bool = False,
+    ) -> "DataLibraryContext":
+        self._context.stage_data_library_datasets(library_label, dataset_labels, folder_label, select_all)
         return self
 
 

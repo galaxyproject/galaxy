@@ -174,8 +174,8 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
     @requires_admin
     @requires_new_library
     def test_upload_list_from_data_library_to_target_history(self):
-        """Library datasets built into a list land in the picked target history, not the current one."""
-        library_name = self._create_and_populate_library(["1.bed", "2.bed"])
+        """Select-all in a library subfolder builds a list in the picked target history, not the current one."""
+        library_name = self._create_and_populate_library(["3.bed"], subfolders={"list folder": ["1.bed", "2.bed"]})
         current_history_id = self.current_history_id()
         # the long managed history name pushes the target history change link out of view
         self.dataset_populator.rename_history(current_history_id, "library list current")
@@ -184,7 +184,9 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
         self.home()
 
         context = self.upload_context("data-library")
-        context.stage_data_library_datasets(library_name, ["1.bed", "2.bed"])
+        context.stage_data_library_datasets(
+            library_name, ["1.bed", "2.bed"], folder_label="list folder", select_all=True
+        )
         context.to_list("library list").select_target_history(target_history_id)
         # collection config is applied by start(), so this shows the staged items and target history
         self._screenshot_when_startable("upload_activity_data_library_target_history_staged")
@@ -208,18 +210,30 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot(label)
 
-    def _create_and_populate_library(self, filenames=("1.bed",)):
+    def _create_and_populate_library(self, filenames=("1.bed",), subfolders=None):
         self.logout_if_needed()
         self.admin_login()
         library_populator = LibraryPopulator(self.api_interactor_for_logged_in_user())
         library = library_populator.new_library(self._get_random_name(prefix="upload_library"))
-        items = []
-        for filename in filenames:
-            with open(self.get_filename(filename)) as f:
-                items.append({"src": "pasted", "paste_content": f.read(), "name": filename, "ext": "bed"})
+        items = self._library_items(filenames)
+        for folder_name, folder_filenames in (subfolders or {}).items():
+            # folder contents API 500s on a fetch-created folder without a description
+            folder = {
+                "name": folder_name,
+                "description": folder_name,
+                "elements": self._library_items(folder_filenames),
+            }
+            items.append(folder)
         library_populator.fetch_to_folder(library["root_folder_id"], items)
         # library uploads are restricted to the uploader's private role
         for entry in library_populator.get_library_contents(library["id"]):
             if entry["type"] == "file":
                 library_populator.remove_library_dataset_restrictions(entry["id"])
         return library["name"]
+
+    def _library_items(self, filenames):
+        items = []
+        for filename in filenames:
+            with open(self.get_filename(filename)) as f:
+                items.append({"src": "pasted", "paste_content": f.read(), "name": filename, "ext": "bed"})
+        return items
