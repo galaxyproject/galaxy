@@ -30,6 +30,7 @@ from galaxy.tool_util.verify.interactor import (
     POLLING_BACKOFF,
     POLLING_DELTA,
     RunToolException,
+    split_declared_job_outputs,
 )
 from galaxy.tool_util.verify.wait import DEFAULT_POLLING_DELTA
 
@@ -500,3 +501,15 @@ def test_staging_diagnostics_continue_after_a_failed_lookup(interactor, mocked):
     assert "No dataset error details available." in message
     assert "good.txt" not in message
     assert exc.value.__cause__ is original_error
+
+
+def test_split_declared_job_outputs_skips_discovered_datasets():
+    outputs, output_collections = split_declared_job_outputs(
+        [
+            {"name": "out_1", "dataset": {"id": "d1"}},
+            {"name": "__new_primary_file_list_output|4__", "dataset": {"id": "d4"}},
+            {"name": "list_output", "dataset_collection_instance": {"id": "c1"}},
+        ]
+    )
+    assert dict(outputs) == {"out_1": {"id": "d1"}}
+    assert output_collections == {"list_output": {"id": "c1"}}

@@ -314,6 +314,9 @@ def split_declared_job_outputs(job_outputs: list[dict[str, Any]]) -> tuple[Outpu
     outputs = OutputsDict()
     output_collections: dict[str, Any] = {}
     for job_output in job_outputs:
+        # Discovered datasets appear once the job finishes; legacy submit responses never list them.
+        if is_discovered_output(job_output["name"]):
+            continue
         if "dataset" in job_output:
             outputs[job_output["name"]] = job_output["dataset"]
         else:
