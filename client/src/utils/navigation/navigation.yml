@@ -542,6 +542,7 @@ collection_builders:
         _: '[row-index="${index}"]'
         link_button: '${_} .paired-action-icon.fa-link'
         unlink_button: '${_} .paired-action-icon.fa-unlink'
+        swap_button: '${_} [title="Swap forward and reverse"]'
 
 data_landing:
   selectors:

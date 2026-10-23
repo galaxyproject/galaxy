@@ -41,10 +41,19 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         uploader.start()
         self._wait_for_and_select([1, 2])
         self.history_panel_build_list_of_pairs()
+        list_wizard = self.components.collection_builders.list_wizard
+        self.ag_grid_edit_cell(list_wizard, "identifier", 2, "renamed", clear=True)
+        list_wizard.row._(index=0).swap_button.wait_for_and_click()
         self.collection_builder_set_name("my awesome paired list")
         self.screenshot("collection_builder_paired_list")
         self.collection_builder_create()
         self._wait_for_hid_visible(5)
+        collection = self.dataset_populator.get_history_collection_details(self.current_history_id(), hid=5)
+        (element,) = collection["elements"]
+        assert element["element_identifier"] == "renamed", element["element_identifier"]
+        pair = element["object"]["elements"]
+        assert [e["element_identifier"] for e in pair] == ["forward", "reverse"]
+        assert [e["object"]["name"] for e in pair] == ["basename_2.fasta", "basename_1.fasta"], pair
         # switch to hidden filters to see the hidden datasets appear
         self._show_hidden_content()
         self._wait_for_hid_visible(1)
