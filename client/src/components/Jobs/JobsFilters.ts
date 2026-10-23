@@ -1,4 +1,4 @@
-import { JOB_STATES, type JobsQueryParams } from "@/api/jobs";
+import { JOB_STATES, type JobBaseModel, type JobsQueryParams } from "@/api/jobs";
 import { useToolStore } from "@/stores/toolStore";
 import Filtering, { compare, contains, equals, toDate, type ValidFilter } from "@/utils/filtering";
 
@@ -47,14 +47,28 @@ export const JobsFiltersById = new Filtering(validFiltersById, undefined, true, 
 export const JobsFiltersByName = new Filtering(validFiltersByName, undefined, true, "name");
 
 /**
- * Turn a `JobsFilters` filter text into query params for `/api/jobs`.
+ * Tests whether a job still matches the *mutable* part of the filter text it was originally
+ * fetched under (state, update time), not tool id/name, which the backend's own search decides
+ * once and a job's tool never changes afterwards.
+ *
+ * Used to drop a job from a filtered view as soon as a live update (e.g. a state change) takes it
+ * out of the filter's criteria, instead of leaving it visible until the next re-fetch.
+ */
+export type JobMatcher = (job: JobBaseModel) => boolean;
+
+/**
+ * Turn a `JobsFilters` filter text into query params for `/api/jobs`, plus a client-side matcher
+ * for the same criteria (see `JobMatcher`).
  * @param filterText The filter text entered by the user.
  * @param useNameFilter If `false` (by default), we filter by tool ID by passing the provided id
  *                      in the `search: string` parameter. If `true`, we instead find all tools in the
  *                      `toolStore` matching the provided name, and then pass `tool_id: string[]`
  *                      as a parameter.
  */
-export function jobsFilterParams(filterText: string, useNameFilter = false): UserJobsQueryParams {
+export function jobsFilterParams(
+    filterText: string,
+    useNameFilter = false,
+): { params: UserJobsQueryParams; matchesJob: JobMatcher } {
     const JobsFilters = useNameFilter ? JobsFiltersByName : JobsFiltersById;
 
     // Ensure that any invalid filters are detected and reported, because otherwise `Filtering` just
@@ -67,6 +81,8 @@ export function jobsFilterParams(filterText: string, useNameFilter = false): Use
     }
 
     const params: UserJobsQueryParams = {};
+    /** Checks for the mutable filter criteria (state, update time); see `JobMatcher`. */
+    const matchers: JobMatcher[] = [];
 
     const queryDict = JobsFilters.getQueryDict(filterText);
 
@@ -98,17 +114,21 @@ export function jobsFilterParams(filterText: string, useNameFilter = false): Use
     const state = JobsFilters.getFilterValue(filterText, "state") as string | undefined;
     if (state) {
         params.state = [state];
+        matchers.push((job) => job.state === state.toLowerCase());
     }
 
     const updatedAfter = JobsFilters.getFilterValue(filterText, "update_time_gt") as string | undefined;
     if (updatedAfter) {
         params.date_range_min = updatedAfter;
+        matchers.push((job) => job.update_time >= updatedAfter);
     }
 
     const updatedBefore = JobsFilters.getFilterValue(filterText, "update_time_lt") as string | undefined;
     if (updatedBefore) {
         params.date_range_max = updatedBefore;
+        matchers.push((job) => job.update_time <= updatedBefore);
     }
 
-    return params;
+    const matchesJob: JobMatcher = (job) => matchers.every((matcher) => matcher(job));
+    return { params, matchesJob };
 }
