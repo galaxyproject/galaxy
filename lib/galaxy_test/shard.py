@@ -92,6 +92,15 @@ def select_shard(items: list[Any], shard_id: int, num_shards: int, durations: di
     return selected
 
 
+def longest_groups_first(items: list[Any], durations: dict[str, float]) -> list[Any]:
+    """Order items so the groups with the most recorded work come first."""
+    groups = build_groups(items, durations)
+    ordered = []
+    for group in sorted(groups, key=lambda g: (-g.seconds, g.key)):
+        ordered.extend(group.items)
+    return ordered
+
+
 def pytest_configure(config) -> None:
     """Take over sharding from pytest-shard, reusing its command line options."""
     if (shard_plugin := config.pluginmanager.get_plugin("pytest-shard")) is not None:
@@ -112,8 +121,12 @@ def pytest_report_collectionfinish(config, items) -> str | None:
 def pytest_collection_modifyitems(config, items: list[Any]) -> None:
     num_shards = config.getoption("num_shards", default=1)
     shard_id = config.getoption("shard_id", default=0)
-    if num_shards <= 1:
-        return
-    if shard_id >= num_shards:
-        raise ValueError(f"shard_id = {shard_id} must be less than num_shards = {num_shards}")
-    items[:] = select_shard(items, shard_id, num_shards, load_durations())
+    durations = load_durations()
+    if num_shards > 1:
+        if shard_id >= num_shards:
+            raise ValueError(f"shard_id = {shard_id} must be less than num_shards = {num_shards}")
+        items[:] = select_shard(items, shard_id, num_shards, durations)
+    if os.environ.get("PYTEST_XDIST_WORKER"):
+        # With --dist loadscope --no-loadscope-reorder, xdist hands whole groups to idle
+        # workers in collection order, so starting the longest groups first balances workers.
+        items[:] = longest_groups_first(items, durations)

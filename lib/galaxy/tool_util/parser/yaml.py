@@ -21,6 +21,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_SORT,
     ParseException,
 )
+from galaxy.tool_util.runtime_environment import parse_runtime_environment_variables
 from galaxy.tool_util_models import UserToolSource
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.parameters import (
@@ -182,6 +183,12 @@ class YamlToolSource(ToolSource):
 
     def parse_version_command_interpreter(self):
         return self.root_dict.get("runtime_version", {}).get("interpreter", None)
+
+    def parse_runtime_environment_variables(self, *, strict: bool = True):
+        return parse_runtime_environment_variables(
+            self.root_dict.get("runtime_environment_variables", []),
+            strict=strict,
+        )
 
     def parse_requirements(self):
         mixed_requirements = self.root_dict.get("requirements") or []

@@ -5,7 +5,7 @@ requires = ["setuptools>=77.0.0", "setuptools-scm>=8"]
 [project]
 dynamic = ["readme"]
 name = "galaxy"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 description = "Galaxy server metapackage"
 requires-python = ">=3.10"
 license = "MIT"
@@ -48,8 +48,5 @@ Homepage = "https://github.com/galaxyproject/galaxy"
 [tool.setuptools.dynamic]
 readme = {content-type = "text/x-rst", file = ["README.rst", "HISTORY.rst"]}
 
-[tool.setuptools.packages.find]
-where = ["src"]
-exclude = [
-    "tests*",
-]
+[tool.setuptools]
+packages = []

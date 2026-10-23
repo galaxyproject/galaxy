@@ -47,6 +47,17 @@ describe("ChangePassword", () => {
         });
     });
 
+    it("associates each password field with its visible label", async () => {
+        await wrapper.setProps({ expiredUser: "expired_user" });
+        const labels = wrapper.findAll("label");
+        expect(labels.map((label) => label.text())).toEqual(["Current Password", "New Password", "Confirm password"]);
+        const ids = labels.map((label) => label.attributes("for"));
+        expect(new Set(ids).size).toBe(3);
+        for (const id of ids) {
+            expect(wrapper.find(`input[id="${id}"]`).attributes("type")).toBe("password");
+        }
+    });
+
     it("basics", async () => {
         const cardHeader = wrapper.find(".card-header");
         expect(cardHeader.text()).toBe("Change your password");

@@ -21,7 +21,7 @@ patchedDependencies:
     hash: 6520cf36ee58d1243c35ef0c96b26c7047ecde505686574659dc9d9e653407b2
     path: patches/bootstrap-vue@2.23.1.patch
   vue-multiselect@3.5.0:
-    hash: 3d3efaaf793c705789f73bb9c7dce2e3b7c28771bc92dba6bc265d59544e9da1
+    hash: 5a705b04177227e6cd45209b2333d41993de5178f0841ed61b490a7939a06394
     path: patches/vue-multiselect@3.5.0.patch
 
 importers:
@@ -213,7 +213,7 @@ importers:
         version: 0.344.0(vue@3.5.43(typescript@5.8.3))
       markdown-it:
         specifier: ^14.1.1
-        version: 14.2.0
+        version: 14.3.3
       markdown-it-regexp:
         specifier: ^0.4.0
         version: 0.4.0
@@ -321,7 +321,7 @@ importers:
         version: 1.9.5
       vue-multiselect:
         specifier: ^3.3
-        version: 3.5.0(patch_hash=3d3efaaf793c705789f73bb9c7dce2e3b7c28771bc92dba6bc265d59544e9da1)
+        version: 3.5.0(patch_hash=5a705b04177227e6cd45209b2333d41993de5178f0841ed61b490a7939a06394)
       vue-observe-visibility:
         specifier: ^1.0.0
         version: 1.0.0
@@ -548,7 +548,7 @@ importers:
         version: '@fortawesome/free-solid-svg-icons@6.7.2'
       markdown-it:
         specifier: ^14.1.0
-        version: 14.2.0
+        version: 14.3.3
       typescript-eslint:
         specifier: ^8.0.0
         version: 8.71.1(eslint@10.12.0)(typescript@5.8.3)
@@ -3914,8 +3914,8 @@ packages:
     peerDependencies:
       linkifyjs: '==4.3.3'
 
-  linkify-it@5.0.1:
-    resolution: {integrity: sha512-wVoTjP4Q6R0NW5hiZkVJaFZPWgtXfoGF+6LucL3/FtiNjmcHhYjEr5f1Kqjirc1nBW07J/ZuRFumqr2oqccEWg==}
+  linkify-it@5.0.2:
+    resolution: {integrity: sha512-ONTm2jCMAVZjgQa/Fy1kScXsuOoF5NPTsoFBdE1KVIZ2vAh/r9+Bqo+0jINCBYnavTPQZz38QzFTme79ENoN3Q==}
 
   linkifyjs@4.3.3:
     resolution: {integrity: sha512-P8aEP5U/D1/IlTY2OeYsErdwh9bGuLE30NcXtKEjgdHcahveQoQwM2yZNsioQHsWFz0P7KKudisbrzCgR0sDHg==}
@@ -4000,8 +4000,8 @@ packages:
   markdown-it-regexp@0.4.0:
     resolution: {integrity: sha512-0XQmr46K/rMKnI93Y3CLXsHj4jIioRETTAiVnJnjrZCEkGaDOmUxTbZj/aZ17G5NlRcVpWBYjqpwSlQ9lj+Kxw==}
 
-  markdown-it@14.2.0:
-    resolution: {integrity: sha512-1TGiQiJVRQ3NPmZH6sx5Cfnmg6GQm9jvC1ch4TK511NjSJvjzKLzn5pPfZRNZkRPZP0HqCioSndqH8v2nRaWVQ==}
+  markdown-it@14.3.3:
+    resolution: {integrity: sha512-L//tDAkjTjJCU6pBUSBTgs3Kg4InVaZuUZog/b6V12UKhcDQ7S78877ibbCanRExwPuYP1CZD7Gd2dxSy1GXRg==}
     hasBin: true
 
   math-intrinsics@1.1.0:
@@ -9104,7 +9104,7 @@ snapshots:
     dependencies:
       linkifyjs: 4.3.3
 
-  linkify-it@5.0.1:
+  linkify-it@5.0.2:
     dependencies:
       uc.micro: 2.1.0
 
@@ -9192,11 +9192,11 @@ snapshots:
 
   markdown-it-regexp@0.4.0: {}
 
-  markdown-it@14.2.0:
+  markdown-it@14.3.3:
     dependencies:
       argparse: 2.0.1
       entities: 4.5.0
-      linkify-it: 5.0.1
+      linkify-it: 5.0.2
       mdurl: 2.0.0
       punycode.js: 2.3.1
       uc.micro: 2.1.0
@@ -10966,7 +10966,7 @@ snapshots:
 
   vue-json-pretty@1.9.5: {}
 
-  vue-multiselect@3.5.0(patch_hash=3d3efaaf793c705789f73bb9c7dce2e3b7c28771bc92dba6bc265d59544e9da1): {}
+  vue-multiselect@3.5.0(patch_hash=5a705b04177227e6cd45209b2333d41993de5178f0841ed61b490a7939a06394): {}
 
   vue-observe-visibility@1.0.0: {}
 

@@ -1,12 +1,18 @@
 import os
+from typing import Any
 
 import pytest
 
+from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 
 class ConfigObject:
     framework_tool_and_types = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config: dict[str, Any]) -> None:
+        UsesCeleryTasks.handle_galaxy_config_kwds(config)
 
 
 @pytest.fixture(scope="session")

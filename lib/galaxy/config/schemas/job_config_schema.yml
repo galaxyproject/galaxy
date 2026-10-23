@@ -59,6 +59,32 @@ mapping:
                         type: str
                       execute:
                         type: str
+              job_env:
+                type: seq
+                sequence:
+                  - type: map
+                    mapping:
+                      name:
+                        type: str
+                      raw:
+                        type: bool
+                      value:
+                        type: str
+                      file:
+                        type: str
+                      execute:
+                        type: str
+              tool_env:
+                type: seq
+                sequence:
+                  - type: map
+                    mapping:
+                      name:
+                        type: str
+                      raw:
+                        type: bool
+                      value:
+                        type: str
               resubmit:
                 type: seq
                 sequence:

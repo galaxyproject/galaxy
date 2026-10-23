@@ -3,6 +3,7 @@ from typing import (
     Any,
 )
 
+from galaxy.util.wait import wait_on
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.decorators import (
     requires_admin,
@@ -831,6 +832,23 @@ class TestHistoryContentsApi(ApiTestCase):
         self._assert_has_keys(new_forward, "history_id")
         assert new_forward["history_id"] == second_history_id
 
+    def test_hdca_copy_preserves_nested_element_tags(self, history_id):
+        fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id)
+        hdca = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        forward_id = hdca["elements"][0]["object"]["elements"][0]["object"]["id"]
+        self.dataset_populator.tag_dataset(history_id, forward_id, tags=["name:sample1", "group:condition:a"])
+
+        second_history_id = self.dataset_populator.new_history()
+        copied_hdca = self.dataset_collection_populator.copy_collection(second_history_id, hdca["id"]).json()
+
+        copied_forward_id = copied_hdca["elements"][0]["object"]["elements"][0]["object"]["id"]
+        assert copied_forward_id != forward_id
+        copied_forward = self.dataset_populator.get_history_dataset_details(
+            history_id=second_history_id, dataset_id=copied_forward_id
+        )
+        assert copied_forward["history_id"] == second_history_id
+        assert sorted(copied_forward["tags"]) == ["group:condition:a", "name:sample1"]
+
     def __get_paired_response_elements(self, history_id: str, contents):
         hdca = self.__show(history_id, contents).json()
         self._assert_has_keys(hdca, "name", "deleted", "visible", "elements")
@@ -879,8 +897,7 @@ class TestHistoryContentsApi(ApiTestCase):
             element_identifiers=element_identifiers,
             collection_type="list",
         )
-        with self._different_user():
-            second_history_id = self.dataset_populator.new_history()
+        with self._different_user_history() as second_history_id:
             create_response = self._post(
                 f"histories/{second_history_id}/contents/dataset_collections", create_data, json=True
             )
@@ -1206,6 +1223,36 @@ class TestHistoryContentsApi(ApiTestCase):
         update_response = self._update(history_id, hda1["id"], dict(name="Updated Name"))
         self._assert_status_code_is(update_response, 403)
         assert update_response.json()["err_msg"] == "History is immutable"
+
+    def test_contents_from_store_async_accepts_only_web_links(self, history_id):
+        for payload in (
+            {"store_content_uri": "/tmp/store.tgz"},
+            {"store_content_uri": "file:///tmp/store.tgz"},
+            {"store_content_uri": "gxfiles://test/store.tgz"},
+            {"store_dict": {}},
+        ):
+            response = self._post(f"histories/{history_id}/contents_from_store_async", payload, json=True)
+            self._assert_status_code_is(response, 403)
+        response = self._post(f"histories/{history_id}/contents_from_store_async", {}, json=True)
+        self._assert_status_code_is(response, 400)
+
+    def test_contents_from_store_async_refuses_a_private_address(self, history_id):
+        response = self._post(
+            f"histories/{history_id}/contents_from_store_async",
+            {"store_content_uri": "http://10.0.0.1/store.tgz"},
+            json=True,
+        )
+        self._assert_status_code_is(response, 403)
+
+    def test_contents_from_store_async_needs_a_history_you_can_change(self):
+        with self._different_user():
+            other_history_id = self.dataset_populator.new_history()
+        response = self._post(
+            f"histories/{other_history_id}/contents_from_store_async",
+            {"store_content_uri": "https://example.org/store.tgz"},
+            json=True,
+        )
+        self._assert_status_code_is(response, 403)
 
 
 class TestHistoryContentsApiBulkOperation(ApiTestCase):
@@ -1595,16 +1642,23 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             self.dataset_populator.wait_for_history(history_id)
 
             history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
-            new_collection_update_times = []
             for item in history_contents:
                 if item["history_content_type"] == "dataset":
                     assert item["extension"] == "tabular"
                     assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
                     assert "metadata_column_names" in item
-                if item["history_content_type"] == "dataset_collection":
-                    new_collection_update_times.append(item["update_time"])
 
-            assert original_collection_update_times != new_collection_update_times
+            # The collection's update_time is touched by the last task in the chain, after the datasets change.
+            def collection_update_times_changed():
+                history_contents = self._get_history_contents(history_id, query="?v=dev&keys=update_time")
+                update_times = [
+                    item["update_time"]
+                    for item in history_contents
+                    if item["history_content_type"] == "dataset_collection"
+                ]
+                return update_times != original_collection_update_times or None
+
+            wait_on(collection_update_times_changed, "collection update times to change", timeout=30)
 
     def test_bulk_datatype_change_should_skip_set_metadata_on_deferred_data(self):
         with self.dataset_populator.test_history() as history_id:

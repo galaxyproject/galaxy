@@ -29,8 +29,9 @@ describe("FormRadio", () => {
         }
         await wrapper.setProps({ options });
         const inputs = wrapper.findAll("[type='radio']");
-        const labels = wrapper.findAll(".custom-control-label");
+        const labels = wrapper.findAll(".g-radio-label");
         expect(inputs.length).toBe(n);
+        expect(new Set(inputs.map((input) => input.attributes("name"))).size).toBe(1);
         for (let i = 0; i < n; i++) {
             await inputs.at(i).setValue(true);
             expect(labels.at(i).text()).toBe(`label_${i}`);

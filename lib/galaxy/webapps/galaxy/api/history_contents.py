@@ -1188,6 +1188,18 @@ class FastAPIHistoryContents:
         return self.service.create_from_store(trans, history_id, create_payload, serialization_params)
 
     @router.post(
+        "/api/histories/{history_id}/contents_from_store_async",
+        summary="Launch a task to create history contents from a model store.",
+    )
+    def create_from_store_async(
+        self,
+        history_id: HistoryIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        create_payload: CreateHistoryContentFromStore = Body(...),
+    ) -> AsyncTaskResultSummary:
+        return self.service.create_from_store_async(trans, history_id, create_payload)
+
+    @router.post(
         "/api/histories/{history_id}/contents/datasets/{id}/materialize",
         summary="Materialize a deferred dataset into real, usable dataset.",
     )

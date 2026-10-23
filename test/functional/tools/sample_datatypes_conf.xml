@@ -12,7 +12,12 @@
     </datatype>
     <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" auto_compressed_types="gz" display_in_upload="true">
         <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
+        <converter file="fasta_to_len.xml" target_datatype="len"/>
     </datatype>
+    <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
+        <converter file="len_to_linecount.xml" target_datatype="linecount"/>
+    </datatype>
+    <datatype extension="linecount" type="galaxy.datatypes.data:LineCount" display_in_upload="false"/>
     <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" />
     <datatype extension="fastqsanger" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true" />
     <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true" />
@@ -64,6 +69,7 @@
     <datatype extension="bwa_index" display_in_upload="true" type="galaxy.datatypes.data:Directory" subclass="true"/>
     <datatype extension="bwa_mem2_index" display_in_upload="true" type="galaxy.datatypes.data:Directory" subclass="true"/>
     <datatype extension="lexicmap_index" display_in_upload="true" type="galaxy.datatypes.data:Directory" subclass="true"/>
+    <datatype extension="zarr" type="galaxy.datatypes.data:ZarrDirectory"/>
     <datatype extension="h5" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true"/>
   </registration>
 </datatypes>

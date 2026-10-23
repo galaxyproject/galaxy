@@ -1,12 +1,12 @@
-from .evaluation import (
-    do_eval,
+from galaxy_ext.expressions.js_engine import (
     evaluate,
-    ExpressionTemplateError,
-    validate_expression_template,
-)
-from .js_engine import (
     register,
     resolve_isolation_command,
+)
+from .evaluation import (
+    do_eval,
+    ExpressionTemplateError,
+    validate_expression_template,
 )
 from .script import (
     EXPRESSION_SCRIPT_CALL,

@@ -21,6 +21,7 @@ describe("GModal", () => {
         });
         await flushPromises();
         expect(showModal).toHaveBeenCalledOnce();
+        expect(wrapper.get("button.g-modal-close-button").attributes("aria-label")).toBe("Close dialog");
         (wrapper.vm as unknown as { showModal: () => void }).showModal();
         expect(showModal).toHaveBeenCalledOnce();
         wrapper.unmount();

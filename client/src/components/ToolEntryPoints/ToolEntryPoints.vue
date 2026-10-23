@@ -12,18 +12,30 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
+import type { JobBaseModel, ShowFullJobResponse } from "@/api/jobs";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
+import { useJobDetails } from "@/composables/jobDetails";
 import { useEntryPointStore } from "@/stores/entryPointStore";
+import { stateIsTerminal } from "@/utils/utils";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import DetailBlock from "@/components/Common/DetailBlock.vue";
 import GCard from "@/components/Common/GCard.vue";
-import Heading from "@/components/Common/Heading.vue";
 
 const props = defineProps<{
     jobId: string;
+    /** A job object. `undefined` fetches/polls it here instead; `null` means
+     * the parent confirms there's deliberately no job yet (also skips fetching). */
+    job?: JobBaseModel | ShowFullJobResponse | null;
+    /** How many other jobs the same run submitted. When > 0, a header hint points to the
+     * pagination so the Interactive Tools of a batch run's other jobs are not missed. */
+    otherJobsCount?: number;
 }>();
 
 const { entryPointsForJob } = storeToRefs(useEntryPointStore());
+const fetchJobId = computed(() => (props.job === undefined ? props.jobId : undefined));
+const { job: fetchedJob } = useJobDetails(fetchJobId, { full: false });
+const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.value));
 
 const badges = computed<CardBadge[]>(() => {
     const total = entryPointsForJob.value(props.jobId).length;
@@ -31,6 +43,17 @@ const badges = computed<CardBadge[]>(() => {
     const label = total > 1 ? `${active}/${total} active` : `${active} active`;
 
     return [{ id: "entry-points-counter", label, variant: "outline-info", title: "" }];
+});
+
+const otherJobsHint = computed(() => {
+    if (!props.otherJobsCount) {
+        return null;
+    }
+    const jobs = props.otherJobsCount > 1 ? "jobs" : "job";
+    return {
+        label: `+${props.otherJobsCount} ${jobs}, paginate to view`,
+        title: `This run has ${props.otherJobsCount} other ${jobs}. Use the pagination above to view their Interactive Tools.`,
+    };
 });
 
 const primaryActions = computed(() => {
@@ -61,10 +84,18 @@ const secondaryActions: CardAction[] = [
 
 const currentStatus = computed<{ title: string; icon: IconDefinition; class?: string }>(() => {
     if (entryPointsForJob.value(props.jobId).length === 0) {
-        return {
-            title: "No Interactive Tool sessions are currently available",
-            icon: faMinus,
-        };
+        if (!job.value || !stateIsTerminal(job.value)) {
+            return {
+                title: "Waiting for Interactive Tool session(s) to become available",
+                icon: faSpinner,
+                class: "fa-spin",
+            };
+        } else {
+            return {
+                title: "No Interactive Tool sessions are currently available",
+                icon: faMinus,
+            };
+        }
     } else if (entryPointsForJob.value(props.jobId).length === 1) {
         if (entryPointsForJob.value(props.jobId)[0]?.active) {
             return {
@@ -86,58 +117,64 @@ const currentStatus = computed<{ title: string; icon: IconDefinition; class?: st
 </script>
 
 <template>
-    <div>
-        <Heading inline size="sm" bold separator>Interactive Tools</Heading>
-
-        <GCard
-            :content-class="currentStatus.class === 'fa-spin' ? 'entry-points-card-loading' : undefined"
-            :badges="badges"
-            :primary-actions="primaryActions"
-            :secondary-actions="secondaryActions"
-            :title="currentStatus.title"
-            :title-icon="currentStatus"
-            title-size="text">
-            <template v-slot:description>
-                <div v-if="entryPointsForJob(props.jobId).length > 1" class="entry-points-grid">
-                    <GButton
-                        v-for="entryPoint of entryPointsForJob(props.jobId)"
-                        :key="entryPoint.id"
-                        data-description="entry point button"
-                        :disabled="!entryPoint.active"
-                        :disabled-title="`${entryPoint.name} is waiting to become active...`"
-                        :href="entryPoint.active ? entryPoint.target : undefined"
-                        target="_blank"
-                        rel="noopener"
-                        color="blue"
-                        outline
-                        size="small"
-                        title="Open in a new tab">
-                        <div class="d-flex justify-content-between align-items-center flex-gapx-1 w-100">
-                            <div class="d-flex align-items-center flex-gapx-1">
-                                <FontAwesomeIcon
-                                    fixed-width
-                                    :class="{ 'status-dot': entryPoint.active }"
-                                    :icon="entryPoint.active ? faCircle : faSpinner"
-                                    :spin="!entryPoint.active" />
-                                {{ entryPoint.name }}
+    <DetailBlock :header-icon="faLaptop" title="Interactive Tools">
+        <template v-slot:header-indicators>
+            <span v-if="otherJobsHint" class="other-jobs-hint" :title="otherJobsHint.title">
+                <FontAwesomeIcon :icon="faLayerGroup" />
+                {{ otherJobsHint.label }}
+            </span>
+        </template>
+        <template v-slot:custom-content>
+            <GCard
+                :content-class="currentStatus.class === 'fa-spin' ? 'entry-points-card-loading' : undefined"
+                :badges="badges"
+                :primary-actions="primaryActions"
+                :secondary-actions="secondaryActions"
+                :title="currentStatus.title"
+                :title-icon="currentStatus"
+                title-size="text">
+                <template v-slot:description>
+                    <div v-if="entryPointsForJob(props.jobId).length > 1" class="entry-points-grid">
+                        <GButton
+                            v-for="entryPoint of entryPointsForJob(props.jobId)"
+                            :key="entryPoint.id"
+                            data-description="entry point button"
+                            :disabled="!entryPoint.active"
+                            :disabled-title="`${entryPoint.name} is waiting to become active...`"
+                            :href="entryPoint.active ? entryPoint.target : undefined"
+                            target="_blank"
+                            rel="noopener"
+                            color="blue"
+                            outline
+                            size="small"
+                            title="Open in a new tab">
+                            <div class="d-flex justify-content-between align-items-center flex-gapx-1 w-100">
+                                <div class="d-flex align-items-center flex-gapx-1">
+                                    <FontAwesomeIcon
+                                        fixed-width
+                                        :class="{ 'status-dot': entryPoint.active }"
+                                        :icon="entryPoint.active ? faCircle : faSpinner"
+                                        :spin="!entryPoint.active" />
+                                    {{ entryPoint.name }}
+                                </div>
+                                <FontAwesomeIcon :icon="faExternalLinkAlt" />
                             </div>
-                            <FontAwesomeIcon :icon="faExternalLinkAlt" />
-                        </div>
-                    </GButton>
-                </div>
-            </template>
+                        </GButton>
+                    </div>
+                </template>
 
-            <template v-slot:update-time>
-                <i
-                    v-if="
-                        entryPointsForJob(props.jobId).length > 1 &&
-                        entryPointsForJob(props.jobId).some((ep) => !ep.active)
-                    ">
-                    Some sessions are not active yet
-                </i>
-            </template>
-        </GCard>
-    </div>
+                <template v-slot:update-time>
+                    <i
+                        v-if="
+                            entryPointsForJob(props.jobId).length > 1 &&
+                            entryPointsForJob(props.jobId).some((ep) => !ep.active)
+                        ">
+                        Some sessions are not active yet
+                    </i>
+                </template>
+            </GCard>
+        </template>
+    </DetailBlock>
 </template>
 
 <style scoped lang="scss">
@@ -145,6 +182,16 @@ const currentStatus = computed<{ title: string; icon: IconDefinition; class?: st
     :deep(.entry-points-card-loading) {
         background-color: var(--color-blue-200);
     }
+}
+
+.other-jobs-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    color: var(--color-blue-600);
+    white-space: nowrap;
 }
 
 .entry-points-grid {

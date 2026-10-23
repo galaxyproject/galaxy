@@ -5,6 +5,7 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/main_tools.yaml'
@@ -13,6 +14,7 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/main_tools.yaml'
@@ -57,9 +59,18 @@ jobs:
       - name: Install Python
         run: uv python install
       - name: Run tests
-        run: ./run_tests.sh --coverage --main_tools
+        run: ./run_tests.sh --main_tools -- -n 4
+        env:
+          # Coverage slows the tests down; collect it for pushes and scheduled runs only.
+          GALAXY_TEST_COVERAGE: ${{ github.event_name != 'pull_request' && '1' || '' }}
+          # Each xdist worker has its own conda prefix, so a tool's first run builds its conda
+          # environment on a busy runner.
+          GALAXY_TEST_DEFAULT_WAIT: '180'
+          # The per-worker conda prefixes outgrow the per-user quota of the tmpfs /tmp on ubuntu-26.04.
+          TMPDIR: ${{ runner.temp }}
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.1.1
+        if: github.event_name != 'pull_request'
         with:
           flags: main-tools
           working-directory: 'galaxy root'

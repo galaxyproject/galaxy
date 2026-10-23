@@ -3,6 +3,7 @@
 import os
 import string
 import tempfile
+import uuid
 
 import pytest
 
@@ -27,8 +28,10 @@ runners:
       conda_auto_init: false
       conda_auto_install: false
       message_queue_url: ${amqp_url}
+      amqp_key_prefix: ${amqp_key_prefix}
       staging_directory: ${jobs_directory}
     amqp_url: ${amqp_url}
+    amqp_key_prefix: ${amqp_key_prefix}
 execution:
   default: pulsar_mq_environment
   environments:
@@ -57,7 +60,12 @@ def _handle_galaxy_config_kwds(cls, config):
     safe_makedirs(jobs_directory)
     job_conf_template = string.Template(JOB_CONF_TEMPLATE)
     job_conf_str = job_conf_template.substitute(
-        amqp_url=AMQP_URL, jobs_directory=jobs_directory, galaxy_home=os.path.join(SCRIPT_DIRECTORY, os.pardir)
+        amqp_url=AMQP_URL,
+        # Queues per instance, so a still-running module-level instance cannot consume the
+        # job messages of another class.
+        amqp_key_prefix=f"pulsar_{uuid.uuid4().hex[:12]}_",
+        jobs_directory=jobs_directory,
+        galaxy_home=os.path.join(SCRIPT_DIRECTORY, os.pardir),
     )
     with tempfile.NamedTemporaryFile(suffix="_mq_job_conf.yml", mode="w", delete=False) as job_conf:
         job_conf.write(job_conf_str)

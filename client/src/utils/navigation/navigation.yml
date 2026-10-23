@@ -86,6 +86,7 @@ preferences:
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
+    api_key_copy_button: '[data-description="copy api key"]'
     object_store: '#select-preferred-object-store'
     delete_account: '#g-card-delete-account'
     delete_account_input: '#name-input'
@@ -103,6 +104,26 @@ preferences:
       option_card: '#g-card-${object_store_id}'
       option_card_select: '#g-card-action-select-${object_store_id}'
       confirm_button: '#modal-select-preferred-object-store .g-modal-close-button'
+
+custom_builds:
+  selectors:
+    name: 'input#name'
+    key: 'input#id'
+    definition: 'select#type'
+    fasta_file: 'select#fasta-file'
+    save: 'button#save'
+    len_text: 'textarea#len-file-text-area'
+    success_alert: '.alert-success.alert-dismissible'
+    table: 'table.g-table'
+    row:
+      type: xpath
+      selector: '//table[contains(@class, "g-table")]//tr[td[1][normalize-space(.)="${name}"]]'
+    row_count:
+      type: xpath
+      selector: '//table[contains(@class, "g-table")]//tr[td[1][normalize-space(.)="${name}"]]/td[3]'
+    row_delete:
+      type: xpath
+      selector: '//table[contains(@class, "g-table")]//tr[td[1][normalize-space(.)="${name}"]]//button[@data-title="Delete build"]'
 
 object_store_instances:
   index:
@@ -176,6 +197,13 @@ confirm_dialog:
     message: '[data-description="confirm dialog message"]'
     ok_button: '[data-description="confirm dialog ok"]'
     cancel_button: '[data-description="confirm dialog cancel"]'
+
+toast:
+  selectors:
+    message: '[data-description="toast message"]'
+    message_with_text:
+      type: xpath
+      selector: '//div[@data-description="toast message" and contains(normalize-space(.), "${text}")]'
 
 dataset_view:
   selectors:
@@ -330,7 +358,7 @@ history_panel:
       selector: 'name input'
       type: data-description
     history_name_edit_label: '[data-description="name display"]'
-    history_name_edit_input: '[data-description="name display"] #click-to-edit-input'
+    history_name_edit_input: '[data-description="name display"] input'
     contents: '.history-index .content-item'
     empty_message: '#empty-history-message'
     size: '.history-size'
@@ -400,8 +428,8 @@ edit_dataset_attributes:
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
     datatypes_tab: '.dataset-edit-datatype-tab'
-    datatype_dropdown: ' #datatype .multiselect'
-    dbkey_dropdown: '#dbkey .multiselect'
+    datatype_dropdown: '#datatype-container .multiselect'
+    dbkey_dropdown: '#dbkey-container .multiselect'
     save_button: '#dataset-attributes-default-save'
     auto_detect_datatype_button: '#dataset-attributes-autodetect-datatype'
     alert: '.dataset-attributes-alert'
@@ -426,13 +454,20 @@ edit_collection_attributes:
     save_dbkey_btn: '.save-dbkey-edit'
     save_datatype_btn: '.save-datatype-edit'
 
+collection_sheet:
+  selectors:
+    _: '[data-description="collection sheet"]'
+    error: '[data-description="collection sheet"] [data-description="collection sheet error"]'
+    loading: '[data-description="collection sheet"] .loading-icon'
+    grid_cell: '[data-description="collection sheet"] [row-index="${row_index}"] .ag-cell-value[col-id="${column_name}"]'
+
 tool_panel:
   selectors:
     edam_link: 'a[href^="https://edamontology.github.io/edam-browser"]'
     tool_box: '[data-description="panel toolbox"]'
-    tool_link: 'a[href$$="/?tool_id=${tool_id}&version=latest"]'
-    outer_tool_link: '.toolTitle a[href$$="/?tool_id=${tool_id}&version=latest"]'
-    data_source_tool_link: 'a[href$$="tool_runner/data_source_redirect?tool_id=${tool_id}"]'
+    tool_link: 'a.tool-link[data-tool-id="${tool_id}"][href$$="&version=latest"]'
+    outer_tool_link: '.toolTitle a.tool-link[data-tool-id="${tool_id}"][href$$="&version=latest"]'
+    data_source_tool_link: 'a.tool-link[data-tool-id="${tool_id}"][href*="tool_runner/data_source_redirect?"]'
     search: '.search-query'
     toolbox: '[data-description="panel toolbox"]'
     workflow_names: '#internal-workflows .toolTitle'
@@ -445,12 +480,12 @@ tools_list:
   selectors:
     _: '.tools-list'
     search_input: '.tools-list [data-description="filter text input"]'
-    tool_card: '#g-card-content-${tool_id}'
-    version_button: '#tools-list-${tool_id}'
-    favorite_tool_button: '#g-card-action-favorite-tool-${tool_id}'
-    toggle_help: '#g-card-content-${tool_id} [data-description="tools list toggle tool help"]'
-    tool_help: '#g-card-content-${tool_id} [data-description="tools list tool help"]'
-    open_tool_button: '#g-card-action-open-tool-${tool_id}'
+    tool_card: '[id="g-card-content-${tool_id}"]'
+    version_button: '[id="tools-list-${tool_id}"]'
+    favorite_tool_button: '[id="g-card-action-favorite-tool-${tool_id}"]'
+    toggle_help: '[id="g-card-content-${tool_id}"] [data-description="tools list toggle tool help"]'
+    tool_help: '[id="g-card-content-${tool_id}"] [data-description="tools list tool help"]'
+    open_tool_button: '[id="g-card-action-open-tool-${tool_id}"]'
 
 multi_history_panel:
   selectors:
@@ -574,9 +609,9 @@ histories:
 
 files_dialog:
   selectors:
-    ftp_label: 'a[title="label-gxftp://"]'
+    ftp_label: 'button[title="label-gxftp://"]'
     ftp_details: 'span[title="details-gxftp://"]'
-    row: 'span[title="label-${uri}"]'
+    row: '[title="label-${uri}"]'
     back_btn: '#back-btn'
     options_ready: '[data-description="selection dialog options"] .selection-dialog-table[aria-busy="false"]'
     ok: '[data-description="selection dialog ok"]'
@@ -800,6 +835,11 @@ registration:
       type: xpath
       selector: "//button[@name='create']"
 
+inactivity_box:
+  selectors:
+    _: '#inactivebox'
+    resend_verification: '#inactivebox a[href*="resend_verification"]'
+
 window_manager:
   selectors:
     _: '.window-manager-window'
@@ -831,7 +871,7 @@ tool_form:
     parameter_color_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="color"]'
     parameter_text_input: 'div.ui-form-element[id="form-element-${parameter}"] input'
     parameter_form_selection: 'div.ui-form-element[id="form-element-${parameter}"] .form-selection'
-    parameter_multiselect_tag_close: 'div.ui-form-element[id="form-element-${parameter}"] i.multiselect__tag-icon'
+    parameter_multiselect_tag_close: 'div.ui-form-element[id="form-element-${parameter}"] button.multiselect__tag-icon'
     parameter_drilldown_option: 'div.ui-form-element[id="form-element-${parameter}"] #drilldown-option-${value}'
     parameter_value_list_input:
       type: xpath
@@ -839,6 +879,8 @@ tool_form:
     parameter_value_list_add:
       type: xpath
       selector: //div[@id="form-element-${parameter}"]//button[@data-description="add value"]
+    parameter_data_select_dropdown: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect__content-wrapper'
+    parameter_batch_info: 'div.ui-form-element[id="form-element-${parameter}"] .info'
 
     repeat_insert: '[data-description="repeat insert"]'
     repeat_insert_named: '[data-description="repeat insert"][data-repeat-name="${name}"]'
@@ -1047,6 +1089,7 @@ workflow_run:
     simplified_value_list_add:
       type: xpath
       selector: //div[@data-label="${label}"]//button[@data-description="add value"]
+    simplified_input_alert: 'div[data-label="${label}"] [data-description="form number alert"]'
     input_select_field:
       type: xpath
       selector: '//div[@data-label="${label}"]//div[contains(@class, "multiselect")]'
@@ -1061,6 +1104,7 @@ workflow_editor:
       title: '${_} .node-title'
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'
+      loading: '${_} .card-header .loading-icon'
       output_data_row:
         type: xpath
         selector: '//div[@data-output-name="${output_name}"]//span[text()[contains(., "(${extension})")]]'
@@ -1107,6 +1151,8 @@ workflow_editor:
     selectors:
       section_input_metadata: '[data-description="linting input metadata"]'
       item_input_metadata: '[data-description="linting input metadata"] [data-item-index="${index}"]'
+      section_conditional_gates: '[data-description="linting conditional gates"]'
+      item_conditional_gate: '[data-description="linting conditional gates"] [data-item-index="${index}"]'
 
   comment:
     selectors:
@@ -1129,6 +1175,7 @@ workflow_editor:
     node_inspector: '.tool-inspector'
     node_inspector_close: ".tool-inspector [title='close']"
     canvas_body: '#workflow-canvas'
+    canvas_loading: '#workflow-canvas .galaxy-loading-shade'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
     license_selector: '[data-description="license select"]'
@@ -1185,11 +1232,11 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@data-label='Rename dataset']//input
-    change_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [role='combobox']"
-    select_datatype_text_search: "#pja__${output}__ChangeDatatypeAction__newtype [role='combobox'] input"
-    select_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [data-option-value='${datatype}']"
-    select_datatype_option_not_matching: "#pja__${output}__ChangeDatatypeAction__newtype [data-option-value]:not([data-option-value*='${text}' i])"
-    selected_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [data-selected-value]"
+    change_datatype: "#pja__${output}__ChangeDatatypeAction__newtype-container .multiselect__select"
+    select_datatype_text_search: "#pja__${output}__ChangeDatatypeAction__newtype[role='combobox']"
+    select_datatype: "#pja__${output}__ChangeDatatypeAction__newtype-container [data-option-value='${datatype}']"
+    select_datatype_option_not_matching: "#pja__${output}__ChangeDatatypeAction__newtype-container [data-option-value]:not([data-option-value*='${text}' i])"
+    selected_datatype: "#pja__${output}__ChangeDatatypeAction__newtype-container [data-selected-value]"
     add_tags_button:
       type: xpath
       selector: >
@@ -1222,6 +1269,9 @@ workflow_editor:
     state_upgrade_modal_close: '[data-description="workflow state upgrade modal"] .g-modal-close-button'
     save_as_modal_close: '[data-description="save-as-modal"] .g-modal-close-button'
     workflow_activity: '#activity-workflow-editor-workflows'
+    workflow_activity_panel: ".activity-panel[data-description='Workflows']"
+    workflow_activity_search: ".activity-panel[data-description='Workflows'] input"
+    workflow_activity_list: ".activity-panel[data-description='Workflows'] .workflow-scroll-list"
     save_as_activity: "#activity-save-workflow-as"
     column_definitions: '[data-description="edit column definitions"]'
     add_column_definition: '[data-description="edit column definitions add"]'
@@ -1293,6 +1343,7 @@ invocations:
     input_details_name: '[data-label="${label}"] .name'
     step_title: '[data-step="${order_index}"] .step-title'
     step_details: '[data-step="${order_index}"] .portlet-operations'
+    step_header_state: '[data-step="${order_index}"] .portlet-header.header-${state}'
     step_outputs_tab_link: '.invocation-step-outputs-tab > a.nav-link'
     step_output_collection: '[data-step="${order_index}"] .invocation-step-output-collection-details'
     step_output_collection_toggle: '[data-step="${order_index}"] .invocation-step-output-collection-details .content-title'
@@ -1429,7 +1480,7 @@ admin:
         selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]"
       remove_selected_user:
         type: xpath
-        selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/i[contains(@class, 'multiselect__tag-icon')]"
+        selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/button[contains(@class, 'multiselect__tag-icon')]"
       submit: '#admin-quota-submit'
 
   role:
@@ -1445,7 +1496,7 @@ admin:
         selector: "//div[@id='role-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]"
       remove_selected_user:
         type: xpath
-        selector: "//div[@id='role-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/i[contains(@class, 'multiselect__tag-icon')]"
+        selector: "//div[@id='role-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/button[contains(@class, 'multiselect__tag-icon')]"
       groups: '#role-groups .multiselect'
       groups_input: '#role-groups input.multiselect__input'
       group_option:
@@ -1456,7 +1507,7 @@ admin:
         selector: "//div[@id='role-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]"
       remove_selected_group:
         type: xpath
-        selector: "//div[@id='role-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/i[contains(@class, 'multiselect__tag-icon')]"
+        selector: "//div[@id='role-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/button[contains(@class, 'multiselect__tag-icon')]"
       submit: '#role-submit'
 
   user_roles_groups:
@@ -1472,7 +1523,7 @@ admin:
         selector: "//div[@id='admin-user-roles']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]"
       remove_selected_role:
         type: xpath
-        selector: "//div[@id='admin-user-roles']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/i[contains(@class, 'multiselect__tag-icon')]"
+        selector: "//div[@id='admin-user-roles']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/button[contains(@class, 'multiselect__tag-icon')]"
       groups: '#admin-user-groups .multiselect'
       groups_input: '#admin-user-groups input.multiselect__input'
       group_option:
@@ -1483,7 +1534,7 @@ admin:
         selector: "//div[@id='admin-user-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]"
       remove_selected_group:
         type: xpath
-        selector: "//div[@id='admin-user-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/i[contains(@class, 'multiselect__tag-icon')]"
+        selector: "//div[@id='admin-user-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/button[contains(@class, 'multiselect__tag-icon')]"
       submit: '#admin-user-roles-groups-submit'
 
   index:
@@ -1569,6 +1620,7 @@ libraries:
       import_datasets_from_history_modal_list_is_ready: '.selection-dialog-modal [data-description="selection dialog busy spinners"]'
       import_datasets_from_history_modal_select_list_items: '.selection-dialog-modal table tbody tr'
       import_datasets_from_history_modal_select_list_item_by_index: '.selection-dialog-modal table tbody tr[aria-rowindex="${row_index}"] td[id^="g-table-cell-label-"]'
+      import_datasets_from_history_modal_open_history_by_index: '.selection-dialog-modal table tbody tr[aria-rowindex="${row_index}"] button.selection-dialog-folder'
       import_datasets_from_history_modal_ok: '.selection-dialog-modal [data-description="selection dialog ok"]'
       import_datasets_from_history_modal_cancel: '.selection-dialog-modal [data-description="selection dialog cancel"]'
       add_to_history_as_collection:

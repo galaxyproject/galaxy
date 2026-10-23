@@ -32,9 +32,14 @@ from galaxy.util.unittest_utils import (
 )
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.api_asserts import assert_error_message_contains
+from galaxy_test.base.decorators import (
+    requires_admin,
+    requires_new_library,
+)
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    LibraryPopulator,
     RunJobsSummary,
     skip_without_tool,
     TOOL_WITH_SHELL_COMMAND,
@@ -4268,6 +4273,89 @@ should_run:
             assert message["details"] == "Type is: str"
             assert message["workflow_step_id"] == 2
 
+    def test_run_workflow_fails_when_input_not_connected(self):
+        # What the editor saves after "Conditionally skip step?" is turned on and `when` is left unconnected.
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  some_file:
+    type: data
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: some_file
+    when: $(inputs.when)
+""",
+                test_data="""
+some_file:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation_details["state"] == "failed"
+            assert len(invocation_details["messages"]) == 1
+            message = invocation_details["messages"][0]
+            assert message["reason"] == "when_not_boolean"
+            assert message["details"] == "Type is: NoneType"
+
+    def test_run_format2_workflow_rejects_out_of_range_int_parameter(self):
+        with self.dataset_populator.test_history() as history_id:
+            error = self._run_jobs(
+                """class: GalaxyWorkflow
+inputs:
+  num:
+    type: int
+    min: 1
+    max: 10
+steps: []
+""",
+                test_data="""
+num:
+  value: 11
+  type: raw
+""",
+                history_id=history_id,
+                client_convert=False,
+                wait=False,
+                assert_ok=False,
+                expected_response=400,
+            )
+            assert isinstance(error, dict)
+            assert error["err_msg"] == "num: Value ('11') must fulfill (1 <= value <= 10)"
+
+    def test_run_format2_workflow_rejects_regex_mismatch_text_parameter(self):
+        with self.dataset_populator.test_history() as history_id:
+            error = self._run_jobs(
+                """class: GalaxyWorkflow
+inputs:
+  name:
+    type: text
+    validators:
+      - type: regex
+        expression: "^[A-Z]+$"
+        message: Upper case letters only
+steps: []
+""",
+                test_data="""
+name:
+  value: lower
+  type: raw
+""",
+                history_id=history_id,
+                client_convert=False,
+                wait=False,
+                assert_ok=False,
+                expected_response=400,
+            )
+            assert isinstance(error, dict)
+            assert error["err_msg"] == "name: Upper case letters only"
+
     def test_run_workflow_subworkflow_conditional_with_simple_mapping_step(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
@@ -7369,6 +7457,198 @@ steps:
             self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
             self._assert_history_job_count(history_id, 4)
 
+    @pytest.mark.parametrize(
+        "field",
+        ["preferred_object_store_id", "preferred_outputs_object_store_id", "preferred_intermediate_object_store_id"],
+    )
+    def test_run_with_unselectable_object_store_creates_no_history(self, field):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        history_name = f"invalid object store history {uuid4()}"
+        response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"new_history_name": history_name, field: "not_an_object_store"},
+        )
+        self._assert_status_code_is(response, 400)
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @pytest.mark.parametrize(
+        "storage_options,error",
+        [
+            ({"effective_outputs": [{"output_name": "out"}]}, "Cannot declare effective outputs"),
+            (
+                {"preferred_object_store_id": "general", "preferred_outputs_object_store_id": "outputs"},
+                "May specify either 'preferred_object_store_id'",
+            ),
+            (
+                {"preferred_object_store_id": "general", "preferred_intermediate_object_store_id": "intermediate"},
+                "May specify either 'preferred_object_store_id'",
+            ),
+        ],
+    )
+    def test_run_with_invalid_storage_routing_creates_no_history(self, storage_options, error):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        history_name = f"invalid storage routing history {uuid4()}"
+        response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"new_history_name": history_name, **storage_options},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, error)
+        assert not self.workflow_populator.workflow_invocations(workflow_id)
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    def test_run_with_unknown_on_complete_action_creates_no_history(self):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        history_name = f"unknown completion action history {uuid4()}"
+        response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"new_history_name": history_name, "on_complete": [{"not_an_action": {}}]},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Unknown on_complete action 'not_an_action'")
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @skip_without_tool("test_data_source")
+    @pytest.mark.parametrize("new_history", [False, True])
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_run_with_workflow_incompatible_tool(self, history_id, new_history, nested):
+        workflow = """
+class: GalaxyWorkflow
+steps:
+  data_source:
+    tool_id: test_data_source
+"""
+        if nested:
+            workflow += """
+  child:
+    run:
+      class: GalaxyWorkflow
+      steps:
+        data_source:
+          tool_id: test_data_source
+"""
+        workflow_id = self._upload_yaml_workflow(workflow)
+        history_name = f"incompatible workflow tool history {uuid4()}"
+        target = {"new_history_name": history_name} if new_history else {"history_id": history_id}
+        response = self.workflow_populator.invoke_workflow_raw(workflow_id, target)
+        self._assert_status_code_is(response, 400)
+        assert response.json()["err_msg"] == (
+            "Workflow was not invoked; the following tools are not workflow-compatible: "
+            "test_data_source (version 1.0.0)"
+        )
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert self._history_jobs(history_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @skip_without_tool("test_data_source")
+    @pytest.mark.parametrize("exact", [False, True])
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_run_with_missing_and_incompatible_tools(self, exact, nested):
+        workflow = """
+class: GalaxyWorkflow
+steps:
+  data_source:
+    tool_id: test_data_source
+  missing:
+    tool_id: nonexistent_tool
+    tool_version: "0.1"
+"""
+        if nested:
+            workflow += """
+  child:
+    run:
+      class: GalaxyWorkflow
+      steps:
+        missing:
+          tool_id: nonexistent_tool
+          tool_version: "0.1"
+        data_source:
+          tool_id: test_data_source
+"""
+        workflow_id = self._upload_yaml_workflow(workflow)
+        workflow = self._download_workflow(workflow_id)
+        assert workflow["steps"]["1"]["tool_id"] == "nonexistent_tool"
+        assert workflow["steps"]["1"]["tool_version"] == "0.1"
+        history_name = f"missing workflow tool history {uuid4()}"
+        response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"new_history_name": history_name, "require_exact_tool_versions": exact},
+        )
+        self._assert_status_code_is(response, 400)
+        expected_tool = "nonexistent_tool (version 0.1)" if exact else "nonexistent_tool"
+        assert response.json()["err_msg"] == (
+            "Workflow was not invoked; the following required tools are not installed: " + expected_tool
+        )
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @pytest.mark.parametrize("exact", [False, True])
+    def test_run_with_nested_missing_tool_versions(self, exact):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  missing:
+    tool_id: nonexistent_tool
+    tool_version: "0.1"
+  child:
+    run:
+      class: GalaxyWorkflow
+      steps:
+        repeated:
+          tool_id: nonexistent_tool
+          tool_version: "0.1"
+        other_version:
+          tool_id: nonexistent_tool
+          tool_version: "0.2"
+""")
+        workflow = self._download_workflow(workflow_id)
+        assert workflow["steps"]["0"]["tool_version"] == "0.1"
+        child_steps = workflow["steps"]["1"]["subworkflow"]["steps"]
+        assert child_steps["0"]["tool_version"] == "0.1"
+        assert child_steps["1"]["tool_version"] == "0.2"
+        history_name = f"nested missing workflow tool versions {uuid4()}"
+        response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"new_history_name": history_name, "require_exact_tool_versions": exact},
+        )
+        self._assert_status_code_is(response, 400)
+        expected_tools = (
+            "nonexistent_tool (version 0.1), nonexistent_tool (version 0.2)" if exact else "nonexistent_tool"
+        )
+        assert response.json()["err_msg"] == (
+            "Workflow was not invoked; the following required tools are not installed: " + expected_tools
+        )
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @pytest.mark.parametrize(
+        "config",
+        [None, [], "invalid", {}, {"target_uri": None}, {"target_uri": ""}, {"target_uri": "   "}, {"target_uri": 42}],
+    )
+    def test_run_with_invalid_export_completion_config_creates_no_history(self, config):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        history_name = f"invalid completion export history {uuid4()}"
+        response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"new_history_name": history_name, "on_complete": [{"export_to_file_source": config}]},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "export_to_file_source")
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @pytest.mark.parametrize("config", [None, {}])
+    def test_run_with_notification_completion_config(self, config):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        with self.dataset_populator.test_history() as history_id:
+            response = self.workflow_populator.invoke_workflow_raw(
+                workflow_id,
+                {"history_id": history_id, "on_complete": [{"send_notification": config}]},
+            )
+            self._assert_status_code_is(response, 200)
+            assert response.json()["history_id"] == history_id
+
     def test_run_with_optional_data_specified_to_multi_data(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_workflow(
@@ -8057,6 +8337,40 @@ input:
             )
             assert "col 1,2" in content, content
 
+    @requires_admin
+    @pytest.mark.parametrize("src", ["hda", "ldda", "ld", "hdca"])
+    def test_run_with_nonexistent_input(self, history_id, src):
+        nonexistent_id = self._get("configuration/encode/999999999", admin=True).json()["encoded_id"]
+        response = self.workflow_populator.invoke_single_input_workflow_raw(history_id, src, nonexistent_id)
+        self._assert_status_code_is(response, 404)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_OBJECT_NOT_FOUND"])
+        assert_error_message_contains(response, f"input1: workflow input '{nonexistent_id}' ({src}) not found")
+
+    @requires_new_library
+    @pytest.mark.parametrize("src", ["ldda", "ld"])
+    def test_run_with_library_input(self, history_id, src):
+        library_dataset = LibraryPopulator(self.galaxy_interactor).new_library_dataset(f"workflow_input_{src}")
+        input_id = library_dataset["ldda_id"] if src == "ldda" else library_dataset["id"]
+        response = self.workflow_populator.invoke_single_input_workflow_raw(history_id, src, input_id)
+        self._assert_status_code_is(response, 200)
+        invocation = self.workflow_populator.get_invocation(response.json()["id"])
+        hda = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=invocation["inputs"]["0"]["id"])
+        assert hda["copied_from_ldda_id"] == library_dataset["ldda_id"]
+        assert hda["history_id"] == history_id
+
+    @pytest.mark.parametrize("src", ["hda", "hdca"])
+    def test_run_with_inaccessible_input(self, history_id, src):
+        if src == "hda":
+            input_id = self.dataset_populator.new_dataset(history_id, wait=True)["id"]
+            self.dataset_populator.make_private(history_id, input_id)
+        else:
+            input_id = self.dataset_collection_populator.create_list_in_history(history_id, wait=True).json()[
+                "output_collections"
+            ][0]["id"]
+        with self._different_user_history() as other_history_id:
+            response = self.workflow_populator.invoke_single_input_workflow_raw(other_history_id, src, input_id)
+            self._assert_status_code_is(response, 403)
+
     def test_run_with_int_parameter_nested(self):
         with self.dataset_populator.test_history() as history_id:
             workflow = self.workflow_populator.load_workflow_from_resource("test_subworkflow_with_integer_input")
@@ -8189,6 +8503,120 @@ input_collection:
                 history_id=history_id, content_id=hda["id"]
             )
             assert "null" in filter_content, f"Expected 'null' in filter output, got: {filter_content}"
+
+    def test_conditional_skip_on_database_operation_nested_collection_output(self):
+        # Nested collection outputs share the input's datasets, skipping must not overwrite them.
+        with self.dataset_populator.test_history() as history_id:
+            hdca = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id).json()["outputs"][0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list:paired
+steps:
+  filter:
+    tool_id: __FILTER_FAILED_DATASETS__
+    in:
+      input: input_collection
+    when: $(false)
+""")
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, history_id=history_id, inputs={"0": {"src": "hdca", "id": hdca["id"]}}
+            ).json()["id"]
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+
+            input_hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=hdca["id"]
+            )
+            input_pair = input_hdca_details["elements"][0]["object"]["elements"]
+            filter_step = [s for s in invocation["steps"] if s["workflow_step_label"] == "filter"][0]
+            filter_output_id = filter_step["output_collections"]["output"]["id"]
+            output_hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=filter_output_id
+            )
+            output_pair = output_hdca_details["elements"][0]["object"]["elements"]
+            assert len(input_pair) == len(output_pair) == 2
+
+            for input_element, output_element in zip(input_pair, output_pair):
+                input_hda = self.dataset_populator.get_history_dataset_details(
+                    history_id, content_id=input_element["object"]["id"]
+                )
+                assert input_hda["file_ext"] != "expression.json", input_hda
+                input_content = self.dataset_populator.get_history_dataset_content(
+                    history_id=history_id, content_id=input_element["object"]["id"]
+                )
+                assert "TestData123" in input_content, f"Expected input to be unchanged, got: {input_content}"
+                assert output_element["object"]["id"] != input_element["object"]["id"]
+                output_content = self.dataset_populator.get_history_dataset_content(
+                    history_id=history_id, content_id=output_element["object"]["id"]
+                )
+                assert "null" in output_content, f"Expected 'null' in filter output, got: {output_content}"
+
+    def test_conditional_skip_on_mapped_over_database_operation(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca = self.dataset_collection_populator.upload_collection(
+                history_id,
+                "list:list:paired",
+                elements=[
+                    {
+                        "name": "outer",
+                        "elements": [
+                            {
+                                "name": "test0",
+                                "elements": [
+                                    {"src": "pasted", "paste_content": "forward content", "name": "forward"},
+                                    {"src": "pasted", "paste_content": "reverse content", "name": "reverse"},
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            ).json()["outputs"][0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list:list:paired
+steps:
+  filter:
+    tool_id: __FILTER_FAILED_DATASETS__
+    in:
+      input: input_collection
+    when: $(false)
+""")
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, history_id=history_id, inputs={"0": {"src": "hdca", "id": hdca["id"]}}
+            ).json()["id"]
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+
+            input_hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=hdca["id"]
+            )
+            input_pair = input_hdca_details["elements"][0]["object"]["elements"][0]["object"]["elements"]
+            filter_step = [s for s in invocation["steps"] if s["workflow_step_label"] == "filter"][0]
+            filter_output_id = filter_step["output_collections"]["output"]["id"]
+            output_hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=filter_output_id
+            )
+            output_pair = output_hdca_details["elements"][0]["object"]["elements"][0]["object"]["elements"]
+            assert len(input_pair) == len(output_pair) == 2
+
+            for input_element, output_element, expected_content in zip(
+                input_pair, output_pair, ["forward content", "reverse content"]
+            ):
+                input_content = self.dataset_populator.get_history_dataset_content(
+                    history_id=history_id, content_id=input_element["object"]["id"]
+                )
+                assert expected_content in input_content, f"Expected input to be unchanged, got: {input_content}"
+                assert output_element["object"]["id"] != input_element["object"]["id"]
+                output_content = self.dataset_populator.get_history_dataset_content(
+                    history_id=history_id, content_id=output_element["object"]["id"]
+                )
+                assert "null" in output_content, f"Expected 'null' in filter output, got: {output_content}"
 
     def test_conditional_flat_crossproduct_subworkflow(self):
         parent = yaml.safe_load("""
@@ -10058,6 +10486,39 @@ steps:
         option_values = {opt[1] for opt in options}
         assert option_values == {"--ex1", "ex2", "--ex3", "--ex4", "ex5"}
 
+    def test_numeric_input_bounds_reach_run_form(self):
+        workflow_id = self._upload_bounded_integer_workflow(1, 5)
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        count_input = run_workflow["steps"][0]["inputs"][0]
+        assert (count_input["min"], count_input["max"]) == (1, 5)
+
+    def test_numeric_input_inverted_bounds_rejected_on_run_form(self):
+        workflow_id = self._upload_bounded_integer_workflow(5, 1)
+        with self.dataset_populator.test_history() as history_id:
+            response = self.workflow_populator.download_workflow_raw(workflow_id, style="run", history_id=history_id)
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Workflow input 'count' has a minimum (5) greater than its maximum (1)")
+
+    def test_numeric_input_inverted_bounds_flagged_in_editor_and_export(self):
+        workflow_id = self._upload_bounded_integer_workflow(5, 1)
+        message = "Workflow input 'count' has a minimum (5) greater than its maximum (1)."
+        editor_steps = self._download_workflow(workflow_id, style="editor")["steps"]
+        assert editor_steps["0"]["errors"] == message
+        export_steps = self._download_workflow(workflow_id)["steps"]
+        assert export_steps["0"]["errors"] == message
+
+    def _upload_bounded_integer_workflow(self, minimum: int, maximum: int) -> str:
+        return self.workflow_populator.upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  count:
+    type: int
+    min: {minimum}
+    max: {maximum}
+steps: []
+""")
+
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):
         workflow_request, history_id, workflow_id = self._setup_random_x2_workflow("test_for_replace_tool_params")
@@ -10088,6 +10549,19 @@ steps:
         # Would be 8 and 6 without modification
         self.__assert_lines_hid_line_count_is(history_id, 2, 4)
         self.__assert_lines_hid_line_count_is(history_id, 3, 3)
+
+    @pytest.mark.parametrize("scheduler", [None, "", "default", "not_a_scheduler"])
+    def test_run_with_scheduler(self, history_id, scheduler):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        workflow_request = {"history_id": history_id}
+        if scheduler is not None:
+            workflow_request["scheduler"] = scheduler
+        response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
+        if scheduler == "not_a_scheduler":
+            self._assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "Unknown workflow scheduler 'not_a_scheduler'")
+        else:
+            self._assert_status_code_is(response, 200)
 
     @skip_without_tool("cat1")
     @skip_without_tool("addValue")
@@ -10584,8 +11058,7 @@ input:
         self._assert_has_keys(pja, "action_type", "output_name", "action_arguments")
 
     def test_invocation_filtering(self):
-        with self._different_user(email=f"{uuid4()}@test.com"):
-            history_id = self.dataset_populator.new_history()
+        with self._different_user_history(email=f"{uuid4()}@test.com") as history_id:
             # new user, start with no invocations
             assert not self._assert_invocation_for_url_is("invocations")
             self._run_jobs(

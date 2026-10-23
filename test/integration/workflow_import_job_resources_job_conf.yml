@@ -1,0 +1,16 @@
+# Job configuration that injects the __job_resource conditional into every tool.
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+
+execution:
+  default: local
+  environments:
+    local:
+      runner: local
+
+resources:
+  default: default
+  groups:
+    default: [multi_compute_resource]

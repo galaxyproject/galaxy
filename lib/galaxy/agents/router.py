@@ -306,7 +306,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         handoff_target = target_agent or agent_type
         log.info(f"Router handing off to {handoff_target}: '{input_text[:100]}...'")
         try:
-            agent = ctx.deps.get_agent(agent_type, ctx.deps)
+            agent = await anyio.to_thread.run_sync(partial(ctx.deps.get_agent, agent_type, ctx.deps))
             handoff_context = self._handoff_context.copy() if self._handoff_context else {}
             response = await agent.process(input_text, handoff_context)
             return self._serialize_handoff(response, handoff_target)

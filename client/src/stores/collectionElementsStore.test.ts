@@ -1,6 +1,6 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DCESummary, HDCASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -28,6 +28,11 @@ describe("useCollectionElementsStore", () => {
                 return response(200).json(elements);
             }),
         );
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.useRealTimers();
     });
 
     it("should fetch collection elements if they are not yet in the store", async () => {
@@ -107,6 +112,31 @@ describe("useCollectionElementsStore", () => {
         // The offset was overlapping with the stored elements, so it was increased by the number of stored elements
         // and it fetches the next "limit" number of elements
         expect(getRealElements(elements)).toHaveLength(initialElements + limit);
+    });
+});
+
+describe("useCollectionElementsStore element loading errors", () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.useRealTimers();
+    });
+
+    it("reports a 5xx error fetching collection elements immediately", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        server.use(
+            http.get("/api/dataset_collections/{hdca_id}/contents/{parent_id}", ({ response }) =>
+                response("5XX").json({ err_msg: "Internal Server Error", err_code: 0 }, { status: 500 }),
+            ),
+        );
+        const store = useCollectionElementsStore();
+        const collection = mockCollection("1", 5);
+
+        await store.fetchMissingElements(collection, 0);
+        expect(store.getLoadingCollectionElementsError(collection)).toBeInstanceOf(Error);
     });
 });
 

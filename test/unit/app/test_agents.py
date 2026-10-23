@@ -90,10 +90,6 @@ from galaxy.agents.base import (
     AgentType,
 )
 from galaxy.agents.error_analysis import ErrorAnalysisResult
-from galaxy.agents.gtn.search import (
-    FAQResult,
-    SearchResult,
-)
 from galaxy.agents.gtn_training import GTNSearchResponse
 from galaxy.agents.orchestrator import (
     AgentPlan,
@@ -104,6 +100,10 @@ from galaxy.agents.page_assistant import (
     SectionPatchEdit,
 )
 from galaxy.exceptions import ConfigurationError
+from galaxy.gtn.search import (
+    FAQResult,
+    SearchResult,
+)
 from galaxy.schema.agents import (
     ConfidenceLevel,
     SourceCitation,
@@ -2031,7 +2031,7 @@ class TestAgentUnitMocked:
                 ]
             }
         ]
-        from galaxy.agents import iwc
+        from galaxy.workflow import iwc
 
         iwc.clear_manifest_cache()
         try:

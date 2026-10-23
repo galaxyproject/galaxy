@@ -267,6 +267,8 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
     supports_pagination: ClassVar[bool] = False
     supports_search: ClassVar[bool] = False
     supports_sorting: ClassVar[bool] = False
+    # a recursive walk of a remote source can be slow, capped or partial, so folders are opened instead
+    supports_recursive: ClassVar[bool] = False
 
     # Implementations must define these classes with their specific configuration models.
     template_config_class: type[TTemplateConfig]
@@ -430,6 +432,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
                 "pagination": self.supports_pagination,
                 "search": self.supports_search,
                 "sorting": self.supports_sorting,
+                "recursive": self.supports_recursive,
             },
         }
         if self.get_browsable():

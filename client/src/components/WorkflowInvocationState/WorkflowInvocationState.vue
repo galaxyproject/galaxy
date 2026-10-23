@@ -438,7 +438,7 @@ async function onCancel() {
                 Debug
             </BNavItem>
 
-            <div class="ml-auto d-flex align-items-center flex-gapx-1">
+            <li class="ml-auto d-flex align-items-center flex-gapx-1">
                 <WorkflowInvocationSearch
                     v-if="!props.tab"
                     :invocation-id="props.invocationId"
@@ -460,7 +460,7 @@ async function onCancel() {
                     <FontAwesomeIcon :icon="faTimes" fixed-width />
                     Cancel Workflow
                 </GButton>
-            </div>
+            </li>
         </BNav>
 
         <div class="mt-1 d-flex flex-column overflow-auto tab-content-container">
@@ -470,7 +470,6 @@ async function onCancel() {
                     :invocation="invocation"
                     :steps-jobs-summary="stepsJobsSummary || undefined"
                     :is-full-page="props.isFullPage"
-                    :invocation-and-job-terminal="invocationAndJobTerminal"
                     :is-subworkflow="isSubworkflow"
                     :invocation-messages="uniqueMessages" />
             </div>
@@ -537,7 +536,10 @@ async function onCancel() {
     <GAlert v-else-if="errorMessage" variant="danger" show>
         {{ errorMessage }}
     </GAlert>
-    <GAlert v-else-if="!invocationLoaded" variant="info" show>
+    <GAlert
+        v-else-if="!invocationLoaded || invocationStore.isLoadingInvocation(props.invocationId)"
+        variant="info"
+        show>
         <LoadingSpan message="Loading invocation" />
     </GAlert>
     <GAlert v-else-if="invocationStore.getInvocationLoadError(props.invocationId)" variant="danger" show>

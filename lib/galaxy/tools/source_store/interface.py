@@ -182,6 +182,11 @@ class ToolSourceStore(ABC):
             entry: The index entry to update.
         """
 
+    def update_index_entries(self, entries: list["ToolIndexEntry"]) -> None:
+        """Update several index entries; stores that rewrite the whole index do it once."""
+        for entry in entries:
+            self.update_index_entry(entry)
+
     def remove_index_entry(self, tool_id: str) -> None:
         """Remove a tool's entry from the persisted index.
 

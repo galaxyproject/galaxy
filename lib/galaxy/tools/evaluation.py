@@ -98,6 +98,9 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+# Name of the staged output parameter JSON in the job's configs directory.
+OUTPUT_PARAMETER_JSON_NAME = "galaxy_output_parameters.json"
+
 
 class ToolErrorLog:
     def __init__(self):
@@ -137,6 +140,16 @@ def global_tool_logs(func, config_file: StrPath | None, action_str: str, tool: "
         ) from e
 
 
+def _check_materialized(materialized_objects: dict[str, DeferrableObjectsT]) -> None:
+    """Fail the job if a deferred input could not be materialized."""
+    for value in materialized_objects.values():
+        for item in value if isinstance(value, list) else [value]:
+            dataset_instances = [item] if isinstance(item, model.DatasetInstance) else item.dataset_instances
+            for dataset_instance in dataset_instances:
+                if dataset_instance.dataset and dataset_instance.dataset.state == model.Dataset.states.ERROR:
+                    raise Exception(dataset_instance.info or "Failed to materialize deferred input dataset")
+
+
 class ToolEvaluator:
     """An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
@@ -161,6 +174,8 @@ class ToolEvaluator:
         self.interactivetools: list[dict[str, Any]] = []
         self.consumes_names = False
         self.use_cached_job = False
+        self.out_data: OutDataDictT = {}
+        self.output_parameter_json_copy: tuple[str, str] | None = None
 
     def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Callable | None = None):
         """
@@ -182,6 +197,7 @@ class ToolEvaluator:
 
         # Restore input / output data lists
         inp_data, out_data, out_collections = job.io_dicts()
+        self.out_data = out_data
 
         # collect deferred datasets and collections.
         deferred_objects = self._deferred_objects(inp_data, incoming)
@@ -346,6 +362,7 @@ class ToolEvaluator:
                 undeferred_collection = materialize_collection_input(value, dataset_materializer)
                 undeferred_objects[key] = undeferred_collection
 
+        _check_materialized(undeferred_objects)
         return undeferred_objects
 
     def _eval_format_source(
@@ -747,6 +764,7 @@ class ToolEvaluator:
             self.tool,
         )
         global_tool_logs(self._build_param_file, config_file, "Building Param File", self.tool)
+        global_tool_logs(self._build_output_parameter_json, config_file, "Building Output Parameter JSON", self.tool)
         global_tool_logs(self._build_command_line, config_file, "Building Command Line", self.tool)
         global_tool_logs(self._build_version_command, config_file, "Building Version Command Line", self.tool)
         global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables", self.tool)
@@ -791,6 +809,9 @@ class ToolEvaluator:
             tool_dir = os.path.abspath(self.tool.tool_dir)
             abs_executable = os.path.join(tool_dir, executable)
             command_line = command_line.replace(executable, f"{interpreter} {shlex.quote(abs_executable)}", 1)
+        if self.output_parameter_json_copy:
+            source, target = self.output_parameter_json_copy
+            command_line = f"cp {shlex.quote(source)} {shlex.quote(target)} || exit $?; {command_line}"
         self.command_line = command_line
 
     def _build_version_command(self):
@@ -982,15 +1003,33 @@ class ToolEvaluator:
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod(config_filename, RW_R__R__)
 
+    def _build_output_parameter_json(self):
+        output_parameter_json = self.tool.output_parameter_json(self.out_data, self.param_dict)
+        if output_parameter_json is None:
+            return
+        output_path, contents = output_parameter_json
+        # The output path is only guaranteed to exist where the job runs, so the
+        # JSON travels as a config file that the command copies into place.
+        local_path = os.path.join(ensure_configs_directory(self.local_working_directory), OUTPUT_PARAMETER_JSON_NAME)
+        self._write_workdir_file(local_path, contents, self.param_dict)
+        self.output_parameter_json_copy = (self._stage_extra_file(local_path), output_path)
+
     def _register_extra_file(self, name, local_config_path):
         """
         Takes in the local path to a config file and registers the (potentially
         remote) ultimate path of the config file with the parameter dict.
         """
+        self.param_dict[name] = self._stage_extra_file(local_config_path)
+
+    def _stage_extra_file(self, local_config_path) -> str:
+        """
+        Stage a local config file with the job and return its (potentially
+        remote) path.
+        """
         self.extra_filenames.append(local_config_path)
         config_basename = os.path.basename(local_config_path)
-        compute_config_path = self._join_for_compute(self.compute_environment.config_directory(), config_basename)
-        self.param_dict[name] = compute_config_path
+        compute_config_path: str = self._join_for_compute(self.compute_environment.config_directory(), config_basename)
+        return compute_config_path
 
     def _join_for_compute(self, *args):
         """
@@ -1097,6 +1136,8 @@ class UserToolEvaluator(ToolEvaluator):
         """
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
+        # shell_command pastes values in unescaped, unlike base_command arguments, which take precedence.
+        shell_quotable = not self.tool.base_command and bool(self.tool.shell_command)
         hda_references: list[model.HistoryDatasetAssociation]
         if validated_tool_state is not None:
             from galaxy.tool_util.parameters.convert import runtimeify
@@ -1111,7 +1152,7 @@ class UserToolEvaluator(ToolEvaluator):
                 input_dataset_collections[assoc.name] = assoc.dataset_collection_element
 
             hda_references, adapt_datasets, adapt_collections = setup_for_runtimeify(
-                self.app, compute_environment, input_datasets, input_dataset_collections
+                self.app, compute_environment, input_datasets, input_dataset_collections, shell_quotable=shell_quotable
             )
             if self.tool.parameters is None:
                 raise RequestParameterInvalidException(f"Tool {self.tool.id} has no parameters defined")
@@ -1132,7 +1173,12 @@ class UserToolEvaluator(ToolEvaluator):
                 "Building CWL style inputs using deprecated to_cwl function - tool may work differently in the future."
             )
             hda_references = []
-            cwl_style_inputs = to_cwl(incoming, hda_references=hda_references, compute_environment=compute_environment)
+            cwl_style_inputs = to_cwl(
+                incoming,
+                hda_references=hda_references,
+                compute_environment=compute_environment,
+                shell_quotable=shell_quotable,
+            )
         return {"inputs": cwl_style_inputs, "outdir": job_working_directory}
 
     def _build_command_line(self):
@@ -1177,6 +1223,7 @@ class RemoteToolEvaluator(ToolEvaluator):
         config_file = self.tool.config_file
         global_tool_logs(self._build_config_files, config_file, "Building Config Files", self.tool)
         global_tool_logs(self._build_param_file, config_file, "Building Param File", self.tool)
+        global_tool_logs(self._build_output_parameter_json, config_file, "Building Output Parameter JSON", self.tool)
         global_tool_logs(self._build_command_line, config_file, "Building Command Line", self.tool)
         global_tool_logs(self._build_version_command, config_file, "Building Version Command Line", self.tool)
         return (

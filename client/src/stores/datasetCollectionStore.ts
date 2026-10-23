@@ -50,14 +50,17 @@ export const useDatasetCollectionStore = defineStore("datasetCollectionStore", (
      * Returns whatever is cached for the given id — summary or detail.
      * Triggers a fetch only if nothing is cached at all, so callers that
      * only need summary-level fields (e.g. `job_source_id`) don't force a
-     * detail upgrade when a summary is already present.
+     * detail upgrade when a summary is already present. Like `getDetailedCollection`,
+     * it doesn't refetch while a retry backs off or after a final load error.
      */
     function getCollection(id: string): CollectionEntry | null {
         const cached = storedItems.value[id];
         if (cached) {
             return cached;
         }
-        fetchItemById({ id });
+        if (!isLoadingItem.value(id) && !getItemLoadError.value(id)) {
+            fetchItemById({ id });
+        }
         return null;
     }
 

@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/admin/extensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Admin panel extensions
+         * @description Return every loaded Admin panel extension with its items.
+         */
+        get: operations["index_api_admin_extensions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/agents": {
         parameters: {
             query?: never;
@@ -814,7 +834,8 @@ export interface paths {
         post?: never;
         delete?: never;
         options?: never;
-        head?: never;
+        /** Check if a raw extra file associated with a dataset can be downloaded. */
+        head: operations["extra_file_raw_api_datasets__dataset_id__extra_files_raw__filename__head"];
         patch?: never;
         trace?: never;
     };
@@ -2878,6 +2899,23 @@ export interface paths {
          *     or hand-crafted JSON dictionary.
          */
         post: operations["create_from_store_api_histories__history_id__contents_from_store_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/histories/{history_id}/contents_from_store_async": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Launch a task to create history contents from a model store. */
+        post: operations["create_from_store_async_api_histories__history_id__contents_from_store_async_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7898,6 +7936,62 @@ export interface components {
             type: string;
         };
         /**
+         * AdminExtension
+         * @description One extension: a titled section of the Admin panel and its items.
+         */
+        AdminExtension: {
+            /**
+             * Id
+             * @description Identifier of the extension, unique across all loaded extensions.
+             */
+            id: string;
+            /**
+             * Items
+             * @description Items shown under the section.
+             */
+            items: components["schemas"]["AdminExtensionLinkItem"][];
+            /**
+             * Section
+             * @description Section title shown in the Admin panel.
+             */
+            section: string;
+        };
+        /**
+         * AdminExtensionLinkItem
+         * @description A panel entry that opens a URL, either framed inside Galaxy or in a new tab.
+         */
+        AdminExtensionLinkItem: {
+            /**
+             * Id
+             * @description Identifier of the item, unique within its extension.
+             */
+            id: string;
+            /**
+             * Target
+             * @description Whether to show the URL inside the Galaxy center panel or open it in a new tab.
+             * @default iframe
+             * @enum {string}
+             */
+            target: "iframe" | "new_tab";
+            /**
+             * Title
+             * @description Text shown in the Admin panel.
+             */
+            title: string;
+            /**
+             * Type
+             * @description Item type.
+             * @default link
+             * @constant
+             */
+            type: "link";
+            /**
+             * Url
+             * @description URL to open: an absolute http(s) URL, or a path starting with '/' that is served by Galaxy.
+             */
+            url: string;
+        };
+        /**
          * AgentListResponse
          * @description Response listing available agents.
          */
@@ -8832,6 +8926,7 @@ export interface components {
              * @description Features supported by this file source.
              * @default {
              *       "pagination": false,
+             *       "recursive": false,
              *       "search": false,
              *       "sorting": false
              *     }
@@ -10629,6 +10724,16 @@ export interface components {
              * @description Stable identifier for this curated workflow. The encoded stored workflow id when the catalog is served from this Galaxy, otherwise the identifier of the workflow in the public catalog.
              */
             id: string;
+            /**
+             * Imported Version
+             * @description The TRS version the user's import came from, such as v0.3, when it was recorded.
+             */
+            imported_version?: string | null;
+            /**
+             * Imported Workflow ID
+             * @description Encoded id of the requesting user's import of this catalog workflow, if they have one. With several imports, the most recent one. Always null for anonymous requests and for workflows hosted here.
+             */
+            imported_workflow_id?: string | null;
             /**
              * Missing Tools
              * @description Ids of the tools this workflow uses that are not installed on this Galaxy in any version. Empty when the workflow will run here after import; null when this Galaxy did not check.
@@ -13885,6 +13990,7 @@ export interface components {
              * @description Features supported by this file source.
              * @default {
              *       "pagination": false,
+             *       "recursive": false,
              *       "search": false,
              *       "sorting": false
              *     }
@@ -13933,6 +14039,12 @@ export interface components {
              * @default false
              */
             pagination: boolean;
+            /**
+             * Recursive
+             * @description Whether a whole folder of this file source can be selected at once.
+             * @default false
+             */
+            recursive: boolean;
             /**
              * Search
              * @description Whether this file source supports server-side search.
@@ -23038,6 +23150,34 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /** RuntimeEnvironmentVariable */
+        RuntimeEnvironmentVariable: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+        };
+        /** RuntimeEnvironmentWarningJobMessage */
+        RuntimeEnvironmentWarningJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /**
+             * Type
+             * @constant
+             */
+            type: "runtime_environment_warning";
+            /** Variable Names */
+            variable_names: string[];
+        };
         /** SampleSheetColumnDefinition */
         SampleSheetColumnDefinition: {
             /** Default Value */
@@ -24011,6 +24151,7 @@ export interface components {
                       | components["schemas"]["OutputDiscoveryJobMessage"]
                       | components["schemas"]["StdioReadErrorJobMessage"]
                       | components["schemas"]["UnknownDatatypeJobMessage"]
+                      | components["schemas"]["RuntimeEnvironmentWarningJobMessage"]
                   )[]
                 | null;
             /**
@@ -30201,6 +30342,11 @@ export interface components {
                   )[]
                 | null;
             /**
+             * runtime_environment_variables
+             * @default []
+             */
+            runtime_environment_variables: components["schemas"]["RuntimeEnvironmentVariable"][];
+            /**
              * shell_command
              * @description A string that contains the command to be executed. Reference inputs inside `$()` as `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files; `${ ... }` evaluates a JavaScript function body that must return a value. Substituted values are not shell-quoted, so quote them yourself. Because `$(` and `${` are consumed by the expression evaluator, shell command substitution and braced parameter expansion do not reach the shell: escape them as `\$(` and `\${`, and prefer unbraced variables such as `$GALAXY_SLOTS`.
              * @example head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt
@@ -33576,6 +33722,47 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    index_api_admin_extensions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminExtension"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     list_agents_api_ai_agents_get: {
         parameters: {
             query?: never;
@@ -35734,6 +35921,52 @@ export interface operations {
         };
     };
     extra_file_raw_api_datasets__dataset_id__extra_files_raw__filename__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the dataset. */
+                dataset_id: string;
+                /** @description The name of the extra file to retrieve. */
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    extra_file_raw_api_datasets__dataset_id__extra_files_raw__filename__head: {
         parameters: {
             query?: never;
             header?: {
@@ -42863,6 +43096,54 @@ export interface operations {
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_from_store_async_api_histories__history_id__contents_from_store_async_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateHistoryContentFromStore"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Request Error */
@@ -55192,13 +55473,16 @@ export interface operations {
                  *     `collection`
                  *     : An IWC collection the curated workflow belongs to. (The tag `c` can be used a short hand alias for this tag to filter on this attribute.)
                  *
+                 *     `is`
+                 *     : Use 'is:runnable' for workflows whose tools are all available here (IWC catalog only; matches nothing for a local feed).
+                 *
                  *     ## Free Text
                  *
                  *     Free text search terms will be searched against the following attributes of the
                  *     Curated Workflows: `name`, `description`, `tag`, `collection`.
                  */
                 search?: string | null;
-                /** @description Sort curated workflows by this attribute. Without it, most recently updated first -- and in IWC catalog mode, workflows whose tools are all available here come before the rest. */
+                /** @description Sort curated workflows by this attribute. Without it, most recently updated first -- and in IWC catalog mode, ordered first by how many of their tools this Galaxy is missing, so the ones that run here as-is lead and the ones it couldn't check come last. */
                 sort_by?: ("create_time" | "update_time" | "name") | null;
                 /** @description Sort in descending order? */
                 sort_desc?: boolean | null;

@@ -19,6 +19,7 @@ from dataclasses import (
     dataclass,
     field,
 )
+from functools import partial
 from typing import (
     Any,
     Literal,
@@ -26,6 +27,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import anyio
 import yaml
 
 from galaxy.exceptions import ConfigurationError
@@ -1016,7 +1018,7 @@ class BaseGalaxyAgent(ABC):
             if ctx.deps.get_agent is None:
                 raise RuntimeError("get_agent not configured in dependencies")
 
-            target_agent = ctx.deps.get_agent(agent_type, ctx.deps)
+            target_agent = await anyio.to_thread.run_sync(partial(ctx.deps.get_agent, agent_type, ctx.deps))
 
             message_history = self._extract_message_history(context, limit=TOOL_HELPER_HISTORY_MESSAGES)
 

@@ -104,7 +104,8 @@ async function clickCILogonLogin() {
     loading.value = true;
 
     try {
-        const redirectUri = await submitCILogon(true, selected.value.EntityID);
+        const redirectParam = new URLSearchParams(window.location.search).get("redirect");
+        const redirectUri = await submitCILogon(true, selected.value.EntityID, redirectParam);
 
         localStorage.setItem("galaxy-provider", "cilogon");
 

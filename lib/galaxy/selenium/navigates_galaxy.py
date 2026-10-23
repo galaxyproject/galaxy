@@ -10,7 +10,10 @@ import random
 import string
 import time
 from abc import abstractmethod
-from collections.abc import Callable
+from collections.abc import (
+    Callable,
+    Iterator,
+)
 from dataclasses import (
     dataclass,
     field,
@@ -58,6 +61,10 @@ from galaxy.util import (
 from galaxy.util.wait import (
     TimeoutAssertionError,
     wait_on,
+)
+from .clipboard import (
+    ClipboardCapture,
+    RecordedClipboard,
 )
 from .has_driver import (
     exception_indicates_click_intercepted,
@@ -435,6 +442,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def go_to_history_sharing(self, history_id: str) -> None:
         self.navigate_to(self.build_url(f"histories/sharing?id={history_id}"))
 
+    def go_to_collection_sheet(self, collection_id: str) -> None:
+        self.navigate_to(self.build_url(f"collection/{collection_id}/sheet"))
+        self.components.collection_sheet._.wait_for_present()
+
     def make_history_private(self):
         self.click_history_option_sharing()
         sharing = self.components.histories.sharing
@@ -456,6 +467,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             yield
         finally:
             self.remove_local_storage(key)
+
+    @contextlib.contextmanager
+    def capture_clipboard(self) -> Iterator[ClipboardCapture]:
+        """Record text the page copies to the clipboard for the scope of the context.
+
+        Usage:
+            with self.capture_clipboard() as clipboard:
+                copy_button.wait_for_and_click()
+                assert clipboard.wait_for_text() == expected_text
+        """
+        timeout = self.wait_length(WAIT_TYPES.UX_TRANSITION)
+        with RecordedClipboard(self.execute_script, timeout) as clipboard:
+            yield clipboard
 
     @contextlib.contextmanager
     def in_frame(self, frame_reference: str | int | Any = "frame"):
@@ -1007,7 +1031,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         login.submit.wait_for_and_click()
         self.snapshot("login-submitted")
 
-    def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True):
+    def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True, via_masthead=False):
+        """Register a user from the login page's "Register here" form, or the masthead's Register button."""
         if email is None:
             email = self._get_random_email()
         if password is None:
@@ -1018,9 +1043,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             username = email.split("@")[0]
 
         self.home()
-        self.components.masthead.login_masthead_button.wait_for_and_click()
         registration = self.components.registration
-        registration.toggle.wait_for_and_click()
+        if via_masthead:
+            self.components.masthead.register_masthead_button.wait_for_and_click()
+        else:
+            self.components.masthead.login_masthead_button.wait_for_and_click()
+            registration.toggle.wait_for_and_click()
         form = registration.form.wait_for_visible()
         self.fill(form, dict(email=email, password=password, username=username, confirm=confirm))
         registration.submit.wait_for_and_click()
@@ -1413,30 +1441,54 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
 
     def workflow_editor_search_for_workflow(self, name: str):
-        self.wait_for_and_click(self.components.workflow_editor.workflow_activity)
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.clear_tooltips(".workflow-scroll-list")
+        editor = self.components.workflow_editor
+        # The activity button toggles: clicking it with the panel open (a second insert) closes it.
+        if editor.workflow_activity_panel.is_absent:
+            self.wait_for_and_click(editor.workflow_activity)
+        search = editor.workflow_activity_search.wait_for_visible()
+        # Rest the pointer on the search input: hovering the list can land on a card badge's tooltip.
+        self.clear_tooltips(editor.workflow_activity_search.selector)
 
-        input = self.wait_for_selector(".activity-panel input")
-        input.send_keys(name)
+        search.clear()
+        search.send_keys(name)
 
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-    def workflow_editor_add_steps(self, name: str):
+    def _workflow_editor_panel_card_action(self, name: str, action: Target):
+        """Search the Workflows panel for ``name`` and click ``action`` in its card."""
         self.workflow_editor_search_for_workflow(name)
 
-        self.components.workflows.workflow_copy_steps.wait_for_and_click()
+        def click_action():
+            card = self._wait_on(
+                lambda: self._workflow_editor_panel_card_titled(name),
+                f"Workflows panel with a workflow titled [{name}]",
+                wait_type=self.wait_types.DATABASE_OPERATION,
+            )
+            card.find_element(*action.element_locator).click()
 
+        # Cards can re-render under the lookup or the click while the debounced search reloads them.
+        retry_call_during_transitions(click_action)
+
+    def _workflow_editor_panel_card_titled(self, name: str):
+        """Panel card titled exactly ``name``, which is right whether or not the debounced search has applied."""
+        cards = self.find_elements(
+            self.navigation.workflow_editor.workflow_activity_list.descendant(self.navigation.workflows.workflow_card)
+        )
+        title_locator = self.navigation.workflows.workflow_card_title.element_locator
+        titles = [card.find_element(*title_locator).text for card in cards]
+        return cards[titles.index(name)] if name in titles else None
+
+    def workflow_editor_add_steps(self, name: str):
+        self._workflow_editor_panel_card_action(name, self.navigation.workflows.workflow_copy_steps)
+
+        # Copied steps keep their own labels, so there is no single node to wait on.
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_editor_add_subworkflow(self, name: str):
-        self.workflow_editor_search_for_workflow(name)
+        self._workflow_editor_panel_card_action(name, self.navigation.workflows.workflow_insert_sub_workflow)
 
-        self.components.workflows.workflow_insert_sub_workflow.wait_for_and_click()
-
-        self.components.workflow_editor.node._(label=name).wait_for_present()
-
-        self.sleep_for(self.wait_types.UX_RENDER)
+        node = self.components.workflow_editor.node._(label=name)
+        node.wait_for_visible()
+        # The node renders before its module request fills in inputs and outputs.
+        node.loading.wait_for_absent(wait_type=self.wait_types.DATABASE_OPERATION)
 
     def workflow_editor_enter_column_definitions(self, column_definitions: list[ColumnDefinition]):
         for index, column_definition in enumerate(column_definitions):
@@ -1669,6 +1721,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         name_input_field.send_keys(name)
         input_field.send_keys(self._get_random_name(prefix="description"))
         self.components.libraries.save_new_library_btn.wait_for_and_click()
+        # Clicking create again before the POST resolves would toggle the still-open form closed.
+        self.components.libraries.save_new_library_btn.wait_for_absent_or_hidden(
+            wait_type=WAIT_TYPES.DATABASE_OPERATION
+        )
 
     def libraries_index_click_search(self):
         self.sleep_for(WAIT_TYPES.UX_RENDER)
@@ -1750,7 +1806,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def wait_for_overlays_cleared(self):
         """Wait for modals and Toast notifications to disappear."""
         self.wait_for_selector_absent_or_hidden(".ui-modal", wait_type=WAIT_TYPES.UX_POPUP)
-        self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
+        self.components.toast.message.wait_for_absent_or_hidden(wait_type=WAIT_TYPES.UX_POPUP)
 
     def clear_tooltips(self, selector_to_move="#center"):
         self.hover(self.find_element_by_selector(selector_to_move))
@@ -1769,9 +1825,45 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.get("workflows/import")
 
     def workflow_index_open_with_name(self, name: str):
+        """Open the workflow titled ``name`` (else the only one whose title contains it) in the editor."""
+        self._workflow_card_action(name, self.navigation.workflows.edit_button)
+
+    def _workflow_card_action(self, name: str, action: Target):
+        """Search the workflow list for ``name``, click ``action`` in its card and return the card."""
         self.workflow_index_open()
         self.workflow_index_search_for(name)
-        self.components.workflows.edit_button.wait_for_and_click()
+
+        def click_action():
+            card = self._wait_on(
+                lambda: self._workflow_card_named(name),
+                f"search results with a workflow titled or uniquely containing [{name}]",
+                wait_type=self.wait_types.DATABASE_OPERATION,
+            )
+            card.find_element(*action.element_locator).click()
+            return card
+
+        # Cards stay mounted under a loading overlay while the search reloads them.
+        return retry_call_during_transitions(click_action)
+
+    def _workflow_card_named(self, name: str):
+        """Card titled exactly ``name``, else the only card, once every listed title contains ``name``.
+
+        Until then the list still shows unfiltered workflows (search input is debounced). Like the
+        server's search, containment ignores case.
+        """
+        cards = self.components.workflows.workflow_card.all()
+        title_locator = self.navigation.workflows.workflow_card_title.element_locator
+        try:
+            titles = [card.find_element(*title_locator).text for card in cards]
+        except Exception as e:
+            if not exception_indicates_stale_element(e):
+                raise
+            return None
+        if not titles or any(name.lower() not in title.lower() for title in titles):
+            return None
+        if name in titles:
+            return cards[titles.index(name)]
+        return cards[0] if len(cards) == 1 else None
 
     def workflow_shared_with_me_open(self):
         self.workflow_index_open()
@@ -1824,16 +1916,21 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         workflow.find_element(By.CSS_SELECTOR, ".g-card-rename").click()
         self.rename_modal_rename("workflow", new_name)
 
-    def workflow_delete_by_name(self, name):
-        self.workflow_index_search_for(name)
-        self.components.workflows.workflow_drop_down.wait_for_and_click()
-        self.components.workflows.delete_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+    def workflow_delete_by_name(self, name: str):
+        """Delete the workflow titled ``name`` (else the only one whose title contains it)."""
+        workflows = self.navigation.workflows
+        card = self._workflow_card_action(name, workflows.workflow_drop_down)
+        # Every card renders its own (hidden) menu, so the item must come from this card.
+        delete_item = card.find_element(*workflows.delete_button.element_locator)
+        self._wait_on(
+            delete_item.is_displayed, f"delete item of workflow [{name}]", wait_type=self.wait_types.UX_RENDER
+        )
+        delete_item.click()
         self.components.confirm_dialog.ok_button.wait_for_and_click()
 
-    def workflow_bookmark_by_name(self, name):
-        self.workflow_index_search_for(name)
-        self.components.workflows.bookmark_link(action="add").wait_for_and_click()
+    def workflow_bookmark_by_name(self, name: str):
+        """Bookmark the workflow titled ``name`` (else the only one whose title contains it)."""
+        self._workflow_card_action(name, self.navigation.workflows.bookmark_link(action="add"))
 
     @retry_during_transitions
     def workflow_index_name(self, workflow_index=0):
@@ -1926,9 +2023,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_with_name(self, name: str):
-        self.workflow_index_open()
-        self.workflow_index_search_for(name)
-        self.components.workflows.run_button.wait_for_and_click()
+        """Open the run form of the workflow titled ``name`` (else the only one whose title contains it)."""
+        self._workflow_card_action(name, self.navigation.workflows.run_button)
+        # Callers expect the run form rendered; they don't all wait on the same element.
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_specify_inputs(self, inputs: dict[str, Any]):
@@ -2114,6 +2211,24 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def tool_form_execute(self):
         self.components.tool_form.execute.wait_for_and_click()
+
+    def tool_form_select_data(self, parameter: str, value: str, multiple: bool = False):
+        select_field = self.components.tool_form.parameter_data_select(parameter=parameter)
+        self.select_set_value(select_field, value, multiple=multiple)
+        self.components.tool_form.parameter_data_select_dropdown(parameter=parameter).wait_for_absent_or_hidden()
+
+    def tool_form_wait_for_batch_info(self, parameter: str, text: str) -> str:
+        batch_info = self.components.tool_form.parameter_batch_info(parameter=parameter)
+
+        def batch_info_with_text(driver=None):
+            # the inline help link can render on its own line, collapse whitespace
+            info = " ".join(batch_info.wait_for_text().split())
+            return info if text in info else None
+
+        return self._wait_on_custom(
+            batch_info_with_text,
+            f"batch info of parameter [{parameter}] to contain [{text}]",
+        )
 
     def click_activity_workflow(self):
         self.components.workflows.activity.wait_for_and_click()
@@ -3021,11 +3136,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             container_elem = self.wait_for_selector(container_selector_or_elem)
         else:
             container_elem = container_selector_or_elem
+        if "multiselect__input" in (container_elem.get_attribute("class") or "").split():
+            container_elem = container_elem.find_element(
+                By.XPATH, "ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' multiselect ')][1]"
+            )
         trigger_elem = container_elem.find_element(By.CSS_SELECTOR, ".multiselect__select")
         self.scroll_into_view(trigger_elem)
         trigger_elem.click()
         try:
-            text_input = container_elem.find_element(By.CSS_SELECTOR, "input[class='multiselect__input']")
+            text_input = container_elem.find_element(By.CSS_SELECTOR, "input.multiselect__input")
         except Exception:
             text_input = None
         if text_input:
@@ -3171,7 +3290,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         for parameter in parameters:
             form_type = parameter.form_element_type
             if form_type in ["integer", "string"]:
-                self.components.tool_form.parameter_input(parameter=parameter.name).wait_for_and_send_keys(
+                # Inputs may be prefilled with the variable's default value.
+                self.components.tool_form.parameter_input(parameter=parameter.name).wait_for_and_clear_and_send_keys(
                     str(parameter.value),
                 )
             else:

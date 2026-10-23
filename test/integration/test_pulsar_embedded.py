@@ -33,6 +33,16 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
         config["cleanup_job"] = "never"
         config["job_metrics"] = [{"type": "pulsar"}]
 
+    def test_runtime_environment_warning(self):
+        with self.dataset_populator.test_history() as history_id:
+            result = self.dataset_populator.run_tool("runtime_environment", {}, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            job = self.dataset_populator.get_job_details(result["jobs"][0]["id"], full=True).json()
+            warnings = [m for m in job["job_messages"] if m["type"] == "runtime_environment_warning"]
+            assert len(warnings) == 1
+            assert warnings[0]["variable_names"] == ["EMPTY_VAR", "MISSING_VAR"]
+            assert job["state"] == "ok"
+
     def test_tool_eval_failure(self):
         with self.dataset_populator.test_history() as history_id:
             dataset = self.dataset_populator.new_dataset(history_id=history_id, content="ABC", ext="tabular")
@@ -131,6 +141,9 @@ test_tools = integration_util.integration_tool_runner(
         "detect_errors",
         "tool_directory_copy",
         "create_directory_index",
+        # Directory datasets read through $input.path, without naming extra_files_path.
+        "dataset_path",
+        "directory_or_file_user_defined",
         "collection_split_on_column",
     ]
 )

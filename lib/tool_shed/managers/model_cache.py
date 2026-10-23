@@ -12,8 +12,12 @@ from galaxy.util.hash_util import md5_hash_str
 RAW_CACHED_JSON = dict[str, Any]
 
 
+# bump when tools are parsed into the cached models differently, without a change to the models' schema
+MODEL_PARSING_VERSION = 1
+
+
 def hash_model(model_class: type[BaseModel]) -> str:
-    return md5_hash_str(json.dumps(model_class.model_json_schema()))
+    return md5_hash_str(json.dumps([model_class.model_json_schema(), MODEL_PARSING_VERSION]))
 
 
 MODEL_HASHES: dict[type[BaseModel], str] = {}
@@ -31,8 +35,7 @@ class ModelCache:
     _cache_directory: str
 
     def __init__(self, cache_directory: str):
-        if not os.path.exists(cache_directory):
-            os.makedirs(cache_directory)
+        os.makedirs(cache_directory, exist_ok=True)
         self._cache_directory = cache_directory
 
     def _cache_target(self, model_class: type[M], tool_id: str, tool_version: str) -> str:
@@ -54,8 +57,6 @@ class ModelCache:
 
     def insert_cache_entry_for(self, model_object: M, tool_id: str, tool_version: str) -> None:
         cache_target = self._cache_target(model_object.__class__, tool_id, tool_version)
-        parent_directory = os.path.dirname(cache_target)
-        if not os.path.exists(parent_directory):
-            os.makedirs(parent_directory)
+        os.makedirs(os.path.dirname(cache_target), exist_ok=True)
         with open(cache_target, "w") as f:
             json.dump(model_object.model_dump(), f)

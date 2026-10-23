@@ -151,6 +151,36 @@ describe("getCombinedStepInputs", () => {
             }),
         );
 
+        expect(getCombinedStepInputs(step, stepStore).map((input) => input.name)).toEqual(["check_value"]);
+    });
+
+    it("adds a port for a when input nothing is connected to", () => {
+        const stepStore = useWorkflowStepStore("mock-workflow");
+        const step = stepStore.addStep(createTestStep(1, { inputs: [regularInput], when: "$(inputs.when)" }));
+
+        const combinedInputs = getCombinedStepInputs(step, stepStore);
+
+        expect(combinedInputs.map((input) => input.name)).toEqual(["when", "input_dataset"]);
+        expect(combinedInputs[0]).toMatchObject({ input_type: "parameter", type: "boolean" });
+    });
+
+    it("adds no port for what the when reads from the step's own inputs or state", () => {
+        const stepStore = useWorkflowStepStore("mock-workflow");
+        const step = stepStore.addStep({
+            ...createTestStep(1, {
+                inputs: [regularInput],
+                when: "$(inputs.input_dataset != null && inputs.threshold > 2)",
+            }),
+            tool_state: { threshold: "3" },
+        });
+
+        expect(getCombinedStepInputs(step, stepStore).map((input) => input.name)).toEqual(["input_dataset"]);
+    });
+
+    it("adds no port for a when that reads inputs dynamically", () => {
+        const stepStore = useWorkflowStepStore("mock-workflow");
+        const step = stepStore.addStep(createTestStep(1, { when: "$(inputs[name])" }));
+
         expect(getCombinedStepInputs(step, stepStore)).toHaveLength(0);
     });
 

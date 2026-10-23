@@ -8,7 +8,10 @@ from typing import (
 )
 
 from galaxy.tool_shed.util import basic_util
-from galaxy.util import unicodify
+from galaxy.util import (
+    smart_str,
+    unicodify,
+)
 
 if TYPE_CHECKING:
     from mercurial.interfaces.repository import IRepo
@@ -62,11 +65,23 @@ def copy_file_from_manifest(repo, changeset_revision, filename, dir):
 
 def get_changectx_for_changeset(repo: "IRepo", changeset_revision: str) -> Any:
     """Retrieve a specified changectx from a repository."""
-    for changeset in repo.changelog:
-        ctx = repo[changeset]
-        if str(ctx) == changeset_revision:
-            return ctx
-    return None
+    from mercurial import (
+        error,
+        scmutil,
+    )
+    from mercurial.node import nullrev
+
+    try:
+        node = scmutil.resolvehexnodeidprefix(repo, smart_str(changeset_revision))
+    except (error.LookupError, error.WdirUnsupported):
+        return None
+    if node is None:
+        return None
+    ctx = repo[node]
+    # Only the exact short hash of a committed changeset names it, not a prefix or the null revision.
+    if ctx.rev() == nullrev or str(ctx) != changeset_revision:
+        return None
+    return ctx
 
 
 def get_config_from_disk(config_file: str, relative_install_dir: str) -> str | None:
@@ -78,7 +93,7 @@ def get_config_from_disk(config_file: str, relative_install_dir: str) -> str | N
     return None
 
 
-def get_ctx_file_path_from_manifest(filename, repo, changeset_revision):
+def get_ctx_file_path_from_manifest(filename: str, repo: "IRepo", changeset_revision: str) -> tuple[Any, Any]:
     """
     Get the ctx file path for the latest revision of filename from the repository manifest up
     to the value of changeset_revision.
@@ -91,6 +106,33 @@ def get_ctx_file_path_from_manifest(filename, repo, changeset_revision):
             if ctx_file_name == stripped_filename:
                 return manifest_ctx, ctx_file
     return None, None
+
+
+def get_file_data_from_manifest(
+    filename: str, repo: "IRepo", changeset_revision: str, max_size: int | None = None
+) -> bytes | None:
+    """
+    Return the contents of filename in the repository manifest as of changeset_revision, or None
+    if that revision is unknown, has no such file, or the file is larger than max_size bytes.
+    filename is matched as a path within the repository first and then by file name alone.
+    """
+    ctx = get_changectx_for_changeset(repo, changeset_revision)
+    if ctx is None:
+        return None
+    path: bytes | None = smart_str(filename)
+    if path not in ctx:
+        stripped_filename = basic_util.strip_path(filename)
+        matches = (f for f in ctx.manifest() if basic_util.strip_path(unicodify(f)) == stripped_filename)
+        path = next(matches, None)
+    if path is None:
+        return None
+    fctx = ctx[path]
+    # filectx.size() reads a newly added file whole to look for copy metadata, while the revlog
+    # index records the stored size (an upper bound of the file size) without reading the file.
+    if max_size is not None and fctx.filelog()._revlog.rawsize(fctx.filerev()) > max_size:
+        return None
+    data: bytes = fctx.data()
+    return data
 
 
 def get_file_context_from_ctx(ctx: Any, filename: str) -> Any | Literal["DELETED"] | None:
@@ -160,7 +202,7 @@ def reversed_lower_upper_bounded_changelog(
     return reversed_changelog
 
 
-def reversed_upper_bounded_changelog(repo, included_upper_bounds_changeset_revision):
+def reversed_upper_bounded_changelog(repo: "IRepo", included_upper_bounds_changeset_revision: str | None) -> list[Any]:
     """
     Return a reversed list of changesets in the repository changelog up to and including the
     included_upper_bounds_changeset_revision.
@@ -204,6 +246,7 @@ __all__ = (
     "get_changectx_for_changeset",
     "get_config_from_disk",
     "get_ctx_file_path_from_manifest",
+    "get_file_data_from_manifest",
     "get_file_context_from_ctx",
     "pull_repository",
     "reversed_lower_upper_bounded_changelog",

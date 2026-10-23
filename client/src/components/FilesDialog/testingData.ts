@@ -5,6 +5,8 @@ export const rootId = "pdb-gzip";
 export const directoryId = "gxfiles://pdb-gzip/directory1";
 export const subDirectoryId = "gxfiles://pdb-gzip/directory1/subdirectory1";
 export const subSubDirectoryId = "gxfiles://pdb-gzip/directory1/subdirectory1/subsubdirectory";
+export const rdmRootId = "my-dataverse";
+export const rdmDatasetId = "dataverse://my-dataverse/doi:10.70122/FK2/ABCDEF";
 
 // TODO these types should be generated from the schema
 interface RemoteEntry {
@@ -39,6 +41,7 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
             pagination: false,
             search: false,
             sorting: false,
+            recursive: true,
         },
     },
     {
@@ -53,6 +56,7 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
             pagination: false,
             search: false,
             sorting: false,
+            recursive: true,
         },
     },
     {
@@ -67,6 +71,7 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
             pagination: false,
             search: false,
             sorting: false,
+            recursive: true,
         },
     },
     {
@@ -80,8 +85,35 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
             pagination: true,
             search: true,
             sorting: false,
+            recursive: false,
         },
         uri_root: "gxuserfiles://c5504eb8-51cf-4b44-88f8-24347c031f52",
+    },
+    {
+        id: "my-dataverse",
+        type: "dataverse",
+        uri_root: "dataverse://my-dataverse",
+        label: "My Dataverse",
+        doc: "Dataverse repository",
+        writable: true,
+        browsable: true,
+        supports: {
+            pagination: false,
+            search: false,
+            sorting: false,
+            recursive: false,
+        },
+    },
+];
+
+export const rdmFileSourceTypes = ["dataverse"];
+
+export const rdmRootResponse: RemoteFilesList = [
+    {
+        class: "Directory",
+        name: "My draft dataset",
+        uri: "dataverse://my-dataverse/doi:10.70122/FK2/ABCDEF",
+        path: "/doi:10.70122/FK2/ABCDEF",
     },
 ];
 

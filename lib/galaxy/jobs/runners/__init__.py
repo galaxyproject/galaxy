@@ -3,6 +3,8 @@ Base classes for job runner plugins.
 """
 
 import datetime
+import errno
+import json
 import os
 import string
 import subprocess
@@ -110,6 +112,8 @@ class RunnerParams(ParamsWithSpecs):
 
 class BaseJobRunner:
     runner_name = "BaseJobRunner"
+    runs_job_script_in_container = False
+    """The entire job script executes inside the tool container."""
 
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
     #: Whether ``recover()`` knows how to resume a job left in the FINISHING state by an
@@ -533,8 +537,7 @@ class BaseJobRunner:
         env_setup_commands = kwds.get("env_setup_commands", [])
         env_setup_commands.append(job_wrapper.get_env_setup_clause() or "")
         destination = job_wrapper.job_destination
-        envs = destination.env
-        envs.extend(job_wrapper.environment_variables)
+        envs = [*destination.env, *job_wrapper.environment_variables]
         for env in envs:
             env_setup_commands.append(env_to_statement(env))
         command_line = job_wrapper.runner_command_line
@@ -589,7 +592,7 @@ class BaseJobRunner:
             tool.containers,
             tool.requirements,
             tool.requires_galaxy_python_environment,
-            tool.docker_env_pass_through,
+            list(dict.fromkeys([*tool.docker_env_pass_through, *job_wrapper.job_destination.tool_env_names])),
             guest_ports=guest_ports,
             tool_id=tool.id,
             tool_version=tool.version,
@@ -699,6 +702,20 @@ class BaseJobRunner:
             stream, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True
         )
 
+    def _read_remote_tool_eval_error(self, job_wrapper) -> dict[str, str] | None:
+        error_path = os.path.join(
+            job_wrapper.working_directory, "metadata", "outputs_populated", "remote_tool_eval_error.json"
+        )
+        try:
+            with open(error_path) as error_file:
+                error = json.load(error_file)
+            return {"message": str(error["message"]), "traceback": str(error["traceback"])}
+        except FileNotFoundError:
+            return None
+        except Exception:
+            log.exception("(%s) Failed to read remote tool evaluation error", job_wrapper.get_id_tag())
+            return None
+
     def _finish_or_resubmit_job(self, job_state: "JobState", job_stdout, job_stderr, job_id=None, external_job_id=None):
         job_wrapper = job_state.job_wrapper
         try:
@@ -742,6 +759,10 @@ class BaseJobRunner:
                     log.warning("(%s/%s) %s (%s)", job_id, external_job_id, desc, path)
             tool_stdout = tool_streams["stdout"]
             tool_stderr = tool_streams["stderr"] or ("Job cancelled" if cancelled else "")
+            eval_error = None
+            if any(error["errno"] == errno.ENOENT for error in stdio_errors):
+                # When remote_tool_eval.py fails the tool never runs, so its streams are never written.
+                eval_error = self._read_remote_tool_eval_error(job_wrapper)
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
@@ -780,8 +801,16 @@ class BaseJobRunner:
             if stdio_errors:
                 # Finishing may require metadata that was never produced. Fail with the
                 # collected diagnostics before another collection error can obscure them.
+                if eval_error:
+                    message = f"Galaxy failed to prepare this job, so the tool was not run: {eval_error['message']}"
+                    # fail() refreshes the job, so persist the traceback first.
+                    job.traceback = eval_error["traceback"]
+                    self.sa_session.add(job)
+                    self.sa_session.commit()
+                else:
+                    message = "\n".join(error["desc"] for error in stdio_errors if error["desc"])
                 job_wrapper.fail(
-                    "\n".join(error["desc"] for error in stdio_errors if error["desc"]),
+                    message,
                     tool_stdout=tool_stdout,
                     tool_stderr=tool_stderr,
                     exit_code=exit_code,

@@ -5,7 +5,7 @@ requires = ["setuptools>=77.0.0", "setuptools-scm>=8"]
 [project]
 dynamic = ["readme"]
 name = "galaxy-test-base"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 description = "Galaxy testing utilities"
 requires-python = ">=3.10"
 license = "MIT"
@@ -20,7 +20,7 @@ dependencies = [
     "galaxy-util",
     "bioblend",
     "cwltest>=2.5.20240906231108",
-    "gxformat2>=0.27.0",
+    "gxformat2>=0.28.0",
     "pytest",
     "pytest-celery",
     "PyYAML",

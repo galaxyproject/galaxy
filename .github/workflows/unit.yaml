@@ -5,6 +5,7 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/unit.yaml'
@@ -13,6 +14,7 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/unit.yaml'
@@ -53,9 +55,14 @@ jobs:
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run tests
-        run: tox -e unit-coverage
+        run: tox -e "$TOX_ENV"
+        env:
+          PYTEST_ADDOPTS: -n 4
+          # Coverage slows the tests down; collect it for pushes and scheduled runs only.
+          TOX_ENV: ${{ github.event_name == 'pull_request' && 'unit' || 'unit-coverage' }}
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.1.1
+        if: github.event_name != 'pull_request'
         with:
           flags: py-unit
           working-directory: 'galaxy root'

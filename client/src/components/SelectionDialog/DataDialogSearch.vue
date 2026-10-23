@@ -37,9 +37,11 @@ function reset() {
 
 <template>
     <BInputGroup class="w-100">
-        <BFormInput v-model="filter" :placeholder="placeholder" debounce="500" />
+        <BFormInput v-model="filter" :placeholder="placeholder" :aria-label="placeholder" debounce="500" />
         <BInputGroupAppend>
-            <GButton :disabled="!filter" @click="reset"><FontAwesomeIcon :icon="faTimes" /></GButton>
+            <GButton aria-label="Clear search" :disabled="!filter" @click="reset"
+                ><FontAwesomeIcon :icon="faTimes"
+            /></GButton>
         </BInputGroupAppend>
     </BInputGroup>
 </template>

@@ -33,7 +33,9 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.datatypes.data import Directory
 from galaxy.exceptions import (
+    RequestParameterInvalidException,
     ToolInputsNotReadyException,
     ToolMissingException,
 )
@@ -155,6 +157,7 @@ from galaxy.tools.parameters.workflow_utils import (
     workflow_building_modes,
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
+from galaxy.tools.runtime import dataset_path
 from galaxy.util import (
     listify,
     unicodify,
@@ -170,6 +173,9 @@ from galaxy.workflow.map_over import (
 from galaxy.workflow.workflow_parameter_input_definitions import (
     get_default_parameter,
     INPUT_PARAMETER_TYPES,
+    numeric_bounds_inverted,
+    NumericBounds,
+    split_numeric_bounds,
 )
 
 if TYPE_CHECKING:
@@ -312,7 +318,11 @@ def replace_expression_json_dataset(
 
 
 def to_cwl(
-    value, hda_references, step: WorkflowStep | None = None, compute_environment: ComputeEnvironment | None = None
+    value,
+    hda_references,
+    step: WorkflowStep | None = None,
+    compute_environment: ComputeEnvironment | None = None,
+    shell_quotable: bool = False,
 ):
     element_identifier = None
     if isinstance(value, NoReplacement):
@@ -348,12 +358,22 @@ def to_cwl(
             return read_expression_json(value, step=step)
         else:
             hda_references.append(value)
-            properties = {
+            properties: dict[str, Any] = {
                 "class": "File",
                 "location": f"step_input://{len(hda_references)}",
                 "format": value.extension,
-                "path": compute_environment.input_path_rewrite(value) if compute_environment else value.get_file_name(),
             }
+            if value.has_deferred_data:
+                # As in runtimeify, the tool consumes the source URI and there is no local path.
+                if not (source_uri := value.deferred_source_uri):
+                    raise ValueError(f"Deferred dataset {value.id} has no source to read it from")
+                properties["location"] = source_uri
+            else:
+                # The same path as runtimeify and $input.path give.
+                properties["path"] = dataset_path(value, compute_environment, shell_quotable=shell_quotable)
+            if isinstance(value.datatype, Directory):
+                properties["class"] = "Directory"
+                properties["listing"] = []
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name
             )
@@ -361,7 +381,13 @@ def to_cwl(
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":
             return [
-                to_cwl(dce, hda_references=hda_references, step=step, compute_environment=compute_environment)
+                to_cwl(
+                    dce,
+                    hda_references=hda_references,
+                    step=step,
+                    compute_environment=compute_environment,
+                    shell_quotable=shell_quotable,
+                )
                 for dce in value.dataset_elements
             ]
         else:
@@ -373,18 +399,32 @@ def to_cwl(
                     hda_references=hda_references,
                     step=step,
                     compute_environment=compute_environment,
+                    shell_quotable=shell_quotable,
                 )
             return rval
     elif isinstance(value, list):
         return [
-            to_cwl(v, hda_references=hda_references, step=step, compute_environment=compute_environment) for v in value
+            to_cwl(
+                v,
+                hda_references=hda_references,
+                step=step,
+                compute_environment=compute_environment,
+                shell_quotable=shell_quotable,
+            )
+            for v in value
         ]
     elif is_runtime_value(value):
         return None
     elif isinstance(value, dict):
         # Nested tool state, such as conditionals
         return {
-            k: to_cwl(v, hda_references=hda_references, step=step, compute_environment=compute_environment)
+            k: to_cwl(
+                v,
+                hda_references=hda_references,
+                step=step,
+                compute_environment=compute_environment,
+                shell_quotable=shell_quotable,
+            )
             for k, v in value.items()
         }
     else:
@@ -1385,9 +1425,14 @@ class InputParameterModule(WorkflowModule):
         parameter_type_cond.test_param = input_parameter_type
         cases = []
 
+        bounds, _ = split_numeric_bounds(parameter_def)
+        if bounds and numeric_bounds_inverted(bounds):
+            bounds = None
         for param_type in POSSIBLE_PARAMETER_TYPES:
             default_parameter = get_default_parameter(
-                param_type, multiple=param_type == parameter_type and bool(parameter_def.get("multiple"))
+                param_type,
+                multiple=param_type == parameter_type and bool(parameter_def.get("multiple")),
+                bounds=bounds if param_type == parameter_type else None,
             )
 
             optional_value = optional_param()
@@ -1684,6 +1729,16 @@ class InputParameterModule(WorkflowModule):
         except Exception:
             log.debug("Failed to generate options for text parameter, falling back to free text.", exc_info=True)
 
+    def get_errors(self, **kwargs):
+        bounds, _ = split_numeric_bounds(self._parse_state_into_dict())
+        return self._inverted_bounds_error(bounds) if bounds else None
+
+    def _inverted_bounds_error(self, bounds: NumericBounds) -> str | None:
+        if not numeric_bounds_inverted(bounds):
+            return None
+        input_name = f"Workflow input '{self.label}'" if self.label else "A workflow input"
+        return f"{input_name} has a minimum ({bounds['min']}) greater than its maximum ({bounds['max']})."
+
     def get_runtime_inputs(self, step, connections: Iterable[WorkflowStepConnection] | None = None):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
@@ -1694,7 +1749,7 @@ class InputParameterModule(WorkflowModule):
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.
-        parameter_kwds: dict[str, str | list[dict[str, Any]]] = {}
+        parameter_kwds: dict[str, Any] = {}
         if "multiple" in parameter_def:
             parameter_kwds["multiple"] = parameter_def["multiple"]
 
@@ -1733,8 +1788,14 @@ class InputParameterModule(WorkflowModule):
             parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values)
             restricted_inputs = True
 
-        if parameter_def.get("validators"):
-            parameter_kwds["validators"] = parameter_def["validators"]
+        # Pass bounds as min/max so the run form gets them; the parameter adds an equivalent implicit range validator.
+        bounds, validators = split_numeric_bounds(parameter_def)
+        if bounds:
+            if inverted_bounds_error := self._inverted_bounds_error(bounds):
+                raise RequestParameterInvalidException(inverted_bounds_error)
+            parameter_kwds.update(bounds)
+        if validators:
+            parameter_kwds["validators"] = validators
 
         client_parameter_type = parameter_type
         if restricted_inputs:
@@ -3100,7 +3161,7 @@ class ToolModule(WorkflowModule):
             raise ToolMissingException(f"Tool {tool_id} missing. Cannot execute workflow step.", tool_id=tool_id)
         tool = trans.app.toolbox.materialize_tool(tool, reason="execution")
         if not tool.is_workflow_compatible:
-            # TODO: why do we even create an invocation, seems like something we could check on submit?
+            # Invocation requests are checked on submit; this catches tools changed after scheduling.
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
             raise exceptions.MessageException(message)
         self.state, step_errors = self.compute_runtime_state(

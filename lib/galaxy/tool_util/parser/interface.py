@@ -23,6 +23,7 @@ from typing_extensions import (
 )
 
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
+from galaxy.tool_util_models.runtime_environment import RuntimeEnvironmentVariable
 from galaxy.tool_util_models.testing_types import (
     AssertionList,
     DirectCredential,
@@ -266,6 +267,10 @@ class ToolSource(metaclass=ABCMeta):
     def parse_tmp_directory_vars(self):
         """Directories to override if a tmp_target is not None."""
         return ["TMPDIR", "TMP", "TEMP"]
+
+    def parse_runtime_environment_variables(self, *, strict: bool = True) -> list[RuntimeEnvironmentVariable]:
+        """Runtime variable names consumed by an installed tool."""
+        return []
 
     def parse_docker_env_pass_through(self):
         return [
@@ -610,6 +615,11 @@ class InputSource(metaclass=ABCMeta):
         return []
 
     def parse_drill_down_static_options(self, tool_data_path: str | None = None) -> list["DrillDownOptionsDict"] | None:
+        """Return the static options of a drill_down parameter.
+
+        Options in a ``from_file`` are read only if ``tool_data_path`` is given, otherwise
+        this returns None (options unknown).
+        """
         return None
 
     def parse_conversion_tuples(self):
@@ -675,7 +685,7 @@ def xml_data_input_to_json(xml_input: ToolSourceTestInput) -> Optional["JsonTest
     if value is None and attributes.get("location") is None:
         return None
     as_dict: JsonTestDatasetDefDict = {
-        "class": "File",
+        "class": "Directory" if attributes.get("class") == "Directory" else "File",
     }
     if value:
         as_dict["path"] = value
@@ -808,7 +818,13 @@ class TestCollectionDef:
                     dataset_element_dict = cast(JsonTestCollectionDefDatasetElementDict, element_dict)
                     value = dataset_element_dict["path"]  # todo handle location
                     name = dataset_element_dict.get("name") or "Unnamed Collection"
-                    element_def = {"name": name, "value": value, "attributes": {}}
+                    # Pass class and filetype on, as XML elements do through their attributes.
+                    attributes: ToolSourceTestInputAttributes = {}
+                    if element_class:
+                        attributes["class"] = element_class
+                    if filetype := dataset_element_dict.get("filetype"):
+                        attributes["ftype"] = filetype
+                    element_def = {"name": name, "value": value, "attributes": attributes}
                 return TestCollectionDefElementInternal(element_identifier=identifier, element_definition=element_def)
 
             elements = list(map(element_from_dict_json, json_as_dict.get("elements") or []))

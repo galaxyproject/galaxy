@@ -2,12 +2,14 @@ import { computed, type Ref, ref, watch } from "vue";
 
 import { ERROR_STATES, TERMINAL_STATES } from "@/api/jobs";
 import { type FetchDataPayload, fetchDatasetsToJobId, fetchJobErrorMessage } from "@/api/tools";
+import { useJobDetails } from "@/composables/jobDetails";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useJobStore } from "@/stores/jobStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 export function useJobWatcher(jobId: Ref<string | undefined>) {
-    const { fetchJob, getJob } = useJobStore();
+    const { fetchJob } = useJobStore();
+    const { job } = useJobDetails(jobId, { poll: false });
     const jobRequestError = ref<string | undefined>(undefined);
 
     async function jobResourceHandler() {
@@ -21,17 +23,6 @@ export function useJobWatcher(jobId: Ref<string | undefined>) {
             jobRequestError.value = `Error requesting job: ${errorMessageAsString(error)}`;
         }
     }
-
-    const job = computed(() => {
-        if (jobId.value) {
-            const jobIdVal = jobId.value;
-            const job = getJob(jobIdVal);
-            if (job) {
-                return job;
-            }
-        }
-        return undefined;
-    });
 
     const { startWatchingResourceIfNeeded, stopWatchingResourceIfNeeded } = useResourceWatcher(jobResourceHandler);
 

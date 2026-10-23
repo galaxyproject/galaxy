@@ -12,7 +12,12 @@ import {
 import type { FetchDataPayload, HdcaUploadTarget } from "@/api/tools";
 import { stripExtension } from "@/components/Collections/common/stripExtension";
 import { useWorkbookDropHandling } from "@/components/Collections/common/useWorkbooks";
-import { downloadWorkbook, parseWorkbook, withAutoListIdentifiers } from "@/components/Collections/sheet/workbooks";
+import {
+    downloadWorkbook,
+    parseWorkbook,
+    withAutoListIdentifiers,
+    workbookForCollection,
+} from "@/components/Collections/sheet/workbooks";
 import type {
     AnyParsedSampleSheetWorkbook,
     InitialElements,
@@ -21,6 +26,7 @@ import type {
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import type { ExtendedCollectionType } from "@/components/Form/Elements/FormData/types";
 import { useFetchJobMonitor } from "@/composables/fetch";
+import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -80,7 +86,14 @@ async function handleWorkbook(base64Content: string) {
         base64Content,
     );
     if (data) {
-        parsedWorkbook.value = data;
+        try {
+            parsedWorkbook.value =
+                sourceFrom.value === "collection" && targetCollection.value
+                    ? workbookForCollection(data, targetCollection.value)
+                    : data;
+        } catch (error) {
+            Toast.error(errorMessageAsString(error));
+        }
     } else {
         console.log(error);
     }
@@ -468,7 +481,6 @@ async function download() {
                 :initial-elements="initialElements"
                 :extensions="extensions"
                 :busy="wizardIsBusy"
-                height="300px"
                 @workbook-contents="handleWorkbook"
                 @on-fetch-target="onFetchTarget"
                 @on-collection-create-payload="onCollectionCreatePayload" />

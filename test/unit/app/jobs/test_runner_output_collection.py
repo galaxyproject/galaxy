@@ -1,4 +1,5 @@
 import errno
+import json
 from types import MethodType
 from unittest.mock import Mock
 
@@ -15,6 +16,7 @@ from galaxy.jobs.runners import (
 )
 from galaxy.tool_util.output_checker import AnyJobMessage
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
+from galaxy.tool_util_models.runtime_environment import RuntimeEnvironmentVariable
 
 
 class InMemoryJob(model.Job):
@@ -48,6 +50,7 @@ def finishing_job(tmp_path, request):
     wrapper.command_line = "tool command"
     wrapper.tool.stdio_regexes = []
     wrapper.tool.stdio_exit_codes = []
+    wrapper.tool.runtime_environment_variables = []
     wrapper.check_tool_output = MethodType(JobWrapper.check_tool_output, wrapper)
     wrapper.fail.side_effect = MethodType(JobWrapper.fail, wrapper)
     state = InMemoryJobState(wrapper, wrapper.job_destination)
@@ -60,6 +63,25 @@ def finishing_job(tmp_path, request):
 
 def finish(runner, state):
     runner._finish_or_resubmit_job(state, job_stdout="runner stdout", job_stderr="runner stderr")
+
+
+def write_metadata_export_file(tmp_path, name, content):
+    export_directory = tmp_path / "metadata" / "outputs_populated"
+    export_directory.mkdir(parents=True, exist_ok=True)
+    (export_directory / name).write_text(content)
+
+
+def write_remote_tool_eval_error(tmp_path):
+    write_metadata_export_file(
+        tmp_path,
+        "remote_tool_eval_error.json",
+        json.dumps(
+            {
+                "message": "Error occurred while building command line <- NotFound: cannot find 'out_file2'",
+                "traceback": "Traceback (most recent call last): ...",
+            }
+        ),
+    )
 
 
 @pytest.mark.parametrize("missing", [("stdout",), ("stderr",), ("stdout", "stderr")])
@@ -217,3 +239,85 @@ def test_failure_diagnostics_survive_database_refresh(finishing_job, tmp_path):
             assert job.job_messages[0]["desc"] == job.info
     finally:
         engine.dispose()
+
+
+@pytest.mark.parametrize("missing", [("stdout",), ("stdout", "stderr")])
+def test_remote_tool_eval_error_fails_with_cause(finishing_job, tmp_path, missing):
+    runner, state, job = finishing_job
+    write_remote_tool_eval_error(tmp_path)
+    for stream in ("stdout", "stderr"):
+        if stream not in missing:
+            (tmp_path / f"tool_{stream}").write_text(f"tool {stream}")
+
+    finish(runner, state)
+
+    assert job.state == job.states.ERROR
+    assert job.info.startswith("Galaxy failed to prepare this job, so the tool was not run: ")
+    assert "NotFound: cannot find 'out_file2'" in job.info
+    assert job.traceback == "Traceback (most recent call last): ..."
+    assert job.tool_stderr == ("" if "stderr" in missing else "tool stderr")
+    assert [message["stream"] for message in job.job_messages] == list(missing)
+    runner.runner_state_handlers["failure"][0].assert_called_once_with(runner.app, runner, state)
+
+
+def test_metadata_traceback_alone_is_not_remote_tool_eval_error(finishing_job, tmp_path):
+    runner, state, job = finishing_job
+    write_metadata_export_file(tmp_path, "traceback.txt", "Traceback (most recent call last): ...")
+
+    finish(runner, state)
+
+    assert job.state == job.states.ERROR
+    assert "Galaxy failed to prepare this job" not in job.info
+    assert "Job failed because the tool stdout file could not be read" in job.info
+    assert job.traceback is None
+
+
+def test_remote_tool_eval_error_preserves_resubmission(finishing_job, tmp_path):
+    runner, state, job = finishing_job
+    write_remote_tool_eval_error(tmp_path)
+
+    def resubmit(app, runner, job_state):
+        job_state.runner_state_handled = True
+
+    runner.runner_state_handlers["failure"] = [resubmit]
+    finish(runner, state)
+
+    state.job_wrapper.fail.assert_not_called()
+    state.job_wrapper.finish.assert_not_called()
+    assert job.traceback is None
+
+
+@pytest.mark.parametrize("finishing_job", [model.Job], indirect=True)
+def test_remote_tool_eval_traceback_survives_database_refresh(finishing_job, tmp_path):
+    runner, state, job = finishing_job
+    write_remote_tool_eval_error(tmp_path)
+    engine = create_engine("sqlite:///:memory:")
+    try:
+        model.Base.metadata.create_all(engine)
+        with Session(engine) as session:
+            runner.sa_session = state.job_wrapper.sa_session = session
+            session.add(job)
+            session.commit()
+
+            finish(runner, state)
+            session.expire_all()
+
+            assert job.state == job.states.ERROR
+            assert "NotFound: cannot find 'out_file2'" in job.info
+            assert job.traceback == "Traceback (most recent call last): ..."
+    finally:
+        engine.dispose()
+
+
+def test_finish_reports_only_declared_runtime_environment_warnings(finishing_job, tmp_path):
+    runner, state, job = finishing_job
+    wrapper = state.job_wrapper
+    wrapper.tool.runtime_environment_variables = [RuntimeEnvironmentVariable(name="MISSING", required=True)]
+    outputs = tmp_path / "outputs"
+    outputs.mkdir()
+    (outputs / "runtime_environment_warnings").write_text("MISSING\nPLANTED\n")
+
+    wrapper.check_tool_output("", "", 0, job)
+
+    warnings = [message for message in job.job_messages if message["type"] == "runtime_environment_warning"]
+    assert [message["variable_names"] for message in warnings] == [["MISSING"]]

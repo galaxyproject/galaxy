@@ -86,4 +86,17 @@ describe("CellAdd.vue", () => {
             id: expect.any(Number),
         });
     });
+
+    it("returns focus to the add button when Escape closes the menu from the search box", async () => {
+        const wrapper = mountTarget();
+        const button = wrapper.findComponent(GButton);
+        await button.trigger("click");
+        const search = wrapper.findComponent(DelayedInput).get("input");
+        search.element.focus();
+        expect(document.activeElement).toBe(search.element);
+        await search.trigger("keydown", { key: "Escape" });
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
+        expect(document.activeElement).toBe(button.element);
+        wrapper.unmount();
+    });
 });

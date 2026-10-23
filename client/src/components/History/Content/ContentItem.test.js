@@ -80,6 +80,15 @@ describe("ContentItem", () => {
         });
     });
 
+    it("names the converted-item count with its action", async () => {
+        await wrapper.setProps({ item: { ...item, sub_items: [{ id: "converted-1" }, { id: "converted-2" }] } });
+        const button = wrapper.get("button.display-btn");
+        expect(button.attributes("aria-label")).toBe("Show converted items (2)");
+        await button.trigger("click");
+        await wrapper.setProps({ item: { ...item, sub_items: [{ id: "converted-1" }] } });
+        expect(wrapper.get("button.display-btn").attributes("aria-label")).toBe("Show converted items (1)");
+    });
+
     it("check basics", async () => {
         expect(wrapper.attributes("data-hid")).toBe("1");
         expect(wrapper.find(".content-title").text()).toBe("name");

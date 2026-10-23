@@ -22,6 +22,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
+    WORKFLOW_WHEN_NOT_CONNECTED,
     WORKFLOW_WITH_INVALID_STATE,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
@@ -124,6 +125,25 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert "MIT" in self.workflow_editor_license_text()
 
     @selenium_test
+    def test_open_and_run_workflow_by_exact_title(self):
+        # The newer sibling also matches a search for ``name`` and is listed first.
+        name = self._get_random_name()
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE, name=name)
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE, name=f"{name} (copy)")
+
+        self.workflow_index_open_with_name(name)
+        editor = self.components.workflow_editor
+        editor.canvas_body.wait_for_visible()
+        # Loading briefly marks the workflow changed; leaving then would raise the unsaved-changes prompt.
+        editor.canvas_loading.wait_for_absent()
+        assert editor.edit_name.wait_for_visible().get_attribute("value") == name
+        assert self.current_url.endswith(f"id={workflow_id}")
+
+        self.workflow_run_with_name(name)
+        self.components.workflow_run.run_workflow.wait_for_visible()
+        assert self.current_url.endswith(f"id={workflow_id}")
+
+    @selenium_test
     def test_parameter_regex_validation(self):
         editor = self.components.workflow_editor
         workflow_run = self.components.workflow_run
@@ -155,7 +175,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
     @selenium_test
     def test_int_parameter_minimum_validation(self):
         editor = self.components.workflow_editor
-        workflow_run = self.components.workflow_run
 
         parameter_name = "int_param"
         name = self.create_and_wait_for_new_workflow_in_editor()
@@ -166,22 +185,18 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.components.tool_form.parameter_input(parameter="parameter_definition|min").wait_for_and_send_keys("4")
         self.save_after_node_form_changes()
 
-        self.workflow_run_with_name(name)
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
-        input_element.send_keys("3")
-        workflow_run.run_workflow_disabled.wait_for_absent()
-        workflow_run.run_error.assert_absent_or_hidden()
-        self.workflow_run_submit()
-        element = workflow_run.run_error.wait_for_present()
-        # follow up with a bigger PR to just make this (4 <= value) right? need to set default message
-        # in parameter validators
-        assert "Value ('3') must fulfill (4 <= value <= +infinity)" in element.text, element.text
+        self._workflow_run_assert_number_clamped(
+            name,
+            parameter_name,
+            entered="3",
+            expected_alert="3 is out of range! (3 < 4)",
+            expected_value="4",
+            screenshot_name="workflow_run_int_parameter_below_minimum",
+        )
 
     @selenium_test
     def test_float_parameter_maximum_validation(self):
         editor = self.components.workflow_editor
-        workflow_run = self.components.workflow_run
 
         parameter_name = "float_param"
         name = self.create_and_wait_for_new_workflow_in_editor()
@@ -190,17 +205,26 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.components.tool_form.parameter_input(parameter="parameter_definition|max").wait_for_and_send_keys("3.14")
         self.save_after_node_form_changes()
 
-        self.workflow_run_with_name(name)
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
-        input_element.send_keys("3.2")
-        workflow_run.run_workflow_disabled.wait_for_absent()
-        workflow_run.run_error.assert_absent_or_hidden()
-        self.workflow_run_submit()
-        element = workflow_run.run_error.wait_for_present()
-        # see message in test test_int_parameter_minimum_validation about making this a little more human
-        # friendly.
-        assert "Value ('3.2') must fulfill (-infinity <= value <= 3.14)" in element.text, element.text
+        self._workflow_run_assert_number_clamped(
+            name,
+            parameter_name,
+            entered="3.2",
+            expected_alert="3.2 is out of range! (3.2 > 3.14)",
+            expected_value="3.14",
+            screenshot_name="workflow_run_float_parameter_above_maximum",
+        )
+
+    def _workflow_run_assert_number_clamped(
+        self, workflow_name, label, entered, expected_alert, expected_value, screenshot_name
+    ):
+        workflow_run = self.components.workflow_run
+        self.workflow_run_with_name(workflow_name)
+        input_element = workflow_run.simplified_input(label=label).wait_for_and_click()
+        input_element.send_keys(entered, Keys.TAB)
+        alert = workflow_run.simplified_input_alert(label=label).wait_for_text()
+        self.screenshot(screenshot_name)
+        assert expected_alert in alert, alert
+        assert input_element.get_attribute("value") == expected_value
 
     @selenium_test
     def test_optional_select_data_field(self):
@@ -790,6 +814,28 @@ steps:
         assert_linting_input_metadata_okay()
 
     @selenium_test
+    def test_best_practices_dangling_conditional_gate(self):
+        editor = self.components.workflow_editor
+        self.open_in_workflow_editor(WORKFLOW_WHEN_NOT_CONNECTED)
+        editor.tool_bar.best_practices.wait_for_and_click()
+        best_practices = editor.best_practices
+        section_element = best_practices.section_conditional_gates.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
+        item_text = best_practices.item_conditional_gate(index=0).wait_for_present().text
+        assert "cat1" in item_text
+        assert "when" in item_text
+
+        self.workflow_editor_connect("should_run#output", "cat1#when")
+        self.assert_connected("should_run#output", "cat1#when")
+
+        @retry_assertion_during_transitions
+        def assert_linting_conditional_gates_okay():
+            section_element = best_practices.section_conditional_gates.wait_for_present()
+            assert section_element.get_attribute("data-lint-status") == "ok"
+
+        assert_linting_conditional_gates_okay()
+
+    @selenium_test
     def test_rendering_rules_workflow_1(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_RULES_1)
         rule_output = "apply#output"
@@ -1115,6 +1161,22 @@ steps:
     def test_editor_embed_workflow(self):
         self.setup_subworkflow()
 
+    @selenium_test
+    def test_editor_embed_two_workflows(self):
+        first_child_name = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
+        second_child_name = self.workflow_upload_yaml_with_random_name(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION)
+        parent_name = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
+        parent_workflow_id = self.workflow_populator.index_ids(search=parent_name)[0]
+        self.workflow_index_open_with_name(parent_name)
+        self.components.workflow_editor.canvas_body.wait_for_visible()
+        self.workflow_editor_add_subworkflow(first_child_name)
+        # The Workflows panel is still open after the first insert.
+        self.workflow_editor_add_subworkflow(second_child_name)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self.workflow_populator.download_workflow(parent_workflow_id)
+        subworkflow_names = [step["name"] for step in workflow["steps"].values() if step["type"] == "subworkflow"]
+        assert sorted(subworkflow_names) == sorted([first_child_name, second_child_name])
+
     def setup_subworkflow(self):
         workflow_populator = self.workflow_populator
         child_workflow_name = self._get_random_name()
@@ -1136,7 +1198,6 @@ steps:
         editor = self.components.workflow_editor
         editor.canvas_body.wait_for_visible()
         self.workflow_editor_add_subworkflow(child_workflow_name)
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(parent_workflow_id)
         subworkflow_step = workflow["steps"]["2"]
@@ -1577,11 +1638,10 @@ steps:
         self.workflow_editor_destroy_connection("conditional_step#when")
         # Make sure the when input is still shown
         conditional_node.input_terminal(name="when").wait_for_present()
-        # Assert save button is disabled because of disconnected when
-        save_button = self.components.workflow_editor.save_button
-        save_button.wait_for_visible()
-        # TODO: hook up best practice panel, disable save when "when" not connected
-        # assert save_button.has_class("g-disabled")
+        # Best practices flag the gate that reads nothing
+        editor.tool_bar.best_practices.wait_for_and_click()
+        section_element = editor.best_practices.section_conditional_gates.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
 
     @selenium_test
     def test_conditional_subworkflow_step(self):
@@ -1604,17 +1664,7 @@ steps:
         self.assert_workflow_has_changes_and_save()
 
     def switch_param_type(self, element, param_type):
-        if self.backend_type == "playwright":
-            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
-            element.click()
-            self.sleep_for(self.wait_types.UX_RENDER)
-            pw_driver.page.keyboard.type(param_type)
-            self.sleep_for(self.wait_types.UX_RENDER)
-            pw_driver.page.keyboard.press("Enter")
-        else:
-            self.action_chains().move_to_element(element).click().pause(1).send_keys(param_type).pause(1).send_keys(
-                Keys.ENTER
-            ).perform()
+        self.select_set_value(element, param_type)
 
     @selenium_test
     def test_editor_invalid_tool_state(self):

@@ -658,6 +658,35 @@ practice.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+  <xs:simpleType name="RuntimeEnvironmentVariableName">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z_][A-Za-z0-9_]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="RuntimeEnvironmentVariable">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Installed tools can consume explicitly named variables from the job environment:
+``<runtime_environment_variable name="_JAVA_OPTIONS" required="false" description="JVM options" />``.
+Place this declaration under ``requirements``, beside ``credentials``. No profile gating
+is needed; older Galaxy releases simply do not forward these names. User-defined tools
+cannot declare runtime environment variables. Use ``credentials`` for secrets.
+
+Galaxy forwards declared names into wrapped Docker and Singularity/Apptainer containers.
+An unset variable is omitted; an empty string is set. Missing required variables produce
+a warning job message, without failing the job, for all runners and execution environments.
+The optional description documents the variable for administrators and tool linting.
+
+Reserved exact names: PATH, HOME, USER, LOGNAME, SHELL, PWD, OLDPWD, HOSTNAME, TMPDIR,
+TMP, TEMP, PYTHONPATH, PYTHONHOME, BASH_ENV, ENV, IFS, PS4.
+Reserved prefixes: LD_, GALAXY_, _GALAXY_, SINGULARITY_, SINGULARITYENV_, APPTAINER_,
+APPTAINERENV_. The loader and linter enforce these exclusions.
+      ]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="RuntimeEnvironmentVariableName" use="required"/>
+    <xs:attribute name="required" type="xs:boolean" default="false"/>
+    <xs:attribute name="description" type="xs:string"/>
+  </xs:complexType>
   <xs:complexType name="Requirements">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -674,6 +703,7 @@ serve as complete descriptions of the runtime of a tool.
       <xs:element name="requirement" type="Requirement"/>
       <xs:element name="container" type="Container"/>
       <xs:element name="resource" type="Resource"/>
+      <xs:element name="runtime_environment_variable" type="RuntimeEnvironmentVariable"/>
       <xs:element name="credentials" type="Credentials">
         <!-- Ensure unique credential names across variables and secrets -->
         <xs:unique name="uniqueCredentialNames">
@@ -4372,6 +4402,54 @@ identifiers ``a/b`` and ``a:b`` both become ``a_b``. When creating several
 sibling files, include an index or another stable unique value in each name.
 For bulk or nested collection staging, prefer a configfile using
 ``data_style="staging_path_and_source_path"``.
+
+Datasets of directory datatypes (``directory`` and its subclasses) keep their
+content in a folder, ``$input.extra_files_path``, rather than in ``$input``
+itself. New datasets have their content at the root of that folder; some
+Zarr datasets created before Galaxy 26.2 keep their store in a subfolder.
+``$input.path`` is where a tool finds a dataset's data on disk: the dataset's
+file for regular datatypes, and the folder holding the content, subfolder
+included, for directory datatypes. A single input can then accept both kinds
+of format through one value, the same way ``$(inputs.input.path)`` works in
+YAML tools. For example, an input taking
+AnnData either as an ``h5ad`` file or as a ``zarr`` store needs no branching.
+``$input.path`` is available since Galaxy 26.2, so tools using it should set
+``profile="26.2"`` or later:
+
+```xml
+<param name="input" type="data" format="h5ad,zarr" label="AnnData"/>
+```
+
+```bash
+python '$__tool_directory__/script.py' --input '$input.path'
+```
+
+For a directory output, write the content directly into ``$output.path``.
+Galaxy does not create this folder, so the tool has to create it first, e.g.
+with ``mkdir -p '$output.path'``.
+
+``$input.path`` is an error, rather than an empty value, for an optional input
+that is not set, so check ``#if $input`` first. With ``allow_uri_if_protocol``,
+a deferred dataset may reach the tool as its source URI instead of being
+downloaded first. ``$input.path`` is an error for it too and ``$input`` renders
+the URI, so check ``$input.is_deferred`` to choose:
+
+```bash
+#if $input.is_deferred
+    --input '$input'
+#else
+    --input '$input.path'
+#end if
+```
+
+Existing Zarr tools use ``$input.extra_files_path/$input.metadata.store_root``.
+That keeps pointing at the store, since ``store_root`` is empty for a store at
+the root and names the subfolder otherwise, but new tools should use
+``$input.path``. For an older dataset whose subfolder name holds a quote,
+``$``, a backtick, a backslash, a line break, ``;``, ``&``, ``|``, ``<`` or
+``>``, ``$input.path`` is an error, since that name could not be passed safely
+on the command line. Other names, e.g. with spaces, are accepted, so always
+quote ``$input.path``.
 
 The following demonstrates a ``param`` which may accept multiple files and
 multiple formats.

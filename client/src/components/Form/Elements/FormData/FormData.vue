@@ -26,11 +26,12 @@ import {
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
+import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
 import type { DataOption, ExtendedCollectionType } from "./types";
 import { containsDataOption, DEFAULT_OPTIONS_PAGE_SIZE, isDataOption } from "./types";
-import { BATCH, SOURCE, VARIANTS } from "./variants";
+import { BATCH, isBatchSelection, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
 import FormSelectionPreference from "../FormSelectionPreference.vue";
@@ -210,6 +211,45 @@ const currentVariant = computed(() => {
         return null;
     }
 });
+
+/**
+ * Whether a selected value is flagged for map over, e.g. a `list:paired` collection selected for a
+ * `paired` collection input. Tool form only: workflow run forms set a `flavor`, and a collection
+ * given to a workflow input is passed to the workflow whole.
+ */
+const selectionMapsOver = computed(() => !props.flavor && !!currentValue.value?.some((v) => !!v.map_over_type));
+
+/**
+ * Whether the input is mapped over this tool: a collection on a `data` input, or a selection
+ * flagged for map over
+ */
+const mapsOver = computed(
+    () => (props.type == "data" && currentVariant.value?.src == SOURCE.COLLECTION) || selectionMapsOver.value,
+);
+
+/**
+ * What each mapped over job receives for a single selected collection, e.g. a "dataset pair",
+ * a `paired_or_unpaired` (`code`) collection or a dataset; unknown for multiple selections
+ */
+const mapOverUnit = computed((): { code?: string; text: string } | null => {
+    const [single, ...rest] = currentValue.value ?? [];
+    if (!mapsOver.value || !single || rest.length > 0) {
+        return null;
+    }
+    const type = single.map_over_type;
+    if (!type || type === "single_datasets") {
+        return { text: localize("dataset") };
+    }
+    const label = COLLECTION_TYPE_TO_LABEL[type];
+    return label ? { text: localize(label.toLowerCase()) } : { code: type, text: localize("collection") };
+});
+
+/**
+ * Show batch info for a batch variant or a selection mapped over this tool
+ */
+const showBatchInfo = computed(
+    () => !!currentVariant.value && (currentVariant.value.batch !== BATCH.DISABLED || selectionMapsOver.value),
+);
 
 /**
  * Converts and populates options for the shown select field
@@ -432,7 +472,6 @@ function createValue(val?: Array<DataOption> | DataOption | null) {
         values = values.filter((value, index, self) => index === self.findIndex((v) => v.id === value.id));
 
         if (variant.value && values.length > 0 && values[0]) {
-            const hasMapOverType = values.find((v) => !!v.map_over_type);
             const isMultiple = values.length > 1;
 
             // Determine source representation (uses only the initial value)
@@ -459,7 +498,7 @@ function createValue(val?: Array<DataOption> | DataOption | null) {
             }
             // Emit new value
             return {
-                batch: batch !== BATCH.DISABLED || !!hasMapOverType,
+                batch: isBatchSelection(batch, values),
                 product: batch === BATCH.ENABLED && !currentLinked.value,
                 values: values.map((entry) => ({
                     id: entry.id,
@@ -1237,9 +1276,9 @@ const noOptionsWarningMessage = computed(() => {
         </div>
 
         <div :class="{ 'd-flex justify-content-between': props.workflowRun }">
-            <div v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
+            <div v-if="showBatchInfo">
                 <BFormCheckbox
-                    v-if="currentVariant.batch === BATCH.ENABLED"
+                    v-if="currentVariant?.batch === BATCH.ENABLED"
                     v-model="currentLinked"
                     class="checkbox no-highlight"
                     switch>
@@ -1256,9 +1295,13 @@ const noOptionsWarningMessage = computed(() => {
                 </BFormCheckbox>
                 <div class="info text-info">
                     <FontAwesomeIcon :icon="faExclamation" />
-                    <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
+                    <span v-if="mapsOver" class="ml-1">
                         The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
-                        tool.
+                        tool<template v-if="mapOverUnit"
+                            >: {{ localize("one job per") }}
+                            <code v-if="mapOverUnit.code">{{ mapOverUnit.code }}</code>
+                            {{ mapOverUnit.text }}</template
+                        >.
                     </span>
                     <span v-else v-localize class="ml-1">
                         This is a batch mode input field. Individual jobs will be triggered for each dataset.

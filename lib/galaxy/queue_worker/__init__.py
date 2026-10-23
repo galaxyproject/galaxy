@@ -370,10 +370,10 @@ def reload_tool_data_tables(app, **kwargs):
 
 
 def rebuild_toolbox_search_index(app, **kwargs):
-    if app.is_webapp and app.database_heartbeat.is_config_watcher:
+    if app.writes_tool_search_index:
         app.ensure_tool_search_index()
     else:
-        log.debug("App is not a webapp, not building a search index")
+        log.debug("App is not the config watcher, not building a search index")
 
 
 def reload_job_rules(app: "MinimalManagerApp", **kwargs):
@@ -401,8 +401,9 @@ def reload_tool_source_cache(app, **kwargs):
     """
     Reload the tool source cache/index.
 
-    This is typically triggered by an external process (like populate_store.py --watch)
-    when tool files change on disk.
+    Sent after a populate, shed install or tool removal writes a store, from
+    this Galaxy or from an external ``populate_store.py --watch``. Read-only
+    SQLite stores are re-read only when their database file changed.
     """
     log.debug("Executing tool source cache reload on '%s'", app.config.server_name)
 

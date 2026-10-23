@@ -193,6 +193,8 @@ class SetMetadataToolAction(ToolAction):
             max_metadata_value_size=app.config.max_metadata_value_size,
             max_discovered_files=app.config.max_discovered_files,
             validate_outputs=validate_outputs,
+            # The dataset already exists and may be shared by other copies; leave its files in place.
+            groom_directory_content=False,
             job=job,
             kwds={"overwrite": overwrite},
         )

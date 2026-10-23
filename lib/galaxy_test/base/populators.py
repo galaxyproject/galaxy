@@ -763,7 +763,7 @@ class BaseDatasetPopulator(BasePopulator):
     ) -> str:
         try:
             return wait_on_state(
-                lambda: self._get(f"histories/{history_id}"), desc="history state", assert_ok=assert_ok, timeout=timeout
+                lambda: self.get_history_raw(history_id), desc="history state", assert_ok=assert_ok, timeout=timeout
             )
         except AssertionError:
             self._summarize_history(history_id)
@@ -1150,6 +1150,13 @@ class BaseDatasetPopulator(BasePopulator):
     def copy_history(self, history_id, name="API Test Copied History", **kwds) -> Response:
         return self._post("histories", data={"name": name, "history_id": history_id, **kwds})
 
+    def copy_hda(self, history_id: str, hda_id: str, **kwds) -> dict[str, Any]:
+        """Copy an existing HDA into history_id, reusing its underlying Dataset."""
+        payload = {"source": "hda", "content": hda_id, **kwds}
+        copy_response = self._post(f"histories/{history_id}/contents/datasets", payload, json=True)
+        api_asserts.assert_status_code_is_ok(copy_response)
+        return copy_response.json()
+
     def fetch_payload(
         self,
         history_id: str,
@@ -1258,13 +1265,22 @@ class BaseDatasetPopulator(BasePopulator):
         payload = self.run_tool_payload(tool_id, inputs, history_id, **kwds)
         return self.tools_post(payload)
 
-    def tool_request_raw(self, tool_id: str, inputs: dict[str, Any], history_id: str, strict: bool = True) -> Response:
+    def tool_request_raw(
+        self,
+        tool_id: str,
+        inputs: dict[str, Any],
+        history_id: str,
+        strict: bool = True,
+        preferred_object_store_id: str | None = None,
+    ) -> Response:
         payload = {
             "tool_id": tool_id,
             "history_id": history_id,
             "inputs": inputs,
             "strict": strict,
         }
+        if preferred_object_store_id is not None:
+            payload["preferred_object_store_id"] = preferred_object_store_id
         response = self._post("jobs", data=payload, json=True)
         return response
 
@@ -1641,6 +1657,19 @@ class BaseDatasetPopulator(BasePopulator):
         assert "id" in role, role
         return role["id"]
 
+    def get_dataset_permissions(self, dataset_id: str) -> dict[str, list[str]]:
+        response = self._get(f"datasets/{dataset_id}")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()["permissions"]
+
+    def assert_history_datasets_permissions(self, history_id: str, expected_count: int, access_private: bool) -> None:
+        role_id = self.user_private_role_id()
+        datasets = self.get_history_contents_of_type(history_id, "datasets")
+        assert len(datasets) == expected_count, [d["name"] for d in datasets]
+        expected = {"manage": [role_id], "access": [role_id] if access_private else []}
+        permissions = {d["name"]: self.get_dataset_permissions(d["id"]) for d in datasets}
+        assert permissions == dict.fromkeys(permissions, expected)
+
     def get_usage(self) -> list[dict[str, Any]]:
         usage_response = self.galaxy_interactor.get("users/current/usage")
         usage_response.raise_for_status()
@@ -1897,6 +1926,14 @@ class BaseDatasetPopulator(BasePopulator):
         update_url = f"histories/{history_id}"
         put_response = self._put(update_url, payload, json=True)
         return put_response
+
+    def get_history_raw(self, history_id: str) -> Response:
+        return self._get(f"histories/{history_id}")
+
+    def get_history(self, history_id: str) -> dict[str, Any]:
+        get_response = self.get_history_raw(history_id)
+        api_asserts.assert_status_code_is_ok(get_response)
+        return get_response.json()
 
     def update_dataset(self, dataset_id: str, update_payload: dict[str, Any]):
         update_url = f"datasets/{dataset_id}"
@@ -2401,7 +2438,7 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
         name: str | None = None,
     ) -> Generator[str, None, None]:
         with self.galaxy_interactor.test_history(
-            require_new=require_new, cleanup_callback=cleanup_callback
+            require_new=require_new, cleanup_callback=cleanup_callback, name=name
         ) as history_id:
             yield history_id
 
@@ -2861,6 +2898,19 @@ class BaseWorkflowPopulator(BasePopulator):
         invocation_response = self.invoke_workflow_raw(workflow_id, request)
         return invocation_response
 
+    def invoke_single_input_workflow_raw(self, history_id: str, src: str, input_id: str) -> Response:
+        """Invoke a step-less workflow whose only input, ``input1``, is the referenced dataset or collection."""
+        input_type = "collection" if src == "hdca" else "data"
+        workflow_id = self.upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  input1: {input_type}
+steps: []
+""")
+        return self.invoke_workflow(
+            workflow_id, history_id=history_id, inputs={"input1": {"src": src, "id": input_id}}, inputs_by="name"
+        )
+
     def invoke_workflow_and_assert_ok(
         self,
         workflow_id: str,
@@ -2909,7 +2959,7 @@ class BaseWorkflowPopulator(BasePopulator):
         api_asserts.assert_status_code_is(response, 200)
         return response
 
-    def download_workflow(
+    def download_workflow_raw(
         self,
         workflow_id: str,
         style: str | None = None,
@@ -2917,7 +2967,7 @@ class BaseWorkflowPopulator(BasePopulator):
         instance: bool | None = None,
         version: int | None = None,
         preserve_external_subworkflow_links: bool | None = None,
-    ) -> dict:
+    ) -> Response:
         params: dict[str, Any] = {}
         if style is not None:
             params["style"] = style
@@ -2929,7 +2979,25 @@ class BaseWorkflowPopulator(BasePopulator):
             params["version"] = version
         if preserve_external_subworkflow_links is not None:
             params["preserve_external_subworkflow_links"] = preserve_external_subworkflow_links
-        response = self._get(f"workflows/{workflow_id}/download", data=params)
+        return self._get(f"workflows/{workflow_id}/download", data=params)
+
+    def download_workflow(
+        self,
+        workflow_id: str,
+        style: str | None = None,
+        history_id: str | None = None,
+        instance: bool | None = None,
+        version: int | None = None,
+        preserve_external_subworkflow_links: bool | None = None,
+    ) -> dict:
+        response = self.download_workflow_raw(
+            workflow_id,
+            style=style,
+            history_id=history_id,
+            instance=instance,
+            version=version,
+            preserve_external_subworkflow_links=preserve_external_subworkflow_links,
+        )
         api_asserts.assert_status_code_is(response, 200)
         if style != "format2":
             return response.json()

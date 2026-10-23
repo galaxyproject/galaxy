@@ -29,7 +29,10 @@ except ImportError:
 import galaxy.datatypes.registry
 import galaxy.model.mapping
 from galaxy.datatypes import sniff
-from galaxy.datatypes.data import validate
+from galaxy.datatypes.data import (
+    Directory,
+    validate,
+)
 from galaxy.exceptions import MessageException
 from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
 from galaxy.job_execution.output_collect import (
@@ -70,6 +73,7 @@ from galaxy.tool_util.output_checker import (
     MaxDiscoveredFilesJobMessage,
     output_discovery_job_message,
     OutputCollectionSecurityJobMessage,
+    runtime_environment_job_messages,
 )
 from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
@@ -129,6 +133,7 @@ def set_meta_with_tool_provided(
     set_meta_kwds,
     datatypes_registry,
     max_metadata_value_size,
+    groom_directory_content=True,
 ):
     # This method is somewhat odd, in that we set the metadata attributes from tool,
     # then call set_meta, then set metadata attributes from tool again.
@@ -150,7 +155,11 @@ def set_meta_with_tool_provided(
     for metadata_name, metadata_value in file_dict.get("metadata", {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
     if not dataset_instance.metadata_deferred:
-        dataset_instance.datatype.set_meta(dataset_instance, **set_meta_kwds)
+        datatype = dataset_instance.datatype
+        if groom_directory_content and isinstance(datatype, Directory):
+            # Settle the directory layout of a new dataset before metadata is read from it.
+            datatype.groom_directory_content(dataset_instance.extra_files_path)
+        datatype.set_meta(dataset_instance, **set_meta_kwds)
     for metadata_name, metadata_value in file_dict.get("metadata", {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
 
@@ -219,7 +228,7 @@ def set_metadata_portable(
         job_working_directory=tool_job_working_directory / "working",
     )
 
-    def set_meta(new_dataset_instance, file_dict):
+    def set_meta(new_dataset_instance, file_dict, groom_directory_content=True):
         if not extended_metadata_collection:
             set_meta_kwds["metadata_tmp_files_dir"] = metadata_tmp_files_dir
         set_meta_with_tool_provided(
@@ -228,6 +237,7 @@ def set_metadata_portable(
             set_meta_kwds,
             datatypes_registry,
             max_metadata_value_size,
+            groom_directory_content=groom_directory_content,
         )
 
     try:
@@ -302,6 +312,11 @@ def set_metadata_portable(
 
         check_output_detected_state, tool_stdout, tool_stderr, job_messages = check_output(
             stdio_regexes, stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code
+        )
+        job_messages.extend(
+            runtime_environment_job_messages(
+                str(tool_job_working_directory), tool_dict.get("required_runtime_environment_variables", [])
+            )
         )
         if check_output_detected_state == DETECTED_JOB_STATE.OK and not tool_provided_metadata.has_failed_outputs():
             final_job_state = Job.states.OK
@@ -450,6 +465,8 @@ def set_metadata_portable(
         filename_results_code = tool_job_working_directory / f"metadata/metadata_results_{output_name}"
         override_metadata = tool_job_working_directory / f"metadata/metadata_override_{output_name}"
         dataset_filename_override = output_dict["filename_override"]
+        # Params written before this key existed are for job outputs, which are groomed.
+        groom_directory_content = output_dict.get("groom_directory_content", True)
         # Same block as below...
         set_meta_kwds = stringify_dictionary_keys(
             json.load(open(filename_kwds))
@@ -546,7 +563,7 @@ def set_metadata_portable(
                     # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
                     # so only run set_meta for fixed outputs
                     if not dataset.dataset.purged:
-                        set_meta(dataset, file_dict)
+                        set_meta(dataset, file_dict, groom_directory_content)
                 # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
                 if meta:
@@ -574,7 +591,7 @@ def set_metadata_portable(
                 if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
                     # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
                     # so only run set_meta for fixed outputs
-                    set_meta(dataset, file_dict)
+                    set_meta(dataset, file_dict, groom_directory_content)
                 dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
 
             with open(filename_results_code, "w+") as tf:

@@ -425,10 +425,9 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             List of PlaywrightElement objects
         """
         selector = self._target_to_playwright_selector(selector_template)
-        locator = self._frame_or_page.locator(selector)
-        # Get all element handles and wrap them
-        count = locator.count()
-        return [PlaywrightElement(locator.nth(i).element_handle(), self) for i in range(count)]
+        # One snapshot, like Selenium: count() then nth(i) waits out the default timeout if the list shrinks.
+        handles = self._frame_or_page.locator(selector).element_handles()
+        return [PlaywrightElement(handle, self) for handle in handles]
 
     def find_element(self, selector_template: HasElementLocator) -> WebElementProtocol:
         """

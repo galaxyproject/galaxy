@@ -163,7 +163,7 @@ const ACTIONS: Gated<PaletteItem>[] = [
             keywords: "editor build new",
             subtitle: "Create a new workflow in the editor",
             title: "Create workflow",
-            to: "/workflows/create",
+            to: "/workflows/edit",
         },
     },
     {

@@ -10,9 +10,15 @@ This test suite covers additional functionality such as:
 
 import secrets
 import string
+from types import SimpleNamespace
 from unittest.mock import (
     Mock,
     patch,
+)
+from urllib.parse import (
+    parse_qs,
+    urlencode,
+    urlsplit,
 )
 
 import pytest
@@ -643,10 +649,15 @@ class TestFixedDelegatedAuth:
 
     def test_without_fixed_delegated_auth_prompts_for_login(self):
         """Test that without fixed_delegated_auth, users are prompted to log in."""
+
+        def url_builder(path, **query):
+            return f"/galaxy{path}?{urlencode(query)}" if query else f"/galaxy{path}"
+
         strategy = MockStrategy(
             {
                 "FIXED_DELEGATED_AUTH": False,
-                setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
+                setting_name("LOGIN_REDIRECT_URL"): "/galaxy/workflows/list",
+                "GALAXY_TRANS": SimpleNamespace(url_builder=url_builder),
                 "provider": "keycloak",
                 "LABEL": "Keycloak",
             }
@@ -675,12 +686,16 @@ class TestFixedDelegatedAuth:
                 is_new=True,
             )
 
-            # Should return redirect URL prompting for login
-            assert result is not None
+            # Should return redirect URL prompting for login, at the app root rather than
+            # appended to where the user was headed
             assert isinstance(result, str)
-            assert "login/start" in result
-            assert "connect_external_provider=keycloak" in result
-            assert "connect_external_email=" in result
+            url = urlsplit(result)
+            assert url.path == "/galaxy/login/start"
+            assert parse_qs(url.query) == {
+                "connect_external_provider": ["keycloak"],
+                "connect_external_email": ["existinguser@example.com"],
+                "connect_external_label": ["Keycloak"],
+            }
 
 
 if __name__ == "__main__":

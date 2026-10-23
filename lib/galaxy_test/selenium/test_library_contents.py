@@ -187,6 +187,6 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions, UsesUploadAct
     def _search_and_select_history(self, row_index=1, label_text="Unnamed history"):
         self.libraries_dataset_import_from_history_search_for(label_text)
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.libraries.folder.import_datasets_from_history_modal_select_list_item_by_index(
+        self.components.libraries.folder.import_datasets_from_history_modal_open_history_by_index(
             row_index=row_index
         ).wait_for_and_click()

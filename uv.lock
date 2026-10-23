@@ -1311,11 +1311,11 @@ wheels = [
 
 [[package]]
 name = "certifi"
-version = "2026.7.22"
+version = "2026.10.19"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a3/c2/24167ea9858356b47a87a50d39908bfdb72ceeefe0041586e704e5376b3a/certifi-2026.7.22.tar.gz", hash = "sha256:741e2c3b351ddf169a738da9f2c048608ff7f2c5cc02f1ebc6b118bb090d5d55", size = 138112, upload-time = "2026-07-22T03:35:12.644Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a6/bd/1436c50cc46699de0230fbaacc1d1de7bfec413176099949e9d5112e88f2/certifi-2026.10.19.tar.gz", hash = "sha256:035c1e85572b141bf1c3a3eff0e33a8eb74917522f2559075ff8d2fea780a1ae", size = 137598, upload-time = "2026-10-20T02:24:16.604Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl", hash = "sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775", size = 136983, upload-time = "2026-07-22T03:35:11.276Z" },
+    { url = "https://files.pythonhosted.org/packages/c4/51/29046e48f693c54e5b7412216d447a1d8362c9653148d98c02cdf65fa733/certifi-2026.10.19-py3-none-any.whl", hash = "sha256:42d35340cc5b9ba78e818ddbff0c5b1c2b779de448a340fd1b989f5fa8670e1b", size = 136464, upload-time = "2026-10-20T02:24:15.072Z" },
 ]
 
 [[package]]
@@ -2627,6 +2627,15 @@ wheels = [
 ]
 
 [[package]]
+name = "execnet"
+version = "2.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/89/780e11f9588d9e7128a3f87788354c7946a9cbb1401ad38a48c4db9a4f07/execnet-2.1.2.tar.gz", hash = "sha256:63d83bfdd9a23e35b9c6a3261412324f964c2ec8dcd8d3c6916ee9373e0befcd", size = 166622, upload-time = "2025-11-12T09:56:37.75Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/84/02fc1827e8cdded4aa65baef11296a9bbe595c474f0d6d758af082d849fd/execnet-2.1.2-py3-none-any.whl", hash = "sha256:67fba928dd5a544b783f6056f449e5e3931a5c378b128bc18501f7ea79e296ec", size = 40708, upload-time = "2025-11-12T09:56:36.333Z" },
+]
+
+[[package]]
 name = "executing"
 version = "2.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3056,7 +3065,7 @@ wheels = [
 
 [[package]]
 name = "galaxy"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/meta" }
 
 [package.optional-dependencies]
@@ -3070,7 +3079,7 @@ provides-extras = ["postgresql"]
 
 [[package]]
 name = "galaxy-app"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/app" }
 dependencies = [
     { name = "beaker" },
@@ -3163,7 +3172,7 @@ requires-dist = [
     { name = "galaxy-util", extras = ["image-util", "jstree"], editable = "packages/util" },
     { name = "galaxy-web-framework", editable = "packages/web_framework" },
     { name = "galaxy-web-stack", editable = "packages/web_stack" },
-    { name = "gxformat2", specifier = ">=0.27.0" },
+    { name = "gxformat2", specifier = ">=0.28.0" },
     { name = "kombu", specifier = ">=5.3" },
     { name = "lagom" },
     { name = "lxml", specifier = "!=4.2.2" },
@@ -3207,7 +3216,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-auth"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/auth" }
 dependencies = [
     { name = "galaxy-data" },
@@ -3229,7 +3238,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-config"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/config" }
 dependencies = [
     { name = "boltons" },
@@ -3259,7 +3268,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-data"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/data" }
 dependencies = [
     { name = "alembic" },
@@ -3358,7 +3367,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-files"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/files" }
 dependencies = [
     { name = "fs" },
@@ -3396,7 +3405,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-job-execution"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/job_execution" }
 dependencies = [
     { name = "galaxy-config" },
@@ -3430,7 +3439,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-job-metrics"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/job_metrics" }
 dependencies = [
     { name = "galaxy-util" },
@@ -3450,7 +3459,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-navigation"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/navigation" }
 dependencies = [
     { name = "galaxy-util" },
@@ -3474,7 +3483,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-objectstore"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/objectstore" }
 dependencies = [
     { name = "galaxy-util", extra = ["config-template"] },
@@ -3546,7 +3555,7 @@ wheels = [
 
 [[package]]
 name = "galaxy-schema"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/schema" }
 dependencies = [
     { name = "galaxy-tool-util-models" },
@@ -3572,7 +3581,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-selenium"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/selenium" }
 dependencies = [
     { name = "axe-selenium-python", version = "2.1.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -3614,7 +3623,7 @@ wheels = [
 
 [[package]]
 name = "galaxy-test-api"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/test_api" }
 dependencies = [
     { name = "galaxy-test-base" },
@@ -3646,7 +3655,7 @@ provides-extras = ["driver", "test"]
 
 [[package]]
 name = "galaxy-test-base"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/test_base" }
 dependencies = [
     { name = "bioblend" },
@@ -3672,7 +3681,7 @@ requires-dist = [
     { name = "cwltest", specifier = ">=2.5.20240906231108" },
     { name = "galaxy-tool-util", editable = "packages/tool_util" },
     { name = "galaxy-util", editable = "packages/util" },
-    { name = "gxformat2", specifier = ">=0.27.0" },
+    { name = "gxformat2", specifier = ">=0.28.0" },
     { name = "jsonschema" },
     { name = "pytest" },
     { name = "pytest", marker = "extra == 'test'" },
@@ -3684,7 +3693,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-test-driver"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/test_driver" }
 dependencies = [
     { name = "galaxy-app" },
@@ -3718,7 +3727,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-test-selenium"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/test_selenium" }
 dependencies = [
     { name = "galaxy-data" },
@@ -3749,7 +3758,7 @@ requires-dist = [
     { name = "galaxy-test-driver", marker = "extra == 'driver'", editable = "packages/test_driver" },
     { name = "galaxy-tool-util", editable = "packages/tool_util" },
     { name = "galaxy-util", editable = "packages/util" },
-    { name = "gxformat2", specifier = ">=0.27.0" },
+    { name = "gxformat2", specifier = ">=0.28.0" },
     { name = "pytest" },
     { name = "pytest", marker = "extra == 'test'" },
     { name = "pyyaml" },
@@ -3760,7 +3769,7 @@ provides-extras = ["driver", "test"]
 
 [[package]]
 name = "galaxy-tool-shed"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/tool_shed" }
 dependencies = [
     { name = "a2wsgi" },
@@ -3834,7 +3843,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-tool-shed-schema"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/tool_shed_schema" }
 dependencies = [
     { name = "galaxy-tool-util-models" },
@@ -3858,7 +3867,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-tool-util"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/tool_util" }
 dependencies = [
     { name = "conda-package-streaming" },
@@ -3941,7 +3950,7 @@ provides-extras = ["cwl", "mulled", "edam", "extended-assertions", "test"]
 
 [[package]]
 name = "galaxy-tool-util-models"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/tool_util_models" }
 dependencies = [
     { name = "pydantic" },
@@ -3967,7 +3976,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-tours"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/tours" }
 dependencies = [
     { name = "galaxy-navigation" },
@@ -3995,7 +4004,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-util"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/util" }
 dependencies = [
     { name = "bleach" },
@@ -4066,7 +4075,7 @@ provides-extras = ["image-util", "jstree", "template", "config-template", "test"
 
 [[package]]
 name = "galaxy-web-apps"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/web_apps" }
 dependencies = [
     { name = "a2wsgi" },
@@ -4129,7 +4138,7 @@ requires-dist = [
     { name = "galaxy-web-framework", editable = "packages/web_framework" },
     { name = "galaxy-web-stack", editable = "packages/web_stack" },
     { name = "gunicorn", specifier = "!=25.1.0" },
-    { name = "gxformat2", specifier = ">=0.27.0" },
+    { name = "gxformat2", specifier = ">=0.28.0" },
     { name = "httpx" },
     { name = "httpx", marker = "extra == 'test'" },
     { name = "mako" },
@@ -4158,7 +4167,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-web-client"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/web_client" }
 
 [package.optional-dependencies]
@@ -4172,7 +4181,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-web-framework"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/web_framework" }
 dependencies = [
     { name = "babel" },
@@ -4212,7 +4221,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-web-stack"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/web_stack" }
 dependencies = [
     { name = "galaxy-data" },
@@ -4391,6 +4400,7 @@ dev = [
     { name = "pytest-playwright" },
     { name = "pytest-postgresql" },
     { name = "pytest-shard" },
+    { name = "pytest-xdist" },
     { name = "python-irodsclient" },
     { name = "responses" },
     { name = "roc-validator" },
@@ -4438,6 +4448,7 @@ test = [
     { name = "pytest-playwright" },
     { name = "pytest-postgresql" },
     { name = "pytest-shard" },
+    { name = "pytest-xdist" },
     { name = "python-irodsclient" },
     { name = "responses" },
     { name = "roc-validator" },
@@ -4509,7 +4520,7 @@ requires-dist = [
     { name = "future", specifier = ">=1.0.0" },
     { name = "gravity", specifier = ">=1.2.3" },
     { name = "gunicorn", specifier = "!=25.1.0" },
-    { name = "gxformat2", specifier = ">=0.27.0" },
+    { name = "gxformat2", specifier = ">=0.28.0" },
     { name = "h5grove", specifier = ">=1.2.1" },
     { name = "h5py", specifier = ">=3.12" },
     { name = "httpx" },
@@ -4619,6 +4630,7 @@ dev = [
     { name = "pytest-playwright" },
     { name = "pytest-postgresql", specifier = "!=3.0.0" },
     { name = "pytest-shard" },
+    { name = "pytest-xdist" },
     { name = "python-irodsclient", specifier = "!=1.1.2" },
     { name = "responses" },
     { name = "roc-validator", specifier = "!=0.7.2" },
@@ -4661,6 +4673,7 @@ test = [
     { name = "pytest-playwright" },
     { name = "pytest-postgresql", specifier = "!=3.0.0" },
     { name = "pytest-shard" },
+    { name = "pytest-xdist" },
     { name = "python-irodsclient", specifier = "!=1.1.2" },
     { name = "responses" },
     { name = "roc-validator", specifier = "!=0.7.2" },
@@ -5178,18 +5191,19 @@ wheels = [
 
 [[package]]
 name = "gxformat2"
-version = "0.27.0"
+version = "0.28.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "requests" },
+    { name = "ruamel-yaml" },
     { name = "schema-salad" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/26/fc/f4bca717e51f26a5249316ed8e46da3b189fa390d9989a7e62129a200767/gxformat2-0.27.0.tar.gz", hash = "sha256:3a3937f8db4f79edb64f3a184d8ce4247b100778a10c1bf7368e01dc39715587", size = 265193, upload-time = "2026-05-27T17:18:12.975Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/db/e3/62227c80ffdae958ca3f3a15341e238d6c45a8475bcf6220141001f885c8/gxformat2-0.28.0.tar.gz", hash = "sha256:4a9b0121430aabcc4ce2e726d629ca351f733a3067e15c16b9985847ee0093e3", size = 384581, upload-time = "2026-10-17T09:54:51.788Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e3/78/47a205b5921bd86ef8d174fcda3daf23d65ad2887b38771935a064acd348/gxformat2-0.27.0-py3-none-any.whl", hash = "sha256:2e8a90b649ddecc7d1662b2ab75b942b895bae9536fec1f8b6f71e27fe4fe4c6", size = 288349, upload-time = "2026-05-27T17:18:11.226Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/2e/1185352275e43a8e260125d6a798aad2fde50ffb0f0b72040361e286d7c7/gxformat2-0.28.0-py3-none-any.whl", hash = "sha256:a1312bb21146b6d06ff0f3c6e6b35167d83a29a4524047e080cb72559d6df89a", size = 426074, upload-time = "2026-10-17T09:54:49.932Z" },
 ]
 
 [[package]]
@@ -9791,6 +9805,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c6/ca/3efa6f3b84dab83220db45997e785be726684c2c2c4267bffb7d80101c7f/pytest-shard-0.1.2.tar.gz", hash = "sha256:b86a967fbfd1c8e50295095ccda031b7e890862ee06531d5142844f4c1d1cd67", size = 3579, upload-time = "2020-12-11T19:52:55.083Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/65/7a/dbeb4c54e9fc3b59622f410091365f354a69cda1af10c3b83ac0ca6e6f4f/pytest_shard-0.1.2-py3-none-any.whl", hash = "sha256:407a1df385cebe1feb9b4d2e7eeee8b044f8a24f0919421233159a17c59be2b9", size = 4608, upload-time = "2020-12-11T19:52:54.226Z" },
+]
+
+[[package]]
+name = "pytest-xdist"
+version = "3.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "execnet" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/78/b4/439b179d1ff526791eb921115fca8e44e596a13efeda518b9d845a619450/pytest_xdist-3.8.0.tar.gz", hash = "sha256:7e578125ec9bc6050861aa93f2d59f1d8d085595d6551c2c90b6f4fad8d3a9f1", size = 88069, upload-time = "2025-07-01T13:30:59.346Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ca/31/d4e37e9e550c2b92a9cbc2e4d0b7420a27224968580b5a447f420847c975/pytest_xdist-3.8.0-py3-none-any.whl", hash = "sha256:202ca578cfeb7370784a8c33d6d05bc6e13b4f25b5053c30a152269fd10f0b88", size = 46396, upload-time = "2025-07-01T13:30:56.632Z" },
 ]
 
 [[package]]

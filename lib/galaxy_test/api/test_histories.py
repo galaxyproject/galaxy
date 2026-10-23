@@ -1170,7 +1170,8 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
     @requires_new_user
     def test_sharing_private_history_makes_datasets_public(self):
         history_id = self.dataset_populator.new_history()
-        hda = self.dataset_populator.new_dataset(history_id)
+        # Let the upload job finish first; it still updates the dataset while it runs.
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
         hda_id = hda["id"]
 
         self.dataset_populator.make_private(history_id, hda_id)
@@ -1309,8 +1310,7 @@ class TestArchivingHistoriesWithoutExportRecord(ApiTestCase, BaseHistories):
             self._assert_status_code_is(restore_response, 403)
 
     def test_archived_histories_index(self):
-        with self._different_user("archived_histories_index_user@bx.psu.edu"):
-            history_id = self.dataset_populator.new_history()
+        with self._different_user_history("archived_histories_index_user@bx.psu.edu") as history_id:
 
             archive_response = self.dataset_populator.archive_history(history_id)
             self._assert_status_code_is(archive_response, 200)

@@ -17,10 +17,11 @@ from galaxy.tools.expressions import (
     do_eval,
     evaluate,
     ExpressionTemplateError,
-    js_engine,
     validate_expression_template,
 )
-from galaxy.tools.expressions.js_engine import (
+from galaxy.util.wait import wait_on
+from galaxy_ext.expressions import js_engine
+from galaxy_ext.expressions.js_engine import (
     _bubblewrap_command,
     evaluate_program,
     resolve_isolation_command,
@@ -318,11 +319,16 @@ def test_timeout_kills_worker_under_waiting_wrapper(tmp_path, short_timeout_grac
             sandbox_command=[sys.executable, str(wrapper), str(pid_file)],
         )
     pid = int(pid_file.read_text())
-    try:
-        child = psutil.Process(pid)
-        assert child.status() == psutil.STATUS_ZOMBIE
-    except psutil.NoSuchProcess:
-        pass
+
+    def worker_exited():
+        try:
+            # The orphaned worker is reaped asynchronously by init or a subreaper.
+            return psutil.Process(pid).status() in (psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD) or None
+        except psutil.NoSuchProcess:
+            return True
+
+    # SIGKILL takes effect asynchronously; on a busy machine the worker can still run for a moment.
+    wait_on(worker_exited, "killed expression worker to exit", timeout=10, delta=0.05)
 
 
 @_needs_env

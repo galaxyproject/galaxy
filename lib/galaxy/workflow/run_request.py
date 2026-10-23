@@ -4,6 +4,7 @@ import uuid
 from typing import (
     Any,
     TYPE_CHECKING,
+    TypeVar,
 )
 
 from pydantic import ValidationError
@@ -27,9 +28,14 @@ from galaxy.model import (
     WorkflowRequestStepState,
 )
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.security.validate_user_input import validate_preferred_object_store_id
 from galaxy.tool_util_models.parameters import (
     DataOrCollectionRequestAdapter,
     DataRequestCollectionUri,
+    DataRequestHda,
+    DataRequestHdca,
+    DataRequestLd,
+    DataRequestLdda,
     DataRequestUri,
     FileRequestUri,
 )
@@ -52,6 +58,8 @@ if TYPE_CHECKING:
 INPUT_STEP_TYPES = ["data_input", "data_collection_input", "parameter_input"]
 
 log = logging.getLogger(__name__)
+
+InputT = TypeVar("InputT")
 
 
 class WorkflowRunConfig:
@@ -313,6 +321,20 @@ def _get_target_history(
     return target_history
 
 
+def _get_input_or_not_found(
+    trans: "ProvidesHistoryContext",
+    model_class: type[InputT],
+    data_request: DataRequestHda | DataRequestLdda | DataRequestLd | DataRequestHdca,
+    step: "WorkflowStep",
+) -> InputT:
+    item: InputT | None = trans.sa_session.get(model_class, trans.security.decode_id(data_request.id))
+    if item is None:
+        raise exceptions.ObjectNotFound(
+            f"{step.label or step.order_index + 1}: workflow input '{data_request.id}' ({data_request.src}) not found"
+        )
+    return item
+
+
 def build_workflow_run_configs(
     trans: "ProvidesHistoryContext", workflow: "Workflow", payload: dict[str, Any]
 ) -> list[WorkflowRunConfig]:
@@ -332,6 +354,31 @@ def build_workflow_run_configs(
         )
     if "inputs" in payload and "ds_map" in payload:
         raise exceptions.RequestParameterInvalidException("Cannot specify both legacy ds_map and input attributes.")
+
+    if payload.get("effective_outputs"):
+        raise exceptions.RequestParameterInvalidException(
+            "Cannot declare effective outputs on invocation in this fashion."
+        )
+
+    preferred_object_store_id = payload.get("preferred_object_store_id")
+    preferred_outputs_object_store_id = payload.get("preferred_outputs_object_store_id")
+    preferred_intermediate_object_store_id = payload.get("preferred_intermediate_object_store_id")
+    split_object_store_config = bool(
+        preferred_outputs_object_store_id is not None or preferred_intermediate_object_store_id is not None
+    )
+    if split_object_store_config and preferred_object_store_id:
+        raise exceptions.RequestParameterInvalidException(
+            "May specify either 'preferred_object_store_id' or one/both of 'preferred_outputs_object_store_id' and 'preferred_intermediate_object_store_id' but not both"
+        )
+    for object_store_id in (
+        preferred_object_store_id,
+        preferred_outputs_object_store_id,
+        preferred_intermediate_object_store_id,
+    ):
+        if object_store_id:
+            validation_error = validate_preferred_object_store_id(trans.user, trans.app.object_store, object_store_id)
+            if validation_error:
+                raise exceptions.RequestParameterInvalidException(validation_error)
 
     add_to_history = "no_add_to_history" not in payload
     legacy = payload.get("legacy", False)
@@ -416,23 +463,21 @@ def build_workflow_run_configs(
                 except ValidationError as e:
                     raise validation_error_to_message_exception(e)
                 if data_request.src == "ldda":
-                    ldda = trans.sa_session.get(
-                        LibraryDatasetDatasetAssociation, trans.security.decode_id(data_request.id)
-                    )
-                    assert ldda
+                    ldda = _get_input_or_not_found(trans, LibraryDatasetDatasetAssociation, data_request, step)
+                    assert ldda.dataset
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), ldda.dataset
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif data_request.src == "hda":
                     # Get dataset handle, add to dict and history if necessary
-                    content = trans.sa_session.get(HistoryDatasetAssociation, trans.security.decode_id(data_request.id))
+                    content = _get_input_or_not_found(trans, HistoryDatasetAssociation, data_request, step)
+                    assert content.dataset
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), content.dataset
                     )
                 elif data_request.src == "ld":
-                    library_dataset = trans.sa_session.get(LibraryDataset, trans.security.decode_id(data_request.id))
-                    assert library_dataset
+                    library_dataset = _get_input_or_not_found(trans, LibraryDataset, data_request, step)
                     ldda = library_dataset.library_dataset_dataset_association
                     assert ldda
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
@@ -440,9 +485,8 @@ def build_workflow_run_configs(
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif data_request.src == "hdca":
-                    content = app.dataset_collection_manager.get_dataset_collection_instance(
-                        trans, "history", data_request.id
-                    )
+                    hdca = _get_input_or_not_found(trans, HistoryDatasetCollectionAssociation, data_request, step)
+                    content = app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca.id)
                 elif isinstance(data_request, DataRequestCollectionUri):
                     hdca_input = dereference_input_to_hdca(trans, data_request, history)
                     added_to_history = True
@@ -513,20 +557,6 @@ def build_workflow_run_configs(
                                 f"Invalid value for parameter '{name}' found."
                             )
         history.add_pending_items()
-        preferred_object_store_id = payload.get("preferred_object_store_id")
-        preferred_outputs_object_store_id = payload.get("preferred_outputs_object_store_id")
-        preferred_intermediate_object_store_id = payload.get("preferred_intermediate_object_store_id")
-        if payload.get("effective_outputs"):
-            raise exceptions.RequestParameterInvalidException(
-                "Cannot declare effective outputs on invocation in this fashion."
-            )
-        split_object_store_config = bool(
-            preferred_outputs_object_store_id is not None or preferred_intermediate_object_store_id is not None
-        )
-        if split_object_store_config and preferred_object_store_id:
-            raise exceptions.RequestParameterInvalidException(
-                "May specified either 'preferred_object_store_id' or one/both of 'preferred_outputs_object_store_id' and 'preferred_intermediate_object_store_id' but not both"
-            )
         run_configs.append(
             WorkflowRunConfig(
                 target_history=history,

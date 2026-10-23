@@ -5,13 +5,17 @@ import logging
 import os
 import re
 import shutil
-from collections.abc import Collection
+import threading
+from collections.abc import (
+    Collection,
+    Iterator,
+)
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 from whoosh import (
     analysis,
     index,
-    writing,
 )
 from whoosh.fields import (
     ID,
@@ -24,11 +28,13 @@ from whoosh.qparser import (
     MultifieldParser,
     OrGroup,
 )
+from whoosh.reading import IndexReader
 from whoosh.scoring import (
     BM25F,
     Frequency,
     MultiWeighting,
 )
+from whoosh.searching import Searcher
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
@@ -48,8 +54,23 @@ from galaxy.util.tool_version import (
 
 log = logging.getLogger(__name__)
 
-# Matching sidecar signatures let ``build`` skip an unchanged corpus.
-_CORPUS_SIGNATURE_FILE = "corpus.md5"
+# Stored per-document fingerprint; a build rewrites only the documents whose
+# fingerprint differs from the corpus it is given.
+_DOC_HASH_FIELD = "doc_hash"
+
+# Galaxy processes share ``tool_search_index_dir``. The elected config watcher
+# writes it, but another process can still hold the write lock: a previous
+# watcher, or at boot a web worker that elected itself before its peers
+# registered and stays watcher until its next heartbeat. A rebuild that cannot
+# get the lock in time gives up rather than block the control task, and the
+# caller leaves the index stale.
+INDEX_WRITE_LOCK_TIMEOUT = 60.0
+
+# Whoosh's estimate of its in-memory posting pool before spilling to disk. The
+# real pool is several times larger, and pymalloc keeps the arenas it filled,
+# so this bounds the memory a full build leaves the building process with.
+# Building a 9000-tool corpus takes as long at 32 as at 256.
+INDEX_WRITER_LIMITMB = 32
 
 # Tool help can contain embedded tables and tutorials large enough to dominate
 # both the persisted metadata index and Whoosh. Eager and cached search must
@@ -235,6 +256,13 @@ def entry_to_search_document(entry: ToolIndexEntry, *, include_help: bool = Fals
     )
 
 
+def search_weighting(tuning: ToolSearchTuning) -> MultiWeighting:
+    return MultiWeighting(
+        Frequency(),
+        help=BM25F(K1=tuning.help_bm25f_k1),
+    )
+
+
 def search_whoosh_index(
     ix: index.FileIndex,
     query: str,
@@ -244,6 +272,15 @@ def search_whoosh_index(
     """Search an eager or cached index with one parser and scoring policy."""
     if not query or not query.strip():
         return []
+    with ix.searcher(weighting=search_weighting(tuning)) as searcher:
+        return search_whoosh_searcher(searcher, query, limit=limit)
+
+
+def search_whoosh_searcher(searcher: Searcher, query: str, limit: int | None = None) -> list[tuple[str, float]]:
+    """Search with a searcher opened with :func:`search_weighting`."""
+    if not query or not query.strip():
+        return []
+    schema = searcher.schema
     search_fields = [
         "id",
         "id_exact",
@@ -259,21 +296,45 @@ def search_whoosh_index(
         "labels",
         "tool_tags",
     ]
-    if "help" in ix.schema.names():
+    if "help" in schema.names():
         search_fields.append("help")
-    parser = MultifieldParser(search_fields, schema=ix.schema, group=OrGroup)
+    parser = MultifieldParser(search_fields, schema=schema, group=OrGroup)
     parsed = parser.parse(query)
-    weighting = MultiWeighting(
-        Frequency(),
-        help=BM25F(K1=tuning.help_bm25f_k1),
-    )
-    with ix.searcher(weighting=weighting) as searcher:
-        hits = searcher.search(parsed, limit=None, sortedby="", terms=True)
-        scored = [(hit["id"], hit.score) for hit in hits]
+    hits = searcher.search(parsed, limit=None, sortedby="", terms=True)
+    scored = [(hit["id"], hit.score) for hit in hits]
     # Whoosh does not define a stable tie order. Sharing an explicit secondary
     # key makes eager and cached result ordering deterministic.
     scored.sort(key=lambda hit: (-hit[1], hit[0]))
     return scored if limit is None else scored[:limit]
+
+
+# The file names Whoosh gives each commit's TOC and each segment's files in an
+# index opened with the default name.
+_TOC_FILENAME = index.TOC._pattern(index._DEF_INDEX_NAME)
+_SEGMENT_FILENAME = index.TOC._segment_pattern(index._DEF_INDEX_NAME)
+
+
+def _latest_generation(filenames: list[str]) -> int:
+    return max((int(match.group(1)) for name in filenames if (match := _TOC_FILENAME.match(name))), default=-1)
+
+
+def _reads_latest_commit(searcher: Searcher, filenames: list[str]) -> bool:
+    """Whether ``searcher`` reads the latest commit of the index holding ``filenames``.
+
+    Rebuilding an index for a new schema restarts its generations at 0, so the
+    rebuilt index can reach the generation of the one it replaced. Its segments
+    have new ids, though, and the replaced segments' files are gone.
+    """
+    reader = searcher.reader()
+    if reader.generation() != _latest_generation(filenames):
+        return False
+    segment_ids = {match.group(1) for name in filenames if (match := _SEGMENT_FILENAME.match(name))}
+    segments = (leaf.segment() for leaf, _docbase in reader.leaf_readers())
+    return all(segment.segment_id() in segment_ids for segment in segments if segment is not None)
+
+
+def _stored_doc_hashes(reader: IndexReader) -> dict[str, str | None]:
+    return {fields["id"]: fields.get(_DOC_HASH_FIELD) for fields in reader.all_stored_fields() if fields}
 
 
 class ToolWhooshIndex:
@@ -288,12 +349,24 @@ class ToolWhooshIndex:
             tuning,
             help_boost=tuning.help_boost if tuning.index_tool_help else None,
         )
+        self._schema_without_doc_hash = self.schema.copy()
+        self.schema.add(_DOC_HASH_FIELD, ID(stored=True))
+        # Opening an index and its segment readers costs as much as a search,
+        # so searchers are kept until the index has a newer commit. A searcher
+        # serves one thread at a time.
+        self._idle_searchers: list[Searcher] = []
+        self._idle_searchers_lock = threading.Lock()
+        self._closed = False
 
     def _open(self) -> index.FileIndex:
         os.makedirs(self.index_dir, exist_ok=True)
         if index.exists_in(self.index_dir):
             ix = index.open_dir(self.index_dir)
-            if ix.schema == self.schema:
+            # An index written before documents carried their hash gains the
+            # field in place (see ``build``), so the upgrade rewrites documents
+            # in an ordinary commit rather than deleting a directory other
+            # processes may be searching.
+            if ix.schema == self.schema or ix.schema == self._schema_without_doc_hash:
                 return ix
             # Schema drift — rebuild from scratch so old field layouts don't
             # poison ranking.
@@ -303,16 +376,13 @@ class ToolWhooshIndex:
             os.makedirs(self.index_dir, exist_ok=True)
         return index.create_in(self.index_dir, schema=self.schema)
 
-    def _corpus_signature(self, docs: list[SearchDocument]) -> str:
-        """Fingerprint document content, schema, and tuning."""
-        return md5_hash_str(
-            repr(self.tuning)
-            + json.dumps(sorted(self.schema.names()))
-            + json.dumps(sorted(docs, key=lambda d: d["id"]), sort_keys=True)
-        )
-
     def build(self, tool_index: ToolIndex, tool_ids: Collection[str] | None = None) -> int:
-        """Rebuild one panel-view corpus, or all entries when unscoped."""
+        """Bring one panel-view corpus, or all entries when unscoped, up to date.
+
+        Returns the number of documents written. Raises ``LockError`` when
+        another writer holds the index for longer than
+        ``INDEX_WRITE_LOCK_TIMEOUT``; nothing is written then.
+        """
         docs = []
         entries = (
             tool_index.entries.values()
@@ -326,28 +396,35 @@ class ToolWhooshIndex:
             if doc is None:
                 continue
             docs.append(doc)
+        doc_hashes = {str(doc["id"]): md5_hash_str(json.dumps(doc, sort_keys=True)) for doc in docs}
 
-        # Avoid re-tokenising an unchanged corpus.
-        signature = self._corpus_signature(docs)
-        signature_path = os.path.join(self.index_dir, _CORPUS_SIGNATURE_FILE)
-        if os.path.isdir(self.index_dir) and index.exists_in(self.index_dir):
-            try:
-                with open(signature_path) as f:
-                    if f.read().strip() == signature:
-                        log.info("Whoosh index at %s is up to date; skipping rebuild", self.index_dir)
-                        return 0
-            except OSError:
-                pass
-
-        # Replace the complete corpus atomically.
+        # Tokenising is the expensive part of a build, and a shed install
+        # changes a handful of documents in a corpus of thousands, so compare
+        # against the hashes stored with the indexed documents and rewrite only
+        # the differences. A previous config watcher may have written this
+        # directory too, so the committed documents are the one record of what
+        # it holds.
         ix = self._open()
-        writer = ix.writer(limitmb=256)
-        for doc in docs:
-            writer.add_document(**doc)
-        writer.commit(mergetype=writing.CLEAR)
-        with open(signature_path, "w") as f:
-            f.write(signature)
-        return len(docs)
+        with ix.reader() as reader:
+            if _stored_doc_hashes(reader) == doc_hashes:
+                log.info("Whoosh index at %s is up to date; skipping rebuild", self.index_dir)
+                return 0
+        written = 0
+        with ix.writer(limitmb=INDEX_WRITER_LIMITMB, timeout=INDEX_WRITE_LOCK_TIMEOUT) as writer:
+            if _DOC_HASH_FIELD not in writer.schema:
+                writer.add_field(_DOC_HASH_FIELD, ID(stored=True))
+            # Another process may have committed between the check above and
+            # taking the lock.
+            with writer.reader() as reader:
+                indexed = _stored_doc_hashes(reader)
+            for tool_id in indexed.keys() - doc_hashes.keys():
+                writer.delete_by_term("id", tool_id)
+            for doc in docs:
+                doc_hash = doc_hashes[str(doc["id"])]
+                if indexed.get(str(doc["id"])) != doc_hash:
+                    writer.update_document(**doc, **{_DOC_HASH_FIELD: doc_hash})
+                    written += 1
+        return written
 
     def search(self, query: str, limit: int | None = None) -> list[str]:
         """Return tool ids ranked for ``query`` (most-relevant first).
@@ -363,7 +440,54 @@ class ToolWhooshIndex:
         """Like :meth:`search`, but pair each tool id with its score."""
         if not query or not query.strip():
             return []
-        if not (os.path.isdir(self.index_dir) and index.exists_in(self.index_dir)):
-            return []
-        ix = index.open_dir(self.index_dir)
-        return search_whoosh_index(ix, query, self.tuning, limit=limit)
+        with self._searcher() as searcher:
+            if searcher is None:
+                return []
+            return search_whoosh_searcher(searcher, query, limit=limit)
+
+    @contextmanager
+    def _searcher(self) -> Iterator[Searcher | None]:
+        try:
+            filenames = os.listdir(self.index_dir)
+        except FileNotFoundError:
+            filenames = []
+        with self._idle_searchers_lock:
+            searcher = self._idle_searchers.pop() if self._idle_searchers else None
+        if searcher is not None and not _reads_latest_commit(searcher, filenames):
+            # The index has a newer commit, so the other idle searchers are
+            # likely stale too and hold files the commit may have deleted.
+            searcher.close()
+            searcher = None
+            with self._idle_searchers_lock:
+                idle, self._idle_searchers = self._idle_searchers, []
+            current = []
+            for idle_searcher in idle:
+                if _reads_latest_commit(idle_searcher, filenames):
+                    current.append(idle_searcher)
+                else:
+                    idle_searcher.close()
+            with self._idle_searchers_lock:
+                self._idle_searchers.extend(current)
+        if searcher is None:
+            if _latest_generation(filenames) < 0:
+                yield None
+                return
+            searcher = index.open_dir(self.index_dir).searcher(weighting=search_weighting(self.tuning))
+        try:
+            yield searcher
+        except BaseException:
+            searcher.close()
+            raise
+        with self._idle_searchers_lock:
+            if not self._closed:
+                self._idle_searchers.append(searcher)
+                return
+        searcher.close()
+
+    def close(self) -> None:
+        """Close the idle searchers, and searchers in use once they are returned."""
+        with self._idle_searchers_lock:
+            self._closed = True
+            idle, self._idle_searchers = self._idle_searchers, []
+        for searcher in idle:
+            searcher.close()

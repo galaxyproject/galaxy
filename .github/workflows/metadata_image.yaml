@@ -2,6 +2,7 @@ name: Metadata runtime image
 on:
   pull_request:
     paths:
+      - 'lib/galaxy/**'
       - 'packages/**'
       - '.github/workflows/metadata_image.yaml'
   push:

@@ -291,6 +291,11 @@ RepositoryIndexToolIdsQueryParam: list[str] | None = Query(
 OptionalRepositoryOwnerParam: str | None = Query(None, title="Owner")
 OptionalRepositoryNameParam: str | None = Query(None, title="Name")
 RequiredRepositoryChangesetRevisionParam: str = Query(..., title="Changeset Revision")
+OptionalChangesetRevisionQueryParam: str | None = Query(
+    None,
+    title="Changeset Revision",
+    description="Serve the file as of this repository revision instead of the current repository files.",
+)
 OptionalRepositoryIdParam: str | None = Query(None, title="TSR ID")
 OptionalHexlifyParam: bool | None = Query(True, title="Hexlify response")
 
