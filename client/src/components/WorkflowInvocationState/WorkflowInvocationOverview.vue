@@ -17,6 +17,8 @@ interface Props {
     invocation: WorkflowInvocationElementView;
     stepsJobsSummary?: StepJobSummary[];
     isFullPage?: boolean;
+    /** Fit the graph and step details to the page height instead of scrolling */
+    fitToPage?: boolean;
     isSubworkflow?: boolean;
     invocationMessages?: InvocationMessage[];
 }
@@ -51,7 +53,7 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
 </script>
 
 <template>
-    <div :class="props.isFullPage ? 'full-page' : 'mb-3'">
+    <div :class="props.fitToPage ? 'fit-to-page' : 'mb-3'">
         <SubworkflowAlert v-if="isSubworkflow" :invocation-id="props.invocation.id" :state="props.invocation.state" />
         <div v-if="props.invocationMessages?.length" class="d-flex align-items-center">
             <WorkflowInvocationError
@@ -79,7 +81,7 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
                 :invocation="invocation"
                 :steps-jobs-summary="props.stepsJobsSummary"
                 :workflow="workflow"
-                :is-full-page="isFullPage"
+                :fit-to-page="props.fitToPage"
                 :show-minimap="isFullPage" />
         </div>
         <GAlert v-else-if="!workflow" variant="info" show> No workflow found for this invocation. </GAlert>
@@ -89,7 +91,7 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
 <style scoped lang="scss">
 @import "@/style/scss/mixins";
 
-.full-page {
+.fit-to-page {
     @include fill-column;
 
     .invocation-graph-container {
