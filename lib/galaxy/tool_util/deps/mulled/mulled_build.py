@@ -320,6 +320,7 @@ def mull_targets(
     repository_template: str = DEFAULT_REPOSITORY_TEMPLATE,
     dry_run: bool = False,
     conda_version: str | None = None,
+    conda_override_cuda: str | None = None,
     mamba_version: str | None = None,
     use_mamba: bool = False,
     verbose: bool = False,
@@ -437,9 +438,21 @@ def mull_targets(
             # For https://github.com/mamba-org/mamba/pull/3919
             specs.append("mamba>=2.2.0")
     involucro_args.extend(["-set", f"CONDA_BIN={conda_bin}"])
+    preinstall_commands = []
+    if conda_override_cuda:
+        # invfile.lua prepends PREINSTALL to `conda create` in the same
+        # /bin/sh -c invocation, so exporting CONDA_OVERRIDE_CUDA here makes the
+        # solver treat the __cuda virtual package as available and select
+        # cuda-enabled package builds (e.g. pytorch=*=cuda*). A dedicated
+        # involucro variable cannot be used for this: invfile.lua may only
+        # reference the fixed set of VAR.* keys involucro knows - reading an
+        # unknown key corrupts the subsequent wrap step.
+        preinstall_commands.append(f"export CONDA_OVERRIDE_CUDA='{conda_override_cuda}'")
     if specs:
         conda_install = f"""conda install {verbose_opt} --yes {" ".join(f"'{spec}'" for spec in specs)}"""
-        involucro_args.extend(["-set", f"PREINSTALL={conda_install}"])
+        preinstall_commands.append(conda_install)
+    if preinstall_commands:
+        involucro_args.extend(["-set", f"PREINSTALL={' && '.join(preinstall_commands)}"])
 
     if test_files:
         test_bind = []
@@ -614,6 +627,16 @@ def add_build_arguments(parser):
         help="Change to specified version of Conda before installing packages.",
     )
     parser.add_argument(
+        "--conda-override-cuda",
+        dest="conda_override_cuda",
+        default=None,
+        metavar="VERSION",
+        help="Pretend CUDA is available at the given version while solving the environment "
+        "(exports CONDA_OVERRIDE_CUDA in the build container), so cuda-enabled package "
+        "variants are selected. A high sentinel like '99' lets the solver pick the best "
+        "available CUDA build.",
+    )
+    parser.add_argument(
         "--mamba-version",
         dest="mamba_version",
         default=None,
@@ -688,6 +711,8 @@ def args_to_mull_targets_kwds(args):
         kwds["repository_template"] = args.repository_template
     if hasattr(args, "conda_version"):
         kwds["conda_version"] = args.conda_version
+    if hasattr(args, "conda_override_cuda"):
+        kwds["conda_override_cuda"] = args.conda_override_cuda
     if hasattr(args, "mamba_version"):
         kwds["mamba_version"] = args.mamba_version
     if hasattr(args, "use_mamba"):
