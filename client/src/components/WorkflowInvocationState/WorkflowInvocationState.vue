@@ -312,6 +312,7 @@ async function onCancel() {
     <div
         v-if="invocation"
         class="d-flex flex-column w-100 overflow-x-hidden"
+        :class="{ 'full-page': props.isFullPage }"
         data-description="workflow invocation state">
         <WorkflowNavigationTitle
             v-if="props.isFullPage"
@@ -469,7 +470,7 @@ async function onCancel() {
         </BNav>
 
         <div class="mt-1 d-flex flex-column overflow-auto tab-content-container">
-            <div v-if="onOverviewTab">
+            <div v-if="onOverviewTab" class="overview-tab-content">
                 <WorkflowInvocationOverview
                     class="invocation-overview"
                     :invocation="invocation"
@@ -570,9 +571,21 @@ async function onCancel() {
 </style>
 
 <style scoped lang="scss">
+@import "@/style/scss/mixins";
+
+.full-page {
+    height: 100%;
+    min-height: 400px;
+}
+
 .tab-content-container {
     flex: 1;
     min-height: 0;
+}
+
+// Overview fills the tab area; the graph and step details size themselves within it.
+.full-page .overview-tab-content {
+    @include fill-column;
 }
 
 .steps-tab-content {

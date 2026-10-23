@@ -32,7 +32,7 @@ const isPolling = computed(() =>
 </script>
 
 <template>
-    <div class="d-flex justify-content-between">
+    <div class="d-flex justify-content-between align-items-center w-100">
         <div>
             <span :id="`step-icon-${props.workflowStep.id}`">
                 <WorkflowStepIcon class="portlet-title-icon" :step-type="workflowStep.type" />
@@ -49,7 +49,7 @@ const isPolling = computed(() =>
             </span>
         </div>
 
-        <span v-if="props.graphStep">
+        <span v-if="props.graphStep" class="text-nowrap">
             <BBadge v-if="isPolling" v-g-tooltip.hover class="mr-1" title="Polling for updates" variant="link">
                 <FontAwesomeIcon :icon="faSpinner" spin />
             </BBadge>
