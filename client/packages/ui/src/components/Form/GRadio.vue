@@ -139,20 +139,34 @@ function onChange(event: Event) {
         cursor: not-allowed;
         opacity: 0.6;
     }
+
+    // Centered on the line, the 1rem radio fits the line height instead of growing each row by 3px
+    &:not(.g-radio-button) {
+        vertical-align: middle;
+    }
 }
 
 .g-radio-input {
-    margin: 0 3px 0 0;
+    // 1rem instead of the 13px browser default, the size of the other form controls
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
     accent-color: var(--color-blue-600, #25537b);
     cursor: pointer;
 
-    .g-disabled & {
+    &:not(:last-child) {
+        margin-right: 3px;
+    }
+
+    .g-radio.g-disabled > & {
         cursor: not-allowed;
     }
 
+    // Page-background gap keeps the ring clear of the radio; outline survives forced colors.
     &:focus-visible {
-        outline: 2px solid var(--color-blue-500, #197cd2);
+        outline: 2px solid var(--color-blue-600, #25537b);
         outline-offset: 2px;
+        box-shadow: 0 0 0 2px var(--background-color, #ffffff);
     }
 }
 
@@ -160,19 +174,19 @@ function onChange(event: Event) {
     margin-left: var(--spacing-2, 0.5rem);
 }
 
-.g-small {
+.g-radio.g-small {
     font-size: var(--font-size-small, 0.75rem);
 
-    .g-radio-input {
+    &:not(.g-radio-button) > .g-radio-input {
         width: 0.75rem;
         height: 0.75rem;
     }
 }
 
-.g-large {
+.g-radio.g-large {
     font-size: var(--font-size-large, 1rem);
 
-    .g-radio-input {
+    &:not(.g-radio-button) > .g-radio-input {
         width: 1.25rem;
         height: 1.25rem;
     }
@@ -195,7 +209,7 @@ function onChange(event: Event) {
         font-size: var(--font-size-large, 1rem);
     }
 
-    .g-radio-input {
+    > .g-radio-input {
         position: absolute;
         width: 1px;
         height: 1px;
@@ -204,16 +218,21 @@ function onChange(event: Event) {
         white-space: nowrap;
     }
 
-    .g-radio-label {
+    > .g-radio-label {
         margin-left: 0;
     }
 
-    &:has(.g-radio-input:focus-visible) {
+    // Joined buttons overlap by 1px; lift the checked one so its darker border is not covered by the next button
+    &.g-checked {
         z-index: 1;
-        box-shadow: 0 0 0 0.2rem var(--color-blue-400);
-        // forced-colors mode drops box-shadow; the transparent outline then renders in the system color
-        outline: 2px solid transparent;
+    }
+
+    // Page-background gap keeps the ring clear of the fill and of neighbouring buttons; outline survives forced colors.
+    &:has(.g-radio-input:focus-visible) {
+        z-index: 2;
+        outline: 2px solid var(--color-blue-600, #25537b);
         outline-offset: 2px;
+        box-shadow: 0 0 0 2px var(--background-color, #ffffff);
     }
 
     &.g-grey {
@@ -225,9 +244,14 @@ function onChange(event: Event) {
             background-color: var(--color-grey-300);
         }
 
+        // Light fill keeps the dark text readable; the darker border sets it apart from a hovered unchecked button
         &.g-checked {
-            background-color: var(--color-grey-400);
+            background-color: var(--color-grey-250);
             border-color: var(--color-grey-600);
+
+            &:hover:not(.g-outline) {
+                background-color: var(--color-grey-300);
+            }
         }
 
         &.g-outline {

@@ -874,7 +874,7 @@ tool_form:
     creator: '.tool-footer .creative-work-creator'
     grant: '.tool-footer [itemprop="funding"]'
     storage_options: '.tool-storage'
-    drilldown_select_all: 'div.ui-form-element[id="form-element-${parameter}"] div.select-all-checkbox'
+    drilldown_select_all: 'div.ui-form-element[id="form-element-${parameter}"] .select-all-checkbox'
     drilldown_option: '.drilldown-option'
     drilldown_expand: '.fa-caret-down'
     tool_version_button: ".tool-versions"
@@ -1461,6 +1461,9 @@ admin:
       repo_search: '#toolshed-repo-search'
       search_results: '#g-table-shed-search-results'
       upgrade_notification: '#g-table-repository-table .badge'
+      installed_only:
+        type: xpath
+        selector: '//label[normalize-space(.)="Installed Only"]/input[@type="radio"]'
 
   quota:
     selectors:
@@ -1664,7 +1667,7 @@ libraries:
       alert_not_exists_user_import_dir:
         type: xpath
         selector: //div[contains(@class, "alert-danger") and text()[contains(normalize-space(.), "Your user import directory does not exist")]]
-      select_import_dir_item: '[for="drilldown-option-${name}"]'
+      select_import_dir_item: '[data-test-id="drilldown-option-${name}-label"]'
       import_dir_btn:
         type: xpath
         selector: '//button[text()[contains(., "Import")]]'

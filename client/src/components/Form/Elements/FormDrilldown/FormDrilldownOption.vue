@@ -2,25 +2,28 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretRight, faFile, faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox, BFormRadio } from "bootstrap-vue";
 import { computed, type ComputedRef, onMounted, ref } from "vue";
 
 import { getAllValues, type Option } from "./utilities";
 
 import FormDrilldownList from "./FormDrilldownList.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
+import GRadio from "@/components/BaseComponents/GRadio.vue";
 
 interface Props {
     currentValue: string[];
     option: Option;
     handleClick: Function;
     multiple: boolean;
+    name?: string;
     showIcons?: boolean;
     leafIcon?: IconDefinition;
     branchIcon?: IconDefinition;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    name: undefined,
     leafIcon: () => faFile,
     branchIcon: () => faFolder,
 });
@@ -39,7 +42,7 @@ const isChecked: ComputedRef<boolean> = computed(() => {
 
 // determine required input element type
 const isComponent = computed(() => {
-    return props.multiple ? BFormCheckbox : BFormRadio;
+    return props.multiple ? GCheckbox : GRadio;
 });
 
 function toggleChildren(): void {
@@ -72,14 +75,16 @@ onMounted(() => {
             <FontAwesomeIcon v-else :icon="faCaretRight" class="align-checkbox" />
         </GButton>
         <span v-if="!hasOptions" class="align-indent"></span>
+        <!-- GCheckbox emits its checked state, GRadio its value (true) once selected -->
         <component
             :is="isComponent"
             :id="`drilldown-option-${option.name}`"
-            class="drilldown-option d-inline"
-            value="true"
+            class="drilldown-option"
             :disabled="option.disabled"
-            :checked="isChecked"
-            @change="handleClick(option.value, $event)">
+            :model-value="isChecked"
+            :name="multiple ? undefined : name"
+            :value="true"
+            @update:model-value="handleClick(option.value, $event)">
             <FontAwesomeIcon v-if="props.showIcons" :icon="getOptionIcon(option)" />
             {{ option.name }}
         </component>
@@ -90,6 +95,7 @@ onMounted(() => {
             :show-icons="props.showIcons"
             :current-value="currentValue"
             :multiple="multiple"
+            :name="name"
             :options="option.options"
             :handle-click="handleClick" />
     </div>

@@ -1,10 +1,14 @@
 <script setup>
-import { BCard, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { useConfig } from "@/composables/config";
 import { useCurrentTheme } from "@/composables/user";
+import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
+
+import GRadio from "@/components/BaseComponents/GRadio.vue";
+import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 
 const { currentTheme, setCurrentTheme, settingTheme } = useCurrentTheme();
 const { config, isConfigLoaded } = useConfig();
@@ -37,13 +41,14 @@ watch(
 
 <template>
     <BCard :show="show" class="mr-3 overflow-auto reset-theme-variables">
-        <BFormRadioGroup v-model="currentValue">
-            <BFormRadio
+        <GRadioGroup v-model="currentValue" :aria-label="localize('Theme')">
+            <!-- top-aligned, so the radio sits by the theme name rather than the middle of the preview -->
+            <GRadio
                 v-for="(themeDetails, theme, index) in config.themes"
                 :key="theme"
-                :value="theme"
-                class="mb-2"
-                :disabled="settingTheme">
+                class="mb-2 align-items-start"
+                :disabled="settingTheme"
+                :value="theme">
                 <span v-if="index === 0" class="font-weight-bold mb-1"> Default Theme ({{ theme }}). </span>
                 <span v-else class="font-weight-bold mb-1">Theme: {{ theme }}</span>
                 <div :style="themeDetails" class="theme-masthead">
@@ -52,8 +57,8 @@ watch(
                     <span v-localize class="theme-hover">Hover</span>
                     <span v-localize class="theme-active">Active</span>
                 </div>
-            </BFormRadio>
-        </BFormRadioGroup>
+            </GRadio>
+        </GRadioGroup>
     </BCard>
 </template>
 
