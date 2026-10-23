@@ -2,26 +2,12 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
 
 import type { PreparedUpload, UploadMethodComponent } from "../types";
 
 import LocalFileUpload from "./LocalFileUpload.vue";
 
-vi.mock("@/composables/upload/uploadDefaults", () => ({
-    useUploadDefaults: () => ({
-        effectiveExtensions: ref([]),
-        listDbKeys: ref([]),
-        configurationsReady: ref(true),
-        createItemDefaults: () => ({
-            extension: "auto",
-            dbkey: "?",
-            spaceToTab: false,
-            toPosixLines: false,
-            autoDecompress: true,
-        }),
-    }),
-}));
+vi.mock("@/composables/upload/uploadDefaults");
 
 const localVue = getLocalVue();
 
