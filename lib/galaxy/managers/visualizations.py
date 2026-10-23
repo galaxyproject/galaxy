@@ -12,7 +12,6 @@ from typing import (
 
 from sqlalchemy import (
     false,
-    func,
     or_,
     select,
     true,
@@ -27,6 +26,7 @@ from galaxy.managers import (
     base,
     sharable,
 )
+from galaxy.managers.base import get_count
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.index_filter_util import (
     append_user_filter,
@@ -211,8 +211,3 @@ class VisualizationDeserializer(sharable.SharableModelDeserializer):
         super().add_deserializers()
         self.deserializers.update({})
         self.deserializable_keyset.update(self.deserializers.keys())
-
-
-def get_count(session, statement):
-    stmt = select(func.count()).select_from(statement.subquery())
-    return session.scalar(stmt)

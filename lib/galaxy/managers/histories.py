@@ -43,6 +43,7 @@ from galaxy.managers import (
 from galaxy.managers.base import (
     apply_sort_column,
     combine_lists,
+    get_count,
     ModelDeserializingError,
     Serializer,
     sort_expression,
@@ -1166,8 +1167,3 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
 
     def username_contains(self, item, val: str) -> bool:
         return val.lower() in str(item.user.username).lower()
-
-
-def get_count(session, statement):
-    stmt = select(func.count()).select_from(statement.subquery())
-    return session.scalar(stmt)

@@ -50,6 +50,7 @@ from galaxy.job_metrics import (
     RawMetric,
     Safety,
 )
+from galaxy.managers.base import get_count
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import (
     ProvidesAppContext,
@@ -445,11 +446,6 @@ class JobManager:
             return True
         else:
             return False
-
-
-def get_count(session, statement):
-    stmt = select(func.count()).select_from(statement.subquery())
-    return session.scalar(stmt)
 
 
 class JobSearch:

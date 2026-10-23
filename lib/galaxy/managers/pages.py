@@ -18,7 +18,6 @@ from typing import (
 from sqlalchemy import (
     desc,
     false,
-    func,
     or_,
     select,
     true,
@@ -33,6 +32,7 @@ from galaxy.managers import (
     base,
     sharable,
 )
+from galaxy.managers.base import get_count
 from galaxy.managers.context import (
     ProvidesAppContext,
     ProvidesHistoryContext,
@@ -809,8 +809,3 @@ def page_exists(session: galaxy_scoped_session, user: User, slug: str) -> bool:
 
 def _build_page_query(select_clause, user: User, slug: str):
     return select_clause.where(Page.user == user).where(Page.slug == slug).where(Page.deleted == false()).limit(1)
-
-
-def get_count(session, statement):
-    stmt = select(func.count()).select_from(statement.subquery())
-    return session.scalar(stmt)
