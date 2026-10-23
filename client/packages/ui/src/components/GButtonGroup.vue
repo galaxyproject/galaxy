@@ -22,11 +22,21 @@ const styleClasses = computed(() => {
 .g-button-group {
     display: inline-flex;
     gap: 0;
-    // Match Bootstrap's `.btn-group` so groups line up with standalone buttons.
+    // Lines groups up with standalone buttons on the same text line
     vertical-align: middle;
 
-    // Matches Bootstrap's `.btn-group > .btn`, so a group given a width (`w-100`)
-    // stretches its buttons instead of collapsing them to content width.
+    // A pressed button's darker border overlaps the next button's, so lift it; a focused button (z-index 999) stays on top
+    &:deep(> .g-button.g-pressed:not(:focus)),
+    &:deep(> :has(.g-button.g-pressed)) {
+        z-index: 1;
+    }
+
+    // A focused GButton inside a wrapper is not a flex item, so lift the wrapper to keep its ring above the next button.
+    &:deep(> :has(.g-button:focus-visible)) {
+        z-index: 2;
+    }
+
+    // A group given a width (`w-100`) stretches its buttons instead of collapsing them to content width
     &:not(.g-vertical) {
         &:deep(> .g-button) {
             flex: 1 1 auto;
@@ -44,6 +54,14 @@ const styleClasses = computed(() => {
             border-bottom-right-radius: 0;
             border-right: 0;
         }
+
+        // Keeps the pressed button's own right border, drawn over the next button's left border
+        &:deep(> .g-button.g-pressed:not(:last-child)),
+        &:deep(> :not(.g-button):not(:last-child) .g-button.g-pressed) {
+            margin-right: -1px;
+            border-right-style: solid;
+            border-right-width: 1px;
+        }
     }
 
     &.g-vertical {
@@ -60,6 +78,14 @@ const styleClasses = computed(() => {
             border-bottom-left-radius: 0;
             border-bottom-right-radius: 0;
             border-bottom: 0;
+        }
+
+        // Keeps the pressed button's own bottom border, drawn over the next button's top border
+        &:deep(> .g-button.g-pressed:not(:last-child)),
+        &:deep(> :not(.g-button):not(:last-child) .g-button.g-pressed) {
+            margin-bottom: -1px;
+            border-bottom-style: solid;
+            border-bottom-width: 1px;
         }
     }
 }
