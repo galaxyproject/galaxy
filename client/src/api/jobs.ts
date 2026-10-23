@@ -153,6 +153,7 @@ export async function fetchJobs(offset = 0, limit = 20, extraProps?: JobFetchExt
         limit,
         offset,
         order_by: "update_time",
+        include_total_count: true,
         ...extraProps,
     };
 
