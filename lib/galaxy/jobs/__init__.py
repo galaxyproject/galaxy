@@ -13,11 +13,13 @@ import pwd
 import shlex
 import shutil
 import sys
+import threading
 import time
 import traceback
 from collections.abc import (
     Callable,
     Iterable,
+    Mapping,
 )
 from dataclasses import (
     dataclass,
@@ -36,7 +38,6 @@ import yaml
 from packaging.version import Version
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
 from sqlalchemy import (
-    and_,
     func,
     or_,
     select,
@@ -337,6 +338,33 @@ class JobConfigurationLimits:
     destination_total_concurrent_jobs: dict[str, int] = field(default_factory=dict)
 
 
+class DestinationTagRegistry:
+    """Destination IDs by tag, registered per source.
+
+    Each registration replaces everything the source registered before. Writers swap in a new mapping under a lock,
+    so readers need none.
+    """
+
+    def __init__(self) -> None:
+        self._tags: dict[str | None, dict[str, frozenset[str]]] = {}
+        self._lock = threading.Lock()
+
+    def register(self, source: str | None, tags: Mapping[str, Iterable[str]]) -> None:
+        with self._lock:
+            source_tags = dict(self._tags)
+            if tags:
+                source_tags[source] = {tag: frozenset(ids) for tag, ids in tags.items()}
+            else:
+                source_tags.pop(source, None)
+            self._tags = source_tags
+
+    def ids_for_tag(self, tag: str) -> set[str]:
+        ids: set[str] = set()
+        for source_tags in self._tags.values():
+            ids.update(source_tags.get(tag, ()))
+        return ids
+
+
 class JobConfiguration(ConfiguresHandlers):
     """A parser and interface to advanced job management features.
 
@@ -367,6 +395,7 @@ class JobConfiguration(ConfiguresHandlers):
         self.default_handler_id: str | None = None
         self.handler_ready_window_size: int | None = None
         self.destinations: dict[str, list[JobDestination]] = {}
+        self.destination_tags = DestinationTagRegistry()
         self.default_destination_id: str | None = None
         self.tools: dict[str, list[JobToolConfiguration]] = {}
         self.tool_classes: dict[str, list[JobToolConfiguration]] = {}
@@ -488,6 +517,7 @@ class JobConfiguration(ConfiguresHandlers):
                 environment_dict["function"] = "map_tool_to_destination"
                 environment_dict["rules_module"] = "tpv.rules"
 
+        destination_tags: dict[str, set[str]] = {}
         for environment_id, environment_dict in environments_list:
             metrics = environment_dict.get("metrics")
             if metrics is None:
@@ -556,6 +586,8 @@ class JobConfiguration(ConfiguresHandlers):
                     if tag not in self.destinations:
                         self.destinations[tag] = []
                     self.destinations[tag].append(job_destination)
+                    destination_tags.setdefault(tag, set()).add(environment_id)
+        self.destination_tags.register(None, destination_tags)
 
         # Determine the default destination
         self.default_destination_id = self._ensure_default_set(
@@ -883,6 +915,25 @@ class JobConfiguration(ConfiguresHandlers):
         anything which might modify them.
         """
         return self.destinations.get(id_or_tag, [])
+
+    def set_dynamic_destination_tags(self, source: str, tags: Mapping[str, Iterable[str]]) -> None:
+        """Register the IDs of destinations carrying each tag, for destinations created at runtime.
+
+        Destinations returned by dynamic rules (e.g. TPV) are not in the job configuration, so tag-based concurrency
+        limits only count jobs in them once their tags are registered here. Each call replaces everything previously
+        registered by ``source``; an empty mapping removes it. Tags of destinations in the job configuration are held
+        under the source ``None``, which only parsing the job configuration sets.
+
+        :param source: Name identifying the caller, e.g. the ID of the dynamic destination that created them.
+        :param tags: Destination IDs keyed by tag.
+        """
+        self.destination_tags.register(source, tags)
+
+    def get_destination_ids_for_tag(self, tag: str) -> set[str]:
+        """Return the IDs of all destinations carrying ``tag``, from both the job configuration and
+        set_dynamic_destination_tags().
+        """
+        return self.destination_tags.ids_for_tag(tag)
 
     def get_job_runner_plugins(self, handler_id: str):
         """Load all configured job runner plugins
@@ -1738,11 +1789,17 @@ class MinimalJobWrapper(HasResourceParameters):
             if job_destination.id
             else None
         )
+        destination_user_concurrent_jobs = self.app.job_config.limits.destination_user_concurrent_jobs
         destination_tag_limits: dict[str, int] = {}
+        destination_user_tag_limits: dict[str, int] = {}
+        # The destination being checked carries its tags even if they were never registered.
+        own_destination_ids = {job_destination.id} if job_destination.id else set()
         if job_destination.tags:
             for tag in job_destination.tags:
                 if tag_limit := destination_total_concurrent_jobs.get(tag):
                     destination_tag_limits[tag] = tag_limit
+                if tag_limit := destination_user_concurrent_jobs.get(tag):
+                    destination_user_tag_limits[tag] = tag_limit
 
         conditions = [Job.id == job.id, Job.state.in_((Job.states.NEW, Job.states.RESUBMITTED))]
         # The job being queued must not take up a slot itself. This only matters for
@@ -1761,109 +1818,40 @@ class MinimalJobWrapper(HasResourceParameters):
         else:
             other_jobs = Job.id != job.id
 
-        if job.user_id:
-            user_job_count = (
+        def active_job_count(*where):
+            return (
                 select(func.count(Job.id))
                 .where(
-                    and_(
-                        Job.state.in_(
-                            [
-                                Job.states.QUEUED,
-                                Job.states.RUNNING,
-                                Job.states.RESUBMITTED,
-                            ]
-                        ),
-                        Job.user_id == job.user_id,
-                        other_jobs,
-                    )
+                    Job.state.in_([Job.states.QUEUED, Job.states.RUNNING, Job.states.RESUBMITTED]), other_jobs, *where
                 )
                 .scalar_subquery()
             )
 
+        if job.user_id:
             if registered_user_concurrent_jobs is not None:
-                conditions.append(user_job_count < registered_user_concurrent_jobs)
+                conditions.append(active_job_count(Job.user_id == job.user_id) < registered_user_concurrent_jobs)
             if destination_user_limit is not None:
-                destination_job_count = (
-                    select(func.count(Job.id))
-                    .where(
-                        and_(
-                            Job.state.in_(
-                                [
-                                    Job.states.QUEUED,
-                                    Job.states.RUNNING,
-                                    Job.states.RESUBMITTED,
-                                ]
-                            ),
-                            Job.destination_id == job_destination.id,
-                            Job.user_id == job.user_id,
-                            other_jobs,
-                        )
-                    )
-                    .scalar_subquery()
+                destination_job_count = active_job_count(
+                    Job.destination_id == job_destination.id, Job.user_id == job.user_id
                 )
                 conditions.append(destination_job_count < destination_user_limit)
+            for tag, limit in destination_user_tag_limits.items():
+                destination_ids = self.app.job_config.get_destination_ids_for_tag(tag) | own_destination_ids
+                user_tag_count = active_job_count(Job.destination_id.in_(destination_ids), Job.user_id == job.user_id)
+                conditions.append(user_tag_count < limit)
 
         elif anonymous_user_concurrent_jobs is not None and job.galaxy_session and job.galaxy_session.id:
-            anon_job_count = (
-                select(func.count(Job.id))
-                .where(
-                    and_(
-                        Job.state.in_(
-                            [
-                                Job.states.QUEUED,
-                                Job.states.RUNNING,
-                                Job.states.RESUBMITTED,
-                            ]
-                        ),
-                        Job.session_id == job.galaxy_session.id,
-                        other_jobs,
-                    )
-                )
-                .scalar_subquery()
-            )
+            anon_job_count = active_job_count(Job.session_id == job.galaxy_session.id)
             conditions.append(anon_job_count < anonymous_user_concurrent_jobs)
 
         if destination_total_limit is not None:
-            destination_total_count = (
-                select(func.count(Job.id))
-                .where(
-                    and_(
-                        Job.state.in_(
-                            [
-                                Job.states.QUEUED,
-                                Job.states.RUNNING,
-                                Job.states.RESUBMITTED,
-                            ]
-                        ),
-                        Job.destination_id == job_destination.id,
-                        other_jobs,
-                    )
-                )
-                .scalar_subquery()
-            )
+            destination_total_count = active_job_count(Job.destination_id == job_destination.id)
             conditions.append(destination_total_count < destination_total_limit)
 
-        if destination_tag_limits:
-            for tag, limit in destination_tag_limits.items():
-                destination_ids = {destination.id for destination in self.app.job_config.get_destinations(tag)}
-                tag_count = (
-                    select(func.count(Job.id))
-                    .where(
-                        and_(
-                            Job.state.in_(
-                                [
-                                    Job.states.QUEUED,
-                                    Job.states.RUNNING,
-                                    Job.states.RESUBMITTED,
-                                ]
-                            ),
-                            Job.destination_id.in_(destination_ids),
-                            other_jobs,
-                        )
-                    )
-                    .scalar_subquery()
-                )
-                conditions.append(tag_count < limit)
+        for tag, limit in destination_tag_limits.items():
+            destination_ids = self.app.job_config.get_destination_ids_for_tag(tag) | own_destination_ids
+            tag_count = active_job_count(Job.destination_id.in_(destination_ids))
+            conditions.append(tag_count < limit)
 
         update_stmt = (
             update(Job)

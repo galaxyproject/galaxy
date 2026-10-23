@@ -8,7 +8,10 @@ from pykwalify.core import Core
 
 from galaxy.config import GALAXY_SCHEMAS_PATH
 from galaxy.job_metrics import JobMetrics
-from galaxy.jobs import JobConfiguration
+from galaxy.jobs import (
+    DestinationTagRegistry,
+    JobConfiguration,
+)
 from galaxy.jobs.runners import (
     BaseJobRunner,
     local,
@@ -283,6 +286,26 @@ class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
         assert longjob_dests_ids[0] == "pbs_longjobs"
         assert longjob_dests_ids[1] == "remote_cluster"
 
+    def test_destination_ids_for_tag(self):
+        self._with_advanced_config()
+        assert self.job_config.get_destination_ids_for_tag("longjobs") == {"pbs_longjobs", "remote_cluster"}
+        assert self.job_config.get_destination_ids_for_tag("nonexistent") == set()
+
+    def test_dynamic_destination_tags(self):
+        self._with_advanced_config()
+        self.job_config.set_dynamic_destination_tags(
+            "tpv_dispatcher", {"longjobs": {"tpv_long"}, "dynamic": {"tpv_short", "tpv_long"}}
+        )
+        assert self.job_config.get_destination_ids_for_tag("longjobs") == {
+            "pbs_longjobs",
+            "remote_cluster",
+            "tpv_long",
+        }
+        assert self.job_config.get_destination_ids_for_tag("dynamic") == {"tpv_short", "tpv_long"}
+        self.job_config.set_dynamic_destination_tags("tpv_dispatcher", {})
+        assert self.job_config.get_destination_ids_for_tag("dynamic") == set()
+        assert self.job_config.get_destination_ids_for_tag("longjobs") == {"pbs_longjobs", "remote_cluster"}
+
     def test_load_tool(self):
         self._with_advanced_config()
         baz_tool = self.job_config.tools["baz"][0]
@@ -379,6 +402,20 @@ class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
 
 class TestAdvancedJobConfYamlParser(TestAdvancedJobConfXmlParser):
     extension = "yml"
+
+
+def test_destination_tag_registry_replaced_per_source():
+    registry = DestinationTagRegistry()
+    registry.register(None, {"longjobs": {"pbs_longjobs", "remote_cluster"}})
+    registry.register("tpv_dispatcher", {"longjobs": {"tpv_long"}})
+    registry.register("tpv_other", {"longjobs": {"other_long"}})
+    registry.register("tpv_dispatcher", {"dynamic": {"tpv_short"}})
+    assert registry.ids_for_tag("longjobs") == {"pbs_longjobs", "remote_cluster", "other_long"}
+    assert registry.ids_for_tag("dynamic") == {"tpv_short"}
+    registry.register("tpv_dispatcher", {})
+    assert registry.ids_for_tag("dynamic") == set()
+    assert registry.ids_for_tag("longjobs") == {"pbs_longjobs", "remote_cluster", "other_long"}
+    assert registry.ids_for_tag("nonexistent") == set()
 
 
 def test_yaml_advanced_validation():
