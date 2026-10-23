@@ -562,10 +562,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         run_as_users = [u for u in self.app.config.get("api_allow_run_as", "").split(",") if u]
         if not run_as_users:
             return False
-        user_in_run_as_users = user and user.email in run_as_users
+        if user is None:
+            return False
         # Can do if explicitly in list or master_api_key supplied.
-        can_do_run_as = user_in_run_as_users or user.bootstrap_admin_user
-        return can_do_run_as
+        return user.email in run_as_users or user.bootstrap_admin_user
 
     # ---- preferences
     def preferences(self, user):
