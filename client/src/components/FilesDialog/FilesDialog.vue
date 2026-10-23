@@ -11,7 +11,7 @@ import {
     type FilterFileSourcesOptions,
     type RemoteEntry,
 } from "@/api/remoteFiles";
-import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
+import { fileSourcePluginToItem, isSamePath, isSubPath } from "@/components/FilesDialog/utilities";
 import {
     type ItemsProvider,
     type ItemsProviderContext,
@@ -85,6 +85,8 @@ const showTime = ref(true);
 const showDetails = ref(true);
 const isBusy = ref(false);
 const showFTPHelper = ref(false);
+/** Root URIs of RDM sources, only fetched in directory mode to prevent selecting a repository root */
+const rdmUriRoots = ref<string[]>([]);
 const selectAllIcon = ref<SelectionState>(SELECTION_STATES.UNSELECTED);
 const urlTracker = useUrlTracker<SelectionItem & { parentPage?: number }>({ root: undefined });
 const totalItems = ref(0);
@@ -103,8 +105,20 @@ const fields = computed(() => {
 
 const fileMode = computed(() => props.mode == "file");
 
+/** RDM repositories (e.g. Dataverse, Invenio) only hold files inside their records, not at their root */
+const isAtRdmRepositoryRoot = computed(() => {
+    const url = urlTracker.current.value?.url;
+    if (!url) {
+        return false;
+    }
+    return rdmUriRoots.value.some((uriRoot) => isSamePath(url, uriRoot));
+});
+
 const okButtonDisabled = computed(
-    () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.isAtRoot.value),
+    () =>
+        (fileMode.value && !hasValue.value) ||
+        isBusy.value ||
+        (!fileMode.value && (urlTracker.isAtRoot.value || isAtRdmRepositoryRoot.value)),
 );
 
 const canCreateNewFileSource = computed(() => {
@@ -263,6 +277,19 @@ function open(record: SelectionItem) {
     load();
 }
 
+/** Fetched alongside the root list, so sources created since the dialog was last opened are included */
+async function loadRdmUriRoots() {
+    if (props.mode !== "directory") {
+        return;
+    }
+    try {
+        const rdmFileSources = await fetchFileSources({ include: ["rdm"] });
+        rdmUriRoots.value = rdmFileSources.map((fs) => fs.uri_root);
+    } catch (error) {
+        console.error("Failed to load RDM file sources", error);
+    }
+}
+
 /** Performs server request to retrieve data records **/
 function load() {
     showFTPHelper.value = urlTracker.current.value?.url === "gxftp://";
@@ -274,6 +301,7 @@ function load() {
         itemsProvider.value = undefined;
         errorMessage.value = undefined;
         isBusy.value = true;
+        loadRdmUriRoots();
         fetchFileSources(props.filterOptions)
             .then((results) => {
                 const convertedItems = results
@@ -472,6 +500,7 @@ watch(query, () => {
 onMounted(() => {
     if (props.selectedItem) {
         urlTracker.forward(props.selectedItem);
+        loadRdmUriRoots();
     }
     load();
 });
@@ -511,6 +540,9 @@ onMounted(() => {
                     <strong>do not have a Galaxy password</strong> please use the reset password option in the login
                     form with your email to create a password for your account.</span
                 >
+            </BAlert>
+            <BAlert v-if="isAtRdmRepositoryRoot" id="rdm-root-helper" variant="info" show>
+                This repository has no files at its top level. Open one of the folders below to select it.
             </BAlert>
         </template>
         <template v-slot:buttons>

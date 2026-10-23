@@ -465,6 +465,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 created_from_basename=created_from_basename,
                 final_job_state=final_job_state,
             )
+            # Storage for elements is finalized in bulk below, so default permissions are applied here.
+            self.permission_provider.set_default_hda_permissions(dataset)
             log.debug(
                 "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s] %s",
                 self.job_id(),

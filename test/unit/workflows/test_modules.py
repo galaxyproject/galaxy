@@ -11,15 +11,21 @@ from unittest import mock
 import pytest
 
 from galaxy import model
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.schema.invocation import FailureReason
 from galaxy.tool_util.parser.output_objects import ToolOutput
-from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
+from galaxy.tools.parameters import populate_state
+from galaxy.tools.parameters.workflow_utils import (
+    NO_REPLACEMENT,
+    workflow_building_modes,
+)
 from galaxy.util import (
     bunch,
     now,
 )
 from galaxy.workflow import modules
+from galaxy.workflow.workflow_parameter_input_definitions import split_numeric_bounds
 from .workflow_support import (
     MockTrans,
     yaml_to_model,
@@ -127,6 +133,130 @@ def test_data_collection_input_connections():
     assert output["name"] == "output"
     assert output["extensions"] == ["input"]
     assert output["collection_type"] == "list:paired"
+
+
+def test_parameter_input_without_bounds_is_unbounded():
+    parameter, trans = __numeric_runtime_parameter("integer", None, None)
+    parameter.validate(-1000, trans)
+    field = parameter.to_dict(trans)
+    assert (field["min"], field["max"]) == (None, None)
+
+
+NUMERIC_RANGE_CASES = [
+    ("integer", 1, 5, 7, "Value ('7') must fulfill (1 <= value <= 5)"),
+    ("integer", 0, None, -1, "Value ('-1') must fulfill (0 <= value <= +infinity)"),
+    ("integer", None, -2, -1, "Value ('-1') must fulfill (-infinity <= value <= -2)"),
+    ("float", 0.5, 2.5, 3.0, "Value ('3.0') must fulfill (0.5 <= value <= 2.5)"),
+]
+
+
+@pytest.mark.parametrize("parameter_type,min,max,invalid_value,message", NUMERIC_RANGE_CASES)
+def test_parameter_input_range_is_validated_once(parameter_type, min, max, invalid_value, message):
+    parameter, trans = __numeric_runtime_parameter(parameter_type, min, max)
+    assert len(parameter.validators) == 1
+    with pytest.raises(ValueError) as exc_info:
+        parameter.validate(invalid_value, trans)
+    assert str(exc_info.value) == f"Parameter 'input': {message}"
+
+
+@pytest.mark.parametrize(
+    "parameter_type,min,max,expected",
+    [(parameter_type, min, max, (min, max)) for parameter_type, min, max, *_ in NUMERIC_RANGE_CASES]
+    + [("float", 1, 2, (1.0, 2.0))],
+)
+def test_parameter_input_range_reaches_run_form(parameter_type, min, max, expected):
+    parameter, trans = __numeric_runtime_parameter(parameter_type, min, max)
+    field = parameter.to_dict(trans)
+    assert (field["min"], field["max"]) == expected
+
+
+@pytest.mark.parametrize(
+    "min,max,default,field_bounds",
+    [(1, 5, 3, (1, 5)), (1, 5, 7, (1, 5)), (5, 1, 3, (None, None))],
+)
+def test_parameter_input_editor_state_with_bounds(min, max, default, field_bounds):
+    # Building the editor form keeps saved state as-is, even for an out-of-range default or inverted bounds.
+    module = __numeric_editor_module("integer", min, max, default=default)
+    field = __editor_default_parameter(module, "integer").to_dict(module.trans)
+    assert (field["min"], field["max"]) == field_bounds
+    assert module.get_export_state()["default"] == default
+    assert module.get_export_state()["validators"] == [{"min": min, "max": max, "negate": False, "type": "in_range"}]
+
+
+@pytest.mark.parametrize("parameter_type,min,max", [("integer", 1, 5), ("integer", 0, None), ("float", None, 2.5)])
+def test_parameter_input_editor_default_has_bounds(parameter_type, min, max):
+    module = __numeric_editor_module(parameter_type, min, max)
+    field = __editor_default_parameter(module, parameter_type).to_dict(module.trans)
+    assert (field["min"], field["max"]) == (min, max)
+    other_type = "float" if parameter_type == "integer" else "integer"
+    other_field = __editor_default_parameter(module, other_type).to_dict(module.trans)
+    assert (other_field["min"], other_field["max"]) == (None, None)
+
+
+def test_parameter_input_editor_default_follows_edited_bounds():
+    # Mirrors the editor's build_module: form values arrive without the previous tool state.
+    trans = MockTrans()
+    trans.workflow_building_mode = workflow_building_modes.ENABLED
+    module = modules.module_factory.from_dict(trans, {"type": "parameter_input"}, from_tool_form=True)
+    incoming = {
+        "parameter_definition|parameter_type": "integer",
+        "parameter_definition|optional|optional": "false",
+        "parameter_definition|optional|specify_default|specify_default": "true",
+        "parameter_definition|optional|specify_default|default": "3",
+        "parameter_definition|min": "2",
+        "parameter_definition|max": "4",
+        "parameter_definition|restrictions|how": "none",
+    }
+    state: dict[str, Any] = {}
+    errors: dict[str, Any] = {}
+    populate_state(trans, module.get_inputs(), incoming, state, errors=errors, check=True)
+    module.recover_state(state, from_tool_form=True)
+    assert not errors
+    assert module.get_export_state()["default"] == 3
+    field = __editor_default_parameter(module, "integer").to_dict(trans)
+    assert (field["min"], field["max"]) == (2, 4)
+
+
+def test_parameter_input_inverted_bounds():
+    module = __numeric_editor_module("integer", 5, 1)
+    field = __editor_default_parameter(module, "integer").to_dict(module.trans)
+    assert (field["min"], field["max"]) == (None, None)
+    with pytest.raises(RequestParameterInvalidException, match="Workflow input 'Count' has a minimum"):
+        module.get_runtime_inputs(__step())
+    assert module.get_errors() == "Workflow input 'Count' has a minimum (5) greater than its maximum (1)."
+
+
+def test_parameter_input_cleared_bounds_are_unbounded():
+    # Both editor fields cleared still saves an in_range validator, with no ends set.
+    module = __numeric_editor_module("integer", None, None)
+    field = __editor_default_parameter(module, "integer").to_dict(module.trans)
+    assert (field["min"], field["max"]) == (None, None)
+    assert module.get_errors() is None
+
+
+@pytest.mark.parametrize(
+    "parameter_type,min,max,expected_bounds",
+    [
+        ("integer", None, None, None),
+        ("integer", 0, None, {"min": 0, "max": None}),
+        ("float", None, 2.5, {"min": None, "max": 2.5}),
+        ("text", 1, 5, None),
+    ],
+)
+def test_split_numeric_bounds(parameter_type, min, max, expected_bounds):
+    range_validator = {"type": "in_range", "min": min, "max": max, "negate": False}
+    regex_validator = {"type": "regex", "expression": ".*", "negate": False}
+    bounds, validators = split_numeric_bounds(
+        {"parameter_type": parameter_type, "validators": [range_validator, regex_validator]}
+    )
+    assert bounds == expected_bounds
+    expected_validators = [range_validator, regex_validator] if parameter_type == "text" else [regex_validator]
+    assert validators == expected_validators
+
+
+def test_parameter_input_ordered_bounds_have_no_errors():
+    assert __numeric_editor_module("integer", 1, 5).get_errors() is None
+    assert __numeric_editor_module("float", 2.5, 2.5).get_errors() is None
 
 
 def test_cannot_create_tool_modules_for_missing_tools():
@@ -615,6 +745,46 @@ def __from_step(**kwds):
     module = step.module
     module.test_step = step
     return module
+
+
+def __numeric_tool_inputs(parameter_type, min, max, **tool_inputs):
+    return {
+        "parameter_type": parameter_type,
+        "optional": False,
+        "validators": [{"type": "in_range", "min": min, "max": max, "negate": False}],
+        **tool_inputs,
+    }
+
+
+def __numeric_runtime_parameter(parameter_type, min, max):
+    trans = MockTrans()
+    trans.workflow_building_mode = workflow_building_modes.DISABLED
+    module = __from_step(
+        trans=trans,
+        type="parameter_input",
+        label="Count",
+        tool_inputs=__numeric_tool_inputs(parameter_type, min, max),
+    )
+    return module.get_runtime_inputs(module.test_step)["input"], trans
+
+
+def __numeric_editor_module(parameter_type, min, max, **tool_inputs):
+    step = __step(
+        type="parameter_input",
+        label="Count",
+        tool_inputs=__numeric_tool_inputs(parameter_type, min, max, **tool_inputs),
+    )
+    return modules.module_factory.from_workflow_step(MockTrans(), step)
+
+
+def __editor_default_parameter(module, parameter_type):
+    type_case = __case(module.get_inputs()["parameter_definition"], parameter_type)
+    specify_default = __case(type_case.inputs["optional"], "true").inputs["default"]
+    return __case(specify_default, "true").inputs["default"]
+
+
+def __case(conditional, value):
+    return next(case for case in conditional.cases if case.value == value)
 
 
 def __step(**kwds):
