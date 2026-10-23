@@ -79,9 +79,17 @@ export const useJobStore = defineStore("jobStore", () => {
         return existingJob ? { ...existingJob, ...freshJob } : freshJob;
     }
 
-    /** Merges partial job data (e.g. from a jobs list response) into the cache. */
+    /** Merges partial job data (e.g. from a jobs list response) into the cache. An older
+     * snapshot only fills in fields the cache lacks, like a stale `fetchAndCacheJob` response. */
     function updateJob(id: string, updatedData: Partial<ShowFullJobResponse>) {
-        storedJobs.value[id] = mergeJob(updatedData as ShowFullJobResponse, storedJobs.value[id]);
+        const existingJob = storedJobs.value[id];
+        const isOlder =
+            !!existingJob &&
+            !!updatedData.update_time &&
+            new Date(updatedData.update_time) < new Date(existingJob.update_time);
+        storedJobs.value[id] = isOlder
+            ? mergeJob(existingJob, updatedData as ShowFullJobResponse)
+            : mergeJob(updatedData as ShowFullJobResponse, existingJob);
         markUsed(id);
         evictIfOverCap();
     }
