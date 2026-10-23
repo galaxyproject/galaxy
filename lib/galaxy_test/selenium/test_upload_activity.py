@@ -154,6 +154,54 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
         self.history_panel_click_item_title(hid=1, wait=True)
         self.assert_item_name(1, "1.bed")
 
+    @selenium_test
+    @requires_admin
+    @requires_new_library
+    def test_upload_from_data_library_as_other_user(self):
+        """A non-admin user can import a public library dataset uploaded by someone else."""
+        library_name = self._create_and_populate_library()
+        self.logout_if_needed()
+        self.register()
+
+        self.upload_context("data-library").stage_data_library_dataset(library_name, "1.bed").start()
+
+        self.history_panel_wait_for_hid_ok(1)
+        self.assert_item_name(1, "1.bed")
+        self.screenshot("upload_activity_data_library_other_user_imported")
+
+    @selenium_test
+    @managed_history
+    @requires_admin
+    @requires_new_library
+    def test_upload_list_from_data_library_to_target_history(self):
+        """Library datasets built into a list land in the picked target history, not the current one."""
+        library_name = self._create_and_populate_library(["1.bed", "2.bed"])
+        current_history_id = self.current_history_id()
+        # the long managed history name pushes the target history change link out of view
+        self.dataset_populator.rename_history(current_history_id, "library list current")
+        target_history_id = self.dataset_populator.new_history(name="library list target")
+        # reload so the target history selector sees the new history
+        self.home()
+
+        context = self.upload_context("data-library")
+        context.stage_data_library_datasets(library_name, ["1.bed", "2.bed"])
+        context.to_list("library list").select_target_history(target_history_id)
+        # collection config is applied by start(), so this shows the staged items and target history
+        self._screenshot_when_startable("upload_activity_data_library_target_history_staged")
+        context.start()
+
+        self._wait_on(
+            lambda: any(
+                c["history_content_type"] == "dataset_collection" for c in self.history_contents(target_history_id)
+            ),
+            "list in target history",
+        )
+        hdca = self.dataset_populator.get_history_collection_details(target_history_id)
+        assert hdca["name"] == "library list"
+        assert hdca["collection_type"] == "list"
+        assert [e["element_identifier"] for e in hdca["elements"]] == ["1.bed", "2.bed"]
+        assert self.history_contents(current_history_id) == []
+
     def _screenshot_when_startable(self, label):
         self.components.upload_activity.start_button_enabled.wait_for_visible()
         # let the button's enable color transition finish so the screenshot doesn't show it greyed out

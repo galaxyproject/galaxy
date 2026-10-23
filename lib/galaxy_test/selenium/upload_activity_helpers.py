@@ -773,6 +773,10 @@ class DataLibraryContext(BaseUploadContext):
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
         return self._context.stage_data_library_dataset(library_label, dataset_label)
 
+    def stage_data_library_datasets(self, library_label: str, dataset_labels: list[str]) -> "DataLibraryContext":
+        self._context.stage_data_library_datasets(library_label, dataset_labels)
+        return self
+
 
 class ExploreZipContext(BaseUploadContext):
     @property
