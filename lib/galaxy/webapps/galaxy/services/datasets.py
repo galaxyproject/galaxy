@@ -607,11 +607,12 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self_uri = f"drs://drs.{request_url.components.netloc}/{object_id}"
         checksums: list[Checksum] = []
         for dataset_hash in dataset_instance.dataset.hashes:
-            if dataset_hash.extra_files_path:
+            # A FINAL hash is only ever set for a dataset without extra files, i.e. a hash of the primary file.
+            if dataset_hash.extra_files_path and dataset_hash.extra_files_path != model.DatasetHash.FINAL:
                 continue
-            type = dataset_hash.hash_function
-            checksum = dataset_hash.hash_value
-            checksums.append(Checksum(type=type, checksum=checksum))
+            checksum = Checksum(type=dataset_hash.hash_function, checksum=dataset_hash.hash_value)
+            if checksum not in checksums:
+                checksums.append(checksum)
 
         if len(checksums) == 0:
             hash_function = HashFunctionNameEnum.md5
