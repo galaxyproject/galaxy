@@ -262,7 +262,11 @@ def replace_expression_json_dataset(
 
 
 def to_cwl(
-    value, hda_references, step: Optional[WorkflowStep] = None, compute_environment: Optional[ComputeEnvironment] = None
+    value,
+    hda_references,
+    step: Optional[WorkflowStep] = None,
+    compute_environment: Optional[ComputeEnvironment] = None,
+    element_identifiers: Optional[dict[int, str]] = None,
 ):
     element_identifier = None
     if isinstance(value, NoReplacement):
@@ -305,11 +309,19 @@ def to_cwl(
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name
             )
+            if identifier := element_identifier or (element_identifiers or {}).get(value.id):
+                properties["element_identifier"] = identifier
             return properties
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":
             return [
-                to_cwl(dce, hda_references=hda_references, step=step, compute_environment=compute_environment)
+                to_cwl(
+                    dce,
+                    hda_references=hda_references,
+                    step=step,
+                    compute_environment=compute_environment,
+                    element_identifiers=element_identifiers,
+                )
                 for dce in value.dataset_elements
             ]
         else:
@@ -321,18 +333,32 @@ def to_cwl(
                     hda_references=hda_references,
                     step=step,
                     compute_environment=compute_environment,
+                    element_identifiers=element_identifiers,
                 )
             return rval
     elif isinstance(value, list):
         return [
-            to_cwl(v, hda_references=hda_references, step=step, compute_environment=compute_environment) for v in value
+            to_cwl(
+                v,
+                hda_references=hda_references,
+                step=step,
+                compute_environment=compute_environment,
+                element_identifiers=element_identifiers,
+            )
+            for v in value
         ]
     elif is_runtime_value(value):
         return None
     elif isinstance(value, dict):
         # Nested tool state, such as conditionals
         return {
-            k: to_cwl(v, hda_references=hda_references, step=step, compute_environment=compute_environment)
+            k: to_cwl(
+                v,
+                hda_references=hda_references,
+                step=step,
+                compute_environment=compute_environment,
+                element_identifiers=element_identifiers,
+            )
             for k, v in value.items()
         }
     else:

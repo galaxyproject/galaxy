@@ -1102,6 +1102,8 @@ class UserToolEvaluator(ToolEvaluator):
         """
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
+        # Map-over hands each job an HDA; its element identifier is only kept in the job parameters.
+        element_identifiers = ElementIdentifierMapper(input_datasets).identifiers_by_dataset_id(incoming)
         hda_references: list[model.HistoryDatasetAssociation]
         if validated_tool_state is not None:
             from galaxy.tool_util.parameters.convert import runtimeify
@@ -1116,7 +1118,11 @@ class UserToolEvaluator(ToolEvaluator):
                 input_dataset_collections[assoc.name] = assoc.dataset_collection_element
 
             hda_references, adapt_datasets, adapt_collections = setup_for_runtimeify(
-                self.app, compute_environment, input_datasets, input_dataset_collections
+                self.app,
+                compute_environment,
+                input_datasets,
+                input_dataset_collections,
+                element_identifiers=element_identifiers,
             )
             if self.tool.parameters is None:
                 raise RequestParameterInvalidException(f"Tool {self.tool.id} has no parameters defined")
@@ -1137,7 +1143,12 @@ class UserToolEvaluator(ToolEvaluator):
                 "Building CWL style inputs using deprecated to_cwl function - tool may work differently in the future."
             )
             hda_references = []
-            cwl_style_inputs = to_cwl(incoming, hda_references=hda_references, compute_environment=compute_environment)
+            cwl_style_inputs = to_cwl(
+                incoming,
+                hda_references=hda_references,
+                compute_environment=compute_environment,
+                element_identifiers=element_identifiers,
+            )
         return {"inputs": cwl_style_inputs, "outdir": job_working_directory}
 
     def _build_command_line(self):
