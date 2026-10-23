@@ -474,37 +474,28 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_has_key(display, "data")
         assert "\nA" in display["data"][0]
 
-    def _raw_data_column_meta(self, history_id, contents, column):
-        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
-        response = self._get(f"datasets/{hda['id']}", {"data_type": "raw_data", "columns": f"[{column}]"})
-        self._assert_status_code_is(response, 200)
-        return response.json()["meta"][0]
-
     def test_raw_data_tabular_numeric_column_stats(self, history_id):
-        meta = self._raw_data_column_meta(history_id, "1\t2\n3\t4\n5\t6\n", 1)
-        assert meta["min"] == 2
-        assert meta["max"] == 6
-        assert meta["mean"] == 4
-        assert meta["median"] == 4
+        # columns: even-count ints, uncastable NA among odd-count castables, all NA
+        contents = "2\t2\tNA\n4\tNA\tNA\n6\t4\tNA\n12\t9\tNA\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(f"datasets/{hda['id']}", {"data_type": "raw_data", "columns": "[0,1,2]"})
+        self._assert_status_code_is(response, 200)
+        even, uncastable, all_na = response.json()["meta"]
 
-    def test_raw_data_tabular_numeric_column_even_count_median(self, history_id):
-        meta = self._raw_data_column_meta(history_id, "1\t2\n3\t4\n5\t6\n7\t12\n", 1)
-        assert meta["count"] == 4
-        assert meta["mean"] == 6
-        assert meta["median"] == 5
+        assert even["count"] == 4
+        assert even["min"] == 2
+        assert even["max"] == 12
+        assert even["mean"] == 6
+        assert even["median"] == 5
 
-    def test_raw_data_tabular_numeric_column_with_uncastable_value(self, history_id):
-        meta = self._raw_data_column_meta(history_id, "1\t2\n3\tNA\n5\t4\n7\t9\n", 1)
-        assert meta["count"] == 4
-        assert meta["mean"] == 5
-        assert meta["median"] == 4
+        assert uncastable["count"] == 4
+        assert uncastable["mean"] == 5
+        assert uncastable["median"] == 4
 
-    def test_raw_data_tabular_numeric_column_without_castable_values(self, history_id):
-        meta = self._raw_data_column_meta(history_id, "1\tNA\n3\tNA\n5\tNA\n", 1)
-        assert meta["count"] == 3
-        assert meta["min"] is None
-        assert "mean" not in meta
-        assert "median" not in meta
+        assert all_na["count"] == 4
+        assert all_na["min"] is None
+        assert "mean" not in all_na
+        assert "median" not in all_na
 
     def test_bam_chunking_through_display_endpoint(self, history_id):
         # This endpoint does not use data providers and instead overrides display_data
