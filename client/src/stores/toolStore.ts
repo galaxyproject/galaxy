@@ -127,6 +127,8 @@ export const useToolStore = defineStore("toolStore", () => {
     const toolResults = ref<Record<string, string[]>>({});
     const toolSections = ref<Record<string, Record<string, ToolPanelItem>>>({});
     const fetchedHelpIds = ref<Map<string, Promise<void>>>(new Map());
+    /** In-flight tool requests by id, so concurrent `fetchToolForId` callers share one request */
+    const toolFetches = new Map<string, Promise<void>>();
     const helpDataCached = ref<Record<string, ToolHelpData>>({});
 
     const currentToolSections = computed(() => {
@@ -274,12 +276,25 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     async function fetchToolForId(toolId: string) {
-        try {
-            const { data } = await axios.get(`${getAppRoot()}api/tools/${toolId}`);
-            saveToolForId(toolId, data);
-        } catch (e) {
-            rethrowSimple(e);
+        if (toolsById.value[toolId]) {
+            return;
         }
+        const existing = toolFetches.get(toolId);
+        if (existing) {
+            return existing;
+        }
+        const promise = (async () => {
+            try {
+                const { data } = await axios.get(`${getAppRoot()}api/tools/${toolId}`);
+                saveToolForId(toolId, data);
+            } catch (e) {
+                rethrowSimple(e);
+            } finally {
+                toolFetches.delete(toolId);
+            }
+        })();
+        toolFetches.set(toolId, promise);
+        return promise;
     }
 
     async function fetchTools(q?: string) {
