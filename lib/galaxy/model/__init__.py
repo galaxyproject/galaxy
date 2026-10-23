@@ -1766,11 +1766,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             for output_name, out_collection in outputs_to_copy.out_collections.items():
                 self_out_collection = self_io.out_collections[output_name]
                 if isinstance(self_out_collection, DatasetCollection) and isinstance(out_collection, DatasetCollection):
-                    # In the context of the job cache this should be unreachable.
-                    # If we have DatasetCollection here, the output was created as part of a map-over job.
-                    # If it is a map-over job, then we were working with element_identifiers instead of names.
-                    # So when we relax the name requirement in the job cache we won't find any additional jobs to consider,
-                    # and we will never get here.
+                    # Both jobs are map-over element jobs of a tool with a collection output,
+                    # e.g. a cached rerun of a mapped run.
                     self_out_collection.copy_from(out_collection, history=self.history)
                     requires_addition_to_history = True
                 elif isinstance(self_out_collection, HistoryDatasetCollectionAssociation) and isinstance(
