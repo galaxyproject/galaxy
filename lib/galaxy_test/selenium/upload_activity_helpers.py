@@ -278,7 +278,8 @@ class _UploadStaging:
 
     def start(self) -> None:
         self._pre_start()
-        self._button_group.start_button.wait_for_and_click()
+        # Start is a GButton that is only aria-disabled, so a plain click wait passes while it does nothing
+        self._button_group.start_button_enabled.wait_for_and_click()
 
     def cancel(self) -> None:
         self._button_group.cancel_button.wait_for_and_click()
