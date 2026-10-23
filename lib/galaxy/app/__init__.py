@@ -1132,7 +1132,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # Initialize workflow completion monitoring (manager is always available,
         # but monitor only runs on workflow scheduler processes)
         self.workflow_completion_manager = WorkflowCompletionManager(self)
-        self.workflow_completion_hook_registry = WorkflowCompletionHookRegistry(self)
+        self.workflow_completion_hook_registry = self._register_singleton(
+            WorkflowCompletionHookRegistry, WorkflowCompletionHookRegistry(self)
+        )
         self.workflow_completion_monitor: WorkflowCompletionMonitor | None = None
         if self.workflow_scheduling_manager._is_workflow_handler():
             self.workflow_completion_monitor = WorkflowCompletionMonitor(
