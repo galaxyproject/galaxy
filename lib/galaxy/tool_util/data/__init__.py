@@ -1297,7 +1297,9 @@ class ToolDataTableManager(Dictifiable):
             table_elems = staging.load_from_config_file(config_filename, tool_data_path, from_shed_config=True)
             for name, table in staging.data_tables.items():
                 if existing := self.data_tables.get(name):
-                    assert type(existing) is type(table), f"Incompatible data table types for {name}"
+                    assert type(existing) is type(table) or (
+                        isinstance(existing, TabularToolDataTable) and isinstance(table, TabularToolDataTable)
+                    ), f"Incompatible data table types for {name}"
                     if isinstance(table, TabularToolDataTable):
                         self.assert_data_table_consistency(name, table.columns)
         except Exception as exc:
@@ -1353,7 +1355,9 @@ class ToolDataTableManager(Dictifiable):
             existing = self.data_tables.get(name)
             rebuilt = staging.data_tables.get(name)
             if existing is not None and rebuilt is not None:
-                assert type(existing) is type(rebuilt), f"Incompatible data table types for {name}"
+                assert type(existing) is type(rebuilt) or (
+                    isinstance(existing, TabularToolDataTable) and isinstance(rebuilt, TabularToolDataTable)
+                ), f"Incompatible data table types for {name}"
         for name in table_names:
             existing = self.data_tables.get(name)
             rebuilt = staging.data_tables.get(name)
@@ -1365,7 +1369,9 @@ class ToolDataTableManager(Dictifiable):
                     del self.data_tables[name]
                 else:
                     rebuilt._update_version(version)
-                    # Keep references held by tools while publishing the rebuilt state together.
+                    # An earlier source can change the implementation, e.g. Refgenie
+                    # to tabular. Preserve references while matching startup behavior.
+                    existing.__class__ = type(rebuilt)
                     existing.__dict__ = rebuilt.__dict__
             elif rebuilt is not None:
                 self.data_tables[name] = rebuilt
