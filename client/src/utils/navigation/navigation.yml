@@ -1787,12 +1787,16 @@ upload_activity:
     composite_slot_file_input: '.composite-file-upload .composite-slot-row:nth-of-type(${row}) [data-test-id="composite-slot-file-input"]'
     # Remote-files selectors
     remote_files_browser_label: '[data-test-id="remote-files-browser-label"][data-label="${label}"]'
+    remote_files_browser_labels: '[data-test-id="remote-files-browser-label"]'
     remote_files_select_all: '[data-test-id="remote-files-select-all"] .custom-control-label'
     remote_files_item_checkbox:
       type: xpath
       selector: '//span[contains(@data-test-id, "remote-files-browser-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'
     remote_files_add_selected: '[data-test-id="remote-files-add-selected"]'
     remote_files_search: '.remote-files-upload .search-bar-container input'
+    remote_files_current_folder:
+      type: xpath
+      selector: '//*[contains(@class, "remote-files-upload")]//*[contains(@class, "breadcrumb-current-label") and normalize-space()="${folder}"]'
     # Data-library selectors
     data_library_library_label: '[data-test-id="data-library-browser-library-label"][data-label="${label}"]'
     data_library_item_label: '[data-test-id="data-library-browser-item-label"][data-label="${label}"]'
