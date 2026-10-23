@@ -36,6 +36,7 @@ from galaxy.exceptions import (
     MalformedId,
     RequestParameterInvalidException,
 )
+from galaxy.managers.base import get_count
 from galaxy.model import (
     Dataset,
     DatasetPermissions,
@@ -610,8 +611,3 @@ class FolderManager:
 def get_folder(session, folder_id):
     stmt = select(LibraryFolder).where(LibraryFolder.id == folder_id)
     return session.execute(stmt).scalar_one()
-
-
-def get_count(session, statement):
-    stmt = select(func.count()).select_from(statement.subquery())
-    return session.scalar(stmt)
