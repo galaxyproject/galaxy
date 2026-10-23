@@ -1,5 +1,12 @@
 import os
-from typing import Any
+from typing import (
+    Any,
+    cast,
+    TYPE_CHECKING,
+)
+
+if TYPE_CHECKING:
+    from galaxy.config import GalaxyAppConfiguration
 
 
 class PopulateConfig:
@@ -27,3 +34,7 @@ class PopulateConfig:
 
     def all_tool_config_files(self) -> list[str]:
         return [self._tool_conf]
+
+
+def populate_config(root: str | os.PathLike[str], tool_conf: str | os.PathLike[str]) -> "GalaxyAppConfiguration":
+    return cast("GalaxyAppConfiguration", PopulateConfig(root, tool_conf))

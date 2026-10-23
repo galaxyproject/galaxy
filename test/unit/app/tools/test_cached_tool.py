@@ -14,7 +14,7 @@ from cachetools import LRUCache
 
 import galaxy.queue_worker as queue_worker_mod
 import galaxy.tools.cached_toolbox as mod
-from galaxy.app_unittest_utils.tool_source_support import PopulateConfig
+from galaxy.app_unittest_utils.tool_source_support import populate_config
 from galaxy.tool_util.toolbox.base import NullToolTagManager
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.panel import (
@@ -586,7 +586,7 @@ def _indexed_shed_tool_box(tmp_path, monkeypatch, tool_xml):
     path = str(tool_file)
     conf = tmp_path / "shed_tool_conf.xml"
     conf.write_text(f'<toolbox tool_path="{tools_dir}"></toolbox>')
-    config = PopulateConfig(tmp_path, conf)
+    config = populate_config(tmp_path, conf)
     populator.populate_store_inline(config, paths=[path], path_guids={path: GUID})
     box = _seam_box()
     box.app.config = config
