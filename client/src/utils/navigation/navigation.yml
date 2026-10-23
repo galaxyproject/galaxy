@@ -1439,6 +1439,7 @@ libraries:
         type: xpath
         selector: '//button[contains(text(), "Close")]'
       export_to_history_options: '#library-collection-type-select'
+      export_to_history_history_select: '#library-collection-history-select'
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
       export_to_history_new_history: 'input[name=history_name]'

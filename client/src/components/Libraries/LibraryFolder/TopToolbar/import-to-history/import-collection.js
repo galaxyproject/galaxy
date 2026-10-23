@@ -91,7 +91,7 @@ class ImportCollectionModal {
             });
         }
         const new_history_name = modal.el.querySelector('input[name="history_name"]').value;
-        this.resolveTargetHistoryId(new_history_name)
+        this.makeTargetHistoryCurrent(new_history_name)
             .then((history_id) => this.collectionImport(collection_elements, history_id))
             .catch((error) => {
                 console.error(error);
@@ -99,14 +99,17 @@ class ImportCollectionModal {
             });
     }
 
-    /** Create the named history (making it current), or take the picked one; resolves to its id. */
-    async resolveTargetHistoryId(new_history_name) {
+    /** Create the named history, or take the picked one, and make it current; resolves to its id. */
+    async makeTargetHistoryCurrent(new_history_name) {
         if (new_history_name !== "") {
             const new_history = await this.createNewHistory(new_history_name);
             Toast.success("History created");
             return new_history.id;
         }
-        return modal.el.querySelector("#library-collection-history-select").value;
+        const selected_history_id = modal.el.querySelector("#library-collection-history-select").value;
+        const { setCurrentHistory } = useHistoryStore();
+        await setCurrentHistory(selected_history_id);
+        return selected_history_id;
     }
 
     collectionImport(collectionElements, historyId) {

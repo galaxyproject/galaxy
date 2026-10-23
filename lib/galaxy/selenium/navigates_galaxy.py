@@ -533,6 +533,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             endpoint = f"histories/{history_id}?view={view}"
         return self.api_get(endpoint)
 
+    def history_collection_names(self, history_id: str) -> list[str]:
+        """Names of the collections in ``history_id``."""
+        response = self.api_get(f"histories/{history_id}/contents?type=dataset_collection", raw=True)
+        response.raise_for_status()
+        return [item["name"] for item in response.json()]
+
     def current_history(self) -> dict[str, Any]:
         full_url = self.build_url("history/current_history_json", for_selenium=False)
         response = requests.get(full_url, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT)
