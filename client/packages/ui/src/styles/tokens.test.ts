@@ -90,6 +90,16 @@ describe("galaxy-ui design tokens", () => {
         expect(tokensSource).toEqual(generateTokens(themeSource));
     });
 
+    it("parses a block's last declaration without a trailing semicolon", () => {
+        // The client's no-redeclare check reads SCSS through this parser, so a missed
+        // declaration there is a redeclared token that slips through.
+        const parsed = parseCustomProperties(":root {\n    --a: #{$a};\n    --b: 1px solid red\n}");
+        expect([...parsed]).toEqual([
+            ["--a", "#{$a}"],
+            ["--b", "1px solid red"],
+        ]);
+    });
+
     it("declares every shade of every color family as a literal", () => {
         // GButton builds selectors as var(--color-#{$color}-600) over the family
         // list, so a missing shade silently renders an unstyled variant.
