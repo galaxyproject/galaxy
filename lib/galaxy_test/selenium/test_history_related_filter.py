@@ -32,11 +32,9 @@ class TestHistoryRelatedFilter(SeleniumTestCase, UsesUploadActivity):
         unrelated_hda.assert_absent_or_hidden()
 
         # test related filter on unrelated item using filterText: only unrelated item shows
-        filter_element = self.history_element(
-            attribute_value="filter text input", scope=".content-operations-filters"
-        ).wait_for_and_click()
+        filter_element = self.components.history_panel.search.wait_for_and_click()
         initial_value = filter_element.get_attribute("value")
         assert initial_value == f"related:{CURRENT_HID}", initial_value
-        self.history_element(attribute_value="reset query", scope=".content-operations-filters").wait_for_and_click()
+        self.components.history_panel.search_reset.wait_for_and_click()
         filter_element.send_keys(f"related:{UNRELATED_HID}")
         current_hda.wait_for_absent()
