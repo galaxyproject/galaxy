@@ -12,6 +12,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormElement from "@/components/Form/FormElement.vue";
@@ -212,6 +213,16 @@ if (props.id) {
                             placeholder="Enter action link"
                             required />
                     </BCol>
+                    <div class="col-auto d-flex align-items-center">
+                        <GCheckbox
+                            :id="`broadcast-action-link-new-tab-${index}`"
+                            :model-value="actionLink.target === '_blank'"
+                            @update:model-value="
+                                (checked: boolean) => (actionLink.target = checked ? '_blank' : '_self')
+                            ">
+                            Open in new tab
+                        </GCheckbox>
+                    </div>
                     <BCol cols="auto">
                         <GButton
                             :id="`delete-action-link-${index}}`"
