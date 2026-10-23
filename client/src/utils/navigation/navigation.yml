@@ -452,6 +452,7 @@ storage_dashboard:
       agreement: '[data-test-id="agreement-checkbox"]'
       confirm_enabled: '#confirmation-modal .g-modal-confirm-buttons button:last-child:not(.g-disabled)'
       success: '#cleanup-result-modal [data-test-id="success-info"]'
+      success_close: '#cleanup-result-modal .g-modal-close-button'
 
 edit_dataset_attributes:
   selectors:

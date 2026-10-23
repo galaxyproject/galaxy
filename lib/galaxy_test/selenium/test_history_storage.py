@@ -112,3 +112,31 @@ class TestHistoryStorage(SeleniumTestCase, UsesUploadActivity):
         self._wait_on(
             lambda: self.dataset_populator.total_disk_usage() == kept_size, "usage to drop the purged dataset"
         )
+
+    @selenium_test
+    def test_purge_deleted_and_archived_histories_from_storage_dashboard(self):
+        current_id = self.current_history_id()
+        deleted_id = self.dataset_populator.new_history(name="deleted history")
+        archived_id = self.dataset_populator.new_history(name="archived history")
+        self.dataset_populator.delete_history(deleted_id)
+        self.dataset_populator.archive_history(archived_id).raise_for_status()
+
+        def purged(history_id):
+            return self.dataset_populator.get_history(history_id)["purged"]
+
+        cleanup = self.components.storage_dashboard.cleanup
+        self.storage_dashboard_cleanup("deleted_histories", screenshot_prefix="storage_dashboard_deleted_histories")
+        cleanup.no_items(operation="deleted_histories").wait_for_visible()
+        assert purged(deleted_id)
+        assert not purged(archived_id)
+
+        self.storage_dashboard_cleanup("archived_histories", screenshot_prefix="storage_dashboard_archived_histories")
+        cleanup.no_items(operation="archived_histories").wait_for_visible()
+        # the result modal covers the archived card
+        cleanup.success_close.wait_for_and_click()
+        cleanup.success.wait_for_absent_or_hidden()
+        self.screenshot("storage_dashboard_histories_purged")
+        assert purged(archived_id)
+        # purging unarchives first
+        assert not self.dataset_populator.get_history(archived_id)["archived"]
+        assert not purged(current_id)
