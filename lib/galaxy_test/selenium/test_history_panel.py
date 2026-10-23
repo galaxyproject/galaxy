@@ -104,6 +104,20 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
         self.history_panel_wait_for_hid_hidden(3)
         self.history_panel_wait_for_hid_hidden(4)
 
+        self.history_panel_filter("deleted:true")
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_wait_for_and_select([2])
+        self.history_panel_undelete_selected()
+        # an undeleted item no longer matches deleted:true
+        self.history_panel_wait_for_hid_hidden(2)
+        self.history_panel_wait_for_hid_visible(4)
+        self._wait_for_history_item_states(
+            history_id,
+            ("deleted", "purged"),
+            {1: (False, False), 2: (False, False), 3: (True, True), 4: (True, False)},
+            "hid 2 to be undeleted",
+        )
+
     @selenium_test
     @managed_history
     def test_unhide_item_with_include_hidden(self):
@@ -129,6 +143,40 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
             ("deleted", "visible"),
             {1: (True, True), 2: (False, True)},
             "hid 1 to be deleted and hid 2 unhidden",
+        )
+
+    @selenium_test
+    @managed_history
+    def test_hide_and_unhide_items(self):
+        history_id = self.current_history_id()
+        for content in ("1\n", "2\n", "3\n"):
+            self.dataset_populator.new_dataset(history_id, content=content, wait=True)
+        self.home()
+        self.history_panel_wait_for_hid_ok(3)
+
+        self.history_panel_wait_for_and_select([1, 2])
+        self.history_panel_hide_selected()
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_wait_for_hid_hidden(2)
+        self._wait_for_history_item_states(
+            history_id, ("visible",), {1: (False,), 2: (False,), 3: (True,)}, "hids 1 and 2 to be hidden"
+        )
+
+        self.history_panel_include_hidden()
+        self.history_panel_wait_for_and_select([1])
+        self.history_panel_hide_selected(unhide=True)
+        self._wait_for_history_item_states(
+            history_id, ("visible",), {1: (True,), 2: (False,), 3: (True,)}, "hid 1 to be unhidden"
+        )
+        self.screenshot("history_panel_hidden_items_shown")
+
+        self.history_panel_filter("visible:hidden")
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_item_unhide(2)
+        # an unhidden item no longer matches visible:hidden
+        self.history_panel_wait_for_hid_hidden(2)
+        self._wait_for_history_item_states(
+            history_id, ("visible",), {1: (True,), 2: (True,), 3: (True,)}, "hid 2 to be unhidden"
         )
 
     def _wait_for_history_item_states(self, history_id, keys, expected, description):
