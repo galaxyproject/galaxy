@@ -1,12 +1,9 @@
-import re
 import urllib.parse
 from typing import (
     Any,
     Optional,
     Union,
 )
-
-from requests import Session
 
 from galaxy.model.unittest_utils.store_fixtures import one_hda_model_store_dict
 from galaxy_test.api._framework import ApiTestCase
@@ -497,17 +494,7 @@ class TestHistoryContentsApi(ApiTestCase):
             hda = self.dataset_populator.new_dataset(
                 history_id, content="#a\n#b\nx\t1\ny\t5\n", file_type="tabular", wait=True
             )
-        # dataset/set_edit is a legacy controller route outside /api, so it
-        # only accepts a browser session, not an API key.
-        with Session() as session:
-            login_page = session.get(urllib.parse.urljoin(self.url, "login/start"))
-            csrf_token_match = re.search(r'session_csrf_token": "(.*?)"', login_page.text)
-            assert csrf_token_match
-            login_response = session.post(
-                urllib.parse.urljoin(self.url, "user/login"),
-                data={"login": email, "password": "testpass", "session_csrf_token": csrf_token_match.group(1)},
-            )
-            self._assert_status_code_is(login_response, 200)
+        with self._browser_session(email) as session:
             edit_response = session.put(
                 urllib.parse.urljoin(self.url, "dataset/set_edit"),
                 json={
