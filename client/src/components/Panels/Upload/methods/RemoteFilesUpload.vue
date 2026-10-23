@@ -960,6 +960,8 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 
     .remote-files-browser-label {
         text-align: start;
+        min-width: 0;
+        overflow-wrap: anywhere;
     }
 }
 

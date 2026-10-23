@@ -1,3 +1,5 @@
+import os
+
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
 from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 from .framework import (
@@ -35,3 +37,20 @@ class TestUploadActivityRemoteFiles(PosixFileSourceSetup, SeleniumIntegrationTes
 
         self.history_panel_wait_for_hid_ok(1)
         assert self.dataset_populator.get_history_dataset_content(self.current_history_id(), hid=1) == "b\n"
+
+    @selenium_test
+    def test_long_remote_file_name_stays_in_its_column(self):
+        long_name = "m84091_230808_224522_s2.hifi_reads.bc2001.default_long_unbroken_run_name" * 2
+        with open(os.path.join(self.root_dir, long_name), "w") as f:
+            f.write("long\n")
+        self.logout_if_needed()
+        self.admin_login()
+        self.upload_context("remote-files").open_remote_folder("Posix")
+        label = self.components.upload_activity.remote_files_browser_label(label=long_name).wait_for_visible()
+        overflow = self.execute_script(
+            "const label = arguments[0];"
+            'return label.getBoundingClientRect().right - label.closest("td").getBoundingClientRect().right;',
+            label,
+        )
+        assert overflow <= 0, f"file name runs {overflow}px past the Name column"
+        self.screenshot("upload_remote_files_long_name_wrapped")
