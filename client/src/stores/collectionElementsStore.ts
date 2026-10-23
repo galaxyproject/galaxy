@@ -126,9 +126,14 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
                 limit: limit,
             });
 
+            del(loadingCollectionElementsErrors.value, collectionKey);
             return { fetchedElements, elementOffset: offset, generation };
         } catch (error) {
             set(loadingCollectionElementsErrors.value, collectionKey, error);
+            // Let a later fetch request the elements again
+            storedElements
+                .slice(offset, offset + limit)
+                .forEach((element) => isPlaceholder(element) && (element.fetching = false));
         } finally {
             del(loadingCollectionElements.value, collectionKey);
         }
@@ -143,6 +148,8 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         if (!storedElements) {
             storedElements = initWithPlaceholderElements(collection);
             set(storedCollectionElements.value, key, storedElements);
+        } else {
+            addMissingPlaceholderElements(storedElements, collection);
         }
 
         try {
@@ -236,6 +243,14 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
     function isInvalid(element: DCEEntry): element is InvalidDCEEntry {
         return (element as InvalidDCEEntry)["valid"] === false;
+    }
+
+    /** Adds placeholders for elements added to the collection since its elements were stored, e.g. while it was populating. */
+    function addMissingPlaceholderElements(storedElements: DCEEntry[], collection: CollectionEntry) {
+        const totalElements = collection.element_count ?? 0;
+        for (let i = storedElements.length; i < totalElements; i++) {
+            storedElements.push({ element_index: i });
+        }
     }
 
     function initWithPlaceholderElements(collection: CollectionEntry): ContentPlaceholder[] {

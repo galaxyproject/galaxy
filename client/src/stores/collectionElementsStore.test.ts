@@ -129,6 +129,23 @@ describe("useCollectionElementsStore", () => {
         // and it fetches the next "limit" number of elements
         expect(getRealElements(elements)).toHaveLength(initialElements + limit);
     });
+
+    it("fetches elements added to a collection after its elements were stored", async () => {
+        vi.useFakeTimers();
+        const collection: HDCASummary = mockCollection("1", 0);
+        const store = useCollectionElementsStore();
+
+        // Opened while the collection was still populating.
+        await store.fetchMissingElements(collection, 0);
+        expect(store.getCollectionElements(collection)).toEqual([]);
+
+        collection.element_count = 3;
+        store.fetchMissingElements(collection, 0, 3);
+        await vi.advanceTimersByTimeAsync(1500);
+        await flushPromises();
+
+        expect(getRealElements(store.getCollectionElements(collection))).toHaveLength(3);
+    });
 });
 
 describe("useCollectionElementsStore collection loading", () => {
@@ -212,6 +229,32 @@ describe("useCollectionElementsStore collection loading", () => {
             await vi.advanceTimersByTimeAsync(RETRY_BACKOFF_CAP_MS);
         }
         expect(store.getLoadingCollectionElementsError(otherCollection)).toBe(false);
+    });
+
+    it("clears an error fetching collection elements once a later fetch succeeds", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        let failRequest = true;
+        server.use(
+            http.get("/api/dataset_collections/{hdca_id}/contents/{parent_id}", ({ response, params }) => {
+                if (failRequest) {
+                    return response("5XX").json({ err_msg: "Bad Gateway", err_code: 0 }, { status: 502 });
+                }
+                return response(200).json([0, 1, 2].map((i) => mockElement(params.hdca_id, i)));
+            }),
+        );
+        const store = useCollectionElementsStore();
+        const collection = mockCollection("1", 3);
+
+        await store.fetchMissingElements(collection, 0);
+        expect(store.getLoadingCollectionElementsError(collection)).toBeInstanceOf(Error);
+
+        failRequest = false;
+        store.fetchMissingElements(collection, 0);
+        await vi.advanceTimersByTimeAsync(1500);
+        await flushPromises();
+
+        expect(store.getLoadingCollectionElementsError(collection)).toBe(false);
+        expect(getRealElements(store.getCollectionElements(collection))).toHaveLength(3);
     });
 
     it("reports a 5xx error fetching collection elements immediately", async () => {
