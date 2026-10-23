@@ -814,6 +814,32 @@ steps:
         )
         assert self._copied_from_job_id(plain) == mapped["jobs"][0]["id"]
 
+    @pytest.mark.require_new_history
+    def test_cached_job_plain_run_skips_mapped_job(self, history_id):
+        hdca_id, hda_id, hda_name = self._list_of_existing_dataset(history_id)
+        self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id))
+        plain = self._run_tool_and_wait(history_id, {"input1": {"src": "hda", "id": hda_id}}, use_cached_job=True)
+        assert self._copied_from_and_identifier(history_id, plain) == (None, hda_name)
+
+    @pytest.mark.require_new_history
+    def test_cached_job_mapped_run_skips_plain_job(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        self._run_tool_and_wait(history_id, {"input1": {"src": "hda", "id": hda_id}})
+        inputs = _mapped_inputs(hdca_id)
+        mapped = self._run_tool_and_wait(history_id, inputs, use_cached_job=True)
+        assert self._copied_from_and_identifier(history_id, mapped) == (None, "sample_a")
+
+    @pytest.mark.require_new_history
+    def test_cached_job_mapped_run_skips_other_identifier(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        other_hdca_id = self.dataset_collection_populator.create_nested_collection(
+            history_id, "list", element_identifiers=[{"name": "sample_b", "src": "hda", "id": hda_id}]
+        ).json()["id"]
+        self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id))
+        inputs = _mapped_inputs(other_hdca_id)
+        mapped = self._run_tool_and_wait(history_id, inputs, use_cached_job=True)
+        assert self._copied_from_and_identifier(history_id, mapped) == (None, "sample_b")
+
     def _list_of_existing_dataset(self, history_id):
         # Element identifier differs from the dataset name.
         hdca = self.dataset_collection_populator.create_list_in_history(

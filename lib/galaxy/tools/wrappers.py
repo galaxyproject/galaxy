@@ -421,6 +421,9 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     @property
     def element_identifier(self) -> str:
         identifier = self._element_identifier
+        if self.tool_evaluator:
+            # Keeps the job out of the name-agnostic job cache search.
+            self.tool_evaluator.consumes_names = True
         if identifier is None:
             identifier = self.name
         return identifier
