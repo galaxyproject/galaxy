@@ -309,8 +309,11 @@ def to_cwl(
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name
             )
-            if identifier := element_identifier or (element_identifiers or {}).get(value.id):
-                properties["element_identifier"] = identifier
+            if element_identifier:
+                properties["element_identifier"] = element_identifier
+            elif element_identifiers is not None:
+                # Passed by the UDT evaluator only; falls back to the dataset name like Cheetah.
+                properties["element_identifier"] = element_identifiers.get(value.id) or value.name
             return properties
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":

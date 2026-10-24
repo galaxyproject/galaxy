@@ -167,7 +167,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
         contents = self._run_mapped_over_list(tool, [("sample_a", "a,1\n"), ("sample_b", "b,2\n")], ext="csv")
         assert contents == {"sample_a": "sample_a\n", "sample_b": "sample_b\n"}
 
-    def test_run_plain_dataset_element_identifier(self):
+    def test_run_plain_dataset_element_identifier_falls_back_to_name(self):
         with (
             self.dataset_populator.test_history() as history_id,
             self.dataset_populator.user_tool_execute_permissions(),
@@ -184,7 +184,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             )
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             output_content = self.dataset_populator.get_history_dataset_content(history_id)
-        assert output_content == "null\n"
+        assert output_content == "reads.txt\n"
 
     def _run_mapped_over_list(
         self, tool: dict[str, Any], elements: list[tuple[str, str]], ext: str = "txt"
