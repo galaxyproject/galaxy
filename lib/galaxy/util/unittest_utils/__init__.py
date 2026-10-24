@@ -1,7 +1,10 @@
 import os
+import re
 from functools import wraps
 from typing import (
     Callable,
+    List,
+    Optional,
     TypeVar,
     Union,
 )
@@ -26,13 +29,40 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def skip_if_site_down(url: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
+def _failure_texts(exception: Exception) -> List[str]:
+    texts = [str(exception)]
+    # requests.HTTPError carries the response, whose body holds the server's error message.
+    response_text = getattr(getattr(exception, "response", None), "text", None)
+    if isinstance(response_text, str):
+        texts.append(response_text)
+    return texts
+
+
+def skip_if_site_down(
+    url: str, unavailable_pattern: Optional[str] = None
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """Skip the test if ``url`` does not answer with HTTP 200.
+
+    With ``unavailable_pattern``, a test that fails with an exception whose message or
+    HTTP response body matches the pattern is skipped too; the pattern describes the
+    errors the site produces when it is down or blocking requests.
+    """
+
     def method_wrapper(method: Callable[P, T]) -> Callable[P, T]:
         @wraps(method)
         def wrapped_method(*args: P.args, **kwargs: P.kwargs) -> T:
             if not is_site_up(url):
                 raise SkipTest(f"Test depends on [{url}] being up and it appears to be down.")
-            return method(*args, **kwargs)
+            if unavailable_pattern is None:
+                return method(*args, **kwargs)
+            try:
+                return method(*args, **kwargs)
+            except Exception as e:
+                for text in _failure_texts(e):
+                    match = re.search(unavailable_pattern, text)
+                    if match:
+                        raise SkipTest(f"Test depends on [{url}] and it became unavailable: {match.group(0)}") from e
+                raise
 
         return wrapped_method
 
@@ -40,6 +70,11 @@ def skip_if_site_down(url: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
 
 
 skip_if_github_down = skip_if_site_down("https://github.com/")
+# Quay's homepage can be available while API requests are rate-limited or fail during pagination.
+skip_if_quay_down = skip_if_site_down(
+    "https://quay.io/",
+    unavailable_pattern=r"\b(?:429 Client|5\d\d Server) Error: [^\n]* for url: https://quay\.io/api/",
+)
 
 
 def _identity(func: Callable[P, T]) -> Callable[P, T]:
