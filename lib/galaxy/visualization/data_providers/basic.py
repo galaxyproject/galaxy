@@ -1,5 +1,8 @@
 from json import loads
-from statistics import median
+from statistics import (
+    fmean,
+    median,
+)
 
 from galaxy.datatypes.tabular import Tabular
 from galaxy.model import DatasetInstance
@@ -152,7 +155,7 @@ class ColumnDataProvider(BaseDataProvider):
             values = [value for value in response["data"][index] if value is not None]
 
             if (column_type == "float" or column_type == "int") and values:
-                meta["mean"] = float(meta["sum"]) / len(values)
+                meta["mean"] = fmean(values)
                 meta["median"] = median(values)
 
         # ugh ... metadata_data_lines is not a reliable source; hafta have an EOF
