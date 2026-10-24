@@ -539,12 +539,6 @@ multi_history_panel:
       _: '[history-dropdown-menu="${history_id}"]'
       delete:  '[history-dropdown-menu="${history_id}"] > .delete-history'
       purge:  '[history-dropdown-menu="${history_id}"] > .purge-history'
-  copy_history_modal:
-    selectors:
-      _: '.modal-dialog'
-      copy_btn:
-        type: xpath
-        selector: '//button[text()[contains(., "Copy")]]'
 
 published_histories:
   selectors:
@@ -570,9 +564,16 @@ history_copy_elements:
     new_history_link: '[data-description="copy switch history"]'
     copy_button: '[data-description="copy button"]'
 
+copy_history_modal:
+  selectors:
+    _: 'dialog[open][data-description="copy history modal"]'
+    name_input: 'dialog[open][data-description="copy history modal"] [data-description="copy history name input"]'
+    copy_button: 'dialog[open][data-description="copy history modal"] .g-modal-confirm-buttons button:last-child'
+
 history_view:
   selectors:
     switch_to_history: '[data-description="switch to history button"]'
+    import_button: '[data-description="import history button"]'
 
 collection_builders:
   selectors:
