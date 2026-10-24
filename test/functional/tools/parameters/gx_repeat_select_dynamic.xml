@@ -4,8 +4,8 @@ echo '$repeat_parameter[0].parameter' >> '$output'
     ]]></command>
     <code file="gx_select_dynamic_options.py"/>
     <inputs>
-        <repeat name="repeat_parameter">
-            <param name="ref_parameter" type="data" ext="txt" >
+        <repeat name="repeat_parameter" title="Repeat Parameter">
+            <param name="ref_parameter" type="data" format="txt" >
             </param>
             <param name="parameter" type="select" dynamic_options="every_other_word(ref_parameter.dataset.get_file_name())">
             </param>
