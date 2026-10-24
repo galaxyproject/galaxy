@@ -47,10 +47,5 @@ class TestUploadActivityRemoteFiles(PosixFileSourceSetup, SeleniumIntegrationTes
         self.admin_login()
         self.upload_context("remote-files").open_remote_folder("Posix")
         label = self.components.upload_activity.remote_files_browser_label(label=long_name).wait_for_visible()
-        overflow = self.execute_script(
-            "const label = arguments[0];"
-            'return label.getBoundingClientRect().right - label.closest("td").getBoundingClientRect().right;',
-            label,
-        )
-        assert overflow <= 0, f"file name runs {overflow}px past the Name column"
+        self.assert_label_within_its_column(label, "file name")
         self.screenshot("upload_remote_files_long_name_wrapped")
