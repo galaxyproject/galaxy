@@ -49,6 +49,32 @@ class RepositoryRevisionReadmes(RootModel):
     root: dict[str, str]
 
 
+RepositoryFileType = Literal["file", "symlink"]
+
+
+class RepositoryFileEntry(BaseModel):
+    path: str
+    type: RepositoryFileType
+    executable: bool
+
+
+class RepositoryRevisionFiles(BaseModel):
+    changeset_revision: str
+    files: list[RepositoryFileEntry]
+
+
+class RepositoryFileContents(BaseModel):
+    path: str
+    size: int
+    type: RepositoryFileType
+    binary: bool = Field(description="The file was read and looks binary, so content is omitted.")
+    truncated: bool = Field(description="The file is over the size limit, so it was not read and content is omitted.")
+    content: str | None = Field(
+        None,
+        description="UTF-8 text of the file, undecodable bytes replaced. Null for symlinks, binary and truncated files.",
+    )
+
+
 class CreateUserRequest(BaseModel):
     username: str
     email: str

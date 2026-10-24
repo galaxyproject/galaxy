@@ -19,6 +19,7 @@ src/
 ├── components/    # Vue components
 │   ├── pages/     # Route-level page components
 │   └── help/      # Help section components
+├── composables/   # Reusable composition functions (use*)
 ├── schema/        # OpenAPI-generated types + client
 ├── stores/        # Pinia stores (auth, categories, repository, users)
 ├── main.ts        # App entry
@@ -125,6 +126,9 @@ For example, if you test a component with long text or special characters, add s
 | `LoadingDiv.vue`                | `role="status"`, `aria-live="polite"`                      |
 | `ActionMenu.vue`                | `aria-label` on the round toggle, which names its menu     |
 | `RepositoryExplore.vue`         | `aria-label` on menu toggle and icon buttons               |
+| `RepositoryFileTree.vue`        | `aria-expanded` on folder buttons, `aria-current` on file  |
+| `RepositoryContentsBrowser.vue` | `<nav aria-label="Files">` around the file tree            |
+| `ConfigFileContents.vue`        | `tabindex="0"` on the code block so it scrolls by keyboard |
 | `PaginatedRepositoriesGrid.vue` | `aria-label` on table                                      |
 
 ### galaxy-ui and the remaining Quasar

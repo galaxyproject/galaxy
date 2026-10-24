@@ -13,11 +13,13 @@ import ToolVersionPage from "@/components/pages/ToolVersionPage.vue"
 import ComponentsShowcase from "@/components/pages/ComponentsShowcase.vue"
 import RepositoryPage from "@/components/pages/RepositoryPage.vue"
 import MetadataInspectorPage from "@/components/pages/MetadataInspectorPage.vue"
+import RepositoryContentsPage from "@/components/pages/RepositoryContentsPage.vue"
 import ManageApiKey from "@/components/pages/ManageApiKey.vue"
 import ChangePassword from "@/components/pages/ChangePassword.vue"
 import ForgotPassword from "@/components/pages/ForgotPassword.vue"
 import ResetPassword from "@/components/pages/ResetPassword.vue"
 import CitableRepositoryPage from "@/components/pages/CitableRepositoryPage.vue"
+import { queryParamToString } from "@/util"
 
 import type { RouteRecordRaw } from "vue-router"
 
@@ -100,6 +102,15 @@ const routes: Array<RouteRecordRaw> = [
         path: "/repositories/:repositoryId/metadata-inspector",
         component: MetadataInspectorPage,
         props: true,
+    },
+    {
+        path: "/repositories/:repositoryId/contents",
+        component: RepositoryContentsPage,
+        props: (route) => ({
+            repositoryId: route.params.repositoryId,
+            revision: queryParamToString(route.query.revision),
+            file: queryParamToString(route.query.file),
+        }),
     },
     {
         path: "/repositories/:repositoryId",

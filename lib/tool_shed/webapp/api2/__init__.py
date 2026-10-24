@@ -208,6 +208,12 @@ ChangesetRevisionPathParam: str = Path(
     description="The changeset revision corresponding to the target revision of the target repository.",
 )
 
+RepositoryFilePathParam: str = Path(
+    ...,
+    title="File Path",
+    description="Path of the file relative to the repository root, as listed for the revision.",
+)
+
 UsernameIdPathParam: str = Path(..., title="Username", description="The target username.")
 
 CommitMessageQueryParam: str | None = Query(

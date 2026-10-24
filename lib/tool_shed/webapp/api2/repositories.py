@@ -7,6 +7,7 @@ import tempfile
 from typing import (
     cast,
     IO,
+    TypeVar,
 )
 
 from fastapi import (
@@ -33,6 +34,7 @@ from galaxy.webapps.galaxy.api import as_form
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.repositories import (
     add_admin_user,
+    CacheableResult,
     can_manage_repo,
     can_update_repo,
     check_updates,
@@ -48,6 +50,8 @@ from tool_shed.managers.repositories import (
     PaginatedIndexRequest,
     readmes,
     remove_admin_user,
+    repository_file_contents,
+    repository_files,
     reset_metadata_on_repositories,
     reset_metadata_on_repository,
     search,
@@ -70,8 +74,10 @@ from tool_shed_client.schema import (
     InstallInfo,
     PaginatedRepositoryIndexResults,
     Repository,
+    RepositoryFileContents,
     RepositoryMetadata,
     RepositoryPermissions,
+    RepositoryRevisionFiles,
     RepositoryRevisionReadmes,
     RepositorySearchResults,
     RepositoryUpdate,
@@ -95,6 +101,7 @@ from . import (
     OptionalRepositoryIdParam,
     OptionalRepositoryNameParam,
     OptionalRepositoryOwnerParam,
+    RepositoryFilePathParam,
     RepositoryIdPathParam,
     RepositoryIndexCategoryQueryParam,
     RepositoryIndexDeletedQueryParam,
@@ -122,17 +129,18 @@ router = Router(tags=["repositories"])
 
 IndexResponse = RepositorySearchResults | list[Repository] | PaginatedRepositoryIndexResults
 
-# Install info for a given name/owner/changeset_revision only changes when the repository's
-# metadata is rebuilt, so it is worth caching. Clients that revalidate get a 304 from the
-# ETag; caches that do not revalidate serve their copy for a day.
-INSTALL_INFO_MAX_AGE = 86400
-INSTALL_INFO_CACHE_CONTROL = f"public, max-age={INSTALL_INFO_MAX_AGE}"
+# Install info and file contents for a given changeset_revision only change when the
+# repository's metadata is rebuilt (or the revision is withdrawn), so they are worth caching.
+# Clients that revalidate get a 304 from the ETag; caches that do not revalidate serve their
+# copy for a day, which also bounds how long a withdrawn revision lingers.
+REVISION_MAX_AGE = 86400
+REVISION_CACHE_CONTROL = f"public, max-age={REVISION_MAX_AGE}"
+
+T = TypeVar("T")
 
 
-def _etag_for(payload) -> str:
-    """Build an ETag from the payload the route is about to serialize."""
-    encoded = json.dumps(jsonable_encoder(payload), sort_keys=True, separators=(",", ":"))
-    return f'"{hashlib.sha256(encoded.encode("utf-8")).hexdigest()}"'
+def _etag(validator: str) -> str:
+    return f'"{hashlib.sha256(validator.encode("utf-8")).hexdigest()}"'
 
 
 def _if_none_match(request: Request) -> list[str]:
@@ -143,14 +151,21 @@ def _if_none_match(request: Request) -> list[str]:
     return [tag.strip().removeprefix("W/") for tag in header.split(",")]
 
 
-def _cacheable(payload, request: Request, response: Response):
-    """Attach cache headers to payload, or hand back a 304 if the client already has it."""
-    etag = _etag_for(payload)
-    headers = {"ETag": etag, "Cache-Control": INSTALL_INFO_CACHE_CONTROL}
+def _cacheable_result(result: CacheableResult[T], request: Request, response: Response) -> T | Response:
+    """Hand back a 304 if the client already has result's validator, otherwise build it with cache headers."""
+    etag = _etag(result.validator)
+    headers = {"ETag": etag, "Cache-Control": REVISION_CACHE_CONTROL}
     if etag in _if_none_match(request):
         return Response(status_code=status.HTTP_304_NOT_MODIFIED, headers=headers)
+    payload = result.build()
     response.headers.update(headers)
     return payload
+
+
+def _cacheable(payload, request: Request, response: Response):
+    """Like _cacheable_result for a payload already built; its serialized form is the validator."""
+    validator = json.dumps(jsonable_encoder(payload), sort_keys=True, separators=(",", ":"))
+    return _cacheable_result(CacheableResult(validator=validator, build=lambda: payload), request, response)
 
 
 @as_form
@@ -686,6 +701,44 @@ class FastAPIRepositories:
     ) -> dict:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
         return readmes(self.app, repository, changeset_revision)
+
+    @router.get(
+        "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/files",
+        description="List the files in a downloadable repository revision.",
+        operation_id="repositories__files",
+        response_model=RepositoryRevisionFiles,
+        allow_cors=True,
+        public=True,
+    )
+    def get_files(
+        self,
+        request: Request,
+        response: Response,
+        encoded_repository_id: str = RepositoryIdPathParam,
+        changeset_revision: str = ChangesetRevisionPathParam,
+    ) -> RepositoryRevisionFiles | Response:
+        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+        return _cacheable_result(repository_files(self.app, repository, changeset_revision), request, response)
+
+    @router.get(
+        "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/files/{path:path}",
+        description="Fetch the contents of a file in a downloadable repository revision, wrapped in JSON.",
+        operation_id="repositories__file_contents",
+        response_model=RepositoryFileContents,
+        allow_cors=True,
+        public=True,
+    )
+    def get_file_contents(
+        self,
+        request: Request,
+        response: Response,
+        encoded_repository_id: str = RepositoryIdPathParam,
+        changeset_revision: str = ChangesetRevisionPathParam,
+        path: str = RepositoryFilePathParam,
+    ) -> RepositoryFileContents | Response:
+        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+        contents = repository_file_contents(self.app, repository, changeset_revision, path)
+        return _cacheable_result(contents, request, response)
 
     @router.get(
         "/repository",
