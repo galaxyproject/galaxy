@@ -103,12 +103,58 @@ export function isDataOption(item: object): item is DataOption {
     return !!item && "src" in item;
 }
 
-export function itemUniqueKey(item: DataOption): string {
-    return `${item.src}-${item.id}`;
+type OptionIdentity = Pick<DataOption, "id" | "src" | "map_over_type">;
+
+/** Identifies an option; an item listed both directly and mapped over yields two distinct keys */
+export function itemUniqueKey(item: OptionIdentity): string {
+    const key = `${item.src}-${item.id}`;
+    return item.map_over_type ? `${key}-${item.map_over_type}` : key;
 }
 
 export function containsDataOption(items: DataOption[], item: DataOption | null): boolean {
     return item !== null && items.some((i) => itemUniqueKey(i) === itemUniqueKey(item));
+}
+
+/** Whether two options refer to the same history item, however each is mapped over */
+export function isSameItem(a: OptionIdentity, b: OptionIdentity): boolean {
+    return a.id === b.id && a.src === b.src;
+}
+
+/**
+ * Find the option for a value: the entry mapped over the same way, else any entry for the same item.
+ * Values without a map-over type resolve to the first (direct) entry.
+ */
+export function findDataOption<T>(
+    items: T[],
+    value: OptionIdentity,
+    toOption: (item: T) => DataOption | null | undefined,
+): T | undefined {
+    const key = itemUniqueKey(value);
+    return (
+        items.find((item) => {
+            const option = toOption(item);
+            return !!option && itemUniqueKey(option) === key;
+        }) ??
+        items.find((item) => {
+            const option = toOption(item);
+            return !!option && isSameItem(option, value);
+        })
+    );
+}
+
+/** Append a fetched page of options, skipping ones already listed */
+export function mergeDataOptions(existing: DataOption[], incoming: DataOption[]): DataOption[] {
+    const seen = new Set(existing.map(itemUniqueKey));
+    return existing.concat(
+        incoming.filter((option) => {
+            const key = itemUniqueKey(option);
+            if (seen.has(key)) {
+                return false;
+            }
+            seen.add(key);
+            return true;
+        }),
+    );
 }
 
 export type ExtendedCollectionType = {
