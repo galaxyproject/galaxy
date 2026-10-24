@@ -806,6 +806,19 @@ class WorkflowModule:
         return MapOverPlanner(self.trans).plan_map_over(progress, step, all_inputs)
 
 
+def disconnected_required_subworkflow_inputs(step: WorkflowStep, subworkflow: Workflow) -> list[WorkflowStep]:
+    """Return the required input steps of ``subworkflow`` without a default that ``step`` doesn't connect."""
+    connected_input_step_ids = {connection.input_subworkflow_step_id for connection in step.input_connections}
+    default_not_set = object()
+    return [
+        input_step
+        for input_step in subworkflow.input_steps
+        if input_step.id not in connected_input_step_ids
+        and not input_step.input_optional
+        and input_step.get_input_default_value(default_not_set) is default_not_set
+    ]
+
+
 class SubWorkflowModule(WorkflowModule):
     # Two step improvements to build runtime inputs for subworkflow modules
     # - First pass verify nested workflow doesn't have an RuntimeInputs
