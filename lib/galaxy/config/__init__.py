@@ -759,6 +759,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     hash_function: HashFunctionNameEnum
     integrated_tool_panel_config: str
     involucro_path: str
+    job_resource_params_file: str
     len_file_path: str
     manage_dependency_relationships: bool
     monitor_thread_join_timeout: int
@@ -784,6 +785,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     trust_jupyter_notebook_conversion: bool
     tus_upload_store: str
     use_remote_user: bool
+    use_tasked_jobs: bool
     user_library_import_dir_auto_creation: bool
     user_library_import_symlink_allowlist: list[str]
     user_tool_filters: list[str]
