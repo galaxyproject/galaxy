@@ -802,8 +802,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             return
         if jw.is_ready_for_resubmission(job):
             self.increase_running_job_count(job.user_id, jw.job_destination.id)
-            self.dispatcher.put(jw)
-            log.debug("(%s) Job was resubmitted and is being dispatched immediately", job.id)
+            if self.dispatcher.put(jw):
+                log.debug("(%s) Job was resubmitted and is being dispatched immediately", job.id)
+            else:
+                log.debug("(%s) Resubmitted job selected for dispatch but was not queued", job.id)
 
     def __fail_unmappable_job(self, job_wrapper: JobWrapper, exception: Exception) -> None:
         """Fail a job whose destination could not be determined.
