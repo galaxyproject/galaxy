@@ -50,6 +50,8 @@ if TYPE_CHECKING:
     from sqlalchemy.sql._typing import _ColumnsClauseArgument
     from sqlalchemy.sql.expression import ColumnExpressionArgument
 
+    from galaxy.jobs.runners import BaseJobRunner
+
 log = get_logger(__name__)
 
 # States for running a job. These are NOT the same as data states
@@ -1301,15 +1303,27 @@ class DefaultJobDispatcher:
             )
             return JobDestination(runner=runner_name)
 
+    def runner_of(self, job_wrapper):
+        """The runner plugin of the job's destination, ``None`` if no runner has its id."""
+        return self.job_runners.get(job_wrapper.job_destination.runner)
+
+    @staticmethod
+    def is_pulsar(runner: "BaseJobRunner") -> bool:
+        """Whether the runner plugin is a Pulsar runner, whatever its id in the job configuration."""
+        return runner.runner_name == "PulsarJobRunner"
+
+    @staticmethod
+    def splits_into_tasks(job_wrapper, runner: "BaseJobRunner") -> bool:
+        """Whether the job runs as tasks: tools with parallelism are split, except on Pulsar."""
+        return bool(job_wrapper.can_split()) and not DefaultJobDispatcher.is_pulsar(runner)
+
     def get_job_runner(self, job_wrapper, get_task_runner=False):
-        runner_name = job_wrapper.job_destination.runner
-        try:
-            runner = self.job_runners[runner_name]
-        except KeyError:
-            log.error(f"({job_wrapper.job_id}) Invalid job runner: {runner_name}")
+        runner = self.runner_of(job_wrapper)
+        if runner is None:
+            log.error(f"({job_wrapper.job_id}) Invalid job runner: {job_wrapper.job_destination.runner}")
             job_wrapper.fail(DEFAULT_JOB_RUNNER_FAILURE_MESSAGE)
             return None
-        if get_task_runner and job_wrapper.can_split() and runner.runner_name != "PulsarJobRunner":
+        if get_task_runner and self.splits_into_tasks(job_wrapper, runner):
             return self.job_runners["tasks"]
         return runner
 

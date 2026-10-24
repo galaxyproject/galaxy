@@ -5,11 +5,15 @@ from abc import (
 )
 from typing import (
     Any,
+    TYPE_CHECKING,
 )
 
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import JobIO
 from galaxy.model import Job
+
+if TYPE_CHECKING:
+    from galaxy.job_execution.protection import ProtectionPlan
 
 
 def dataset_path_to_extra_path(path: str) -> str:
@@ -181,3 +185,89 @@ class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
 
     def galaxy_url(self):
         return self.job_io.galaxy_url
+
+
+class ProtectedInputsComputeEnvironment(ComputeEnvironment):
+    """Point the tool at decrypted copies of protected inputs, delegate everything else.
+
+    The decrypted copies are produced on the compute host before the tool runs, as
+    described by the job's :class:`~galaxy.job_execution.protection.ProtectionPlan`.
+    """
+
+    def __init__(self, base: ComputeEnvironment, plan: "ProtectionPlan"):
+        self.base = base
+        self.plan = plan
+
+    def __getattr__(self, name: str) -> Any:
+        # Runner specific attributes, e.g. Pulsar's path mapper.
+        return getattr(self.base, name)
+
+    @property
+    def materialized_objects(self) -> dict[str, DeferrableObjectsT]:
+        return self.base.materialized_objects
+
+    @materialized_objects.setter
+    def materialized_objects(self, value: dict[str, DeferrableObjectsT]) -> None:
+        # Set by the tool evaluator, read by runners from the environment they created.
+        self.base.materialized_objects = value
+
+    def input_path_rewrite(self, dataset):
+        base_path = self.base.input_path_rewrite(dataset)
+        protected_input = self.plan.staged_input(dataset.dataset.id)
+        return protected_input.primary.staged_path if protected_input else base_path
+
+    def input_extra_files_rewrite(self, dataset):
+        base_path = self.base.input_extra_files_rewrite(dataset)
+        protected_input = self.plan.staged_input(dataset.dataset.id)
+        return protected_input.staged_extra_files_path if protected_input else base_path
+
+    def output_names(self):
+        return self.base.output_names()
+
+    def output_path_rewrite(self, dataset):
+        return self.base.output_path_rewrite(dataset)
+
+    def output_extra_files_rewrite(self, dataset):
+        return self.base.output_extra_files_rewrite(dataset)
+
+    def input_metadata_rewrite(self, dataset, metadata_value):
+        return self.base.input_metadata_rewrite(dataset, metadata_value)
+
+    def unstructured_path_rewrite(self, path):
+        return self.base.unstructured_path_rewrite(path)
+
+    def container_path_rewrite(self, path):
+        return self.base.container_path_rewrite(path)
+
+    def working_directory(self):
+        return self.base.working_directory()
+
+    def config_directory(self):
+        return self.base.config_directory()
+
+    def env_config_directory(self):
+        return self.base.env_config_directory()
+
+    def sep(self):
+        return self.base.sep()
+
+    def new_file_path(self):
+        return self.base.new_file_path()
+
+    def tool_directory(self):
+        return self.base.tool_directory()
+
+    def version_path(self):
+        return self.base.version_path()
+
+    def home_directory(self):
+        return self.base.home_directory()
+
+    def tmp_directory(self):
+        return self.base.tmp_directory()
+
+    def galaxy_url(self):
+        return self.base.galaxy_url()
+
+    def get_file_sources_dict(self) -> dict[str, Any]:
+        return self.base.get_file_sources_dict()
