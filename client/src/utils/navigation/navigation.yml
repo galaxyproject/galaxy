@@ -105,6 +105,26 @@ preferences:
       option_card_select: '#g-card-action-select-${object_store_id}'
       confirm_button: '#modal-select-preferred-object-store .g-modal-close-button'
 
+custom_builds:
+  selectors:
+    name: 'input#name'
+    key: 'input#id'
+    definition: 'select#type'
+    fasta_file: 'select#fasta-file'
+    save: 'button#save'
+    len_text: 'textarea#len-file-text-area'
+    success_alert: '.alert-success.alert-dismissible'
+    table: 'table.g-table'
+    row:
+      type: xpath
+      selector: '//table[contains(@class, "g-table")]//tr[td[1][normalize-space(.)="${name}"]]'
+    row_count:
+      type: xpath
+      selector: '//table[contains(@class, "g-table")]//tr[td[1][normalize-space(.)="${name}"]]/td[3]'
+    row_delete:
+      type: xpath
+      selector: '//table[contains(@class, "g-table")]//tr[td[1][normalize-space(.)="${name}"]]//button[@data-title="Delete build"]'
+
 object_store_instances:
   index:
     selectors:
@@ -1730,6 +1750,7 @@ upload_activity:
       type: xpath
       selector: '//button[normalize-space() = "Cancel"]'
     row_name_input: '[data-test-id="upload-row-${row}-name"]'
+    table_sortable_header: 'th.g-table-sortable[id^="g-table-field-${field}-"]'
     row_extension_select: '[data-test-id="upload-row-${row}-extension"] .single-item-selector'
     row_dbkey_select: '[data-test-id="upload-row-${row}-dbkey"] .single-item-selector'
     paste_content_row_toggle_button: '[data-test-id="paste-content-toggle-${row}"]'

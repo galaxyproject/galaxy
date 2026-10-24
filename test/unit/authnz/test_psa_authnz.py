@@ -278,6 +278,37 @@ def test_decode_access_token_invalid_issuer():
         decode_access_token_oidc(token_str=dummy_access_token.access_token_str, backend=mock_backend)
 
 
+def test_decode_access_token_other_provider_without_matching_key():
+    """
+    Test that a token from another provider reads as an issuer mismatch even when this
+    provider has no key for it, so the next configured provider gets to try it
+    """
+    dummy_access_token = create_access_token(iss="https://other-provider.url")
+    mock_backend = MagicMock()
+    mock_backend.find_valid_key.return_value = None
+    mock_backend.strategy.config = {"accepted_audiences": dummy_access_token.access_token_data["aud"]}
+    mock_backend.id_token_issuer.return_value = "https://validissuer.com"
+    mock_backend.__class__ = OpenIdConnectAuth  # type: ignore[assignment]
+    with pytest.raises(InvalidIssuerError):
+        decode_access_token_oidc(token_str=dummy_access_token.access_token_str, backend=mock_backend)
+    mock_backend.find_valid_key.assert_not_called()
+
+
+def test_decode_access_token_no_matching_key():
+    """
+    Test that a token from this provider with no matching signing key is an invalid token
+    rather than an unexpected error
+    """
+    dummy_access_token = create_access_token()
+    mock_backend = MagicMock()
+    mock_backend.find_valid_key.return_value = None
+    mock_backend.strategy.config = {"accepted_audiences": dummy_access_token.access_token_data["aud"]}
+    mock_backend.id_token_issuer.return_value = dummy_access_token.access_token_data["iss"]
+    mock_backend.__class__ = OpenIdConnectAuth  # type: ignore[assignment]
+    with pytest.raises(InvalidSignatureError):
+        decode_access_token_oidc(token_str=dummy_access_token.access_token_str, backend=mock_backend)
+
+
 def test_decode_access_token_invalid_audience():
     """
     Test that a token with an invalid audience (doesn't match what we expect)

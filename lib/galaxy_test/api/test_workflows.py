@@ -982,6 +982,33 @@ steps:
         post_update_workflow = self.workflow_populator.download_workflow(workflow_id)
         assert post_update_workflow["name"] == new_name
 
+    def test_update_with_unchanged_export_of_workflow_with_subworkflow(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  dataset: data
+steps:
+  subworkflow:
+    in:
+      dataset: dataset
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        dataset:
+          type: data
+      steps:
+        cat1:
+          tool_id: cat1
+          in:
+            input1: dataset
+""")
+        exported = self.workflow_populator.download_workflow(workflow_id, style="export")
+        # The embedded subworkflow was built with the update's options, which lack `publish`: HTTP 500.
+        self._update_workflow(workflow_id, exported).raise_for_status()
+        updated = self.workflow_populator.download_workflow(workflow_id, style="export")
+        subworkflow_steps = [s for s in updated["steps"].values() if s["type"] == "subworkflow"]
+        assert len(subworkflow_steps) == 1, updated
+
     def test_update_name_empty(self):
         # Update doesn't allow empty names.
 
@@ -7458,6 +7485,18 @@ steps:
         assert not self.workflow_populator.workflow_invocations(workflow_id)
         assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
 
+    def test_run_with_unknown_on_complete_action_creates_no_history(self):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        history_name = f"unknown completion action history {uuid4()}"
+        response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"new_history_name": history_name, "on_complete": [{"not_an_action": {}}]},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Unknown on_complete action 'not_an_action'")
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
     @skip_without_tool("test_data_source")
     @pytest.mark.parametrize("new_history", [False, True])
     @pytest.mark.parametrize("nested", [False, True])
@@ -7570,6 +7609,33 @@ steps:
         )
         assert self.workflow_populator.workflow_invocations(workflow_id) == []
         assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @pytest.mark.parametrize(
+        "config",
+        [None, [], "invalid", {}, {"target_uri": None}, {"target_uri": ""}, {"target_uri": "   "}, {"target_uri": 42}],
+    )
+    def test_run_with_invalid_export_completion_config_creates_no_history(self, config):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        history_name = f"invalid completion export history {uuid4()}"
+        response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"new_history_name": history_name, "on_complete": [{"export_to_file_source": config}]},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "export_to_file_source")
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @pytest.mark.parametrize("config", [None, {}])
+    def test_run_with_notification_completion_config(self, config):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        with self.dataset_populator.test_history() as history_id:
+            response = self.workflow_populator.invoke_workflow_raw(
+                workflow_id,
+                {"history_id": history_id, "on_complete": [{"send_notification": config}]},
+            )
+            self._assert_status_code_is(response, 200)
+            assert response.json()["history_id"] == history_id
 
     def test_run_with_optional_data_specified_to_multi_data(self):
         with self.dataset_populator.test_history() as history_id:

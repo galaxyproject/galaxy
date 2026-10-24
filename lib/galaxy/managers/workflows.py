@@ -919,7 +919,10 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow.stored_workflow = stored
         stored.latest_workflow = workflow
         stored.user = trans.user
-        stored.published = workflow_create_options.publish
+        # An update builds embedded subworkflows with WorkflowUpdateOptions, which has no `publish`.
+        stored.published = (
+            isinstance(workflow_create_options, WorkflowCreateOptions) and workflow_create_options.publish
+        )
         stored.hidden = hidden
         if data["annotation"]:
             annotation = sanitize_html(data["annotation"])

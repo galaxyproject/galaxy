@@ -21,6 +21,7 @@ from galaxy_test.base.populators import (
 TEST_SOURCE_URI = "http://google.com/dataset.txt"
 TEST_HASH_FUNCTION = "MD5"
 TEST_HASH_VALUE = "moocowpretendthisisahas"
+VTK_POLY_DATA = '<?xml version="1.0"?>\n<VTKFile type="PolyData" version="0.1">\n</VTKFile>\n'
 
 
 # TODO: Test anonymous access.
@@ -32,6 +33,16 @@ class TestHistoryContentsApi(ApiTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
+
+    def test_archive_uses_download_extension(self, history_id):
+        self.dataset_populator.new_dataset(
+            history_id, content=VTK_POLY_DATA, file_type="vtkxml", name="mesh", wait=True
+        )
+        response = self._get(f"histories/{history_id}/contents/archive/contents.zip", {"dry_run": True})
+        self._assert_status_code_is(response, 200)
+        archive_paths = [archive_path for _, archive_path in response.json()]
+        assert len(archive_paths) == 1
+        assert archive_paths[0].endswith("mesh.vtp")
 
     def test_index_hda_summary(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id)
