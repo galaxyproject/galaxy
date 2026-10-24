@@ -1412,7 +1412,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def workflow_editor_source_sink_terminal_elements(
         self, source: EditorTerminalReference, sink: EditorTerminalReference
-    ):
+    ) -> tuple[WebElementProtocol, WebElementProtocol]:
         source_node, source_output = self.workflow_editor_node_and_terminal(source)
         sink_node, sink_input = self.workflow_editor_node_and_terminal(sink)
         return (
