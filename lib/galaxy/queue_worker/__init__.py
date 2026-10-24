@@ -36,6 +36,7 @@ from galaxy.managers.sse import (
     SSEEvent,
 )
 from galaxy.model import User
+from galaxy.structured_app import StructuredApp
 from galaxy.tools import ToolBox
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.special_tools import load_lib_tools
@@ -45,10 +46,7 @@ log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from galaxy.app import UniverseApplication
-    from galaxy.structured_app import (
-        MinimalManagerApp,
-        StructuredApp,
-    )
+    from galaxy.structured_app import MinimalManagerApp
 
 
 class NotifyUsersPayload(TypedDict, total=False):
@@ -348,6 +346,8 @@ def reload_tool_data_tables(app, **kwargs):
     table_names = path or table_name or "all tables"
     log.debug("Executing tool data table reload for %s", table_names)
     table_names = app.tool_data_tables.reload_tables(table_names=table_name, path=path)
+    if isinstance(app, StructuredApp):
+        app.watchers.update_watch_data_table_paths()
     log.debug("Finished data table reload for %s", table_names)
 
 
