@@ -1,4 +1,5 @@
 from json import loads
+from math import isfinite
 from statistics import (
     fmean,
     median,
@@ -105,6 +106,9 @@ class ColumnDataProvider(BaseDataProvider):
                 try:
                     val = float(val)
                 except ValueError:
+                    return None
+                # nan and inf break the stats and are not JSON compliant
+                if not isfinite(val):
                     return None
             return val
 

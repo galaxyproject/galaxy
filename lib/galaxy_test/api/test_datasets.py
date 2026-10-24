@@ -475,12 +475,12 @@ class TestDatasetsApi(ApiTestCase):
         assert "\nA" in display["data"][0]
 
     def test_raw_data_tabular_numeric_column_stats(self, history_id):
-        # columns: even-count ints, uncastable NA among odd-count castables, all NA
-        contents = "2\t2\tNA\n4\tNA\tNA\n6\t4\tNA\n12\t9\tNA\n"
+        # columns: even-count ints, uncastable NA among odd-count castables, all NA, non-finite floats
+        contents = "2\t2\tNA\tnan\n4\tNA\tNA\t3\n6\t4\tNA\tinf\n12\t9\tNA\t6\n"
         hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
-        response = self._get(f"datasets/{hda['id']}", {"data_type": "raw_data", "columns": "[0,1,2]"})
+        response = self._get(f"datasets/{hda['id']}", {"data_type": "raw_data", "columns": "[0,1,2,3]"})
         self._assert_status_code_is(response, 200)
-        even, uncastable, all_na = response.json()["meta"]
+        even, uncastable, all_na, non_finite = response.json()["meta"]
 
         assert even["count"] == 4
         assert even["min"] == 2
@@ -496,6 +496,12 @@ class TestDatasetsApi(ApiTestCase):
         assert all_na["min"] is None
         assert "mean" not in all_na
         assert "median" not in all_na
+
+        assert non_finite["count"] == 4
+        assert non_finite["min"] == 3
+        assert non_finite["max"] == 6
+        assert non_finite["mean"] == 4.5
+        assert non_finite["median"] == 4.5
 
     def test_bam_chunking_through_display_endpoint(self, history_id):
         # This endpoint does not use data providers and instead overrides display_data
