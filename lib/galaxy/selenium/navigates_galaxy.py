@@ -1444,7 +1444,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return self.wait_for_selector_visible(".activity-settings")
 
     def workflow_editor_click_run(self):
-        return self.wait_for_and_click_selector("#workflow-run-button")
+        """Open the run form from the editor's Run activity."""
+        return self.components.workflow_editor.tool_bar.run.wait_for_and_click()
 
     def workflow_editor_click_save(self):
         self.wait_for_and_click_selector("#workflow-save-button")
@@ -2052,10 +2053,16 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_specify_inputs(self, inputs: dict[str, Any]):
+        """Select a dataset or collection by hid for each input label, in the simplified or expanded run form."""
         workflow_run = self.components.workflow_run
+        workflow_run.run_workflow.wait_for_visible()
+        # Expanded form tool steps also carry data-label attributes; step-label names only input steps.
+        input_field = (
+            workflow_run.input_select_field if workflow_run.expanded_form.is_absent else workflow_run.input_data_div
+        )
         for label, value in inputs.items():
-            input_div_element = workflow_run.input_data_div(label=label).wait_for_visible()
-            hid = value.pop("hid")
+            input_div_element = input_field(label=label).wait_for_visible()
+            hid = value["hid"]
             self.select_set_value(input_div_element, f"{hid}: ")
 
     def workflow_run_submit(self):
