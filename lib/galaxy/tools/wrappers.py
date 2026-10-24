@@ -857,3 +857,11 @@ class ElementIdentifierMapper:
             element_identifier = input_values.get(identifier_key, None)
 
         return element_identifier
+
+    def identifiers_by_dataset_id(self, input_values: dict[str, str]) -> dict[int, str]:
+        """Map each input dataset's id to the element identifier recorded for it."""
+        return {
+            dataset.id: identifier
+            for dataset, identifier_key in self.identifier_key_dict.items()
+            if dataset is not None and (identifier := input_values.get(identifier_key))
+        }

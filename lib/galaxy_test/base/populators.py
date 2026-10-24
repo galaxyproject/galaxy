@@ -169,6 +169,10 @@ TOOL_WITH_SHELL_COMMAND = {
         }
     ],
 }
+TOOL_WITH_ELEMENT_IDENTIFIER = {
+    **TOOL_WITH_SHELL_COMMAND,
+    "shell_command": "echo '$(inputs.input.element_identifier)' > output.fastq",
+}
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
 
@@ -1256,18 +1260,22 @@ class BaseDatasetPopulator(BasePopulator):
 
     def tool_request_raw(
         self,
-        tool_id: str,
+        tool_id: Optional[str],
         inputs: dict[str, Any],
         history_id: str,
         strict: bool = True,
         preferred_object_store_id: Optional[str] = None,
+        tool_uuid: Optional[str] = None,
     ) -> Response:
-        payload = {
-            "tool_id": tool_id,
+        payload: dict[str, Any] = {
             "history_id": history_id,
             "inputs": inputs,
             "strict": strict,
         }
+        if tool_id is not None:
+            payload["tool_id"] = tool_id
+        if tool_uuid is not None:
+            payload["tool_uuid"] = tool_uuid
         if preferred_object_store_id is not None:
             payload["preferred_object_store_id"] = preferred_object_store_id
         response = self._post("jobs", data=payload, json=True)
@@ -1375,6 +1383,16 @@ class BaseDatasetPopulator(BasePopulator):
         details_response = self._get_contents_request(history_id, f"/dataset_collections/{hdca_id}")
         assert details_response.status_code == 200, details_response.content
         return details_response.json()
+
+    def get_collection_element_contents(self, history_id: str, hdca_id: str) -> dict[str, str]:
+        """Map each element identifier of a flat dataset collection to its dataset's content."""
+        elements = self.get_history_collection_details(history_id, content_id=hdca_id)["elements"]
+        return {
+            element["element_identifier"]: self.get_history_dataset_content(
+                history_id, dataset_id=element["object"]["id"]
+            )
+            for element in elements
+        }
 
     def run_collection_creates_list(self, history_id: str, hdca_id: str) -> Response:
         inputs = {

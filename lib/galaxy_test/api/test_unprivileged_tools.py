@@ -1,10 +1,12 @@
 # Test tools API.
+from typing import Any
 from uuid import uuid4
 
 from galaxy.tool_util_models import UserToolSource
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    TOOL_WITH_ELEMENT_IDENTIFIER,
     TOOL_WITH_SHELL_COMMAND,
 )
 from ._framework import ApiTestCase
@@ -129,6 +131,83 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             output_content = self.dataset_populator.get_history_dataset_content(history_id)
             assert output_content == "abc\n"
+
+    def test_run_mapped_over_writes_element_identifier(self):
+        contents = self._run_mapped_over_list(TOOL_WITH_ELEMENT_IDENTIFIER, [("sample_a", "a"), ("sample_b", "b")])
+        assert contents == {"sample_a": "sample_a\n", "sample_b": "sample_b\n"}
+
+    def test_tool_request_mapped_over_writes_element_identifier(self):
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_ELEMENT_IDENTIFIER)
+            )
+            hdca = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[("sample_a", "a"), ("sample_b", "b")], wait=True
+            ).json()["outputs"][0]
+            response = self.dataset_populator.tool_request_raw(
+                tool_id=None,
+                inputs={"input": {"__class__": "Batch", "values": [{"src": "hdca", "id": hdca["id"]}]}},
+                history_id=history_id,
+                tool_uuid=dynamic_tool["uuid"],
+            )
+            self._assert_status_code_is(response, 200)
+            tool_request_id = response.json()["tool_request_id"]
+            assert self.dataset_populator.wait_on_tool_request(tool_request_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            [implicit] = self.dataset_populator.get_tool_request(tool_request_id)["implicit_collections"]
+            contents = self.dataset_populator.get_collection_element_contents(history_id, implicit["id"])
+        assert contents == {"sample_a": "sample_a\n", "sample_b": "sample_b\n"}
+
+    def test_run_mapped_over_converted_input_writes_element_identifier(self):
+        tabular_input = [{**TOOL_WITH_ELEMENT_IDENTIFIER["inputs"][0], "format": "tabular"}]
+        tool = {**TOOL_WITH_ELEMENT_IDENTIFIER, "inputs": tabular_input}
+        contents = self._run_mapped_over_list(tool, [("sample_a", "a,1\n"), ("sample_b", "b,2\n")], ext="csv")
+        assert contents == {"sample_a": "sample_a\n", "sample_b": "sample_b\n"}
+
+    def test_run_plain_dataset_element_identifier_falls_back_to_name(self):
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_ELEMENT_IDENTIFIER)
+            )
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc", name="reads.txt")
+            self._run(
+                history_id=history_id,
+                tool_uuid=dynamic_tool["uuid"],
+                inputs={"input": {"src": "hda", "id": dataset["id"]}},
+                assert_ok=True,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        assert output_content == "reads.txt\n"
+
+    def _run_mapped_over_list(
+        self, tool: dict[str, Any], elements: list[tuple[str, str]], ext: str = "txt"
+    ) -> dict[str, str]:
+        """Run a UDT mapped over a new list via /api/tools; return output contents by element identifier."""
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**tool))
+            hdca = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=elements, ext=ext, wait=True
+            ).json()["outputs"][0]
+            run = self._run(
+                history_id=history_id,
+                tool_uuid=dynamic_tool["uuid"],
+                inputs={"input": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"]}]}},
+                assert_ok=True,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            return self.dataset_populator.get_collection_element_contents(
+                history_id, run["implicit_collections"][0]["id"]
+            )
 
     def test_rerun_private_udt_denied_for_non_owner_with_execute_role(self):
         with (
