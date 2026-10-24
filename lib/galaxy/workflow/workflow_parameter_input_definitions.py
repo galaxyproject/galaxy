@@ -49,12 +49,15 @@ def split_numeric_bounds(
 ) -> tuple[Optional[NumericBounds], list[dict[str, Any]]]:
     """Separate an integer or float input's ``in_range`` validator, which the parameter expresses as min/max.
 
-    Bounds are ``None`` when the input has no range validator or neither end is set.
+    Only a range that min/max can express is separated; a negated range, exclusive ends, a custom message
+    or fractional bounds on an integer input stay validators. Bounds are ``None`` when the input has no
+    such range or neither end is set.
     """
     validators = list(parameter_def.get("validators") or [])
-    if parameter_def["parameter_type"] not in ["integer", "float"]:
+    parameter_type = parameter_def["parameter_type"]
+    if parameter_type not in ["integer", "float"]:
         return None, validators
-    range_validator = next((v for v in validators if v["type"] == "in_range"), None)
+    range_validator = next((v for v in validators if _range_is_bounds(parameter_type, v)), None)
     if range_validator is None:
         return None, validators
     validators.remove(range_validator)
@@ -62,6 +65,17 @@ def split_numeric_bounds(
     if lower is None and upper is None:
         return None, validators
     return NumericBounds(min=lower, max=upper), validators
+
+
+def _range_is_bounds(parameter_type: str, validator: dict[str, Any]) -> bool:
+    # Unlike _form_can_show, this skips model validation, so inverted bounds still separate and get reported.
+    shape = FORM_VALIDATOR_SHAPES[parameter_type]
+    if validator.get("type") != shape.validator_type:
+        return False
+    keys = {key for key, value in validator.items() if value is not None and value is not False} - {"type"}
+    return keys <= shape.fields and all(
+        isinstance(validator.get(key), (shape.field_value_type, type(None))) for key in shape.fields
+    )
 
 
 def numeric_bounds_inverted(bounds: NumericBounds) -> bool:
