@@ -29,6 +29,12 @@
     }
 }
 
+// Browser row name in a flex cell: wrap long unbroken names inside the column - use as mixin
+@mixin upload-browser-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 // Column header with vertical layout (title + dropdown)
 .column-header-vertical {
     display: flex;

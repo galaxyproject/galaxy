@@ -1077,6 +1077,15 @@ class UsesUploadActivity(NavigatesGalaxyMixin):
         context_class = _CONTEXT_CLASS_MAP[method_id]
         return context_class(base_context)  # type: ignore[return-value]
 
+    def assert_label_within_its_column(self, label, what: str) -> None:
+        """Assert browser row ``label`` doesn't run past the right edge of its table cell."""
+        overflow = self.execute_script(
+            "const label = arguments[0];"
+            'return label.getBoundingClientRect().right - label.closest("td").getBoundingClientRect().right;',
+            label,
+        )
+        assert overflow <= 0, f"{what} runs {overflow}px past the Name column"
+
     def _rule_import_context(self) -> RuleImportContext:
         context = getattr(self, "_active_rule_import_context", None)
         if context is None:
