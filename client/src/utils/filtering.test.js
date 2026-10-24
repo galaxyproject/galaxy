@@ -97,7 +97,8 @@ describe("filtering", () => {
         expect(HistoryFilters.getFilterValue("", "deleted")).toBe(false);
         expect(HistoryFilters.getFilterValue("", "visible")).toBe(true);
         expect(HistoryFilters.getFilterValue("name_eq:Select", "name")).toBe(undefined);
-        expect(HistoryFilters.getFilterValue("name_eq:Select", "name_eq")).toBe("select");
+        // name_eq is an equals key, so its case is preserved even unquoted
+        expect(HistoryFilters.getFilterValue("name_eq:Select", "name_eq")).toBe("Select");
     });
     test("parse get valid filters and settings", () => {
         sampleFilters.forEach((sample) => {
@@ -120,6 +121,8 @@ describe("filtering", () => {
             expect(filters[3][1]).toBe("2021-01-01");
             expect(filters[4][0]).toBe("update_time_lt");
             expect(filters[4][1]).toBe("2022-01-01");
+            // state and extension use equals() as their handler, but aren't dedicated `_eq`
+            // sibling keys, so they still fold to lower case when unquoted like any other key
             expect(filters[5][0]).toBe("state");
             expect(filters[5][1]).toBe("success");
             expect(filters[6][0]).toBe("extension");
@@ -138,7 +141,7 @@ describe("filtering", () => {
         });
     });
     test("parse filter text as query dictionary", () => {
-        filterTexts.forEach((filterText) => {
+        filterTexts.forEach((filterText, i) => {
             const queryDict = HistoryFilters.getQueryDict(filterText);
             // both fixtures quote the name (`name:'name of item'`) but the value has a space
             expect(queryDict["name-contains"]).toBe("name of item");
@@ -147,6 +150,8 @@ describe("filtering", () => {
             expect(queryDict["hid-lt"]).toBe("100");
             expect(queryDict["create_time-gt"]).toBe(1609459200);
             expect(queryDict["update_time-lt"]).toBe(1640995200);
+            // state and extension use equals() as their handler, but aren't dedicated `_eq`
+            // sibling keys, so they still fold to lower case when unquoted like any other key
             expect(queryDict["state-eq"]).toBe("success");
             expect(queryDict["extension-eq"]).toBe("ext");
             expect(queryDict["tag"]).toBe("first");
@@ -237,8 +242,9 @@ describe("filtering", () => {
             visible: "true",
         };
         // iterate through filterTexts and compare with parsedFilters. filterTexts[0] quotes
-        // `visible:'TRUE'`, so its parsed value keeps the original case (see the quoted-value
-        // block below); everything else folds the same either way.
+        // `visible:'TRUE'`, so its parsed value keeps the original case; filterTexts[1] writes
+        // `state`/`extension` in mixed case unquoted, which still folds to lower case since
+        // neither is a dedicated `_eq` sibling key.
         filterTexts.forEach((filterText, i) => {
             const expected = i === 0 ? { ...parsedFilters, visible: "TRUE" } : parsedFilters;
             expect(Object.fromEntries(HistoryFilters.getFiltersForText(filterText))).toEqual(expected);
@@ -297,8 +303,8 @@ describe("quoted filter values (case preserved, grouped, not routed to _eq)", ()
         expect(F.getQueryDict("name:GREP")).toEqual({ "name-contains": "grep" });
     });
 
-    test("getQueryDict routes the explicit name_eq: key to an exact match", () => {
-        expect(F.getQueryDict("name_eq:GREP")).toEqual({ "name-eq": "grep" });
+    test("getQueryDict routes the explicit name_eq: key to an exact match, case preserved", () => {
+        expect(F.getQueryDict("name_eq:GREP")).toEqual({ "name-eq": "GREP" });
         expect(F.getQueryDict("name_eq:'GREP'")).toEqual({ "name-eq": "GREP" });
     });
 
@@ -307,8 +313,9 @@ describe("quoted filter values (case preserved, grouped, not routed to _eq)", ()
         expect(F.getQueryString("name:grep")).toBe("q=name-contains&qv=grep");
     });
 
-    test("a quoted value with no _eq sibling still strips quotes and preserves case", () => {
+    test("state uses equals() as its handler, but is not a dedicated `_eq` sibling key, so it follows the normal quoted/unquoted case rule", () => {
         expect(F.getQueryDict("state:'OK'")).toEqual({ "state-eq": "OK" });
+        expect(F.getQueryDict("state:OK")).toEqual({ "state-eq": "ok" });
     });
 
     test("getFilterText re-serializes a quoted single-word value unquoted", () => {
@@ -416,8 +423,8 @@ describe("quote matching + unspecified text + autoFilterKey combined (JobsFilter
         expect(JF.getQueryDict("tool_id:'Foo'")).toEqual({ "tool_id-contains": "Foo" });
     });
 
-    test("the explicit tool_id_eq: key requests an exact match", () => {
-        expect(JF.getQueryDict("tool_id_eq:Foo")).toEqual({ "tool_id-eq": "foo" });
+    test("the explicit tool_id_eq: key requests an exact match, case preserved", () => {
+        expect(JF.getQueryDict("tool_id_eq:Foo")).toEqual({ "tool_id-eq": "Foo" });
     });
 
     test("a quoted bare multi-word token is still an exact match (autoFilterKey's own syntax)", () => {

@@ -19,6 +19,7 @@ from fastapi import (
     Depends,
     Path,
     Query,
+    Response,
 )
 from fastapi.responses import PlainTextResponse
 from pydantic import Field
@@ -99,6 +100,12 @@ UserDetailsQueryParam: bool = Query(
     default=False,
     title="Include user details",
     description="If true, and requester is an admin, will return external job id and user email. This is only available to admins.",
+)
+
+IncludeTotalCountQueryParam: bool = Query(
+    default=False,
+    title="Include total count",
+    description="If true, the total number of jobs matching the query is returned in the `total_matches` response header.",
 )
 
 UserIdQueryParam: DecodedDatabaseIdField | None = Query(
@@ -284,6 +291,7 @@ class FastAPIJobs:
     @router.get("/api/jobs")
     def index(
         self,
+        response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         states: list[str] | None = Depends(query_parameter_as_list(StateQueryParam)),
         user_details: bool = UserDetailsQueryParam,
@@ -302,6 +310,7 @@ class FastAPIJobs:
         search: str | None = SearchQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
+        include_total_count: bool = IncludeTotalCountQueryParam,
     ) -> list[ShowFullJobResponse | EncodedJobDetails | JobSummary]:
         payload = JobIndexPayload.model_construct(
             states=states,
@@ -322,7 +331,10 @@ class FastAPIJobs:
             limit=limit,
             offset=offset,
         )
-        return self.service.index(trans, payload)
+        jobs, total_matches = self.service.index(trans, payload, include_total_count=include_total_count)
+        response.headers["total_matches"] = str(total_matches)
+        # Ignoring type checking here because `service.index` returns plain dicts, not response models.
+        return jobs  # type: ignore[return-value]
 
     @router.get(
         "/api/jobs/{job_id}/common_problems",

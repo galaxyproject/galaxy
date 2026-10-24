@@ -45284,6 +45284,8 @@ export interface operations {
                 limit?: number;
                 /** @description Return jobs starting from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, jobs 200-299 will be returned. */
                 offset?: number;
+                /** @description If true, the total number of jobs matching the query is returned in the `total_matches` response header. */
+                include_total_count?: boolean;
                 /** @description A list or comma-separated list of states to filter job query on. If unspecified, jobs of any state may be returned. */
                 state?: string[] | null;
                 /** @description Limit listing of jobs to those that match one of the included tool_ids. If none, all are returned */

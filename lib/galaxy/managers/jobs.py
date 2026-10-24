@@ -50,6 +50,7 @@ from galaxy.job_metrics import (
     RawMetric,
     Safety,
 )
+from galaxy.managers.base import get_count
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import (
     ProvidesAppContext,
@@ -200,7 +201,9 @@ class JobManager:
         self.dataset_manager = DatasetManager(app)
         self.history_manager = history_manager
 
-    def index_query(self, trans: ProvidesUserContext, payload: JobIndexQueryPayload) -> sqlalchemy.engine.ScalarResult:
+    def index_query(
+        self, trans: ProvidesUserContext, payload: JobIndexQueryPayload, include_total_count: bool = False
+    ) -> tuple[sqlalchemy.engine.ScalarResult, int | None]:
         """The caller is responsible for security checks on the resulting job if
         history_id, invocation_id, or implicit_collection_jobs_id is set.
         Otherwise this will only return the user's jobs or all jobs if the requesting
@@ -342,6 +345,11 @@ class JobManager:
         if search:
             stmt = add_search_criteria(stmt)
 
+        if include_total_count:
+            total_matches = get_count(trans.sa_session, stmt)
+        else:
+            total_matches = None
+
         if order_by == JobIndexSortByEnum.create_time:
             stmt = stmt.order_by(order_by_columns.create_time.desc())
         else:
@@ -349,7 +357,7 @@ class JobManager:
 
         stmt = stmt.offset(payload.offset)
         stmt = stmt.limit(payload.limit)
-        return trans.sa_session.scalars(stmt)
+        return trans.sa_session.scalars(stmt), total_matches
 
     def job_lock(self) -> JobLock:
         return JobLock(active=self.app.job_manager.job_lock)

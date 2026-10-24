@@ -1370,6 +1370,17 @@ invocations:
     wizard_export_button: '.wizard-actions .go-next-btn.btn-primary'
     export_download_link: '.download-link'
 
+job_panel:
+  selectors:
+    activity: '#activity-jobs'
+    panel: '[data-description="Jobs"]'
+    search_input: '[data-description="Jobs"] input.search-query[data-description="filter text input"]'
+    name_mode_toggle: '[data-description="Jobs"] [data-test-id="job-panel-name-mode-toggle"]'
+    job_card: '#g-card-job-${job_id}'
+    job_card_title: '#g-card-job-${job_id} .job-card-title-text'
+    job_card_state: '#g-card-job-${job_id} .job-state-badge'
+    error_alert: '[data-description="Jobs"] .alert-danger'
+
 tour:
   popover:
     selectors:
