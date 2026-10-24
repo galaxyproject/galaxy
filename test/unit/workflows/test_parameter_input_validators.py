@@ -107,6 +107,14 @@ def test_stored_min_greater_than_max_still_loads():
     assert module.get_export_state()["validators"] == step.tool_inputs["validators"]
 
 
+def test_imported_min_greater_than_max_is_flagged():
+    inverted = {"type": "in_range", "min": 5, "max": 1, "negate": False}
+    step = import_input("integer", [inverted])
+    assert step.tool_inputs["validators"] == [inverted]
+    module = modules.module_factory.from_workflow_step(_trans(), step)
+    assert module.get_errors() == "A workflow input has a minimum (5) greater than its maximum (1)."
+
+
 @pytest.mark.parametrize(
     "parameter_type,validators,accepted,rejected",
     [

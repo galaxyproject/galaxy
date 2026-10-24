@@ -190,7 +190,11 @@ WORKFLOW_PARAMETER_VALIDATOR_TYPES: dict[INPUT_PARAMETER_TYPES, list[ValidatorTy
 
 
 def check_validators(parameter_type: INPUT_PARAMETER_TYPES, validators: list[dict[str, Any]]) -> None:
-    """Build ``validators`` as a workflow run would; raise ValueError describing what could not be built."""
+    """Build ``validators`` as a workflow run would; raise ValueError describing what could not be built.
+
+    min/max bounds are left to the step error and run form checks, so inverted bounds still save.
+    """
+    _, validators = split_numeric_bounds({"parameter_type": parameter_type, "validators": validators})
     try:
         validator_models = parse_dict_validators(validators, trusted=False)
         to_validators(None, validator_models)

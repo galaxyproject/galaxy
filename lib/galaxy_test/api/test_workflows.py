@@ -7975,8 +7975,8 @@ text_input:
             )
             self._assert_status_code_is(accepted, 200)
 
-    def test_import_rejects_parameter_range_with_min_greater_than_max(self):
-        inverted = {"type": "in_range", "min": 5, "max": 1}
+    def test_import_rejects_negated_parameter_range_with_min_greater_than_max(self):
+        inverted = {"type": "in_range", "min": 5, "max": 1, "negate": True}
         response = self.workflow_populator.create_workflow_response(
             parameter_input_workflow("int_input", "integer", [inverted])
         )
