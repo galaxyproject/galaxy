@@ -1441,12 +1441,8 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
 
     def run_cat1(self, history_id: str) -> tuple[str, str]:
         """Run a single cat1 over two fresh uploads. Returns (job_id, output_id)."""
-        hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
-        hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
-        inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
-        run = self.dataset_populator.run_tool("cat1", inputs, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return run["jobs"][0]["id"], run["outputs"][0]["id"]
+        run = self.dataset_populator.run_cat1(history_id, ("foo\nbar", "baz"))
+        return run.job_id, run.output_id
 
     def setup_two_independent_cat1_runs(self, history_id: str) -> tuple[str, str, str]:
         """Two independent cat1 runs in one history. Returns (job_a, output_a, job_b).

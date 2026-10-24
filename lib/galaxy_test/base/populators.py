@@ -1289,6 +1289,16 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is(tool_response, 200)
         return tool_response.json()
 
+    def run_cat1(self, history_id: str, contents: tuple[str, str] = ("1 2 3\n", "4 5 6\n"), **kwds) -> "Cat1Run":
+        """Upload two datasets and concatenate them with cat1."""
+        d1 = self.new_dataset(history_id, content=contents[0])
+        d2 = self.new_dataset(history_id, content=contents[1])
+        self.wait_for_history(history_id, assert_ok=True)
+        inputs = {"input1": {"src": "hda", "id": d1["id"]}, "queries_0|input2": {"src": "hda", "id": d2["id"]}}
+        run = self.run_tool("cat1", inputs, history_id, **kwds)
+        self.wait_for_history(history_id, assert_ok=True)
+        return Cat1Run((d1, d2), run["jobs"][0]["id"], run["outputs"][0]["id"])
+
     def tools_post(self, payload: dict, url="tools") -> Response:
         tool_response = self._post(url, data=payload)
         return tool_response
@@ -3459,6 +3469,12 @@ steps: []
         data = {"user_ids": [user_id_or_email]}
         response = self._put(f"workflows/{workflow_id}/share_with_users", data, json=True)
         api_asserts.assert_status_code_is_ok(response)
+
+
+class Cat1Run(NamedTuple):
+    inputs: tuple[dict[str, Any], dict[str, Any]]
+    job_id: str
+    output_id: str
 
 
 class RunJobsSummary(NamedTuple):

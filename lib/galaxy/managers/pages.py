@@ -421,6 +421,19 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         session.commit()
         return page_revision
 
+    def get_accessible_notebook(self, trans: ProvidesHistoryContext, page_id: int) -> tuple[Page, History]:
+        """Return a history-attached page and its history, requiring access to both.
+
+        Page access alone (shared/published) must not expose the history's contents.
+        """
+        page = base.get_object(trans, page_id, "Page", check_ownership=False, check_accessible=True)
+        if page.history_id is None:
+            raise exceptions.RequestParameterInvalidException(
+                "Workflow extraction is only available for history-backed pages (notebooks)."
+            )
+        history = trans.app.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
+        return page, history
+
     def list_revisions(self, trans: ProvidesUserContext, page, sort_desc: bool = False):
         page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
         return sorted(page.revisions, key=lambda r: r.create_time, reverse=sort_desc)

@@ -329,6 +329,21 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
         )
         assert response.status_code == 400, response.text
 
+    @skip_without_tool("Grep1")
+    @summarize_instance_history_on_error
+    def test_hid_extract_connects_implicitly_converted_input(self, history_id):
+        with open(self.test_data_resolver.get_filename("1.fastqsanger.gz"), "rb") as fh:
+            hda = self.dataset_populator.new_dataset(history_id, content=fh, file_type="fastqsanger.gz", wait=True)
+        run = self.dataset_populator.run_tool("Grep1", {"input": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        downloaded = self._extract_and_download_workflow(
+            history_id, dataset_ids=[hda["hid"]], job_ids=[run["jobs"][0]["id"]]
+        )
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+        (grep_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
+        assert "input" in grep_step["input_connections"], grep_step
+        assert _connection_step_id(grep_step["input_connections"]["input"]) == input_step["id"], grep_step
+
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
     def test_extract_udt_step_with_downstream_tool(self, history_id):
@@ -980,20 +995,8 @@ class TestWorkflowExtractionByIdsApi(_ExtractionHelpersMixin, BaseWorkflowsApiTe
         return response.json()["id"]
 
     def _seed_two_inputs_and_run_cat1(self, history_id, c1, c2, **run_kwargs):
-        d1 = self.dataset_populator.new_dataset(history_id, content=c1)
-        d2 = self.dataset_populator.new_dataset(history_id, content=c2)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        run = self.dataset_populator.run_tool(
-            tool_id="cat1",
-            inputs={
-                "input1": {"src": "hda", "id": d1["id"]},
-                "queries_0|input2": {"src": "hda", "id": d2["id"]},
-            },
-            history_id=history_id,
-            **run_kwargs,
-        )
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return d1, d2, run["jobs"][0]["id"]
+        run = self.dataset_populator.run_cat1(history_id, (c1, c2), **run_kwargs)
+        return *run.inputs, run.job_id
 
     def _assert_single_input_single_tool(self, workflow, expected_tool_id=None):
         steps = workflow["steps"]
@@ -2242,16 +2245,8 @@ class TestNotebookWorkflowExtractionReport(
         return download.json().get("report", {}).get("markdown")
 
     def _run_cat1(self, history_id):
-        d1 = self.dataset_populator.new_dataset(history_id, content="1 2 3\n")
-        d2 = self.dataset_populator.new_dataset(history_id, content="4 5 6\n")
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        run = self.dataset_populator.run_tool(
-            tool_id="cat1",
-            inputs={"input1": {"src": "hda", "id": d1["id"]}, "queries_0|input2": {"src": "hda", "id": d2["id"]}},
-            history_id=history_id,
-        )
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return run["outputs"][0]["id"], run["jobs"][0]["id"]
+        run = self.dataset_populator.run_cat1(history_id)
+        return run.output_id, run.job_id
 
     @skip_without_tool("cat1")
     def test_report_rewrites_output_and_job_directives(self):
@@ -2321,3 +2316,54 @@ class TestNotebookWorkflowExtractionReport(
                 json=True,
             )
             assert response.status_code == 400, response.text
+
+    def _workflow_count(self) -> int:
+        response = self._get("workflows")
+        self._assert_status_code_is(response, 200)
+        return len(response.json())
+
+    def _assert_other_user_extraction_from_page_forbidden(self, page_id):
+        with self._different_user():
+            with self.dataset_populator.test_history() as history_id:
+                _, cat1_job_id = self._run_cat1(history_id)
+                before = self._workflow_count()
+                response = self._post(
+                    "workflows/extract",
+                    {"workflow_name": "stolen report", "job_ids": [cat1_job_id], "from_page_id": page_id},
+                    json=True,
+                )
+                self._assert_status_code_is(response, 403)
+                assert self._workflow_count() == before
+
+    @skip_without_tool("cat1")
+    def test_403_for_other_users_private_page(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, _ = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[out_id])
+            self._assert_other_user_extraction_from_page_forbidden(page["id"])
+
+    @skip_without_tool("cat1")
+    def test_403_for_published_page_without_history_access(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, _ = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[out_id])
+            self._assert_status_code_is(self._put(f"pages/{page['id']}/publish", json=True), 200)
+            self._assert_other_user_extraction_from_page_forbidden(page["id"])
+
+    @skip_without_tool("cat1")
+    def test_failed_report_rewrite_creates_no_workflow(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, cat1_job_id = self._run_cat1(history_id)
+            # An HTML notebook skips markdown validation on save; its fence fails the report rewrite.
+            page = self.dataset_populator.new_history_page(
+                history_id, content="```python\nprint(1)\n```\n", content_format="html"
+            )
+            before = self._workflow_count()
+            response = self._post(
+                "workflows/extract",
+                {"workflow_name": "bad report", "job_ids": [cat1_job_id], "from_page_id": page["id"]},
+                json=True,
+            )
+            self._assert_status_code_is(response, 400)
+            assert "Unsupported fenced block type" in response.json()["err_msg"], response.text
+            assert self._workflow_count() == before
