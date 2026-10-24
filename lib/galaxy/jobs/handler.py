@@ -798,11 +798,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             log.debug("(%s) Resubmitted job is not ready to be dispatched", job.id)
             return
         except Exception as e:
-            job_wrapper = self.job_wrapper(job)
-            # Without a destination, fail() would map the job again, from
-            # the tool's default rather than the resubmit destination.
-            job_wrapper.set_cached_job_destination(JobDestination(id="__fail__"))
-            self.__fail_unmappable_job(job_wrapper, e)
+            self.__fail_unmappable_job(self.job_wrapper(job), e)
             return
         if jw.is_ready_for_resubmission(job):
             self.increase_running_job_count(job.user_id, jw.job_destination.id)
@@ -819,6 +815,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             log.exception("(%s) Failed to generate job destination", job_wrapper.job_id)
         else:
             log.debug("(%s) Intentionally failing job with message (%s)", job_wrapper.job_id, failure_message)
+        # Without a destination, fail() would map the job again, from the tool's default.
+        job_wrapper.set_cached_job_destination(JobDestination(id="__fail__"))
         job_wrapper.fail(failure_message)
 
     def __verify_job_ready(self, job: model.Job, job_wrapper: JobWrapper):

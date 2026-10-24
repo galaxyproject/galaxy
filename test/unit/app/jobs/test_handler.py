@@ -473,3 +473,14 @@ def test_resubmission_dispatch_error_does_not_interrupt_other_jobs(handler):
     handler.poll()
     assert handler.dispatched == [ready]
     assert handler.app.model.context.get(model.Job, resubmit).state == "resubmitted"
+
+
+@pytest.mark.parametrize("handler", ["sqlite", "postgresql"], indirect=True)
+def test_unmappable_new_job_fails_without_mapping_again(handler):
+    job = handler.job(handler.user())
+    handler.unmappable.add(job)
+    assert job in handler.poll()
+    assert handler.remapped_on_fail == []
+    failed = handler.app.model.context.get(model.Job, job)
+    assert failed.state == "error"
+    assert failed.info == "No destination can run this job."
