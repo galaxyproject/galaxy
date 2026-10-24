@@ -38,6 +38,20 @@ COLUMN_DIVERGENT_TABLE_CONF_XML = """<tables>
 </tables>
 """
 
+SHED_COLUMN_DIVERGENT_TABLE_CONF_XML = """<tables>
+  <table name="testalpha" comment_char="#">
+    <columns>value, name, path, extra</columns>
+    <file path="{loc_path}" />
+    <tool_shed_repository>
+      <tool_shed>toolshed.g2.bx.psu.edu</tool_shed>
+      <repository_name>data_manager_example</repository_name>
+      <repository_owner>iuc</repository_owner>
+      <installed_changeset_revision>abc123</installed_changeset_revision>
+    </tool_shed_repository>
+  </table>
+</tables>
+"""
+
 
 def test_data_tables_as_dictionary(tdt_manager):
     assert "testalpha" in tdt_manager.data_tables
@@ -152,6 +166,54 @@ def test_assert_data_table_consistency_raises_column_mismatch(tdt_manager):
             {"value": 0, "name": 1, "path": 2, "extra": 3},
         )
     assert exc_info.value.table_name == "testalpha"
+
+
+@pytest.fixture
+def divergent_conf(tmp_path):
+    loc_path = tmp_path / "divergent.loc"
+    loc_path.write_text("data9\tdata9name\t/data9\textra9\n")
+    conf = tmp_path / "divergent_tool_data_table_conf.xml"
+    conf.write_text(COLUMN_DIVERGENT_TABLE_CONF_XML.format(loc_path=loc_path))
+    return conf
+
+
+def test_load_from_config_file_raises_column_mismatch(tdt_manager, tmp_path, divergent_conf):
+    with pytest.raises(DataTableColumnMismatch) as exc_info:
+        tdt_manager.load_from_config_file(divergent_conf, tmp_path)
+    assert exc_info.value.table_name == "testalpha"
+    assert exc_info.value.config_filename == divergent_conf
+    assert exc_info.value.repository_info is None
+    assert str(divergent_conf) in str(exc_info.value)
+
+
+def test_load_from_config_file_column_mismatch_names_repository(tdt_manager, tmp_path):
+    loc_path = tmp_path / "divergent.loc"
+    loc_path.write_text("data9\tdata9name\t/data9\textra9\n")
+    conf = tmp_path / "shed_tool_data_table_conf.xml"
+    conf.write_text(SHED_COLUMN_DIVERGENT_TABLE_CONF_XML.format(loc_path=loc_path))
+    with pytest.raises(DataTableColumnMismatch) as exc_info:
+        tdt_manager.load_from_config_file(conf, tmp_path, from_shed_config=True)
+    assert exc_info.value.repository_info == {
+        "tool_shed": "toolshed.g2.bx.psu.edu",
+        "name": "data_manager_example",
+        "owner": "iuc",
+        "installed_changeset_revision": "abc123",
+    }
+    assert "installed by repository iuc/data_manager_example revision abc123" in str(exc_info.value)
+    assert tdt_manager["testalpha"].columns == {"value": 0, "name": 1, "path": 2}
+
+
+def test_merge_tool_data_table_raises_column_mismatch(tdt_manager, tmp_path, divergent_conf):
+    divergent = ToolDataTableManager(tmp_path, divergent_conf)["testalpha"]
+    table = tdt_manager["testalpha"]
+    original_data = list(table.data)
+    original_filenames = dict(table.filenames)
+    with pytest.raises(DataTableColumnMismatch) as exc_info:
+        table.merge_tool_data_table(divergent)
+    assert exc_info.value.table_name == "testalpha"
+    assert exc_info.value.incoming_columns == divergent.columns
+    assert table.data == original_data
+    assert table.filenames == original_filenames
 
 
 def test_get_filename_for_source_falls_back_to_shared_filename(tdt_manager):

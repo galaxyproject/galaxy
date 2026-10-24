@@ -42,6 +42,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.datatypes.registry import Registry
 from galaxy.di import Container
+from galaxy.exceptions import ConfigurationError
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
@@ -168,7 +169,10 @@ from galaxy.tool_shed.galaxy_install.installed_repository_manager import (
 from galaxy.tool_shed.galaxy_install.update_repository_manager import (
     UpdateRepositoryManager,
 )
-from galaxy.tool_util.data import ToolDataTableManager as BaseToolDataTableManager
+from galaxy.tool_util.data import (
+    DataTableColumnMismatch,
+    ToolDataTableManager as BaseToolDataTableManager,
+)
 from galaxy.tool_util.deps import containers
 from galaxy.tool_util.deps.dependencies import AppInfo
 from galaxy.tool_util.deps.views import DependencyResolversView
@@ -212,6 +216,33 @@ from galaxy.workflow.trs_proxy import TrsProxy
 
 log = logging.getLogger(__name__)
 app = None
+
+
+def build_tool_data_tables(config: GalaxyAppConfiguration, from_shed_config: bool) -> BaseToolDataTableManager:
+    # Initialize tool data tables using the config defined by config.tool_data_table_config_path.
+    tool_data_tables: BaseToolDataTableManager = ToolDataTableManager(
+        tool_data_path=config.tool_data_path,
+        config_filename=config.tool_data_table_config_path,
+        other_config_dict=config,
+    )
+    # Load additional entries defined by config.shed_tool_data_table_config into tool data tables.
+    try:
+        tool_data_tables.load_from_config_file(
+            config_filename=config.shed_tool_data_table_config,
+            tool_data_path=tool_data_tables.tool_data_path,
+            from_shed_config=from_shed_config,
+        )
+    except OSError as exc:
+        # Missing shed_tool_data_table_config is okay if it's the default
+        if exc.errno != errno.ENOENT or config.is_set("shed_tool_data_table_config"):
+            raise
+    except DataTableColumnMismatch as e:
+        raise ConfigurationError(
+            f"{e} To start Galaxy, remove this <table name=\"{e.table_name}\"> element from '{e.config_filename}' "
+            f"or remove the other definition of {e.table_name!r}; tools that rely on the removed definition will "
+            "not work until the conflict is resolved."
+        ) from e
+    return tool_data_tables
 
 
 class HaltableContainer(Container):
@@ -459,24 +490,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         )
 
     def _configure_tool_data_tables(self, from_shed_config):
-        # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
-        tool_data_tables: BaseToolDataTableManager = ToolDataTableManager(
-            tool_data_path=self.config.tool_data_path,
-            config_filename=self.config.tool_data_table_config_path,
-            other_config_dict=self.config,
-        )
-        # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
-        try:
-            tool_data_tables.load_from_config_file(
-                config_filename=self.config.shed_tool_data_table_config,
-                tool_data_path=tool_data_tables.tool_data_path,
-                from_shed_config=from_shed_config,
-            )
-        except OSError as exc:
-            # Missing shed_tool_data_table_config is okay if it's the default
-            if exc.errno != errno.ENOENT or self.config.is_set("shed_tool_data_table_config"):
-                raise
-        self._tool_data_tables = tool_data_tables
+        self._tool_data_tables = build_tool_data_tables(self.config, from_shed_config)
 
     @property
     def tool_data_tables(self) -> BaseToolDataTableManager:
