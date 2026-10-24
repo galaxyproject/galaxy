@@ -36,8 +36,9 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
     def test_runtime_environment_warning(self):
         with self.dataset_populator.test_history() as history_id:
             result = self.dataset_populator.run_tool("runtime_environment", {}, history_id)
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            job = self.dataset_populator.get_job_details(result["jobs"][0]["id"], full=True).json()
+            job_id = result["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+            job = self.dataset_populator.get_job_details(job_id, full=True).json()
             warnings = [m for m in job["job_messages"] if m["type"] == "runtime_environment_warning"]
             assert len(warnings) == 1
             assert warnings[0]["variable_names"] == ["EMPTY_VAR", "MISSING_VAR"]
