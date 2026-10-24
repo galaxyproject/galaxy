@@ -3,6 +3,8 @@ import re
 from functools import wraps
 from typing import (
     Callable,
+    List,
+    Optional,
     TypeVar,
     Union,
 )
@@ -27,7 +29,7 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def _failure_texts(exception: Exception) -> list[str]:
+def _failure_texts(exception: Exception) -> List[str]:
     texts = [str(exception)]
     # requests.HTTPError carries the response, whose body holds the server's error message.
     response_text = getattr(getattr(exception, "response", None), "text", None)
@@ -36,7 +38,9 @@ def _failure_texts(exception: Exception) -> list[str]:
     return texts
 
 
-def skip_if_site_down(url: str, unavailable_pattern: str | None = None) -> Callable[[Callable[P, T]], Callable[P, T]]:
+def skip_if_site_down(
+    url: str, unavailable_pattern: Optional[str] = None
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """Skip the test if ``url`` does not answer with HTTP 200.
 
     With ``unavailable_pattern``, a test that fails with an exception whose message or
