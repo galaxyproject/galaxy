@@ -267,6 +267,7 @@ history_panel:
       _: '.history-index .content-item${suffix}'
       title: '${_} .content-title'
       details: '${_} .details'
+      details_expanded: '${_} > .g-collapse-shown'
       summary: '${_} .not-loading .summary'
 
       hid: '${_} .hid'
@@ -280,6 +281,7 @@ history_panel:
 
       # Title buttons...
       display_button: '${_} .display-btn'
+      edit_button: '${_} .edit-btn'
       delete_button: '${_} .delete-btn'
       undelete_button: '${_} .undelete-btn'
       unhide_button: '${_} .unhide-btn'
@@ -288,7 +290,7 @@ history_panel:
 
       # Action buttons...
       download_button: '${_} .download-btn'
-      info_button: '${_} .params-btn'
+      info_button: '${_} .info-btn'
       highlight_button: '${_} .highlight-btn'
       alltags: '${_} .stateless-tags .tag'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
