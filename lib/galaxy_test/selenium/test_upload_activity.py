@@ -229,6 +229,30 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot(label)
 
+    @selenium_test
+    @requires_admin
+    @requires_new_library
+    def test_long_data_library_names_stay_in_their_column(self):
+        long_name = "bTaeGut1_pacbio_hifi_reads_m84091_230808_224522_s2_default_long_unbroken_name" * 2
+        library_name = self._get_random_name(prefix=f"{long_name}_library_")
+        folder_name = f"{long_name}_folder"
+        self.logout_if_needed()
+        self.admin_login()
+        self.libraries_open()
+        self.libraries_index_create(library_name)
+        self.libraries_open_with_name(library_name)
+        self.libraries_folder_create(folder_name)
+        self.home()
+        self.upload_context("data-library")
+        upload = self.components.upload_activity
+        library_label = upload.data_library_library_label(label=library_name).wait_for_visible()
+        self.assert_label_within_its_column(library_label, "library name")
+        self.screenshot("upload_data_library_long_library_name_wrapped")
+        upload.data_library_library_label(label=library_name).wait_for_and_click()
+        folder_label = upload.data_library_item_label(label=folder_name).wait_for_visible()
+        self.assert_label_within_its_column(folder_label, "folder name")
+        self.screenshot("upload_data_library_long_name_wrapped")
+
     def _create_and_populate_library(self, filenames=("1.bed",), subfolders=None):
         self.logout_if_needed()
         self.admin_login()
