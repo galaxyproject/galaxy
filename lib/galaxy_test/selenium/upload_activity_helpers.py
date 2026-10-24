@@ -248,6 +248,11 @@ class _UploadStaging:
 
         return item
 
+    def sort_by(self, field: str) -> "_UploadStaging":
+        """Click a staged-items table header to sort by that column."""
+        self.components.upload_activity.table_sortable_header(field=field).wait_for_and_click()
+        return self
+
     def _row_number(self, index: int) -> int:
         return index + 1
 
@@ -674,6 +679,10 @@ class BaseUploadContext:
 
     def to_paired_list(self, name: str) -> "BaseUploadContext":
         self._context.to_paired_list(name)
+        return self
+
+    def sort_by(self: TUploadContext, field: str) -> TUploadContext:
+        self._context.sort_by(field)
         return self
 
     def _start_and_wait_for_uploaded_hids(self) -> list[int]:

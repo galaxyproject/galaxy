@@ -14,6 +14,7 @@ import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadOptionBindings } from "@/composables/upload/uploadOptionBindings";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
+import { useUploadTableSorting } from "@/composables/upload/uploadTableSorting";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
 import { buildPreparedUpload } from "@/utils/upload";
 import { mapToLocalFileUpload } from "@/utils/upload/itemMappers";
@@ -71,6 +72,7 @@ const selectedFiles = ref<LocalFileItem[]>([]);
 const { clear: clearStaging } = useUploadStaging<LocalFileItem>(props.method.id, selectedFiles, {
     disableStore: props.transient,
 });
+const { tableSortProps, tableSortEvents } = useUploadTableSorting(selectedFiles);
 const uploadFile = ref<HTMLInputElement | null>(null);
 const dropZoneElement = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
@@ -205,8 +207,11 @@ watch(
     { immediate: true },
 );
 
-function removeFile(index: number) {
-    selectedFiles.value.splice(index, 1);
+function removeFile(item: LocalFileItem) {
+    const index = selectedFiles.value.indexOf(item);
+    if (index !== -1) {
+        selectedFiles.value.splice(index, 1);
+    }
 }
 
 function addFileFromInput(eventTarget: EventTarget | null) {
@@ -272,7 +277,16 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                 </div>
 
                 <div class="file-table-container">
-                    <GTable hover striped compact fixed :items="selectedFiles" :fields="tableFields" class="file-table">
+                    <GTable
+                        v-bind="tableSortProps"
+                        hover
+                        striped
+                        compact
+                        fixed
+                        :items="selectedFiles"
+                        :fields="tableFields"
+                        class="file-table"
+                        v-on="tableSortEvents">
                         <template v-slot:cell(name)="{ item, index }">
                             <UploadTableNameCell
                                 :data-test-id="`upload-row-${index + 1}-name`"
@@ -333,7 +347,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                             <UploadTableOptionsCell v-bind="getRowOptionProps(item)" v-on="getRowOptionEvents(item)" />
                         </template>
 
-                        <template v-slot:cell(actions)="{ index }">
+                        <template v-slot:cell(actions)="{ item, index }">
                             <GButton
                                 v-g-tooltip.hover
                                 class="remove-btn"
@@ -341,7 +355,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                                 outline
                                 transparent
                                 title="Remove file from list"
-                                @click="removeFile(index)">
+                                @click="removeFile(item)">
                                 <FontAwesomeIcon :icon="faTrash" />
                             </GButton>
                         </template>

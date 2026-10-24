@@ -7,6 +7,7 @@ from typing import (
 from unittest import mock
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
@@ -1047,6 +1048,29 @@ def test_capture_unexpected_error_returns_none_loudly():
         assert _capture(resolve) == (None, None, None)
 
     log.warning.assert_called_once()
+
+
+class _PersistableFakeTool(_CaptureFakeTool):
+    version = "1.0"
+    dynamic_tool = None
+    tool_source = bunch.Bunch(to_string=lambda: "<tool/>")
+
+
+def test_capture_propagates_failure_flushing_unrelated_pending_objects():
+    trans = MockTrans()
+    history = model.History(name="target")
+    existing = model.History(name="existing")
+    trans.sa_session.add_all([history, existing])
+    trans.sa_session.commit()
+    existing_id = existing.id
+    trans.sa_session.expunge(existing)
+    trans.sa_session.add(model.History(id=existing_id, name="duplicate"))
+
+    def resolve(iteration_elements):
+        return bunch.Bunch(inputs={}), None, None
+
+    with pytest.raises(IntegrityError):
+        modules._capture_workflow_tool_request_state(trans, _PersistableFakeTool(), None, None, history, resolve, [])
 
 
 def test_to_decoded_json_lowers_connected_value_in_repeat():
