@@ -131,8 +131,8 @@ def setup_for_runtimeify(
             "listing": [],
         }
         set_basename_and_derived_properties(properties, hda_entry.dataset.created_from_basename or hda_entry.name)
-        if element_identifier := element_identifiers.get(hda_entry.id):
-            properties["element_identifier"] = element_identifier
+        # Like Cheetah's ``element_identifier``, fall back to the dataset name outside a collection.
+        properties["element_identifier"] = element_identifiers.get(hda_entry.id) or hda_entry.name
         return DataInternalJson(**properties)
 
     def adapt_collection(
