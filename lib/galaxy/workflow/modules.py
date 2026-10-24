@@ -1826,7 +1826,7 @@ class InputParameterModule(WorkflowModule):
             raise FailWorkflowEvaluation(
                 why=InvocationFailureWorkflowParameterInvalid(
                     reason=FailureReason.workflow_parameter_invalid,
-                    workflow_step_id=invocation_step.workflow_step_id,
+                    workflow_step_id=invocation_step.workflow_step.id,
                     details=str(e),
                 )
             )
