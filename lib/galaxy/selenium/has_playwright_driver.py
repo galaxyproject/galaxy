@@ -942,8 +942,9 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
                 source.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
                 drag(source, "dragstart");
                 await new Promise((resolve) => setTimeout(resolve));
-                drag(target, "dragenter");
-                drag(target, "dragover");
+                const over = ancestors.find((node) => node.isConnected) || ancestors[0];
+                drag(over, "dragenter");
+                drag(over, "dragover");
                 return { source, ancestors, dataTransfer };
             }""",
             [source, target],

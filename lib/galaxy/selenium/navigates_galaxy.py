@@ -73,7 +73,10 @@ from .has_driver import (
     SeleniumTimeoutException,
 )
 from .has_driver_proxy import HasDriverProxy
-from .smart_components import SmartComponent
+from .smart_components import (
+    SmartComponent,
+    SmartTarget,
+)
 from .web_element_protocol import WebElementProtocol
 
 P = ParamSpec("P")
@@ -1373,25 +1376,25 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
         with self.drag_over(source_element, sink_element):
             # Idle terminals also carry can-not-accept; only judge once the drag has registered.
-            dragged_over = sink_node.input_terminal_dragging(name=sink_input_name).wait_for_present()
-            if sink_node.input_terminal(name=sink_input_name).has_class("can-accept"):
-                return None
-            tooltip_id = dragged_over.get_attribute("aria-describedby")
-            reason = self.components._.tooltip_by_id(id=tooltip_id).wait_for_text()
+            sink_terminal = sink_node.input_terminal(name=sink_input_name)
+            dragged_over = self.wait_for_present(sink_terminal.with_class("is-dragging"))
             if screenshot_partial:
                 self.screenshot(screenshot_partial)
-            return reason
+            if sink_terminal.has_class("can-accept"):
+                return None
+            tooltip_id = dragged_over.get_attribute("aria-describedby")
+            return self.components._.tooltip_by_id(id=tooltip_id).wait_for_text()
 
     def workflow_editor_remove_node(self, node_ref: EditorNodeReference):
         node = self.workflow_editor_node(node_ref)
         node.destroy.wait_for_and_click()
         node.wait_for_absent()
 
-    def workflow_editor_node(self, node_ref: EditorNodeReference) -> SmartComponent:
+    def workflow_editor_node(self, node_ref: EditorNodeReference) -> SmartTarget:
         node = self.components.workflow_editor.node
         return node._(id=node_ref) if isinstance(node_ref, int) else node._(label=css_attribute_value(node_ref))
 
-    def workflow_editor_node_and_terminal(self, terminal: EditorTerminalReference) -> tuple[SmartComponent, str]:
+    def workflow_editor_node_and_terminal(self, terminal: EditorTerminalReference) -> tuple[SmartTarget, str]:
         """Resolve a ``label#terminal`` or ``(node, terminal)`` reference to a node component and CSS-escaped terminal name."""
         if isinstance(terminal, tuple):
             node_ref, terminal_name = terminal

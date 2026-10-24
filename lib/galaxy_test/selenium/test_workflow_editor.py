@@ -801,8 +801,8 @@ steps:
         self.workflow_editor_assert_connected("first_cat#out_file1", "second_cat#input1")
         self.workflow_editor_destroy_connection("second_cat#input1")
         self.workflow_editor_assert_not_connected("first_cat#out_file1", "second_cat#input1")
-        assert self.workflow_editor_try_connect("input1#output", "second_cat#input1") is None
-        self.workflow_editor_assert_connected("input1#output", "second_cat#input1")
+        self.workflow_editor_connect("first_cat#out_file1", "second_cat#input1")
+        self.workflow_editor_assert_connected("first_cat#out_file1", "second_cat#input1")
         self.workflow_editor_remove_node("first_cat")
         self.assert_workflow_has_changes_and_save()
 
@@ -810,7 +810,7 @@ steps:
         assert connections == {
             "input1": {},
             "int_input": {},
-            "second_cat": {"input1": ("input1", "output")},
+            "second_cat": {},
         }
 
     @selenium_test

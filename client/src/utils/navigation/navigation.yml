@@ -1134,7 +1134,6 @@ workflow_editor:
       _:
       - "[node-label='${label}']"
       - "#wf-node-step-${id}"
-      by_id: "#wf-node-step-${id}"
       title: '${_} .node-title'
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'
@@ -1144,7 +1143,6 @@ workflow_editor:
         selector: '//div[@data-output-name="${output_name}"]//span[text()[contains(., "(${extension})")]]'
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
-      input_terminal_dragging: "${_} [input-name='${name}'].is-dragging"
       input_mapping_icon: "${_} [input-name='${name}'].mapped-over"
       connector_destroy_callout: "${_} [input-name='${name}'] + .delete-terminal-button"
       workflow_output_toggle: "${_} [data-output-name='${name}'] .callout-terminal "
