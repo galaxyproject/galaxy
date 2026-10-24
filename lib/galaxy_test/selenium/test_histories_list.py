@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
+    SeleniumTestCase,
     SharedStateSeleniumTestCase,
 )
 
@@ -352,3 +353,20 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         # rename XHR has completed before any subsequent home() navigation
         # that would otherwise cancel the still-in-flight request.
         self.wait_for_selector(f'[data-description="name display"][title="{name}"]')
+
+
+class TestHistoriesPurge(SeleniumTestCase):
+    ensure_registered = True
+
+    @selenium_test
+    def test_purge_all_histories(self):
+        history_ids = [self.dataset_populator.new_history(f"purge me {i}") for i in range(2)]
+        self.navigate_to_histories_page()
+        assert {"purge me 0", "purge me 1"} <= set(self.get_history_titles(3))
+        self.screenshot("histories_before_bulk_purge")
+        self.histories_purge_all()
+
+        def all_purged():
+            return all(self.api_get(f"histories/{history_id}")["purged"] for history_id in history_ids)
+
+        self._wait_on(all_purged, "histories to be purged", wait_type=self.wait_types.DATABASE_OPERATION)
