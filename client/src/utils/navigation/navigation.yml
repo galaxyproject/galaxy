@@ -400,7 +400,6 @@ history_panel:
     page_button: '[data-description="history page button"]'
 
     collection_menu_button: '.collection-menu'
-    collection_menu_edit_attributes: '.edit-btn'
 
     new_history_button: '[data-description="create new history"]'
     histories_operation_menu: '[data-description="history options"]'
@@ -460,6 +459,9 @@ edit_collection_attributes:
     alert_info: 'div.alert-info'
     database_genome_tab: '.collection-edit-change-genome-nav'
     datatypes_tab: '.collection-edit-change-datatype-nav'
+    convert_tab: '.collection-edit-convert-datatype-nav'
+    converter_select: '.multiselect:has(#converter-tool)'
+    convert_btn: '.run-tool-collection-edit'
     data_value:
       type: xpath
       selector: '//span[text()[contains(., "${data_change}")]]'
@@ -569,8 +571,12 @@ collection_builders:
       wizard_next_button: '.wizard-actions .go-next-btn'
       auto_pairing: '[data-description="auto pairing"]'
       dismiss_unmatched: '[data-description="dismiss unmatched datasets"]'
+      # the switch's input is hidden, so click its label
+      remove_extensions: 'input[name="remove-extensions"] + label'
       cell: '[aria-rowindex="${row_index}"] [col-id="${column_identifier}"]'
       cell_input: '[aria-rowindex="${row_index}"] [col-id="${column_identifier}"] input'
+      element_name: '[data-description="list dataset collection element"][data-hid="${hid}"] .click-to-edit-label'
+      element_name_input: '[data-description="list dataset collection element"][data-hid="${hid}"] input'
     row:
       selectors:
         _: '[row-index="${index}"]'
