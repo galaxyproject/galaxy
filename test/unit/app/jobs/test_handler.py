@@ -42,9 +42,10 @@ WINDOW = 2
 class HandlerJobWrapper:
     """Keep destination mapping real; replace runner preparation and output handling."""
 
-    def __init__(self, job, queue, **kwds):
+    def __init__(self, job, harness, **kwds):
         self.job_id = job.id
-        self.app = queue.app
+        self.harness = harness
+        self.app = harness.app
         self.tool = SimpleNamespace(
             id="handler_test",
             get_job_destination=lambda params: JobDestination(runner="dynamic", params={"type": "handler_test"}),
@@ -64,10 +65,13 @@ class HandlerJobWrapper:
     def fail(self, message):
         # Like JobWrapper.fail, resolve the destination first, mapping the job
         # if no destination is cached yet.
+        attempts = len(self.harness.attempts)
         try:
             self.job_destination  # noqa: B018
         except JobMappingException:
             self.set_cached_job_destination(JobDestination(id="__fail__"))
+        if len(self.harness.attempts) > attempts:
+            self.harness.remapped_on_fail.append(self.job_id)
         job = self.get_job()
         job.info = str(message)
         job.set_state(model.Job.states.ERROR)
@@ -86,6 +90,7 @@ class HandlerHarness:
         self.dispatched = []
         self.deferred = {}
         self.unmappable: set[int] = set()
+        self.remapped_on_fail: list[int] = []
         self.selected: list[tuple[int | None, int | None]] = []
         self.destination = JobDestination(id="local", runner="local")
         app.job_config = SimpleNamespace(
@@ -102,7 +107,7 @@ class HandlerHarness:
         app.execution_timer_factory = Mock()
         monkeypatch.setitem(STOCK_RULES, "handler_test", self.map_destination)
         self.queue = JobHandlerQueue(app, SimpleNamespace(put=self.dispatch, url_to_destination=Mock()))
-        monkeypatch.setattr(self.queue, "job_wrapper", lambda job, **kwds: HandlerJobWrapper(job, self.queue, **kwds))
+        monkeypatch.setattr(self.queue, "job_wrapper", lambda job, **kwds: HandlerJobWrapper(job, self, **kwds))
         select_ready_jobs = self.queue._select_ready_jobs
 
         def record_candidates():
@@ -447,9 +452,9 @@ def test_unmappable_resubmission_fails_without_interrupting_other_jobs(handler):
     resubmit = handler.resubmitted_job(user)
     handler.unmappable.add(resubmit)
     ready = handler.job(user)
-    # The mapper retries a failing rule once without resource parameters.
+    assert resubmit in handler.poll()
     # Failing the job must not map it again from the tool's default.
-    assert handler.poll().count(resubmit) == 2
+    assert handler.remapped_on_fail == []
     assert handler.dispatched == [ready]
     failed = handler.app.model.context.get(model.Job, resubmit)
     assert failed.state == "error"
