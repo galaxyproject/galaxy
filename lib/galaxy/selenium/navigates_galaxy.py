@@ -1791,6 +1791,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.libraries.folder.add_folder.wait_for_and_click()
         self.components.libraries.folder.input_folder_name.wait_for_and_send_keys(name)
         self.components.libraries.folder.save_folder_btn.wait_for_and_click()
+        # the save button goes away once the POST resolves; navigating sooner can drop the folder
+        self.components.libraries.folder.save_folder_btn.wait_for_absent_or_hidden(
+            wait_type=WAIT_TYPES.DATABASE_OPERATION
+        )
 
     def libraries_click_dataset_import(self):
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.add_items_button)
