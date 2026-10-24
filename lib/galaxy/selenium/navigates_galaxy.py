@@ -32,7 +32,6 @@ from typing import (
     TypeVar,
 )
 
-import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from typing_extensions import ParamSpec
@@ -54,6 +53,7 @@ from galaxy.navigation.components import (
     Target,
 )
 from galaxy.navigation.data import load_root_component
+from galaxy.navigation.tours import load_tour_from_path
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
@@ -3029,8 +3029,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         if tour_callback is None:
             tour_callback = NullTourCallback()
         self.home()
-        with open(path) as f:
-            tour_dict = yaml.safe_load(f)
+        # Components stay unresolved - run_tour_step resolves them against self.components.
+        tour_dict = load_tour_from_path(path, resolve_components=False)
         steps = tour_dict["steps"]
         for i, step in enumerate(steps):
             title = step.get("title", None)

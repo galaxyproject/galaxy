@@ -16,7 +16,6 @@ import pytest
 import requests
 from typing_extensions import Protocol
 
-from galaxy.celery import CELERY_APP_DEFAULTS
 from galaxy.util.properties import get_from_env
 from .api_asserts import (
     assert_error_code_is,
@@ -85,6 +84,10 @@ class UsesCeleryTasks:
 
     @pytest.fixture(scope="session")
     def celery_parameters(self):
+        # Imported here: galaxy-test-base doesn't depend on galaxy-app, and only
+        # tests that start a celery worker need the app's settings.
+        from galaxy.celery import CELERY_APP_DEFAULTS
+
         return CELERY_APP_DEFAULTS
 
 

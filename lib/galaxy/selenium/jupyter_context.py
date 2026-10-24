@@ -9,8 +9,8 @@ def init(config=None):
 
 
 class JupyterContextImpl(GalaxySeleniumContextImpl):
-    def screenshot(self, label):
-        path = super().screenshot(label)
+    def screenshot(self, label, caption: str | None = None):
+        path = super().screenshot(label, caption)
         from IPython.display import Image
 
         return Image(filename=path)
