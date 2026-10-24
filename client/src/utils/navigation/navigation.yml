@@ -460,6 +460,7 @@ edit_dataset_attributes:
     name_input: '[aria-labelledby="dataset-attributes-heading"] input#name'
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
+    attribute_field: '[aria-labelledby="dataset-attributes-heading"] .ui-form-field[data-name]'
     datatypes_tab: '.dataset-edit-datatype-tab'
     permissions_tab: '.dataset-edit-permissions-tab'
     # permission: DATASET_MANAGE_PERMISSIONS or DATASET_ACCESS

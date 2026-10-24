@@ -99,6 +99,12 @@ class HistoryEntry(NamedTuple):
     history_content_type: str
 
 
+class FormField(NamedTuple):
+    name: str
+    label: str
+    value: str
+
+
 # Default wait times should make sense for a development server under low
 # load. Wait times for production servers can be scaled up with a multiplier.
 class WAIT_TYPES:
@@ -900,6 +906,20 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             dbkey_text=dbkey_text
         ).wait_for_and_click()
         self.components.edit_dataset_attributes.save_button.wait_for_and_click()
+
+    def edit_dataset_attribute_fields(self) -> list[FormField]:
+        """On the dataset edit view, return the Attributes tab's visible fields."""
+        edit = self.components.edit_dataset_attributes
+        edit.name_input.wait_for_visible()
+        return [
+            FormField(
+                field.get_attribute("data-name") or "",
+                field.get_attribute("data-label") or "",
+                self.form_field_value(field),
+            )
+            for field in edit.attribute_field.all()
+            if field.is_displayed()
+        ]
 
     def edit_dataset_permission_roles(self) -> dict[str, list[str]]:
         """On the dataset edit view, open the Permissions tab; return its ``manage`` and ``access`` role names."""
