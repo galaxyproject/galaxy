@@ -409,10 +409,11 @@ class FastAPIRepositories:
     )
     def show(
         self,
+        trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
     ) -> DetailedRepository:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
-        return to_detailed_model(self.app, repository)
+        return to_detailed_model(trans, repository)
 
     @router.put(
         "/api/repositories/{encoded_repository_id}",
@@ -441,7 +442,7 @@ class FastAPIRepositories:
         if repo_result is None:
             raise ActionInputError(message)
 
-        return to_detailed_model(self.app, repository)
+        return to_detailed_model(trans, repository)
 
     @router.get(
         "/api/repositories/{encoded_repository_id}/permissions",

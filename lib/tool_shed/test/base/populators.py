@@ -222,10 +222,10 @@ class ToolShedPopulator:
         put_response = self._api_interactor.put(f"repositories/{repository_id}", json=body_json)
         return put_response
 
-    def update(self, repository: HasRepositoryId, request: UpdateRepositoryRequest) -> Repository:
+    def update(self, repository: HasRepositoryId, request: UpdateRepositoryRequest) -> DetailedRepository:
         response = self.update_raw(repository, request)
         api_asserts.assert_status_code_is_ok(response)
-        return Repository(**response.json())
+        return DetailedRepository(**response.json())
 
     def upload_revision(
         self, repository: HasRepositoryId, path: Traversable, commit_message: str = DEFAULT_COMMIT_MESSAGE
