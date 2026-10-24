@@ -83,6 +83,10 @@ preferences:
     toolbox_filters: '#g-card-edit-preferences-toolbox-filters'
     manage_api_key: '#g-card-edit-preferences-api-key'
     custom_builds: '#g-card-edit-preferences-custom-builds'
+    dataset_permissions: '#g-card-edit-preferences-permissions'
+    # Set Dataset Permissions for New Histories' "Make new datasets private" switch
+    new_datasets_private_input: '[data-description="make new datasets private"]'
+    new_datasets_private_label: '[data-description="make new datasets private"] + .g-checkbox-label'
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
@@ -263,6 +267,7 @@ history_panel:
       _: '.history-index .content-item${suffix}'
       title: '${_} .content-title'
       details: '${_} .details'
+      details_expanded: '${_} > .g-collapse-shown'
       summary: '${_} .not-loading .summary'
 
       hid: '${_} .hid'
@@ -276,13 +281,16 @@ history_panel:
 
       # Title buttons...
       display_button: '${_} .display-btn'
+      edit_button: '${_} .edit-btn'
       delete_button: '${_} .delete-btn'
+      undelete_button: '${_} .undelete-btn'
+      unhide_button: '${_} .unhide-btn'
       rerun_button: '${_} .rerun-btn'
       collection_job_details_button: '${_} .collection-job-details-btn'
 
       # Action buttons...
       download_button: '${_} .download-btn'
-      info_button: '${_} .params-btn'
+      info_button: '${_} .info-btn'
       highlight_button: '${_} .highlight-btn'
       alltags: '${_} .stateless-tags .tag'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
@@ -353,6 +361,8 @@ history_panel:
     _: '#current-history-panel'
     search: '#current-history-panel input.search-query'
     refresh_button: '.history-refresh-button'
+    include_deleted_button: '[data-description="include deleted items button"]'
+    include_hidden_button: '[data-description="include hidden items button"]'
     name: '.history-title span:last-child'
     name_edit_input:
       selector: 'name input'
@@ -428,6 +438,10 @@ edit_dataset_attributes:
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
     datatypes_tab: '.dataset-edit-datatype-tab'
+    permissions_tab: '.dataset-edit-permissions-tab'
+    # permission: DATASET_MANAGE_PERMISSIONS or DATASET_ACCESS
+    permission_field: '#form-element-${permission}'
+    permission_roles: '#form-element-${permission} .multiselect__tag'
     datatype_dropdown: '#datatype-container .multiselect'
     dbkey_dropdown: '#dbkey-container .multiselect'
     save_button: '#dataset-attributes-default-save'

@@ -48,6 +48,8 @@ const contentRef = ref<HTMLElement | null>(null);
 const internalOpen = ref(false);
 // Stays true during close animation so slot content can remain mounted
 const contentActive = ref(false);
+// True once fully expanded and no longer clipped (after the open transition ends)
+const isShown = ref(false);
 
 const isOpen = computed(() => {
     if (props.modelValue !== undefined) {
@@ -68,6 +70,7 @@ function closeSelf() {
 watch(
     isOpen,
     (open) => {
+        isShown.value = false;
         if (open) {
             contentActive.value = true;
         }
@@ -79,6 +82,7 @@ onMounted(() => {
     const el = contentRef.value;
     if (isOpen.value) {
         contentActive.value = true;
+        isShown.value = true;
         if (el) {
             el.style.height = "auto";
             el.style.overflow = "visible";
@@ -99,6 +103,7 @@ function onTransitionEnd(e: TransitionEvent) {
     if (isOpen.value) {
         el.style.height = "auto";
         el.style.overflow = "visible";
+        isShown.value = true;
         emit("shown");
     } else {
         el.style.display = "none";
@@ -154,7 +159,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div ref="contentRef" class="g-collapse" :class="{ 'g-collapse-open': isOpen }" @transitionend="onTransitionEnd">
+    <div
+        ref="contentRef"
+        class="g-collapse"
+        :class="{ 'g-collapse-open': isOpen, 'g-collapse-shown': isShown }"
+        @transitionend="onTransitionEnd">
         <slot :content-active="contentActive" />
     </div>
 </template>
