@@ -675,21 +675,25 @@ class JobConfiguration(ConfiguresHandlers):
         self.destinations["local"] = [JobDestination(id="local", runner="local")]
         log.debug("Done loading job configuration")
 
-    def get_tool_resource_xml(self, tool_id, tool_type):
-        """Given a tool id, return XML elements describing parameters to
+    def get_tool_resource_xml(self, tool_ids, tool_type):
+        """Given a tool's IDs, return XML elements describing parameters to
         insert into job resources.
 
-        :tool id: A tool ID (a string)
+        :tool ids: The tool's IDs in lookup order (see ``Tool.all_ids``), as
+            accepted by :meth:`get_job_tool_configurations`. The resource group
+            of the first ID whose tool definition sets one is used.
         :tool type: A tool type (a string)
 
         :returns: List of parameter elements.
         """
-        if tool_id and tool_type in ("default", "manage_data"):
-            # TODO: Only works with exact matches, should handle different kinds of ids
-            # the way destination lookup does.
+        tool_ids = util.listify(tool_ids)
+        if tool_ids and tool_type in ("default", "manage_data"):
             resource_group = None
-            if tool_id in self.tools:
-                resource_group = self.tools[tool_id][0].get_resource_group()
+            for tool_id in tool_ids:
+                if tool_id in self.tools:
+                    resource_group = self.tools[tool_id][0].get_resource_group()
+                    if resource_group:
+                        break
             resource_group = resource_group or self.default_resource_group
             if resource_group and resource_group in self.resource_groups:
                 fields_names = self.resource_groups[resource_group]
