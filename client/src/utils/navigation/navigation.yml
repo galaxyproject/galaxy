@@ -403,6 +403,8 @@ history_panel:
     collection_menu_edit_attributes: '.edit-btn'
 
     new_history_button: '[data-description="create new history"]'
+    switch_history_button: '[data-description="switch to another history"]'
+    switch_history_modal_item: 'dialog.g-dialog[open] [data-pk="${history_id}"]'
     histories_operation_menu: '[data-description="history options"]'
     multi_view_button: '[data-description="switch to multi history view"]'
 

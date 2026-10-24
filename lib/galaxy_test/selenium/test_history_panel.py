@@ -180,6 +180,18 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
         )
 
     @selenium_test
+    def test_history_panel_switch_history(self):
+        target_id = self.dataset_populator.new_history("switch target")
+        self.home()
+        self.history_panel_switch_to(target_id)
+
+        @retry_assertion_during_transitions
+        def assert_switched():
+            assert self.history_panel_name() == "switch target"
+
+        assert_switched()
+
+    @selenium_test
     def test_history_panel_tags_change(self):
         def create_tags(size):
             history_panel_tags = []
