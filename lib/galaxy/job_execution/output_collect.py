@@ -240,6 +240,10 @@ def collect_dynamic_outputs(
                 change_datatype_actions=job_context.change_datatype_actions,
             )
             collection_builder.populate()
+            if job_context.final_job_state == "error" and not collection.elements:
+                # A failed job that discovered nothing is not an empty success: consumers would map
+                # over zero elements and the workflow would complete with no data.
+                collection.handle_population_failed("Job failed before producing any datasets for this collection.")
         except MaxDiscoveredFilesExceededError:
             # Mark the collection as population-failed so it is not left in NEW,
             # then let the outer metadata/job handler record this in job_messages.
