@@ -2334,6 +2334,77 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             input_element.clear()
             input_element.send_keys(value)
 
+    def form_field(self, parameter: str) -> WebElementProtocol:
+        """Wait for and return form element ``parameter``'s ``.ui-form-field``."""
+        return self.components.tool_form.parameter_field(parameter=parameter).wait_for_visible()
+
+    @staticmethod
+    def form_field_kind(field: WebElementProtocol) -> str:
+        """Widget kind of a ``.ui-form-field``: boolean, color, drill_down, checkboxes, select or text."""
+        field_type = field.get_attribute("data-type") or ""
+        if field_type in ("boolean", "color", "drill_down"):
+            return field_type
+        if field.get_attribute("data-display") == "checkboxes":
+            return "checkboxes"
+        if field.find_elements(By.CSS_SELECTOR, ".multiselect"):
+            return "select"
+        return "text"
+
+    def form_field_value(self, field: WebElementProtocol) -> str:
+        """Value of a ``.ui-form-field`` as ``form_element_set_value`` takes it; lists joined by ``, ``."""
+        kind = self.form_field_kind(field)
+        if kind == "boolean":
+            return str(field.find_element(By.CSS_SELECTOR, "input[type=checkbox]").is_selected()).lower()
+        if kind == "checkboxes":
+            boxes = field.find_elements(By.CSS_SELECTOR, '[role="group"] input[type=checkbox]')
+            return ", ".join(box.get_attribute("value") or "" for box in boxes if box.is_selected())
+        if kind == "drill_down":
+            options = field.find_elements(By.CSS_SELECTOR, '[id^="drilldown-option-"]')
+            return ", ".join(
+                (option.get_attribute("id") or "").removeprefix("drilldown-option-")
+                for option in options
+                if option.is_selected()
+            )
+        if kind == "select":
+            chosen = field.find_elements(By.CSS_SELECTOR, ".multiselect__single, .multiselect__tag")
+            return ", ".join(option.text.strip() for option in chosen)
+        inputs = field.find_elements(By.CSS_SELECTOR, "input:not([type=checkbox]):not(.multiselect__input), textarea")
+        return (inputs[0].get_attribute("value") or "") if inputs else ""
+
+    def form_element_value(self, parameter: str) -> str:
+        """Value of form element ``parameter``, see ``form_field_value``."""
+        return self.form_field_value(self.form_field(parameter))
+
+    def form_element_set_value(self, parameter: str, value):
+        """Set form element ``parameter``; checkboxes and drill-downs take a value or list of values."""
+        tool_form = self.components.tool_form
+        kind = self.form_field_kind(self.form_field(parameter))
+        if kind == "checkboxes":
+            boxes = tool_form.parameter_checkbox_input(parameter=parameter).all()
+            for option_value in value if isinstance(value, list) else [value]:
+                matched = [box for box in boxes if box.get_attribute("value") == option_value]
+                assert matched, f"No checkbox with value '{option_value}' in param {parameter}"
+                if not matched[0].is_selected():
+                    self.execute_script_click(matched[0])
+        elif kind == "drill_down":
+            # option ids use option names, so this only works where name == value
+            for option_value in value if isinstance(value, list) else [value]:
+                option = tool_form.parameter_drilldown_option(
+                    parameter=parameter, value=option_value
+                ).wait_for_present()
+                if not option.is_selected():
+                    self.execute_script_click(option)
+        elif kind == "boolean":
+            checkbox = tool_form.parameter_checkbox_input(parameter=parameter).wait_for_present()
+            if checkbox.is_selected() != (str(value).lower() in ("true", "1", "yes")):
+                self.execute_script_click(checkbox)
+        elif kind == "select":
+            self.tool_set_value(parameter, str(value), expected_type="select")
+        elif kind == "color":
+            self.set_element_value(tool_form.parameter_color_input(parameter=parameter).wait_for_present(), str(value))
+        else:
+            self.set_element_value(tool_form.parameter_text_input(parameter=parameter).wait_for_present(), str(value))
+
     def tool_form_generate_tour(self):
         self.components.tool_form.options.wait_for_and_click()
         self.components.tool_form.generate_tour.wait_for_and_click()

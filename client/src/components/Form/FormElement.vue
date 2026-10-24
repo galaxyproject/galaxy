@@ -369,7 +369,13 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
         <div v-if="rendersContent" :class="{ 'form-element-content px-3 py-1 mb-2': props.workflowRun }">
             <FormError v-if="props.workflowRun && hasAlert && !unPopulatedError" :alerts="alerts" has-alert-class />
 
-            <div v-if="showField" class="ui-form-field" :data-label="props.title">
+            <div
+                v-if="showField"
+                class="ui-form-field"
+                :data-name="props.id"
+                :data-label="props.title"
+                :data-type="props.type"
+                :data-display="attrs.display">
                 <div
                     v-if="props.type === 'boolean' && props.workflowRun"
                     :class="{ 'd-flex align-items-start flex-gapx-1': Boolean(nonMdHelp) }">

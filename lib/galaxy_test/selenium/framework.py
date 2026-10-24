@@ -26,7 +26,6 @@ from selenium.common.exceptions import (
     StaleElementReferenceException,
     TimeoutException,
 )
-from selenium.webdriver.common.by import By
 
 from galaxy.selenium import driver_factory
 from galaxy.selenium.axe_results import assert_baseline_accessible
@@ -1037,95 +1036,14 @@ class RunsToolTests(NavigatesGalaxyMixin):
             header.click()
             self.sleep_for(self.wait_types.UX_RENDER)
 
-    # -- Type detection and value setting --
-
-    def _detect_param_type(self, expanded_id: str) -> str:
-        """Inspect DOM to determine param type.
-
-        Detection order matters:
-        - drilldown before checkbox_select (drilldown also has checkboxes)
-        - checkbox_select before boolean (both have input[type='checkbox'])
-        """
-        tf = self.components.tool_form
-
-        param_div = tf.parameter_div(parameter=expanded_id).wait_for_visible()
-        if param_div.find_elements(By.CSS_SELECTOR, tf.drilldown_option.selector):
-            return "drilldown"
-
-        checkboxes = tf.parameter_checkbox_input(parameter=expanded_id).all()
-        if len(checkboxes) > 1:
-            return "checkbox_select"
-        if checkboxes:
-            return "boolean"
-
-        if not tf.parameter_color_input(parameter=expanded_id).is_absent:
-            return "color"
-        if not tf.parameter_select(parameter=expanded_id).is_absent:
-            return "select"
-
-        return "text"
+    # -- Value setting --
 
     def _set_tool_form_value(self, key: str, value, required_filenames: set):
         if isinstance(value, list) and len(value) == 1:
             value = value[0]
         if isinstance(value, str) and value in required_filenames:
             return
-
-        param_type = self._detect_param_type(key)
-
-        if param_type == "drilldown":
-            values = value if isinstance(value, list) else [value]
-            self._set_drilldown_value(key, values)
-        elif param_type == "checkbox_select":
-            values = value if isinstance(value, list) else [value]
-            self._set_checkbox_select_value(key, values)
-        elif param_type == "boolean":
-            self._set_boolean_value(key, value)
-        elif param_type == "color":
-            self._set_color_value(key, value)
-        elif param_type == "select":
-            self.tool_set_value(key, str(value), expected_type="select")
-        else:
-            self._set_text_value(key, str(value))
-
-    def _set_boolean_value(self, expanded_id: str, value):
-        checkbox = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).wait_for_present()
-        is_checked = checkbox.is_selected()
-        want_checked = str(value).lower() in ("true", "1", "yes")
-        if is_checked != want_checked:
-            self.execute_script("arguments[0].click();", checkbox)
-
-    def _set_checkbox_select_value(self, expanded_id: str, values: list):
-        all_checkboxes = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).all()
-        for val in values:
-            matched = [cb for cb in all_checkboxes if cb.get_attribute("value") == val]
-            assert matched, f"No checkbox with value '{val}' in param {expanded_id}"
-            if not matched[0].is_selected():
-                self.execute_script("arguments[0].click();", matched[0])
-
-    def _set_drilldown_value(self, expanded_id: str, values: list):
-        """Set drill-down param by clicking option checkboxes.
-
-        TODO: DOM id is ``drilldown-option-{option.name}`` but test API returns
-        option *values*. Works only when name == value. If a tool has
-        ``<option name="Label" value="key">``, the lookup will fail.
-        Fixing requires changing FormDrilldownOption.vue (breaks library export)
-        or adding a value->name mapping step here.
-        """
-        for val in values:
-            checkbox = self.components.tool_form.parameter_drilldown_option(
-                parameter=expanded_id, value=val
-            ).wait_for_present()
-            if not checkbox.is_selected():
-                self.execute_script("arguments[0].click();", checkbox)
-
-    def _set_color_value(self, expanded_id: str, value: str):
-        color_input = self.components.tool_form.parameter_color_input(parameter=expanded_id).wait_for_present()
-        self.set_element_value(color_input, value)
-
-    def _set_text_value(self, expanded_id: str, value: str):
-        input_element = self.components.tool_form.parameter_text_input(parameter=expanded_id).wait_for_present()
-        self.set_element_value(input_element, value)
+        self.form_element_set_value(key, value)
 
     # -- Output verification --
 
