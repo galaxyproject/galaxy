@@ -143,10 +143,9 @@ class CompositeToolSourceStore(ToolSourceStore):
     def unavailable_read_only_member_names(self) -> set[str]:
         """Read-only members that cannot supply a schema-compatible index.
 
-        The cached toolbox must disable its index-only panel fast path when
-        this is non-empty; otherwise placements from a healthy default store
-        could make tools belonging to the unavailable conf disappear instead
-        of falling through to the eager traversal.
+        The cached toolbox refuses to build while this is non-empty: nothing
+        local can populate these stores, and their tools would otherwise be
+        parsed eagerly or self-heal one whole-index write at a time.
         """
         unavailable: set[str] = set()
         for name, member in self._members:
@@ -194,11 +193,15 @@ class CompositeToolSourceStore(ToolSourceStore):
             # Merge the per-version map too — ``ToolIndex.get(tool_id,
             # tool_version)`` resolves exact versions through it, so skipping
             # it would make every non-newest version of a member-store tool
-            # unreachable. Same collision rule, applied per (id, version).
+            # unreachable. Same collision rule, applied per (id, version),
+            # except that a configured entry beats a storage-only twin so
+            # ``select_configured_defaults`` below can still find it.
             for tool_id, versions in idx.entries_by_version.items():
                 version_bucket = merged.entries_by_version.setdefault(tool_id, {})
                 for version, entry in versions.items():
-                    version_bucket.setdefault(version, entry)
+                    existing = version_bucket.get(version)
+                    if existing is None or (entry.in_panel and not existing.in_panel):
+                        version_bucket[version] = entry
             for section_id, ids in idx.by_section.items():
                 bucket = merged.by_section.setdefault(section_id, [])
                 for tid in ids:
@@ -219,6 +222,7 @@ class CompositeToolSourceStore(ToolSourceStore):
                 merged.built_at = idx.built_at
         if not any_loaded:
             return None
+        merged.select_configured_defaults()
         return merged
 
     def invalidate_index_cache(self) -> None:
@@ -235,8 +239,7 @@ class CompositeToolSourceStore(ToolSourceStore):
         index at all, which can't be healed locally — warn and continue,
         the publisher owns repopulation. An unavailable cohort placeholder
         reports itself handled to avoid futile local population; the cached
-        toolbox separately detects its missing index and forces eager panel
-        traversal. A member without a probe downgrades an otherwise-fresh
+        toolbox separately refuses to build without its index. A member without a probe downgrades an otherwise-fresh
         verdict to ``None`` so the caller still runs its coverage scan.
         """
         verdict: bool | None = True
@@ -246,7 +249,7 @@ class CompositeToolSourceStore(ToolSourceStore):
                 if member.read_only:
                     log.warning(
                         "Read-only tool source store %r has no loadable index; "
-                        "its tools will parse eagerly until it is repopulated upstream",
+                        "the cached toolbox cannot load until it is repopulated upstream",
                         name,
                     )
                 else:

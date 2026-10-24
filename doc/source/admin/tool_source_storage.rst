@@ -162,8 +162,11 @@ a published cohort directory:
         cvmfs_main:
           external_store_directory: /cvmfs/example.org/config/tool_source_store
 
-External stores are read-only. If no compatible bundle is available, Galaxy
-logs a warning and parses the tools normally. Galaxy versions predating
+External stores are read-only. If no compatible bundle is available, or a
+read-only store's index cannot be loaded, the cached toolbox refuses to load:
+Galaxy does not start, and a toolbox reload keeps the current toolbox. Parsing
+the conf's tools instead would hold every one of them in memory, and nothing
+local can populate a read-only store. Galaxy versions predating
 automatic selection should configure a specific bundle with ``url`` instead.
 
 Populating the Tool Source Store

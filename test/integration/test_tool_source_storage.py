@@ -98,7 +98,9 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
         cls._tmpdir = tempfile.mkdtemp(prefix="composite_tss_")
         cls._sqlite_path = os.path.join(cls._tmpdir, "sources.sqlite")
 
-        SqlAlchemyToolSourceStore(url=f"sqlite:///{cls._sqlite_path}").count()
+        # Publish an (empty) index: the cached toolbox refuses read-only
+        # stores that have none.
+        SqlAlchemyToolSourceStore(url=f"sqlite:///{cls._sqlite_path}").store_index(ToolIndex())
 
         cls._conf_path = os.path.join(cls._tmpdir, "extra_tool_conf.xml")
         with open(cls._conf_path, "w") as f:
@@ -209,6 +211,51 @@ class TestCachedToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
         assert self._app.toolbox.get_tool("upload1") is not None
         self._test_api_tools_show("cat1")
         self._test_api_tools_list()
+
+
+class TestCachedToolBoxReloadAfterLocalEdit(BaseToolSourceStorageIntegrationTestCase):
+    """A toolbox reload applies an in-place edit of a local tool's XML."""
+
+    _tool_path: str
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        tmpdir = tempfile.mkdtemp(prefix="cached_reload_edit_")
+        cls._tool_path = os.path.join(tmpdir, "cached_toolbox_probe.xml")
+        cls._write_probe("1.1")
+        conf_path = os.path.join(tmpdir, "local_tool_conf.xml")
+        with open(conf_path, "w") as f:
+            f.write(f'<toolbox tool_path="{tmpdir}"><tool file="cached_toolbox_probe.xml"/></toolbox>')
+        config["use_cached_toolbox"] = True
+        existing_confs = config.get("tool_config_file") or "config/tool_conf.xml.sample"
+        if isinstance(existing_confs, str):
+            config["tool_config_file"] = f"{existing_confs},{conf_path}"
+        else:
+            config["tool_config_file"] = list(existing_confs) + [conf_path]
+
+    @classmethod
+    def _write_probe(cls, version: str) -> None:
+        with open(cls._tool_path, "w") as f:
+            f.write(
+                f'<tool id="cached_toolbox_probe" name="Probe" version="{version}">'
+                f"<command>echo {version} > '$out'</command><inputs/>"
+                '<outputs><data name="out" format="txt"/></outputs></tool>'
+            )
+
+    def test_reload_serves_edited_tool_version(self):
+        response = self._get("tools/cached_toolbox_probe")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["version"] == "1.1"
+
+        self._write_probe("1.2")
+        reload_toolbox(self._app)
+
+        response = self._get("tools/cached_toolbox_probe")
+        self._assert_status_code_is(response, 200)
+        tool = response.json()
+        assert tool["version"] == "1.2"
+        assert tool["versions"] == ["1.2"]
 
 
 class TestCachedToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
