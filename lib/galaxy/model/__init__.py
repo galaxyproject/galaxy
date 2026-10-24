@@ -4847,14 +4847,16 @@ class Dataset(Base, StorableObject, Serializable):
         )
 
         if supports_skip_locked:
-            # Use FOR UPDATE SKIP LOCKED for better concurrency when supported
-            # First select the HDCAs we want to update with FOR UPDATE SKIP LOCKED
+            # First select the HDCAs we want to update with FOR NO KEY UPDATE SKIP LOCKED.
+            # Only update_time changes, and this lock mode is compatible with the FOR KEY SHARE
+            # lock that foreign key checks take, so concurrent inserts of rows referencing these
+            # HDCAs (job inputs, workflow step outputs) proceed while this transaction is open.
             hdca_ids_to_update = (
                 session.execute(
                     select(HistoryDatasetCollectionAssociation.id)
                     .where(HistoryDatasetCollectionAssociation.collection_id.in_(collection_ids_subquery))
                     .order_by(HistoryDatasetCollectionAssociation.id)
-                    .with_for_update(skip_locked=True)
+                    .with_for_update(skip_locked=True, key_share=True)
                 )
                 .scalars()
                 .all()
