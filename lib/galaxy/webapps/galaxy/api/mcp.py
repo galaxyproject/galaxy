@@ -17,6 +17,7 @@ from typing import (
 )
 from urllib.parse import urlparse
 
+from fastapi.security.utils import get_authorization_scheme_param
 from fastmcp import (
     Context as MCPContext,
     FastMCP,
@@ -28,7 +29,9 @@ from starlette.datastructures import URL
 from starlette.routing import Route
 
 from galaxy.agents.operations import AgentOperationsManager
+from galaxy.exceptions import AuthenticationFailed
 from galaxy.managers.users import UserManager
+from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.deps.mulled.recommend import (
     biocontainer_tag_built,
     ContainerRecommendation,
@@ -59,13 +62,18 @@ ApiKey = Annotated[
 ]
 
 
-def _resolve_api_key(api_key: str | None, headers: Mapping[str, str]) -> str | None:
-    """Prefer the ``x-api-key`` request header, falling back to an explicit ``api_key`` argument.
+def _resolve_credentials(api_key: str | None, headers: Mapping[str, str]) -> tuple[str | None, str | None]:
+    """Pick an ``(api_key, access_token)`` pair: the ``x-api-key`` header, then a Bearer token, then ``api_key``.
 
-    The header comes from the operator's client config and the argument from the model, so the
+    Both headers come from the operator's client config and the argument from the model, so the
     model can't override the operator's choice of user.
     """
-    return headers.get(API_KEY_HEADER_NAME) or api_key or None
+    if header_key := headers.get(API_KEY_HEADER_NAME):
+        return header_key, None
+    scheme, access_token = get_authorization_scheme_param(headers.get("authorization"))
+    if scheme.lower() == "bearer" and access_token:
+        return None, access_token
+    return api_key or None, None
 
 
 def get_mcp_url_builder(fallback_base_url: str):
@@ -214,32 +222,30 @@ def _biocontainer_recommendation_payload(
     }
 
 
-def get_mcp_app(gx_app):
+def get_mcp_app(gx_app: StructuredApp):
     """Create and configure the MCP server application."""
     fastmcp_settings.stateless_http = True
 
     mcp = FastMCP("Galaxy")
 
     base_url = gx_app.config.galaxy_infrastructure_url
-    user_manager = UserManager(gx_app)
+    user_manager = gx_app[UserManager]
 
     def get_operations_manager(api_key: str | None, ctx: MCPContext) -> AgentOperationsManager:
-        """Look up user from API key and return an AgentOperationsManager."""
-        api_key = _resolve_api_key(api_key, get_http_headers())
-        if not api_key:
+        """Look up the user from an API key or OIDC access token and return an AgentOperationsManager."""
+        api_key, access_token = _resolve_credentials(api_key, get_http_headers(include={"authorization"}))
+        if not (api_key or access_token):
             raise ValueError(
-                f"API key required. Configure your MCP client to send it in an {API_KEY_HEADER_NAME} header, "
-                "or pass it as the api_key argument. "
+                f"API key required. Add an {API_KEY_HEADER_NAME} header to this MCP server's entry in your "
+                "client config. Passing the key as the api_key argument also works, but it exposes the key "
+                "to the model provider. "
                 "You can create an API key in Galaxy under User -> Preferences -> Manage API Key."
             )
 
-        user = user_manager.by_api_key(api_key=api_key)
-
+        user = user_manager.by_credentials(api_key, access_token)
         if not user:
-            raise ValueError(
-                "Invalid API key. Please check your API key and try again. "
-                "You can create or view your API key in Galaxy under User -> Preferences -> Manage API Key."
-            )
+            # Only an access token that matches no OIDC user gets here; a bad API key already raised.
+            raise AuthenticationFailed("Invalid access token.")
 
         url_builder = get_mcp_url_builder(base_url)
         trans = SessionRequestContext(
