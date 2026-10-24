@@ -245,7 +245,10 @@ def get_mcp_app(gx_app: StructuredApp):
         user = user_manager.by_credentials(api_key, access_token)
         if not user:
             # Only an access token that no OIDC provider accepts gets here; a bad API key already raised.
-            raise AuthenticationFailed("Invalid access token.")
+            raise AuthenticationFailed(
+                f"Invalid access token. A Bearer token must be an OIDC access token; send a Galaxy API key "
+                f"in an {API_KEY_HEADER_NAME} header instead."
+            )
 
         url_builder = get_mcp_url_builder(base_url)
         trans = SessionRequestContext(
