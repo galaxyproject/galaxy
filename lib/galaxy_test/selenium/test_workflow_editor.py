@@ -19,6 +19,7 @@ from galaxy.selenium.web_element_protocol import WebElementProtocol
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
+    WORKFLOW_RENAME_ON_REPLACEMENT_PARAM,
     WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
@@ -565,6 +566,33 @@ steps:
             assert section_element.get_attribute("data-lint-status") == "ok"
 
         assert_linting_input_metadata_okay()
+
+    @selenium_test
+    def test_best_practices_extract_untyped_rename_parameter(self):
+        editor = self.components.workflow_editor
+        # No auto layout: it marks the workflow changed and the refactor would add a save-first confirm.
+        self.open_in_workflow_editor(WORKFLOW_RENAME_ON_REPLACEMENT_PARAM, auto_layout=False)
+        # Refactors are silently dropped while the workflow is still loading.
+        editor.canvas_loading.wait_for_absent()
+        editor.tool_bar.best_practices.wait_for_and_click()
+        best_practices = editor.best_practices
+        section_element = best_practices.section_formal_inputs.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
+        item = best_practices.item_formal_input(index=0)
+        assert "replaceme" in item.wait_for_present().text
+        self.screenshot("workflow_editor_best_practices_untyped_parameter")
+
+        item.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        editor.node._(label="replaceme").wait_for_present()
+
+        @retry_assertion_during_transitions
+        def assert_linting_formal_inputs_okay():
+            section_element = best_practices.section_formal_inputs.wait_for_present()
+            assert section_element.get_attribute("data-lint-status") == "ok"
+
+        assert_linting_formal_inputs_okay()
+        self.screenshot("workflow_editor_best_practices_untyped_parameter_extracted")
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test

@@ -256,6 +256,12 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
             preserve_external_subworkflow_links=preserve_external_subworkflow_links,
         )
 
+    def _yaml_workflow_run_form(self, workflow_yaml: str) -> dict[str, Any]:
+        """Upload a format2 workflow and download its run form against a fresh history."""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(workflow_yaml)
+        with self.dataset_populator.test_history() as history_id:
+            return self._download_workflow(workflow_id, style="run", history_id=history_id)
+
     def _assert_is_runtime_input(self, tool_state_value):
         if not isinstance(tool_state_value, dict):
             tool_state_value = json.loads(tool_state_value)
@@ -4409,6 +4415,42 @@ outer_input:
             self._run_jobs(WORKFLOW_NESTED_REPLACEMENT_PARAMETER, test_data=test_data, history_id=history_id)
             details = self.dataset_populator.get_history_dataset_details(history_id)
             assert details["name"] == "moocow suffix"
+
+    @skip_without_tool("cat")
+    def test_run_form_replacement_parameters_from_rename(self):
+        run_form = self._yaml_workflow_run_form("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+    out:
+      out_file1:
+        rename: "${a} ${b} suffix"
+""")
+        assert sorted(run_form["steps"][1]["replacement_parameters"]) == ["a", "b"]
+
+    @skip_without_tool("cat")
+    def test_run_form_replacement_parameters_ignore_non_rename_actions(self):
+        run_form = self._yaml_workflow_run_form("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+    out:
+      out_file1:
+        rename: "${a} suffix"
+        add_tags: ["name:${t}"]
+        change_datatype: "${d}"
+""")
+        assert sorted(run_form["steps"][1]["replacement_parameters"]) == ["a"]
 
     @skip_without_tool("random_lines1")
     def test_run_runtime_parameters_after_pause(self):

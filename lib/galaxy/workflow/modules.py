@@ -3214,13 +3214,12 @@ class ToolModule(WorkflowModule):
         return PostJobAction(value["action_type"], step, output_name, action_arguments)
 
     def get_informal_replacement_parameters(self, step: WorkflowStep) -> list[str]:
-        """Return a list of replacement parameters."""
+        """Return the ``${...}`` names in rename actions, the only actions that substitute them at runtime."""
         replacement_parameters = set()
         for pja in step.post_job_actions:
-            if action_arguments := pja.action_arguments:
-                for argument in action_arguments.values():
-                    for match in re.findall(r"\$\{(.+?)\}", unicodify(argument)):
-                        replacement_parameters.add(match)
+            if pja.action_type == "RenameDatasetAction":
+                newname = (pja.action_arguments or {}).get("newname") or ""
+                replacement_parameters.update(re.findall(r"\$\{(.+?)\}", unicodify(newname)))
 
         return list(replacement_parameters)
 
