@@ -495,26 +495,12 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         self.__cache_user_job_count()
         # Check resubmit jobs first so that limits of new jobs will still be enforced
         for job in resubmit_jobs:
-            # Reassemble resubmit job destination from persisted value, walking
-            # any dynamic destination chain afresh. Resubmissions are handled
-            # before new jobs on every poll, so one that cannot be mapped must
-            # not escape and stop all dispatch from this handler.
+            # Resubmissions are handled before new jobs on every poll, so one
+            # that fails must not escape and stop all dispatch from this handler.
             try:
-                jw = self.__recover_job_wrapper(job, resubmit=True)
-            except JobNotReadyException:
-                log.debug("(%s) Resubmitted job is not ready to be dispatched", job.id)
-                continue
-            except Exception as e:
-                job_wrapper = self.job_wrapper(job)
-                # Without a destination, fail() would map the job again, from
-                # the tool's default rather than the resubmit destination.
-                job_wrapper.set_cached_job_destination(JobDestination(id="__fail__"))
-                self.__fail_unmappable_job(job_wrapper, e)
-                continue
-            if jw.is_ready_for_resubmission(job):
-                self.increase_running_job_count(job.user_id, jw.job_destination.id)
-                self.dispatcher.put(jw)
-                log.debug("(%s) Job was resubmitted and is being dispatched immediately", job.id)
+                self.__dispatch_resubmitted_job(job)
+            except Exception:
+                log.exception("failure resubmitting job %d", job.id)
         # Iterate over new and waiting jobs and look for any that are
         # ready to run
         new_waiting_jobs = []
@@ -802,6 +788,26 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 if job_to_input_dataset_association.dataset:
                     job_to_input_dataset_association.dataset_version = job_to_input_dataset_association.dataset.version
         return state
+
+    def __dispatch_resubmitted_job(self, job: model.Job) -> None:
+        # Reassemble resubmit job destination from persisted value, walking
+        # any dynamic destination chain afresh.
+        try:
+            jw = self.__recover_job_wrapper(job, resubmit=True)
+        except JobNotReadyException:
+            log.debug("(%s) Resubmitted job is not ready to be dispatched", job.id)
+            return
+        except Exception as e:
+            job_wrapper = self.job_wrapper(job)
+            # Without a destination, fail() would map the job again, from
+            # the tool's default rather than the resubmit destination.
+            job_wrapper.set_cached_job_destination(JobDestination(id="__fail__"))
+            self.__fail_unmappable_job(job_wrapper, e)
+            return
+        if jw.is_ready_for_resubmission(job):
+            self.increase_running_job_count(job.user_id, jw.job_destination.id)
+            self.dispatcher.put(jw)
+            log.debug("(%s) Job was resubmitted and is being dispatched immediately", job.id)
 
     def __fail_unmappable_job(self, job_wrapper: JobWrapper, exception: Exception) -> None:
         """Fail a job whose destination could not be determined.

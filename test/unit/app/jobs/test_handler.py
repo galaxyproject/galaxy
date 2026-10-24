@@ -91,6 +91,7 @@ class HandlerHarness:
         self.deferred = {}
         self.unmappable: set[int] = set()
         self.remapped_on_fail: list[int] = []
+        self.undispatchable: set[int] = set()
         self.selected: list[tuple[int | None, int | None]] = []
         self.destination = JobDestination(id="local", runner="local")
         app.job_config = SimpleNamespace(
@@ -126,6 +127,8 @@ class HandlerHarness:
         return self.destination
 
     def dispatch(self, wrapper):
+        if wrapper.job_id in self.undispatchable:
+            raise RuntimeError("Runner unavailable.")
         self.dispatched.append(wrapper.job_id)
         job = wrapper.get_job()
         job.set_state(model.Job.states.QUEUED)
@@ -459,3 +462,14 @@ def test_unmappable_resubmission_fails_without_interrupting_other_jobs(handler):
     failed = handler.app.model.context.get(model.Job, resubmit)
     assert failed.state == "error"
     assert failed.info == "No destination can run this job."
+
+
+@pytest.mark.parametrize("handler", ["sqlite", "postgresql"], indirect=True)
+def test_resubmission_dispatch_error_does_not_interrupt_other_jobs(handler):
+    user = handler.user()
+    resubmit = handler.resubmitted_job(user)
+    handler.undispatchable.add(resubmit)
+    ready = handler.job(user)
+    handler.poll()
+    assert handler.dispatched == [ready]
+    assert handler.app.model.context.get(model.Job, resubmit).state == "resubmitted"
