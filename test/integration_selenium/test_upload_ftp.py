@@ -6,6 +6,8 @@ from .framework import (
     SeleniumIntegrationTestCase,
 )
 
+FTP_UPLOAD_SITE = "ftp://ftp.galaxyproject.com"
+
 
 class TestUploadFtpSeleniumIntegration(SeleniumIntegrationTestCase, UsesUploadActivity):
     ensure_registered = True
@@ -16,7 +18,7 @@ class TestUploadFtpSeleniumIntegration(SeleniumIntegrationTestCase, UsesUploadAc
         ftp_dir = cls.ftp_dir()
         os.makedirs(ftp_dir)
         config["ftp_upload_dir"] = ftp_dir
-        config["ftp_upload_site"] = "ftp://ftp.galaxyproject.com"
+        config["ftp_upload_site"] = FTP_UPLOAD_SITE
 
     @classmethod
     def ftp_dir(cls):
@@ -39,6 +41,18 @@ class TestUploadFtpSeleniumIntegration(SeleniumIntegrationTestCase, UsesUploadAc
         user_ftp_dir = os.path.join(self.ftp_dir(), email)
         os.makedirs(user_ftp_dir)
         return user_ftp_dir
+
+    @selenium_test
+    def test_ftp_directory_shows_upload_site(self):
+        self._create_ftp_dir()
+        self.home()
+        self.upload_context("remote-files").open_remote_folder("FTP Directory")
+        upload = self.components.upload_activity
+        assert FTP_UPLOAD_SITE in upload.remote_files_ftp_help.wait_for_text()
+        self.screenshot("upload_remote_files_ftp_help")
+        upload.remote_files_breadcrumb_link(title="Sources").wait_for_and_click()
+        upload.remote_files_browser_label(label="FTP Directory").wait_for_visible()
+        upload.remote_files_ftp_help.wait_for_absent_or_hidden()
 
     @selenium_test
     def test_upload_simplest(self):
