@@ -244,7 +244,10 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         default=None,
     ),
-    custom_vm_image=dict(
+    # Runner-level default for the ``custom_vm_image`` destination param. See
+    # ``BaseJobRunner.runner_default_destination_params``; lets the image be set
+    # once on the runner instead of on every GCP Batch destination.
+    default_custom_vm_image=dict(
         map=specs.to_str_or_none,
         default=None,
     ),
@@ -706,20 +709,13 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             job_wrapper.prepare_input_files_cmds = None  # prevent them from being used in-line
 
     def _populate_parameter_defaults(self, job_destination):
-        updated = False
+        updated = super()._populate_parameter_defaults(job_destination)
         params = job_destination.params
         for key, value in self.destination_defaults.items():
             if key in params:
                 if value is PARAMETER_SPECIFICATION_IGNORED:
                     log.warning(f"Pulsar runner in selected configuration ignores parameter {key}")
                 continue
-            # if self.runner_params.get( key, None ):
-            #    # Let plugin define defaults for some parameters -
-            #    # for instance that way jobs_directory can be
-            #    # configured next to AMQP url (where it belongs).
-            #    params[ key ] = self.runner_params[ key ]
-            #    continue
-
             if not value:
                 continue
 
@@ -1366,18 +1362,10 @@ class PulsarGcpBatchJobRunner(PulsarCoexecutionJobRunner):
     client_manager_kwargs = GCP_BATCH_CLIENT_MANAGER_KWARGS
     destination_defaults = GCP_DESTINATION_DEFAULTS
 
-    # Runner-level params that should be passed through to the Pulsar client
-    # as destination params (destination overrides runner).
-    PASSTHROUGH_PARAMS = ["custom_vm_image"]
-
-    def _populate_parameter_defaults(self, job_destination):
-        updated = super()._populate_parameter_defaults(job_destination)
-        params = job_destination.params
-        for key in self.PASSTHROUGH_PARAMS:
-            if key not in params and self.runner_params.get(key):
-                params[key] = self.runner_params[key]
-                updated = True
-        return updated
+    # Destination params seeded from runner-level ``default_<param>`` settings
+    # (e.g. ``default_custom_vm_image``). Destination values override the
+    # runner-level default. See ``BaseJobRunner.runner_default_destination_params``.
+    runner_default_destination_params = ["custom_vm_image"]
 
 
 class PulsarRESTJobRunner(PulsarJobRunner):
