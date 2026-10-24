@@ -23,6 +23,7 @@ interface CommonCollectionBuilderProps {
     defaultHideSourceItems?: boolean;
     suggestedName?: string;
     mode: Mode;
+    historyId: string;
 }
 
 type EmitsName = {
@@ -81,7 +82,7 @@ export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?:
     }
 
     const { hasInvalidExtension, showElementExtension } = useExtensionFiltering(props);
-    const { createPayload } = useCollectionCreation();
+    const { createPayload } = useCollectionCreation(() => props.historyId);
 
     function onCollectionCreate(collectionType: string, elementIdentifiers: CollectionElementIdentifiers) {
         const payload = createPayload(collectionName.value, collectionType, elementIdentifiers, hideSourceItems.value);
