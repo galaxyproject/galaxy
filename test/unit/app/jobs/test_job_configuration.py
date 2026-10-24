@@ -357,6 +357,54 @@ class TestAdvancedJobConfYamlParser(TestAdvancedJobConfXmlParser):
     extension = "yml"
 
 
+TOOL_RESOURCE_JOB_CONF_YAML = """
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+execution:
+  default: local
+  environments:
+    local:
+      runner: local
+tools:
+- id: toolshed.example.org/repos/nate/filter_tool_repo/filter_tool
+  resources: memoryonly
+resources:
+  groups:
+    memoryonly: [memory]
+"""
+
+TOOL_RESOURCE_PARAMS_XML = """<parameters>
+    <param label="Memory" name="memory" type="integer" min="1" max="8" value="1" />
+</parameters>
+"""
+
+
+class TestToolResourceXml(BaseJobConfXmlParserTestCase):
+    extension = "yml"
+
+    def setUp(self):
+        super().setUp()
+        self.config.job_resource_params_file = os.path.join(self.temp_directory, "job_resource_params_conf.xml")
+        with open(self.config.job_resource_params_file, "w") as f:
+            f.write(TOOL_RESOURCE_PARAMS_XML)
+        self._write_config(TOOL_RESOURCE_JOB_CONF_YAML)
+
+    def test_versionless_tool_shed_guid(self):
+        tool_ids = [
+            "toolshed.example.org/repos/nate/filter_tool_repo/filter_tool/1.0.0",
+            "toolshed.example.org/repos/nate/filter_tool_repo/filter_tool",
+            "filter_tool",
+        ]
+        resource_xml = self.job_config.get_tool_resource_xml(tool_ids, "default")
+        assert resource_xml is not None
+        assert resource_xml.find("when/param[@name='memory']") is not None
+
+    def test_unmatched_tool_id(self):
+        assert self.job_config.get_tool_resource_xml(["other_tool"], "default") is None
+        assert self.job_config.get_tool_resource_xml("other_tool", "default") is None
+
+
 def test_yaml_advanced_validation():
     schema = GALAXY_SCHEMAS_PATH / "job_config_schema.yml"
     integration_tests_dir = os.path.join(galaxy_directory(), "test", "integration")

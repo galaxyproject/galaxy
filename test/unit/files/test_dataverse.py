@@ -1,6 +1,22 @@
+import pytest
+
+from galaxy.files.sources.dataverse import build_title_search_query
 from ._util import configured_file_sources
 
 MD5 = {"checksum": {"type": "MD5", "value": "887d4b7467d3c40c8b6176c57d568eac"}}
+
+
+@pytest.mark.parametrize(
+    "query, expected",
+    [
+        ("", "*"),
+        ("handwritten medieval", "title:(+handwritten* +medieval*)"),
+        ("handwritten-text", "title:(+handwritten* +text*)"),
+        ("title:foo OR (bar", "title:(+title* +foo* +OR* +bar*)"),
+    ],
+)
+def test_build_title_search_query(query, expected):
+    assert build_title_search_query(query) == expected
 
 
 def test_converted_tabular_files_have_no_hash():

@@ -8,7 +8,7 @@ from urllib.parse import quote
 from starlette.datastructures import URL
 
 from galaxy.exceptions import ObjectNotFound
-from galaxy.tool_util.version import parse_version
+from galaxy.tool_util.version import parse_tool_version
 from galaxy.tools.stock import stock_tool_sources_by_id
 from galaxy.util.tool_shed.common_util import remove_protocol_and_user_from_clone_url
 from galaxy.version import VERSION
@@ -174,7 +174,7 @@ def _get_stock_tool(trans: ProvidesRepositoriesContext, tool_id: str) -> Tool:
             url=f"{base_url}/api/tools/{encoded_id}/versions/{quote(version, safe='')}",
             verified=False,
         )
-        for version in sorted(sources, key=parse_version)
+        for version in sorted(sources, key=parse_tool_version)
     ]
     latest_source = sources[versions[-1].id]
     return Tool(

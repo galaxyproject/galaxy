@@ -1072,6 +1072,33 @@ steps:
         post_update_workflow = self.workflow_populator.download_workflow(workflow_id)
         assert post_update_workflow["name"] == new_name
 
+    def test_update_with_unchanged_export_of_workflow_with_subworkflow(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  dataset: data
+steps:
+  subworkflow:
+    in:
+      dataset: dataset
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        dataset:
+          type: data
+      steps:
+        cat1:
+          tool_id: cat1
+          in:
+            input1: dataset
+""")
+        exported = self.workflow_populator.download_workflow(workflow_id, style="export")
+        # The embedded subworkflow was built with the update's options, which lack `publish`: HTTP 500.
+        self._update_workflow(workflow_id, exported).raise_for_status()
+        updated = self.workflow_populator.download_workflow(workflow_id, style="export")
+        subworkflow_steps = [s for s in updated["steps"].values() if s["type"] == "subworkflow"]
+        assert len(subworkflow_steps) == 1, updated
+
     def test_update_name_empty(self):
         # Update doesn't allow empty names.
 
@@ -7570,6 +7597,120 @@ input_collection:
             )
             assert "null" in filter_content, f"Expected 'null' in filter output, got: {filter_content}"
 
+    def test_conditional_skip_on_database_operation_nested_collection_output(self):
+        # Nested collection outputs share the input's datasets, skipping must not overwrite them.
+        with self.dataset_populator.test_history() as history_id:
+            hdca = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id).json()["outputs"][0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list:paired
+steps:
+  filter:
+    tool_id: __FILTER_FAILED_DATASETS__
+    in:
+      input: input_collection
+    when: $(false)
+""")
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, history_id=history_id, inputs={"0": {"src": "hdca", "id": hdca["id"]}}
+            ).json()["id"]
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+
+            input_hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=hdca["id"]
+            )
+            input_pair = input_hdca_details["elements"][0]["object"]["elements"]
+            filter_step = [s for s in invocation["steps"] if s["workflow_step_label"] == "filter"][0]
+            filter_output_id = filter_step["output_collections"]["output"]["id"]
+            output_hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=filter_output_id
+            )
+            output_pair = output_hdca_details["elements"][0]["object"]["elements"]
+            assert len(input_pair) == len(output_pair) == 2
+
+            for input_element, output_element in zip(input_pair, output_pair):
+                input_hda = self.dataset_populator.get_history_dataset_details(
+                    history_id, content_id=input_element["object"]["id"]
+                )
+                assert input_hda["file_ext"] != "expression.json", input_hda
+                input_content = self.dataset_populator.get_history_dataset_content(
+                    history_id=history_id, content_id=input_element["object"]["id"]
+                )
+                assert "TestData123" in input_content, f"Expected input to be unchanged, got: {input_content}"
+                assert output_element["object"]["id"] != input_element["object"]["id"]
+                output_content = self.dataset_populator.get_history_dataset_content(
+                    history_id=history_id, content_id=output_element["object"]["id"]
+                )
+                assert "null" in output_content, f"Expected 'null' in filter output, got: {output_content}"
+
+    def test_conditional_skip_on_mapped_over_database_operation(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca = self.dataset_collection_populator.upload_collection(
+                history_id,
+                "list:list:paired",
+                elements=[
+                    {
+                        "name": "outer",
+                        "elements": [
+                            {
+                                "name": "test0",
+                                "elements": [
+                                    {"src": "pasted", "paste_content": "forward content", "name": "forward"},
+                                    {"src": "pasted", "paste_content": "reverse content", "name": "reverse"},
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            ).json()["outputs"][0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list:list:paired
+steps:
+  filter:
+    tool_id: __FILTER_FAILED_DATASETS__
+    in:
+      input: input_collection
+    when: $(false)
+""")
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, history_id=history_id, inputs={"0": {"src": "hdca", "id": hdca["id"]}}
+            ).json()["id"]
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+
+            input_hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=hdca["id"]
+            )
+            input_pair = input_hdca_details["elements"][0]["object"]["elements"][0]["object"]["elements"]
+            filter_step = [s for s in invocation["steps"] if s["workflow_step_label"] == "filter"][0]
+            filter_output_id = filter_step["output_collections"]["output"]["id"]
+            output_hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=filter_output_id
+            )
+            output_pair = output_hdca_details["elements"][0]["object"]["elements"][0]["object"]["elements"]
+            assert len(input_pair) == len(output_pair) == 2
+
+            for input_element, output_element, expected_content in zip(
+                input_pair, output_pair, ["forward content", "reverse content"]
+            ):
+                input_content = self.dataset_populator.get_history_dataset_content(
+                    history_id=history_id, content_id=input_element["object"]["id"]
+                )
+                assert expected_content in input_content, f"Expected input to be unchanged, got: {input_content}"
+                assert output_element["object"]["id"] != input_element["object"]["id"]
+                output_content = self.dataset_populator.get_history_dataset_content(
+                    history_id=history_id, content_id=output_element["object"]["id"]
+                )
+                assert "null" in output_content, f"Expected 'null' in filter output, got: {output_content}"
+
     def test_conditional_flat_crossproduct_subworkflow(self):
         parent = yaml.safe_load("""
 class: GalaxyWorkflow
@@ -9341,6 +9482,39 @@ steps:
         # Options are sorted by label when there are multiple connections
         option_values = {opt[1] for opt in options}
         assert option_values == {"--ex1", "ex2", "--ex3", "--ex4", "ex5"}
+
+    def test_numeric_input_bounds_reach_run_form(self):
+        workflow_id = self._upload_bounded_integer_workflow(1, 5)
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        count_input = run_workflow["steps"][0]["inputs"][0]
+        assert (count_input["min"], count_input["max"]) == (1, 5)
+
+    def test_numeric_input_inverted_bounds_rejected_on_run_form(self):
+        workflow_id = self._upload_bounded_integer_workflow(5, 1)
+        with self.dataset_populator.test_history() as history_id:
+            response = self.workflow_populator.download_workflow_raw(workflow_id, style="run", history_id=history_id)
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Workflow input 'count' has a minimum (5) greater than its maximum (1)")
+
+    def test_numeric_input_inverted_bounds_flagged_in_editor_and_export(self):
+        workflow_id = self._upload_bounded_integer_workflow(5, 1)
+        message = "Workflow input 'count' has a minimum (5) greater than its maximum (1)."
+        editor_steps = self._download_workflow(workflow_id, style="editor")["steps"]
+        assert editor_steps["0"]["errors"] == message
+        export_steps = self._download_workflow(workflow_id)["steps"]
+        assert export_steps["0"]["errors"] == message
+
+    def _upload_bounded_integer_workflow(self, minimum: int, maximum: int) -> str:
+        return self.workflow_populator.upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  count:
+    type: int
+    min: {minimum}
+    max: {maximum}
+steps: []
+""")
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):

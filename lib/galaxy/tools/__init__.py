@@ -138,6 +138,7 @@ from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tool_util.version import (
+    parse_tool_version,
     parse_version,
 )
 from galaxy.tool_util.version_updates import WORKFLOW_SAFE_TOOL_VERSION_UPDATES
@@ -368,7 +369,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "Convert characters1": parse_version("1.0.1"),
     "substitutions1": parse_version("1.0.1"),
     "winSplitter": parse_version("1.0.1"),
-    "Interval2Maf1": parse_version("1.0.1+galaxy0"),
+    "Interval2Maf1": parse_tool_version("1.0.1+galaxy0"),
 }
 
 REQUIRE_FULL_DIRECTORY = {
@@ -1118,8 +1119,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.dependencies: list = []
         # populate toolshed repository info, if available
         self.populate_tool_shed_info(tool_shed_repository)
-        # add tool resource parameters
-        self.populate_resource_parameters(tool_source)
         self.tool_errors: Optional[str] = None
         # Parse XML element containing configuration
         self.tool_source = tool_source
@@ -1161,22 +1160,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def version_object(self):
         """Parse version string, handling special Galaxy version format."""
-        GALAXY_VERSION_SUFFIX = "+galaxy"
-        version = self.version
-
-        # Check if version has Galaxy suffix that we need to modify (e.g., "1.0+galaxy123")
-        if GALAXY_VERSION_SUFFIX not in version:
-            return parse_version(version)
-
-        base_version, suffix = version.split(GALAXY_VERSION_SUFFIX, 1)
-
-        # Handle Galaxy versions that need numeric sorting
-        if suffix:
-            # Per PEP-440 a version like <base_version>+galaxy<suffix> would be sorted lexicographically if not separated by a '.'.
-            # Injecting a '.' here will force a numeric sort if the suffix is an integer, otherwise the outcome will be the same.
-            version = f"{base_version}{GALAXY_VERSION_SUFFIX}.{suffix.lstrip('.')}"
-
-        return parse_version(version)
+        return parse_tool_version(self.version)
 
     @property
     def sa_session(self):
@@ -1495,6 +1479,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                 tool_classes.append("user_defined")
 
             self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids, tool_classes)
+            # Adds the job resource conditional to the tool's XML inputs, so it must run before parse_inputs.
+            self.populate_resource_parameters(tool_source)
 
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = tool_source.parse_hidden()
@@ -2057,12 +2043,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def populate_resource_parameters(self, tool_source):
         root = getattr(tool_source, "root", None)
-        if (
-            root is not None
-            and hasattr(self.app, "job_config")
-            and hasattr(self.app.job_config, "get_tool_resource_xml")
-        ):
-            resource_xml = self.app.job_config.get_tool_resource_xml(root.get("id", "").lower(), self.tool_type)
+        if root is not None and hasattr(self.app.job_config, "get_tool_resource_xml"):
+            resource_xml = self.app.job_config.get_tool_resource_xml(self.all_ids, self.tool_type)
             if resource_xml is not None:
                 inputs = root.find("inputs")
                 if inputs is None:

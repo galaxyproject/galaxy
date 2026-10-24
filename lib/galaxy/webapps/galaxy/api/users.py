@@ -33,11 +33,13 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.favorites import FavoritesManager
+from galaxy.managers.hdas import HDAManager
 from galaxy.model import (
     Dataset,
     FormDefinition,
     FormValues,
     HistoryDatasetAssociation,
+    NoConverterException,
     Role,
     User,
     UserAddress,
@@ -158,6 +160,7 @@ class FastAPIUsers:
     service: UsersService = depends(UsersService)
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
     favorites_manager: FavoritesManager = depends(FavoritesManager)
+    hda_manager: HDAManager = depends(HDAManager)
 
     @router.put(
         "/api/users/current/recalculate_disk_usage",
@@ -517,15 +520,16 @@ class FastAPIUsers:
                 build_dict["count"] = str(counter)
             else:
                 build_dict["fasta"] = trans.security.decode_id(len_value)
-                dataset = trans.sa_session.get(HistoryDatasetAssociation, int(build_dict["fasta"]))
-                assert dataset
+                dataset = self.hda_manager.get_accessible(build_dict["fasta"], trans.user)
                 try:
                     new_len = dataset.get_converted_dataset(trans, "len")
                     new_linecount = new_len.get_converted_dataset(trans, "linecount")
                     build_dict["len"] = new_len.id
                     build_dict["linecount"] = new_linecount.id
-                except Exception:
-                    raise exceptions.ToolExecutionError("Failed to convert dataset.")
+                except NoConverterException as e:
+                    raise exceptions.RequestParameterInvalidException(
+                        f"Cannot create a custom build from this dataset: {e.value}"
+                    )
             dbkeys[key] = build_dict
             user.preferences["dbkeys"] = json.dumps(dbkeys)
             trans.sa_session.commit()

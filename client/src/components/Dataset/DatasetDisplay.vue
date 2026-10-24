@@ -52,25 +52,21 @@ const sanitizedMessage = computed(() => {
     return undefined;
 });
 
-watch(
-    () => props.datasetId,
-    async () => {
-        try {
-            const { headers } = await fetch(withPrefix(previewUrl.value), { method: "HEAD" });
-            contentChunked.value = !!headers.get("x-content-chunked");
-            contentTruncated.value = headers.get("x-content-truncated")
-                ? Number(headers.get("x-content-truncated"))
-                : null;
-            sanitizedJobImported.value = !!headers.get("x-sanitized-job-imported");
-            sanitizedToolId.value = headers.get("x-sanitized-tool-id");
-            errorMessage.value = "";
-        } catch (e) {
-            errorMessage.value = errorMessageAsString(e);
-            console.error(e);
-        }
-    },
-    { immediate: true },
-);
+async function checkPreview() {
+    try {
+        const { headers } = await fetch(withPrefix(previewUrl.value), { method: "HEAD" });
+        contentChunked.value = !!headers.get("x-content-chunked");
+        contentTruncated.value = headers.get("x-content-truncated") ? Number(headers.get("x-content-truncated")) : null;
+        sanitizedJobImported.value = !!headers.get("x-sanitized-job-imported");
+        sanitizedToolId.value = headers.get("x-sanitized-tool-id");
+        errorMessage.value = "";
+    } catch (e) {
+        errorMessage.value = errorMessageAsString(e);
+        console.error(e);
+    }
+}
+
+watch(() => props.datasetId, checkPreview, { immediate: true });
 </script>
 
 <template>

@@ -39,11 +39,13 @@ from pulsar.client.staging import COMMAND_VERSION_FILENAME
 from sqlalchemy import (
     and_,
     func,
+    inspect,
     or_,
     select,
     update,
 )
 from sqlalchemy.engine import CursorResult
+from sqlalchemy.orm import joinedload
 
 from galaxy import (
     model,
@@ -640,21 +642,25 @@ class JobConfiguration(ConfiguresHandlers):
         self.destinations["local"] = [JobDestination(id="local", runner="local")]
         log.debug("Done loading job configuration")
 
-    def get_tool_resource_xml(self, tool_id, tool_type):
-        """Given a tool id, return XML elements describing parameters to
+    def get_tool_resource_xml(self, tool_ids, tool_type):
+        """Given a tool's IDs, return XML elements describing parameters to
         insert into job resources.
 
-        :tool id: A tool ID (a string)
+        :tool ids: The tool's IDs in lookup order (see ``Tool.all_ids``), as
+            accepted by :meth:`get_job_tool_configurations`. The resource group
+            of the first ID whose tool definition sets one is used.
         :tool type: A tool type (a string)
 
         :returns: List of parameter elements.
         """
-        if tool_id and tool_type in ("default", "manage_data"):
-            # TODO: Only works with exact matches, should handle different kinds of ids
-            # the way destination lookup does.
+        tool_ids = util.listify(tool_ids)
+        if tool_ids and tool_type in ("default", "manage_data"):
             resource_group = None
-            if tool_id in self.tools:
-                resource_group = self.tools[tool_id][0].get_resource_group()
+            for tool_id in tool_ids:
+                if tool_id in self.tools:
+                    resource_group = self.tools[tool_id][0].get_resource_group()
+                    if resource_group:
+                        break
             resource_group = resource_group or self.default_resource_group
             if resource_group and resource_group in self.resource_groups:
                 fields_names = self.resource_groups[resource_group]
@@ -2213,9 +2219,20 @@ class MinimalJobWrapper(HasResourceParameters):
                 )
                 object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
                 # Datasets discovered by the job are created by the import, without permissions.
-                permission_provider = PermissionProvider(job.io_dicts()[0], self.app.security_agent, job)
-                for hda in [*object_import_tracker.hdas_by_key.values(), *object_import_tracker.hdas_by_id.values()]:
-                    permission_provider.set_default_hda_permissions(hda)
+                # Precreated outputs (hdas_by_id) got their permissions when the job was created.
+                # The import's commit expired the new HDAs, so load them and their dataset permissions in one go.
+                if discovered_hda_ids := [
+                    inspect(hda).identity[0] for hda in object_import_tracker.hdas_by_key.values()
+                ]:
+                    discovered_hdas = self.sa_session.scalars(
+                        select(model.HistoryDatasetAssociation)
+                        .where(model.HistoryDatasetAssociation.id.in_(discovered_hda_ids))
+                        .options(joinedload(model.HistoryDatasetAssociation.dataset).selectinload(Dataset.actions))
+                    )
+                    permission_provider = PermissionProvider(job.io_dicts()[0], self.app.security_agent, job)
+                    # Copied HDAs share a Dataset.
+                    for hda in {hda.dataset: hda for hda in discovered_hdas}.values():
+                        permission_provider.set_default_hda_permissions(hda)
                 # The import leaves job.state untouched so nothing polling the job can see it finish before
                 # exec_after_process and the final commit below have run.
                 if object_import_tracker.job_states_by_id.get(job.id) == job.states.ERROR:

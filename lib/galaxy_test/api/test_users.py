@@ -1,7 +1,11 @@
 from urllib.parse import quote
 
+from galaxy.exceptions import error_codes
 from galaxy_test.api._framework import ApiTestCase
-from galaxy_test.base.api_asserts import assert_object_id_error
+from galaxy_test.base.api_asserts import (
+    assert_error_message_contains,
+    assert_object_id_error,
+)
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_history,
@@ -419,6 +423,22 @@ class TestUsersApi(ApiTestCase):
             updated_theme = self._get(url).json()["preferences"]["theme"]
             assert updated_theme == "test_theme"
 
+    def test_custom_build_from_unconvertible_dataset(self):
+        user_id = self._get("users/current").json()["id"]
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        with dataset_populator.test_history() as history_id:
+            hda = dataset_populator.new_dataset(history_id, content="chr1\t0\t100\n", file_type="bed", wait=True)
+            response = self._put(
+                f"users/{user_id}/custom_builds/unconvertible_build",
+                data={"name": "Unconvertible build", "len|type": "fasta", "len|value": hda["id"]},
+                json=True,
+            )
+            self._assert_status_code_is(response, 400)
+            self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
+            assert_error_message_contains(response, "Conversion from 'bed' to 'len' not possible")
+            builds = self._get(f"users/{user_id}/custom_builds").json()
+            assert "unconvertible_build" not in [build["id"] for build in builds]
+
     @requires_admin
     @requires_new_user
     def test_show_delete(self):
@@ -489,3 +509,21 @@ class TestUsersApi(ApiTestCase):
         user_roles = response.json()
         assert len(user_roles) == 1
         assert user_roles[0]["type"] == PRIVATE_ROLE_TYPE
+
+    @requires_admin
+    @requires_new_user
+    def test_custom_build_from_inaccessible_dataset(self):
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        with dataset_populator.test_history() as history_id:
+            hda = dataset_populator.new_dataset(history_id, content=">chr1\nACGT\n", file_type="fasta", wait=True)
+            dataset_populator.make_private(history_id, hda["id"])
+            with self._different_user(email=TEST_USER_EMAIL):
+                user_id = self._get("users/current").json()["id"]
+                response = self._put(
+                    f"users/{user_id}/custom_builds/inaccessible_build",
+                    data={"name": "Inaccessible build", "len|type": "fasta", "len|value": hda["id"]},
+                    json=True,
+                )
+                self._assert_status_code_is(response, 403)
+                builds = self._get(f"users/{user_id}/custom_builds").json()
+                assert "inaccessible_build" not in [build["id"] for build in builds]

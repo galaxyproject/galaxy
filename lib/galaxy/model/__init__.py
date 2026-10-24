@@ -5180,14 +5180,16 @@ class Dataset(Base, StorableObject, Serializable):
         )
 
         if supports_skip_locked:
-            # Use FOR UPDATE SKIP LOCKED for better concurrency when supported
-            # First select the HDCAs we want to update with FOR UPDATE SKIP LOCKED
+            # First select the HDCAs we want to update with FOR NO KEY UPDATE SKIP LOCKED.
+            # Only update_time changes, and this lock mode is compatible with the FOR KEY SHARE
+            # lock that foreign key checks take, so concurrent inserts of rows referencing these
+            # HDCAs (job inputs, workflow step outputs) proceed while this transaction is open.
             hdca_ids_to_update = (
                 session.execute(
                     select(HistoryDatasetCollectionAssociation.id)
                     .where(HistoryDatasetCollectionAssociation.collection_id.in_(collection_ids_subquery))
                     .order_by(HistoryDatasetCollectionAssociation.id)
-                    .with_for_update(skip_locked=True)
+                    .with_for_update(skip_locked=True, key_share=True)
                 )
                 .scalars()
                 .all()
@@ -5559,14 +5561,11 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     def set_skipped(self, object_store_populator: "ObjectStorePopulator", replace_dataset: bool) -> None:
         assert self.dataset
-        object_store_populator.set_object_store_id(self)
         if replace_dataset:
-            replacement = Dataset(state=Dataset.states.NEW)
-            replacement.object_store_id = self.dataset.object_store_id
-            self.dataset = replacement
+            # Replace the dataset before touching the object store, the current one may be shared with an input.
+            self.dataset = Dataset(state=Dataset.states.NEW)
             self.dataset_id = None
-            assert self.dataset.object_store is not None
-            self.dataset.object_store.create(self.dataset)
+        object_store_populator.set_object_store_id(self)
         self.extension = "expression.json"
         self.state = self.states.OK
         self.blurb = "skipped"
@@ -5671,22 +5670,26 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return `False` if there exists an associated job with a non-terminal state.
         """
 
-        def exists_clause(assoc_model):
+        def exists_clause(dataset_id_column):
             return (
-                select(assoc_model.job_id)
+                select(dataset_id_column)
                 .join(Job)
-                .where(assoc_model.dataset_id == self.id)
+                .where(dataset_id_column == self.id)
                 .where(Job.state.not_in(Job.terminal_states))
                 .exists()
             )
 
+        input_dataset_id, output_dataset_id = self._job_association_dataset_id_columns()
         stmt = select(
             or_(
-                exists_clause(JobToInputDatasetAssociation),
-                exists_clause(JobToOutputDatasetAssociation),
+                exists_clause(input_dataset_id),
+                exists_clause(output_dataset_id),
             )
         )
         return not required_object_session(self).scalar(stmt)
+
+    def _job_association_dataset_id_columns(self):
+        return JobToInputDatasetAssociation.dataset_id, JobToOutputDatasetAssociation.dataset_id
 
     def change_datatype(self, new_ext):
         self.clear_associated_files()
@@ -6921,6 +6924,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
     def purged(self):
         # For uniformity with HistoryDatasetAssociation
         return self.dataset and self.dataset.purged
+
+    def _job_association_dataset_id_columns(self):
+        return JobToInputLibraryDatasetAssociation.ldda_id, JobToOutputLibraryDatasetAssociation.ldda_id
 
     def to_history_dataset_association(
         self, target_history, parent_id=None, add_to_history=False, visible=None, commit=True
@@ -10008,12 +10014,15 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         session = object_session(self)
         priority_states = (WorkflowInvocation.states.CANCELLING, WorkflowInvocation.states.CANCELLED)
         if session and self.id and state not in priority_states:
-            # generate statement that will not revert CANCELLING or CANCELLED back to anything non-terminal
+            # generate statement that will not revert CANCELLING, CANCELLED or COMPLETED. Scheduling a
+            # parent's subworkflow step runs the child's invoker again, and a child whose completion
+            # was already recorded must stay completed for the parent to complete.
+            final_states = (*priority_states, WorkflowInvocation.states.COMPLETED)
             session.execute(
                 update(WorkflowInvocation)
                 .where(
                     WorkflowInvocation.id == self.id,
-                    or_(~WorkflowInvocation.state.in_(priority_states), WorkflowInvocation.state.is_(None)),
+                    or_(~WorkflowInvocation.state.in_(final_states), WorkflowInvocation.state.is_(None)),
                 )
                 .values(state=state)
             )

@@ -1632,6 +1632,19 @@ class BaseDatasetPopulator(BasePopulator):
         assert "id" in role, role
         return role["id"]
 
+    def get_dataset_permissions(self, dataset_id: str) -> dict[str, list[str]]:
+        response = self._get(f"datasets/{dataset_id}")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()["permissions"]
+
+    def assert_history_datasets_permissions(self, history_id: str, expected_count: int, access_private: bool) -> None:
+        role_id = self.user_private_role_id()
+        datasets = self.get_history_contents_of_type(history_id, "datasets")
+        assert len(datasets) == expected_count, [d["name"] for d in datasets]
+        expected = {"manage": [role_id], "access": [role_id] if access_private else []}
+        permissions = {d["name"]: self.get_dataset_permissions(d["id"]) for d in datasets}
+        assert permissions == dict.fromkeys(permissions, expected)
+
     def get_usage(self) -> list[dict[str, Any]]:
         usage_response = self.galaxy_interactor.get("users/current/usage")
         usage_response.raise_for_status()
@@ -2871,7 +2884,7 @@ steps: []
         api_asserts.assert_status_code_is(response, 200)
         return response
 
-    def download_workflow(
+    def download_workflow_raw(
         self,
         workflow_id: str,
         style: Optional[str] = None,
@@ -2879,7 +2892,7 @@ steps: []
         instance: Optional[bool] = None,
         version: Optional[int] = None,
         preserve_external_subworkflow_links: Optional[bool] = None,
-    ) -> dict:
+    ) -> Response:
         params: dict[str, Any] = {}
         if style is not None:
             params["style"] = style
@@ -2891,7 +2904,25 @@ steps: []
             params["version"] = version
         if preserve_external_subworkflow_links is not None:
             params["preserve_external_subworkflow_links"] = preserve_external_subworkflow_links
-        response = self._get(f"workflows/{workflow_id}/download", data=params)
+        return self._get(f"workflows/{workflow_id}/download", data=params)
+
+    def download_workflow(
+        self,
+        workflow_id: str,
+        style: Optional[str] = None,
+        history_id: Optional[str] = None,
+        instance: Optional[bool] = None,
+        version: Optional[int] = None,
+        preserve_external_subworkflow_links: Optional[bool] = None,
+    ) -> dict:
+        response = self.download_workflow_raw(
+            workflow_id,
+            style=style,
+            history_id=history_id,
+            instance=instance,
+            version=version,
+            preserve_external_subworkflow_links=preserve_external_subworkflow_links,
+        )
         api_asserts.assert_status_code_is(response, 200)
         if style != "format2":
             return response.json()

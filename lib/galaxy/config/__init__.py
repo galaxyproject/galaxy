@@ -668,7 +668,8 @@ class CommonConfigurationMixin:
     def _ensure_directory(self, path):
         if path not in [None, False] and not os.path.isdir(path):
             try:
-                os.makedirs(path)
+                # Another process starting with the same configuration may create it first.
+                os.makedirs(path, exist_ok=True)
             except Exception as e:
                 raise ConfigurationError(f"Unable to create missing directory: {path}\n{unicodify(e)}")
 
@@ -758,6 +759,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     hash_function: HashFunctionNameEnum
     integrated_tool_panel_config: str
     involucro_path: str
+    job_resource_params_file: str
     len_file_path: str
     manage_dependency_relationships: bool
     monitor_thread_join_timeout: int
@@ -783,6 +785,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     trust_jupyter_notebook_conversion: bool
     tus_upload_store: str
     use_remote_user: bool
+    use_tasked_jobs: bool
     user_library_import_dir_auto_creation: bool
     user_library_import_symlink_allowlist: list[str]
     user_tool_filters: list[str]
@@ -1452,6 +1455,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Check that required directories exist; attempt to create otherwise
         paths_to_check = [
             self.data_dir,
+            self.file_path,
             self.ftp_upload_dir,
             self.library_import_dir,
             self.managed_config_dir,
