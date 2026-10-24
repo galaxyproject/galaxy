@@ -793,6 +793,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
+    def history_panel_wait_for_hid_datatype(self, hid: int, datatype: str):
+        datatype_component = self.history_panel_item_component(hid=hid).datatype
+        self._wait_on(lambda: datatype_component.wait_for_text() == datatype, f"hid {hid} datatype to be [{datatype}]")
+
+    def history_panel_wait_for_hid_dbkey(self, hid: int, dbkey: str):
+        dbkey_component = self.history_panel_item_component(hid=hid).dbkey
+        self._wait_on(lambda: dbkey_component.wait_for_text() == dbkey, f"hid {hid} dbkey to be [{dbkey}]")
+
     def history_panel_wait_for_and_select(self, hids: list[int]):
         """
         Waits for uploads to pass through queued, running, ok. Not all the states are not guaranteed
@@ -2376,6 +2384,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def click_history_option_sharing(self):
         self.use_bootstrap_dropdown(option="share and manage access", menu="history options")
 
+    def click_history_option_tool_references(self):
+        """Open History options > Export Tool References and wait for the references."""
+        self.use_bootstrap_dropdown(option="export tool references", menu="history options")
+        self.components.citations._.reference.wait_for_visible()
+
     def click_history_option_extract_workflow(self):
         self.use_bootstrap_dropdown(option="extract workflow", menu="history options")
 
@@ -2696,6 +2709,18 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         item_selector = self.history_panel_item_selector(hid, wait=True)
         operation_radio_selector = f"{item_selector} .selector"
         self.wait_for_and_click_selector(operation_radio_selector)
+
+    def history_panel_change_selected(self, operation: str, value: str):
+        """Apply ``value`` to the selected history items through a Selection menu modal.
+
+        ``operation`` is the menu item's data-description, e.g. "change data type" (needs Celery).
+        """
+        self.use_bootstrap_dropdown(option=operation, menu="selected content menu")
+        modal = self.components.history_panel.multi_operations.operation_modal._(operation=operation)
+        modal.item_selector.wait_for_visible()
+        self.select_set_value(modal, value)
+        modal.ok.wait_for_and_click()
+        modal.wait_for_absent_or_hidden()
 
     def history_panel_multi_operation_action_click(self, action):
         # Maybe isn't needed?
