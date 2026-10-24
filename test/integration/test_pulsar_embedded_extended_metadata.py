@@ -34,8 +34,9 @@ class TestEmbeddedAndExtendedMetadataPulsarRuntimeEnvironment(integration_util.I
         populator = DatasetPopulator(self.galaxy_interactor)
         with populator.test_history() as history_id:
             result = populator.run_tool("runtime_environment", {}, history_id)
-            populator.wait_for_history(history_id, assert_ok=True)
-            job = populator.get_job_details(result["jobs"][0]["id"], full=True).json()
+            job_id = result["jobs"][0]["id"]
+            populator.wait_for_job(job_id, assert_ok=True)
+            job = populator.get_job_details(job_id, full=True).json()
             warnings = [m for m in job["job_messages"] if m["type"] == "runtime_environment_warning"]
             assert len(warnings) == 1
             assert warnings[0]["variable_names"] == ["EMPTY_VAR", "MISSING_VAR"]
