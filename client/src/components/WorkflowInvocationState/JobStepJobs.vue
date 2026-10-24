@@ -22,6 +22,8 @@ interface Props {
     currentPage: number;
     sortDesc: boolean;
     perPage: number;
+    selectedJob?: string;
+    selectionEnabled?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -29,6 +31,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
     (e: "update:current-page", value: number): void;
     (e: "update:sort-desc", value: boolean): void;
+    (e: "select-job", value: string | undefined): void;
 }>();
 
 const invocationStore = useInvocationStore();
@@ -73,6 +76,27 @@ const viewedJobIndex = computed<number | null>({
 function jobClicked(event: { item: JobBaseModel }) {
     viewedJob.value = event.item;
     showModal.value = true;
+    emit("select-job", event.item.id);
+}
+
+watch(
+    [() => props.selectedJob, () => props.jobs],
+    () => {
+        if (!props.selectionEnabled) {
+            return;
+        }
+        const job = props.jobs.find((job) => job.id === props.selectedJob);
+        viewedJob.value = job ?? null;
+        showModal.value = Boolean(job);
+    },
+    { immediate: true },
+);
+
+function closeJob() {
+    if (viewedJob.value) {
+        emit("select-job", undefined);
+    }
+    viewedJob.value = null;
 }
 
 function onSort(_sortBy: string, sortDesc: boolean) {
@@ -90,19 +114,21 @@ function navigateJob(direction: "previous" | "next") {
     } else {
         viewedJobIndex.value += direction === "next" ? 1 : -1;
     }
+    emit("select-job", viewedJob.value?.id);
 }
 
 // If we navigate to a job not on the current page, switch to that page
 watch(
     () => viewedJobIndex.value,
     (newIndex) => {
-        if (newIndex !== null) {
+        if (newIndex !== null && newIndex >= 0) {
             const pageOfJob = Math.floor(newIndex / props.perPage) + 1;
             if (pageOfJob !== props.currentPage) {
                 emit("update:current-page", pageOfJob);
             }
         }
     },
+    { immediate: true },
 );
 
 // If the number of jobs changes such that the current page is out of range, adjust the current page
@@ -164,7 +190,7 @@ watch(
             </template>
         </GTable>
 
-        <GModal v-model:show="showModal" fixed-height size="medium" @close="viewedJob = null">
+        <GModal v-model:show="showModal" fixed-height size="medium" @close="closeJob">
             <template v-slot:header>
                 <div v-if="viewedJob" class="w-100 d-flex justify-content-between align-items-center">
                     <Heading h2 size="sm">
@@ -176,11 +202,14 @@ watch(
 
                     <div class="d-flex align-items-center">
                         <GButtonGroup>
-                            <GButton transparent @click="navigateJob('previous')">
+                            <GButton
+                                transparent
+                                data-description="invocation job previous"
+                                @click="navigateJob('previous')">
                                 <FontAwesomeIcon :icon="faArrowCircleLeft" />
                                 Prev
                             </GButton>
-                            <GButton transparent @click="navigateJob('next')">
+                            <GButton transparent data-description="invocation job next" @click="navigateJob('next')">
                                 <FontAwesomeIcon :icon="faArrowCircleRight" />
                                 Next
                             </GButton>

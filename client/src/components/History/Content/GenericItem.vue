@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useIntersectionObserver } from "@vueuse/core";
-import { computed, ref } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import type { HistoryItemSummary } from "@/api";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
@@ -15,15 +15,29 @@ import GenericElement from "./GenericElement.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-const props = defineProps<{
-    itemId: string;
-    itemSrc: string;
-}>();
+const props = withDefaults(
+    defineProps<{
+        itemId: string;
+        itemSrc: string;
+        expanded?: boolean;
+        scrollOnExpand?: boolean;
+    }>(),
+    { expanded: undefined },
+);
+
+const emit = defineEmits<{ (e: "update:expanded", value: boolean): void }>();
 
 const historyStore = useHistoryStore();
 
 const viewCollection = ref(false);
 const expandDataset = ref(false);
+// An item the user just toggled is already in view; only scroll to targets expanded from elsewhere.
+let userToggled = false;
+function setExpanded(value: boolean) {
+    userToggled = true;
+    expandDataset.value = value;
+    emit("update:expanded", value);
+}
 const view = ref(props.itemSrc === "hdca" ? "collection" : "element");
 
 const providerComponent = computed(() => {
@@ -48,6 +62,33 @@ const { stop: stopObserver } = useIntersectionObserver(containerEl, ([entry]) =>
         stopObserver();
     }
 });
+
+watch(
+    () => props.expanded,
+    async (value) => {
+        const scroll = props.scrollOnExpand && !userToggled;
+        userToggled = false;
+        if (value === undefined) {
+            return;
+        }
+        expandDataset.value = props.itemSrc === "hda" && value;
+        viewCollection.value = props.itemSrc !== "hda" && value;
+        if (value) {
+            // URL targets must load even when they start below the viewport.
+            hasBeenVisible.value = true;
+            if (props.itemSrc === "hdca") {
+                view.value = "element";
+            }
+            await nextTick();
+            if (scroll) {
+                // The target is still loading and will grow, so align its top. Jump rather than
+                // smooth scroll: lazy items passed mid-scroll load, grow and push the target off screen.
+                containerEl.value?.scrollIntoView({ block: "start" });
+            }
+        }
+    },
+    { immediate: true },
+);
 
 async function onDelete(item: HistoryItemSummary, recursive = false) {
     try {
@@ -93,7 +134,9 @@ function onViewCollection(collection: any) {
     if (view.value === "collection" && collection.model_class === "HistoryDatasetCollectionAssociation") {
         view.value = "element";
     }
+    userToggled = true;
     viewCollection.value = !viewCollection.value;
+    emit("update:expanded", viewCollection.value);
 }
 </script>
 
@@ -118,7 +161,7 @@ function onViewCollection(collection: any) {
                     :name="item.name || item.element_identifier"
                     :expand-dataset="expandDataset"
                     :is-dataset="item.history_content_type == 'dataset' || item.element_type == 'hda'"
-                    @update:expand-dataset="expandDataset = $event"
+                    @update:expand-dataset="setExpanded"
                     @view-collection="onViewCollection"
                     @delete="onDelete"
                     @toggleHighlights="onHighlight(item)"

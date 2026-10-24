@@ -42,11 +42,11 @@ async function showStep(stepId: number) {
     }
 }
 
-function showSubworkflowInvocation(invocationId: string, stepId: number) {
-    // Navigate to the subworkflow invocation page
-    // The stepId parameter could be used to highlight a specific step, but for now
-    // we'll just navigate to the subworkflow invocation
-    router.push(`/workflows/invocations/${invocationId}`);
+function showSubworkflowInvocation(invocationId: string, stepId?: number) {
+    router.push({
+        path: `/workflows/invocations/${invocationId}`,
+        query: stepId === undefined ? {} : { step_index: String(stepId) },
+    });
 }
 </script>
 

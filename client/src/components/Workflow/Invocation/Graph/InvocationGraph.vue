@@ -78,7 +78,9 @@ onMounted(async () => {
     await nextTick();
 
     // @ts-ignore: TS2339 component method not exposed in template ref type
-    workflowGraph.value?.fitWorkflow(0.25, 1.0, 20.0);
+    if (activeNodeId.value === null) {
+        workflowGraph.value?.fitWorkflow(0.25, 1.0, 20.0);
+    }
 });
 
 // Equivalent to onMounted; this is where the graph is initialized. The graph then follows the
@@ -242,7 +244,7 @@ function toggleDetailedView() {
                         class="w-100 pr-2"
                         :workflow-step="activeStep"
                         :graph-step="steps[activeNodeId]"
-                        :invocation-step="props.invocation.steps[activeNodeId]" />
+                        :invocation-step="props.invocation.steps.find((step) => step.order_index === activeNodeId)" />
                     <div class="d-flex flex-gapx-1">
                         <GButton title="Scroll to Step" size="small" transparent @click="scrollStepToView()">
                             <FontAwesomeIcon :icon="faArrowDown" />

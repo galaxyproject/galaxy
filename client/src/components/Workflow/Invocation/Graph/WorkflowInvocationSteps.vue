@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { getStepTitle } from "@/components/WorkflowInvocationState/util";
+import { useInvocationSelection } from "@/composables/invocationSelection";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useToolStore } from "@/stores/toolStore";
@@ -32,6 +33,17 @@ const toolStore = useToolStore();
 const workflowStore = useWorkflowStore();
 
 const currentQuery = ref("");
+const selection = useInvocationSelection();
+const stepsContainer = ref<HTMLElement>();
+const expandedSteps = ref<Record<number, boolean>>({});
+function setExpanded(index: number, expanded: boolean) {
+    expandedSteps.value = { ...expandedSteps.value, [index]: expanded };
+    if (selection && expanded) {
+        selection.stepIndex.value = index;
+    } else if (selection?.stepIndex.value === index) {
+        selection.stepIndex.value = null;
+    }
+}
 
 const workflowId = computed(() => workflow.value?.id);
 const workflowVersion = computed(() => workflow.value?.version);
@@ -50,7 +62,7 @@ const filteredWorkflowSteps = computed(() => {
     // Filter steps based on the search query matching the step title
     const query = currentQuery.value.toLowerCase().trim();
     return steps.filter((step) => {
-        const invocationStep = props.invocation.steps[step.id];
+        const invocationStep = props.invocation.steps.find((candidate) => candidate.order_index === step.id);
 
         const toolId = step.tool_uuid || step.tool_id;
         const toolName = toolId ? toolStore.getToolNameById(toolId) : undefined;
@@ -87,11 +99,37 @@ const {
     workflowVersion,
 );
 
+watch(
+    [() => selection?.stepIndex.value, workflow, graphLoading],
+    async ([index]) => {
+        if (index === undefined || index === null || !workflow.value || graphLoading.value) {
+            return;
+        }
+        const step = workflow.value.steps[index];
+        if (!step) {
+            return;
+        }
+        expandedSteps.value = { ...expandedSteps.value, [index]: true };
+        if (isWorkflowInput(step.type)) {
+            expandInvocationInputs.value = true;
+        }
+        currentQuery.value = "";
+        await nextTick();
+        stepsContainer.value?.querySelector(`[data-index="${index}"]`)?.scrollIntoView({ block: "start" });
+    },
+    { immediate: true },
+);
+
 // Expand the inputs portlet while searching so results aren't hidden inside it
 watch(
     () => currentQuery.value,
     (newVal) => {
-        expandInvocationInputs.value = newVal.trim().length > 0;
+        expandInvocationInputs.value =
+            newVal.trim().length > 0 ||
+            Boolean(
+                selection?.stepIndex.value !== null &&
+                    workflowInputSteps.value.some((step) => step.id === selection?.stepIndex.value),
+            );
     },
 );
 
@@ -120,7 +158,7 @@ watch(
     <GAlert v-else-if="error || graphError" variant="danger" show>
         {{ error || graphError }}
     </GAlert>
-    <div v-else-if="graphSteps && workflow" class="steps-container">
+    <div v-else-if="graphSteps && workflow" ref="stepsContainer" class="steps-container">
         <div class="px-1 pt-1 pb-2">
             <DelayedInput placeholder="search steps" :delay="200" @change="(v: string) => (currentQuery = v)" />
         </div>
@@ -157,7 +195,8 @@ watch(
                     :invocation="props.invocation"
                     :workflow-step="step"
                     :graph-step="graphSteps[step.id]"
-                    :expanded="undefined" />
+                    :expanded="selection ? Boolean(expandedSteps[step.id]) : undefined"
+                    @update:expanded="setExpanded(step.id, $event)" />
             </div>
         </div>
 

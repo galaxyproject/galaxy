@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, watchEffect } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
+import { useInvocationSelection } from "@/composables/invocationSelection";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import type { Step } from "@/stores/workflowStepStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -21,6 +22,13 @@ const props = defineProps<{
     tab?: "inputs" | "outputs";
     terminal?: boolean;
 }>();
+
+const selection = useInvocationSelection();
+function selectOutput(name: string, expanded: boolean) {
+    if (selection) {
+        selection.output.value = expanded ? name : undefined;
+    }
+}
 
 // Fetching full workflow to get the workflow output labels (for when invocation is not terminal)
 const workflowOutputLabels = ref<string[]>([]);
@@ -60,6 +68,13 @@ const outputs = computed(() => {
     const outputCollectionEntries = Object.entries(props.invocation.output_collections);
     return [...outputEntries, ...outputCollectionEntries];
 });
+// A terminal invocation won't gain outputs, so drop a link to one it doesn't have.
+watchEffect(() => {
+    const output = selection?.output.value;
+    if (props.tab === "outputs" && props.terminal && output && !outputs.value.some(([key]) => key === output)) {
+        selection!.output.value = undefined;
+    }
+});
 
 const parameters = computed(() => Object.values(props.invocation.input_step_parameters));
 </script>
@@ -72,12 +87,19 @@ const parameters = computed(() => Object.values(props.invocation.input_step_para
     </div>
     <div v-else-if="props.tab === 'outputs'">
         <div v-if="outputs.length">
-            <div v-for="([key, output], index) in outputs" :key="index" data-description="terminal invocation output">
+            <div
+                v-for="([key, output], index) in outputs"
+                :key="index"
+                data-description="terminal invocation output"
+                :data-label="key">
                 <Heading size="text" bold separator>{{ key }}</Heading>
                 <GenericHistoryItem
                     :item-id="output.id ?? ''"
                     :item-src="output.src"
-                    data-description="terminal invocation output item" />
+                    data-description="terminal invocation output item"
+                    :expanded="selection ? selection.output.value === key : undefined"
+                    scroll-on-expand
+                    @update:expanded="selectOutput(key, $event)" />
             </div>
         </div>
         <div v-else-if="workflowOutputLabels.length">

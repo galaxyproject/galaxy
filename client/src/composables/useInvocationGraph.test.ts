@@ -28,7 +28,7 @@ const { server, http } = useServerMock();
 function setupComposable(invStep?: object, summaries: object[] = [], loadOntoEditor = false, invocationFields = {}) {
     const invocation = ref({
         id: "inv1",
-        steps: invStep ? { 0: invStep } : {},
+        steps: invStep ? [{ order_index: 0, ...invStep }] : [],
         inputs: {},
         input_step_parameters: {},
         ...invocationFields,
@@ -71,6 +71,26 @@ describe("useInvocationGraph — step state", () => {
         const { steps, load } = setupComposable();
         await load();
         expect(steps.value[0]?.state).toBe("queued");
+    });
+
+    it("looks up invocation steps by order_index when imported steps arrive out of order", async () => {
+        const invocation = ref({
+            id: "inv1",
+            steps: [
+                { order_index: 3, job_id: "unrelated" },
+                { order_index: 0, job_id: "target" },
+            ],
+            inputs: {},
+            input_step_parameters: {},
+        } as WorkflowInvocationElementView);
+        const { steps, loadInvocationGraph } = useInvocationGraph(
+            invocation,
+            ref([{ id: "target", model: "Job", states: { error: 1 }, populated_state: "ok" }] as StepJobSummary[]),
+            ref("wf1"),
+            ref(0),
+        );
+        await loadInvocationGraph(false);
+        expect(steps.value[0]?.state).toBe("error");
     });
 
     it("is waiting — invocation step present but no matching job summary", async () => {
