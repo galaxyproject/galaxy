@@ -7,11 +7,15 @@ from galaxy.tool_util.deps.mulled.mulled_search import (
     QuaySearch,
     singularity_search,
 )
-from galaxy.util.unittest_utils import skip_unless_executable
+from galaxy.util.unittest_utils import (
+    skip_if_quay_down,
+    skip_unless_executable,
+)
 from ..util import external_dependency_management
 
 
 @external_dependency_management
+@skip_if_quay_down
 def test_quay_search():
     t = QuaySearch("biocontainers")
     t.build_index()
