@@ -254,9 +254,56 @@ def test_split_numeric_bounds(parameter_type, min, max, expected_bounds):
     assert validators == expected_validators
 
 
+@pytest.mark.parametrize(
+    "parameter_type,range_validator",
+    [
+        ("integer", {"type": "in_range", "min": 1, "max": 5, "negate": True}),
+        ("integer", {"type": "in_range", "min": 1, "max": 5, "exclude_min": True}),
+        ("integer", {"type": "in_range", "min": 1, "max": 5, "message": "1-5 only"}),
+        ("integer", {"type": "in_range", "min": 1.5, "max": 5}),
+    ],
+)
+def test_split_numeric_bounds_keeps_ranges_bounds_cannot_express(parameter_type, range_validator):
+    bounds, validators = split_numeric_bounds({"parameter_type": parameter_type, "validators": [range_validator]})
+    assert bounds is None
+    assert validators == [range_validator]
+
+
+def test_split_numeric_bounds_separates_inverted_bounds():
+    bounds, validators = split_numeric_bounds(
+        {"parameter_type": "integer", "validators": [{"type": "in_range", "min": 5, "max": 1, "negate": False}]}
+    )
+    assert bounds == {"min": 5, "max": 1}
+    assert validators == []
+
+
 def test_parameter_input_ordered_bounds_have_no_errors():
     assert __numeric_editor_module("integer", 1, 5).get_errors() is None
     assert __numeric_editor_module("float", 2.5, 2.5).get_errors() is None
+
+
+@pytest.mark.parametrize("form_value,negate", [("true", True), ("false", False)])
+def test_text_input_regex_validator_negate_from_tool_form(form_value, negate):
+    trans = MockTrans()
+    trans.workflow_building_mode = workflow_building_modes.ENABLED
+    module = modules.module_factory.from_dict(trans, {"type": "parameter_input"}, from_tool_form=True)
+    incoming = {
+        "parameter_definition|parameter_type": "text",
+        "parameter_definition|optional|optional": "false",
+        "parameter_definition|validators_0|regex_match": "cow",
+        "parameter_definition|validators_0|regex_doc": "no cows",
+        "parameter_definition|validators_0|regex_negate": form_value,
+    }
+    module_state = {}
+    errors = {}
+    populate_state(trans, module.get_inputs(), incoming, module_state, errors=errors, check=True)
+    assert not errors
+    module.recover_state(module_state, from_tool_form=True)
+    step = model.WorkflowStep()
+    module.save_to_step(step)
+    assert step.tool_inputs["validators"] == [
+        {"type": "regex", "expression": "cow", "negate": negate, "message": "no cows"}
+    ]
 
 
 def test_cannot_create_tool_modules_for_missing_tools():
