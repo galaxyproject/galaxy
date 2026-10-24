@@ -323,6 +323,12 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         self.screenshot("tool_form_map_over_paired_collection_hint")
 
     @selenium_test
+    def test_data_parameter_accepted_formats(self):
+        self.tool_open("column_param")
+        assert sorted(self.tool_form_accepted_formats("input1")) == ["csv", "tabular"]
+        self.screenshot("tool_form_data_accepted_formats")
+
+    @selenium_test
     @flakey
     def test_run_data(self):
         test_path = self.get_filename("1.fasta")

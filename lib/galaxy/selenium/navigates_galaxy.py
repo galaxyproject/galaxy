@@ -2346,6 +2346,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.select_set_value(select_field, value, multiple=multiple)
         self.components.tool_form.parameter_data_select_dropdown(parameter=parameter).wait_for_absent_or_hidden()
 
+    def tool_form_accepted_formats(self, parameter: str) -> list[str]:
+        """Open data parameter's accepted formats list; return the datatypes it shows."""
+        self.components.tool_form.parameter_data_formats_button(parameter=parameter).wait_for_and_click()
+        formats = self.components.tool_form.parameter_data_format(parameter=parameter)
+        formats.wait_for_visible()
+        return [element.text.strip() for element in formats.all()]
+
     def tool_form_wait_for_batch_info(self, parameter: str, text: str) -> str:
         batch_info = self.components.tool_form.parameter_batch_info(parameter=parameter)
 
