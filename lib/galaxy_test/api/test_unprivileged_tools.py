@@ -1,3 +1,5 @@
+import json
+
 # Test tools API.
 from uuid import uuid4
 
@@ -6,6 +8,7 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     TOOL_WITH_SHELL_COMMAND,
+    WorkflowPopulator,
 )
 from ._framework import ApiTestCase
 from .test_tools import TestsTools
@@ -17,6 +20,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
     def test_admin_cannot_create_public_galaxy_user_tool(self):
         # GalaxyUserTool would land as public=True and bypass role+ownership.
@@ -198,6 +202,99 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             assert not any(
                 dynamic_tool["uuid"] == t["uuid"] for t in dynamic_tools
             ), f"Dynamic tool {dynamic_tool['uuid']} still in dynamic tools list {dynamic_tools}"
+
+    def test_run_mapped_over_list_sees_element_identifier(self):
+        representation = dict(TOOL_WITH_SHELL_COMMAND)
+        representation["shell_command"] = "echo '$(inputs.input.element_identifier)' > output.fastq"
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**representation))
+            hdca_id = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[("sample_a", "a\n"), ("sample_b", "b\n")], wait=True
+            ).json()["outputs"][0]["id"]
+            for request in (
+                {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}},
+                {"input": {"__class__": "Batch", "values": [{"src": "hdca", "id": hdca_id}]}},
+            ):
+                legacy = "batch" in request["input"]
+                if legacy:
+                    response = self._run(
+                        history_id=history_id, tool_uuid=dynamic_tool["uuid"], inputs=request, assert_ok=True
+                    )
+                    job_ids = [job["id"] for job in response["jobs"]]
+                else:
+                    response = self._post(
+                        "jobs",
+                        data={"tool_uuid": dynamic_tool["uuid"], "history_id": history_id, "inputs": request},
+                        json=True,
+                    )
+                    self._assert_status_code_is(response, 200)
+                    tool_request_id = response.json()["tool_request_id"]
+                    self.dataset_populator.wait_on_tool_request(tool_request_id)
+                    job_ids = [j["id"] for j in self._get(f"tool_requests/{tool_request_id}").json()["jobs"]]
+                contents = []
+                for job_id in job_ids:
+                    self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+                    output = self.dataset_populator.get_job_details(job_id, full=True).json()["outputs"]["output"]
+                    contents.append(
+                        self.dataset_populator.get_history_dataset_content(history_id, dataset_id=output["id"]).strip()
+                    )
+                assert sorted(contents) == ["sample_a", "sample_b"], (legacy, contents)
+
+    def test_run_mapped_in_workflow_sees_element_identifier(self):
+        representation = dict(TOOL_WITH_SHELL_COMMAND)
+        representation["shell_command"] = "echo '$(inputs.input.element_identifier)' > output.fastq"
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**representation))
+            hdca_id = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[("sample_a", "a\n"), ("sample_b", "b\n")], wait=True
+            ).json()["outputs"][0]["id"]
+            workflow = {
+                "a_galaxy_workflow": "true",
+                "name": "map a UDT over a list",
+                "annotation": "",
+                "format-version": "0.1",
+                "steps": {
+                    "0": {
+                        "id": 0,
+                        "type": "data_collection_input",
+                        "label": "samples",
+                        "tool_state": json.dumps({"collection_type": "list"}),
+                        "inputs": [{"name": "samples", "description": ""}],
+                        "input_connections": {},
+                        "workflow_outputs": [],
+                    },
+                    "1": {
+                        "id": 1,
+                        "type": "tool",
+                        "content_id": representation["id"],
+                        "tool_uuid": dynamic_tool["uuid"],
+                        "tool_representation": representation,
+                        "tool_state": "{}",
+                        "input_connections": {"input": {"id": 0, "output_name": "output"}},
+                        "workflow_outputs": [],
+                        "post_job_actions": {},
+                    },
+                },
+            }
+            workflow_id = self.workflow_populator.create_workflow(workflow)
+            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                workflow_id, history_id=history_id, inputs={"0": {"src": "hdca", "id": hdca_id}}
+            )
+            self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            contents = []
+            for job in invocation["steps"][-1]["jobs"]:
+                output = self.dataset_populator.get_job_details(job["id"], full=True).json()["outputs"]["output"]
+                contents.append(
+                    self.dataset_populator.get_history_dataset_content(history_id, dataset_id=output["id"]).strip()
+                )
+            assert sorted(contents) == ["sample_a", "sample_b"], contents
 
     def test_create_unprivileged_rejects_unparseable_shell_command(self):
         """A shell_command with an unbalanced '$(' is refused at create time.
