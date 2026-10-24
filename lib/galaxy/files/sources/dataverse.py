@@ -254,6 +254,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
     ):
         """Used when uploading files to dataverse."""
+        self._ensure_target_in_container(target_path)
         dataset_id, _ = self.parse_path(target_path)
         # parse_path expands the last segment into a dataset-scoped persistent ID, but the
         # upload needs the bare filename (Dataverse rejects names containing '/' or ':').
