@@ -246,8 +246,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(2)
         # delete source dataset and click re-run on resulting dataset
-        item = self.history_panel_item_component(hid=1)
-        item.delete_button.wait_for_and_click()
+        self.history_panel_item_delete(1)
         item = self.history_panel_item_component(hid=2)
         item.title.wait_for_and_click()
         item.rerun_button.wait_for_and_click()

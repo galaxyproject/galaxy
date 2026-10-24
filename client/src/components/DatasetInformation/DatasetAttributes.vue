@@ -208,7 +208,7 @@ onMounted(async () => {
                     </div>
                 </GTab>
 
-                <GTab v-if="!datasetAttributes['permission_disable']">
+                <GTab v-if="!datasetAttributes['permission_disable']" title-link-class="dataset-edit-permissions-tab">
                     <template v-slot:title>
                         <FontAwesomeIcon :icon="faUser" class="mr-1" />
                         {{ localize("Permissions") }}
