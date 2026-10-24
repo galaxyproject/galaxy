@@ -431,7 +431,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(
                 "Workflow extraction is only available for history-backed pages (notebooks)."
             )
-        history = trans.app.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
+        history = self.app.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
         return page, history
 
     def list_revisions(self, trans: ProvidesUserContext, page, sort_desc: bool = False):
