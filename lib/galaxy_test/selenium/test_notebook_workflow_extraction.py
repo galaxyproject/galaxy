@@ -148,7 +148,8 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
     def test_notebook_report_warnings_show_as_a_toast(self):
         """Report lines the extraction drops are reported to the user, not lost silently."""
         history_id = self.current_history_id()
-        job_id, output_id = self.run_cat1(history_id)
+        run = self.run_cat1(history_id)
+        job_id, output_id = run.job_id, run.output_id
         page = self.dataset_populator.new_history_page(
             history_id,
             content=(
@@ -173,7 +174,7 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
     def test_notebook_seeds_copied_in_output_as_input(self):
         """A tool output copied in from another history becomes a pre-checked input wired to its consumer."""
         source_history_id = self.dataset_populator.new_history()
-        _, source_output_id = self.run_cat1(source_history_id)
+        source_output_id = self.run_cat1(source_history_id).output_id
         history_id = self.current_history_id()
         copied = self.dataset_populator.copy_dataset(history_id, source_output_id)
         run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": copied["id"]}}, history_id)
