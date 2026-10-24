@@ -936,6 +936,11 @@ class CollectionAttributes(StrictModel):
     collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
 
 
+class CollectionMetadata(StrictModel):
+    model_config = ConfigDict(extra="forbid", title="CollectionMetadata")
+    name: Annotated[Optional[str], Field(title="Name", description="Expected name of the output collection.")] = None
+
+
 class TestCollectionOutputAssertions(StrictModel):
     model_config = ConfigDict(extra="forbid", title="TestCollectionOutputAssertions")
     class_: Optional[Literal["Collection"]] = Field("Collection", alias="class", title="Class")
@@ -950,6 +955,7 @@ class TestCollectionOutputAssertions(StrictModel):
     element_count: Annotated[Optional[int], Field(title="Element Count")] = None
     attributes: Annotated[Optional[CollectionAttributes], Field(title="Attributes")] = None
     collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
+    metadata: Annotated[Optional[CollectionMetadata], Field(title="Metadata")] = None
 
 
 TestOutputLiteral = Union[bool, int, float, str]

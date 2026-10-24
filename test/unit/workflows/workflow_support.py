@@ -1,4 +1,6 @@
+from datetime import timedelta
 from functools import partial
+from typing import Optional
 
 import yaml
 
@@ -6,6 +8,7 @@ from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.workflows import WorkflowsManager
+from galaxy.util import now
 from galaxy.util.bunch import Bunch
 from galaxy.workflow.modules import module_factory
 
@@ -130,3 +133,15 @@ def _dict_to_workflow_output(workflow_step, as_dict):
     for key, value in as_dict.items():
         setattr(output, key, value)
     return output
+
+
+def expression_json_hda(path, content: Optional[str], seconds_since_updated: int = 0):
+    hda = model.HistoryDatasetAssociation(extension="expression.json", create_dataset=True, flush=False)
+    hda.id = 1
+    assert hda.dataset is not None
+    hda.dataset.state = model.Dataset.states.OK
+    if content is not None:
+        path.write_text(content)
+    hda.dataset.external_filename = str(path)
+    hda.update_time = now() - timedelta(seconds=seconds_since_updated)
+    return hda
