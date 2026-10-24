@@ -296,30 +296,45 @@ const formattedOptions = computed(() => {
                 });
             }
         }
-        // Populate keep-options from cache
+        // Populate keep-options from cache. A batch selection can carry many
+        // keep-options, so look options up by id instead of scanning the list.
+        // New keep-options go in front, the latest first.
+        const prepended: Array<SelectOption> = [];
+        const prependedIndex = new Map<string | undefined, number>();
+        const resultIndex = new Map<string | undefined, number>();
+        result.forEach((v, index) => {
+            if (!resultIndex.has(v.value?.id)) {
+                resultIndex.set(v.value?.id, index);
+            }
+        });
         Object.entries(keepOptions).forEach(([key, option]) => {
             if (option.value && getSourceType(option.value) === currentSource.value) {
-                // check if option (with same id) is already in result, if yes replace it with keepOption
-                const existingOptionIndex = result.findIndex((v) => v.value?.id === option.value?.id);
-                if (existingOptionIndex >= 0) {
-                    const existingOption = result[existingOptionIndex];
+                // check if option (with same id) is already listed, if yes replace it with keepOption
+                const id = option.value.id;
+                const prependedAt = prependedIndex.get(id);
+                const target = prependedAt !== undefined ? prepended : result;
+                const existingOptionIndex = prependedAt ?? resultIndex.get(id);
+                if (existingOptionIndex !== undefined) {
+                    const existingOption = target[existingOptionIndex];
                     if (existingOption?.value && shouldPreferCanonicalOption(existingOption.value, option.value)) {
                         return;
                     }
-                    result[existingOptionIndex] = option;
+                    target[existingOptionIndex] = option;
                 } else {
-                    result.unshift(option);
+                    prependedIndex.set(id, prepended.length);
+                    prepended.push(option);
                 }
             }
         });
+        const merged = prepended.reverse().concat(result);
         // Add optional entry
         if (!currentVariant.value?.multiple && props.optional) {
-            result.unshift({
+            merged.unshift({
                 label: "Nothing selected",
                 value: null,
             });
         }
-        return result;
+        return merged;
     } else {
         return [];
     }
@@ -1076,13 +1091,26 @@ function onDrop(e: DragEvent) {
 const matchedValues = computed(() => {
     const values: Array<DataOption> = [];
     if (props.value && props.value.values.length > 0) {
+        // Index options by id per source once; a batch selection can hold
+        // many values. Page options win over pinned ones.
+        const optionsBySrc = new Map<string, Map<string, DataOption>>();
+        const optionsFor = (src: string) => {
+            let byId = optionsBySrc.get(src);
+            if (!byId) {
+                byId = new Map();
+                const pinnedOptions = (props.pinned && props.pinned[src]) || [];
+                for (const v of [...(props.options[src] || []), ...pinnedOptions]) {
+                    if (v.src === src && !byId.has(v.id)) {
+                        byId.set(v.id, v);
+                    }
+                }
+                optionsBySrc.set(src, byId);
+            }
+            return byId;
+        };
         props.value.values.forEach((entry) => {
             if ("src" in entry && entry.src) {
-                const pageOptions = props.options[entry.src] || [];
-                const pinnedOptions = (props.pinned && props.pinned[entry.src]) || [];
-                const option =
-                    pageOptions.find((v) => v.id === entry.id && v.src === entry.src) ||
-                    pinnedOptions.find((v) => v.id === entry.id && v.src === entry.src);
+                const option = optionsFor(entry.src).get(entry.id);
                 if (option) {
                     const accepted = !props.tag || option.tags?.includes(props.tag);
                     if (accepted) {
