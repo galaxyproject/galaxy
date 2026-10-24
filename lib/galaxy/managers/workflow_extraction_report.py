@@ -1,37 +1,32 @@
-"""Carry a notebook page's markdown into an extracted workflow's report.
-
-Extraction (:func:`galaxy.workflow.extract.extract_workflow_by_ids`) hands its
-``build_report`` hook an :class:`~galaxy.workflow.extract.ExtractionLabelIndex`
-mapping the ids the page references to the labeled workflow steps/outputs it
-built. This module turns the page's internal-id markdown into a portable
-workflow report:
-
-1. :func:`reconcile_report_labels` auto-labels/exposes any referenced item the
-   user left unlabeled, so every directive can resolve. This can expose outputs
-   the notebook displays but the user did not explicitly star.
-2. :class:`_ReportLabelRewriter` does the pure id -> label rewrite against the
-   now-complete index, reusing the directive-walk taxonomy and access checks of
-   the shared markdown directive handler.
-
-:func:`reconcile_and_build_report` runs both, and is the only entry point the
-service needs. It *mutates* the extracted workflow (step labels / workflow
-outputs) as a side effect of reconcile; it runs before the workflow is persisted,
-so those mutations and the report are committed with it.
-"""
+"""Rewrite a notebook page's internal-id markdown into an extracted workflow's label-based report."""
 
 import logging
+import re
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from datetime import datetime
+from functools import partial
 
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.markdown_parse import (
+    is_quotable_argument_value,
+    remap_galaxy_markdown_cells,
+    VALID_ARGUMENTS,
+)
 from galaxy.managers.markdown_util import (
     check_galaxy_markdown,
     ENCODED_ID_PATTERN,
     GalaxyInternalMarkdownDirectiveHandler,
+    OBJECT_ID_ARGUMENTS,
     referenced_content_ids,
-    ReferencedContent,
+    remap_galaxy_markdown_calls,
+    remap_galaxy_markdown_embedded_containers,
 )
 from galaxy.managers.workflow_extraction_naming import (
-    normalize_label,
+    MAX_LABEL_LENGTH,
+    normalize_generated_label,
     suggested_output_name,
 )
 from galaxy.model import (
@@ -46,10 +41,9 @@ from galaxy.model import (
     WorkflowStep,
 )
 from galaxy.workflow.extract import (
-    _original_hda,
-    _original_hdca,
+    DirectiveLabel,
     ExtractionLabelIndex,
-    OutputLabelKind,
+    resolve_content,
 )
 
 log = logging.getLogger(__name__)
@@ -57,109 +51,167 @@ log = logging.getLogger(__name__)
 # A directive handler's result: the rewritten line and whether the line was dropped.
 DirectiveResult = tuple[str, bool]
 
+# Argument names that point at a specific Galaxy object; hid= names an item of the notebook's history.
+_INSTANCE_ARGUMENT = re.compile(rf"\b({'|'.join(OBJECT_ID_ARGUMENTS)}|hid)\s*=")
+_QUOTED_VALUE = re.compile(r"\"[^\"]*\"|'[^']*'")
+_DATASET_CELL_TYPES = ("visualization", "vitessce")
+_CELL_INSTANCE_REFERENCE = re.compile(r'"(?:dataset_id|dataset_url|__gx_dataset_id)"\s*:|"invocation_id"\s*:\s*"[^"]+"')
+
 
 def reconcile_and_build_report(
     trans: ProvidesHistoryContext, page: Page, index: ExtractionLabelIndex
 ) -> tuple[str, list[str]]:
-    """Build a workflow report markdown (and warnings) from a notebook page.
-
-    Reconciles the index so referenced-but-unlabeled items get labels -- which
-    *mutates* the extracted workflow's steps (assigning labels, exposing workflow
-    outputs the user did not star) -- then rewrites the page's internal markdown
-    into the workflow-relative form.
-    """
+    """Report markdown and warnings for ``page``; labels/exposes referenced steps and outputs as a side effect."""
     revision = page.latest_revision
     content = revision.content if revision is not None else None
     if not content:
         return "", []
     referenced = referenced_content_ids(trans, content)
-    reconcile_report_labels(trans, index, referenced)
-    markdown, warnings = _rewrite_page_markdown(trans, content, index)
-    return markdown, referenced.warnings + warnings
+    contents = [c for c in (resolve_content(trans, ref) for ref in referenced.refs) if c is not None]
+    exposure_warnings = reconcile_report_labels(
+        index, contents, referenced.job_refs, referenced.icj_refs, partial(_suggested, trans)
+    )
+    markdown, warnings = _rewrite_page_markdown(trans, content, index, page.history_id)
+    return markdown, referenced.warnings + exposure_warnings + warnings
 
 
 def _rewrite_page_markdown(
-    trans: ProvidesHistoryContext, internal_markdown: str, index: ExtractionLabelIndex
+    trans: ProvidesHistoryContext, internal_markdown: str, index: ExtractionLabelIndex, page_history_id: int | None
 ) -> tuple[str, list[str]]:
-    """Rewrite a notebook page's internal markdown into a workflow report.
-
-    Returns the rewritten (label-based) markdown and any warnings for directives
-    that had to be dropped. Validates the result so a malformed rewrite fails at
-    extraction time rather than at report render, as a MalformedContents rather
-    than the bare ValueError the parser raises.
-    """
-    rewriter = _ReportLabelRewriter(index)
-    markdown = rewriter._walk_directives(trans, internal_markdown)
+    """Label-based markdown and drop warnings; raises MalformedContents if the result does not validate."""
+    rewriter = _ReportLabelRewriter(index, page_history_id)
+    markdown = rewriter.walk_directives(trans, internal_markdown)
     check_galaxy_markdown(markdown)
-    return markdown, rewriter.warnings
+    # Only removes whole directives/embeds/cells, so the result stays valid.
+    markdown, sweep_warnings = _drop_instance_references(markdown)
+    return markdown, rewriter.warnings + sweep_warnings
+
+
+def _instance_argument(directive: str) -> str | None:
+    """Name of the first argument of ``directive`` that points at a specific Galaxy object."""
+    match = _INSTANCE_ARGUMENT.search(_QUOTED_VALUE.sub('""', directive))
+    return match.group(1) if match else None
+
+
+def _drop_instance_references(markdown: str) -> tuple[str, list[str]]:
+    """Drop, with a warning, any directive, inline embed or visualization cell still naming a Galaxy object.
+
+    Invocation reports render label-form inline embeds only for images, and label-form visualization cells not at
+    all, so these are dropped, not rewritten.
+    """
+    warnings: list[str] = []
+
+    def _directive(container: str, line: str) -> DirectiveResult:
+        argument = _instance_argument(line)
+        if argument is None:
+            return (line, False)
+        warnings.append(
+            f"Dropped a [{container}] directive from the report: it names a specific Galaxy object "
+            f"({argument}), which has no workflow-relative form."
+        )
+        return ("", True)
+
+    def _embed(match: re.Match[str]) -> str:
+        container = match.group("container")
+        # Embeds that take arguments reference a dataset, invocation or workflow.
+        if not VALID_ARGUMENTS[container]:
+            return match.group()
+        warnings.append(
+            f"Dropped an inline [{container}] reference from the report: inline object references do not "
+            "resolve in workflow reports."
+        )
+        return ""
+
+    def _cell(cell_type: str, cell: str) -> str:
+        if cell_type == "galaxy":
+            # Left only where the client parses a cell that remap_galaxy_markdown_calls's
+            # column-0 fence regex does not, e.g. an indented fence.
+            argument = _instance_argument(cell)
+            if argument is None:
+                return cell
+            warnings.append(
+                f"Dropped a [galaxy] cell from the report: it names a specific Galaxy object ({argument}), "
+                "which has no workflow-relative form."
+            )
+            return ""
+        if cell_type not in _DATASET_CELL_TYPES or not _CELL_INSTANCE_REFERENCE.search(cell):
+            return cell
+        warnings.append(
+            f"Dropped a [{cell_type}] cell from the report: it names a specific dataset or invocation, "
+            "which has no workflow-relative form."
+        )
+        return ""
+
+    markdown = remap_galaxy_markdown_calls(_directive, markdown)
+    markdown = remap_galaxy_markdown_embedded_containers(_embed, markdown)
+    markdown = remap_galaxy_markdown_cells(_cell, markdown)
+    return markdown, warnings
 
 
 class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
-    """Rewrite a notebook page's internal-id directives into workflow-relative
-    label directives for storage as a workflow report.
+    """Rewrite content/job directives to ``input=``/``output=``/``step=`` labels.
 
-    The inverse of :func:`resolve_invocation_markdown`: a dataset/collection
-    reference becomes ``input="x"`` / ``output="y"`` and a job reference becomes
-    ``step="z"``, read from the ``label_index`` extraction built. Reuses the
-    directive-walk taxonomy and access checks of the base handler, like
-    ``_ReferencedContentCollector``; only the content/job directives carry
-    behavior.
-
-    A portable report must never embed an instance id. So a content/job directive
-    that cannot resolve to a label, and any id-bearing directive with no
-    workflow-relative form (history/workflow/invocation links), is dropped with a
-    warning rather than leaked. Id-less directives (instance links, generated
-    values, visualizations) pass through unchanged.
+    The inverse of :func:`resolve_invocation_markdown`. Never emits an instance id: a directive with no
+    workflow-relative form is dropped with a warning.
     """
 
-    def __init__(self, label_index: ExtractionLabelIndex) -> None:
+    def __init__(self, label_index: ExtractionLabelIndex, page_history_id: int | None) -> None:
         self.index = label_index
+        self.page_history_id = page_history_id
         self.warnings: list[str] = []
 
-    def _rewrite(self, line: str, arg: str | None, description: str) -> DirectiveResult:
-        if arg is None:
+    def _rewrite(self, line: str, target: DirectiveLabel | None, description: str) -> DirectiveResult:
+        if target is None:
             self.warnings.append(f"Dropped a {description} from the report: it has no workflow-relative label.")
             return ("", True)
+        argument, label = target
+        if not is_quotable_argument_value(label):
+            self.warnings.append(
+                f"Dropped a {description} from the report: its label {label!r} contains a double quote or "
+                "line break, which report directives cannot express."
+            )
+            return ("", True)
+        arg = f'{argument}="{label}"'
         return (ENCODED_ID_PATTERN.sub(lambda _match: arg, line, count=1), False)
 
     def _drop_unportable(self, line: str, description: str) -> DirectiveResult:
         self.warnings.append(f"Dropped a {description} from the report: it cannot be expressed relative to a workflow.")
         return ("", True)
 
-    def _content(self, line: str, content_kind: OutputLabelKind, content: HistoryItem) -> DirectiveResult:
-        return self._rewrite(line, self.index.content_label_arg(content_kind, content), "dataset reference")
+    def _content(self, line: str, content: HistoryItem) -> DirectiveResult:
+        return self._rewrite(line, self.index.content_label(content), "dataset reference")
 
     def handle_dataset_display(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_as_image(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_as_table(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_peek(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_embedded(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_info(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_name(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_type(self, line: str, hda: HistoryDatasetAssociation) -> DirectiveResult:
-        return self._content(line, "hda", hda)
+        return self._content(line, hda)
 
     def handle_dataset_collection_display(
         self, line: str, hdca: HistoryDatasetCollectionAssociation
     ) -> DirectiveResult:
-        return self._content(line, "hdca", hdca)
+        return self._content(line, hdca)
 
     def _job(self, line: str, job: Job) -> DirectiveResult:
-        return self._rewrite(line, self.index.job_label_arg(job), "job reference")
+        return self._rewrite(line, self.index.job_label(job), "job reference")
 
     def handle_tool_stdout(self, line: str, job: Job) -> DirectiveResult:
         return self._job(line, job)
@@ -173,10 +225,13 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
     def handle_job_parameters(self, line: str, job: Job) -> DirectiveResult:
         return self._job(line, job)
 
-    # Id-bearing directives with no workflow-relative form -> dropped with a warning.
     def handle_history_link(self, line: str, history: History) -> DirectiveResult:
+        if history.id == self.page_history_id:
+            return ("history_link()\n", False)
         return self._drop_unportable(line, "history link")
 
+    # Id-bearing directives pointing at other objects -> dropped with a warning. Their
+    # argument-less forms resolve against the invocation, which would silently retarget them.
     def handle_workflow_display(
         self, line: str, stored_workflow: StoredWorkflow, workflow_version: int | None
     ) -> DirectiveResult:
@@ -239,41 +294,44 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
 
 
 def reconcile_report_labels(
-    trans: ProvidesHistoryContext, index: ExtractionLabelIndex, referenced: ReferencedContent
-) -> None:
-    """Ensure every item the page references resolves to a label.
+    index: ExtractionLabelIndex,
+    contents: Iterable[HistoryItem],
+    job_refs: Iterable[int],
+    icj_refs: Iterable[int],
+    suggest: Callable[[HistoryItem], str | None],
+) -> list[str]:
+    """Label each referenced input/step and expose each referenced tool output, if extracted and unlabeled.
 
-    A referenced tool output the user did not star is exposed as a workflow
-    output; a referenced input or step the user did not name is labeled. Labels
-    are generated from the same ``suggested_name`` chain the summary surfaces and
-    deduped against the shared step/output label namespace. Items outside the
-    extracted subgraph are left alone - the pure rewriter drops them with a
-    warning so no instance id can leak into the report.
+    ``suggest`` names a referenced content item. Returns a warning for each output exposed here
+    that the request had not exposed.
     """
     used = _used_labels(index)
+    warnings: list[str] = []
 
-    for kind, content_id in referenced.refs:
-        content = _resolve_content(trans, kind, content_id)
-        if content is None:
-            continue
-        content_kind: OutputLabelKind = "hdca" if kind == "hdca" else "hda"
-        pair = index.step_for_content(content_kind, _original_id(kind, content))
+    for content in contents:
+        pair = index.step_for_content(content)
         if pair is None:
             continue
         step, output_name = pair
         if step.type in ("data_input", "data_collection_input"):
             if not step.label:
-                step.label = _generate_label(_suggested(trans, kind, content), used)
+                step.label = _generate_label(suggest(content), used)
         else:
             workflow_output = step.workflow_output_for(output_name)
             if workflow_output is None or not workflow_output.label:
-                label = _generate_label(_suggested(trans, kind, content) or output_name, used)
+                label = _generate_label(suggest(content) or output_name, used)
                 step.create_or_update_workflow_output(output_name=output_name, label=label, uuid=None)
+                if workflow_output is None:
+                    warnings.append(
+                        f"Made history item {content.hid} a workflow output ({label!r}) "
+                        "because the notebook report uses it."
+                    )
 
-    for job_id in referenced.job_refs:
+    for job_id in job_refs:
         _label_step(index.job_to_step.get(job_id), used)
-    for icj_id in referenced.icj_refs:
+    for icj_id in icj_refs:
         _label_step(index.icj_to_step.get(icj_id), used)
+    return warnings
 
 
 def _label_step(step: WorkflowStep | None, used: set[str]) -> None:
@@ -296,17 +354,18 @@ def _used_labels(index: ExtractionLabelIndex) -> set[str]:
     return used
 
 
-def _suggested(trans: ProvidesHistoryContext, kind: str, content: HistoryItem) -> str | None:
-    suggested = suggested_output_name(trans, content.id, "hda" if kind == "hda" else "hdca")
+def _suggested(trans: ProvidesHistoryContext, content: HistoryItem) -> str | None:
+    suggested = suggested_output_name(trans, content)
     return suggested.name if suggested else None
 
 
 def _generate_label(base: str | None, used: set[str]) -> str:
-    label = normalize_label(base) or "label"
+    label = normalize_generated_label(base) or "label"
     candidate = label
     suffix = 2
     while candidate in used:
-        candidate = f"{label}_{suffix}"
+        suffix_str = f"_{suffix}"
+        candidate = label[: MAX_LABEL_LENGTH - len(suffix_str)] + suffix_str
         suffix += 1
     used.add(candidate)
     return candidate
@@ -316,18 +375,3 @@ def _tool_base_name(step: WorkflowStep) -> str:
     tool_id = step.tool_id or "step"
     segments = tool_id.split("/")
     return segments[-2] if len(segments) >= 2 else tool_id
-
-
-def _resolve_content(trans: ProvidesHistoryContext, kind: str, content_id: int) -> HistoryItem | None:
-    content: HistoryItem | None
-    if kind == "hdca":
-        content = trans.sa_session.get(HistoryDatasetCollectionAssociation, content_id)
-    else:
-        content = trans.sa_session.get(HistoryDatasetAssociation, content_id)
-    return content
-
-
-def _original_id(kind: str, content: HistoryItem) -> int:
-    if isinstance(content, HistoryDatasetCollectionAssociation):
-        return _original_hdca(content).id
-    return _original_hda(content).id

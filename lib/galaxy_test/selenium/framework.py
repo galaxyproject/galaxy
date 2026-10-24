@@ -1423,11 +1423,7 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
 
 
 class ExtractsWorkflows(GalaxyTestSeleniumContext):
-    """Shared history setup + extraction-form UI drivers.
-
-    Used by the history-options extraction tests and the notebook (page)
-    extraction tests so both drive the same form through one set of helpers.
-    """
+    """History setup and extraction-form drivers shared by history and notebook extraction tests."""
 
     def setup_cat1_history(self, history_id: str) -> str:
         """Run the cat1 example workflow and return the cat1 job_id."""
@@ -1441,27 +1437,17 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
 
     def run_cat1(self, history_id: str) -> tuple[str, str]:
         """Run a single cat1 over two fresh uploads. Returns (job_id, output_id)."""
-        hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
-        hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
-        inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
-        run = self.dataset_populator.run_tool("cat1", inputs, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return run["jobs"][0]["id"], run["outputs"][0]["id"]
+        run = self.dataset_populator.run_cat1(history_id, ("foo\nbar", "baz"))
+        return run.job_id, run.output_id
 
     def setup_two_independent_cat1_runs(self, history_id: str) -> tuple[str, str, str]:
-        """Two independent cat1 runs in one history. Returns (job_a, output_a, job_b).
-
-        Only run A's output is meant to be referenced by a notebook, so seeding
-        should select run A's subgraph and leave run B unchecked — the
-        differentiator vs. the form's default whole-history check.
-        """
+        """Two independent cat1 runs in one history. Returns (job_a, output_a, job_b)."""
         job_a, output_a = self.run_cat1(history_id)
         job_b, _ = self.run_cat1(history_id)
         return job_a, output_a, job_b
 
     def run_random_lines_mapped(self, history_id: str) -> str:
-        """Map random_lines1 over a fresh pair. Returns the implicit output
-        collection id (the HDCA a notebook would reference)."""
+        """Map random_lines1 over a fresh pair. Returns the implicit output collection id."""
         hdca = self.dataset_collection_populator.create_pair_in_history(
             history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
         ).json()["outputs"][0]
@@ -1513,15 +1499,16 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
         return [card.get_attribute("data-job-id") for card in cards]
 
     def extract_workflow_toggle_output_star(self, job_id: str):
-        """Star/un-star the first output of the tool card for the given job.
-        The star button in WorkflowExtractionCard.vue is disabled while
-        `!props.job.checked` — a regression that defaults cards to
-        unchecked turns the click into a silent no-op, so the test surfaces
-        the bug directly rather than via a downstream timeout."""
+        """Star/un-star the first output of the given job's card; fails fast if the card is unchecked."""
         star = self.components.workflow_extract.output_star_for_job(job_id=job_id).wait_for_present()
-        assert not star.get_attribute("disabled"), f"star for job {job_id} is disabled — its card is unchecked"
+        assert star.get_attribute("aria-disabled") != "true", f"star for job {job_id} is disabled"
+        active_star = self.components.workflow_extract.output_star_active_for_job(job_id=job_id)
+        was_active = not active_star.is_absent
         self.execute_script_click(star)
-        self.sleep_for(self.wait_types.UX_RENDER)
+        if was_active:
+            active_star.wait_for_absent()
+        else:
+            active_star.wait_for_present()
 
     def extract_workflow_rename_output(self, job_id: str, new_label: str):
         """Click the output label button, type a new label in the modal, and

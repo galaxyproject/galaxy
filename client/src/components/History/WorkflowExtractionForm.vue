@@ -2,7 +2,7 @@
 import { faCheck, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 
 import {
     extractWorkflowByIds,
@@ -18,6 +18,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import {
+    type ExtractionOutput,
     type ExtractionRow,
     type InputStep,
     isInputStep,
@@ -39,17 +40,11 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const props = defineProps<{
     historyId: string;
+    /** Notebook page whose referenced outputs' producing subgraph is pre-checked. */
+    fromPageId?: string;
 }>();
 
 const router = useRouter();
-const route = useRoute();
-
-/** When the form is opened from a notebook, the producing subgraph of the page's
- *  referenced outputs is pre-checked instead of the default non-deleted heuristic. */
-const fromPageId = computed(() => {
-    const value = route.query.from_page;
-    return typeof value === "string" && value ? value : null;
-});
 
 const Toast = useToast();
 
@@ -172,6 +167,11 @@ const selectedJobBuckets = computed<{ job_ids: string[]; implicit_collection_job
     return { job_ids, implicit_collection_jobs_ids: icj_ids };
 });
 
+/** Checked input cards; a card lists an input and its in-history copies, which become one input step. */
+const selectedInputSteps = computed<InputStep[]>(() =>
+    (jobsList.value ?? []).filter((job): job is InputStep => job.checked && isInputStep(job) && job.outputs.length > 0),
+);
+
 /**
  * A parallel mapping for `checked` input step type encoded ids and their `newNames`.
  */
@@ -181,20 +181,15 @@ const selectedInputs = computed<
         newName: string;
         history_content_type: "dataset" | "dataset_collection";
     }[]
->(() => {
-    if (!jobsList.value?.length) {
-        return [];
-    }
-    return jobsList.value
-        .filter((job): job is InputStep => job.checked && isInputStep(job) && job.outputs.length > 0)
-        .flatMap((job) =>
-            job.outputs.map((output) => ({
-                id: output.id,
-                newName: job.newName,
-                history_content_type: output.history_content_type,
-            })),
-        );
-});
+>(() =>
+    selectedInputSteps.value.flatMap((job) =>
+        job.outputs.map((output) => ({
+            id: output.id,
+            newName: job.newName,
+            history_content_type: output.history_content_type,
+        })),
+    ),
+);
 
 const selectedOutputLabels = computed<OutputLabelHint[]>(() => {
     if (!jobsList.value?.length) {
@@ -223,9 +218,7 @@ const selectedOutputLabels = computed<OutputLabelHint[]>(() => {
     return outputLabels;
 });
 
-/** Step labels for checked tool steps that carry one. Mapped steps are keyed by
- *  their ICJ id; plain tool steps by job id. Steps without a label are omitted —
- *  labeling is off by default. */
+/** Trimmed labels of checked, labeled tool steps, keyed by ICJ id (mapped) or job id. */
 const selectedStepLabels = computed<StepLabelHint[]>(() => {
     const hints: StepLabelHint[] = [];
     for (const job of jobsList.value ?? []) {
@@ -248,12 +241,9 @@ const selectedStepLabels = computed<StepLabelHint[]>(() => {
 /** No workflow steps are selected: the workflow would have no steps */
 const hasNoSelectedSteps = computed(() => !jobsList.value?.some((job) => job.checked));
 
-/** Opened from a notebook whose markdown referenced nothing that maps to an
- *  extractable step — every row loaded unchecked. Distinct from an empty history
- *  (`!jobsList.length`), which keeps its own message; here the full history is
- *  shown and the user can still check steps by hand. */
+/** Opened from a notebook that seeded no rows (unlike an empty history, rows still show). */
 const nothingSeeded = computed(
-    () => !!fromPageId.value && jobsList.value.length > 0 && !jobsList.value.some((job) => job.seeded),
+    () => !!props.fromPageId && jobsList.value.length > 0 && !jobsList.value.some((job) => job.seeded),
 );
 
 /** For any inputs selected for inclusion as workflow steps, check if any are missing a name/label */
@@ -282,13 +272,12 @@ const hasDuplicateOutputLabels = computed(() => {
     return hasDuplicates(labels);
 });
 
-/** Step labels share one namespace with input names on the backend. Compared
- *  RAW (no `_sanitize_output_label`-style whitespace collapse) so the prediction
- *  matches the backend's raw reject-not-sanitize rule for step labels and input
- *  names exactly. */
+/** Step labels share one namespace with input names. Compared as submitted (step labels
+ *  trimmed, input names as-is, no whitespace collapse) as the backend does. One name per
+ *  input card: the summary gives each original (with its copies) one card. */
 const hasDuplicateStepLabels = computed(() => {
     const stepLabels = selectedStepLabels.value.map((hint) => hint.label);
-    const inputNames = selectedInputs.value.map((input) => input.newName);
+    const inputNames = selectedInputSteps.value.map((job) => job.newName);
     return hasDuplicates([...stepLabels, ...inputNames]);
 });
 
@@ -320,8 +309,8 @@ function uniqueInputLabel(desired: string, taken: Set<string>): string {
 
 async function extractWorkflow() {
     try {
-        const result: WorkflowExtractionSummary = fromPageId.value
-            ? await fetchWorkflowExtractionSummary(fromPageId.value)
+        const result: WorkflowExtractionSummary = props.fromPageId
+            ? await fetchWorkflowExtractionSummary(props.fromPageId)
             : await extractWorkflowFromHistory(props.historyId);
         if (result.jobs) {
             const rows = result.jobs.map(toExtractionRow);
@@ -332,7 +321,7 @@ async function extractWorkflow() {
                 }
             }
             jobsList.value = rows;
-            if (fromPageId.value) {
+            if (props.fromPageId) {
                 // Pre-check the producing subgraph rather than the default non-deleted heuristic.
                 jobsList.value.forEach((job) => {
                     job.checked = job.seeded;
@@ -363,9 +352,13 @@ function onJobSelect(index: number) {
     const job = jobsList.value[index];
     if (job) {
         job.checked = !job.checked;
-        if (!job.checked && job.step_type === "tool") {
+        if (job.step_type === "tool") {
             job.outputs.forEach((output) => {
-                output.exposed = false;
+                if (!job.checked) {
+                    output.exposed = false;
+                } else if (output.referenced_by_report) {
+                    exposeOutput(output);
+                }
             });
         }
     }
@@ -377,11 +370,19 @@ function onOutputToggle(jobIndex: number, outputIndex: number) {
         return;
     }
     const output = job.outputs[outputIndex];
-    if (!output || output.deleted || !output.output_name) {
+    if (!output || output.deleted || !output.output_name || output.referenced_by_report) {
         return;
     }
-    output.exposed = !output.exposed;
-    if (output.exposed && !output.label.trim()) {
+    if (output.exposed) {
+        output.exposed = false;
+    } else {
+        exposeOutput(output);
+    }
+}
+
+function exposeOutput(output: ExtractionOutput) {
+    output.exposed = true;
+    if (!output.label.trim()) {
         output.label = output.suggested_name || output.name || output.output_name || "";
     }
 }
@@ -487,16 +488,20 @@ async function submitWorkflow() {
         if (selectedStepLabels.value.length) {
             payload.step_labels = selectedStepLabels.value;
         }
-        if (fromPageId.value) {
+        if (props.fromPageId) {
             // Carry the notebook's markdown into the workflow as its report.
-            payload.from_page_id = fromPageId.value;
+            payload.from_page_id = props.fromPageId;
         }
 
         const data = await extractWorkflowByIds(payload);
 
         Toast.success("Workflow created successfully", "Success");
         if (data.report_warnings?.length) {
-            Toast.warning(data.report_warnings.join("\n"), "Some report directives were dropped");
+            Toast.addToast(data.report_warnings.join("\n"), {
+                title: "Notebook report notes",
+                variant: "warning",
+                duration: 0,
+            });
         }
 
         router.push(`/published/workflow?id=${data.id}`);
@@ -521,7 +526,7 @@ function stepKind(job: ExtractionRow): string {
             <BreadcrumbHeading :items="breadcrumbItems" />
 
             <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
-            <GAlert v-if="loading" variant="info" show>
+            <GAlert v-if="loading" data-description="workflow-extraction-loading" variant="info" show>
                 <LoadingSpan message="Extracting workflow from history" />
             </GAlert>
             <GAlert v-if="!loading && nothingSeeded" data-description="no-seed-message" variant="info" show>

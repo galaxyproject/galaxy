@@ -17,27 +17,26 @@ from typing import (
 
 import pytest
 
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util_models import UserToolSource
+from galaxy_test.base.decorators import requires_new_library
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    LibraryPopulator,
     skip_without_tool,
     summarize_instance_history_on_error,
     TOOL_WITH_SHELL_COMMAND,
     WorkflowPopulator,
 )
-from galaxy_test.base.workflow_assertions import WorkflowStructureAssertions
+from galaxy_test.base.workflow_assertions import (
+    connection_step_id,
+    WorkflowStructureAssertions,
+)
 from .test_workflows import BaseWorkflowsApiTestCase
 
 if TYPE_CHECKING:
     from requests import Response
-
-
-def _connection_step_id(connection: Any) -> int:
-    # .ga format may yield a single dict or a list of one dict.
-    if isinstance(connection, list):
-        connection = connection[0]
-    return connection["id"]
 
 
 class _ExtractionHelpersMixin:
@@ -46,6 +45,7 @@ class _ExtractionHelpersMixin:
     dataset_populator: DatasetPopulator
     dataset_collection_populator: DatasetCollectionPopulator
     workflow_populator: WorkflowPopulator
+    test_data_resolver: TestDataResolver
 
     if TYPE_CHECKING:
 
@@ -104,8 +104,8 @@ test_data:
         parse = self._tool_step(tool_steps, "param_value_from_file")
         expression = self._tool_step(tool_steps, "expression_null_handling_text")
         consume = self._tool_step(tool_steps, "param_text_option")
-        assert _connection_step_id(expression["input_connections"]["text_input"]) == parse["id"]
-        assert _connection_step_id(consume["input_connections"]["text_param"]) == expression["id"]
+        assert connection_step_id(expression["input_connections"]["text_input"]) == parse["id"]
+        assert connection_step_id(consume["input_connections"]["text_param"]) == expression["id"]
 
         workflow_id = self.workflow_populator.import_workflow(downloaded)["id"]
         with self.dataset_populator.test_history() as history_id:
@@ -155,7 +155,7 @@ test_data:
         tool_steps = self.assert_steps_of_type(downloaded, "tool", expected_len=2)
         parse = self._tool_step(tool_steps, "param_value_from_file")
         consume = self._tool_step(tool_steps, "output_filter_exception_1")
-        assert _connection_step_id(consume["input_connections"]["options|options"]) == parse["id"]
+        assert connection_step_id(consume["input_connections"]["options|options"]) == parse["id"]
         state = loads(consume["tool_state"])
         options = state["options"]
         if isinstance(options, str):
@@ -216,8 +216,8 @@ test_data:
         cat_step = self._tool_step(tool_steps, "cat1")
         extract_connections = extract_step["input_connections"]
         cat_connections = cat_step["input_connections"]
-        assert _connection_step_id(extract_connections["input"]) == collection_step["id"], extract_connections
-        assert _connection_step_id(cat_connections["input1"]) == extract_step["id"], cat_connections
+        assert connection_step_id(extract_connections["input"]) == collection_step["id"], extract_connections
+        assert connection_step_id(cat_connections["input1"]) == extract_step["id"], cat_connections
 
     def _run_tool_get_collection_and_job_id(self, history_id, tool_id, inputs):
         run = self.dataset_populator.run_tool(tool_id=tool_id, inputs=inputs, history_id=history_id)
@@ -241,13 +241,7 @@ test_data:
         return hdca, job_id1, job_id2, implicit_hdca1["id"], implicit_hdca2["id"]
 
     def _copy_hda_to_history(self, history_id, hda):
-        response = self._post(
-            f"histories/{history_id}/contents/datasets",
-            dict(source="hda", content=hda["id"]),
-            json=True,
-        )
-        self._assert_status_code_is(response, 200)
-        return response.json()
+        return self.dataset_populator.copy_dataset(history_id, hda["id"])
 
     def _copy_content_to_history(self, history_id, content):
         if content["history_content_type"] == "dataset":
@@ -263,6 +257,28 @@ test_data:
     def _rows_by_type(self, summary, *step_types):
         return [j for j in summary["jobs"] if j["step_type"] in step_types]
 
+    def _get_extraction_summary(self, history_id: str) -> dict:
+        response = self._get(f"histories/{history_id}/extraction_summary")
+        self._assert_status_code_is(response, 200)
+        return response.json()
+
+    def _extract_by_ids_raw(self, payload: dict[str, Any]) -> "Response":
+        return self._post("workflows/extract", data=payload, json=True)
+
+    def _extract_by_ids(self, payload: dict[str, Any]) -> dict[str, Any]:
+        response = self._extract_by_ids_raw(payload)
+        self._assert_status_code_is(response, 200)
+        return response.json()
+
+    def _extract_from_history_raw(self, history_id: str, payload: dict[str, Any]) -> "Response":
+        return self._post(f"histories/{history_id}/extract_workflow", data=payload, json=True)
+
+    def _only_row_listing(self, summary, content_ids):
+        """The one summary row listing any of ``content_ids`` (e.g. copies of one original)."""
+        rows = [job for job in summary["jobs"] if any(o["id"] in content_ids for o in job["outputs"])]
+        assert len(rows) == 1, rows
+        return rows[0]
+
     def _row_with_output_id(self, summary, content_id):
         for job in summary["jobs"]:
             if any(o["id"] == content_id for o in job["outputs"]):
@@ -277,6 +293,52 @@ test_data:
 
     def _job_id_for_tool(self, jobs, tool_id):
         return self._job_for_tool(jobs, tool_id)["id"]
+
+    def _run_user_tool(self, history_id: str) -> str:
+        """Run a new user-defined tool on an upload while holding the execute role; return its output id."""
+        with self.dataset_populator.user_tool_execute_permissions():
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
+            hda = self.dataset_populator.new_dataset(history_id, content="hello", wait=True)
+            payload = self.dataset_populator.run_tool_payload(
+                tool_id=None, inputs={"input": {"src": "hda", "id": hda["id"]}}, history_id=history_id
+            )
+            payload["tool_uuid"] = dynamic_tool["uuid"]
+            response = self.dataset_populator.tools_post(payload)
+            self._assert_status_code_is(response, 200)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return response.json()["outputs"][0]["id"]
+
+    def _run_user_tool_in_published_history(self) -> str:
+        """Run a user-defined tool in a new published history; return its output id."""
+        history_id = self.dataset_populator.new_history()
+        output_id = self._run_user_tool(history_id)
+        self.dataset_populator.make_public(history_id)
+        return output_id
+
+    def _run_grep1_on_converted_input(self, history_id: str) -> tuple[dict[str, Any], str]:
+        """Run Grep1 on a fastqsanger.gz upload, which Galaxy implicitly converts first; return (upload, job id)."""
+        hda = self.dataset_populator.new_dataset_from_test_data(
+            history_id, self.test_data_resolver, "1.fastqsanger.gz", "fastqsanger.gz"
+        )
+        run = self.dataset_populator.run_tool("Grep1", {"input": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return hda, run["jobs"][0]["id"]
+
+    def _source_step_id(self, step: dict[str, Any], input_name: str) -> int | None:
+        """Id of the step wired into ``step``'s ``input_name``, or None if it is unconnected."""
+        connection = step["input_connections"].get(input_name)
+        return None if connection is None else connection_step_id(connection)
+
+    def _assert_single_input_single_tool(self, workflow, input_name="input1", expected_tool_id=None):
+        """Assert ``workflow`` is one data input wired into one tool's ``input_name``; return the input step."""
+        steps = workflow["steps"]
+        assert len(steps) == 2, steps
+        (input_step,) = self.assert_steps_of_type(workflow, "data_input", expected_len=1)
+        (tool_step,) = self.assert_steps_of_type(workflow, "tool", expected_len=1)
+        if expected_tool_id is not None:
+            assert tool_step["tool_id"] == expected_tool_id
+        assert self._source_step_id(tool_step, input_name) == input_step["id"], tool_step
+        return input_step
 
 
 class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCase, WorkflowStructureAssertions):
@@ -318,16 +380,128 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
         """POST /api/histories/{id}/extract_workflow rejects duplicate input names."""
         d1 = self.dataset_populator.new_dataset(history_id, content="alpha\n", wait=True)
         d2 = self.dataset_populator.new_dataset(history_id, content="beta\n", wait=True)
-        response = self._post(
-            f"histories/{history_id}/extract_workflow",
-            data={
+        response = self._extract_from_history_raw(
+            history_id,
+            {
                 "workflow_name": "dup names from history",
                 "dataset_hids": [d1["hid"], d2["hid"]],
                 "dataset_names": ["dup", "dup"],
             },
-            json=True,
         )
         assert response.status_code == 400, response.text
+
+    @summarize_instance_history_on_error
+    def test_extract_from_history_fewer_names_than_hids_rejected(self, history_id):
+        d1 = self.dataset_populator.new_dataset(history_id, content="alpha\n", wait=True)
+        d2 = self.dataset_populator.new_dataset(history_id, content="beta\n", wait=True)
+        response = self._extract_from_history_raw(
+            history_id,
+            {
+                "workflow_name": "short names from history",
+                "dataset_hids": [d1["hid"], d2["hid"]],
+                "dataset_names": ["only one"],
+            },
+        )
+        self._assert_status_code_is(response, 400)
+        err_msg = response.json()["err_msg"]
+        assert "dataset_names" in err_msg and "dataset_hids" in err_msg, response.text
+
+    @skip_without_tool("Grep1")
+    @summarize_instance_history_on_error
+    def test_hid_extract_connects_implicitly_converted_input(self, history_id):
+        hda, job_id = self._run_grep1_on_converted_input(history_id)
+        downloaded = self._extract_and_download_workflow(history_id, dataset_ids=[hda["hid"]], job_ids=[job_id])
+        self._assert_single_input_single_tool(downloaded, input_name="input")
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_hid_extract_connects_whichever_copy_is_sent(self, history_id):
+        """The hid path (bioblend's extract_workflow_from_history) treats in-history copies as one input."""
+        hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
+        hda_copy = self._copy_hda_to_history(history_id, hda)
+        run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        for hids in ([hda["hid"]], [hda_copy["hid"]], [hda["hid"], hda_copy["hid"]]):
+            downloaded = self._extract_and_download_workflow(
+                history_id, dataset_ids=hids, job_ids=[run["jobs"][0]["id"]]
+            )
+            (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+            (cat1_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
+            assert self._source_step_id(cat1_step, "input1") == input_step["id"], (hids, cat1_step)
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_hid_extract_connects_tool_output_with_an_in_history_copy(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
+        first = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        intermediate = first["outputs"][0]
+        self._copy_hda_to_history(history_id, intermediate)
+        second = self.dataset_populator.run_tool(
+            "cat1", {"input1": {"src": "hda", "id": intermediate["id"]}}, history_id
+        )
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        downloaded = self._extract_and_download_workflow(
+            history_id, dataset_ids=[hda["hid"]], job_ids=[first["jobs"][0]["id"], second["jobs"][0]["id"]]
+        )
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+        tool_steps = self.assert_steps_of_type(downloaded, "tool", expected_len=2)
+        # input -> first cat1 -> second cat1, whichever order the steps come in
+        sources = {s["id"]: self._source_step_id(s, "input1") for s in tool_steps}
+        first_id, second_id = sorted(sources, key=lambda step_id: sources[step_id] != input_step["id"])
+        assert sources == {first_id: input_step["id"], second_id: first_id}, tool_steps
+
+    @summarize_instance_history_on_error
+    def test_hid_extract_collection_copied_from_another_history(self, history_id):
+        other_history_id = self.dataset_populator.new_history()
+        hdca = self.dataset_collection_populator.create_list_in_history(
+            other_history_id, contents=["a\n", "b\n"], wait=True
+        ).json()["outputs"][0]
+        self.dataset_populator.new_dataset(history_id, content="shift hids\n", wait=True)
+        hdca_copy = self._copy_content_to_history(history_id, hdca)
+        assert hdca_copy["hid"] != hdca["hid"], (hdca_copy, hdca)
+        downloaded = self._extract_and_download_workflow(history_id, dataset_collection_ids=[hdca_copy["hid"]])
+        (collection_step,) = self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)
+        assert loads(collection_step["tool_state"])["collection_type"] == "list"
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_hid_extract_copies_sent_with_one_name_make_one_input(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
+        hda_copy = self._copy_hda_to_history(history_id, hda)
+        run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": hda_copy["id"]}}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        response = self._extract_from_history_raw(
+            history_id,
+            {
+                "workflow_name": "copies named once",
+                "dataset_hids": [hda["hid"], hda_copy["hid"]],
+                "dataset_names": ["numbers", "numbers"],
+                "job_ids": [run["jobs"][0]["id"]],
+            },
+        )
+        self._assert_status_code_is(response, 200)
+        downloaded = self.workflow_populator.download_workflow(response.json()["id"])
+        input_step = self._assert_single_input_single_tool(downloaded)
+        assert input_step["label"] == "numbers", input_step
+
+    @summarize_instance_history_on_error
+    def test_hid_extract_copies_with_different_names_rejected(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
+        hda_copy = self._copy_hda_to_history(history_id, hda)
+        response = self._extract_from_history_raw(
+            history_id,
+            {
+                "workflow_name": "copies named twice",
+                "dataset_hids": [hda["hid"], hda_copy["hid"]],
+                "dataset_names": ["numbers", "digits"],
+            },
+        )
+        self._assert_status_code_is(response, 400)
+        assert (
+            response.json()["err_msg"]
+            == "dataset_hids includes copies of one dataset with different dataset_names: 'numbers' and 'digits'"
+        ), response.json()
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
@@ -965,48 +1139,19 @@ class TestWorkflowExtractionByIdsApi(_ExtractionHelpersMixin, BaseWorkflowsApiTe
     def _extract_and_download_workflow_by_ids(self, **payload):
         if "workflow_name" not in payload:
             payload["workflow_name"] = "test import from history (by id)"
-        response = self._post("workflows/extract", data=payload, json=True)
-        self._assert_status_code_is(response, 200)
-        new_workflow_id = response.json()["id"]
-        download = self._get(f"workflows/{new_workflow_id}/download")
-        self._assert_status_code_is(download, 200)
-        return download.json()
+        return self.workflow_populator.download_workflow(self._extract_by_ids(payload)["id"])
 
     def _extract_workflow_id_by_ids(self, **payload):
         if "workflow_name" not in payload:
             payload["workflow_name"] = "extract roundtrip"
-        response = self._post("workflows/extract", data=payload, json=True)
-        self._assert_status_code_is(response, 200)
-        return response.json()["id"]
+        return self._extract_by_ids(payload)["id"]
 
     def _seed_two_inputs_and_run_cat1(self, history_id, c1, c2, **run_kwargs):
-        d1 = self.dataset_populator.new_dataset(history_id, content=c1)
-        d2 = self.dataset_populator.new_dataset(history_id, content=c2)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        run = self.dataset_populator.run_tool(
-            tool_id="cat1",
-            inputs={
-                "input1": {"src": "hda", "id": d1["id"]},
-                "queries_0|input2": {"src": "hda", "id": d2["id"]},
-            },
-            history_id=history_id,
-            **run_kwargs,
-        )
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return d1, d2, run["jobs"][0]["id"]
-
-    def _assert_single_input_single_tool(self, workflow, expected_tool_id=None):
-        steps = workflow["steps"]
-        assert len(steps) == 2, steps
-        input_steps = [s for s in steps.values() if s["type"] == "data_input"]
-        tool_steps = [s for s in steps.values() if s["type"] == "tool"]
-        assert len(input_steps) == 1 and len(tool_steps) == 1
-        if expected_tool_id is not None:
-            assert tool_steps[0]["tool_id"] == expected_tool_id
-        assert _connection_step_id(tool_steps[0]["input_connections"]["input1"]) == input_steps[0]["id"]
+        run = self.dataset_populator.run_cat1(history_id, (c1, c2), **run_kwargs)
+        return *run.inputs, run.job_id
 
     def _assert_extract_rejected(self, payload, allowed_codes):
-        response = self._post("workflows/extract", data=payload, json=True)
+        response = self._extract_by_ids_raw(payload)
         assert response.status_code in allowed_codes, response.text
 
     @skip_without_tool("__EXTRACT_DATASET__")
@@ -1089,7 +1234,7 @@ class TestWorkflowExtractionByIdsApi(_ExtractionHelpersMixin, BaseWorkflowsApiTe
         # The cat1 step must have an input connection pointing back to the UDT step.
         assert "input_connections" in cat1_step, cat1_step
         assert "input1" in cat1_step["input_connections"], cat1_step
-        assert _connection_step_id(cat1_step["input_connections"]["input1"]) == udt_step["id"], cat1_step
+        assert connection_step_id(cat1_step["input_connections"]["input1"]) == udt_step["id"], cat1_step
 
     @skip_without_tool("random_lines1")
     @summarize_instance_history_on_error
@@ -1182,6 +1327,154 @@ test_data:
             job_ids=[cat1_job_id],
         )
         self.assert_cat1_workflow_structure(downloaded)
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_with_two_copies_of_one_input_makes_one_input(self, history_id):
+        """The history card for an upload lists its in-history copies; checking it sends every copy under the card's one name."""
+        hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
+        hda_copy = self._copy_hda_to_history(history_id, hda)
+        run = self.dataset_populator.run_tool(
+            "cat1",
+            {"input1": {"src": "hda", "id": hda["id"]}, "queries_0|input2": {"src": "hda", "id": hda_copy["id"]}},
+            history_id,
+        )
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        input_row = self._row_with_output_id(self._get_extraction_summary(history_id), hda_copy["id"])
+        assert input_row is not None, input_row
+        assert {o["id"] for o in input_row["outputs"]} == {hda["id"], hda_copy["id"]}, input_row
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[hda["id"], hda_copy["id"]],
+            dataset_names=["numbers", "numbers"],
+            job_ids=[run["jobs"][0]["id"]],
+        )
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+        assert input_step["label"] == "numbers", input_step
+        (cat1_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
+        for name in ("input1", "queries_0|input2"):
+            assert connection_step_id(cat1_step["input_connections"][name]) == input_step["id"], cat1_step
+
+    @summarize_instance_history_on_error
+    def test_extract_with_two_copies_of_one_collection_makes_one_input(self, history_id):
+        hdca = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["a\n", "b\n"], wait=True
+        ).json()["outputs"][0]
+        hdca_copy = self._copy_content_to_history(history_id, hdca)
+        summary = self._get_extraction_summary(history_id)
+        input_row = self._only_row_listing(summary, {hdca["id"], hdca_copy["id"]})
+        assert [o["id"] for o in input_row["outputs"]] == [hdca["id"], hdca_copy["id"]], input_row
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hdca_ids=[hdca["id"], hdca_copy["id"]], dataset_collection_names=["letters", "letters"]
+        )
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)
+        assert input_step["label"] == "letters", input_step
+
+    @summarize_instance_history_on_error
+    def test_copies_from_a_history_no_longer_shared_extract_by_local_ids(self, history_id):
+        """Input cards list this history's copies, not their source in another user's now-private history."""
+        with self._different_user("extract_copy_source@bx.psu.edu"):
+            source_history_id = self.dataset_populator.new_history()
+            source_hda = self.dataset_populator.new_dataset(source_history_id, content="1 2 3\n", wait=True)
+            source_hdca = self.dataset_collection_populator.create_list_in_history(
+                source_history_id, contents=["a\n", "b\n"], wait=True
+            ).json()["outputs"][0]
+            self.dataset_populator.make_public(source_history_id)
+        hda_copy = self._copy_content_to_history(history_id, source_hda)
+        hdca_copies = [self._copy_content_to_history(history_id, source_hdca) for _ in range(2)]
+        hdca_copy_ids = [hdca_copy["id"] for hdca_copy in hdca_copies]
+        with self._different_user("extract_copy_source@bx.psu.edu"):
+            self._assert_status_code_is(self._put(f"histories/{source_history_id}/disable_link_access"), 200)
+        self._assert_extract_rejected({"workflow_name": "source", "hdca_ids": [source_hdca["id"]]}, (400, 403))
+        summary = self._get_extraction_summary(history_id)
+        # Encoded HDA and HDCA ids can coincide, so rows are told apart by step type.
+        (hda_row,) = self._rows_by_type(summary, "input_dataset")
+        assert [o["id"] for o in hda_row["outputs"]] == [hda_copy["id"]], hda_row
+        (hdca_row,) = self._rows_by_type(summary, "input_collection")
+        assert [o["id"] for o in hdca_row["outputs"]] == hdca_copy_ids, hdca_row
+        assert [o["hid"] for o in hdca_row["outputs"]] == [c["hid"] for c in hdca_copies], hdca_row
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[hda_copy["id"]],
+            dataset_names=["numbers"],
+            hdca_ids=hdca_copy_ids,
+            dataset_collection_names=["letters", "letters"],
+        )
+        self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)
+        assert input_step["label"] == "letters", input_step
+
+    @requires_new_library
+    @summarize_instance_history_on_error
+    def test_copies_of_job_less_dataset_list_one_input(self, history_id):
+        """A library import has no creating job; it and its in-history copy share one input card."""
+        library_dataset = LibraryPopulator(self.galaxy_interactor).new_library_dataset("extraction_job_less")
+        imported = self.dataset_populator.copy_library_dataset(history_id, library_dataset["id"])
+        imported_copy = self._copy_hda_to_history(history_id, imported)
+        copy_ids = {imported["id"], imported_copy["id"]}
+        summary = self._get_extraction_summary(history_id)
+        row = self._only_row_listing(summary, copy_ids)
+        assert row["step_type"] == "input_dataset", row
+        assert {o["id"] for o in row["outputs"]} == copy_ids, row
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[imported["id"], imported_copy["id"]], dataset_names=["imported", "imported"]
+        )
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+        assert input_step["label"] == "imported", input_step
+
+    @skip_without_tool("Grep1")
+    @summarize_instance_history_on_error
+    def test_extract_by_ids_connects_implicitly_converted_input(self, history_id):
+        hda, job_id = self._run_grep1_on_converted_input(history_id)
+        downloaded = self._extract_and_download_workflow_by_ids(hda_ids=[hda["id"]], job_ids=[job_id])
+        self._assert_single_input_single_tool(downloaded, input_name="input")
+
+    @summarize_instance_history_on_error
+    def test_extract_copies_of_one_input_with_different_names_rejected(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
+        hda_copy = self._copy_hda_to_history(history_id, hda)
+        response = self._extract_by_ids_raw(
+            {
+                "workflow_name": "copies named twice",
+                "hda_ids": [hda["id"], hda_copy["id"]],
+                "dataset_names": ["numbers", "digits"],
+            }
+        )
+        self._assert_status_code_is(response, 400)
+        assert (
+            response.json()["err_msg"]
+            == "hda_ids includes copies of one dataset with different dataset_names: 'numbers' and 'digits'"
+        ), response.json()
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_multi_file_upload_lists_one_input_per_file(self, history_id):
+        """One fetch job uploading two files gives two input cards, each extractable under its own name."""
+        first, second = self.dataset_populator.fetch_hdas(
+            history_id,
+            [{"src": "pasted", "paste_content": "1 2 3\n"}, {"src": "pasted", "paste_content": "4 5 6\n"}],
+        )
+        run = self.dataset_populator.run_tool(
+            "cat1",
+            {"input1": {"src": "hda", "id": first["id"]}, "queries_0|input2": {"src": "hda", "id": second["id"]}},
+            history_id,
+        )
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        summary = self._get_extraction_summary(history_id)
+        rows = [self._row_with_output_id(summary, hda["id"]) for hda in (first, second)]
+        for row, hda in zip(rows, (first, second)):
+            assert row is not None and row["step_type"] == "input_dataset", summary["jobs"]
+            assert [o["id"] for o in row["outputs"]] == [hda["id"]], row
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[first["id"], second["id"]],
+            dataset_names=["first", "second"],
+            job_ids=[run["jobs"][0]["id"]],
+        )
+        input_steps = self.assert_steps_of_type(downloaded, "data_input", expected_len=2)
+        step_id_by_label = {step["label"]: step["id"] for step in input_steps}
+        (cat1_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
+        assert connection_step_id(cat1_step["input_connections"]["input1"]) == step_id_by_label["first"], cat1_step
+        assert (
+            connection_step_id(cat1_step["input_connections"]["queries_0|input2"]) == step_id_by_label["second"]
+        ), cat1_step
 
     @summarize_instance_history_on_error
     def test_empty_payload_rejected(self, history_id):
@@ -1590,8 +1883,7 @@ test_data:
         # not the chained second step that consumes the first tool's output.
         input_step = self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)[0]
         connection = labelled[0]["input_connections"]["input"]
-        connection = connection[0] if isinstance(connection, list) else connection
-        assert connection["id"] == input_step["id"], (connection, input_step)
+        assert connection_step_id(connection) == input_step["id"], (connection, input_step)
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
@@ -1753,6 +2045,22 @@ test_data:
             },
             (400,),
         )
+
+    @summarize_instance_history_on_error
+    def test_extract_names_not_parallel_to_ids_rejected(self, history_id):
+        d1 = self.dataset_populator.new_dataset(history_id, content="alpha\n", wait=True)
+        d2 = self.dataset_populator.new_dataset(history_id, content="beta\n", wait=True)
+        for names in (["only one"], ["one", "two", "three"]):
+            response = self._extract_by_ids_raw(
+                {
+                    "workflow_name": "names not parallel",
+                    "hda_ids": [d1["id"], d2["id"]],
+                    "dataset_names": names,
+                }
+            )
+            self._assert_status_code_is(response, 400)
+            err_msg = response.json()["err_msg"]
+            assert "dataset_names" in err_msg and "hda_ids" in err_msg, response.text
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
@@ -1919,57 +2227,49 @@ test_data:
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
-    def test_extract_step_label_with_quote_rejected(self, history_id):
-        """Labels become double-quoted arguments in a workflow report directive and
-        the grammar has no escape syntax, so a quote has no representable form."""
+    def test_extract_step_label_with_quote_accepted(self, history_id):
         d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
-        self._assert_extract_rejected(
-            {
-                "workflow_name": "quoted step label",
-                "hda_ids": [d1["id"], d2["id"]],
-                "job_ids": [cat1_job_id],
-                "step_labels": [{"kind": "job", "id": cat1_job_id, "label": 'say "hi"'}],
-            },
-            (400,),
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[d1["id"], d2["id"]],
+            job_ids=[cat1_job_id],
+            step_labels=[{"kind": "job", "id": cat1_job_id, "label": 'say "hi"'}],
         )
+        tool_steps = [s for s in downloaded["steps"].values() if s["type"] == "tool"]
+        assert [s["label"] for s in tool_steps] == ['say "hi"']
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
-    def test_extract_input_name_with_quote_rejected(self, history_id):
+    def test_extract_input_names_with_quote_and_newline_accepted(self, history_id):
         d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
-        self._assert_extract_rejected(
-            {
-                "workflow_name": "quoted input name",
-                "hda_ids": [d1["id"], d2["id"]],
-                "job_ids": [cat1_job_id],
-                "dataset_names": ['my "input"', "other"],
-            },
-            (400,),
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[d1["id"], d2["id"]],
+            job_ids=[cat1_job_id],
+            dataset_names=['my "input"', "first\nsecond"],
         )
+        input_labels = {s["label"] for s in downloaded["steps"].values() if s["type"] == "data_input"}
+        assert input_labels == {'my "input"', "first\nsecond"}
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
-    def test_extract_input_name_with_newline_rejected(self, history_id):
-        """A directive occupies a single line, so a line break is unrepresentable too."""
+    def test_extract_from_history_quoted_dataset_name_accepted(self, history_id):
         d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
-        self._assert_extract_rejected(
+        response = self._extract_from_history_raw(
+            history_id,
             {
-                "workflow_name": "multiline input name",
-                "hda_ids": [d1["id"], d2["id"]],
+                "workflow_name": "quoted name from history",
+                "dataset_hids": [d1["hid"], d2["hid"]],
+                "dataset_names": ['Sample "A".csv', "other"],
                 "job_ids": [cat1_job_id],
-                "dataset_names": ["first\nsecond", "other"],
             },
-            (400,),
         )
+        self._assert_status_code_is(response, 200)
+        downloaded = self.workflow_populator.download_workflow(response.json()["id"])
+        input_labels = {s["label"] for s in downloaded["steps"].values() if s["type"] == "data_input"}
+        assert input_labels == {'Sample "A".csv', "other"}
 
 
 class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCase):
     """Tests for GET /api/histories/{history_id}/extraction_summary."""
-
-    def _get_extraction_summary(self, history_id: str) -> dict:
-        response = self._get(f"histories/{history_id}/extraction_summary")
-        self._assert_status_code_is(response, 200)
-        return response.json()
 
     def test_extraction_summary_empty_history(self):
         with self.dataset_populator.test_history() as history_id:
@@ -2083,6 +2383,18 @@ class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApi
             assert tool_jobs[0]["invalid"] == "custom_tool_inaccessible"
             assert tool_jobs[0]["checked"] is False
 
+    def test_extraction_summary_udt_step_invalid_for_non_owner(self):
+        # Holding the execute role does not grant access to another user's tool.
+        output_id = self._run_user_tool_in_published_history()
+        with self._different_user("udt_non_owner@bx.psu.edu"), self.dataset_populator.user_tool_execute_permissions():
+            history_id = self.dataset_populator.new_history()
+            copied = self._copy_hda_to_history(history_id, {"id": output_id})
+            summary = self._get_extraction_summary(history_id)
+            row = self._row_with_output_id(summary, copied["id"])
+            assert row is not None and row["step_type"] == "tool", summary["jobs"]
+            assert row["invalid"] == "custom_tool_inaccessible", row
+            assert row["checked"] is False, row
+
     @skip_without_tool("random_lines1")
     def test_extraction_summary_mapped_tool_step_icj_metadata(self):
         with self.dataset_populator.test_history() as history_id:
@@ -2151,6 +2463,26 @@ class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApi
                 # injected on the cat1 HDA, proving the dispatch did not
                 # bleed the cat1 rename into the HDCA path.
                 assert output["suggested_name"] != sentinel_cat1_name, output
+
+    @skip_without_tool("cat1")
+    def test_extraction_summary_suggested_name_is_directive_safe(self):
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
+            hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
+            cat1_run = self.dataset_populator.run_tool(
+                "cat1",
+                {
+                    "input1": {"src": "hda", "id": hda1["id"]},
+                    "queries_0|input2": {"src": "hda", "id": hda2["id"]},
+                },
+                history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            self.dataset_populator.rename_dataset(cat1_run["outputs"][0]["id"], 'Sample "A" merged')
+
+            summary = self._get_extraction_summary(history_id)
+            cat1_job = next(j for j in summary["jobs"] if j.get("tool_id") == "cat1")
+            assert cat1_job["outputs"][0]["suggested_name"] == "Sample A merged", cat1_job["outputs"][0]
 
     @skip_without_tool("cat1")
     def test_extraction_summary_structure(self):
@@ -2232,26 +2564,34 @@ class TestNotebookWorkflowExtractionReport(
     def _extract(self, **payload):
         if "workflow_name" not in payload:
             payload["workflow_name"] = "report extraction"
-        response = self._post("workflows/extract", data=payload, json=True)
-        self._assert_status_code_is(response, 200)
-        return response.json()
+        return self._extract_by_ids(payload)
+
+    def _starred(self, output_id, label="merged"):
+        """output_labels as the form sends them for a pre-starred notebook output."""
+        return [{"kind": "hda", "id": output_id, "label": label}]
 
     def _report_markdown(self, workflow_id):
-        download = self._get(f"workflows/{workflow_id}/download")
-        self._assert_status_code_is(download, 200)
-        return download.json().get("report", {}).get("markdown")
+        return self.workflow_populator.download_workflow(workflow_id).get("report", {}).get("markdown")
 
     def _run_cat1(self, history_id):
-        d1 = self.dataset_populator.new_dataset(history_id, content="1 2 3\n")
-        d2 = self.dataset_populator.new_dataset(history_id, content="4 5 6\n")
+        run = self.dataset_populator.run_cat1(history_id)
+        return run.output_id, run.job_id
+
+    def _invoke_cat1_on_fresh_inputs(self, workflow_id):
+        history_id = self.dataset_populator.new_history()
+        n1 = self.dataset_populator.new_dataset(history_id, content="7 8 9\n")
+        n2 = self.dataset_populator.new_dataset(history_id, content="10 11 12\n")
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        run = self.dataset_populator.run_tool(
-            tool_id="cat1",
-            inputs={"input1": {"src": "hda", "id": d1["id"]}, "queries_0|input2": {"src": "hda", "id": d2["id"]}},
+        invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+            workflow_id,
             history_id=history_id,
+            inputs={"0": {"src": "hda", "id": n1["id"]}, "1": {"src": "hda", "id": n2["id"]}},
+            inputs_by="step_index",
         )
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return run["outputs"][0]["id"], run["jobs"][0]["id"]
+        self.workflow_populator.wait_for_invocation_and_jobs(
+            history_id=history_id, workflow_id=workflow_id, invocation_id=invocation_id
+        )
+        return invocation_id
 
     @skip_without_tool("cat1")
     def test_report_rewrites_output_and_job_directives(self):
@@ -2261,7 +2601,11 @@ class TestNotebookWorkflowExtractionReport(
                 history_id, output_ids=[out_id], job_ids=[cat1_job_id]
             )
 
-            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+            result = self._extract(
+                job_ids=[cat1_job_id],
+                from_page_id=page["id"],
+                output_labels=self._starred(out_id),
+            )
             markdown = self._report_markdown(result["id"])
 
             assert markdown is not None, "extracted workflow has no report markdown"
@@ -2274,15 +2618,68 @@ class TestNotebookWorkflowExtractionReport(
             assert "job_id=" not in markdown, markdown
             assert result["report_warnings"] == [], result["report_warnings"]
 
-            # The output= label is a real workflow output the reconcile exposed.
-            output_match = re.search(r'output="([^"]+)"', markdown)
-            assert output_match is not None, markdown
-            output_label = output_match.group(1)
-            downloaded = self._get(f"workflows/{result['id']}/download").json()
-            output_labels = {
-                wo["label"] for step in downloaded["steps"].values() for wo in step.get("workflow_outputs", [])
-            }
-            assert output_label in output_labels, (output_label, output_labels)
+            # The output= label is the workflow output label the user chose.
+            assert 'output="merged"' in markdown, markdown
+
+    @skip_without_tool("cat1")
+    def test_report_warns_when_it_restores_an_unstarred_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[out_id])
+
+            # No output_labels: the user un-starred the output the notebook displays.
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+
+            hid = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=out_id)["hid"]
+            self._assert_restored_output_warning(result, hid)
+
+    def test_report_warns_when_it_restores_an_unstarred_output_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            d1 = self.dataset_populator.new_dataset(history_id, content="a\t1\nb\t2\n", wait=True)
+            split = self.dataset_populator.run_tool(
+                tool_id="collection_split_on_column",
+                inputs={"input1": {"src": "hda", "id": d1["id"]}},
+                history_id=history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            hdca = split["output_collections"][0]
+            page = self.dataset_populator.new_notebook_referencing(history_id, collection_ids=[hdca["id"]])
+
+            result = self._extract(job_ids=[split["jobs"][0]["id"]], from_page_id=page["id"])
+
+            self._assert_restored_output_warning(result, hdca["hid"])
+
+    @skip_without_tool("random_lines1")
+    def test_report_warns_when_it_restores_an_unstarred_mapped_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            pair = self.dataset_collection_populator.create_pair_in_history(
+                history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
+            ).json()["outputs"][0]
+            inputs = {"input": {"batch": True, "values": [{"src": "hdca", "id": pair["id"]}]}, "num_lines": 2}
+            run = self.dataset_populator.run_tool(tool_id="random_lines1", inputs=inputs, history_id=history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            mapped_output = run["implicit_collections"][0]
+            icj_id = self.dataset_populator.get_hdca_implicit_collection_jobs_id(history_id, mapped_output["id"])
+            page = self.dataset_populator.new_notebook_referencing(history_id, collection_ids=[mapped_output["id"]])
+
+            result = self._extract(implicit_collection_jobs_ids=[icj_id], from_page_id=page["id"])
+
+            self._assert_restored_output_warning(result, mapped_output["hid"])
+
+    def _assert_restored_output_warning(self, result, hid):
+        """The report's only output= label is a real workflow output, and the server warned it restored it."""
+        markdown = self._report_markdown(result["id"])
+        output_match = re.search(r'output="([^"]+)"', markdown)
+        assert output_match is not None, markdown
+        output_label = output_match.group(1)
+        downloaded = self.workflow_populator.download_workflow(result["id"])
+        output_labels = {
+            wo["label"] for step in downloaded["steps"].values() for wo in step.get("workflow_outputs", [])
+        }
+        assert output_label in output_labels, (output_label, output_labels)
+        assert result["report_warnings"] == [
+            f"Made history item {hid} a workflow output ({output_label!r}) because the notebook report uses it."
+        ], result["report_warnings"]
 
     @skip_without_tool("random_lines1")
     def test_report_rewrites_icj_job_directive_to_step(self):
@@ -2305,6 +2702,261 @@ class TestNotebookWorkflowExtractionReport(
             assert "implicit_collection_jobs_id=" not in markdown, markdown
             assert result["report_warnings"] == [], result["report_warnings"]
 
+    @skip_without_tool("cat1")
+    def test_empty_notebook_keeps_default_report(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_history_page(history_id, content="")
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+
+            assert self._report_markdown(result["id"]) is None
+            assert result["report_warnings"] == [], result["report_warnings"]
+
+    @skip_without_tool("cat1")
+    def test_notebook_with_only_dropped_directives_keeps_default_report(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, _ = self._run_cat1(history_id)
+            unrelated = self.dataset_populator.new_dataset(history_id, content="x\n", wait=True)
+            page = self.dataset_populator.new_history_page(
+                history_id, content=f"```galaxy\nhistory_dataset_display(history_dataset_id={out_id})\n```\n"
+            )
+
+            result = self._extract(hda_ids=[unrelated["id"]], from_page_id=page["id"])
+
+            assert self._report_markdown(result["id"]) is None
+            assert result["report_warnings"] == [
+                "Dropped a dataset reference from the report: it has no workflow-relative label."
+            ]
+
+    @skip_without_tool("cat1")
+    def test_report_drops_directive_for_unquotable_output_label(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[out_id])
+
+            result = self._extract(
+                job_ids=[cat1_job_id],
+                from_page_id=page["id"],
+                output_labels=[{"kind": "hda", "id": out_id, "label": 'merged "lines"'}],
+            )
+            markdown = self._report_markdown(result["id"])
+
+            assert markdown is not None
+            assert "history_dataset_display" not in markdown, markdown
+            assert result["report_warnings"] == [
+                (
+                    "Dropped a dataset reference from the report: its label 'merged \"lines\"' contains a double "
+                    "quote or line break, which report directives cannot express."
+                )
+            ]
+            downloaded = self.workflow_populator.download_workflow(result["id"])
+            tool_step = self.assert_steps_of_type(downloaded, "tool", expected_len=1)[0]
+            assert [o["label"] for o in tool_step["workflow_outputs"]] == ['merged "lines"']
+
+    @skip_without_tool("cat1")
+    def test_report_drops_directive_for_unquotable_step_label(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, job_ids=[cat1_job_id])
+
+            result = self._extract(
+                job_ids=[cat1_job_id],
+                from_page_id=page["id"],
+                step_labels=[{"kind": "job", "id": cat1_job_id, "label": 'say "hi"'}],
+            )
+            markdown = self._report_markdown(result["id"])
+
+            assert markdown is not None
+            assert "# Analysis" in markdown, markdown
+            assert "job_metrics" not in markdown, markdown
+            assert result["report_warnings"] == [
+                (
+                    "Dropped a job reference from the report: its label 'say \"hi\"' contains a double quote or "
+                    "line break, which report directives cannot express."
+                )
+            ]
+            downloaded = self.workflow_populator.download_workflow(result["id"])
+            tool_labels = [s["label"] for s in downloaded["steps"].values() if s["type"] == "tool"]
+            assert tool_labels == ['say "hi"']
+
+    @skip_without_tool("cat1")
+    def test_report_directives_resolve_against_invocation(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_history_page(
+                history_id,
+                content=(
+                    "# Analysis\n\n"
+                    f"```galaxy\nhistory_dataset_display(history_dataset_id={out_id})\n```\n\n"
+                    f"```galaxy\njob_metrics(job_id={cat1_job_id})\n```\n\n"
+                    f"```galaxy\nhistory_link(history_id={history_id})\n```\n"
+                ),
+            )
+            # Select the inputs too, so the workflow is runnable on fresh data.
+            input_ids = [item["id"] for item in self._history_contents(history_id) if item["hid"] in (1, 2)]
+            result = self._extract(
+                hda_ids=input_ids, job_ids=[cat1_job_id], from_page_id=page["id"], output_labels=self._starred(out_id)
+            )
+            assert result["report_warnings"] == [], result["report_warnings"]
+            markdown = self._report_markdown(result["id"])
+            output_match = re.search(r'output="([^"]+)"', markdown)
+            step_match = re.search(r'step="([^"]+)"', markdown)
+            assert output_match and step_match, markdown
+            output_label, step_label = output_match.group(1), step_match.group(1)
+
+            invocation_id = self._invoke_cat1_on_fresh_inputs(result["id"])
+            report = self.workflow_populator.workflow_report_json(result["id"], invocation_id)
+
+            # The JSON report keeps label directives scoped to the invocation; the
+            # client resolves them against it.
+            assert not report.get("errors"), report.get("errors")
+            rendered = report["markdown"]
+            assert f'history_dataset_display(invocation_id={invocation_id}, output="{output_label}")' in rendered
+            assert f'job_metrics(invocation_id={invocation_id}, step="{step_label}")' in rendered
+            assert f"history_link(invocation_id={invocation_id})" in rendered
+            # No notebook object survives (encoded ids can coincide across types, so match arguments).
+            for argument in ("history_dataset_id=", "job_id=", "history_id="):
+                assert argument not in rendered, (argument, rendered)
+            # The labels name this invocation's own output and job.
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            assert invocation["outputs"][output_label]["id"] != out_id
+            label_steps = [step for step in invocation["steps"] if step["workflow_step_label"] == step_label]
+            assert len(label_steps) == 1, invocation["steps"]
+            assert label_steps[0]["job_id"] not in (None, cat1_job_id), label_steps[0]
+
+    @skip_without_tool("cat1")
+    def test_report_history_link_to_page_history_becomes_argless(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, cat1_job_id = self._run_cat1(history_id)
+            other_history_id = self.dataset_populator.new_history()
+            page = self.dataset_populator.new_history_page(
+                history_id,
+                content=(
+                    "# Analysis\n\n"
+                    f"```galaxy\nhistory_link(history_id={history_id})\n```\n\n"
+                    f"```galaxy\nhistory_link(history_id={other_history_id})\n```\n"
+                ),
+            )
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+            markdown = self._report_markdown(result["id"])
+
+            assert markdown.count("history_link") == 1, markdown
+            assert "```galaxy\nhistory_link()\n```" in markdown, markdown
+            assert history_id not in markdown and other_history_id not in markdown, markdown
+            assert result["report_warnings"] == [
+                "Dropped a history link from the report: it cannot be expressed relative to a workflow."
+            ]
+
+    @skip_without_tool("cat1")
+    def test_report_drops_inline_object_embeds(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_history_page(
+                history_id,
+                content=(
+                    "# Analysis\n\n"
+                    f"Merged ${{galaxy history_dataset_name(history_dataset_id={out_id})}} "
+                    "on Galaxy ${galaxy generate_galaxy_version()}.\n\n"
+                    f"```galaxy\nhistory_dataset_display(history_dataset_id={out_id})\n```\n"
+                ),
+            )
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"], output_labels=self._starred(out_id))
+            markdown = self._report_markdown(result["id"])
+
+            assert "history_dataset_name" not in markdown, markdown
+            assert "history_dataset_id" not in markdown, markdown
+            assert "${galaxy generate_galaxy_version()}" in markdown, markdown
+            assert 'history_dataset_display(output="' in markdown, markdown
+            assert result["report_warnings"] == [
+                (
+                    "Dropped an inline [history_dataset_name] reference from the report: inline object references "
+                    "do not resolve in workflow reports."
+                )
+            ]
+
+    @skip_without_tool("cat1")
+    def test_report_drops_visualization_cell_naming_a_dataset(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            visualization = dumps({"visualization_name": "csv", "dataset_id": out_id, "dataset_name": "merged"})
+            page = self.dataset_populator.new_history_page(
+                history_id,
+                content=(
+                    f"# Analysis\n\n```visualization\n{visualization}\n```\n\n"
+                    f"```galaxy\nhistory_dataset_display(history_dataset_id={out_id})\n```\n"
+                ),
+            )
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"], output_labels=self._starred(out_id))
+            markdown = self._report_markdown(result["id"])
+
+            assert "visualization" not in markdown, markdown
+            assert out_id not in markdown, markdown
+            assert 'history_dataset_display(output="' in markdown, markdown
+            assert result["report_warnings"] == [
+                (
+                    "Dropped a [visualization] cell from the report: it names a specific dataset or invocation, which "
+                    "has no workflow-relative form."
+                )
+            ]
+
+    @skip_without_tool("cat1")
+    def test_report_drops_indented_galaxy_cell_naming_a_dataset(self):
+        """The client renders an indented fence as a galaxy cell; page import leaves its id encoded."""
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_history_page(
+                history_id,
+                content=(
+                    f"# Analysis\n\n  ```galaxy\n  history_dataset_display(history_dataset_id={out_id})\n  ```\n\nAfter.\n"
+                ),
+            )
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"], output_labels=self._starred(out_id))
+            markdown = self._report_markdown(result["id"])
+
+            assert "history_dataset_id" not in markdown, markdown
+            assert out_id not in markdown, markdown
+            assert "After." in markdown, markdown
+            assert result["report_warnings"] == [
+                (
+                    "Dropped a [galaxy] cell from the report: it names a specific Galaxy object "
+                    "(history_dataset_id), which has no workflow-relative form."
+                )
+            ]
+
+    @skip_without_tool("cat1")
+    def test_report_drops_invocation_scoped_directive(self):
+        """A notebook seeded from an invocation report carries invocation_id-scoped
+        label lines; the walk passes them through, so they must not leak the id."""
+        with self.dataset_populator.test_history() as history_id:
+            _, cat1_job_id = self._run_cat1(history_id)
+            # Any encoded id stands in for a prior invocation; nothing resolves it.
+            prior_invocation_id = history_id
+            page = self.dataset_populator.new_history_page(
+                history_id,
+                content=(
+                    "# Analysis\n\n"
+                    f'```galaxy\nhistory_dataset_display(invocation_id={prior_invocation_id}, output="merged")\n```\n'
+                ),
+            )
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+            markdown = self._report_markdown(result["id"])
+
+            assert "# Analysis" in markdown, markdown
+            assert "invocation_id" not in markdown, markdown
+            assert prior_invocation_id not in markdown, markdown
+            assert result["report_warnings"] == [
+                (
+                    "Dropped a [history_dataset_display] directive from the report: it names a specific Galaxy object "
+                    "(invocation_id), which has no workflow-relative form."
+                )
+            ]
+
     def test_400_on_page_without_history(self):
         page_response = self.dataset_populator._post(
             "pages",
@@ -2315,9 +2967,52 @@ class TestNotebookWorkflowExtractionReport(
         page = page_response.json()
         with self.dataset_populator.test_history() as history_id:
             d1 = self.dataset_populator.new_dataset(history_id, content="a", wait=True)
-            response = self._post(
-                "workflows/extract",
-                {"workflow_name": "bad report", "hda_ids": [d1["id"]], "from_page_id": page["id"]},
-                json=True,
+            response = self._extract_by_ids_raw(
+                {"workflow_name": "bad report", "hda_ids": [d1["id"]], "from_page_id": page["id"]}
             )
             assert response.status_code == 400, response.text
+
+    def _workflow_count(self) -> int:
+        return len(self.workflow_populator.index())
+
+    def _assert_other_user_extraction_from_page_forbidden(self, page_id):
+        with self._different_user():
+            with self.dataset_populator.test_history() as history_id:
+                _, cat1_job_id = self._run_cat1(history_id)
+                before = self._workflow_count()
+                response = self._extract_by_ids_raw(
+                    {"workflow_name": "stolen report", "job_ids": [cat1_job_id], "from_page_id": page_id}
+                )
+                self._assert_status_code_is(response, 403)
+                assert self._workflow_count() == before
+
+    @skip_without_tool("cat1")
+    def test_403_for_other_users_private_page(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, _ = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[out_id])
+            self._assert_other_user_extraction_from_page_forbidden(page["id"])
+
+    @skip_without_tool("cat1")
+    def test_403_for_published_page_without_history_access(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, _ = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[out_id])
+            self.dataset_populator.make_page_public(page["id"])
+            self._assert_other_user_extraction_from_page_forbidden(page["id"])
+
+    @skip_without_tool("cat1")
+    def test_failed_report_rewrite_creates_no_workflow(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, cat1_job_id = self._run_cat1(history_id)
+            # An HTML notebook skips markdown validation on save; its fence fails the report rewrite.
+            page = self.dataset_populator.new_history_page(
+                history_id, content="```python\nprint(1)\n```\n", content_format="html"
+            )
+            before = self._workflow_count()
+            response = self._extract_by_ids_raw(
+                {"workflow_name": "bad report", "job_ids": [cat1_job_id], "from_page_id": page["id"]}
+            )
+            self._assert_status_code_is(response, 400)
+            assert "Unsupported fenced block type" in response.json()["err_msg"], response.text
+            assert self._workflow_count() == before
