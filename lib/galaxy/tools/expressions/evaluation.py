@@ -67,6 +67,12 @@ def _unterminated_message(expression: str, scan: str, consumed: int, description
     )
 
 
+def expression_error_message(exc: Exception) -> str:
+    """The JavaScript error from a failed evaluation (e.g. ``TypeError: ...``), without the script positions."""
+    lines = [line.strip() for line in str(exc).splitlines()]
+    return next((line for line in lines[1:] if line and not line.startswith("at ")), lines[0] if lines else "")
+
+
 def do_eval(
     expression: str,
     jobinput: CWLObjectType,
