@@ -8,6 +8,7 @@ from urllib.parse import (
     urlencode,
     urljoin,
 )
+from uuid import uuid4
 
 import pytest
 import requests
@@ -171,6 +172,15 @@ class UsesApiTestCaseMixin:
             self.user_api_key = original_api_key
             self.galaxy_interactor.api_key = original_interactor_key
             self.galaxy_interactor.cookies = original_cookies
+
+    @contextmanager
+    def _different_user_with_address(self, desc: str):
+        """Act as a new user with one address, as tools reading ``$__user__.addresses`` need."""
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            user_id = self._get("users/current").json()["id"]
+            response = self._put(f"users/{user_id}/information/inputs", data={"address_0|desc": desc}, json=True)
+            assert_status_code_is_ok(response)
+            yield
 
     def _get(self, *args, **kwds):
         return self.galaxy_interactor.get(*args, **kwds)

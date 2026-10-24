@@ -559,6 +559,7 @@ class ToolEvaluator:
                     tool=self.tool,
                     name=name,
                     compute_environment=self.compute_environment,
+                    tool_evaluator=self,
                 )
 
     def __populate_output_collection_wrappers(self, param_dict, output_collections, job_working_directory):
