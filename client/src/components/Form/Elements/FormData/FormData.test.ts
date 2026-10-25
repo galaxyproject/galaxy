@@ -492,6 +492,8 @@ describe("FormData", () => {
             ["list", ["paired_or_unpaired"], "single_datasets"],
             ["list:paired", ["paired_or_unpaired"], "paired"],
             ["list:list:list", ["list", "list:list"], "list:list"],
+            ["list:list", ["paired_or_unpaired"], "single_datasets"],
+            ["list:list:paired", ["paired_or_unpaired"], "paired"],
         ])(
             "uses a dropped %s on a %j input with map_over_type %s",
             async (collectionType, collectionTypes, mapOverType) => {
@@ -508,6 +510,10 @@ describe("FormData", () => {
             ["paired", ["list:paired_or_unpaired"]],
             ["list:paired_or_unpaired", ["paired"]],
             ["paired_or_unpaired", ["paired"]],
+            ["list:list", ["list:paired_or_unpaired"]],
+            ["list:list:paired", ["list:paired_or_unpaired"]],
+            ["list:list", ["sample_sheet"]],
+            ["list:list", ["sample_sheet", "sample_sheet:paired_or_unpaired"]],
         ])("refuses a dropped %s on a %j input", async (collectionType, collectionTypes) => {
             const value = await dropOnCollectionInput(collectionTypes, droppedHdca(collectionType));
             expect(value).toEqual({
@@ -535,6 +541,7 @@ describe("FormData", () => {
         it.each([
             ["paired", ["list"]],
             ["paired_or_unpaired", ["paired"]],
+            ["list:list", ["list:paired_or_unpaired"]],
         ])("refuses a dropped element holding a %s on a %j input", async (collectionType, collectionTypes) => {
             const value = await dropOnCollectionInput(collectionTypes, droppedCollectionElement(collectionType));
             expect(value).toEqual({
@@ -599,12 +606,12 @@ describe("FormData", () => {
                 });
             });
 
-            it("maps a dropped list:list over it without checking column definitions, like the server", async () => {
-                const value = await dropOnCollectionInput(["sample_sheet"], droppedHdca("list:list"), props);
+            it("maps a dropped list:list over a list type without checking column definitions, like the server", async () => {
+                const value = await dropOnCollectionInput(["list", "sample_sheet"], droppedHdca("list:list"), props);
                 expect(value).toEqual({
                     batch: true,
                     product: false,
-                    values: [{ id: "dropped", map_over_type: "sample_sheet", src: "hdca" }],
+                    values: [{ id: "dropped", map_over_type: "list", src: "hdca" }],
                 });
             });
         });
