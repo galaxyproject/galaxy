@@ -1342,6 +1342,10 @@ class ToolDataTableManager(Dictifiable):
         if names:
             try:
                 self.reload_tables(names)
+            except Exception as exc:
+                message = f"Registered {os.path.basename(config_filename)} but reloading data tables failed: {util.unicodify(exc)}"
+                log.exception(message)
+                return table_elems, message
             finally:
                 # The registration is on disk even if this process cannot reload it.
                 if self.on_registration:

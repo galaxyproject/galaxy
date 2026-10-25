@@ -352,9 +352,11 @@ def test_failed_reload_keeps_table_state_and_notifies_after_persist(tmp_path, mo
     managed.write_text("<tables />")
     incoming = write_config(tmp_path, "incoming", "hg38\tHuman\t/new\n")
     monkeypatch.setattr(app.tool_data_tables, "reload_tables", Mock(side_effect=OSError("reload failed")))
-    with pytest.raises(OSError, match="reload failed"):
-        app.tool_data_tables.add_new_entries_from_config_file(incoming, None, managed, persist=True)
+    elems, error = app.tool_data_tables.add_new_entries_from_config_file(incoming, None, managed, persist=True)
+    assert elems
+    assert error == "Registered incoming.xml but reloading data tables failed: reload failed"
     assert "incoming.loc" in managed.read_text()
+    assert paths(app) == ["/local"]
     app.queue_worker.send_control_task.assert_called_once_with(
         "reload_tool_data_tables", noop_self=True, kwargs={"table_name": "references"}
     )
