@@ -652,15 +652,30 @@ def _resolve_matching_inputs(
 
 
 def _comparable_test_input(input: ToolSourceTestInput) -> Tuple[Any, Dict[str, Any]]:
-    """Value and attributes with generated composite renames dropped."""
+    """Value and attributes with generated composite renames dropped, including inside collections."""
     attributes = dict(input.get("attributes") or {})
     if "edit_attributes" in attributes:
         attributes["edit_attributes"] = [
             edit
             for edit in attributes["edit_attributes"]
-            if not str(edit.get("value", "")).startswith(COMPOSITE_DATA_RENAME_PREFIX)
+            if not edit.get("value", "").startswith(COMPOSITE_DATA_RENAME_PREFIX)
         ]
+    if "collection" in attributes:
+        attributes["collection"] = _comparable_collection(attributes["collection"])
     return input.get("value"), attributes
+
+
+def _comparable_collection(collection: Dict[str, Any]) -> Dict[str, Any]:
+    elements = []
+    for element in collection.get("elements", []):
+        definition = element["element_definition"]
+        comparable: Any
+        if definition.get("model_class") == "TestCollectionDef":
+            comparable = _comparable_collection(definition)
+        else:
+            comparable = _comparable_test_input(definition)
+        elements.append({**element, "element_definition": comparable})
+    return {**collection, "elements": elements}
 
 
 def _path_ends_with_param(qualified_path: str, param_name: str) -> bool:
