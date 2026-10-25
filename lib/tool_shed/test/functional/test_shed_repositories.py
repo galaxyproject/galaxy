@@ -1,6 +1,8 @@
 import json
 import os
+import tarfile
 import tempfile
+from pathlib import Path
 
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.util.compression_utils import CompressedFile
@@ -11,8 +13,10 @@ from tool_shed.test.base.hg_operations import HgRepositoryOperations
 from tool_shed.test.base.populators import (
     HasRepositoryId,
     repo_tars,
+    TEST_DATA_REPO_FILES,
 )
 from tool_shed_client.schema import (
+    Repository,
     RepositoryIndexRequest,
     RepositoryPaginatedIndexRequest,
     RepositoryRevisionMetadata,
@@ -22,6 +26,47 @@ from ..base.api import ShedApiTestCase
 from ..base.populators import ToolShedPopulator
 
 COLUMN_MAKER_PATH = resource_path(__name__, "../test_data/column_maker/column_maker.tar")
+
+
+INDEXED_TOOL_XML = """<tool id="indexed_tool" name="indexed_tool" version="{version}">
+    <command>echo $index</command>
+    <inputs>
+        <param name="index" type="select" label="Index">
+            <options from_data_table="indexes" />
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+</tool>
+"""
+
+TOOL_DATA_TABLE_CONF = """<tables>
+    <table name="indexes" comment_char="#">
+        <columns>value, path</columns>
+        <file path="tool-data/{loc}.loc" />
+    </table>
+</tables>
+"""
+
+
+def _upload_files(populator: ToolShedPopulator, repository: Repository, files: dict[str, str]) -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory) / "repo"
+        root.mkdir()
+        for name, content in files.items():
+            (root / name).write_text(content)
+        archive = Path(directory) / "repo.tar.gz"
+        with tarfile.open(archive, "w:gz") as tar:
+            tar.add(root, arcname="repo")
+        assert populator.upload_revision(repository, archive).is_ok
+
+
+def _metadata_rows(populator: ToolShedPopulator, repository: Repository) -> dict[str, list[tuple[str, str]]]:
+    return {
+        row.changeset_revision: sorted((tool.id, tool.version) for tool in row.tools or [])
+        for row in populator.get_metadata(repository, downloadable_only=False).root.values()
+    }
 
 
 # test_0000 tests commit_message  - find a way to test it here
@@ -281,6 +326,39 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert len(metadata_response.repository_status) == 1
         revisions = populator.get_ordered_installable_revisions(repository.owner, repository.name)
         assert len(revisions.root) == 1
+
+    def test_reset_ignores_tools_shipped_only_as_samples(self):
+        populator = self.populator
+        repository = populator.new_repository(populator.new_category().id)
+        filter_tool = TEST_DATA_REPO_FILES.joinpath("repos/column_maker_subset/2/filter_tool.xml").read_text()
+        _upload_files(populator, repository, {"filter_tool.xml.sample": filter_tool})
+        column_maker = TEST_DATA_REPO_FILES.joinpath("repos/column_maker/1/column_maker.xml").read_text()
+        _upload_files(populator, repository, {"column_maker.xml": column_maker})
+        rows = _metadata_rows(populator, repository)
+        assert {tool_id for tools in rows.values() for tool_id, _ in tools} == {"Add_a_column1"}
+        reset_response = populator.reset_metadata(repository)
+        rows = _metadata_rows(populator, repository)
+        assert {tool_id for tools in rows.values() for tool_id, _ in tools} == {"Add_a_column1"}
+        assert reset_response.status == "ok"
+
+    def test_reset_reads_sample_files_from_each_revision(self):
+        populator = self.populator
+        repository = populator.new_repository(populator.new_category().id)
+        for version, loc in [("1.0", "first"), ("2.0", "second")]:
+            _upload_files(
+                populator,
+                repository,
+                {
+                    "indexed_tool.xml": INDEXED_TOOL_XML.format(version=version),
+                    "tool_data_table_conf.xml.sample": TOOL_DATA_TABLE_CONF.format(loc=loc),
+                    f"{loc}.loc.sample": "",
+                },
+            )
+        rows = _metadata_rows(populator, repository)
+        assert sorted(rows.values()) == [[("indexed_tool", "1.0")], [("indexed_tool", "2.0")]]
+        reset_response = populator.reset_metadata(repository)
+        assert _metadata_rows(populator, repository) == rows
+        assert reset_response.status == "ok"
 
     def test_repository_search(self):
         populator = self.populator

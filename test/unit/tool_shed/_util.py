@@ -13,7 +13,6 @@ from typing import (
 )
 
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.tools.data import ToolDataTableManager
 from galaxy.util import safe_makedirs
 from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.managers.model_cache import ModelCache
@@ -42,18 +41,6 @@ TEST_HOST = "localhost"
 TEST_COMMIT_MESSAGE = "Test Commit Message"
 
 
-def revision_path(test_data_path: str, revision: str) -> Path:
-    return Path(str(TEST_DATA_FILES.joinpath(f"repos/{test_data_path}/{revision}")))
-
-
-def metadata_rows(repository: Repository) -> dict[str, list[tuple[str, str]]]:
-    """Sorted tool ``(id, version)`` pairs keyed by each metadata row's changeset revision."""
-    return {
-        str(rm.changeset_revision): sorted((t["id"], t["version"]) for t in (rm.metadata or {}).get("tools", []))
-        for rm in repository.metadata_revisions
-    }
-
-
 class TestToolShedConfig:
     user_activation_on = False
     file_path: str
@@ -67,10 +54,6 @@ class TestToolShedConfig:
         files_path = os.path.join(temp_directory, "files")
         safe_makedirs(files_path)
         self.file_path = files_path
-        self.tool_data_path = os.path.join(temp_directory, "tool-data")
-        safe_makedirs(self.tool_data_path)
-        self.shed_tool_data_path = self.tool_data_path
-        self.shed_tool_data_table_config = os.path.join(temp_directory, "shed_tool_data_table_conf.xml")
 
     def get(self, key, default):
         assert key == "admin_users"
@@ -98,11 +81,6 @@ class TestToolShedApp(ToolShedApp):
         self.security = IdEncodingHelper(id_secret=self.config.id_secret)
         self.model_cache = ModelCache(os.path.join(temp_directory, "model_cache"))
         self.security_agent = self.model.security_agent
-        self._tool_data_tables = ToolDataTableManager(self.config.tool_data_path)
-
-    @property
-    def tool_data_tables(self) -> ToolDataTableManager:
-        return self._tool_data_tables
 
 
 def user_fixture(app: ToolShedApp, username: str, password: str = "testpassword", email: Optional[str] = None) -> User:

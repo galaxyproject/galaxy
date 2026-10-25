@@ -1,67 +1,10 @@
 import copy
-from pathlib import Path
 
 from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.managers import repositories as repository_manager
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.webapp.model import Repository
-from ._util import (
-    metadata_rows,
-    revision_path,
-    upload,
-    upload_directories_to_repository,
-)
-
-INDEXED_TOOL_XML = """<tool id="indexed_tool" name="indexed_tool" version="{version}">
-    <command>echo $index</command>
-    <inputs>
-        <param name="index" type="select" label="Index">
-            <options from_data_table="indexes" />
-        </param>
-    </inputs>
-    <outputs>
-        <data name="output" format="txt" />
-    </outputs>
-</tool>
-"""
-
-TOOL_DATA_TABLE_CONF = """<tables>
-    <table name="indexes" comment_char="#">
-        <columns>value, path</columns>
-        <file path="tool-data/{loc}.loc" />
-    </table>
-</tables>
-"""
-
-
-def _upload_files(
-    provides_repositories: ProvidesRepositoriesContext,
-    repository: Repository,
-    revision_dir: Path,
-    files: dict[str, str],
-) -> None:
-    root = revision_dir / "repo"
-    root.mkdir(parents=True)
-    for name, content in files.items():
-        (root / name).write_text(content)
-    upload(provides_repositories, repository, root, arcname="repo")
-
-
-def _reset_all_metadata(provides_repositories: ProvidesRepositoriesContext, repository: Repository) -> None:
-    rmm = repository_metadata_manager.RepositoryMetadataManager(
-        provides_repositories,
-        repository=repository,
-        resetting_all_metadata_on_repository=True,
-        updating_installed_repository=False,
-        persist=False,
-    )
-    rmm.reset_all_metadata_on_repository_in_tool_shed(
-        repository_clone_url=repository.repo_path(provides_repositories.app)
-    )
-
-
-def _tool_ids(repository: Repository) -> set[str]:
-    return {tool["id"] for rm in repository.metadata_revisions for tool in (rm.metadata or {}).get("tools", [])}
+from ._util import upload_directories_to_repository
 
 
 def test_reset_simple(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):
@@ -389,31 +332,3 @@ def test_reset_metadata_dry_run_shows_visual_diff(
     assert (
         db_tool_config == corrupted_path
     ), f"dry_run should not modify database.\n  Expected: {corrupted_path}\n  Got: {db_tool_config}"
-
-
-def test_reset_ignores_tools_shipped_only_as_samples(
-    provides_repositories: ProvidesRepositoriesContext, new_repository: Repository, tmp_path: Path
-):
-    filter_tool = (revision_path("column_maker_subset", "2") / "filter_tool.xml").read_text()
-    _upload_files(provides_repositories, new_repository, tmp_path / "1", {"filter_tool.xml.sample": filter_tool})
-    column_maker = (revision_path("column_maker", "1") / "column_maker.xml").read_text()
-    _upload_files(provides_repositories, new_repository, tmp_path / "2", {"column_maker.xml": column_maker})
-    assert _tool_ids(new_repository) == {"Add_a_column1"}
-    _reset_all_metadata(provides_repositories, new_repository)
-    assert _tool_ids(new_repository) == {"Add_a_column1"}
-
-
-def test_reset_reads_sample_files_from_each_revision(
-    provides_repositories: ProvidesRepositoriesContext, new_repository: Repository, tmp_path: Path
-):
-    for version, loc in [("1.0", "first"), ("2.0", "second")]:
-        files = {
-            "indexed_tool.xml": INDEXED_TOOL_XML.format(version=version),
-            "tool_data_table_conf.xml.sample": TOOL_DATA_TABLE_CONF.format(loc=loc),
-            f"{loc}.loc.sample": "",
-        }
-        _upload_files(provides_repositories, new_repository, tmp_path / loc, files)
-    rows = metadata_rows(new_repository)
-    assert sorted(rows.values()) == [[("indexed_tool", "1.0")], [("indexed_tool", "2.0")]]
-    _reset_all_metadata(provides_repositories, new_repository)
-    assert metadata_rows(new_repository) == rows
