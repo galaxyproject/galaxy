@@ -1763,6 +1763,11 @@ should be given as comma separated list. For optional selects
 (`optional="true"`) the case that no option is selected can be specified with
 `value=""`.
 
+The value of a select without `multiple="true"` is used as given, so it may
+contain commas (e.g. `value="relax,150,100"`). If the option values of a multiple
+select contain commas, give the selection as a JSON list with `value_json`
+instead (e.g. `value_json='["relax,150,100"]'`).
+
 While in general it is preferred to specify the selected cases by their values it
 is also possible to specify them by their name (i.e. the content of the
 `option` tag that is shown to the user). One use case is a dynamic select that is
