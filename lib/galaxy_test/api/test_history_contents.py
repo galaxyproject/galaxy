@@ -5,6 +5,7 @@ from typing import (
     Union,
 )
 
+from galaxy.model.unittest_utils.store_fixtures import one_hda_model_store_dict
 from galaxy.util.wait import wait_on
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.decorators import (
@@ -34,6 +35,17 @@ class TestHistoryContentsApi(ApiTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
+
+    def test_contents_from_store_unregistered_extension_imported_as_data(self, history_id):
+        store_dict = one_hda_model_store_dict()
+        store_dict["datasets"][0]["extension"] = "not_a_registered_datatype"
+        as_list = self.dataset_populator.create_contents_from_store(history_id, store_dict=store_dict)
+        assert len(as_list) == 1
+        assert as_list[0]["extension"] == "data"
+        response = self._get(f"histories/{history_id}/contents/archive/contents.zip", {"dry_run": True})
+        self._assert_status_code_is(response, 200)
+        archive_paths = [archive_path for _, archive_path in response.json()]
+        assert archive_paths == ["contents/1.my_cool_name.data"]
 
     def test_index_hda_summary(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id)
