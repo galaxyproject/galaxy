@@ -13,7 +13,7 @@ from galaxy.webapps.galaxy.services.library_contents import LibraryContentsServi
 
 class TestLibraryContentsService:
     def setup_method(self):
-        mock_trans = galaxy_mock.MockTrans()
+        mock_trans = self.mock_trans = galaxy_mock.MockTrans()
         self.trans = cast(ProvidesUserContext, mock_trans)
         self.app = self.trans.app
         Security.security = self.app.security
@@ -39,7 +39,7 @@ class TestLibraryContentsService:
         pending_ld = LibraryDataset(folder=folder, name="pending.bed")
         sa_session.add_all((ld, ldda, pending_ld))
         sa_session.commit()
-        self.trans.user_is_admin = False
+        self.mock_trans.user_is_admin = False
 
         result = self.service.index(self.trans, library.id)
 
