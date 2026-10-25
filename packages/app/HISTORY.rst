@@ -3,11 +3,46 @@ History
 
 .. to_doc
 
------------
-25.1.3.dev0
------------
+-------------------
+25.1.3 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix dataset collection tag duplication when copying a history by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21984 <https://github.com/galaxyproject/galaxy/pull/21984>`_
+* Restore file doesn't match sniffed datatype message by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21988 <https://github.com/galaxyproject/galaxy/pull/21988>`_
+* Do not queue paused jobs by `@martenson <https://github.com/martenson>`_ in `#22156 <https://github.com/galaxyproject/galaxy/pull/22156>`_
+* Fix flaky job search for HDCA inputs on PostgreSQL by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22290 <https://github.com/galaxyproject/galaxy/pull/22290>`_
+* Use correct timezone to compare step scheduling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22446 <https://github.com/galaxyproject/galaxy/pull/22446>`_
+* Backport FastAPI/Starlette upgrade for BadHost (CVE-2026-48710) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22778 <https://github.com/galaxyproject/galaxy/pull/22778>`_
+* Fix NameError, move assignation of days prior to get_failed_jobs call by `@ccoulombe <https://github.com/ccoulombe>`_ in `#23053 <https://github.com/galaxyproject/galaxy/pull/23053>`_
+* Fix broken calls to \`\`InteractiveToolManager\`\` methods by `@nsoranzo <https://github.com/nsoranzo>`_ in `#23216 <https://github.com/galaxyproject/galaxy/pull/23216>`_
+* Use pydantic-aware serializer for celery control replies by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23525 <https://github.com/galaxyproject/galaxy/pull/23525>`_
+* Don't let extended metadata import set the live job's terminal state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23529 <https://github.com/galaxyproject/galaxy/pull/23529>`_
+* Fix \`attr-defined\` mypy error in \`test_expression_basics.py\` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#23569 <https://github.com/galaxyproject/galaxy/pull/23569>`_
+* Serialize runtime values of unresolved conditionals in populate_state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23649 <https://github.com/galaxyproject/galaxy/pull/23649>`_
+* Record export result before marking short term download ready by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23658 <https://github.com/galaxyproject/galaxy/pull/23658>`_
+* Fix job deletion racing handler enqueue by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23686 <https://github.com/galaxyproject/galaxy/pull/23686>`_
+* Fix 500 on reading pages with non-ASCII slugs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23854 <https://github.com/galaxyproject/galaxy/pull/23854>`_
+* Respect allow_uri_if_protocol for single deferred data inputs by `@davelopez <https://github.com/davelopez>`_ in `#24001 <https://github.com/galaxyproject/galaxy/pull/24001>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Run the ftp file source tests against a local ftp server by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24044 <https://github.com/galaxyproject/galaxy/pull/24044>`_
+* Fix tool help render race and TRS import test race by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24082 <https://github.com/galaxyproject/galaxy/pull/24082>`_
+* Bind OIDC account confirmation to the authenticated browser flow by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24084 <https://github.com/galaxyproject/galaxy/pull/24084>`_
+* Fix flaky test_timeout_kills_worker_under_waiting_wrapper by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24109 <https://github.com/galaxyproject/galaxy/pull/24109>`_
+* Validate preferred object store ids on tool runs and workflow invocations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24214 <https://github.com/galaxyproject/galaxy/pull/24214>`_
+* Fix dataset permissions set when upload and discovery jobs finish by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24233 <https://github.com/galaxyproject/galaxy/pull/24233>`_
+* Backport flaky test fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24251 <https://github.com/galaxyproject/galaxy/pull/24251>`_
+* Don't let resubmitted jobs block each other on concurrency limits by `@davelopez <https://github.com/davelopez>`_ in `#24257 <https://github.com/galaxyproject/galaxy/pull/24257>`_
+* Ignore stale user and history object store preferences by `@davelopez <https://github.com/davelopez>`_ in `#24280 <https://github.com/galaxyproject/galaxy/pull/24280>`_
+* Apply default permissions to discovered collection elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24284 <https://github.com/galaxyproject/galaxy/pull/24284>`_
+* Don't overwrite inputs when skipping database operations on nested collections by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24286 <https://github.com/galaxyproject/galaxy/pull/24286>`_
+* Update certifi for eMudhra intermediate cert compromise by `@natefoo <https://github.com/natefoo>`_ in `#24343 <https://github.com/galaxyproject/galaxy/pull/24343>`_
+* Match tool shed GUIDs when looking up job resource parameters by `@monsterlag <https://github.com/monsterlag>`_ in `#24355 <https://github.com/galaxyproject/galaxy/pull/24355>`_
+* Fix numeric column stats in tabular raw_data requests by `@davelopez <https://github.com/davelopez>`_ in `#24359 <https://github.com/galaxyproject/galaxy/pull/24359>`_
 
 -------------------
 25.1.2 (2026-03-09)

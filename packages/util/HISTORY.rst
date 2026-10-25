@@ -3,11 +3,19 @@ History
 
 .. to_doc
 
------------
-25.1.3.dev0
------------
+-------------------
+25.1.3 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Discard rest of line in chunks in iter_start_of_line by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22332 <https://github.com/galaxyproject/galaxy/pull/22332>`_
+* Fix tool help render race and TRS import test race by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24082 <https://github.com/galaxyproject/galaxy/pull/24082>`_
+* Backport flaky test fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24251 <https://github.com/galaxyproject/galaxy/pull/24251>`_
+* Skip Quay search tests on runtime API outages by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24432 <https://github.com/galaxyproject/galaxy/pull/24432>`_
 
 -------------------
 25.1.2 (2026-03-09)

@@ -3,11 +3,17 @@ History
 
 .. to_doc
 
------------
-25.1.3.dev0
------------
+-------------------
+25.1.3 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix \`\`preferred_object_store_id\`\` not respected for discovered outputs with extended metadata by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22056 <https://github.com/galaxyproject/galaxy/pull/22056>`_
+* Fix dataset permissions set when upload and discovery jobs finish by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24233 <https://github.com/galaxyproject/galaxy/pull/24233>`_
 
 -------------------
 25.1.2 (2026-03-09)

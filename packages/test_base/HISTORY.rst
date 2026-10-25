@@ -3,11 +3,18 @@ History
 
 .. to_doc
 
------------
-25.1.3.dev0
------------
+-------------------
+25.1.3 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Use pydantic-aware serializer for celery control replies by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23525 <https://github.com/galaxyproject/galaxy/pull/23525>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Apply default permissions to discovered collection elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24284 <https://github.com/galaxyproject/galaxy/pull/24284>`_
 
 -------------------
 25.1.2 (2026-03-09)
