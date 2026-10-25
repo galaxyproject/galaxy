@@ -81,14 +81,7 @@ class ConfigWatchers:
         [self.tool_config_watcher.watch_file(config) for config in self.tool_config_paths]
         [self.data_manager_config_watcher.watch_file(config) for config in self.data_manager_configs]
         for tool_data_path in self.tool_data_paths:
-            self.tool_data_watcher.watch_directory(
-                tool_data_path,
-                callback=lambda path: self.app.queue_worker.send_control_task(
-                    "reload_tool_data_tables", kwargs={"path": path}
-                ),
-                require_extensions=(".loc",),
-                recursive=True,
-            )
+            self._watch_tool_data_dir(tool_data_path)
         for job_rules_directory in self.job_rules_paths:
             self.job_rule_watcher.watch_directory(
                 job_rules_directory,
@@ -116,14 +109,17 @@ class ConfigWatchers:
         if hasattr(self.tool_data_watcher, "monitored_dirs"):
             for tool_data_table_path in self.tool_data_paths:
                 if tool_data_table_path not in self.tool_data_watcher.monitored_dirs:
-                    self.tool_data_watcher.watch_directory(
-                        tool_data_table_path,
-                        callback=lambda path: self.app.queue_worker.send_control_task(
-                            "reload_tool_data_tables", kwargs={"path": path}
-                        ),
-                        require_extensions=(".loc",),
-                        recursive=True,
-                    )
+                    self._watch_tool_data_dir(tool_data_table_path)
+
+    def _watch_tool_data_dir(self, directory):
+        self.tool_data_watcher.watch_directory(
+            directory,
+            callback=lambda path: self.app.queue_worker.send_control_task(
+                "reload_tool_data_tables", kwargs={"path": path}
+            ),
+            require_extensions=(".loc",),
+            recursive=True,
+        )
 
     @property
     def data_manager_configs(self):

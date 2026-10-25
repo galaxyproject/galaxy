@@ -1327,12 +1327,8 @@ class ToolDataTableManager(Dictifiable):
         try:
             table_elems = staging.load_from_config_file(config_filename, tool_data_path, from_shed_config=True)
             for name, table in staging.data_tables.items():
-                if existing := self.data_tables.get(name):
-                    assert type(existing) is type(table) or (
-                        isinstance(existing, TabularToolDataTable) and isinstance(table, TabularToolDataTable)
-                    ), f"Incompatible data table types for {name}"
-                    if isinstance(table, TabularToolDataTable):
-                        self.assert_data_table_consistency(name, table.columns)
+                if name in self.data_tables and isinstance(table, TabularToolDataTable):
+                    self.assert_data_table_consistency(name, table.columns)
         except Exception as exc:
             message = f"Error attempting to parse file {os.path.basename(config_filename)}: {util.unicodify(exc)}"
             log.debug(message, exc_info=True)
@@ -1386,13 +1382,6 @@ class ToolDataTableManager(Dictifiable):
                 staging._load_from_elements(
                     elements, source.filename, self.tool_data_path, source.from_shed_config, table_names
                 )
-        for name in table_names:
-            existing = self.data_tables.get(name)
-            rebuilt = staging.data_tables.get(name)
-            if existing is not None and rebuilt is not None:
-                assert type(existing) is type(rebuilt) or (
-                    isinstance(existing, TabularToolDataTable) and isinstance(rebuilt, TabularToolDataTable)
-                ), f"Incompatible data table types for {name}"
         for name in table_names:
             existing = self.data_tables.get(name)
             rebuilt = staging.data_tables.get(name)
