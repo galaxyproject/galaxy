@@ -461,6 +461,28 @@ def test_new_table_registration_notifies_peers_and_updates_watchers(tmp_path, re
     peer.watchers.update_watch_data_table_paths.assert_called_once()
 
 
+def test_multi_table_registration_sends_one_peer_reload(tmp_path):
+    local = write_config(tmp_path, "local", "hg38\tHuman\t/local\n")
+    managed = write_empty_config(tmp_path)
+    app = make_app(tmp_path, [local, managed], managed)
+    peer = make_app(tmp_path, [local, managed], managed)
+    loc = tmp_path / "incoming.loc"
+    loc.write_text("mm10\tMouse\t/new\n")
+    incoming = tmp_path / "incoming.xml"
+    incoming.write_text(f"""<tables>
+      <table name="references"><columns>value, name, path</columns><file path="{loc}" /></table>
+      <table name="new_table"><columns>value, name, path</columns><file path="{loc}" /></table>
+    </tables>""")
+    _, error = app.tool_data_tables.add_new_entries_from_config_file(incoming, None, managed, persist=True)
+    assert not error
+    assert app.queue_worker.control_tasks == [
+        ("reload_tool_data_tables", True, {"table_name": ["references", "new_table"]})
+    ]
+    reload_tool_data_tables(peer, **app.queue_worker.control_tasks[0][2])
+    assert paths(peer.tool_data_tables) == paths(app.tool_data_tables) == ["/local", "/new"]
+    assert peer.tool_data_tables["new_table"].data == app.tool_data_tables["new_table"].data
+
+
 def test_registration_and_reload_without_application_watchers(tmp_path):
     local = write_config(tmp_path, "local", "hg38\tHuman\t/local\n")
     managed = write_empty_config(tmp_path)
