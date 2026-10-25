@@ -663,7 +663,17 @@ class NavigatesGalaxy(HasDriver):
         target_card = self.get_history_card(card_name)
 
         if is_in_extra:
+            # Bootstrap-vue keeps menu items in the DOM for every card, so look up the item
+            # within target_card and wait for its dropdown to open before clicking it.
             target_card.find_element(By.CSS_SELECTOR, '[id^="g-card-extra-actions-history-"]').click()
+            action_element = target_card.find_element(By.CSS_SELECTOR, action_selector)
+            self._wait_on(
+                lambda *_: action_element.is_displayed(),
+                f"history card action [{action_selector}] to be displayed",
+                wait_type=self.wait_types.UX_TRANSITION,
+            )
+            action_element.click()
+            return
 
         action_chains = self.action_chains()
         action_selector = target_card.find_element(By.CSS_SELECTOR, action_selector)
