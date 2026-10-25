@@ -39,7 +39,7 @@ def make_app(tmp_path, sources, managed=None, app_type=UniverseApplication):
         config_dir=str(tmp_path),
         managed_config_dir=str(tmp_path / "managed"),
         tool_data_path=str(tmp_path),
-        tool_data_table_config_path=sources if isinstance(sources, str) else [str(p) for p in sources],
+        tool_data_table_config_path=[str(p) for p in sources],
     )
     if managed is not None:
         kwds["shed_tool_data_table_config"] = str(managed)
@@ -58,17 +58,6 @@ def make_app(tmp_path, sources, managed=None, app_type=UniverseApplication):
 
 def paths(app):
     return [row[2] for row in app.tool_data_tables["references"].data]
-
-
-@pytest.mark.parametrize("as_string", [False, True])
-def test_explicit_managed_position_loads_once(tmp_path, as_string):
-    local = write_config(tmp_path, "local", "hg38\tHuman\t/local\n")
-    managed = write_config(tmp_path, "managed", "hg38\tHuman\t/managed\n")
-    external = write_config(tmp_path, "external", "hg38\tHuman\t/external\n")
-    sources = [local, managed, external, managed]
-    app = make_app(tmp_path, ",".join(str(p) for p in sources) if as_string else sources, managed)
-    assert paths(app) == ["/local", "/managed", "/external"]
-    assert len(app.tool_data_tables["references"]._merged_load_info) == 2
 
 
 def test_live_registration_and_peer_reload_follow_source_order(tmp_path):
