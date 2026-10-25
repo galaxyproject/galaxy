@@ -332,7 +332,7 @@ def to_cwl(
             rval = {}
             for element in value.elements:
                 rval[element.element_identifier] = to_cwl(
-                    element.element_object,
+                    element,
                     hda_references=hda_references,
                     step=step,
                     compute_environment=compute_environment,

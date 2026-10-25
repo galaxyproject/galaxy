@@ -186,6 +186,38 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             output_content = self.dataset_populator.get_history_dataset_content(history_id)
         assert output_content == "reads.txt\n"
 
+    def test_run_paired_input_writes_element_identifiers(self):
+        tool = {
+            **TOOL_WITH_SHELL_COMMAND,
+            "shell_command": "echo '$(inputs.input.forward.element_identifier) $(inputs.input.reverse.element_identifier)' > output.fastq",
+            "inputs": [{"type": "data_collection", "name": "input", "collection_type": "paired"}],
+        }
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**tool))
+            r1 = self.dataset_populator.new_dataset(history_id=history_id, content="a", name="r1.fq")
+            r2 = self.dataset_populator.new_dataset(history_id=history_id, content="b", name="r2.fq")
+            hdca = self.dataset_collection_populator.create_pair_in_history(
+                history_id,
+                direct_upload=False,
+                element_identifiers=[
+                    {"name": "forward", "src": "hda", "id": r1["id"]},
+                    {"name": "reverse", "src": "hda", "id": r2["id"]},
+                ],
+                wait=True,
+            ).json()
+            self._run(
+                history_id=history_id,
+                tool_uuid=dynamic_tool["uuid"],
+                inputs={"input": {"src": "hdca", "id": hdca["id"]}},
+                assert_ok=True,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        assert output_content == "forward reverse\n"
+
     def _run_mapped_over_list(
         self, tool: dict[str, Any], elements: list[tuple[str, str]], ext: str = "txt"
     ) -> dict[str, str]:
