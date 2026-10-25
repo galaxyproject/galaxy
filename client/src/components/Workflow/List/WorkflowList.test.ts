@@ -12,13 +12,20 @@ import { useUserStore } from "@/stores/userStore";
 
 import { generateRandomWorkflowList } from "../testUtils";
 
+import WorkflowCardList from "./WorkflowCardList.vue";
 import WorkflowList from "./WorkflowList.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const { server, http } = useServerMock();
 
-vi.mock("@/api/workflows", () => ({
+const { confirm } = vi.hoisted(() => ({ confirm: vi.fn() }));
+
+vi.mock("@/api/workflows", async (importOriginal) => ({
+    ...(await importOriginal<object>()),
     loadWorkflows: vi.fn(),
+}));
+vi.mock("@/composables/confirmDialog", () => ({
+    useConfirmDialog: () => ({ confirm }),
 }));
 
 const mockedLoadWorkflows = loadWorkflows as ReturnType<typeof vi.fn>;
@@ -35,11 +42,12 @@ const FAKE_USER = getFakeRegisteredUser({
     username: FAKE_USERNAME,
 });
 
-async function mountWorkflowList() {
+async function mountWorkflowList(activeList: "my" | "shared_with_me" = "my") {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     const wrapper = mount(WorkflowList as object, {
+        props: { activeList },
         global: localVue,
         pinia,
         router,
@@ -51,6 +59,12 @@ async function mountWorkflowList() {
     await flushPromises();
 
     return wrapper;
+}
+
+function deleteKeyEvent(): KeyboardEvent {
+    const target = document.createElement("div");
+    target.classList.add("workflow-card-in-list");
+    return { key: "Delete", shiftKey: false, target, preventDefault: () => {} } as unknown as KeyboardEvent;
 }
 
 describe("WorkflowList", () => {
@@ -133,5 +147,18 @@ describe("WorkflowList", () => {
 
         expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("");
         await flushPromises();
+    });
+
+    it("asks to delete on the Delete key in my view", async () => {
+        const workflows = generateRandomWorkflowList(FAKE_USERNAME, 1);
+        mockedLoadWorkflows.mockResolvedValue({ data: workflows, totalMatches: 1 });
+        confirm.mockResolvedValue(false);
+        const wrapper = await mountWorkflowList("my");
+
+        wrapper.findComponent(WorkflowCardList).vm.$emit("on-key-down", workflows[0], deleteKeyEvent());
+        await flushPromises();
+
+        expect(confirm).toHaveBeenCalledTimes(1);
+        expect(confirm.mock.calls[0]?.[1]).toMatchObject({ title: "Delete workflow" });
     });
 });
