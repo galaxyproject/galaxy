@@ -2534,8 +2534,12 @@ class MinimalJobWrapper(HasResourceParameters):
         self._set_unknown_output_extensions_to_data(job)
         self._fix_output_permissions()
 
-        # Outputs and the final job state are committed together, so readers never
-        # see finished outputs on a job that is still running.
+        # Outputs, metrics and the final job state are committed together, so
+        # readers never see finished outputs on a job that is still running, or
+        # a finished job without its metrics.
+        if not job.tasks:
+            # If job was composed of tasks, don't attempt to recollect statistics
+            self._collect_metrics(job, job_metrics_directory)
         job.set_state(final_job_state)
         self.sa_session.commit()
 
@@ -2544,9 +2548,6 @@ class MinimalJobWrapper(HasResourceParameters):
         # run in their own short transaction after the outputs are visible,
         # not in the one that holds the user's disk usage row.
         job.touch_dependent_update_times()
-        if not job.tasks:
-            # If job was composed of tasks, don't attempt to recollect statistics
-            self._collect_metrics(job, job_metrics_directory)
         self.sa_session.commit()
         if job.state == job.states.ERROR:
             self._report_error()

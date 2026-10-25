@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from sqlalchemy import event
 
 from galaxy import (
@@ -40,11 +42,28 @@ class TestJobWrapperFinish(TestCase, UsesTools):
         self.tear_down_app()
 
     def test_outputs_and_final_job_state_are_committed_together(self):
+        committed = self._finish_and_record_commits()
+
+        assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
+        for job_state, dataset_state, _ in committed:
+            if dataset_state == model.Dataset.states.OK:
+                assert job_state == model.Job.states.OK
+
+    def test_metrics_are_committed_with_final_job_state(self):
+        with patch.object(self.app.job_metrics, "collect_properties", return_value={"core": {"runtime_seconds": 1}}):
+            committed = self._finish_and_record_commits()
+
+        assert committed[-1] == (model.Job.states.OK, model.Dataset.states.OK, True)
+        for job_state, _, has_metrics in committed:
+            if job_state == model.Job.states.OK:
+                assert has_metrics
+
+    def _finish_and_record_commits(self):
         session = self.app.model.context()
         committed = []
 
         def record(_session):
-            committed.append((self.job.state, self.dataset.state))
+            committed.append((self.job.state, self.dataset.state, bool(self.job.numeric_metrics)))
 
         event.listen(session, "before_commit", record)
         try:
@@ -52,8 +71,4 @@ class TestJobWrapperFinish(TestCase, UsesTools):
             wrapper.finish("", "", tool_exit_code=0)
         finally:
             event.remove(session, "before_commit", record)
-
-        assert committed[-1] == (model.Job.states.OK, model.Dataset.states.OK)
-        for job_state, dataset_state in committed:
-            if dataset_state == model.Dataset.states.OK:
-                assert job_state == model.Job.states.OK
+        return committed
