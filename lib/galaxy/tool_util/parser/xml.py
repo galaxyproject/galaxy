@@ -22,6 +22,7 @@ from pydantic import TypeAdapter
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
+    COMPOSITE_DATA_RENAME_PREFIX,
     DEFAULT_DECOMPRESS,
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
@@ -1209,7 +1210,7 @@ def __parse_param_elem(param_elem, i=0) -> ToolSourceTestInput:
                 if composite_data_name is None:
                     # Generate a unique name; each test uses a
                     # fresh history.
-                    composite_data_name = f"_COMPOSITE_RENAMED_t{i}_{uuid.uuid1().hex}"
+                    composite_data_name = f"{COMPOSITE_DATA_RENAME_PREFIX}t{i}_{uuid.uuid1().hex}"
             elif child.tag == "metadata":
                 attrib["metadata"][child.get("name")] = child.get("value")
             elif child.tag == "edit_attributes":

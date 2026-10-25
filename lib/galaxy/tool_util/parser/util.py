@@ -44,6 +44,8 @@ DEFAULT_PIN_LABELS = None
 DEFAULT_SORT = False
 DEFAULT_DECOMPRESS = False
 
+COMPOSITE_DATA_RENAME_PREFIX = "_COMPOSITE_RENAMED_"
+
 
 def is_dict(item):
     return isinstance(item, dict) or isinstance(item, OrderedDict)
