@@ -3,11 +3,53 @@ History
 
 .. to_doc
 
------------
-26.1.2.dev0
------------
+-------------------
+26.1.2 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Carry the landing-request destination through OIDC login by `@dannon <https://github.com/dannon>`_ in `#23274 <https://github.com/galaxyproject/galaxy/pull/23274>`_
+* Fixes for package installed Galaxy. by `@jmchilton <https://github.com/jmchilton>`_ in `#23360 <https://github.com/galaxyproject/galaxy/pull/23360>`_
+* Gate user tool build endpoints by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23390 <https://github.com/galaxyproject/galaxy/pull/23390>`_
+* Report datasets left shared when making a history private by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23527 <https://github.com/galaxyproject/galaxy/pull/23527>`_
+* Fix MCP endpoint routing and lifespan under a URL prefix by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23561 <https://github.com/galaxyproject/galaxy/pull/23561>`_
+* Fix 500 on the dataset tool-markdown report endpoint by `@jmchilton <https://github.com/jmchilton>`_ in `#23599 <https://github.com/galaxyproject/galaxy/pull/23599>`_
+* Return 404 when there is no most recently used history by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23632 <https://github.com/galaxyproject/galaxy/pull/23632>`_
+* Return 400 for non-integer dataset ids in /root/display_as by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23650 <https://github.com/galaxyproject/galaxy/pull/23650>`_
+* Fix unusable admin quota forms on large instances by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23673 <https://github.com/galaxyproject/galaxy/pull/23673>`_
+* Fix user-defined tool references in workflow steps by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23694 <https://github.com/galaxyproject/galaxy/pull/23694>`_
+* Fix tool recommendations for anonymous Galaxy sessions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23745 <https://github.com/galaxyproject/galaxy/pull/23745>`_
+* End SSE streams when a gunicorn worker starts draining by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23798 <https://github.com/galaxyproject/galaxy/pull/23798>`_
+* Disable RST file insertion in tool help and bound the help cache by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23825 <https://github.com/galaxyproject/galaxy/pull/23825>`_
+* Fix 500 on reading pages with non-ASCII slugs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23854 <https://github.com/galaxyproject/galaxy/pull/23854>`_
+* Keep numeric changeset hashes as strings when installing shed repositories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23875 <https://github.com/galaxyproject/galaxy/pull/23875>`_
+* Fix serving and downloading of directory-backed datasets (Zarr, OME-Zarr, Directory subclasses) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23953 <https://github.com/galaxyproject/galaxy/pull/23953>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Backport chat proxy fixes from #24032 to release_26.1 by `@guerler <https://github.com/guerler>`_ in `#24047 <https://github.com/galaxyproject/galaxy/pull/24047>`_
+* Bind OIDC account confirmation to the authenticated browser flow by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24084 <https://github.com/galaxyproject/galaxy/pull/24084>`_
+* Return users to their destination after login, add allowed_login_redirect_hosts by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24111 <https://github.com/galaxyproject/galaxy/pull/24111>`_
+* Reject unknown workflow scheduler IDs instead of queueing invocations that never run by `@jmchilton <https://github.com/jmchilton>`_ in `#24169 <https://github.com/galaxyproject/galaxy/pull/24169>`_
+* Show workflow integer/float input bounds on the run form by `@jmchilton <https://github.com/jmchilton>`_ in `#24212 <https://github.com/galaxyproject/galaxy/pull/24212>`_
+* Validate preferred object store ids on tool runs and workflow invocations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24214 <https://github.com/galaxyproject/galaxy/pull/24214>`_
+* Better API Handling for Custom Builds by `@jmchilton <https://github.com/jmchilton>`_ in `#24310 <https://github.com/galaxyproject/galaxy/pull/24310>`_
+* Return 400 when a custom build's dataset can't be converted to len by `@jmchilton <https://github.com/jmchilton>`_ in `#24313 <https://github.com/galaxyproject/galaxy/pull/24313>`_
+
+============
+Enhancements
+============
+
+* Add embedded authoring reference for user-defined tools by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23365 <https://github.com/galaxyproject/galaxy/pull/23365>`_
+* Backport test CI time fixes: pytest-xdist and parallel docs build by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24336 <https://github.com/galaxyproject/galaxy/pull/24336>`_
+
+=============
+Other changes
+=============
+
+* Merge release_26.0 into release_26.1 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24248 <https://github.com/galaxyproject/galaxy/pull/24248>`_
 
 -------------------
 26.0.2 (2026-10-25)

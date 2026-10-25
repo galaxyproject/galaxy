@@ -3,11 +3,36 @@ History
 
 .. to_doc
 
------------
-26.1.2.dev0
------------
+-------------------
+26.1.2 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fixes for package installed Galaxy. by `@jmchilton <https://github.com/jmchilton>`_ in `#23360 <https://github.com/galaxyproject/galaxy/pull/23360>`_
+* Fix failing API tests on release_26.1 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23405 <https://github.com/galaxyproject/galaxy/pull/23405>`_
+* Document unique server names for multi-instance Gunicorn deployments by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23488 <https://github.com/galaxyproject/galaxy/pull/23488>`_
+* Fix built-in converter registration during toolbox reload by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23797 <https://github.com/galaxyproject/galaxy/pull/23797>`_
+* Fix OIDC PKCE login by carrying the code verifier in a cookie by `@bgruening <https://github.com/bgruening>`_ in `#23836 <https://github.com/galaxyproject/galaxy/pull/23836>`_
+* Apply max_discovered_files to collection operation tools that multiply inputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23859 <https://github.com/galaxyproject/galaxy/pull/23859>`_
+* Return users to their destination after login, add allowed_login_redirect_hosts by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24111 <https://github.com/galaxyproject/galaxy/pull/24111>`_
+* Ignore stale user and history object store preferences by `@davelopez <https://github.com/davelopez>`_ in `#24280 <https://github.com/galaxyproject/galaxy/pull/24280>`_
+* Match tool shed GUIDs when looking up job resource parameters by `@monsterlag <https://github.com/monsterlag>`_ in `#24355 <https://github.com/galaxyproject/galaxy/pull/24355>`_
+
+============
+Enhancements
+============
+
+* Backport RMSX datatype registration and viewer 0.0.4 to Galaxy 26.1 by `@Finn2400 <https://github.com/Finn2400>`_ in `#23531 <https://github.com/galaxyproject/galaxy/pull/23531>`_
+* Add TensorBoardEvents datatype and sample file for tfevents by `@IvoLeist <https://github.com/IvoLeist>`_ in `#23553 <https://github.com/galaxyproject/galaxy/pull/23553>`_
+* Add Montreal Forced Aligner datatypes by `@IvoLeist <https://github.com/IvoLeist>`_ in `#23893 <https://github.com/galaxyproject/galaxy/pull/23893>`_
+* Add datatypes sniffer: alto/page/abbyy XML and hOCR (HTML) by `@IvoLeist <https://github.com/IvoLeist>`_ in `#23916 <https://github.com/galaxyproject/galaxy/pull/23916>`_
+* backport #23353 (mzlite datatype) by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#24000 <https://github.com/galaxyproject/galaxy/pull/24000>`_
+* Backport test CI time fixes: pytest-xdist and parallel docs build by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24336 <https://github.com/galaxyproject/galaxy/pull/24336>`_
+* add embl.gz as auto compress embl by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#24403 <https://github.com/galaxyproject/galaxy/pull/24403>`_
 
 -------------------
 26.0.2 (2026-10-25)

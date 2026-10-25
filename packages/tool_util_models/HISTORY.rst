@@ -3,11 +3,31 @@ History
 
 .. to_doc
 
------------
-26.1.2.dev0
------------
+-------------------
+26.1.2 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Harden user-defined tool output declarations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23388 <https://github.com/galaxyproject/galaxy/pull/23388>`_
+* Fix collection output assertions in workflow tests by `@jmchilton <https://github.com/jmchilton>`_ in `#23554 <https://github.com/galaxyproject/galaxy/pull/23554>`_
+* Fix dangling discriminator mapping in standalone tool state JSON schemas by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23614 <https://github.com/galaxyproject/galaxy/pull/23614>`_
+* Stop filling user-defined tool output labels as Cheetah templates by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23803 <https://github.com/galaxyproject/galaxy/pull/23803>`_
+* Disable RST file insertion in tool help and bound the help cache by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23825 <https://github.com/galaxyproject/galaxy/pull/23825>`_
+* Keep config file links inside the job working directory by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23826 <https://github.com/galaxyproject/galaxy/pull/23826>`_
+* Restrict from_work_dir paths of user-defined tools and shell-quote the copy command by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23840 <https://github.com/galaxyproject/galaxy/pull/23840>`_
+* Validate stored user-defined tools before loading them by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23841 <https://github.com/galaxyproject/galaxy/pull/23841>`_
+* Don't read files or evaluate Python from untrusted tools in the Tool Shed by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24239 <https://github.com/galaxyproject/galaxy/pull/24239>`_
+* Keep workflow parameter input validators as declared by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24282 <https://github.com/galaxyproject/galaxy/pull/24282>`_
+
+============
+Enhancements
+============
+
+* Add embedded authoring reference for user-defined tools by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23365 <https://github.com/galaxyproject/galaxy/pull/23365>`_
 
 -------------------
 26.0.2 (2026-10-25)

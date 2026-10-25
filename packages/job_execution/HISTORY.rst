@@ -3,11 +3,18 @@ History
 
 .. to_doc
 
------------
-26.1.2.dev0
------------
+-------------------
+26.1.2 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Harden user-defined tool output declarations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23388 <https://github.com/galaxyproject/galaxy/pull/23388>`_
+* Harden tool-provided dynamic output collection by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23404 <https://github.com/galaxyproject/galaxy/pull/23404>`_
+* Fix dataset permissions set when upload and discovery jobs finish by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24233 <https://github.com/galaxyproject/galaxy/pull/24233>`_
 
 -------------------
 26.0.2 (2026-10-25)

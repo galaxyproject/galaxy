@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-26.1.2.dev0
------------
+-------------------
+26.1.2 (2026-10-25)
+-------------------
 
 
+============
+Enhancements
+============
+
+* add title for job metric cgroups v1 memory.oom_control.oom_kill by `@cat-bro <https://github.com/cat-bro>`_ in `#23383 <https://github.com/galaxyproject/galaxy/pull/23383>`_
 
 -------------------
 26.0.2 (2026-10-25)

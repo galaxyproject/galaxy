@@ -3,11 +3,34 @@ History
 
 .. to_doc
 
------------
-26.1.2.dev0
------------
+-------------------
+26.1.2 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix TestPublishedHistories Selenium failures by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23419 <https://github.com/galaxyproject/galaxy/pull/23419>`_
+* Fix flaky datatype selection in workflow editor selenium tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23435 <https://github.com/galaxyproject/galaxy/pull/23435>`_
+* Wait for upload rows to be submitted before closing the upload dialog by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23443 <https://github.com/galaxyproject/galaxy/pull/23443>`_
+* Fade in the workflow run settings panel instead of scaling it by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23612 <https://github.com/galaxyproject/galaxy/pull/23612>`_
+* Fix unusable admin quota forms on large instances by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23673 <https://github.com/galaxyproject/galaxy/pull/23673>`_
+* Restore batch info for collections mapped over a collection input by `@jmchilton <https://github.com/jmchilton>`_ in `#24223 <https://github.com/galaxyproject/galaxy/pull/24223>`_
+* Run FTP user file source Selenium test against a local server by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24360 <https://github.com/galaxyproject/galaxy/pull/24360>`_
+
+============
+Enhancements
+============
+
+* Backport test CI time fixes: pytest-xdist and parallel docs build by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24336 <https://github.com/galaxyproject/galaxy/pull/24336>`_
+
+=============
+Other changes
+=============
+
+* Merge release_25.1 into release_26.0 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24274 <https://github.com/galaxyproject/galaxy/pull/24274>`_
 
 -------------------
 26.0.2 (2026-10-25)
