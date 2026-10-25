@@ -1,3 +1,6 @@
+import json
+from typing import Any
+
 WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES = """
 class: GalaxyWorkflow
 doc: |
@@ -1375,3 +1378,25 @@ image_input_1:
   file_type: png
   name: first test image
 """
+
+
+def parameter_input_workflow(label: str, parameter_type: str, validators: list[dict[str, Any]]) -> dict[str, Any]:
+    """Native (.ga) workflow with one parameter input declaring ``validators`` (format2 does not carry them)."""
+    tool_state = {"parameter_type": parameter_type, "optional": False, "validators": validators}
+    return {
+        "a_galaxy_workflow": "true",
+        "format-version": "0.1",
+        "name": "parameter input validators",
+        "annotation": "",
+        "steps": {
+            "0": {
+                "id": 0,
+                "type": "parameter_input",
+                "label": label,
+                "tool_state": json.dumps(tool_state),
+                "input_connections": {},
+                "position": {"left": 0, "top": 0},
+                "workflow_outputs": [],
+            }
+        },
+    }
