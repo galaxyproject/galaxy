@@ -105,6 +105,28 @@ class TestHistorySharing(SeleniumTestCase, UsesUploadActivity):
         response = self.api_get(f"histories/{history_id}", raw=True)
         assert response.status_code == 403
 
+    @selenium_test
+    def test_bulk_unshare_with_me(self):
+        kept_name, *removed_names = ["Kept shared history", "Bulk shared history 1", "Bulk shared history 2"]
+        kept_id, *removed_ids = self.setup_histories_shared_with_new_user([kept_name, *removed_names])
+        self.navigate_to_histories_shared_with_me_page()
+        shared_histories = self.components.shared_histories
+        for history_id in [kept_id, *removed_ids]:
+            shared_histories.history_card(history_id=history_id).wait_for_visible()
+
+        self.toggle_card_selection_in_list("#history-list", removed_names)
+        assert "Remove from Shared (2)" in shared_histories.bulk_unshare_button.wait_for_text()
+        shared_histories.bulk_unshare_button.wait_for_and_click()
+        assert "Remove 2 histories" in self.components.confirm_dialog.message.wait_for_text()
+        self.screenshot("history_sharing_bulk_unshare_with_me_confirm")
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+
+        for history_id in removed_ids:
+            shared_histories.history_card(history_id=history_id).wait_for_absent()
+            assert self.api_get(f"histories/{history_id}", raw=True).status_code == 403
+        shared_histories.history_card(history_id=kept_id).wait_for_visible()
+        self.screenshot("history_sharing_bulk_unshare_with_me_removed")
+
     def setup_histories_shared_with_new_user(self, names):
         """Owner shares one API-created history per name with a new recipient, who stays logged in."""
         self.register(self._get_random_email())
