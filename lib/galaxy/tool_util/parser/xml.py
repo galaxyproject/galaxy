@@ -1214,7 +1214,7 @@ def __parse_param_elem(param_elem, i=0) -> ToolSourceTestInput:
             elif child.tag == "metadata":
                 attrib["metadata"][child.get("name")] = child.get("value")
             elif child.tag == "edit_attributes":
-                attrib["edit_attributes"].append(child)
+                attrib["edit_attributes"].append(dict(child.attrib))
             elif child.tag == "collection":
                 attrib["collection"] = _test_collection_def_dict(child)
         if composite_data_name:
