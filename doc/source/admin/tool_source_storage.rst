@@ -309,7 +309,7 @@ Applying Local Tool Edits
 A toolbox reload (``PUT /api/configuration/toolbox``) re-indexes tool files
 in writable stores whose contents changed since they were indexed. Edits made
 only to an imported macro file are not detected this way; run
-``populate_store.py``, or keep watch mode running, to pick those up.
+``populate_store.py --full``, or keep watch mode running, to pick those up.
 
 Troubleshooting
 ---------------
