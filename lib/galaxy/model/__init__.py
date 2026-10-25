@@ -5856,7 +5856,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         for copied_hda in self.copied_to_history_dataset_associations:
             copied_hda.copy_from(self, include_tags=include_tags, include_metadata=include_metadata)
 
-        if old_dataset:
+        # A cached job's structured collection output reaches the same HDA as both a job output
+        # and a collection element, so the second copy finds the dataset already in place.
+        if old_dataset and old_dataset is not self.dataset:
             old_dataset.full_delete()
 
     def copy(self, parent_id=None, copy_tags=None, flush=True, copy_hid=True, new_name=None):

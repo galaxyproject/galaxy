@@ -874,20 +874,23 @@ steps:
         self._assert_pair_matches(history_id, mapped, plain)
 
     def _assert_pair_matches(self, history_id, cached, original):
-        def pair_dataset_ids(run_response):
+        def pair_datasets(run_response):
             hdca_id = (run_response["output_collections"] or run_response["implicit_collections"])[0]["id"]
             hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
             elements = hdca["elements"]
             if elements[0]["element_type"] == "dataset_collection":
                 elements = elements[0]["object"]["elements"]
             return {
-                e["element_identifier"]: self.dataset_populator.get_history_dataset_details(
-                    history_id, dataset_id=e["object"]["id"]
-                )["dataset_id"]
+                e["element_identifier"]: (
+                    self.dataset_populator.get_history_dataset_details(history_id, dataset_id=e["object"]["id"])[
+                        "dataset_id"
+                    ],
+                    self.dataset_populator.get_history_dataset_content(history_id, dataset_id=e["object"]["id"]),
+                )
                 for e in elements
             }
 
-        assert pair_dataset_ids(cached) == pair_dataset_ids(original)
+        assert pair_datasets(cached) == pair_datasets(original)
 
     def _list_of_existing_dataset(self, history_id):
         # Element identifier differs from the dataset name.
