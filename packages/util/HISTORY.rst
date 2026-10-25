@@ -10,6 +10,19 @@ History
 
 
 -------------------
+26.0.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix tool help render race and TRS import test race by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24082 <https://github.com/galaxyproject/galaxy/pull/24082>`_
+* Backport flaky test fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24251 <https://github.com/galaxyproject/galaxy/pull/24251>`_
+* Skip Quay search tests on runtime API outages by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24432 <https://github.com/galaxyproject/galaxy/pull/24432>`_
+
+-------------------
 25.1.3 (2026-10-25)
 -------------------
 

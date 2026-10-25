@@ -10,6 +10,53 @@ History
 
 
 -------------------
+26.0.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Throws error if workflow step dict has no id by `@guerler <https://github.com/guerler>`_ in `#22593 <https://github.com/galaxyproject/galaxy/pull/22593>`_
+* Require gravity 1.2.2 by `@jdavcs <https://github.com/jdavcs>`_ in `#23050 <https://github.com/galaxyproject/galaxy/pull/23050>`_
+* Fix NameError, move assignation of days prior to get_failed_jobs call by `@ccoulombe <https://github.com/ccoulombe>`_ in `#23053 <https://github.com/galaxyproject/galaxy/pull/23053>`_
+* Fix clean jwd task by `@davelopez <https://github.com/davelopez>`_ in `#23121 <https://github.com/galaxyproject/galaxy/pull/23121>`_
+* Fix AssertionError remapping malformed galaxy markdown blocks by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23176 <https://github.com/galaxyproject/galaxy/pull/23176>`_
+* Fix broken calls to \`\`InteractiveToolManager\`\` methods by `@nsoranzo <https://github.com/nsoranzo>`_ in `#23216 <https://github.com/galaxyproject/galaxy/pull/23216>`_
+* Use pydantic-aware serializer for celery control replies by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23525 <https://github.com/galaxyproject/galaxy/pull/23525>`_
+* Don't let extended metadata import set the live job's terminal state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23529 <https://github.com/galaxyproject/galaxy/pull/23529>`_
+* Fix \`attr-defined\` mypy error in \`test_expression_basics.py\` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#23569 <https://github.com/galaxyproject/galaxy/pull/23569>`_
+* Complete subworkflows before their parent invocation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23581 <https://github.com/galaxyproject/galaxy/pull/23581>`_
+* Serialize runtime values of unresolved conditionals in populate_state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23649 <https://github.com/galaxyproject/galaxy/pull/23649>`_
+* Record export result before marking short term download ready by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23658 <https://github.com/galaxyproject/galaxy/pull/23658>`_
+* Record export result before marking short term download ready by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23660 <https://github.com/galaxyproject/galaxy/pull/23660>`_
+* Fix job deletion racing handler enqueue by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23686 <https://github.com/galaxyproject/galaxy/pull/23686>`_
+* Bug fix - Galaxy would delete composite files it shouldn't during data_fetch.py sometimes. by `@jmchilton <https://github.com/jmchilton>`_ in `#23733 <https://github.com/galaxyproject/galaxy/pull/23733>`_
+* Fix 500 on reading pages with non-ASCII slugs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23854 <https://github.com/galaxyproject/galaxy/pull/23854>`_
+* Respect allow_uri_if_protocol for single deferred data inputs by `@davelopez <https://github.com/davelopez>`_ in `#24001 <https://github.com/galaxyproject/galaxy/pull/24001>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Run the ftp file source tests against a local ftp server by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24044 <https://github.com/galaxyproject/galaxy/pull/24044>`_
+* Fix tool help render race and TRS import test race by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24082 <https://github.com/galaxyproject/galaxy/pull/24082>`_
+* Bind OIDC account confirmation to the authenticated browser flow by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24084 <https://github.com/galaxyproject/galaxy/pull/24084>`_
+* Fix flaky test_timeout_kills_worker_under_waiting_wrapper by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24109 <https://github.com/galaxyproject/galaxy/pull/24109>`_
+* Derive OIDC username from email when IdP sends no username claim by `@jdavcs <https://github.com/jdavcs>`_ in `#24129 <https://github.com/galaxyproject/galaxy/pull/24129>`_
+* Fix workflow scheduler missing history updates committed mid-attempt by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24192 <https://github.com/galaxyproject/galaxy/pull/24192>`_
+* Show workflow integer/float input bounds on the run form by `@jmchilton <https://github.com/jmchilton>`_ in `#24212 <https://github.com/galaxyproject/galaxy/pull/24212>`_
+* Validate preferred object store ids on tool runs and workflow invocations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24214 <https://github.com/galaxyproject/galaxy/pull/24214>`_
+* Fix dataset permissions set when upload and discovery jobs finish by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24233 <https://github.com/galaxyproject/galaxy/pull/24233>`_
+* Backport flaky test fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24251 <https://github.com/galaxyproject/galaxy/pull/24251>`_
+* Don't let resubmitted jobs block each other on concurrency limits by `@davelopez <https://github.com/davelopez>`_ in `#24257 <https://github.com/galaxyproject/galaxy/pull/24257>`_
+* Ignore stale user and history object store preferences by `@davelopez <https://github.com/davelopez>`_ in `#24280 <https://github.com/galaxyproject/galaxy/pull/24280>`_
+* Apply default permissions to discovered collection elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24284 <https://github.com/galaxyproject/galaxy/pull/24284>`_
+* Don't overwrite inputs when skipping database operations on nested collections by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24286 <https://github.com/galaxyproject/galaxy/pull/24286>`_
+* Check an access token's issuer before looking up its signing key by `@dannon <https://github.com/dannon>`_ in `#24340 <https://github.com/galaxyproject/galaxy/pull/24340>`_
+* Update certifi for eMudhra intermediate cert compromise by `@natefoo <https://github.com/natefoo>`_ in `#24343 <https://github.com/galaxyproject/galaxy/pull/24343>`_
+* Match tool shed GUIDs when looking up job resource parameters by `@monsterlag <https://github.com/monsterlag>`_ in `#24355 <https://github.com/galaxyproject/galaxy/pull/24355>`_
+* Fix numeric column stats in tabular raw_data requests by `@davelopez <https://github.com/davelopez>`_ in `#24359 <https://github.com/galaxyproject/galaxy/pull/24359>`_
+* Fix CI on ubuntu-26.04 runners by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24390 <https://github.com/galaxyproject/galaxy/pull/24390>`_
+
+-------------------
 25.1.3 (2026-10-25)
 -------------------
 

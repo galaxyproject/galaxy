@@ -10,6 +10,34 @@ History
 
 
 -------------------
+26.0.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Raise InvalidFileFormatError on short rows in UCSC display by `@guerler <https://github.com/guerler>`_ in `#22524 <https://github.com/galaxyproject/galaxy/pull/22524>`_
+* Fix tag creation self-deadlock under SQLite by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22846 <https://github.com/galaxyproject/galaxy/pull/22846>`_
+* Fix fasta preview rendering for sequences larger than 100 KB by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23163 <https://github.com/galaxyproject/galaxy/pull/23163>`_
+* Fix invalid \`\`LN:0\`\` field in \`\`@SQ\`\` header lines in \`\`1.bam\`\` test file by `@nsoranzo <https://github.com/nsoranzo>`_ in `#23474 <https://github.com/galaxyproject/galaxy/pull/23474>`_
+* Don't let extended metadata import set the live job's terminal state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23529 <https://github.com/galaxyproject/galaxy/pull/23529>`_
+* Complete subworkflows before their parent invocation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23581 <https://github.com/galaxyproject/galaxy/pull/23581>`_
+* Bug fix - Galaxy would delete composite files it shouldn't during data_fetch.py sometimes. by `@jmchilton <https://github.com/jmchilton>`_ in `#23733 <https://github.com/galaxyproject/galaxy/pull/23733>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Bind OIDC account confirmation to the authenticated browser flow by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24084 <https://github.com/galaxyproject/galaxy/pull/24084>`_
+* Fix workflow editor map-over onto \`:paired_or_unpaired\` inputs the server rejects by `@jmchilton <https://github.com/jmchilton>`_ in `#24227 <https://github.com/galaxyproject/galaxy/pull/24227>`_
+* Fix dataset permissions set when upload and discovery jobs finish by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24233 <https://github.com/galaxyproject/galaxy/pull/24233>`_
+* Fix supports_returning() probe always returning False by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24252 <https://github.com/galaxyproject/galaxy/pull/24252>`_
+* Ignore stale user and history object store preferences by `@davelopez <https://github.com/davelopez>`_ in `#24280 <https://github.com/galaxyproject/galaxy/pull/24280>`_
+* Apply default permissions to discovered collection elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24284 <https://github.com/galaxyproject/galaxy/pull/24284>`_
+* Don't overwrite inputs when skipping database operations on nested collections by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24286 <https://github.com/galaxyproject/galaxy/pull/24286>`_
+* Fix ok_to_edit_metadata checking HDA job associations for LDDAs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24306 <https://github.com/galaxyproject/galaxy/pull/24306>`_
+* Lock HDCAs with FOR NO KEY UPDATE when touching update_time by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24404 <https://github.com/galaxyproject/galaxy/pull/24404>`_
+* Import unregistered dataset extensions from model stores as data by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24433 <https://github.com/galaxyproject/galaxy/pull/24433>`_
+
+-------------------
 25.1.3 (2026-10-25)
 -------------------
 

@@ -10,6 +10,24 @@ History
 
 
 -------------------
+26.0.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Ignore stale user and history object store preferences by `@davelopez <https://github.com/davelopez>`_ in `#24280 <https://github.com/galaxyproject/galaxy/pull/24280>`_
+* Match tool shed GUIDs when looking up job resource parameters by `@monsterlag <https://github.com/monsterlag>`_ in `#24355 <https://github.com/galaxyproject/galaxy/pull/24355>`_
+
+============
+Enhancements
+============
+
+* Add new datatypes for the tool vg by `@Maed0x <https://github.com/Maed0x>`_ in `#23111 <https://github.com/galaxyproject/galaxy/pull/23111>`_
+
+-------------------
 25.1.3 (2026-10-25)
 -------------------
 
