@@ -4,10 +4,22 @@ History
 .. to_doc
 
 ---------
-26.2.dev0
+27.0.dev0
 ---------
 
 
+
+-------------------
+25.1.3 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Ignore stale user and history object store preferences by `@davelopez <https://github.com/davelopez>`_ in `#24280 <https://github.com/galaxyproject/galaxy/pull/24280>`_
+* Match tool shed GUIDs when looking up job resource parameters by `@monsterlag <https://github.com/monsterlag>`_ in `#24355 <https://github.com/galaxyproject/galaxy/pull/24355>`_
 
 -------------------
 26.1.1 (2026-08-04)

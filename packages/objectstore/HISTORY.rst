@@ -4,10 +4,21 @@ History
 .. to_doc
 
 ---------
-26.2.dev0
+27.0.dev0
 ---------
 
 
+
+-------------------
+25.1.3 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix refresh time in object store caches by `@bgruening <https://github.com/bgruening>`_ in `#22279 <https://github.com/galaxyproject/galaxy/pull/22279>`_
 
 -------------------
 26.1.1 (2026-08-04)
