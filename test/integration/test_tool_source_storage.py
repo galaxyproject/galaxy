@@ -262,6 +262,9 @@ class TestCachedToolBoxReloadAfterLocalEdit(BaseToolSourceStorageIntegrationTest
 class TestCachedToolBoxKeepsConfiguredVersion(BaseToolSourceStorageIntegrationTestCase):
     """A newer bundled version no conf names stays storage-only and isn't served."""
 
+    # The sample tool conf names filters/grep.xml (1.0.4); keep it out of the toolbox.
+    allow_tool_conf_override = False
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -271,11 +274,7 @@ class TestCachedToolBoxKeepsConfiguredVersion(BaseToolSourceStorageIntegrationTe
         with open(conf_path, "w") as f:
             f.write(f'<toolbox tool_path="{tools_dir}"><tool file="filters/grep_1.0.1.xml"/></toolbox>')
         config["use_cached_toolbox"] = True
-        existing_confs = config.get("tool_config_file") or "config/tool_conf.xml.sample"
-        if isinstance(existing_confs, str):
-            config["tool_config_file"] = f"{existing_confs},{conf_path}"
-        else:
-            config["tool_config_file"] = list(existing_confs) + [conf_path]
+        config["tool_config_file"] = f"{config['tool_config_file']},{conf_path}"
 
     def test_show_serves_configured_version(self):
         toolbox = self._app.toolbox
