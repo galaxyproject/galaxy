@@ -168,7 +168,7 @@ from galaxy.tool_shed.galaxy_install.update_repository_manager import (
     UpdateRepositoryManager,
 )
 from galaxy.tool_util.data import (
-    ToolDataTableConfigSource,
+    tool_data_table_config_sources,
     ToolDataTableManager as BaseToolDataTableManager,
 )
 from galaxy.tool_util.deps import containers
@@ -461,33 +461,12 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         )
 
     def _configure_tool_data_tables(self, from_shed_config):
-        managed = self.config.shed_tool_data_table_config
-        managed_identity = os.path.normcase(os.path.realpath(managed))
-        sources = []
-        managed_seen = False
-        for filename in listify(self.config.tool_data_table_config_path):
-            if not filename:
-                continue
-            is_managed = os.path.normcase(os.path.realpath(filename)) == managed_identity
-            if is_managed and managed_seen:
-                continue
-            if is_managed:
-                managed_seen = True
-            sources.append(
-                ToolDataTableConfigSource(
-                    filename,
-                    from_shed_config=from_shed_config if is_managed else False,
-                    optional=is_managed and not self.config.is_set("shed_tool_data_table_config"),
-                )
-            )
-        if not managed_seen:
-            sources.append(
-                ToolDataTableConfigSource(
-                    managed,
-                    from_shed_config=from_shed_config,
-                    optional=not self.config.is_set("shed_tool_data_table_config"),
-                )
-            )
+        sources = tool_data_table_config_sources(
+            self.config.tool_data_table_config_path,
+            self.config.shed_tool_data_table_config,
+            from_shed_config=from_shed_config,
+            managed_optional=not self.config.is_set("shed_tool_data_table_config"),
+        )
         self._tool_data_tables = ToolDataTableManager(
             tool_data_path=self.config.tool_data_path,
             config_sources=sources,

@@ -1077,6 +1077,35 @@ class ToolDataTableConfigSource:
     optional: bool = False
 
 
+def tool_data_table_config_sources(
+    config_paths: Optional[Union[StrPath, List[StrPath]]],
+    managed: StrPath,
+    from_shed_config: bool = False,
+    managed_optional: bool = False,
+) -> List[ToolDataTableConfigSource]:
+    """Order sources as configured; the managed file keeps its first listed position, else loads last."""
+    managed_identity = os.path.normcase(os.path.realpath(managed))
+    sources = []
+    managed_seen = False
+    for filename in util.listify(config_paths):
+        if not filename:
+            continue
+        is_managed = os.path.normcase(os.path.realpath(filename)) == managed_identity
+        if is_managed and managed_seen:
+            continue
+        managed_seen = managed_seen or is_managed
+        sources.append(
+            ToolDataTableConfigSource(
+                filename,
+                from_shed_config=from_shed_config and is_managed,
+                optional=managed_optional and is_managed,
+            )
+        )
+    if not managed_seen:
+        sources.append(ToolDataTableConfigSource(managed, from_shed_config, managed_optional))
+    return sources
+
+
 class ToolDataTableManager(Dictifiable):
     """Manages a collection of tool data tables"""
 

@@ -5,6 +5,7 @@ import pytest
 
 from galaxy.tool_util.data import (
     DataTableColumnMismatch,
+    tool_data_table_config_sources,
     ToolDataTableConfigSource,
     ToolDataTableManager,
 )
@@ -309,3 +310,35 @@ def test_config_sources_and_config_filename_are_exclusive(tmp_path):
     conf = _write_multi_table_conf(tmp_path)
     with pytest.raises(ValueError, match="not both"):
         ToolDataTableManager(str(tmp_path), conf, config_sources=[ToolDataTableConfigSource(conf)])
+
+
+@pytest.mark.parametrize("as_string", [False, True])
+def test_config_sources_keep_first_managed_position_across_aliases(tmp_path, as_string):
+    managed = tmp_path / "managed.xml"
+    managed.write_text("<tables />")
+    alias = tmp_path / "alias.xml"
+    alias.symlink_to(managed)
+    paths = [str(tmp_path / "local.xml"), str(alias), "", str(tmp_path / "external.xml"), str(managed)]
+    sources = tool_data_table_config_sources(
+        ",".join(p for p in paths if p) if as_string else paths,
+        str(managed),
+        from_shed_config=True,
+        managed_optional=True,
+    )
+    assert sources == [
+        ToolDataTableConfigSource(paths[0]),
+        ToolDataTableConfigSource(paths[1], from_shed_config=True, optional=True),
+        ToolDataTableConfigSource(paths[3]),
+    ]
+
+
+@pytest.mark.parametrize("managed_optional", [False, True])
+def test_config_sources_append_unlisted_managed_file(tmp_path, managed_optional):
+    managed = str(tmp_path / "missing" / "managed.xml")
+    sources = tool_data_table_config_sources(
+        str(tmp_path / "local.xml"), managed, from_shed_config=False, managed_optional=managed_optional
+    )
+    assert sources == [
+        ToolDataTableConfigSource(str(tmp_path / "local.xml")),
+        ToolDataTableConfigSource(managed, optional=managed_optional),
+    ]
