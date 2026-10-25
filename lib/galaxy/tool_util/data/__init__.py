@@ -1093,6 +1093,8 @@ class ToolDataTableManager(Dictifiable):
         config_sources: Optional[List[ToolDataTableConfigSource]] = None,
         on_registration: Optional[Callable[[List[str]], None]] = None,
     ) -> None:
+        if config_sources is not None and config_filename:
+            raise ValueError("Pass either config_sources or config_filename, not both")
         self.config_sources = config_sources
         self._loaded_config_definitions: Dict[str, List[Tuple[StrPath, str]]] = {}
         self.on_registration = on_registration

@@ -5,6 +5,7 @@ import pytest
 
 from galaxy.tool_util.data import (
     DataTableColumnMismatch,
+    ToolDataTableConfigSource,
     ToolDataTableManager,
 )
 
@@ -302,3 +303,9 @@ def test_exists_outside_load_pass_does_not_walk(tmp_path):
     assert tdpf.exists(str(tmp_path / "missing.loc")) is False
     assert fs.walks == 0, f"exists() outside a load pass must not walk, got {fs.walks}"
     assert tdpf._tool_data_path_files is None
+
+
+def test_config_sources_and_config_filename_are_exclusive(tmp_path):
+    conf = _write_multi_table_conf(tmp_path)
+    with pytest.raises(ValueError, match="not both"):
+        ToolDataTableManager(str(tmp_path), conf, config_sources=[ToolDataTableConfigSource(conf)])
