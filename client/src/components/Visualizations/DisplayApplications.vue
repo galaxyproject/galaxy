@@ -35,8 +35,11 @@ function getUrl(link: LinkType) {
                         <ol>
                             <li
                                 v-for="(displayApp, displayKey) in dataset.display_apps"
-                                :key="`display-app-${displayKey}`">
-                                <span class="font-weight-bold">{{ displayApp.label }}</span>
+                                :key="`display-app-${displayKey}`"
+                                data-description="dataset display application">
+                                <span class="font-weight-bold" data-description="display application label">{{
+                                    displayApp.label
+                                }}</span>
                                 <span v-for="(link, linkKey) in displayApp.links" :key="`display-app-link-${linkKey}`">
                                     <span v-if="linkKey == 0">(</span>
                                     <router-link :to="getUrl(link)">{{ link.text }}</router-link>
@@ -46,8 +49,11 @@ function getUrl(link: LinkType) {
                             </li>
                             <li
                                 v-for="(displayType, displayKey) in dataset.display_types"
-                                :key="`display-type-${displayKey}`">
-                                <span class="font-weight-bold">{{ displayType.label }}</span>
+                                :key="`display-type-${displayKey}`"
+                                data-description="dataset display application">
+                                <span class="font-weight-bold" data-description="display application label">{{
+                                    displayType.label
+                                }}</span>
                                 <span
                                     v-for="(link, linkKey) in displayType.links"
                                     :key="`display-type-link-${linkKey}`">

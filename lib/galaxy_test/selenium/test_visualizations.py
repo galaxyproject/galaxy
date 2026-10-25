@@ -74,16 +74,7 @@ class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
             for app in details["display_apps"] + details["display_types"]
         }
         assert expected["display at UCSC"] == ["main"]
-        self.show_dataset_visualizations(1)
-        items = self.components.visualization.display_application_items
-        items.wait_for_present()
-        applications = {
-            item.find_element("css selector", ".font-weight-bold").text: [
-                link.text for link in item.find_elements("css selector", "a")
-            ]
-            for item in items.all()
-        }
-        assert applications == expected
+        assert self.dataset_display_applications(1) == expected
         self.screenshot("dataset_display_application_links")
 
     @selenium_test

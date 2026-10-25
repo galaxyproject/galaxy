@@ -32,11 +32,7 @@ class TestHistoryStorage(SeleniumTestCase, UsesUploadActivity):
 
     @selenium_test
     def test_recalculate_disk_usage_from_storage_dashboard(self):
-        self.home()
-        self.components.masthead.storage_dashboard_link.wait_for_and_click()
-        dashboard = self.components.storage_dashboard
-        dashboard.refresh_disk_usage.wait_for_and_click()
-        dashboard.recalculating.wait_for_visible()
+        self.storage_dashboard_recalculate_disk_usage()
         self.screenshot("storage_dashboard_recalculating_disk_usage")
 
     def _upload_named_paste_content(self, data: dict[str, str]) -> None:

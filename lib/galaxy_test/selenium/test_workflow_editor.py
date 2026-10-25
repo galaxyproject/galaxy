@@ -108,11 +108,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
     @selenium_test
     def test_edit_tags(self):
         name = self.create_and_wait_for_new_workflow_in_editor()
-        editor = self.components.workflow_editor
-        if editor.edit_name.is_absent:
-            editor.tool_bar.attributes.wait_for_and_click()
-        editor.edit_tags_toggle.wait_for_and_click()
-        self.tagging_add(["editortag"], parent_selector="#edit-attributes ")
+        self.workflow_editor_add_tags(["editortag"])
         self.screenshot("workflow_editor_tags")
         self.workflow_index_open()
         self.workflow_index_search_for(name)
@@ -974,7 +970,8 @@ steps:
         annotation = "best_practices_input_label"
         self.workflow_create_new(annotation=annotation)
         self.workflow_editor_add_input(item_name="data_input")
-        editor.tool_bar.best_practices.wait_for_and_click()
+        assert self.workflow_editor_best_practices()["input metadata"] == "warning"
+        self.screenshot("workflow_editor_best_practices_input_metadata")
         best_practices = editor.best_practices
         section_element = best_practices.section_input_metadata.wait_for_present()
         assert section_element.get_attribute("data-lint-status") == "warning"
@@ -986,7 +983,6 @@ steps:
         item.wait_for_and_click()
         self.workflow_editor_set_node_label("best practice input")
 
-        # editor.tool_bar.best_practices.wait_for_and_click()
         element = item.wait_for_present()
         assert element.get_attribute("data-missing-label") == "false"
         assert element.get_attribute("data-missing-annotation") == "true"
@@ -1004,7 +1000,7 @@ steps:
     def test_best_practices_dangling_conditional_gate(self):
         editor = self.components.workflow_editor
         self.open_in_workflow_editor(WORKFLOW_WHEN_NOT_CONNECTED)
-        editor.tool_bar.best_practices.wait_for_and_click()
+        self.workflow_editor_best_practices()
         best_practices = editor.best_practices
         section_element = best_practices.section_conditional_gates.wait_for_present()
         assert section_element.get_attribute("data-lint-status") == "warning"
@@ -1824,7 +1820,7 @@ steps:
         # Make sure the when input is still shown
         conditional_node.input_terminal(name="when").wait_for_present()
         # Best practices flag the gate that reads nothing
-        editor.tool_bar.best_practices.wait_for_and_click()
+        self.workflow_editor_best_practices()
         section_element = editor.best_practices.section_conditional_gates.wait_for_present()
         assert section_element.get_attribute("data-lint-status") == "warning"
 
