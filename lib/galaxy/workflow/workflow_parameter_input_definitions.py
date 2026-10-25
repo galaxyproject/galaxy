@@ -114,7 +114,7 @@ class _FormValidatorShape(NamedTuple):
     validator_type: str
     fields: set[str]
     # values the form fields hold without loss (integer inputs' min/max would truncate fractional bounds)
-    field_value_type: type = object
+    field_value_type: Union[type, tuple[type, ...]] = object
 
 
 # Validators the editor form shows as fields, by parameter type: regex rows or a min/max pair.
@@ -122,7 +122,7 @@ FORM_VALIDATOR_SHAPES = {
     "text": _FormValidatorShape("regex", {"expression", "message", "negate"}),
     "directory_uri": _FormValidatorShape("regex", {"expression", "message", "negate"}),
     "integer": _FormValidatorShape("in_range", {"min", "max"}, int),
-    "float": _FormValidatorShape("in_range", {"min", "max"}),
+    "float": _FormValidatorShape("in_range", {"min", "max"}, (int, float)),
 }
 
 

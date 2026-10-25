@@ -206,18 +206,20 @@ def test_editor_drops_hidden_validators_when_parameter_type_changes():
 
 
 @pytest.mark.parametrize(
-    "validators",
+    "parameter_type,validators",
     [
-        [MIN_RANGE, {"type": "in_range", "min": 5, "max": 1}],
-        [{"type": "in_range", "min": "one"}],
-        [{"type": "not_a_validator"}],
-        [{"type": "length", "min": 5, "max": 1}],
-        [{"type": "regex", "expression": "["}],
+        ("integer", [MIN_RANGE, {"type": "in_range", "min": 5, "max": 1}]),
+        ("integer", [{"type": "in_range", "min": "one"}]),
+        ("float", [{"type": "in_range", "min": "one"}]),
+        ("float", [{"type": "in_range", "min": 1, "max": [5]}]),
+        ("integer", [{"type": "not_a_validator"}]),
+        ("integer", [{"type": "length", "min": 5, "max": 1}]),
+        ("integer", [{"type": "regex", "expression": "["}]),
     ],
 )
-def test_invalid_validators_rejected_at_import(validators):
+def test_invalid_validators_rejected_at_import(parameter_type, validators):
     with pytest.raises(RequestParameterInvalidException, match="^Invalid validator on workflow parameter input 'p': "):
-        import_input("integer", validators)
+        import_input(parameter_type, validators)
 
 
 TEXT_VALIDATOR_TYPES = "regex, length, empty_field, value_in_data_table, value_not_in_data_table, expression"
