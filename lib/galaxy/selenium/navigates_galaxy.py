@@ -844,6 +844,21 @@ class NavigatesGalaxy(HasDriver):
         login.reset_password_link.wait_for_and_click()
         return login.alert.wait_for_text()
 
+    def reset_password_from_link(self, link: str, password: str) -> None:
+        """Open the emailed reset link and save the new password."""
+        self.get(link)
+        self.change_password(password)
+
+    def change_password(self, password: str, current_password: Optional[str] = None) -> None:
+        """Save a new password from the reset or expired-password form."""
+        form = self.components.change_password
+        if current_password is not None:
+            form.current.wait_for_and_clear_and_send_keys(current_password)
+        form.password.wait_for_and_clear_and_send_keys(password)
+        form.confirm.wait_for_and_clear_and_send_keys(password)
+        form.save.wait_for_and_click()
+        form.form.wait_for_absent_or_hidden()
+
     def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True):
         if email is None:
             email = self._get_random_email()
