@@ -333,6 +333,47 @@ def test_import_library_from_dict():
     assert len(all_lddas) == 1, len(all_lddas)
 
 
+@pytest.mark.parametrize(
+    "extension, expected_extension",
+    [
+        ("notadatatype", "data"),
+        ("bed", "bed"),
+        ("auto", "auto"),
+    ],
+)
+def test_import_from_dict_unregistered_extension(extension, expected_extension):
+    fixture_context = setup_fixture_context_with_history()
+    import_dict = one_hda_model_store_dict()
+    import_dict["datasets"][0]["extension"] = extension
+    perform_import_from_store_dict(fixture_context, import_dict)
+    assert fixture_context.history.datasets[0].extension == expected_extension
+
+
+def test_import_library_from_dict_unregistered_extension():
+    fixture_context = setup_fixture_context_with_history()
+    import_dict = one_ld_library_model_store_dict()
+    import_dict["datasets"][0]["extension"] = "not_a_registered_datatype"
+    import_options = store.ImportOptions()
+    import_options.allow_library_creation = True
+    perform_import_from_store_dict(fixture_context, import_dict, import_options=import_options)
+    ldda = fixture_context.sa_session.scalars(select(model.LibraryDatasetDatasetAssociation)).one()
+    assert ldda.extension == "data"
+
+
+def test_import_edit_dataset_unregistered_extension():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    datasets_metadata_path = os.path.join(temp_directory, store.ATTRS_FILENAME_DATASETS)
+    with open(datasets_metadata_path) as f:
+        datasets_metadata = json.load(f)
+    datasets_metadata[0]["extension"] = "not_a_registered_datatype"
+    with open(datasets_metadata_path, "w") as f:
+        json.dump(datasets_metadata, f)
+
+    _perform_import_from_directory(temp_directory, app, h.user, import_history, store.ImportOptions(allow_edit=True))
+
+    assert h.datasets[0].extension == "data"
+
+
 def test_import_allow_discarded():
     fixture_context = setup_fixture_context_with_history()
     import_dict = one_hda_model_store_dict(include_source=False)

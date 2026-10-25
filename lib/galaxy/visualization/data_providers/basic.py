@@ -2,6 +2,11 @@ from json import (
     JSONDecodeError,
     loads,
 )
+from math import isfinite
+from statistics import (
+    fmean,
+    median,
+)
 
 from galaxy.datatypes.tabular import Tabular
 from galaxy.exceptions import (
@@ -121,6 +126,9 @@ class ColumnDataProvider(BaseDataProvider):
                     val = float(val)
                 except ValueError:
                     return None
+                # nan and inf break the stats and are not JSON compliant
+                if not isfinite(val):
+                    return None
             return val
 
         returning_data = False
@@ -166,18 +174,12 @@ class ColumnDataProvider(BaseDataProvider):
 
         for index, meta in enumerate(response["meta"]):
             column_type = column_types[index]
-            count = meta["count"]
+            # uncastable values are kept in the data as None but excluded from the stats
+            values = [value for value in response["data"][index] if value is not None]
 
-            if (column_type == "float" or column_type == "int") and count:
-                meta["mean"] = float(meta["sum"]) / count
-
-                sorted_data = sorted(response["data"][index])
-                middle_index = (count / 2) - 1
-                if count % 2 == 0:
-                    meta["median"] = (sorted_data[middle_index] + sorted_data[(middle_index + 1)]) / 2.0
-
-                else:
-                    meta["median"] = sorted_data[middle_index]
+            if (column_type == "float" or column_type == "int") and values:
+                meta["mean"] = fmean(values)
+                meta["median"] = median(values)
 
         # ugh ... metadata_data_lines is not a reliable source; hafta have an EOF
         return response
