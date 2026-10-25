@@ -111,7 +111,7 @@ def test_data_manager_repo_invokes_handle_missing_data_table_entry():
 
 def test_install_rebuilds_tables_in_configured_order(tmp_path):
     from galaxy.tool_util.data import (
-        ToolDataTableConfig,
+        ToolDataTableConfigSource,
         ToolDataTableManager,
     )
 
@@ -128,7 +128,7 @@ def test_install_rebuilds_tables_in_configured_order(tmp_path):
     on_registration = mock.Mock()
     manager = ToolDataTableManager(
         str(tmp_path),
-        config_sources=[ToolDataTableConfig(managed), ToolDataTableConfig(configs[0])],
+        config_sources=[ToolDataTableConfigSource(managed), ToolDataTableConfigSource(configs[0])],
         on_registration=on_registration,
     )
     irm, _ = _make_install_repository_manager()

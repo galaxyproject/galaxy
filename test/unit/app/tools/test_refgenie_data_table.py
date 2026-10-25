@@ -1,7 +1,7 @@
 import pytest
 
 from galaxy import util
-from galaxy.tool_util.data import ToolDataTableConfig
+from galaxy.tool_util.data import ToolDataTableConfigSource
 from galaxy.tools.data import (
     RefgenieToolDataTable,
     TabularToolDataTable,
@@ -69,7 +69,7 @@ def test_register_tabular_source_for_refgenie_table(tmp_path, managed_first):
     incoming.write_text(f"<tables>{util.xml_to_string(tabular_table)}</tables>")
     managed = tmp_path / "managed.xml"
     managed.write_text("<tables />")
-    sources = [ToolDataTableConfig(refgenie_source), ToolDataTableConfig(managed, from_shed_config=True)]
+    sources = [ToolDataTableConfigSource(refgenie_source), ToolDataTableConfigSource(managed, from_shed_config=True)]
     if managed_first:
         sources.reverse()
 

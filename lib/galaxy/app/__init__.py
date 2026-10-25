@@ -168,7 +168,7 @@ from galaxy.tool_shed.galaxy_install.update_repository_manager import (
     UpdateRepositoryManager,
 )
 from galaxy.tool_util.data import (
-    ToolDataTableConfig,
+    ToolDataTableConfigSource,
     ToolDataTableManager as BaseToolDataTableManager,
 )
 from galaxy.tool_util.deps import containers
@@ -474,7 +474,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             if is_managed:
                 managed_seen = True
             sources.append(
-                ToolDataTableConfig(
+                ToolDataTableConfigSource(
                     filename,
                     from_shed_config=from_shed_config if is_managed else False,
                     optional=is_managed and not self.config.is_set("shed_tool_data_table_config"),
@@ -482,7 +482,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             )
         if not managed_seen:
             sources.append(
-                ToolDataTableConfig(
+                ToolDataTableConfigSource(
                     managed,
                     from_shed_config=from_shed_config,
                     optional=not self.config.is_set("shed_tool_data_table_config"),

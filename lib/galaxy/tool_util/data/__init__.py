@@ -1069,7 +1069,7 @@ class OutputDataset(HasExtraFiles, Protocol):
 
 
 @dataclass(frozen=True)
-class ToolDataTableConfig:
+class ToolDataTableConfigSource:
     """A read source, retaining its configured path for XML-relative references."""
 
     filename: StrPath
@@ -1090,7 +1090,7 @@ class ToolDataTableManager(Dictifiable):
         tool_data_table_config_path_set=None,
         other_config_dict: Optional[StoresConfigFilePaths] = None,
         filesystem: Optional[ToolDataFilesystem] = None,
-        config_sources: Optional[List[ToolDataTableConfig]] = None,
+        config_sources: Optional[List[ToolDataTableConfigSource]] = None,
         on_registration: Optional[Callable[[List[str]], None]] = None,
     ) -> None:
         self.config_sources = config_sources
