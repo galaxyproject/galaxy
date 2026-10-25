@@ -497,6 +497,7 @@ onMounted(() => {
             <WorkflowCardList
                 :workflows="workflowsLoaded"
                 :published-view="published"
+                :shared-with-me-view="sharedWithMe"
                 :grid-view="currentListViewMode === 'grid'"
                 :selected-workflow-ids="selectedWorkflowIds"
                 :item-refs="itemRefs"

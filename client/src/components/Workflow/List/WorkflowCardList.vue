@@ -18,6 +18,7 @@ interface Props {
     hideRuns?: boolean;
     filterable?: boolean;
     publishedView?: boolean;
+    sharedWithMeView?: boolean;
     editorView?: boolean;
     currentWorkflowId?: string;
     selectedWorkflowIds?: SelectedWorkflow[];
@@ -31,6 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
     hideRuns: false,
     filterable: true,
     publishedView: false,
+    sharedWithMeView: false,
     editorView: false,
     currentWorkflowId: "",
     selectedWorkflowIds: () => [],
@@ -104,6 +106,7 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             :hide-runs="props.hideRuns"
             :filterable="props.filterable"
             :published-view="props.publishedView"
+            :shared-with-me-view="props.sharedWithMeView"
             :editor-view="props.editorView"
             :current="workflow.id === props.currentWorkflowId"
             :clickable="props.clickable"
