@@ -239,8 +239,9 @@ class CompositeToolSourceStore(ToolSourceStore):
         index at all, which can't be healed locally — warn and continue,
         the publisher owns repopulation. An unavailable cohort placeholder
         reports itself handled to avoid futile local population; the cached
-        toolbox separately refuses to build without its index. A member without a probe downgrades an otherwise-fresh
-        verdict to ``None`` so the caller still runs its coverage scan.
+        toolbox separately refuses to build without its index. A member
+        without a probe downgrades an otherwise-fresh verdict to ``None`` so
+        the caller still runs its coverage scan.
         """
         verdict: bool | None = True
         for name, member in self._members:

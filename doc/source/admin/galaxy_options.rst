@@ -485,24 +485,24 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Optional named tool source stores referenced from individual
-    tool_conf files via a top-level ``store="<name>"`` attribute (XML)
-    or ``store: <name>`` key (YAML). When any tool_conf opts in, the
-    process composes its named store with the default
-    (``tool_source_database_connection``) store at runtime, with reads
-    tried in declared order and writes always landing on the default.
-    Each entry takes either a normal SQLAlchemy ``url`` or an
-    ``external_store_directory`` containing versioned publisher
-    bundles. Galaxy never consults manifests for a normal URL. For an
-    external directory it reads the sidecars and automatically selects
-    the newest cohort compatible with its store/source/index formats
-    and index schema. External stores are always read-only.
-    With ``use_cached_toolbox`` enabled, every read-only store must
-    provide a compatible index. If one does not (no compatible cohort,
-    or an index that fails to load), Galaxy does not start, and a
-    toolbox reload keeps the current toolbox.
-    For SQLite connection-level read-only, use a SQLite URI with
-    ``mode=ro&uri=true``.
+    Additional tool source stores, typically pre-built bundles of
+    tools shared read-only, for example on CVMFS. Name each store here
+    and point a tool conf at it with ``store="<name>"`` on the root
+    element (XML) or a top-level ``store: <name>`` key (YAML). Galaxy
+    reads that conf's tools from the named store and writes only to
+    the default store (``tool_source_database_connection``).
+    Configure each store with an ``external_store_directory`` or a
+    ``url``. An ``external_store_directory`` holds bundles published
+    with ``populate_store.py``; Galaxy picks the newest bundle this
+    Galaxy version can read, and never writes to it. A ``url`` is the
+    SQLAlchemy URL of one store; add ``read_only: true`` for a store
+    Galaxy must not write to, and for a read-only SQLite file also
+    ``?mode=ro&uri=true``.
+    With ``use_cached_toolbox`` enabled, Galaxy does not start when a
+    read-only store has no bundle this Galaxy version can read, and a
+    toolbox reload keeps the current tools. Publish a bundle built
+    with this Galaxy version's ``populate_store.py``, or remove the
+    store from this setting and from its tool conf.
     For details see
     https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
 :Default: ``None``

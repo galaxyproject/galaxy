@@ -653,8 +653,10 @@ class CachedToolBox(ToolBox):
             else:
                 reasons.append(f"read-only tool source store {name!r} has no loadable index")
         raise ConfigurationError(
-            "The cached toolbox requires every read-only tool source store to provide a compatible index: "
+            "Cannot load the cached toolbox: "
             + "; ".join(reasons)
+            + ". Publish a tool source bundle built with this Galaxy version's populate_store.py,"
+            " or remove the store from tool_source_stores and from its tool conf."
         )
 
     def _member_stores(self) -> list[tuple[str, ToolSourceStore]]:
