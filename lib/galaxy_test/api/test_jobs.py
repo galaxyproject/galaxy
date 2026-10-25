@@ -844,6 +844,42 @@ steps:
             content = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=out_file1["id"])
             assert content == "renamed\n"
 
+    @pytest.mark.require_new_history
+    def test_use_cached_job_plain_collection_creates_pair_run_reuses_mapped_job(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        mapped = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), tool_id="collection_creates_pair")
+        plain = self._run_tool_and_wait(
+            history_id, _plain_inputs(hda_id), use_cached_job=True, tool_id="collection_creates_pair"
+        )
+        assert self._copied_from_job_id(plain) == mapped["jobs"][0]["id"]
+        self._assert_pair_matches(history_id, plain, mapped)
+
+    @pytest.mark.require_new_history
+    def test_use_cached_job_mapped_collection_creates_pair_run_reuses_plain_job(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        plain = self._run_tool_and_wait(history_id, _plain_inputs(hda_id), tool_id="collection_creates_pair")
+        mapped = self._run_tool_and_wait(
+            history_id, _mapped_inputs(hdca_id), use_cached_job=True, tool_id="collection_creates_pair"
+        )
+        assert self._copied_from_job_id(mapped) == plain["jobs"][0]["id"]
+        self._assert_pair_matches(history_id, mapped, plain)
+
+    def _assert_pair_matches(self, history_id, cached, original):
+        def pair_dataset_ids(run_response):
+            hdca_id = (run_response["output_collections"] or run_response["implicit_collections"])[0]["id"]
+            hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
+            elements = hdca["elements"]
+            if elements[0]["element_type"] == "dataset_collection":
+                elements = elements[0]["object"]["elements"]
+            return {
+                e["element_identifier"]: self.dataset_populator.get_history_dataset_details(
+                    history_id, dataset_id=e["object"]["id"]
+                )["dataset_id"]
+                for e in elements
+            }
+
+        assert pair_dataset_ids(cached) == pair_dataset_ids(original)
+
     def _list_of_existing_dataset(self, history_id):
         # Element identifier differs from the dataset name.
         hdca = self.dataset_collection_populator.create_list_in_history(

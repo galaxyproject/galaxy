@@ -1765,23 +1765,21 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                     self.add_output_dataset(output_name, copied_output)
             for output_name, out_collection in outputs_to_copy.out_collections.items():
                 self_out_collection = self_io.out_collections[output_name]
-                if isinstance(self_out_collection, DatasetCollection) and isinstance(out_collection, DatasetCollection):
-                    # Both jobs are map-over element jobs of a tool with a collection output,
-                    # e.g. a cached rerun of a mapped run.
-                    self_out_collection.copy_from(out_collection, history=self.history)
-                    requires_addition_to_history = True
-                elif isinstance(self_out_collection, HistoryDatasetCollectionAssociation) and isinstance(
-                    out_collection, HistoryDatasetCollectionAssociation
+                # A map-over element job records its part of the implicit output collection as a
+                # DatasetCollection, any other job the HDCA it created. The late job cache search
+                # pairs either kind with either kind.
+                if isinstance(self_out_collection, HistoryDatasetCollectionAssociation):
+                    self_out_collection = self_out_collection.collection
+                if isinstance(out_collection, HistoryDatasetCollectionAssociation):
+                    out_collection = out_collection.collection
+                if not isinstance(self_out_collection, DatasetCollection) or not isinstance(
+                    out_collection, DatasetCollection
                 ):
-                    self_out_collection.collection.copy_from(
-                        out_collection.collection,
-                        history=self.history,
-                    )
-                    requires_addition_to_history = True
-                else:
                     raise NotImplementedError(
                         f"Don't know how to copy {type(out_collection)} to {type(self_out_collection)}"
                     )
+                self_out_collection.copy_from(out_collection, history=self.history)
+                requires_addition_to_history = True
             if requires_addition_to_history:
                 assert job.history
                 job.history.add_pending_items()
