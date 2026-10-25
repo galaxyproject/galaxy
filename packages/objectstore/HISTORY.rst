@@ -10,6 +10,17 @@ History
 
 
 -------------------
+26.0.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix typo in irods object store cache size by `@davelopez <https://github.com/davelopez>`_ in `#23124 <https://github.com/galaxyproject/galaxy/pull/23124>`_
+
+-------------------
 25.1.3 (2026-10-25)
 -------------------
 

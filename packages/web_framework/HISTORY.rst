@@ -10,6 +10,17 @@ History
 
 
 -------------------
+26.0.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Return 400 for request bodies that webob cannot parse by `@rmz-oz <https://github.com/rmz-oz>`_ in `#23839 <https://github.com/galaxyproject/galaxy/pull/23839>`_
+
+-------------------
 25.1.3 (2026-10-25)
 -------------------
 
