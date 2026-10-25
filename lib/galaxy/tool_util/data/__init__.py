@@ -263,6 +263,11 @@ class ToolDataTable(Dictifiable):
             self._loaded_content_version += 1
         return self._loaded_content_version
 
+    def _replace_with(self, other: "ToolDataTable") -> None:
+        """Adopt another table's type and state in place so held references see the rebuild."""
+        self.__class__ = type(other)
+        self.__dict__ = other.__dict__
+
     def get_empty_field_by_name(self, name: Optional[str]) -> str:
         return self.empty_field_values.get(name, self.empty_field_value)
 
@@ -1393,10 +1398,7 @@ class ToolDataTableManager(Dictifiable):
                     del self.data_tables[name]
                 else:
                     rebuilt._update_version(version)
-                    # An earlier source can change the implementation, e.g. Refgenie
-                    # to tabular. Preserve references while matching startup behavior.
-                    existing.__class__ = type(rebuilt)
-                    existing.__dict__ = rebuilt.__dict__
+                    existing._replace_with(rebuilt)
             elif rebuilt is not None:
                 self.data_tables[name] = rebuilt
             if name in definitions:
