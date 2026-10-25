@@ -543,6 +543,9 @@ shared_histories:
   selectors:
     shared_list: '.history-card-list'
     history_cards: '.history-card-list .g-card'
+    history_card: '#g-card-history-${history_id}'
+    extra_actions: '#g-card-extra-actions-history-${history_id}'
+    unshare_with_me_button: '#g-card-action-unshare-with-me-history-${history_id}'
     shared_tab: '#histories-shared-tab'
 
 history_copy_elements:

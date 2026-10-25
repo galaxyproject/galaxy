@@ -1,4 +1,5 @@
 from galaxy.util.unittest_utils import transient_failure
+from galaxy_test.base.populators import DatasetPopulator
 from .framework import (
     selenium_test,
     SeleniumTestCase,
@@ -85,6 +86,46 @@ class TestHistorySharing(SeleniumTestCase, UsesUploadActivity):
         rows = self.components.shared_histories.history_cards.all()
         assert len(rows) > 0
         assert any(user1_email.split("@")[0] in row.text for row in rows)
+
+    @selenium_test
+    def test_unshare_with_me(self):
+        [history_id] = self.setup_histories_shared_with_new_user(["History to remove from shared"])
+        self.navigate_to_histories_shared_with_me_page()
+        shared_histories = self.components.shared_histories
+        shared_histories.history_card(history_id=history_id).wait_for_visible()
+
+        shared_histories.extra_actions(history_id=history_id).wait_for_and_click()
+        shared_histories.unshare_with_me_button(history_id=history_id).wait_for_and_click()
+        assert "from your shared histories" in self.components.confirm_dialog.message.wait_for_text()
+        self.screenshot("history_sharing_unshare_with_me_confirm")
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+
+        shared_histories.history_card(history_id=history_id).wait_for_absent()
+        self.screenshot("history_sharing_unshare_with_me_removed")
+        response = self.api_get(f"histories/{history_id}", raw=True)
+        assert response.status_code == 403
+
+    def setup_histories_shared_with_new_user(self, names):
+        """Owner shares one API-created history per name with a new recipient, who stays logged in."""
+        self.register(self._get_random_email())
+        owner = self.api_interactor_for_logged_in_user()
+        owner_populator = DatasetPopulator(owner)
+        history_ids = []
+        for name in names:
+            history_id = owner_populator.new_history(name=name)
+            # Can't share an empty history...
+            owner_populator.new_dataset(history_id, wait=True)
+            history_ids.append(history_id)
+        self.logout_if_needed()
+
+        self.register(self._get_random_email())
+        recipient_id = self.get_user_id()
+        for history_id in history_ids:
+            payload = {"user_ids": [recipient_id], "share_option": "make_accessible_to_shared"}
+            response = owner.put(f"histories/{history_id}/share_with_users", payload, json=True)
+            response.raise_for_status()
+            assert [user["id"] for user in response.json()["users_shared_with"]] == [recipient_id]
+        return history_ids
 
     def setup_two_users_with_one_shared_history(self, share_by_id=False):
         user1_email = self._get_random_email()
