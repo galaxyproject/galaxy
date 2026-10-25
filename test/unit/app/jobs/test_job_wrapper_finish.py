@@ -1,3 +1,4 @@
+import os
 from unittest.mock import patch
 
 from sqlalchemy import event
@@ -8,6 +9,7 @@ from galaxy import (
 )
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.jobs import MinimalJobWrapper
+from galaxy.model import store
 from galaxy.util.unittest import TestCase
 
 
@@ -58,7 +60,30 @@ class TestJobWrapperFinish(TestCase, UsesTools):
             if job_state == model.Job.states.OK:
                 assert has_metrics
 
-    def _finish_and_record_commits(self):
+    def test_extended_metadata_outputs_and_final_job_state_are_committed_together(self):
+        self.app.config.metadata_strategy = "extended"
+        wrapper = MinimalJobWrapper(self.job, self.app, tool=self.tool)
+        assert wrapper.external_output_metadata.extended
+        self.dataset.state = model.Dataset.states.OK
+        with store.DirectoryModelExportStore(
+            os.path.join(wrapper.working_directory, "metadata", "outputs_populated"),
+            serialize_dataset_objects=True,
+            for_edit=True,
+            strip_metadata_files=False,
+            serialize_jobs=True,
+        ) as export_store:
+            export_store.add_dataset(self.job.output_datasets[0].dataset)
+        self.app.model.context.rollback()
+
+        committed = self._finish_and_record_commits(wrapper)
+
+        assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
+        for job_state, dataset_state, _ in committed:
+            if dataset_state == model.Dataset.states.OK:
+                assert job_state == model.Job.states.OK
+
+    def _finish_and_record_commits(self, wrapper=None):
+        wrapper = wrapper or MinimalJobWrapper(self.job, self.app, tool=self.tool)
         session = self.app.model.context()
         committed = []
 
@@ -67,7 +92,6 @@ class TestJobWrapperFinish(TestCase, UsesTools):
 
         event.listen(session, "before_commit", record)
         try:
-            wrapper = MinimalJobWrapper(self.job, self.app, tool=self.tool)
             wrapper.finish("", "", tool_exit_code=0)
         finally:
             event.remove(session, "before_commit", record)

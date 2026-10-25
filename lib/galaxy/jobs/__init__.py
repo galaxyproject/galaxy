@@ -2345,11 +2345,13 @@ class MinimalJobWrapper(HasResourceParameters):
                     import_options=import_options,
                     user=job.user,
                     tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
+                    # The imported outputs are committed together with the final job state below.
+                    commit=False,
                 )
                 object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
                 # Datasets discovered by the job are created by the import, without permissions.
                 # Precreated outputs (hdas_by_id) got their permissions when the job was created.
-                # The import's commit expired the new HDAs, so load them and their dataset permissions in one go.
+                # Load the new HDAs and their dataset permissions in one go.
                 if discovered_hda_ids := [
                     inspect(hda).identity[0] for hda in object_import_tracker.hdas_by_key.values()
                 ]:
