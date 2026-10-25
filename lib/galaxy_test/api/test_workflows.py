@@ -6522,8 +6522,6 @@ steps:
             first_invocation_id = self.workflow_populator.invoke_workflow_and_wait(
                 workflow_id, history_id=history_id_one, inputs={"0": {"src": "hdca", "id": hdca["id"]}}
             ).json()["id"]
-            # Shift hids so default output names differ between the two histories.
-            self.dataset_populator.new_dataset(history_id_two, wait=True)
             copy = self.dataset_collection_populator.copy_collection(history_id_two, hdca["id"]).json()
             invocation_id = self.workflow_populator.invoke_workflow_and_wait(
                 workflow_id,

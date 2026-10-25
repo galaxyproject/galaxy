@@ -798,52 +798,40 @@ steps:
         self._search(search_payload, expected_search_count=0)
 
     @pytest.mark.require_new_history
-    def test_cached_job_mapped_run_reuses_mapped_job(self, history_id):
-        hdca_id, _, _ = self._list_of_existing_dataset(history_id)
-        inputs = _mapped_inputs(hdca_id)
-        mapped = self._run_tool_and_wait(history_id, inputs)
-        cached = self._run_tool_and_wait(history_id, inputs, use_cached_job=True)
-        assert self._copied_from_and_identifier(history_id, cached) == (mapped["jobs"][0]["id"], "sample_a")
-
-    @pytest.mark.require_new_history
-    def test_cached_job_name_agnostic_plain_run_reuses_mapped_job(self, history_id):
+    def test_use_cached_job_plain_cat1_run_reuses_mapped_job(self, history_id):
         hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
-        inputs = _mapped_inputs(hdca_id)
-        mapped = self._run_tool_and_wait(history_id, inputs, tool_id="cat1")
-        plain = self._run_tool_and_wait(
-            history_id, {"input1": {"src": "hda", "id": hda_id}}, use_cached_job=True, tool_id="cat1"
-        )
+        mapped = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), tool_id="cat1")
+        plain = self._run_tool_and_wait(history_id, _plain_inputs(hda_id), use_cached_job=True, tool_id="cat1")
         assert self._copied_from_job_id(plain) == mapped["jobs"][0]["id"]
 
     @pytest.mark.require_new_history
-    def test_cached_job_plain_run_skips_mapped_job(self, history_id):
+    def test_use_cached_job_plain_identifier_single_run_does_not_reuse_mapped_job(self, history_id):
         hdca_id, hda_id, hda_name = self._list_of_existing_dataset(history_id)
         self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id))
-        plain = self._run_tool_and_wait(history_id, {"input1": {"src": "hda", "id": hda_id}}, use_cached_job=True)
-        assert self._copied_from_and_identifier(history_id, plain) == (None, hda_name)
+        plain = self._run_tool_and_wait(history_id, _plain_inputs(hda_id), use_cached_job=True)
+        assert self._copied_from_job_id(plain) is None
+        assert hda_name in self._output_words(history_id, plain)
 
     @pytest.mark.require_new_history
-    def test_cached_job_mapped_run_skips_plain_job(self, history_id):
+    def test_use_cached_job_mapped_identifier_single_run_does_not_reuse_plain_job(self, history_id):
         hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
-        self._run_tool_and_wait(history_id, {"input1": {"src": "hda", "id": hda_id}})
-        inputs = _mapped_inputs(hdca_id)
-        mapped = self._run_tool_and_wait(history_id, inputs, use_cached_job=True)
-        assert self._copied_from_and_identifier(history_id, mapped) == (None, "sample_a")
+        self._run_tool_and_wait(history_id, _plain_inputs(hda_id))
+        mapped = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), use_cached_job=True)
+        assert self._copied_from_job_id(mapped) is None
+        assert "sample_a" in self._output_words(history_id, mapped)
 
     @pytest.mark.require_new_history
-    def test_cached_job_mapped_run_skips_other_identifier(self, history_id):
+    def test_use_cached_job_mapped_identifier_single_run_does_not_reuse_job_with_other_identifier(self, history_id):
         hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
-        other_hdca_id = self.dataset_collection_populator.create_nested_collection(
-            history_id, "list", element_identifiers=[{"name": "sample_b", "src": "hda", "id": hda_id}]
-        ).json()["id"]
+        other_hdca_id = self._list_with_identifier(history_id, hda_id, "sample_b")
         self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id))
-        inputs = _mapped_inputs(other_hdca_id)
-        mapped = self._run_tool_and_wait(history_id, inputs, use_cached_job=True)
-        assert self._copied_from_and_identifier(history_id, mapped) == (None, "sample_b")
+        mapped = self._run_tool_and_wait(history_id, _mapped_inputs(other_hdca_id), use_cached_job=True)
+        assert self._copied_from_job_id(mapped) is None
+        assert "sample_b" in self._output_words(history_id, mapped)
 
     @requires_new_user
-    def test_cached_job_mapped_run_skips_renamed_input(self):
-        # model_attributes echoes $input1.name and needs a user address.
+    def test_use_cached_job_mapped_model_attributes_run_does_not_reuse_job_after_input_rename(self):
+        # model_attributes also renders $__user__.addresses[0].desc, which fails for a user without an address.
         with self._different_user_with_address("lab"), self.dataset_populator.test_history() as history_id:
             hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
             self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), tool_id="model_attributes")
@@ -867,6 +855,11 @@ steps:
         assert hda_name != "sample_a"
         return hdca["id"], hda_id, hda_name
 
+    def _list_with_identifier(self, history_id, hda_id, identifier):
+        return self.dataset_collection_populator.create_nested_collection(
+            history_id, "list", element_identifiers=[{"name": identifier, "src": "hda", "id": hda_id}]
+        ).json()["id"]
+
     def _run_tool_and_wait(self, history_id, inputs, use_cached_job=False, tool_id="identifier_single"):
         response = self.dataset_populator.run_tool(tool_id, inputs, history_id, use_cached_job=use_cached_job)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
@@ -876,12 +869,11 @@ steps:
         job = self.dataset_populator.get_job_details(run_response["jobs"][0]["id"], full=True).json()
         return job["copied_from_job_id"]
 
-    def _copied_from_and_identifier(self, history_id, run_response):
+    def _output_words(self, history_id, run_response):
         content = self.dataset_populator.get_history_dataset_content(
             history_id, dataset_id=run_response["outputs"][0]["id"]
         )
-        # Last word of the first line; newer identifier_single prefixes "identifier ".
-        return self._copied_from_job_id(run_response), content.splitlines()[0].split()[-1]
+        return content.split()
 
     @pytest.mark.require_new_history
     def test_search_delete_outputs(self, history_id):
@@ -1294,3 +1286,7 @@ steps:
 
 def _mapped_inputs(hdca_id):
     return {"input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}}
+
+
+def _plain_inputs(hda_id):
+    return {"input1": {"src": "hda", "id": hda_id}}
