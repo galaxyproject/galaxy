@@ -106,6 +106,19 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.assert_wf_annotation_is(new_annotation)
 
     @selenium_test
+    def test_edit_tags(self):
+        name = self.create_and_wait_for_new_workflow_in_editor()
+        editor = self.components.workflow_editor
+        if editor.edit_name.is_absent:
+            editor.tool_bar.attributes.wait_for_and_click()
+        editor.edit_tags_toggle.wait_for_and_click()
+        self.tagging_add(["editortag"], parent_selector="#edit-attributes ")
+        self.screenshot("workflow_editor_tags")
+        self.workflow_index_open()
+        self.workflow_index_search_for(name)
+        self._wait_on(lambda: self.workflow_index_tags() == ["editortag"], "saved workflow to show its tag")
+
+    @selenium_test
     def test_edit_name(self):
         name = self.create_and_wait_for_new_workflow_in_editor()
         new_name = self._get_random_name()

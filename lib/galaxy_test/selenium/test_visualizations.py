@@ -64,6 +64,41 @@ class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
 
     @selenium_test
     @managed_history
+    def test_display_application_links(self):
+        self.dataset_populator.new_dataset(
+            self.current_history_id(), content="chr1\t100\t200\ta\n", file_type="bed", dbkey="hg38", wait=True
+        )
+        details = self.dataset_populator.get_history_dataset_details(self.current_history_id(), hid=1)
+        expected = {
+            app["label"]: [link["text"] for link in app["links"]]
+            for app in details["display_apps"] + details["display_types"]
+        }
+        assert expected["display at UCSC"] == ["main"]
+        self.show_dataset_visualizations(1)
+        items = self.components.visualization.display_application_items
+        items.wait_for_present()
+        applications = {
+            item.find_element("css selector", ".font-weight-bold").text: [
+                link.text for link in item.find_elements("css selector", "a")
+            ]
+            for item in items.all()
+        }
+        assert applications == expected
+        self.screenshot("dataset_display_application_links")
+
+    @selenium_test
+    @managed_history
+    def test_no_display_application_links(self):
+        self.dataset_populator.new_dataset(
+            self.current_history_id(), content="No display applications.\n", file_type="txt", wait=True
+        )
+        self.show_dataset_visualizations(1)
+        self.components.visualization.display_applications.wait_for_present()
+        assert self.components.visualization.display_application_items.all() == []
+        self.screenshot("dataset_display_application_links_empty")
+
+    @selenium_test
+    @managed_history
     @skip_without_visualization_plugin("igv")
     def test_igv_loads_correct_genome(self):
         hid = 1
