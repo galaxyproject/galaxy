@@ -266,7 +266,7 @@ def to_cwl(
     hda_references,
     step: Optional[WorkflowStep] = None,
     compute_environment: Optional[ComputeEnvironment] = None,
-    element_identifiers: Optional[dict[int, str]] = None,
+    element_identifiers: Optional[dict[DatasetInstance, str]] = None,
 ):
     element_identifier = None
     if isinstance(value, NoReplacement):
@@ -313,7 +313,7 @@ def to_cwl(
                 properties["element_identifier"] = element_identifier
             elif element_identifiers is not None:
                 # Passed by the UDT evaluator only; falls back to the dataset name like Cheetah.
-                properties["element_identifier"] = element_identifiers.get(value.id) or value.name
+                properties["element_identifier"] = element_identifiers.get(value) or value.name
             return properties
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":

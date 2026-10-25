@@ -54,11 +54,11 @@ def setup_for_runtimeify(
     compute_environment: Optional["ComputeEnvironment"],
     input_datasets: InpDataDictT,
     input_dataset_collections: Optional[InpDataCollectionsDictT] = None,
-    element_identifiers: Optional[dict[int, str]] = None,
+    element_identifiers: Optional[dict[DatasetInstance, str]] = None,
 ):
     """Set up callbacks for runtimeify to convert tool state to runtime representations.
 
-    ``element_identifiers`` maps job input dataset ids to the element identifiers they were mapped over with.
+    ``element_identifiers`` maps job input datasets to the element identifiers they were mapped over with.
 
     Returns:
         Tuple of (hda_references, adapt_dataset, adapt_collection)
@@ -132,7 +132,7 @@ def setup_for_runtimeify(
         }
         set_basename_and_derived_properties(properties, hda_entry.dataset.created_from_basename or hda_entry.name)
         # Like Cheetah's ``element_identifier``, fall back to the dataset name outside a collection.
-        properties["element_identifier"] = element_identifiers.get(hda_entry.id) or hda_entry.name
+        properties["element_identifier"] = element_identifiers.get(hda_entry) or hda_entry.name
         return DataInternalJson(**properties)
 
     def adapt_collection(

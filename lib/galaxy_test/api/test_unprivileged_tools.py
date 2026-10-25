@@ -1,4 +1,5 @@
 # Test tools API.
+import base64
 from typing import Any
 from uuid import uuid4
 
@@ -217,6 +218,44 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             output_content = self.dataset_populator.get_history_dataset_content(history_id)
         assert output_content == "forward reverse\n"
+
+    def test_run_mapped_over_deferred_list_with_deferred_input_writes_element_identifiers(self):
+        tool = {
+            **TOOL_WITH_SHELL_COMMAND,
+            "shell_command": "echo '$(inputs.input.element_identifier) $(inputs.ref.element_identifier)' > output.fastq",
+            "inputs": [
+                {"type": "data", "name": "input", "format": "txt"},
+                {"type": "data", "name": "ref", "format": "txt"},
+            ],
+        }
+
+        def deferred(name: str, content: str) -> dict[str, Any]:
+            url = f"base64://{base64.b64encode(content.encode()).decode()}"
+            return {"src": "url", "url": url, "deferred": True, "ext": "txt", "name": name}
+
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**tool))
+            hdca = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[deferred("sample_a", "a"), deferred("sample_b", "b")], wait=True
+            ).json()["outputs"][0]
+            ref = self.dataset_populator.fetch_hda(history_id, deferred("ref.txt", "ref"))
+            run = self._run(
+                history_id=history_id,
+                tool_uuid=dynamic_tool["uuid"],
+                inputs={
+                    "input": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"]}]},
+                    "ref": {"src": "hda", "id": ref["id"]},
+                },
+                assert_ok=True,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            contents = self.dataset_populator.get_collection_element_contents(
+                history_id, run["implicit_collections"][0]["id"]
+            )
+        assert contents == {"sample_a": "sample_a ref.txt\n", "sample_b": "sample_b ref.txt\n"}
 
     def _run_mapped_over_list(
         self, tool: dict[str, Any], elements: list[tuple[str, str]], ext: str = "txt"

@@ -1103,7 +1103,7 @@ class UserToolEvaluator(ToolEvaluator):
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
         # Map-over hands each job an HDA; its element identifier is only kept in the job parameters.
-        element_identifiers = ElementIdentifierMapper(input_datasets).identifiers_by_dataset_id(incoming)
+        element_identifiers = ElementIdentifierMapper(input_datasets).identifiers_by_dataset(incoming)
         hda_references: list[model.HistoryDatasetAssociation]
         if validated_tool_state is not None:
             from galaxy.tool_util.parameters.convert import runtimeify
