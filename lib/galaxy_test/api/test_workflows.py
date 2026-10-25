@@ -566,6 +566,19 @@ steps:
         assert workflow["tags"] == []
         assert workflow["hidden"] is False
 
+    def test_set_workflow_menu(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            shared_workflow_id = self.workflow_populator.simple_workflow("test_set_menu_shared")
+            self.workflow_populator.share_with_user(shared_workflow_id, my_email)
+            private_workflow_id = self.workflow_populator.simple_workflow("test_set_menu_private")
+        menu_response = self.workflow_populator.set_workflow_menu([shared_workflow_id])
+        self._assert_status_code_is_ok(menu_response)
+        assert self._shows_in_tool_panel(shared_workflow_id, show_shared=True)
+        menu_response = self.workflow_populator.set_workflow_menu([shared_workflow_id, private_workflow_id])
+        self._assert_status_code_is(menu_response, 403)
+        assert self._shows_in_tool_panel(shared_workflow_id, show_shared=True)
+
     def test_set_workflow_menu_drops_duplicate_ids(self):
         workflow_id_1 = self.workflow_populator.simple_workflow("test_set_menu_dup_1")
         workflow_id_2 = self.workflow_populator.simple_workflow("test_set_menu_dup_2")

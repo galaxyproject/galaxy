@@ -171,7 +171,8 @@ class WorkflowsAPIController(
         workflow_ids_decoded = [trans.security.decode_id(encoded_id) for encoded_id in workflow_ids]
         # Unique ids in request order, all resolved before existing entries are cleared.
         stored_workflows = [
-            trans.sa_session.get(model.StoredWorkflow, wf_id) for wf_id in dict.fromkeys(workflow_ids_decoded)
+            self.workflow_manager.get_stored_accessible_workflow(trans, wf_id)
+            for wf_id in dict.fromkeys(workflow_ids_decoded)
         ]
         session = trans.sa_session
         # This explicit remove seems like a hack, need to figure out
