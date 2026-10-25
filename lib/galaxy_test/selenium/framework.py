@@ -45,7 +45,10 @@ from galaxy.tool_util.verify import (
     verify,
     verify_job_metadata,
 )
-from galaxy.tool_util.verify.interactor import prepare_request_params
+from galaxy.tool_util.verify.interactor import (
+    discovered_output_name,
+    prepare_request_params,
+)
 from galaxy.util import (
     asbool,
     classproperty,
@@ -1193,7 +1196,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 verify(output_name, output_content, output_def.get("attributes", {}))
                 primary_datasets = output_def.get("attributes", {}).get("primary_datasets", {})
                 for designation, (_primary_outfile, primary_attribs) in primary_datasets.items():
-                    primary_key = f"__new_primary_file_{output_name}|{designation}__"
+                    primary_key = discovered_output_name(output_name, designation)
                     assert primary_key in output_id_by_name, (
                         f"Discovered dataset '{designation}' not found for output '{output_name}': "
                         f"{list(output_id_by_name.keys())}"

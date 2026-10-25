@@ -420,6 +420,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.navigate_to(self.build_url(path))
         self.components.workflow_run.run_workflow.wait_for_visible()
 
+    def go_to_tool_landing(
+        self, uuid: str, public: Literal["false", "true"] = "true", client_secret: str | None = None
+    ):
+        path = f"tool_landings/{uuid}?public={public}"
+        if client_secret:
+            path = f"{path}&client_secret={client_secret}"
+        self.navigate_to(self.build_url(path))
+
     def go_to_trs_search(self) -> None:
         self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
@@ -650,6 +658,17 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             return True if self.current_history()["name"] == name else None
 
         self._wait_on(renamed, f"current history name to become [{name}]", wait_type=WAIT_TYPES.DATABASE_OPERATION)
+
+    def history_panel_switch_to(self, history_id: str):
+        """Make ``history_id`` current via the history panel's Switch to history modal."""
+        self.components.history_panel.switch_history_button.wait_for_and_click()
+        self.components.history_selector_modal.item(history_id=history_id).wait_for_and_click()
+        self.components.history_selector_modal._.wait_for_absent_or_hidden()
+        self._wait_on(
+            lambda driver=None: True if self.current_history_id() == history_id else None,
+            f"history {history_id} to become current",
+            wait_type=WAIT_TYPES.DATABASE_OPERATION,
+        )
 
     def history_panel_create_new(self):
         """Click create new and wait for the new history to become the current one."""
@@ -3010,10 +3029,18 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         list_wizard.wizard_next_button.wait_for_and_click()
 
     def list_wizard_click_cell_and_send_keys(self, column_identifier: str, row_index: int, text: str):
-        list_wizard = self.components.collection_builders.list_wizard
-        list_wizard.cell(row_index=row_index, column_identifier=column_identifier).wait_for_and_double_click()
-        input = list_wizard.cell_input(row_index=row_index, column_identifier=column_identifier)
-        input.wait_for_and_send_keys(text)
+        self.ag_grid_edit_cell(self.components.collection_builders.list_wizard, column_identifier, row_index, text)
+
+    def ag_grid_edit_cell(
+        self, grid: SmartComponent, column_identifier: str, row_index: int, text: str, clear: bool = False
+    ):
+        """Edit a cell of ``grid``, a component with ``cell`` and ``cell_input`` selectors."""
+        grid.cell(row_index=row_index, column_identifier=column_identifier).wait_for_and_double_click()
+        input = grid.cell_input(row_index=row_index, column_identifier=column_identifier)
+        if clear:
+            input.wait_for_and_clear_and_send_keys(text)
+        else:
+            input.wait_for_and_send_keys(text)
         self.send_enter(input.wait_for_present())
 
     def collection_builder_set_name(self, name):

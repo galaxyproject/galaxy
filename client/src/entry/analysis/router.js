@@ -645,7 +645,7 @@ export function getRouter(Galaxy) {
                         component: ToolLanding,
                         props: (route) => ({
                             uuid: route.params.uuid,
-                            public: Boolean(route.query.public),
+                            public: (route.query.public || "").toLowerCase() === "true",
                             secret: route.query.client_secret,
                         }),
                         beforeEnter: requireAuth,

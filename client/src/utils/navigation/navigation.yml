@@ -61,6 +61,11 @@ masthead:
     window_manager: '#enable-window-manager > .nav-link'
     workflow: '#workflow .nav-link'
 
+history_selector_modal:
+  selectors:
+    _: 'dialog.g-dialog[open]'
+    item: 'dialog.g-dialog[open] [data-pk="${history_id}"]'
+
 command_palette:
 
   selectors:
@@ -403,6 +408,7 @@ history_panel:
     collection_menu_edit_attributes: '.edit-btn'
 
     new_history_button: '[data-description="create new history"]'
+    switch_history_button: '[data-description="switch to another history"]'
     histories_operation_menu: '[data-description="history options"]'
     multi_view_button: '[data-description="switch to multi history view"]'
 
@@ -577,6 +583,13 @@ collection_builders:
         _: '[row-index="${index}"]'
         link_button: '${_} .paired-action-icon.fa-link'
         unlink_button: '${_} .paired-action-icon.fa-unlink'
+
+data_landing:
+  selectors:
+    cell: '[data-description="fetch grid"] [aria-rowindex="${row_index}"] [col-id="${column_identifier}"]'
+    cell_input: '[data-description="fetch grid"] [aria-rowindex="${row_index}"] [col-id="${column_identifier}"] input'
+    execute: 'button#execute'
+    success: '[data-description="fetch landing success"]'
 
 histories:
   selectors:
@@ -1774,8 +1787,6 @@ upload_activity:
     paste_links_row_deferred_label: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] + .g-checkbox-label'
     # Target-history selectors (TargetHistorySelector inside UploadMethodView)
     target_history_change_link: '.target-history-banner .change-history-link'
-    history_selector_modal: '.g-dialog'
-    history_selector_modal_item: '.g-dialog [data-pk="${history_id}"]'
     # Upload panel advanced mode switch
     advanced_mode_toggle_checkbox: '[data-test-id="upload-advanced-mode-toggle"]'
     # Target-object-store selectors (TargetObjectStoreSelector inside UploadMethodView)
