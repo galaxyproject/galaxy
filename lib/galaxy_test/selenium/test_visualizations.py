@@ -83,9 +83,7 @@ class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
         self.dataset_populator.new_dataset(
             self.current_history_id(), content="No display applications.\n", file_type="txt", wait=True
         )
-        self.show_dataset_visualizations(1)
-        self.components.visualization.display_applications.wait_for_present()
-        assert self.components.visualization.display_application_items.all() == []
+        assert self.dataset_display_applications(1) == {}
         self.screenshot("dataset_display_application_links_empty")
 
     @selenium_test

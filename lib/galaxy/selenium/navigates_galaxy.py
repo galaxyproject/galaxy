@@ -3034,10 +3034,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.dataset_view.visualize_tab.wait_for_and_click()
 
     def dataset_display_applications(self, hid: int) -> dict[str, list[str]]:
-        """Open dataset ``hid``'s Visualize tab; return its display application links, label to link texts."""
+        """Open dataset ``hid``'s Visualize tab; return display application labels to link texts, or an empty catalog."""
         self.show_dataset_visualizations(hid)
+        self.components.visualization.display_applications.wait_for_present()
         items = self.components.visualization.display_application_items
-        items.wait_for_present()
         return {
             item.find_element(*self.navigation.visualization.display_application_label.element_locator).text: [
                 link.text
