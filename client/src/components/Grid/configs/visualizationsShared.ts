@@ -1,8 +1,10 @@
-import { faEye } from "@fortawesome/free-solid-svg-icons";
+import { faEye, faUserSlash } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
+import { GalaxyApi } from "@/api";
 import { loadVisualizations, type VisualizationSortByLiteral } from "@/api/visualizations";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { FieldArray, GridConfig } from "./types";
 
@@ -48,6 +50,25 @@ const fields: FieldArray = [
                     emit(`/visualizations/display?visualization=${data.type}&visualization_id=${data.id}`, {
                         title: data.title,
                     });
+                },
+            },
+            {
+                title: "Remove from Shared",
+                icon: faUserSlash,
+                handler: async (data: VisualizationEntry) => {
+                    const { error } = await GalaxyApi().PUT("/api/visualizations/{id}/unshare_with_me", {
+                        params: { path: { id: String(data.id) } },
+                    });
+                    if (error) {
+                        return {
+                            status: "danger",
+                            message: `Failed to remove '${data.title}': ${errorMessageAsString(error)}.`,
+                        };
+                    }
+                    return {
+                        status: "success",
+                        message: `'${data.title}' has been removed from your shared visualizations.`,
+                    };
                 },
             },
         ],
