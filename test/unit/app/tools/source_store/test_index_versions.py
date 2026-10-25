@@ -211,14 +211,32 @@ def test_storage_only_twin_does_not_displace_configured_version_slot(index_entry
     assert index.get("x", "1.0") is configured
 
 
-def test_superseding_entry_replaces_configured_version_slot(index_entry, tool_index):
-    # A rescan of the same id and version at a new path replaces the slot.
-    configured = index_entry("x", version="1.0", source_path="/old/x.xml")
-    index = tool_index(configured, index_entry("x", version="0.9"))
-    rescanned = index_entry("x", version="1.0", source_path="/new/x.xml", in_panel=False)
+def test_superseding_shed_entry_replaces_configured_version_slot(index_entry, tool_index):
+    configured = index_entry("x", version="1.0", source_path="/old/x.xml", is_local=False)
+    index = tool_index(configured, index_entry("x", version="0.9", is_local=False))
+    rescanned = index_entry("x", version="1.0", source_path="/new/x.xml", in_panel=False, is_local=False)
     index.add_entry(rescanned, supersede=True)
     assert index.get("x", "1.0") is rescanned
     assert index.entries["x"].version == "0.9"
+
+
+def test_superseding_rescan_of_same_file_replaces_configured_version_slot(index_entry, tool_index):
+    configured = index_entry("x", version="1.0", source_path="/local/x.xml")
+    index = tool_index(configured)
+    rescanned = index_entry("x", version="1.0", source_path="/local/x.xml", in_panel=False)
+    index.add_entry(rescanned, supersede=True)
+    assert index.get("x", "1.0") is rescanned
+
+
+def test_rescanned_local_twin_does_not_displace_configured_version_slot(index_entry, tool_index):
+    configured = index_entry("j", version="0.3", source_path="/database/tools/j.xml")
+    bundled = index_entry("j", version="0.3", source_path="/bundled/j.xml", in_panel=False)
+    newer = index_entry("j", version="1.0.3", source_path="/bundled/j_1.0.3.xml", in_panel=False)
+    index = tool_index(configured, bundled, newer)
+    index.add_entry(bundled.model_copy(), new_placements_first=True, supersede=True)
+    assert index.get("j", "0.3") is configured
+    assert index.entries["j"] is configured
+    assert list(index.configured_versions("j")) == ["0.3"]
 
 
 def test_remove_version_keeps_placement_order_for_readded_id(index_entry, tool_index):

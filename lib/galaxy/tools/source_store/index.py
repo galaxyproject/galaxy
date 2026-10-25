@@ -249,19 +249,21 @@ class ToolIndex(BaseModel):
         tool at its conf-fragment position — the top of the section. Full
         rebuilds append, preserving conf order.
 
-        ``supersede``: the entry replaces its id/version slot even when a
-        configured entry holds it. Rescans and runtime writes pass this: a
-        shed update indexes the new revision ad hoc before its conf entry
-        catches up, and the old path may already be gone.
+        ``supersede``: a storage-only shed entry, or a rescan of the slot's
+        own file, replaces its id/version slot even when a configured entry
+        holds it. Rescans and runtime writes pass this: a shed update indexes
+        the new revision ad hoc before its conf entry catches up, and the old
+        path may already be gone. A local storage-only twin at another path
+        (a bundled copy) never displaces the configured entry.
         """
         self.invalidate_caches()
         version = entry.version or ""
         versions = self.entries_by_version.setdefault(entry.id, {})
         slot = versions.get(version)
-        if slot is not None and not supersede and not _preferred_default(entry, slot, replace_equal=True):
-            # A storage-only twin of a configured id/version found by the same
-            # scan (e.g. a bundled copy at another path) must not displace it.
-            return
+        if slot is not None and not _preferred_default(entry, slot, replace_equal=True):
+            # ``entry`` is storage-only and ``slot`` is configured.
+            if not (supersede and (not entry.is_local or entry.source_path == slot.source_path)):
+                return
         versions[version] = entry
         self._record_panel_item(entry, new_placements_first=new_placements_first)
         existing = self.entries.get(entry.id)
