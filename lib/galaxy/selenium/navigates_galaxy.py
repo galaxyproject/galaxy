@@ -835,6 +835,15 @@ class NavigatesGalaxy(HasDriver):
         login.submit.wait_for_and_click()
         self.snapshot("login-submitted")
 
+    def request_password_reset(self, email: str) -> str:
+        """Request a reset email from the login page and return its confirmation."""
+        self.home()
+        self.components.masthead.login_masthead_button.wait_for_and_click()
+        login = self.components.login
+        self.fill(login.form.wait_for_visible(), {"login": email})
+        login.reset_password_link.wait_for_and_click()
+        return login.alert.wait_for_text()
+
     def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True):
         if email is None:
             email = self._get_random_email()

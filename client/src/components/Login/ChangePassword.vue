@@ -43,22 +43,34 @@ async function submit() {
 </script>
 
 <template>
-    <BForm @submit.prevent="submit">
+    <BForm data-description="change password" @submit.prevent="submit">
         <BAlert v-if="!!message" :variant="variant" show>
             {{ message }}
         </BAlert>
 
         <BCard header="Change your password">
             <BFormGroup v-if="expiredUser" label="Current Password">
-                <BFormInput v-model="current" type="password" autocomplete="current-password" />
+                <BFormInput
+                    v-model="current"
+                    data-description="current password"
+                    type="password"
+                    autocomplete="current-password" />
             </BFormGroup>
 
             <BFormGroup label="New Password">
-                <BFormInput v-model="password" type="password" autocomplete="new-password" />
+                <BFormInput
+                    v-model="password"
+                    data-description="new password"
+                    type="password"
+                    autocomplete="new-password" />
             </BFormGroup>
 
             <BFormGroup label="Confirm password">
-                <BFormInput v-model="confirm" type="password" autocomplete="new-password" />
+                <BFormInput
+                    v-model="confirm"
+                    data-description="confirm password"
+                    type="password"
+                    autocomplete="new-password" />
             </BFormGroup>
 
             <BButton type="submit">Save new password</BButton>
