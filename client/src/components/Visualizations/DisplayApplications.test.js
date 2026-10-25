@@ -8,6 +8,7 @@ import DisplayApplications from "./DisplayApplications.vue";
 const localVue = getLocalVue();
 
 const raw = {
+    id: "dataset-id",
     display_apps: [
         {
             label: "app-1",
