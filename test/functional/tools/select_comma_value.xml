@@ -1,17 +1,57 @@
 <tool id="select_comma_value" name="select_comma_value" version="1.0.0" profile="24.2">
     <command><![CDATA[
+echo '$rep' > '$output' &&
+echo '$cond.mode' > '$output2' &&
 echo '$multi' > '$output3'
     ]]></command>
     <inputs>
+        <param name="rep" type="select">
+            <option value="relax,150,100">relax</option>
+            <option value="default,200,100">default</option>
+        </param>
         <param name="multi" type="select" multiple="true" optional="true">
             <option value="x,1">X</option>
             <option value="y,2">Y</option>
         </param>
+        <conditional name="cond">
+            <param name="mode" type="select">
+                <option value="a,1">A</option>
+                <option value="b,2">B</option>
+            </param>
+            <when value="a,1"/>
+            <when value="b,2"/>
+        </conditional>
     </inputs>
     <outputs>
+        <data name="output" format="txt" />
+        <data name="output2" format="txt" />
         <data name="output3" format="txt" />
     </outputs>
     <tests>
+        <test>
+            <param name="rep" value="relax,150,100" />
+            <conditional name="cond">
+                <param name="mode" value="b,2" />
+            </conditional>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="relax,150,100" />
+                </assert_contents>
+            </output>
+            <output name="output2">
+                <assert_contents>
+                    <has_line line="b,2" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="rep" value_json="&quot;default,200,100&quot;" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="default,200,100" />
+                </assert_contents>
+            </output>
+        </test>
         <test>
             <param name="multi" value_json='["x,1", "y,2"]' />
             <output name="output3">
