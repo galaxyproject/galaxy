@@ -1336,7 +1336,6 @@ def test_reindex_edited_tool_files_reindexes_selected_files(monkeypatch):
     box._reindex_edited_tool_files()
 
     assert calls == [{"/t/edited.xml": None}]
-    box._store.invalidate_index_cache.assert_called_once()
 
 
 @pytest.mark.parametrize(

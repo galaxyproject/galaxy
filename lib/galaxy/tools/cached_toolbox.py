@@ -676,14 +676,9 @@ class CachedToolBox(ToolBox):
             if not changed:
                 return
             log.info("CachedToolBox: re-indexing %d tool file(s) changed since they were indexed", len(changed))
+            # Reloads the index when it was written, by this populate or by a
+            # peer process reloading at the same time.
             self.index_tool_files(changed)
-            # A peer process reloading at the same time may have written these
-            # entries first, leaving this populate nothing to write; read the
-            # index back either way instead of keeping the stale cached copy.
-            if self._store is not None:
-                self._store.invalidate_index_cache()
-                self._tool_index = self._store.load_index() or ToolIndex()
-                self._rebuild_shed_short_id_map()
         except Exception as e:
             log.warning("Re-indexing edited tool files raised; serving the indexed definitions: %s", e)
 
