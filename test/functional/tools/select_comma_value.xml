@@ -1,0 +1,34 @@
+<tool id="select_comma_value" name="select_comma_value" version="1.0.0" profile="24.2">
+    <command><![CDATA[
+echo '$multi' > '$output3'
+    ]]></command>
+    <inputs>
+        <param name="multi" type="select" multiple="true" optional="true">
+            <option value="x,1">X</option>
+            <option value="y,2">Y</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output3" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="multi" value_json='["x,1", "y,2"]' />
+            <output name="output3">
+                <assert_contents>
+                    <has_line line="x,1,y,2" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="multi" value_json='["y,2"]' />
+            <output name="output3">
+                <assert_contents>
+                    <has_line line="y,2" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>
