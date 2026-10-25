@@ -10,6 +10,30 @@ History
 
 
 -------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Validate BCO exports against vendored IEEE-2791 schemas by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23430 <https://github.com/galaxyproject/galaxy/pull/23430>`_
+* Use pydantic-aware serializer for celery control replies by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23525 <https://github.com/galaxyproject/galaxy/pull/23525>`_
+* Serve deferred materialization test data from the mock HTTP server by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23794 <https://github.com/galaxyproject/galaxy/pull/23794>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Fix 500 when invoking a workflow with a nonexistent dataset input by `@jmchilton <https://github.com/jmchilton>`_ in `#24171 <https://github.com/galaxyproject/galaxy/pull/24171>`_
+* Show workflow integer/float input bounds on the run form by `@jmchilton <https://github.com/jmchilton>`_ in `#24212 <https://github.com/galaxyproject/galaxy/pull/24212>`_
+* Keep workflow parameter input validators as declared by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24282 <https://github.com/galaxyproject/galaxy/pull/24282>`_
+* Apply default permissions to discovered collection elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24284 <https://github.com/galaxyproject/galaxy/pull/24284>`_
+
+=============
+Other changes
+=============
+
+* Merge release_26.0 into release_26.1 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24248 <https://github.com/galaxyproject/galaxy/pull/24248>`_
+
+-------------------
 26.0.2 (2026-10-25)
 -------------------
 

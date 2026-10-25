@@ -10,6 +10,17 @@ History
 
 
 -------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* End SSE streams when a gunicorn worker starts draining by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23798 <https://github.com/galaxyproject/galaxy/pull/23798>`_
+
+-------------------
 26.0.2 (2026-10-25)
 -------------------
 

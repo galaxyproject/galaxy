@@ -10,6 +10,24 @@ History
 
 
 -------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fixes for package installed Galaxy. by `@jmchilton <https://github.com/jmchilton>`_ in `#23360 <https://github.com/galaxyproject/galaxy/pull/23360>`_
+* Fix deferred materialization fd double close and wait for gx-it-proxy in tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23793 <https://github.com/galaxyproject/galaxy/pull/23793>`_
+
+============
+Enhancements
+============
+
+* Backport test CI time fixes: pytest-xdist and parallel docs build by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24336 <https://github.com/galaxyproject/galaxy/pull/24336>`_
+
+-------------------
 26.0.2 (2026-10-25)
 -------------------
 

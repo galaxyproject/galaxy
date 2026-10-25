@@ -10,6 +10,36 @@ History
 
 
 -------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Restore root path support for FTP file sources by `@davelopez <https://github.com/davelopez>`_ in `#23497 <https://github.com/galaxyproject/galaxy/pull/23497>`_
+* Fix remote files ctime crash and eLabFTW listing and sorting by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23770 <https://github.com/galaxyproject/galaxy/pull/23770>`_
+* Fix deferred materialization fd double close and wait for gx-it-proxy in tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23793 <https://github.com/galaxyproject/galaxy/pull/23793>`_
+* Serve deferred materialization test data from the mock HTTP server by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23794 <https://github.com/galaxyproject/galaxy/pull/23794>`_
+* Don't resolve DNS in HTTP file source and URI validation unit tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23982 <https://github.com/galaxyproject/galaxy/pull/23982>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Run the ftp file source tests against a local ftp server by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24044 <https://github.com/galaxyproject/galaxy/pull/24044>`_
+* Percent-encode unsafe characters in HTTP file source URLs by `@itisAliRH <https://github.com/itisAliRH>`_ in `#24071 <https://github.com/galaxyproject/galaxy/pull/24071>`_
+* Return users to their destination after login, add allowed_login_redirect_hosts by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24111 <https://github.com/galaxyproject/galaxy/pull/24111>`_
+* Backport flaky test fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24251 <https://github.com/galaxyproject/galaxy/pull/24251>`_
+* Improve Dataverse file source search by `@davelopez <https://github.com/davelopez>`_ in `#24324 <https://github.com/galaxyproject/galaxy/pull/24324>`_
+* Fix uploading files to Dataverse by `@davelopez <https://github.com/davelopez>`_ in `#24327 <https://github.com/galaxyproject/galaxy/pull/24327>`_
+* Prevent selecting the root of RDM repositories as a directory by `@davelopez <https://github.com/davelopez>`_ in `#24358 <https://github.com/galaxyproject/galaxy/pull/24358>`_
+* Run FTP user file source Selenium test against a local server by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24360 <https://github.com/galaxyproject/galaxy/pull/24360>`_
+
+============
+Enhancements
+============
+
+* Name DRS-fetched datasets from DRS metadata instead of the URI basename by `@dannon <https://github.com/dannon>`_ in `#23275 <https://github.com/galaxyproject/galaxy/pull/23275>`_
+
+-------------------
 26.0.2 (2026-10-25)
 -------------------
 

@@ -10,6 +10,34 @@ History
 
 
 -------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Carry the landing-request destination through OIDC login by `@dannon <https://github.com/dannon>`_ in `#23274 <https://github.com/galaxyproject/galaxy/pull/23274>`_
+* Fix failing Selenium tests on release_26.1 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23406 <https://github.com/galaxyproject/galaxy/pull/23406>`_
+* Restore root path support for FTP file sources by `@davelopez <https://github.com/davelopez>`_ in `#23497 <https://github.com/galaxyproject/galaxy/pull/23497>`_
+* Distinguish ppm, pgm and pbm image types when sniffing by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#23759 <https://github.com/galaxyproject/galaxy/pull/23759>`_
+* Fix deferred materialization fd double close and wait for gx-it-proxy in tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23793 <https://github.com/galaxyproject/galaxy/pull/23793>`_
+* Serve deferred materialization test data from the mock HTTP server by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23794 <https://github.com/galaxyproject/galaxy/pull/23794>`_
+* Disable RST file insertion in tool help and bound the help cache by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23825 <https://github.com/galaxyproject/galaxy/pull/23825>`_
+* Skip anaconda and WorkflowHub tests when those sites are unavailable by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23842 <https://github.com/galaxyproject/galaxy/pull/23842>`_
+* Fix tool help render race and TRS import test race by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24082 <https://github.com/galaxyproject/galaxy/pull/24082>`_
+* Return users to their destination after login, add allowed_login_redirect_hosts by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24111 <https://github.com/galaxyproject/galaxy/pull/24111>`_
+* Backport flaky test fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24251 <https://github.com/galaxyproject/galaxy/pull/24251>`_
+* Skip Quay search tests on runtime API outages by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24432 <https://github.com/galaxyproject/galaxy/pull/24432>`_
+
+============
+Enhancements
+============
+
+* Share one watchdog observer across all file watchers by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24110 <https://github.com/galaxyproject/galaxy/pull/24110>`_
+
+-------------------
 26.0.2 (2026-10-25)
 -------------------
 

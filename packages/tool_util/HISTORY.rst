@@ -10,6 +10,49 @@ History
 
 
 -------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Reject generating parameter models for upload_dataset inputs by `@guerler <https://github.com/guerler>`_ in `#23283 <https://github.com/galaxyproject/galaxy/pull/23283>`_
+* Preserve tool lint errors after parser failures by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23386 <https://github.com/galaxyproject/galaxy/pull/23386>`_
+* Harden user-defined tool output declarations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23388 <https://github.com/galaxyproject/galaxy/pull/23388>`_
+* Harden tool-provided dynamic output collection by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23404 <https://github.com/galaxyproject/galaxy/pull/23404>`_
+* Fix \`base_image_for_targets()\` for newer conda search output by `@nsoranzo <https://github.com/nsoranzo>`_ in `#23496 <https://github.com/galaxyproject/galaxy/pull/23496>`_
+* Fix zero defaults for YAML numeric tool parameters by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23533 <https://github.com/galaxyproject/galaxy/pull/23533>`_
+* Backport mulled cache seeding to fix flaky integration tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23541 <https://github.com/galaxyproject/galaxy/pull/23541>`_
+* Fix dangling discriminator mapping in standalone tool state JSON schemas by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23614 <https://github.com/galaxyproject/galaxy/pull/23614>`_
+* Allow <requirements> children in any order in the tool XSD by `@jmchilton <https://github.com/jmchilton>`_ in `#23629 <https://github.com/galaxyproject/galaxy/pull/23629>`_
+* Fix user-defined tool references in workflow steps by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23694 <https://github.com/galaxyproject/galaxy/pull/23694>`_
+* Fix built-in converter registration during toolbox reload by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23797 <https://github.com/galaxyproject/galaxy/pull/23797>`_
+* Stop filling user-defined tool output labels as Cheetah templates by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23803 <https://github.com/galaxyproject/galaxy/pull/23803>`_
+* Disable RST file insertion in tool help and bound the help cache by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23825 <https://github.com/galaxyproject/galaxy/pull/23825>`_
+* Keep config file links inside the job working directory by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23826 <https://github.com/galaxyproject/galaxy/pull/23826>`_
+* Restrict from_work_dir paths of user-defined tools and shell-quote the copy command by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23840 <https://github.com/galaxyproject/galaxy/pull/23840>`_
+* Validate stored user-defined tools before loading them by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23841 <https://github.com/galaxyproject/galaxy/pull/23841>`_
+* Skip anaconda and WorkflowHub tests when those sites are unavailable by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23842 <https://github.com/galaxyproject/galaxy/pull/23842>`_
+* Fix collection type_source for inputs in conditionals and _<digit> names by `@jmchilton <https://github.com/jmchilton>`_ in `#23890 <https://github.com/galaxyproject/galaxy/pull/23890>`_
+* Ignore data table entries for already registered values when merging tables by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24003 <https://github.com/galaxyproject/galaxy/pull/24003>`_
+* Resolve implicitly converted inputs in the YAML tool runtime by `@davelopez <https://github.com/davelopez>`_ in `#24004 <https://github.com/galaxyproject/galaxy/pull/24004>`_
+* Cancel tool test jobs that exceed the test timeout by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24092 <https://github.com/galaxyproject/galaxy/pull/24092>`_
+* Don't read files or evaluate Python from untrusted tools in the Tool Shed by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24239 <https://github.com/galaxyproject/galaxy/pull/24239>`_
+* Keep workflow parameter input validators as declared by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24282 <https://github.com/galaxyproject/galaxy/pull/24282>`_
+* Order +galaxyN tool versions numerically in toolbox lineages by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24320 <https://github.com/galaxyproject/galaxy/pull/24320>`_
+* Skip Quay search tests on runtime API outages by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24432 <https://github.com/galaxyproject/galaxy/pull/24432>`_
+
+============
+Enhancements
+============
+
+* Add embedded authoring reference for user-defined tools by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23365 <https://github.com/galaxyproject/galaxy/pull/23365>`_
+* Share dir_mtime cache directory listings per process by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24017 <https://github.com/galaxyproject/galaxy/pull/24017>`_
+* Backport test CI time fixes: pytest-xdist and parallel docs build by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24336 <https://github.com/galaxyproject/galaxy/pull/24336>`_
+
+-------------------
 26.0.2 (2026-10-25)
 -------------------
 
