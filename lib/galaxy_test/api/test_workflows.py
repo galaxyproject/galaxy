@@ -375,6 +375,14 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         self._assert_status_code_is(show_response, 200)
         assert show_response.json()["name"] == "test_admin_show"
 
+    def test_cannot_show_workflow_with_unset_importable(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_unset_importable")
+        self._assert_status_code_is_ok(
+            self.workflow_populator.update_workflow_fields(workflow_id, {"importable": None})
+        )
+        with self._different_user():
+            self._assert_status_code_is(self._get(f"workflows/{workflow_id}"), 403)
+
     def test_cannot_download_private_workflow(self):
         workflow_id = self.workflow_populator.simple_workflow("test_not_downloadable")
         with self._different_user():

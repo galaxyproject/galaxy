@@ -321,7 +321,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                 user=trans.user, stored_workflow=stored_workflow
             )
             if get_count(trans.sa_session, stmt) == 0:
-                message = "Workflow is not owned by or shared with current user"
+                message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
 
         return stored_workflow

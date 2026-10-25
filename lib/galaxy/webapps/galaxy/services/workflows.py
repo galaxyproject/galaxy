@@ -237,12 +237,9 @@ class WorkflowsService(ServiceBase):
         return self._workflow_contents_manager.refactor(trans, stored_workflow, payload)
 
     def show_workflow(self, trans, workflow_id, instance, legacy, version) -> StoredWorkflowDetailed:
-        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
-        if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
-            wf_count = 0 if not trans.user else trans.user.count_stored_workflow_user_assocs(stored_workflow)
-            if wf_count == 0:
-                message = "Workflow is neither importable, nor owned by or shared with current user"
-                raise exceptions.ItemAccessibilityException(message)
+        stored_workflow = self._workflows_manager.get_stored_accessible_workflow(
+            trans, workflow_id, by_stored_id=not instance
+        )
         if legacy:
             style = "legacy"
         else:
