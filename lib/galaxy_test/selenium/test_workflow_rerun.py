@@ -18,6 +18,7 @@ inputs:
   bool_param:
     type: boolean
     default: true
+    doc: Shown beside the switch in place of its Yes/No label.
 steps:
   echo_bool:
     tool_id: gx_boolean

@@ -2236,12 +2236,16 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.tool_form.execute.wait_for_and_click()
 
     def tool_form_set_switch(self, parameter: str, value: bool = True) -> None:
-        """Set a switch on the open tool form by clicking its visible label."""
+        """Set a switch on the open tool form by clicking it as a user would."""
         tool_form = self.components.tool_form
         checkbox = tool_form.parameter_checkbox_input(parameter=parameter).wait_for_present()
         if checkbox.is_selected() != value:
-            tool_form.parameter_switch_label(parameter=parameter).wait_for_and_click()
-        assert checkbox.is_selected() == value, f"switch {parameter!r} not set to {value} after clicking its label"
+            label = tool_form.parameter_switch_label(parameter=parameter)
+            # A workflow run switch with help text has an empty Yes/No label, which has no size;
+            # its wrapper is then just the switch graphic.
+            target = label if label.is_displayed else tool_form.parameter_switch(parameter=parameter)
+            target.wait_for_and_click()
+        assert checkbox.is_selected() == value, f"switch {parameter!r} not set to {value} after clicking it"
 
     def tool_form_set_use_cached_job(self, value: bool = True) -> None:
         """Set the open tool form's "Attempt to re-use jobs with identical parameters?" switch."""
