@@ -11,7 +11,10 @@ from .framework import (
 
 class TestUploadActivityRemoteFiles(PosixFileSourceSetup, SeleniumIntegrationTestCase, UsesUploadActivity):
     run_as_admin = True
-    ensure_registered = True
+
+    def setup_with_driver(self):
+        super().setup_with_driver()
+        self.admin_login()
 
     def setUp(self):
         super().setUp()
@@ -20,8 +23,6 @@ class TestUploadActivityRemoteFiles(PosixFileSourceSetup, SeleniumIntegrationTes
     @selenium_test
     @managed_history
     def test_upload_from_remote_file_source(self):
-        self.logout_if_needed()
-        self.admin_login()
         self.upload_context("remote-files").stage_remote_file("Posix", "a").start()
 
         self.history_panel_wait_for_hid_ok(1)
@@ -29,8 +30,6 @@ class TestUploadActivityRemoteFiles(PosixFileSourceSetup, SeleniumIntegrationTes
     @selenium_test
     @managed_history
     def test_upload_from_remote_file_source_folder(self):
-        self.logout_if_needed()
-        self.admin_login()
         item = self.upload_context("remote-files").stage_remote_file("Posix", "b", path="subdir1")
         self.screenshot("upload_remote_files_subfolder_staged")
         item.start()
@@ -43,8 +42,6 @@ class TestUploadActivityRemoteFiles(PosixFileSourceSetup, SeleniumIntegrationTes
         long_name = "m84091_230808_224522_s2.hifi_reads.bc2001.default_long_unbroken_run_name" * 2
         with open(os.path.join(self.root_dir, long_name), "w") as f:
             f.write("long\n")
-        self.logout_if_needed()
-        self.admin_login()
         self.upload_context("remote-files").open_remote_folder("Posix")
         label = self.components.upload_activity.remote_files_browser_label(label=long_name).wait_for_visible()
         self.assert_label_within_its_column(label, "file name")
