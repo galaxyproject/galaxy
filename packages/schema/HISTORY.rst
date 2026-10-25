@@ -10,6 +10,17 @@ History
 
 
 -------------------
+26.0.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix 500 on reading pages with non-ASCII slugs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23854 <https://github.com/galaxyproject/galaxy/pull/23854>`_
+
+-------------------
 25.1.3 (2026-10-25)
 -------------------
 
