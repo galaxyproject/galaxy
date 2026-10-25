@@ -10,6 +10,42 @@ History
 
 
 -------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix workflow run-form option pagination by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23384 <https://github.com/galaxyproject/galaxy/pull/23384>`_
+* Fix failing Selenium tests on release_26.1 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23406 <https://github.com/galaxyproject/galaxy/pull/23406>`_
+* Fix workflow run-form dropdowns hiding and offering wrong datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23407 <https://github.com/galaxyproject/galaxy/pull/23407>`_
+* Fix TestPublishedHistories Selenium failures by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23419 <https://github.com/galaxyproject/galaxy/pull/23419>`_
+* Fix flaky datatype selection in workflow editor selenium tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23435 <https://github.com/galaxyproject/galaxy/pull/23435>`_
+* Compare published histories against the grid's own query in selenium tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23795 <https://github.com/galaxyproject/galaxy/pull/23795>`_
+* Quit selenium driver in test teardown to stop leaking chromedriver processes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23901 <https://github.com/galaxyproject/galaxy/pull/23901>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Show workflow integer/float input bounds on the run form by `@jmchilton <https://github.com/jmchilton>`_ in `#24212 <https://github.com/galaxyproject/galaxy/pull/24212>`_
+* Restore batch info for collections mapped over a collection input by `@jmchilton <https://github.com/jmchilton>`_ in `#24223 <https://github.com/galaxyproject/galaxy/pull/24223>`_
+* Backport flaky test fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24251 <https://github.com/galaxyproject/galaxy/pull/24251>`_
+* Keep workflow parameter input validators as declared by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24282 <https://github.com/galaxyproject/galaxy/pull/24282>`_
+
+============
+Enhancements
+============
+
+* Add embedded authoring reference for user-defined tools by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23365 <https://github.com/galaxyproject/galaxy/pull/23365>`_
+* Render client markup through a v-sanitize-html directive by `@dannon <https://github.com/dannon>`_ in `#23791 <https://github.com/galaxyproject/galaxy/pull/23791>`_
+* Backport test CI time fixes: pytest-xdist and parallel docs build by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24336 <https://github.com/galaxyproject/galaxy/pull/24336>`_
+
+=============
+Other changes
+=============
+
+* Merge release_25.1 into release_26.0 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24274 <https://github.com/galaxyproject/galaxy/pull/24274>`_
+
+-------------------
 26.0.2 (2026-10-25)
 -------------------
 
