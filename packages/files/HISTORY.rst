@@ -10,6 +10,23 @@ History
 
 
 -------------------
+25.1.3 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Don't resolve DNS in HTTP file source and URI validation unit tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23982 <https://github.com/galaxyproject/galaxy/pull/23982>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Run the ftp file source tests against a local ftp server by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24044 <https://github.com/galaxyproject/galaxy/pull/24044>`_
+* Backport flaky test fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24251 <https://github.com/galaxyproject/galaxy/pull/24251>`_
+* Improve Dataverse file source search by `@davelopez <https://github.com/davelopez>`_ in `#24324 <https://github.com/galaxyproject/galaxy/pull/24324>`_
+* Fix uploading files to Dataverse by `@davelopez <https://github.com/davelopez>`_ in `#24327 <https://github.com/galaxyproject/galaxy/pull/24327>`_
+* Run FTP user file source Selenium test against a local server by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24360 <https://github.com/galaxyproject/galaxy/pull/24360>`_
+
+-------------------
 26.0.1 (2026-06-04)
 -------------------
 
