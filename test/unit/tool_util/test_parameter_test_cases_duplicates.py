@@ -1,3 +1,4 @@
+import json
 import re
 from dataclasses import dataclass
 from typing import (
@@ -170,3 +171,21 @@ def test_duplicate_data_test_param_with_conflicting_edit_attributes_is_rejected(
     [test_description] = parse_tool_test_descriptions(tool_source)
     assert test_description.error
     assert "Ambiguous test parameter (input)" in str(test_description.exception)
+
+
+def test_data_test_param_edit_attributes_survive_json_round_trip():
+    tool_source = raw_xml_tool_source("""
+<tool id="edit_attributes" name="edit_attributes" version="1.0.0" profile="25.1">
+    <command>echo</command>
+    <inputs><param name="input" type="data" format="txt" /></inputs>
+    <outputs />
+    <tests><test>
+        <param name="input" value="simple_line.txt"><edit_attributes type="name" value="renamed" /></param>
+    </test></tests>
+</tool>
+        """)
+    [test_description] = parse_tool_test_descriptions(tool_source)
+    assert not test_description.error, test_description.exception
+    round_tripped = json.loads(json.dumps(test_description.to_dict()))
+    [(_, extra)] = round_tripped["required_files"]
+    assert extra["edit_attributes"] == [{"type": "name", "value": "renamed"}]
