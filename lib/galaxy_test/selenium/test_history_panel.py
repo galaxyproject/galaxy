@@ -190,6 +190,7 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
             assert self.history_panel_name() == "switch target"
 
         assert_switched()
+        self.screenshot("history_panel_switched_history")
 
     @selenium_test
     def test_history_panel_tags_change(self):

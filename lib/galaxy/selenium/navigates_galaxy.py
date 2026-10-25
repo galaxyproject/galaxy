@@ -644,7 +644,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def history_panel_switch_to(self, history_id: str):
         """Make ``history_id`` current via the history panel's Switch to history modal."""
         self.components.history_panel.switch_history_button.wait_for_and_click()
-        self.components.history_panel.switch_history_modal_item(history_id=history_id).wait_for_and_click()
+        self.components.history_selector_modal.item(history_id=history_id).wait_for_and_click()
+        self.components.history_selector_modal._.wait_for_absent_or_hidden()
         self._wait_on(
             lambda driver=None: True if self.current_history_id() == history_id else None,
             f"history {history_id} to become current",
