@@ -551,6 +551,14 @@ class UsesLibraryAssertions(NavigatesGalaxyMixin):
     def num_displayed_items(self) -> int:
         return len(self.libraries_table_elements())
 
+    def wait_for_num_displayed_items(self, n):
+        # Imports send one request per item and refresh the folder list only after the last one returns.
+        self._wait_on(
+            lambda *_: self.num_displayed_items() == n,
+            f"{n} items to be displayed in the library folder",
+            wait_type=self.wait_types.DATABASE_OPERATION,
+        )
+
 
 class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
     def assert_item_peek_includes(self, hid, expected):
