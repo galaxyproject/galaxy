@@ -135,8 +135,11 @@ class TestUploadActivity(SeleniumTestCase, UsesUploadActivity, UsesHistoryItemAs
 
 
 class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHistoryItemAssertions):
-    ensure_registered = True
     run_as_admin = True
+
+    def setup_with_driver(self):
+        super().setup_with_driver()
+        self.admin_login()
 
     @selenium_test
     @managed_history
@@ -236,8 +239,6 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
         long_name = "bTaeGut1_pacbio_hifi_reads_m84091_230808_224522_s2_default_long_unbroken_name" * 2
         library_name = self._get_random_name(prefix=f"{long_name}_library_")
         folder_name = f"{long_name}_folder"
-        self.logout_if_needed()
-        self.admin_login()
         self.libraries_open()
         self.libraries_index_create(library_name)
         self.libraries_open_with_name(library_name)
@@ -254,8 +255,6 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
         self.screenshot("upload_data_library_long_name_wrapped")
 
     def _create_and_populate_library(self, filenames=("1.bed",), subfolders=None):
-        self.logout_if_needed()
-        self.admin_login()
         library_populator = LibraryPopulator(self.api_interactor_for_logged_in_user())
         library = library_populator.new_library(self._get_random_name(prefix="upload_library"))
         items = self._library_items(filenames)
