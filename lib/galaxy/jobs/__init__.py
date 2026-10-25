@@ -2534,19 +2534,16 @@ class MinimalJobWrapper(HasResourceParameters):
         self._set_unknown_output_extensions_to_data(job)
         self._fix_output_permissions()
 
-        # Empirically, we need to update job.user and
-        # job.workflow_invocation_step.workflow_invocation in separate
-        # transactions. Best guess as to why is that the workflow_invocation
-        # may or may not exist when the job is first loaded by the handler -
-        # and depending on whether it is or not sqlalchemy orders the updates
-        # differently and deadlocks can occur (one thread updates user and
-        # waits on invocation and the other updates invocation and waits on
-        # user).
+        # Outputs and the final job state are committed together, so readers never
+        # see finished outputs on a job that is still running.
+        job.set_state(final_job_state)
         self.sa_session.commit()
 
-        # Finally set the job state.  This should only happen *after* all
-        # dataset creation, and will allow us to eliminate force_history_refresh.
-        job.set_final_state(final_job_state)
+        # The update_time bumps wake the workflow scheduler. Every job of a
+        # mapped-over step bumps the same workflow_invocation_step row, so they
+        # run in their own short transaction after the outputs are visible,
+        # not in the one that holds the user's disk usage row.
+        job.touch_dependent_update_times()
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
