@@ -1,4 +1,5 @@
 import os.path
+import shutil
 
 import pytest
 
@@ -47,6 +48,27 @@ def test_mulled_build_files_cli(use_mamba: bool, tmpdir) -> None:
     )
     assert exit_code == 0
     assert singularity_image_dir.join("zlib:1.2.13--h166bdaf_4").exists()
+
+
+def test_exec_command_runs_cleanup_task_after_failed_build(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    commands = []
+
+    def shell_exec(cmd):
+        commands.append(cmd)
+        if cmd[-1] == "cleanup":
+            shutil.rmtree("build/dist")
+            return 0
+        os.makedirs("build/dist")
+        return 1
+
+    involucro_context = InvolucroContext(involucro_bin="involucro", shell_exec=shell_exec)
+    assert involucro_context.exec_command(["-set", "TARGETS=zlib", "build-and-test"]) == 1
+    assert commands == [
+        ["involucro", "-v=3", "-set", "TARGETS=zlib", "build-and-test"],
+        ["involucro", "-v=3", "-set", "TARGETS=zlib", "cleanup"],
+    ]
+    assert not os.path.exists("build")
 
 
 def test_target_str_to_targets():
