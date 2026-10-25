@@ -177,6 +177,7 @@ const { historyCardExtraActions, historyCardSecondaryActions, historyCardPrimary
     computed(() => props.history),
     props.archivedView,
     () => emit("refreshList", true),
+    props.sharedView,
 );
 
 /**
