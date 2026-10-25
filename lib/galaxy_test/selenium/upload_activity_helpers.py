@@ -482,8 +482,8 @@ class UploadContext(_UploadStaging):
 
     def select_target_history(self, history_id: str) -> "UploadContext":
         self.components.upload_activity.target_history_change_link.wait_for_and_click()
-        self.components.upload_activity.history_selector_modal_item(history_id=history_id).wait_for_and_click()
-        self.components.upload_activity.history_selector_modal.wait_for_absent_or_hidden()
+        self.components.history_selector_modal.item(history_id=history_id).wait_for_and_click()
+        self.components.history_selector_modal._.wait_for_absent_or_hidden()
         return self
 
     def to_list(self, name: str) -> "UploadContext":

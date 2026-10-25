@@ -54,6 +54,7 @@ from galaxy_test.base.populators import (
 from galaxy_test.base.workflow_fixtures import (
     DEFAULT_FILE_DATASET_INPUT_LOCATION,
     NESTED_WORKFLOW_WITH_CONDITIONAL_SUBWORKFLOW_AND_DISCONNECTED_MAP_OVER_SOURCE,
+    parameter_input_workflow,
     WORKFLOW_FLAT_CROSS_PRODUCT,
     WORKFLOW_INPUTS_AS_OUTPUTS,
     WORKFLOW_KEEP_SUCCESSFUL_DATASETS,
@@ -131,6 +132,28 @@ steps:
     in:
       input1: nested_workflow/1:out_file1
       queries_0|input2: nested_workflow/1:out_file1
+"""
+
+WORKFLOW_NEGATED_REGEX_TEXT_INPUT = """
+class: GalaxyWorkflow
+inputs:
+  name:
+    type: text
+    validators:
+      - type: regex
+        expression: cow
+        negate: true
+        message: no cows
+steps: []
+"""
+
+WORKFLOW_MIN_ONLY_INT_INPUT = """
+class: GalaxyWorkflow
+inputs:
+  num:
+    type: int
+    min: 1
+steps: []
 """
 
 
@@ -4343,6 +4366,125 @@ name:
             )
             assert isinstance(error, dict)
             assert error["err_msg"] == "name: Upper case letters only"
+
+    def test_run_format2_workflow_rejects_negated_regex_match_text_parameter(self):
+        with self.dataset_populator.test_history() as history_id:
+            error = self._run_jobs(
+                WORKFLOW_NEGATED_REGEX_TEXT_INPUT,
+                test_data="""
+name:
+  value: cow
+  type: raw
+""",
+                history_id=history_id,
+                client_convert=False,
+                wait=False,
+                assert_ok=False,
+                expected_response=400,
+            )
+            assert isinstance(error, dict)
+            assert error["err_msg"] == "name: no cows"
+
+    def test_run_format2_workflow_accepts_negated_regex_mismatch_text_parameter(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                WORKFLOW_NEGATED_REGEX_TEXT_INPUT,
+                test_data="""
+name:
+  value: horse
+  type: raw
+""",
+                history_id=history_id,
+                client_convert=False,
+            )
+
+    def test_run_format2_workflow_accepts_valid_int_and_text_parameters(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  num:
+    type: int
+    min: 1
+    max: 10
+  name:
+    type: text
+    validators:
+      - type: regex
+        expression: "^[A-Z]+$"
+        message: Upper case letters only
+steps: []
+""",
+                test_data="""
+num:
+  value: 5
+  type: raw
+name:
+  value: UPPER
+  type: raw
+""",
+                history_id=history_id,
+                client_convert=False,
+            )
+
+    def test_run_format2_workflow_min_only_int_parameter(self):
+        with self.dataset_populator.test_history() as history_id:
+            error = self._run_jobs(
+                WORKFLOW_MIN_ONLY_INT_INPUT,
+                test_data="""
+num:
+  value: -1
+  type: raw
+""",
+                history_id=history_id,
+                client_convert=False,
+                wait=False,
+                assert_ok=False,
+                expected_response=400,
+            )
+            assert isinstance(error, dict)
+            assert error["err_msg"] == "num: Value ('-1') must fulfill (1 <= value <= +infinity)"
+            self._run_workflow(
+                WORKFLOW_MIN_ONLY_INT_INPUT,
+                test_data="""
+num:
+  value: 1000
+  type: raw
+""",
+                history_id=history_id,
+                client_convert=False,
+            )
+
+    def test_export_format2_parameter_input_validators(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """class: GalaxyWorkflow
+inputs:
+  num:
+    type: int
+    min: 1
+    max: 10
+  low:
+    type: int
+    min: 1
+  name:
+    type: text
+    validators:
+      - type: regex
+        expression: cow
+        negate: true
+        message: no cows
+steps: []
+""",
+            client_convert=False,
+        )
+        inputs = self._download_workflow(workflow_id, style="format2")["inputs"]
+        assert inputs["num"]["min"] == 1
+        assert inputs["num"]["max"] == 10
+        assert inputs["low"]["min"] == 1
+        assert "max" not in inputs["low"]
+        assert inputs["name"]["validators"] == [
+            {"type": "regex", "expression": "cow", "negate": True, "message": "no cows"}
+        ]
 
     def test_run_workflow_subworkflow_conditional_with_simple_mapping_step(self):
         with self.dataset_populator.test_history() as history_id:
@@ -8711,6 +8853,33 @@ text_input:
                 wait=True,
                 assert_ok=False,
             )
+
+    def test_imported_negated_parameter_validator_is_kept(self):
+        negated = {"type": "regex", "expression": "^bad", "message": "no bad", "negate": True}
+        workflow_id = self.workflow_populator.create_workflow(parameter_input_workflow("text_input", "text", [negated]))
+        downloaded = self.workflow_populator.download_workflow(workflow_id)
+        assert json.loads(downloaded["steps"]["0"]["tool_state"])["validators"] == [negated]
+        with self.dataset_populator.test_history() as history_id:
+            rejected = self.workflow_populator.invoke_workflow(
+                workflow_id, history_id=history_id, inputs={"text_input": "bad1"}, inputs_by="name"
+            )
+            self._assert_status_code_is(rejected, 400)
+            assert rejected.json()["err_msg"] == "text_input: no bad"
+            accepted = self.workflow_populator.invoke_workflow(
+                workflow_id, history_id=history_id, inputs={"text_input": "good"}, inputs_by="name"
+            )
+            self._assert_status_code_is(accepted, 200)
+
+    def test_import_rejects_negated_parameter_range_with_min_greater_than_max(self):
+        inverted = {"type": "in_range", "min": 5, "max": 1, "negate": True}
+        response = self.workflow_populator.create_workflow_response(
+            parameter_input_workflow("int_input", "integer", [inverted])
+        )
+        self._assert_status_code_is(response, 400)
+        assert (
+            response.json()["err_msg"]
+            == "Invalid validator on workflow parameter input 'int_input': min must be less than or equal to max"
+        )
 
     def test_run_with_text_input_connection(self):
         with self.dataset_populator.test_history() as history_id:
