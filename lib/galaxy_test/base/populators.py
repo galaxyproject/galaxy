@@ -4122,6 +4122,20 @@ class BaseDatasetCollectionPopulator:
         payload = self.create_list_payload(history_id, instance_type="history", **kwds)
         return self.__create(payload, wait=wait)
 
+    def create_list_of_named_datasets(
+        self, history_id: str, contents: list[tuple[str, str]], ext: str = "txt"
+    ) -> dict[str, Any]:
+        """Create a list from datasets named ``<element identifier>.<ext>``, so names and identifiers differ."""
+        element_identifiers = []
+        for identifier, content in contents:
+            hda = self.dataset_populator.new_dataset(
+                history_id, content=content, name=f"{identifier}.{ext}", file_type=ext, wait=True
+            )
+            element_identifiers.append({"name": identifier, "src": "hda", "id": hda["id"]})
+        response = self.create_list_in_history(history_id, direct_upload=False, element_identifiers=element_identifiers)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
     def copy_collection(self, history_id: str, hdca_id: str, copy_elements: bool = True, wait: bool = False):
         """Copy an existing dataset collection to a history."""
         payload = {

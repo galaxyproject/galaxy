@@ -10742,9 +10742,9 @@ outer_input:
             )
             workflow_id = self.workflow_populator.create_workflow(workflow)
             with self.dataset_populator.test_history() as history_id:
-                hdca = self.dataset_collection_populator.create_list_in_history(
-                    history_id, contents=[("sample_a", "a"), ("sample_b", "b")], wait=True
-                ).json()["outputs"][0]
+                hdca = self.dataset_collection_populator.create_list_of_named_datasets(
+                    history_id, [("sample_a", "a"), ("sample_b", "b")]
+                )
                 invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
                     workflow_id, history_id=history_id, inputs={"0": {"src": "hdca", "id": hdca["id"]}}
                 )

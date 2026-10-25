@@ -274,9 +274,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             self.dataset_populator.user_tool_execute_permissions(),
         ):
             dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**tool))
-            hdca = self.dataset_collection_populator.create_list_in_history(
-                history_id, contents=elements, ext=ext, wait=True
-            ).json()["outputs"][0]
+            hdca = self.dataset_collection_populator.create_list_of_named_datasets(history_id, elements, ext=ext)
             run = self._run(
                 history_id=history_id,
                 tool_uuid=dynamic_tool["uuid"],
@@ -297,9 +295,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             self.dataset_populator.user_tool_execute_permissions(),
         ):
             dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**tool))
-            hdca = self.dataset_collection_populator.create_list_in_history(
-                history_id, contents=elements, ext=ext, wait=True
-            ).json()["outputs"][0]
+            hdca = self.dataset_collection_populator.create_list_of_named_datasets(history_id, elements, ext=ext)
             response = self.dataset_populator.tool_request_raw(
                 tool_id=None,
                 inputs={"input": {"__class__": "Batch", "values": [{"src": "hdca", "id": hdca["id"]}]}},
