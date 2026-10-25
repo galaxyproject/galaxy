@@ -1,3 +1,4 @@
+from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
 from .framework import (
     GALAXY_TEST_SELENIUM_USER_PASSWORD,
@@ -82,6 +83,26 @@ class TestWorkflowSharing(SeleniumTestCase, UsesWorkflowAssertions):
         self.components.workflows.workflows_list_empty.wait_for_visible()
 
     @selenium_test
+    def test_unshare_with_me(self):
+        workflow_id = self.setup_workflow_shared_with_new_user()
+        self.workflow_shared_with_me_open()
+        self._assert_showing_n_workflows(1)
+        assert self.workflow_populator.index_ids(show_shared=True) == [workflow_id]
+
+        workflows = self.components.workflows
+        workflows.workflow_card_by_id(id=workflow_id).wait_for_visible()
+        workflows.dropdown(id=workflow_id).wait_for_and_click()
+        workflows.unshare_with_me_button(id=workflow_id).wait_for_and_click()
+        assert "from your shared workflows" in self.components.confirm_dialog.message.wait_for_text()
+        self.screenshot("workflow_sharing_unshare_with_me_confirm")
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+
+        workflows.workflow_card_by_id(id=workflow_id).wait_for_absent()
+        workflows.workflows_list_empty.wait_for_visible()
+        self.screenshot("workflow_sharing_unshare_with_me_removed")
+        assert workflow_id not in self.workflow_populator.index_ids(show_shared=True)
+
+    @selenium_test
     def test_sharing_with_invalid_user(self):
         user1_email = self._get_random_email()
         self.register(user1_email)
@@ -104,6 +125,17 @@ class TestWorkflowSharing(SeleniumTestCase, UsesWorkflowAssertions):
         )
         self.assert_error_message(contains="You cannot share resources with yourself")
         self.screenshot("workflow_sharing_invalid_sharing_with_self")
+
+    def setup_workflow_shared_with_new_user(self):
+        """Owner shares an API-created workflow with a new recipient, who stays logged in."""
+        self.register(self._get_random_email())
+        owner_populator = WorkflowPopulator(self.api_interactor_for_logged_in_user())
+        workflow_id = owner_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.logout_if_needed()
+
+        self.register(self._get_random_email())
+        owner_populator.share_with_user(workflow_id, self.get_user_id())
+        return workflow_id
 
     def setup_two_users_with_one_shared_workflow(self, screenshot=False, share_by_id=False):
         user1_email = self._get_random_email()
