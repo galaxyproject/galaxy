@@ -6,6 +6,10 @@ from typing import (
 from unittest import mock
 
 from galaxy.tool_shed.galaxy_install import install_manager
+from galaxy.tool_util.data import (
+    ToolDataTableConfigSource,
+    ToolDataTableManager,
+)
 
 INSTALL_MANAGER_MODULE = "galaxy.tool_shed.galaxy_install.install_manager"
 
@@ -110,11 +114,6 @@ def test_data_manager_repo_invokes_handle_missing_data_table_entry():
 
 
 def test_install_rebuilds_tables_in_configured_order(tmp_path):
-    from galaxy.tool_util.data import (
-        ToolDataTableConfigSource,
-        ToolDataTableManager,
-    )
-
     managed = tmp_path / "managed.xml"
     managed.write_text("<tables />")
     configs = []

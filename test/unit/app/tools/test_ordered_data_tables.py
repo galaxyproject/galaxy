@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import cast
 from unittest.mock import Mock
 
@@ -9,8 +10,17 @@ from galaxy.app import (
     MinimalGalaxyApplication,
     UniverseApplication,
 )
+from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.config_watchers import ConfigWatchers
 from galaxy.queue_worker import reload_tool_data_tables
+from galaxy.tool_util.data import ToolDataTableManager
+from galaxy.tools.parameters.dynamic_options import DynamicOptions
+from galaxy.tools.parameters.options import ParameterOption
+from galaxy.util import XML
+from galaxy.util.bunch import Bunch
+from galaxy.work.context import WorkRequestContext
+from .test_data_manager_reload import _data_manager
 
 
 def write_config(tmp_path, source, rows="", table_name="references"):
@@ -199,8 +209,6 @@ def test_multi_table_registration_sends_one_peer_reload(tmp_path):
 
 
 def test_registration_preserves_read_only_external_sources_and_data_manager_order(tmp_path):
-    from .test_data_manager_reload import _data_manager
-
     local = write_config(tmp_path, "local", "")
     managed = tmp_path / "managed.xml"
     managed.write_text("<tables />")
@@ -268,13 +276,6 @@ def test_failed_write_does_not_publish_registration(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("version", ["1", "2", "3"])
 def test_ordered_sources_retain_version_filtered_rows(tmp_path, version):
-    from galaxy.app_unittest_utils.galaxy_mock import MockApp
-    from galaxy.tools.parameters.dynamic_options import DynamicOptions
-    from galaxy.tools.parameters.options import ParameterOption
-    from galaxy.util import XML
-    from galaxy.util.bunch import Bunch
-    from galaxy.work.context import WorkRequestContext
-
     configs = []
     for source, index in (("local", "1"), ("managed", "2"), ("external", "3")):
         conf = write_config(tmp_path, source, f"hg38\tHuman\t{index}\t/{source}\n")
@@ -321,8 +322,6 @@ def test_xml_definition_file_and_row_order_survive_reload(tmp_path):
 
 
 def test_watchers_discover_new_location_directories_with_reload_callback(tmp_path, tmp_path_factory):
-    from galaxy.config_watchers import ConfigWatchers
-
     local = write_config(tmp_path, "local")
     managed = tmp_path / "managed.xml"
     managed.write_text("<tables />")
@@ -353,8 +352,6 @@ def test_watchers_discover_new_location_directories_with_reload_callback(tmp_pat
 
 
 def test_nonpersistent_parser_keeps_transient_definitions(tmp_path):
-    from galaxy.tool_util.data import ToolDataTableManager
-
     local = write_config(tmp_path, "local", "hg38\tHuman\t/local\n")
     manager = ToolDataTableManager(str(tmp_path), local)
     incoming = write_config(tmp_path, "incoming", "hg38\tHuman\t/transient\n")
@@ -425,10 +422,6 @@ def test_path_reload_does_not_download_unrelated_tables(tmp_path, monkeypatch):
 
 
 def test_url_downloads_are_not_watched_but_missing_location_files_are(tmp_path, monkeypatch):
-    from pathlib import Path
-
-    from galaxy.config_watchers import ConfigWatchers
-
     monkeypatch.setattr("galaxy.tool_util.data.requests.get", Mock(return_value=Mock(text="remote\tRemote\t/remote\n")))
     location_dir = tmp_path / "locations"
     location_dir.mkdir()
