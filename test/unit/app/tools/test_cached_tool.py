@@ -1245,6 +1245,34 @@ def test_unconfigured_bundled_version_does_not_replace_configured_tool():
     assert box.get_tool("jupyter", tool_version="1.0.3", exact=True).version == "0.3"
 
 
+def test_invalidate_index_cache_drops_versions_no_longer_configured():
+    box = _registry_box()
+    box._guid_sibling_versions_cache = None
+    for version in ("1.0", "2.0", "3.0"):
+        entry = _entry(id="probe", version=version, source_hash=f"h{version}", source_path=f"/t/probe_{version}.xml")
+        box._tool_index.add_entry(entry)
+        box._register_cached_entry(entry)
+    assert sorted(box._lineage_map.get("probe").tool_versions) == ["1.0", "2.0", "3.0"]
+
+    reloaded = ToolIndex()
+    for version in ("1.0", "2.0", "3.0"):
+        reloaded.add_entry(
+            _entry(
+                id="probe",
+                version=version,
+                source_hash=f"h{version}",
+                source_path=f"/t/probe_{version}.xml",
+                in_panel=version != "2.0",
+            )
+        )
+    box._store.load_index.return_value = reloaded
+    box.invalidate_index_cache()
+
+    assert "2.0" not in box._tool_versions_by_id["probe"]
+    assert box.get_tool("probe", tool_version="2.0", exact=True).version != "2.0"
+    assert sorted(box._lineage_map.get("probe").tool_versions) == ["1.0", "3.0"]
+
+
 def test_invalidate_index_cache_drops_versions_a_reindex_removed():
     # A peer re-indexed an in-place edit of probe from 1.1 to 1.2 and
     # dropped 1.1 from the index.

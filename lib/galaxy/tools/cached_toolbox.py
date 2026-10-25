@@ -1640,11 +1640,13 @@ class CachedToolBox(ToolBox):
                         self._refresh_changed_entry(tool_id, default_entry)
                     except Exception as e:
                         log.warning("Refreshing content-changed index entry %s raised: %s", tool_id, e)
+            # A version leaves the offered set when a re-index drops it, or
+            # when a conf change leaves it indexed only as a storage-only file.
             for tool_id, old_hashes in previous_hashes.items():
-                current = self._tool_index.entries_by_version.get(tool_id)
-                if current is None:
+                if tool_id not in self._tool_index.entries_by_version:
                     continue
-                removed = [version for version in old_hashes if version not in current]
+                offered = self._tool_index.configured_versions(tool_id)
+                removed = [version for version in old_hashes if version not in offered]
                 if removed:
                     try:
                         self._remove_versions_in_memory(tool_id, removed)
@@ -1923,10 +1925,11 @@ class CachedToolBox(ToolBox):
         return result
 
     def _remove_versions_in_memory(self, tool_id: str, removed: list[str]) -> None:
-        """Drop registry slots, proxies and lineage versions the index no longer has.
+        """Drop registry slots, proxies and lineage versions the index no longer offers.
 
         A re-indexed file can stop defining a version while the id lives on
-        (an in-place version bump). Without this, an exact request for the
+        (an in-place version bump), and a conf change can leave a version
+        indexed only as a storage-only file. Without this, an exact request for the
         old version falls through to ``_tool_versions_by_id`` and gets a proxy
         that now describes the new version. Caller must hold
         ``app._toolbox_lock``.
@@ -1939,7 +1942,7 @@ class CachedToolBox(ToolBox):
             # A proxy the default-entry refresh moved onto a surviving version
             # stays the panel's object; keep it reachable under that version.
             if proxy is not None and (live_version := proxy._entry.version or "") != version:
-                if live_version in self._tool_index.entries_by_version.get(tool_id, {}):
+                if live_version in self._tool_index.configured_versions(tool_id):
                     self._cached_tools.setdefault((tool_id, live_version), proxy)
                     slots.setdefault(live_version, proxy)  # type: ignore[arg-type]
         with self._cache_lock:
