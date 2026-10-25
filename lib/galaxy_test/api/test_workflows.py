@@ -506,6 +506,15 @@ steps:
         self._assert_status_code_is_ok(response)
         assert self._shows_in_tool_panel(workflow_id, show_published=True)
 
+    def test_update_show_in_tool_panel_by_uuid(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_show_in_tool_panel_by_uuid")
+        workflow_uuid = self._show_workflow(workflow_id)["latest_workflow_uuid"]
+        update_fields = self.workflow_populator.update_workflow_fields
+        self._assert_status_code_is_ok(update_fields(workflow_uuid, {"show_in_tool_panel": True}))
+        assert self._shows_in_tool_panel(workflow_id)
+        self._assert_status_code_is_ok(update_fields(workflow_uuid, {"show_in_tool_panel": False}))
+        assert not self._shows_in_tool_panel(workflow_id)
+
     def test_admin_can_update_workflow(self):
         workflow_id = self.workflow_populator.simple_workflow("test_admin_update")
         response = self.workflow_populator.update_workflow_fields(workflow_id, {"hidden": True}, admin=True)

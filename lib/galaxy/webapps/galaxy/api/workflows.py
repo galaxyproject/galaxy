@@ -469,10 +469,9 @@ class WorkflowsAPIController(
             if "menu_entry" in workflow_dict or "show_in_tool_panel" in workflow_dict:
                 show_in_panel = workflow_dict.get("menu_entry") or workflow_dict.get("show_in_tool_panel")
                 stored_workflow_menu_entries = trans.user.stored_workflow_menu_entries
-                decoded_id = trans.security.decode_id(id)
                 if show_in_panel:
                     workflow_ids = [wf.stored_workflow_id for wf in stored_workflow_menu_entries]
-                    if decoded_id not in workflow_ids:
+                    if stored_workflow.id not in workflow_ids:
                         menu_entry = model.StoredWorkflowMenuEntry()
                         menu_entry.stored_workflow = stored_workflow
                         stored_workflow_menu_entries.append(menu_entry)
@@ -481,8 +480,8 @@ class WorkflowsAPIController(
                 else:
                     # remove if in list
                     entries = {x.stored_workflow_id: x for x in stored_workflow_menu_entries}
-                    if decoded_id in entries:
-                        stored_workflow_menu_entries.remove(entries[decoded_id])
+                    if stored_workflow.id in entries:
+                        stored_workflow_menu_entries.remove(entries[stored_workflow.id])
                         require_flush = True
             # set tags
             if "tags" in workflow_dict:
