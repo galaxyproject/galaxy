@@ -220,6 +220,20 @@ class FastAPIVisualizations:
         return self.service.shareable_service.share_with_users(trans, id, payload)
 
     @router.put(
+        "/api/visualizations/{id}/unshare_with_me",
+        summary="Remove this item from the items shared with the current user.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def unshare_with_me(
+        self,
+        id: VisualizationIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """Removes the current user's own share of this item. Other users' shares are left unchanged."""
+        self.service.shareable_service.unshare_with_me(trans, id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.put(
         "/api/visualizations/{id}/slug",
         summary="Set a new slug for this shared item.",
         status_code=status.HTTP_204_NO_CONTENT,

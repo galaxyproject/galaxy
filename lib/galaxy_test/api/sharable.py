@@ -4,6 +4,7 @@ from typing import (
 from unittest import SkipTest
 from uuid import uuid4
 
+from galaxy.exceptions import error_codes
 from galaxy_test.base.api import UsesApiTestCaseMixin
 
 
@@ -150,6 +151,33 @@ class SharingApiTests(UsesApiTestCaseMixin):
         with self._different_user(recipient_email):
             self._assert_get_status(resource_id, 403)
 
+    def test_unshare_with_me(self):
+        recipient_email, other_recipient_email = self._setup_recipients(2)
+        resource_id = self.create("resource-to-unshare-with-me")
+        self._share_with(resource_id, [recipient_email, other_recipient_email])
+
+        with self._different_user(recipient_email):
+            self._assert_status_code_is(self._unshare_with_me(resource_id), 204)
+            self._assert_get_status(resource_id, 403)
+            self._assert_unshare_with_me_not_found(resource_id)
+
+        sharing_response = self._get_resource_sharing_status(resource_id)
+        assert [u["email"] for u in sharing_response["users_shared_with"]] == [other_recipient_email]
+
+    def test_unshare_with_me_requires_share(self):
+        [recipient_email] = self._setup_recipients(1)
+        resource_id = self.create("resource-to-unshare-with-me-unshared")
+        self._share_with(resource_id, [recipient_email])
+
+        self._assert_unshare_with_me_not_found(resource_id)
+        with self._different_user(f"stranger-{uuid4()}@user.com"):
+            self._assert_unshare_with_me_not_found(resource_id)
+        with self._different_user(anon=True):
+            self._assert_status_code_is(self._unshare_with_me(resource_id), 403)
+
+        sharing_response = self._get_resource_sharing_status(resource_id)
+        assert [u["email"] for u in sharing_response["users_shared_with"]] == [recipient_email]
+
     def test_set_slug(self):
         resource_id = self.create("resource-to-set-slug")
         other_resource_id = self.create("other-resource-to-set-slug")
@@ -188,8 +216,16 @@ class SharingApiTests(UsesApiTestCaseMixin):
         self._assert_status_code_is(sharing_response, expect_response_status)
         return sharing_response.json()
 
-    def _share_with(self, resource_id: str, user_ids: list[str]):
-        return self._set_resource_sharing(resource_id, action="share_with_users", payload={"user_ids": user_ids})
+    def _share_with(self, resource_id: str, users: list[str]):
+        return self._set_resource_sharing(resource_id, action="share_with_users", payload={"user_ids": users})
+
+    def _unshare_with_me(self, resource_id: str):
+        return self._put(f"{self.api_name}/{resource_id}/unshare_with_me")
+
+    def _assert_unshare_with_me_not_found(self, resource_id: str):
+        response = self._unshare_with_me(resource_id)
+        self._assert_status_code_is(response, 404)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_OBJECT_NOT_FOUND"])
 
     def _set_slug(self, resource_id: str, new_slug: str):
         payload = {"new_slug": new_slug}
