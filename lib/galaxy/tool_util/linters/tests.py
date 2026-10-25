@@ -1,9 +1,12 @@
 """This module contains a linting functions for tool tests."""
 
+from collections import Counter
 from io import StringIO
 from typing import (
+    Dict,
     Iterator,
     List,
+    Set,
     Tuple,
     TYPE_CHECKING,
 )
@@ -17,8 +20,12 @@ from galaxy.tool_util_models.assertions import (
     assertion_list,
     relaxed_assertion_list,
 )
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    string_as_bool,
+)
 from ._util import is_datasource
+from .inputs import _iter_param
 
 if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext
@@ -265,6 +272,44 @@ class TestsParamInInputs(Linter):
                 if not found:
                     lint_ctx.error(
                         f"Test {test_idx}: Test param {name} not found in the inputs", linter=cls.name(), node=param
+                    )
+
+
+class TestsParamMultipleSelectCommaOptions(Linter):
+    """
+    `value` of a multiple select is split on commas, so it can't name options whose values contain commas
+    """
+
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        input_params = list(_iter_param(tool_xml))
+        # test params are matched by short name, so skip names shared by several inputs
+        name_counts = Counter(name for _, name in input_params)
+        comma_selects: Dict[str, Set[str]] = {}
+        for param, name in input_params:
+            if param.attrib.get("type") != "select" or name_counts[name] != 1:
+                continue
+            if not string_as_bool(param.attrib.get("multiple", "false")):
+                continue
+            options = param.findall("option")
+            if any("," in option.attrib.get("value", "") for option in options):
+                comma_selects[name] = {option.attrib.get("value", "") for option in options} | {
+                    option.text or "" for option in options
+                }
+        if not comma_selects:
+            return
+        for test_idx, test in enumerate(tool_xml.findall("./tests/test"), start=1):
+            for param in test.findall(".//param[@value]"):
+                name = param.attrib.get("name", "").split("|")[-1]
+                parts = {part for part in param.attrib["value"].split(",") if part}
+                if name in comma_selects and not parts <= comma_selects[name]:
+                    lint_ctx.warn(
+                        f"Test {test_idx}: Test param {name} value is split on commas but its option values contain commas, use value_json",
+                        linter=cls.name(),
+                        node=param,
                     )
 
 

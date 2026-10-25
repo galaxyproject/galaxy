@@ -810,6 +810,66 @@ TESTS_PARAM_OUTPUT_NAMES = """
 </tool>
 """
 
+TESTS_PARAM_MULTIPLE_SELECT_COMMA_OPTIONS = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="multi" type="select" multiple="true">
+            <option value="a,1">A</option>
+            <option value="b,2">B</option>
+            <option value="c">C</option>
+            <option value="d">D</option>
+        </param>
+        <param argument="--multi-true" type="select" multiple="True">
+            <option value="a,1">A</option>
+        </param>
+        <param name="single" type="select">
+            <option value="a,1">A</option>
+            <option value="b,2">B</option>
+        </param>
+        <param name="dup" type="select" multiple="true">
+            <option value="x,1">X</option>
+        </param>
+        <section name="other">
+            <param name="dup" type="select">
+                <option value="a,1">A</option>
+            </param>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="out"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="multi" value="a,1"/>
+            <param name="multi_true" value="a,1"/>
+            <param name="single" value="a,1"/>
+            <output name="out" value="out.txt"/>
+        </test>
+        <test>
+            <param name="multi" value="c"/>
+            <param name="multi_true" value=""/>
+            <output name="out" value="out.txt"/>
+        </test>
+        <test>
+            <param name="multi" value_json='["a,1", "b,2"]'/>
+            <output name="out" value="out.txt"/>
+        </test>
+        <test>
+            <param name="sect|multi_true" value="a,1"/>
+            <section name="sect">
+                <param name="multi" value="b,2"/>
+            </section>
+            <output name="out" value="out.txt"/>
+        </test>
+        <test>
+            <param name="multi" value="c,d"/>
+            <param name="other|dup" value="a,1"/>
+            <output name="out" value="out.txt"/>
+        </test>
+    </tests>
+</tool>
+"""
+
 TESTS_EXPECT_FAILURE_OUTPUT = """
 <tool id="id" name="name">
     <outputs>
@@ -1997,6 +2057,18 @@ def test_tests_param_output_names(lint_ctx):
     assert len(lint_ctx.error_messages) == 6
 
 
+def test_tests_param_multiple_select_comma_options(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_PARAM_MULTIPLE_SELECT_COMMA_OPTIONS)
+    run_lint_module(lint_ctx, tests, tool_source)
+    comma_warnings = [m for m in lint_ctx.warn_messages if m.linter == "TestsParamMultipleSelectCommaOptions"]
+    assert comma_warnings == [
+        "Test 1: Test param multi value is split on commas but its option values contain commas, use value_json",
+        "Test 1: Test param multi_true value is split on commas but its option values contain commas, use value_json",
+        "Test 4: Test param multi_true value is split on commas but its option values contain commas, use value_json",
+        "Test 4: Test param multi value is split on commas but its option values contain commas, use value_json",
+    ]
+
+
 def test_tests_expect_failure_output(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_EXPECT_FAILURE_OUTPUT)
     run_lint_module(lint_ctx, tests, tool_source)
@@ -2424,7 +2496,7 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 142
+    assert len(linter_names) == 143
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
