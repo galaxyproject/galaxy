@@ -1310,6 +1310,13 @@ class MinimalJobWrapper(HasResourceParameters):
             assert self.tool
             params = self.tool.params_from_strings(param_dump)
             json_internal = params_to_json_internal(self.tool.inputs, params, self.app)
+            element_identifiers = None
+            if tool_evaluator.consumes_identifiers:
+                element_identifiers = {
+                    name.removesuffix("|__identifier__"): json.loads(value)
+                    for name, value in param_dump.items()
+                    if name.endswith("|__identifier__")
+                }
             job_to_copy = self.app.job_search.by_tool_input(
                 job.user,
                 job.tool_id,
@@ -1317,6 +1324,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 param=params,
                 param_dump=json_internal,
                 require_name_match=False,
+                element_identifiers=element_identifiers,
             )
             if job_to_copy and isinstance(job_to_copy, model.Job):
                 job.copy_from_job(job_to_copy, copy_outputs=True)

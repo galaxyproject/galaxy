@@ -153,6 +153,7 @@ class ToolEvaluator:
         self.command_line: Optional[str] = None
         self.interactivetools: list[dict[str, Any]] = []
         self.consumes_names = False
+        self.consumes_identifiers = False
         self.use_cached_job = False
 
     def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Optional[Callable] = None):

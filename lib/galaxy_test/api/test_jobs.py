@@ -829,6 +829,15 @@ steps:
         assert self._copied_from_job_id(mapped) is None
         assert "sample_b" in self._output_words(history_id, mapped)
 
+    @pytest.mark.require_new_history
+    def test_use_cached_job_mapped_identifier_single_run_reuses_job_after_input_rename(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        first = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id))
+        self.dataset_populator.rename_dataset(hda_id, "renamed")
+        mapped = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), use_cached_job=True)
+        assert self._copied_from_job_id(mapped) == first["jobs"][0]["id"]
+        assert "sample_a" in self._output_words(history_id, mapped)
+
     @requires_new_user
     def test_use_cached_job_mapped_model_attributes_run_does_not_reuse_job_after_input_rename(self):
         # model_attributes also renders $__user__.addresses[0].desc, which fails for a user without an address.
