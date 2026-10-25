@@ -10,6 +10,7 @@ from galaxy import (
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.model import store
+from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.unittest import TestCase
 
 
@@ -60,6 +61,18 @@ class TestJobWrapperFinish(TestCase, UsesTools):
             if job_state == model.Job.states.OK:
                 assert has_metrics
 
+    def test_hash_tasks_are_queued_after_outputs_are_committed(self):
+        self.app.config.calculate_dataset_hash = "always"
+        self.app.config.enable_celery_tasks = True
+        self.app.config.hash_function = HashFunctionNameEnum.md5
+        committed_when_queued = []
+        with patch("galaxy.celery.tasks.compute_dataset_hash.delay") as delay:
+            delay.side_effect = lambda request: committed_when_queued.append(list(self.committed))
+            self._finish_and_record_commits()
+
+        assert len(committed_when_queued) == 1
+        assert (model.Job.states.OK, model.Dataset.states.OK) in [c[:2] for c in committed_when_queued[0]]
+
     def test_extended_metadata_outputs_and_final_job_state_are_committed_together(self):
         self.app.config.metadata_strategy = "extended"
         wrapper = MinimalJobWrapper(self.job, self.app, tool=self.tool)
@@ -85,7 +98,7 @@ class TestJobWrapperFinish(TestCase, UsesTools):
     def _finish_and_record_commits(self, wrapper=None):
         wrapper = wrapper or MinimalJobWrapper(self.job, self.app, tool=self.tool)
         session = self.app.model.context()
-        committed = []
+        committed = self.committed = []
 
         def record(_session):
             committed.append((self.job.state, self.dataset.state, bool(self.job.numeric_metrics)))
