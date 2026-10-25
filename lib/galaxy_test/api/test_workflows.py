@@ -10841,6 +10841,28 @@ steps:
         assert_error_message_contains(response, "Workflow step 'values' cannot be run")
         assert_error_message_contains(response, "the attribute 'value' must be text")
 
+    def test_numeric_multiple_text_default_rejected_on_invocation_and_preview(self, history_id):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  values:
+    type: [string]
+    default: [1, 2]
+steps: {}
+""")
+        for inputs in ({}, {"values": ["a"]}):
+            response = self._post(
+                f"workflows/{workflow_id}/invocations",
+                data={"history_id": history_id, "inputs_by": "name", "inputs": inputs},
+                json=True,
+            )
+            self._assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "Workflow step 'values' cannot be run")
+            assert_error_message_contains(response, "the attribute 'value' must be text")
+        response = self._get(f"workflows/{workflow_id}/download", data={"style": "preview"})
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Workflow step 'values' cannot be run")
+
     def test_value_restriction_with_select_from_subworkflow_input(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow

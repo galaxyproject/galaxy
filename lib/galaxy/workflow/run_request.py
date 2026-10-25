@@ -48,6 +48,7 @@ from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
 from galaxy.workflow.modules import (
     disconnected_required_subworkflow_inputs,
     disconnected_subworkflow_inputs_message,
+    step_cannot_run_exception,
     workflow_step_name,
     WorkflowModuleInjector,
 )
@@ -466,7 +467,10 @@ def build_workflow_run_configs(
                     )
                 module_injector.inject(step)
                 assert step.module
-                input_param = step.module.get_runtime_inputs(step.module)["input"]
+                try:
+                    input_param = step.module.get_runtime_inputs(step.module)["input"]
+                except ParameterValueError as e:
+                    raise step_cannot_run_exception(step, e) from e
                 try:
                     input_param.validate(input_dict, trans=trans)
                     if isinstance(input_param, TextToolParameter) and input_param.multiple:

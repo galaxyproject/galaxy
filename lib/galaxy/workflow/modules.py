@@ -3724,13 +3724,26 @@ class WorkflowModuleInjector:
 
     def compute_runtime_state(self, step: WorkflowStep, step_args=None):
         assert step.module, "module must be injected before computing runtime state"
-        state, step_errors = step.module.compute_runtime_state(self.trans, step, step_args)
+        try:
+            state, step_errors = step.module.compute_runtime_state(self.trans, step, step_args)
+        except ParameterValueError as e:
+            raise step_cannot_run_exception(step, e) from e
         step.state = state
 
         # Fix any missing parameters
         step.upgrade_messages = step.module.check_and_update_state()
 
         return step_errors
+
+
+def step_cannot_run_exception(
+    step: WorkflowStep, error: ParameterValueError
+) -> exceptions.RequestParameterInvalidException:
+    """Report a stored step definition (such as an invalid default) that keeps the workflow from running."""
+    step_name = step.label or str(step.order_index + 1)
+    return exceptions.RequestParameterInvalidException(
+        f"Workflow step '{step_name}' cannot be run: {error.message_suffix}"
+    )
 
 
 def populate_module_and_state(
