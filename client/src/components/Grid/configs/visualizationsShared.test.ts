@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -43,6 +43,80 @@ describe("visualizationsShared grid", () => {
         expect(result).toEqual({
             status: "danger",
             message: "Failed to remove 'Shared Viz': Visualization not found.",
+        });
+    });
+});
+
+describe("visualizationsShared grid batch", () => {
+    const ROWS = [
+        { id: "viz_1", title: "First Viz" },
+        { id: "viz_2", title: "Second Viz" },
+    ];
+
+    function batchRemove() {
+        return gridConfig.batch?.find((operation) => operation.title === "Remove from Shared");
+    }
+
+    function interceptUnshare(failId?: string) {
+        const unshared: string[] = [];
+        server.use(
+            http.put("/api/visualizations/{id}/unshare_with_me", ({ params, response }) => {
+                unshared.push(params.id);
+                if (params.id === failId) {
+                    return response("4XX").json({ err_msg: "Visualization not found", err_code: 404 }, { status: 404 });
+                }
+                return response(204).empty();
+            }),
+        );
+        return unshared;
+    }
+
+    function stubConfirm(answer: boolean) {
+        const confirm = vi.fn(() => answer);
+        vi.stubGlobal("confirm", confirm);
+        return confirm;
+    }
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it("removes every selected share once confirmed", async () => {
+        const unshared = interceptUnshare();
+        const confirm = stubConfirm(true);
+
+        const result = await batchRemove()?.handler(ROWS);
+
+        expect(confirm).toHaveBeenCalledTimes(1);
+        expect(unshared).toEqual(["viz_1", "viz_2"]);
+        expect(result).toEqual({
+            status: "success",
+            message: "Removed 2 visualizations from your shared visualizations.",
+        });
+    });
+
+    it("keeps every share when removal is not confirmed", async () => {
+        const unshared = interceptUnshare();
+        const confirm = stubConfirm(false);
+
+        expect(batchRemove()).toBeDefined();
+        const result = await batchRemove()?.handler(ROWS);
+
+        expect(confirm).toHaveBeenCalledTimes(1);
+        expect(unshared).toEqual([]);
+        expect(result).toBeUndefined();
+    });
+
+    it("reports the visualizations whose share could not be removed", async () => {
+        const unshared = interceptUnshare("viz_2");
+        stubConfirm(true);
+
+        const result = await batchRemove()?.handler(ROWS);
+
+        expect(unshared).toEqual(["viz_1", "viz_2"]);
+        expect(result).toEqual({
+            status: "danger",
+            message: "Removed 1 of 2 visualizations. Failed to remove 'Second Viz' (Visualization not found).",
         });
     });
 });
