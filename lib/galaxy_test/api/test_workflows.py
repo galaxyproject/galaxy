@@ -463,6 +463,41 @@ steps:
             undelete_response = post(workflow_undelete_url)
             self._assert_status_code_is(undelete_response, 403)
 
+    def test_update_show_in_tool_panel(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_update_show_in_tool_panel")
+        self._assert_status_code_is_ok(self._update_workflow(workflow_id, {"show_in_tool_panel": True}))
+        assert self._shows_in_tool_panel(workflow_id)
+        self._assert_status_code_is_ok(self._update_workflow(workflow_id, {"show_in_tool_panel": False}))
+        assert not self._shows_in_tool_panel(workflow_id)
+
+    def test_shared_user_can_update_show_in_tool_panel(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_show_in_tool_panel")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        for key in ("show_in_tool_panel", "menu_entry"):
+            self._assert_status_code_is_ok(self._update_workflow(workflow_id, {key: True}))
+            assert self._shows_in_tool_panel(workflow_id, show_shared=True)
+            self._assert_status_code_is_ok(self._update_workflow(workflow_id, {key: False}))
+            assert not self._shows_in_tool_panel(workflow_id, show_shared=True)
+
+    def test_other_can_update_show_in_tool_panel_for_published(self):
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_published_show_in_tool_panel", publish=True)
+        response = self.workflow_populator.update_workflow_fields(workflow_id, {"show_in_tool_panel": True})
+        self._assert_status_code_is_ok(response)
+        assert self._shows_in_tool_panel(workflow_id, show_published=True)
+
+    def test_set_workflow_menu_drops_duplicate_ids(self):
+        workflow_id_1 = self.workflow_populator.simple_workflow("test_set_menu_dup_1")
+        workflow_id_2 = self.workflow_populator.simple_workflow("test_set_menu_dup_2")
+        menu_response = self.workflow_populator.set_workflow_menu([workflow_id_1, workflow_id_2, workflow_id_1])
+        self._assert_status_code_is_ok(menu_response)
+        menu = self._get("workflows/menu").json()
+        assert len(menu["ids_in_menu"]) == 2
+        assert self._shows_in_tool_panel(workflow_id_1)
+        assert self._shows_in_tool_panel(workflow_id_2)
+
     def test_index(self):
         index_response = self._get("workflows")
         self._assert_status_code_is(index_response, 200)
@@ -9061,6 +9096,12 @@ outer_input:
         show_response = self._get(f"workflows/{workflow_id}")
         self._assert_status_code_is(show_response, 200)
         return show_response.json()
+
+    def _shows_in_tool_panel(self, workflow_id, show_shared=None, show_published=None):
+        workflows = self.workflow_populator.index(show_shared=show_shared, show_published=show_published)
+        matches = [w["show_in_tool_panel"] for w in workflows if w["id"] == workflow_id]
+        assert len(matches) == 1, f"expected workflow {workflow_id} once in index, found {len(matches)}"
+        return matches[0]
 
     def _assert_looks_like_instance_workflow_representation(self, workflow):
         self._assert_has_keys(workflow, "url", "owner", "inputs", "annotation", "steps")
