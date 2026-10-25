@@ -199,6 +199,21 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         self.app = app
         self.dynamic_tool_manager = dynamic_tool_manager
 
+    def unshare_with(self, item: StoredWorkflow, user: model.User, flush: bool = True):
+        """Delete a user share along with that user's tool panel bookmark of the workflow."""
+        user_share_assoc = super().unshare_with(item, user, flush=False)
+        menu_entries = self.session().scalars(
+            select(model.StoredWorkflowMenuEntry).where(
+                model.StoredWorkflowMenuEntry.stored_workflow_id == item.id,
+                model.StoredWorkflowMenuEntry.user_id == user.id,
+            )
+        )
+        for menu_entry in menu_entries:
+            self.session().delete(menu_entry)
+        if flush:
+            self.session().commit()
+        return user_share_assoc
+
     def copy_workflow_for_user(self, user: model.User, workflow: model.Workflow) -> model.Workflow:
         """Copy ``workflow`` for ``user``, with private copies of the user-defined tools they don't own."""
         # Created before copying, so a user who may not create user-defined tools
