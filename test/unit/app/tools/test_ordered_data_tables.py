@@ -297,7 +297,7 @@ def test_xml_definition_file_and_row_order_survive_reload(tmp_path):
     assert paths(app) == expected
 
 
-def test_watchers_discover_new_location_directories_with_reload_callback(tmp_path):
+def test_watchers_discover_new_location_directories_with_reload_callback(tmp_path, tmp_path_factory):
     from galaxy.config_watchers import ConfigWatchers
 
     local = write_config(tmp_path, "local")
@@ -305,18 +305,24 @@ def test_watchers_discover_new_location_directories_with_reload_callback(tmp_pat
     managed.write_text("<tables />")
     app = make_app(tmp_path, [local, managed], managed)
     watcher = Mock(monitored_dirs={str(tmp_path): True})
+    watcher.watch_directory.side_effect = lambda directory, **kwds: watcher.monitored_dirs.update({directory: True})
     watchers = ConfigWatchers.__new__(ConfigWatchers)
     watchers.app = app
     watchers.tool_data_watcher = watcher
     app.watchers = watchers
-    outside = tmp_path / "new_locations"
-    outside.mkdir()
-    incoming = write_config(outside, "incoming", "hg38\tHuman\t/new\n")
-    _, error = app.tool_data_tables.add_new_entries_from_config_file(incoming, None, managed, persist=True)
-    assert not error
+    outside = tmp_path_factory.mktemp("new_locations")
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    for directory, table_name in ((outside, "outside_table"), (nested, "nested_table")):
+        incoming = write_config(directory, "incoming", "hg38\tHuman\t/new\n", table_name=table_name)
+        _, error = app.tool_data_tables.add_new_entries_from_config_file(incoming, None, managed, persist=True)
+        assert not error
+    watched = [call.args[0] for call in watcher.watch_directory.call_args_list]
+    assert str(nested) not in watched
     calls = [call for call in watcher.watch_directory.call_args_list if call.args == (str(outside),)]
     assert len(calls) == 1
     assert calls[0].kwargs["require_extensions"] == (".loc",)
+    assert calls[0].kwargs["recursive"] is False
     calls[0].kwargs["callback"](str(outside / "incoming.loc"))
     app.queue_worker.send_control_task.assert_called_with(
         "reload_tool_data_tables", kwargs={"path": str(outside / "incoming.loc")}

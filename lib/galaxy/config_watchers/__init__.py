@@ -80,8 +80,7 @@ class ConfigWatchers:
             watcher.start()
         [self.tool_config_watcher.watch_file(config) for config in self.tool_config_paths]
         [self.data_manager_config_watcher.watch_file(config) for config in self.data_manager_configs]
-        for tool_data_path in self.tool_data_paths:
-            self._watch_tool_data_dir(tool_data_path)
+        self._watch_tool_data_paths()
         for job_rules_directory in self.job_rules_paths:
             self.job_rule_watcher.watch_directory(
                 job_rules_directory,
@@ -107,18 +106,28 @@ class ConfigWatchers:
 
     def update_watch_data_table_paths(self):
         if hasattr(self.tool_data_watcher, "monitored_dirs"):
-            for tool_data_table_path in self.tool_data_paths:
-                if tool_data_table_path not in self.tool_data_watcher.monitored_dirs:
-                    self._watch_tool_data_dir(tool_data_table_path)
+            self._watch_tool_data_paths()
 
-    def _watch_tool_data_dir(self, directory):
+    def _watch_tool_data_paths(self):
+        roots = [os.path.abspath(p) for p in self.tool_data_root_paths]
+        monitored = getattr(self.tool_data_watcher, "monitored_dirs", {})
+        for directory in map(os.path.abspath, self.tool_data_paths):
+            if directory in monitored:
+                continue
+            # Location file directories can sit atop large reference trees, so only roots recurse.
+            recursive = directory in roots
+            if not recursive and any(os.path.commonpath([directory, root]) == root for root in roots):
+                continue
+            self._watch_tool_data_dir(directory, recursive=recursive)
+
+    def _watch_tool_data_dir(self, directory, recursive):
         self.tool_data_watcher.watch_directory(
             directory,
             callback=lambda path: self.app.queue_worker.send_control_task(
                 "reload_tool_data_tables", kwargs={"path": path}
             ),
             require_extensions=(".loc",),
-            recursive=True,
+            recursive=recursive,
         )
 
     @property
@@ -130,12 +139,16 @@ class ConfigWatchers:
         return data_manager_configs
 
     @property
+    def tool_data_root_paths(self):
+        return [
+            getattr(self.app.config, name)
+            for name in ("tool_data_path", "shed_tool_data_path")
+            if hasattr(self.app.config, name)
+        ]
+
+    @property
     def tool_data_paths(self):
-        tool_data_paths = []
-        if hasattr(self.app.config, "tool_data_path"):
-            tool_data_paths.append(self.app.config.tool_data_path)
-        if hasattr(self.app.config, "shed_tool_data_path"):
-            tool_data_paths.append(self.app.config.shed_tool_data_path)
+        tool_data_paths = self.tool_data_root_paths
         for table in self.app.tool_data_tables.get_tables().values():
             for filename, info in table.filenames.items():
                 if info.get("transient", False):
