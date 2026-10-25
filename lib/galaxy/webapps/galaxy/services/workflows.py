@@ -194,13 +194,11 @@ class WorkflowsService(ServiceBase):
             return encoded_invocations[0]
 
     def delete(self, trans, workflow_id):
-        workflow_to_delete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
-        self._workflows_manager.check_security(trans, workflow_to_delete)
+        workflow_to_delete = self._workflows_manager.get_stored_owned_workflow(trans, workflow_id)
         self._workflows_manager.delete(workflow_to_delete)
 
     def undelete(self, trans, workflow_id):
-        workflow_to_undelete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
-        self._workflows_manager.check_security(trans, workflow_to_undelete)
+        workflow_to_undelete = self._workflows_manager.get_stored_owned_workflow(trans, workflow_id)
         self._workflows_manager.undelete(workflow_to_undelete)
 
     def get_versions(self, trans, workflow_id, instance: bool):
