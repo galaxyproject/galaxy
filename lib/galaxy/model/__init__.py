@@ -1743,7 +1743,11 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                     if isinstance(self_output, HistoryDatasetAssociation) and isinstance(
                         out_data, HistoryDatasetAssociation
                     ):
+                        # A map-over element job hides its outputs, a plain job shows them. The late job
+                        # cache search pairs either kind with either kind, so keep this job's visibility.
+                        visible = self_output.visible
                         self_output.copy_from(out_data, include_metadata=True)
+                        self_output.visible = visible
                 else:
                     assert output_name.startswith("__") and isinstance(out_data, HistoryDatasetAssociation)
                     if output_name.startswith("__new_primary_file_"):

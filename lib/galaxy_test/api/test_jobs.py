@@ -803,6 +803,15 @@ steps:
         mapped = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), tool_id="cat1")
         plain = self._run_tool_and_wait(history_id, _plain_inputs(hda_id), use_cached_job=True, tool_id="cat1")
         assert self._copied_from_job_id(plain) == mapped["jobs"][0]["id"]
+        assert self._output_details(history_id, plain)["visible"]
+
+    @pytest.mark.require_new_history
+    def test_use_cached_job_mapped_cat1_run_reuses_plain_job(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        plain = self._run_tool_and_wait(history_id, _plain_inputs(hda_id), tool_id="cat1")
+        mapped = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), use_cached_job=True, tool_id="cat1")
+        assert self._copied_from_job_id(mapped) == plain["jobs"][0]["id"]
+        assert not self._output_details(history_id, mapped)["visible"]
 
     @pytest.mark.require_new_history
     def test_use_cached_job_plain_identifier_single_run_does_not_reuse_mapped_job(self, history_id):
@@ -946,6 +955,11 @@ steps:
     def _copied_from_job_id(self, run_response):
         job = self.dataset_populator.get_job_details(run_response["jobs"][0]["id"], full=True).json()
         return job["copied_from_job_id"]
+
+    def _output_details(self, history_id, run_response):
+        return self.dataset_populator.get_history_dataset_details(
+            history_id, dataset_id=run_response["outputs"][0]["id"]
+        )
 
     def _output_words(self, history_id, run_response):
         content = self.dataset_populator.get_history_dataset_content(
