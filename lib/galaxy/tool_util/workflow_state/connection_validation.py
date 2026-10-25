@@ -156,6 +156,7 @@ def validate_connection_graph(
 
         # Validate each connection into this step
         map_over_contributions: list[CollectionTypeDescription | None] = []
+        map_over_unknown = False
 
         for input_path, conn_refs in step.connections.items():
             for ref in conn_refs:
@@ -172,23 +173,34 @@ def validate_connection_graph(
                 if conn_result.status == "ok" and conn_result.mapping:
                     ctd = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(conn_result.mapping)
                     map_over_contributions.append(ctd)
-                elif conn_result.status in ("ok", "skip"):
+                elif conn_result.status == "ok":
                     map_over_contributions.append(None)
+                elif conn_result.status == "skip":
+                    map_over_unknown = True
 
         # Resolve step map-over from contributions
         step_map_over = _resolve_step_map_over(map_over_contributions, step_result)
-        if step_map_over:
-            step_result.map_over = step_map_over.collection_type
-
-        # Resolve output types: subworkflow recursion or normal tool output resolution
-        if step.step_type == "subworkflow" and step.inner_graph:
-            _resolve_subworkflow_outputs(step, resolved_output_types)
+        if map_over_unknown:
+            _mark_outputs_unknown(step, resolved_output_types)
         else:
-            _resolve_output_types(step, step_map_over, resolved_output_types)
+            if step_map_over:
+                step_result.map_over = step_map_over.collection_type
+            # Resolve output types: subworkflow recursion or normal tool output resolution
+            if step.step_type == "subworkflow" and step.inner_graph:
+                _resolve_subworkflow_outputs(step, resolved_output_types)
+            else:
+                _resolve_output_types(step, step_map_over, resolved_output_types)
 
         result.step_results.append(step_result)
 
     return result, resolved_output_types
+
+
+def _mark_outputs_unknown(step: ResolvedStep, resolved_output_types: StepOutputTypeMap) -> None:
+    """A skipped edge leaves map-over unknown, so every output could be any collection."""
+    outputs = resolved_output_types[step.step_id]
+    for output_name in [*outputs, *step.subworkflow_output_map]:
+        outputs[output_name] = ANY_COLLECTION_TYPE
 
 
 def _validate_single_connection(

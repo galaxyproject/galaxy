@@ -17,6 +17,8 @@ from galaxy.tool_util_models.tool_outputs import (
     ToolOutputInteger,
 )
 from .connection_test_fixtures import (
+    make_collection_input,
+    make_collection_output,
     make_data_input,
     make_data_output,
     make_input_step,
@@ -344,3 +346,121 @@ class TestParameterConnections:
         statuses = {c.target_input: c.status for c in step_result.connections}
         assert statuses["input1"] == "ok"
         assert statuses["when"] == "ok"
+
+
+# -- Unknown map-over: a skipped edge must not collapse downstream types --
+
+
+def _unknown_map_over_tools():
+    tool_info = MockGetToolInfo()
+    # Collection output with no declared collection_type, like __APPLY_RULES__.
+    tool_info.register(
+        "regroup",
+        make_parsed_tool("regroup", inputs=[make_data_input("input1")], outputs=[make_collection_output("output")]),
+    )
+    tool_info.register(
+        "paired_consumer",
+        make_parsed_tool(
+            "paired_consumer", inputs=[make_collection_input("f1", "paired")], outputs=[make_data_output("out1")]
+        ),
+    )
+    tool_info.register(
+        "list_consumer",
+        make_parsed_tool(
+            "list_consumer", inputs=[make_collection_input("f1", "list")], outputs=[make_data_output("out1")]
+        ),
+    )
+    tool_info.register(
+        "cat", make_parsed_tool("cat", inputs=[make_data_input("input1")], outputs=[make_data_output("out1")])
+    )
+    tool_info.register(
+        "three_data",
+        make_parsed_tool(
+            "three_data",
+            inputs=[make_data_input("a"), make_data_input("b"), make_data_input("c")],
+            outputs=[make_data_output("out1")],
+        ),
+    )
+    return tool_info
+
+
+def _collection_input(collection_type):
+    return make_input_step("data_collection_input", tool_state={"collection_type": collection_type})
+
+
+def _statuses(result):
+    return [[c.status for c in sr.connections] for sr in result.step_results]
+
+
+class TestUnknownMapOver:
+    def test_direct_and_transitive_consumers_skip(self):
+        wf = make_native_workflow(
+            _collection_input("list:paired"),
+            make_tool_step("regroup", input_connections={"input1": {"id": 0, "output_name": "output"}}),
+            make_tool_step("paired_consumer", input_connections={"f1": {"id": 1, "output_name": "output"}}),
+            make_tool_step("list_consumer", input_connections={"f1": {"id": 2, "output_name": "out1"}}),
+            make_tool_step("cat", input_connections={"input1": {"id": 2, "output_name": "out1"}}),
+            make_tool_step("list_consumer", input_connections={"f1": {"id": 4, "output_name": "out1"}}),
+        )
+        result = validate_connections(wf, _unknown_map_over_tools())
+        assert _statuses(result) == [[], ["ok"], ["skip"], ["skip"], ["skip"], ["skip"]]
+        assert result.valid
+
+    def test_known_mapping_beside_skip_leaves_map_over_unknown(self):
+        wf = make_native_workflow(
+            _collection_input("list:paired"),
+            _collection_input("list"),
+            make_tool_step("regroup", input_connections={"input1": {"id": 0, "output_name": "output"}}),
+            make_tool_step(
+                "three_data",
+                input_connections={
+                    "a": {"id": 2, "output_name": "output"},
+                    "b": {"id": 1, "output_name": "output"},
+                },
+            ),
+            make_tool_step("list_consumer", input_connections={"f1": {"id": 3, "output_name": "out1"}}),
+        )
+        result = validate_connections(wf, _unknown_map_over_tools())
+        assert _statuses(result)[3] == ["skip", "ok"]
+        assert result.step_results[3].map_over is None
+        assert _statuses(result)[4] == ["skip"]
+
+    def test_incompatible_known_map_overs_still_error(self):
+        wf = make_native_workflow(
+            _collection_input("list:paired"),
+            _collection_input("list"),
+            _collection_input("paired"),
+            make_tool_step("regroup", input_connections={"input1": {"id": 0, "output_name": "output"}}),
+            make_tool_step(
+                "three_data",
+                input_connections={
+                    "a": {"id": 1, "output_name": "output"},
+                    "b": {"id": 2, "output_name": "output"},
+                    "c": {"id": 3, "output_name": "output"},
+                },
+            ),
+        )
+        result = validate_connections(wf, _unknown_map_over_tools())
+        assert _statuses(result)[4] == ["ok", "ok", "skip"]
+        assert result.step_results[4].errors == ["Incompatible map-over types: list vs paired"]
+        assert not result.valid
+
+    def test_subworkflow_outputs_unknown(self):
+        inner_wf = _inner_workflow_with_exposed_output(
+            _collection_input("paired"),
+            make_tool_step("paired_consumer", input_connections={"f1": {"id": 0, "output_name": "output"}}),
+            workflow_outputs=[(1, "out1", "inner_out")],
+        )
+        wf = make_native_workflow(
+            _collection_input("list:paired"),
+            make_tool_step("regroup", input_connections={"input1": {"id": 0, "output_name": "output"}}),
+            make_subworkflow_step(
+                inner_wf,
+                input_connections={"inner_in": {"id": 1, "output_name": "output", "input_subworkflow_step_id": 0}},
+            ),
+            make_tool_step("list_consumer", input_connections={"f1": {"id": 2, "output_name": "inner_out"}}),
+        )
+        result = validate_connections(wf, _unknown_map_over_tools())
+        conn = result.step_results[3].connections[0]
+        assert conn.status == "skip"
+        assert conn.errors == ["Cannot determine output type for 'inner_out' on step 2"]
