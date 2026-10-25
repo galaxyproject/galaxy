@@ -164,7 +164,7 @@ def test_new_table_registration_notifies_peers_and_updates_watchers(tmp_path, re
     _, error = app.tool_data_tables.add_new_entries_from_config_file(incoming, None, managed, persist=True)
     assert not error
     app.queue_worker.send_control_task.assert_called_once_with(
-        "reload_tool_data_tables", noop_self=True, kwargs={"table_name": "new_table"}
+        "reload_tool_data_tables", noop_self=True, kwargs={"table_name": ["new_table"]}
     )
     app.watchers.update_watch_data_table_paths.assert_called_once()
     kwds = {"table_name": "new_table"} if reload_kind == "targeted" else {}
@@ -173,6 +173,29 @@ def test_new_table_registration_notifies_peers_and_updates_watchers(tmp_path, re
     reload_tool_data_tables(peer, **kwds)
     assert peer.tool_data_tables["new_table"].data == app.tool_data_tables["new_table"].data
     peer.watchers.update_watch_data_table_paths.assert_called_once()
+
+
+def test_multi_table_registration_sends_one_peer_reload(tmp_path):
+    local = write_config(tmp_path, "local", "hg38\tHuman\t/local\n")
+    managed = tmp_path / "managed.xml"
+    managed.write_text("<tables />")
+    app = make_app(tmp_path, [local, managed], managed)
+    peer = make_app(tmp_path, [local, managed], managed)
+    loc = tmp_path / "incoming.loc"
+    loc.write_text("mm10\tMouse\t/new\n")
+    incoming = tmp_path / "incoming.xml"
+    incoming.write_text(f"""<tables>
+      <table name="references"><columns>value, name, path</columns><file path="{loc}" /></table>
+      <table name="new_table"><columns>value, name, path</columns><file path="{loc}" /></table>
+    </tables>""")
+    _, error = app.tool_data_tables.add_new_entries_from_config_file(incoming, None, managed, persist=True)
+    assert not error
+    app.queue_worker.send_control_task.assert_called_once_with(
+        "reload_tool_data_tables", noop_self=True, kwargs={"table_name": ["references", "new_table"]}
+    )
+    reload_tool_data_tables(peer, **app.queue_worker.send_control_task.call_args.kwargs["kwargs"])
+    assert paths(peer) == paths(app) == ["/local", "/new"]
+    assert peer.tool_data_tables["new_table"].data == app.tool_data_tables["new_table"].data
 
 
 def test_registration_preserves_read_only_external_sources_and_data_manager_order(tmp_path):
@@ -364,7 +387,7 @@ def test_failed_reload_keeps_table_state_and_notifies_after_persist(tmp_path, mo
     assert "incoming.loc" in managed.read_text()
     assert paths(app) == ["/local"]
     app.queue_worker.send_control_task.assert_called_once_with(
-        "reload_tool_data_tables", noop_self=True, kwargs={"table_name": "references"}
+        "reload_tool_data_tables", noop_self=True, kwargs={"table_name": ["references"]}
     )
 
 
@@ -378,7 +401,7 @@ def test_registration_and_reload_without_application_watchers(tmp_path):
     _, error = app.tool_data_tables.add_new_entries_from_config_file(incoming, None, managed, persist=True)
     assert not error
     app.queue_worker.send_control_task.assert_called_once_with(
-        "reload_tool_data_tables", noop_self=True, kwargs={"table_name": "references"}
+        "reload_tool_data_tables", noop_self=True, kwargs={"table_name": ["references"]}
     )
     reload_tool_data_tables(peer, table_name="references")
     assert paths(app) == paths(peer) == ["/managed", "/local"]

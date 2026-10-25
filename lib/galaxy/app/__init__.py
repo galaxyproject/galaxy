@@ -479,10 +479,9 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             self.watchers.update_watch_data_table_paths()
         queue_worker: Optional[GalaxyQueueWorker] = getattr(self, "queue_worker", None)
         if queue_worker is not None:
-            for table_name in table_names:
-                queue_worker.send_control_task(
-                    "reload_tool_data_tables", noop_self=True, kwargs={"table_name": table_name}
-                )
+            queue_worker.send_control_task(
+                "reload_tool_data_tables", noop_self=True, kwargs={"table_name": list(table_names)}
+            )
 
     @property
     def tool_data_tables(self) -> BaseToolDataTableManager:
