@@ -165,26 +165,20 @@ class WorkflowsAPIController(
             workflow_ids = []
         elif not isinstance(workflow_ids, list):
             workflow_ids = [workflow_ids]
-        workflow_ids_decoded = []
-        # Decode the encoded workflow ids
-        for ids in workflow_ids:
-            workflow_ids_decoded.append(trans.security.decode_id(ids))
+        workflow_ids_decoded = [trans.security.decode_id(encoded_id) for encoded_id in workflow_ids]
+        # Unique ids in request order, all resolved before existing entries are cleared.
+        stored_workflows = [
+            trans.sa_session.get(model.StoredWorkflow, wf_id) for wf_id in dict.fromkeys(workflow_ids_decoded)
+        ]
         session = trans.sa_session
         # This explicit remove seems like a hack, need to figure out
         # how to make the association do it automatically.
         for m in user.stored_workflow_menu_entries:
             session.delete(m)
         user.stored_workflow_menu_entries = []
-        # To ensure id list is unique
-        seen_workflow_ids = set()
-        for wf_id in workflow_ids_decoded:
-            if wf_id in seen_workflow_ids:
-                continue
-            else:
-                seen_workflow_ids.add(wf_id)
+        for stored_workflow in stored_workflows:
             m = model.StoredWorkflowMenuEntry()
-            m.stored_workflow = session.get(model.StoredWorkflow, wf_id)
-
+            m.stored_workflow = stored_workflow
             user.stored_workflow_menu_entries.append(m)
         session.commit()
         message = "Menu updated."
