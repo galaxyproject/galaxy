@@ -1309,6 +1309,23 @@ def test_edited_tool_files_selects_only_changed_files(tmp_path):
     assert edited_tool_files(stores) == {str(edited): None, str(shed): shed_guid}
 
 
+def test_edited_tool_files_sees_edit_made_while_populating(tmp_path, monkeypatch):
+    box, tool_file = _indexed_shed_tool_box(tmp_path, monkeypatch, _shed_tool_xml("echo before"))
+    path = str(tool_file)
+
+    def hash_then_edit(file_path):
+        file_hash = md5_hash_file(file_path)
+        tool_file.write_text(_shed_tool_xml("echo after"))
+        return file_hash
+
+    monkeypatch.setattr(populator, "md5_hash_file", hash_then_edit)
+    populator.populate_store_inline(box.app.config, paths=[path], path_guids={path: GUID}, incremental=False)
+    monkeypatch.undo()
+    box._store.invalidate_index_cache()
+
+    assert edited_tool_files([box._store]) == {path: GUID}
+
+
 def test_reindex_edited_tool_files_reindexes_selected_files(monkeypatch):
     box = _seam_box()
     box._store.load_index.return_value = ToolIndex()

@@ -532,7 +532,9 @@ def build_index_entry_from_source(
             repository_owner=discovered.repository_owner,
             changeset_revision=discovered.installed_changeset_revision,
             is_local=discovered.guid is None,
-            indexed_at=datetime.now(timezone.utc),
+            # The file's state at hash time: an edit after this instant leaves
+            # it newer than ``indexed_at``, so a reload's re-index check sees it.
+            indexed_at=stored.stored_at or datetime.now(timezone.utc),
         )
     except Exception as e:
         log.error(
@@ -822,6 +824,7 @@ def _populate_store_inline_unlocked(
         try:
             # Fast path: a byte-identical file carries its prior index entry
             # forward, skipping the macro-expanding parse below.
+            hashed_at = datetime.now(timezone.utc)
             file_hash = md5_hash_file(path)
             if incremental and not prune:
                 old_entry = old_entry_by_path[store_name].get(path)
@@ -853,7 +856,7 @@ def _populate_store_inline_unlocked(
                 tool_version=tool_source.parse_version(),
                 tool_dir=str(Path(path).parent),
                 source_path=str(path),
-                stored_at=datetime.now(timezone.utc),
+                stored_at=hashed_at,
                 # Raw file md5 for the fast path; carried onto the index entry.
                 metadata={"file_hash": file_hash},
             )
