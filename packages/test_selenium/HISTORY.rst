@@ -3,11 +3,26 @@ History
 
 .. to_doc
 
------------
-26.0.2.dev0
------------
+-------------------
+26.0.2 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Quit selenium driver in test teardown to stop leaking chromedriver processes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23901 <https://github.com/galaxyproject/galaxy/pull/23901>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Show workflow integer/float input bounds on the run form by `@jmchilton <https://github.com/jmchilton>`_ in `#24212 <https://github.com/galaxyproject/galaxy/pull/24212>`_
+* Restore batch info for collections mapped over a collection input by `@jmchilton <https://github.com/jmchilton>`_ in `#24223 <https://github.com/galaxyproject/galaxy/pull/24223>`_
+* Backport flaky test fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24251 <https://github.com/galaxyproject/galaxy/pull/24251>`_
+
+=============
+Other changes
+=============
+
+* Merge release_25.1 into release_26.0 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24274 <https://github.com/galaxyproject/galaxy/pull/24274>`_
 
 -------------------
 26.0.1 (2026-06-04)

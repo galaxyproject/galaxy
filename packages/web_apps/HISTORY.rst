@@ -3,11 +3,26 @@ History
 
 .. to_doc
 
------------
-26.0.2.dev0
------------
+-------------------
+26.0.2 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix WES workflow completion and add missing WES docs by `@jmchilton <https://github.com/jmchilton>`_ in `#22857 <https://github.com/galaxyproject/galaxy/pull/22857>`_
+* Fix 500 on the dataset tool-markdown report endpoint by `@jmchilton <https://github.com/jmchilton>`_ in `#23599 <https://github.com/galaxyproject/galaxy/pull/23599>`_
+* Fix tool recommendations for anonymous Galaxy sessions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23745 <https://github.com/galaxyproject/galaxy/pull/23745>`_
+* Fix 500 on reading pages with non-ASCII slugs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23854 <https://github.com/galaxyproject/galaxy/pull/23854>`_
+* Keep numeric changeset hashes as strings when installing shed repositories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23875 <https://github.com/galaxyproject/galaxy/pull/23875>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Bind OIDC account confirmation to the authenticated browser flow by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24084 <https://github.com/galaxyproject/galaxy/pull/24084>`_
+* Show workflow integer/float input bounds on the run form by `@jmchilton <https://github.com/jmchilton>`_ in `#24212 <https://github.com/galaxyproject/galaxy/pull/24212>`_
+* Validate preferred object store ids on tool runs and workflow invocations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24214 <https://github.com/galaxyproject/galaxy/pull/24214>`_
+* Better API Handling for Custom Builds by `@jmchilton <https://github.com/jmchilton>`_ in `#24310 <https://github.com/galaxyproject/galaxy/pull/24310>`_
+* Return 400 when a custom build's dataset can't be converted to len by `@jmchilton <https://github.com/jmchilton>`_ in `#24313 <https://github.com/galaxyproject/galaxy/pull/24313>`_
 
 -------------------
 25.1.3 (2026-10-25)

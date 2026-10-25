@@ -3,11 +3,25 @@ History
 
 .. to_doc
 
------------
-26.0.2.dev0
------------
+-------------------
+26.0.2 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fade in the workflow run settings panel instead of scaling it by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23612 <https://github.com/galaxyproject/galaxy/pull/23612>`_
+* Restore batch info for collections mapped over a collection input by `@jmchilton <https://github.com/jmchilton>`_ in `#24223 <https://github.com/galaxyproject/galaxy/pull/24223>`_
+* Run FTP user file source Selenium test against a local server by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24360 <https://github.com/galaxyproject/galaxy/pull/24360>`_
+* Fix CI on ubuntu-26.04 runners by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24390 <https://github.com/galaxyproject/galaxy/pull/24390>`_
+
+=============
+Other changes
+=============
+
+* Merge release_25.1 into release_26.0 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24274 <https://github.com/galaxyproject/galaxy/pull/24274>`_
 
 -------------------
 25.1.3 (2026-10-25)

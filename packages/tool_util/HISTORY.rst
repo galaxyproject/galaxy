@@ -3,11 +3,21 @@ History
 
 .. to_doc
 
------------
-26.0.2.dev0
------------
+-------------------
+26.0.2 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix ToolPanelElements._section_by_tool being class-level shared state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23062 <https://github.com/galaxyproject/galaxy/pull/23062>`_
+* Handle sample_sheet and paired_or_unpaired collections in output_to_cwl_json by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23152 <https://github.com/galaxyproject/galaxy/pull/23152>`_
+* Fix \`base_image_for_targets()\` for newer conda search output by `@nsoranzo <https://github.com/nsoranzo>`_ in `#23496 <https://github.com/galaxyproject/galaxy/pull/23496>`_
+* Backport mulled cache seeding to fix flaky integration tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23541 <https://github.com/galaxyproject/galaxy/pull/23541>`_
+* Allow <requirements> children in any order in the tool XSD by `@jmchilton <https://github.com/jmchilton>`_ in `#23629 <https://github.com/galaxyproject/galaxy/pull/23629>`_
+* Skip Quay search tests on runtime API outages by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24432 <https://github.com/galaxyproject/galaxy/pull/24432>`_
 
 -------------------
 25.1.3 (2026-10-25)

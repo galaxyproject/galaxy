@@ -3,11 +3,34 @@ History
 
 .. to_doc
 
------------
-26.0.2.dev0
------------
+-------------------
+26.0.2 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix WES workflow completion and add missing WES docs by `@jmchilton <https://github.com/jmchilton>`_ in `#22857 <https://github.com/galaxyproject/galaxy/pull/22857>`_
+* Fix fasta preview rendering for sequences larger than 100 KB by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23163 <https://github.com/galaxyproject/galaxy/pull/23163>`_
+* Use pydantic-aware serializer for celery control replies by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23525 <https://github.com/galaxyproject/galaxy/pull/23525>`_
+* Fix 500 on the dataset tool-markdown report endpoint by `@jmchilton <https://github.com/jmchilton>`_ in `#23599 <https://github.com/galaxyproject/galaxy/pull/23599>`_
+* Serialize runtime values of unresolved conditionals in populate_state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23649 <https://github.com/galaxyproject/galaxy/pull/23649>`_
+* Fix wait_on callback in test_delete_job_with_message by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23687 <https://github.com/galaxyproject/galaxy/pull/23687>`_
+* Return 400 for request bodies that webob cannot parse by `@rmz-oz <https://github.com/rmz-oz>`_ in `#23839 <https://github.com/galaxyproject/galaxy/pull/23839>`_
+* Fix 500 on reading pages with non-ASCII slugs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23854 <https://github.com/galaxyproject/galaxy/pull/23854>`_
+* Respect allow_uri_if_protocol for single deferred data inputs by `@davelopez <https://github.com/davelopez>`_ in `#24001 <https://github.com/galaxyproject/galaxy/pull/24001>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* De-race test_workflow_with_deleted_dataset_step_parameter by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24083 <https://github.com/galaxyproject/galaxy/pull/24083>`_
+* Show workflow integer/float input bounds on the run form by `@jmchilton <https://github.com/jmchilton>`_ in `#24212 <https://github.com/galaxyproject/galaxy/pull/24212>`_
+* Fix dataset permissions set when upload and discovery jobs finish by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24233 <https://github.com/galaxyproject/galaxy/pull/24233>`_
+* Apply default permissions to discovered collection elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24284 <https://github.com/galaxyproject/galaxy/pull/24284>`_
+* Don't overwrite inputs when skipping database operations on nested collections by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24286 <https://github.com/galaxyproject/galaxy/pull/24286>`_
+* Better API Handling for Custom Builds by `@jmchilton <https://github.com/jmchilton>`_ in `#24310 <https://github.com/galaxyproject/galaxy/pull/24310>`_
+* Return 400 when a custom build's dataset can't be converted to len by `@jmchilton <https://github.com/jmchilton>`_ in `#24313 <https://github.com/galaxyproject/galaxy/pull/24313>`_
+* Fix numeric column stats in tabular raw_data requests by `@davelopez <https://github.com/davelopez>`_ in `#24359 <https://github.com/galaxyproject/galaxy/pull/24359>`_
+* Import unregistered dataset extensions from model stores as data by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24433 <https://github.com/galaxyproject/galaxy/pull/24433>`_
 
 -------------------
 25.1.3 (2026-10-25)

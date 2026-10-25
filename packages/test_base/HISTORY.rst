@@ -3,11 +3,19 @@ History
 
 .. to_doc
 
------------
-26.0.2.dev0
------------
+-------------------
+26.0.2 (2026-10-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Use pydantic-aware serializer for celery control replies by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23525 <https://github.com/galaxyproject/galaxy/pull/23525>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Show workflow integer/float input bounds on the run form by `@jmchilton <https://github.com/jmchilton>`_ in `#24212 <https://github.com/galaxyproject/galaxy/pull/24212>`_
+* Apply default permissions to discovered collection elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24284 <https://github.com/galaxyproject/galaxy/pull/24284>`_
 
 -------------------
 25.1.3 (2026-10-25)
