@@ -3,11 +3,32 @@ History
 
 .. to_doc
 
----------
-26.2.dev0
----------
+-------
+26.2rc1
+-------
 
 
+
+-------------------
+25.1.3 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix dataset collection tag duplication when copying a history by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21984 <https://github.com/galaxyproject/galaxy/pull/21984>`_
+* Fix make all histories private controller None id bug by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#22174 <https://github.com/galaxyproject/galaxy/pull/22174>`_
+* Use \`\`/api/tool_data\`\` endpoints in DataTables.vue & DataManagerTable.vue by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22229 <https://github.com/galaxyproject/galaxy/pull/22229>`_
+* Backport FastAPI/Starlette upgrade for BadHost (CVE-2026-48710) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22778 <https://github.com/galaxyproject/galaxy/pull/22778>`_
+* Fix tool recommendations for anonymous Galaxy sessions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23745 <https://github.com/galaxyproject/galaxy/pull/23745>`_
+* Fix 500 on reading pages with non-ASCII slugs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23854 <https://github.com/galaxyproject/galaxy/pull/23854>`_
+* Keep numeric changeset hashes as strings when installing shed repositories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23875 <https://github.com/galaxyproject/galaxy/pull/23875>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Bind OIDC account confirmation to the authenticated browser flow by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24084 <https://github.com/galaxyproject/galaxy/pull/24084>`_
+* Validate preferred object store ids on tool runs and workflow invocations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24214 <https://github.com/galaxyproject/galaxy/pull/24214>`_
+* Better API Handling for Custom Builds by `@jmchilton <https://github.com/jmchilton>`_ in `#24310 <https://github.com/galaxyproject/galaxy/pull/24310>`_
 
 -------------------
 26.1.1 (2026-08-04)
