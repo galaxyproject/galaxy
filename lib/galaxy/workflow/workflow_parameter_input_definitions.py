@@ -68,11 +68,12 @@ def split_numeric_bounds(
 
 
 def _range_is_bounds(parameter_type: str, validator: dict[str, Any]) -> bool:
-    # Unlike _form_can_show, this skips model validation, so inverted bounds still separate and get reported.
+    # Skips model validation, so inverted bounds still separate, show in the min/max fields and get reported.
     shape = FORM_VALIDATOR_SHAPES[parameter_type]
     if validator.get("type") != shape.validator_type:
         return False
-    keys = {key for key, value in validator.items() if value is not None and value is not False} - {"type"}
+    # 0 is a false flag too (negate: 0), as the models parse it
+    keys = {key for key, value in validator.items() if value not in (None, False)} - {"type"}
     return keys <= shape.fields and all(
         isinstance(validator.get(key), (shape.field_value_type, type(None))) for key in shape.fields
     )
@@ -217,6 +218,8 @@ def _form_can_show(parameter_type: str, validator: dict[str, Any]) -> bool:
     shape = FORM_VALIDATOR_SHAPES.get(parameter_type)
     if shape is None or validator.get("type") != shape.validator_type:
         return False
+    if shape.validator_type == "in_range":
+        return _range_is_bounds(parameter_type, validator)
     keys = _non_default_keys(validator)
     if keys is None or not keys <= shape.fields:
         return False

@@ -115,6 +115,18 @@ def test_imported_min_greater_than_max_is_flagged():
     assert module.get_errors() == "A workflow input has a minimum (5) greater than its maximum (1)."
 
 
+def test_editor_edits_range_with_numeric_false_flag():
+    step = import_input("integer", [{**RANGE, "negate": 0}])
+    resaved = editor_resave(step, {"parameter_definition|max": 10})
+    assert resaved.tool_inputs["validators"] == [{**RANGE, "max": 10}]
+
+
+def test_editor_fixes_imported_min_greater_than_max():
+    step = import_input("integer", [{"type": "in_range", "min": 5, "max": 1, "negate": False}])
+    resaved = editor_resave(step, {"parameter_definition|min": 1, "parameter_definition|max": 5})
+    assert resaved.tool_inputs["validators"] == [RANGE]
+
+
 @pytest.mark.parametrize(
     "parameter_type,validators,accepted,rejected",
     [
