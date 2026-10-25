@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { faStar, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faStar, faTags, faTrash, faUserSlash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BPagination } from "bootstrap-vue";
 import { faTrashRestore } from "font-awesome-6";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
-import { loadWorkflows, undeleteWorkflow, type WorkflowSummary } from "@/api/workflows";
+import { loadWorkflows, undeleteWorkflow, unshareWorkflowWithMe, type WorkflowSummary } from "@/api/workflows";
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
 import { deleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -14,6 +14,8 @@ import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
+import { describeFailures, settleEach, type SettleFailure } from "@/utils/settleEach";
+import { pluralize } from "@/utils/strings";
 
 import type { SelectedWorkflow } from "./types";
 import { useWorkflowCardActions } from "./useWorkflowCardActions";
@@ -60,6 +62,7 @@ const listHeader = ref<any>(null);
 const showBulkAddTagsModal = ref(false);
 const bulkTagsLoading = ref(false);
 const bulkDeleteOrRestoreLoading = ref(false);
+const bulkUnshareLoading = ref(false);
 const workflowsFetched = ref<WorkflowSummary[]>([]);
 const workflowsLoaded = computed(() =>
     props.activeList === "my"
@@ -136,8 +139,12 @@ const {
     totalItemsInQuery: computed(() => totalWorkflows.value ?? 0),
     allItems: workflowsLoaded,
     filterClass: workflowFilters.value,
-    selectable: computed(() => !published.value && !sharedWithMe.value),
+    selectable: computed(() => !published.value),
     onDelete: async (item) => {
+        // Delete/Backspace never removes a share; that takes the explicit footer or card action
+        if (sharedWithMe.value) {
+            return;
+        }
         const { deleteWorkflow: deleteInModal } = useWorkflowCardActions(
             computed(() => item),
             false,
@@ -331,6 +338,52 @@ async function onBulkRestore() {
     }
 }
 
+/** Removes the current user's shares of the selected workflows, reporting failures together. */
+async function onBulkUnshareWithMe() {
+    const totalSelected = selectedWorkflowIds.value.length;
+
+    const confirmed = await confirm(
+        `Remove ${totalSelected} ${pluralize(totalSelected, "workflow")} from your shared workflows? Their owners will need to share them again for you to see them.`,
+        {
+            title: "Remove shared workflows",
+            okText: "Remove",
+            okIcon: faUserSlash,
+            okColor: "red",
+        },
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    let failures: SettleFailure<SelectedWorkflow>[] = [];
+
+    try {
+        overlay.value = true;
+        bulkUnshareLoading.value = true;
+
+        failures = await settleEach(selectedWorkflowIds.value, (w) => unshareWorkflowWithMe(w.id));
+
+        const removed = totalSelected - failures.length;
+        if (removed > 0) {
+            Toast.success(`Removed ${removed} ${pluralize(removed, "workflow")} from your shared workflows.`);
+        }
+        if (failures.length) {
+            Toast.error(
+                `Failed to remove ${failures.length} shared ${pluralize(failures.length, "workflow")}: ${describeFailures(failures, (w) => w.name)}`,
+            );
+        }
+
+        resetSelection();
+    } finally {
+        bulkUnshareLoading.value = false;
+
+        await load(true);
+
+        selectTmpSelected(failures.map(({ item }) => item));
+    }
+}
+
 function selectTmpSelected(tmpSelected: SelectedWorkflow[]) {
     for (const selectedWf of tmpSelected) {
         const workflow = workflowsLoaded.value.find((w) => w.id === selectedWf.id);
@@ -420,7 +473,7 @@ onMounted(() => {
                 list-id="workflows"
                 show-sort-options
                 show-view-toggle
-                :show-select-all="!published && !sharedWithMe"
+                :show-select-all="!published"
                 :select-all-disabled="loading || overlay || noItems || noResults"
                 :all-selected="allSelected"
                 :indeterminate-selected="indeterminateSelected"
@@ -560,6 +613,22 @@ onMounted(() => {
                         Add tags ({{ selectedWorkflowIds.length }})
                     </span>
                     <LoadingSpan v-else message="Adding tags" />
+                </GButton>
+            </div>
+            <div v-else-if="sharedWithMe && selectedWorkflowIds.length" class="workflow-list-footer-bulk-actions">
+                <GButton
+                    id="workflow-list-footer-bulk-unshare-button"
+                    v-g-tooltip.hover
+                    :title="bulkUnshareLoading ? 'Removing shared workflows' : 'Remove selected workflows from Shared'"
+                    :disabled="bulkUnshareLoading"
+                    size="small"
+                    color="blue"
+                    @click="onBulkUnshareWithMe">
+                    <span v-if="!bulkUnshareLoading">
+                        <FontAwesomeIcon :icon="faUserSlash" fixed-width />
+                        Remove from Shared ({{ selectedWorkflowIds.length }})
+                    </span>
+                    <LoadingSpan v-else message="Removing" />
                 </GButton>
             </div>
 

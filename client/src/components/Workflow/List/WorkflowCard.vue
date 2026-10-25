@@ -145,7 +145,7 @@ function onKeyDown(event: KeyboardEvent) {
         :primary-actions="workflowCardPrimaryActions"
         :secondary-actions="workflowCardSecondaryActions"
         :published="workflow.published"
-        :selectable="props.selectable && !shared"
+        :selectable="props.selectable && (!shared || props.sharedWithMeView)"
         :selected="props.selected"
         :show-bookmark="!props.workflow.deleted"
         :tags="workflow.tags"
