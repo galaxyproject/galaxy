@@ -173,6 +173,30 @@ def test_duplicate_data_test_param_with_conflicting_edit_attributes_is_rejected(
     assert "Ambiguous test parameter (input)" in str(test_description.exception)
 
 
+def test_duplicate_identical_composite_collection_test_param_is_tolerated():
+    element = (
+        '<collection type="list"><element name="e" value="velveth_test1/output.html" ftype="velvet">'
+        '<composite_data value="velveth_test1/Sequences" /></element></collection>'
+    )
+    tool_source = raw_xml_tool_source(f"""
+<tool id="duplicate_collection" name="duplicate_collection" version="1.0.0" profile="25.1">
+    <command>echo</command>
+    <inputs>
+        <param name="input" type="data_collection" collection_type="list" format="velvet" />
+    </inputs>
+    <outputs />
+    <tests>
+        <test>
+            <param name="input">{element}</param>
+            <param name="input">{element}</param>
+        </test>
+    </tests>
+</tool>
+        """)
+    [test_description] = parse_tool_test_descriptions(tool_source)
+    assert not test_description.error, test_description.exception
+
+
 def test_data_test_param_edit_attributes_survive_json_round_trip():
     tool_source = raw_xml_tool_source("""
 <tool id="edit_attributes" name="edit_attributes" version="1.0.0" profile="25.1">
