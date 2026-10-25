@@ -62,7 +62,8 @@ class TestDataset(SeleniumTestCase):
         item_name = self.history_panel_item_component(hid=hid).name
 
         def item_has_new_name(driver=None):
-            return item_name.wait_for_text() == new_name
+            name = item_name.wait_for_text()
+            return name if name == new_name else None
 
         self._wait_on_custom(item_has_new_name, f"history item {hid} to be named [{new_name}]")
 
