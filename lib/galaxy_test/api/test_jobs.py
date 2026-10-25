@@ -873,6 +873,35 @@ steps:
         assert self._copied_from_job_id(mapped) == plain["jobs"][0]["id"]
         self._assert_pair_matches(history_id, mapped, plain)
 
+    def test_use_cached_job_discovered_collection_run_in_other_history_reuses_job_after_input_rename(self):
+        with (
+            self.dataset_populator.test_history() as history_id_one,
+            self.dataset_populator.test_history() as history_id_two,
+        ):
+            hda = self.dataset_populator.new_dataset(
+                history_id_one, content="a\t1\nb\t2\n", file_type="tabular", wait=True
+            )
+            first = self._run_tool_and_wait(
+                history_id_one, _plain_inputs(hda["id"]), tool_id="collection_split_on_column"
+            )
+            copy_payload = {"content": hda["id"], "source": "hda", "type": "dataset"}
+            copy_response = self._post(f"histories/{history_id_two}/contents", data=copy_payload, json=True)
+            self._assert_status_code_is(copy_response, 200)
+            copy_id = copy_response.json()["id"]
+            self.dataset_populator.rename_dataset(copy_id, "renamed")
+            cached = self._run_tool_and_wait(
+                history_id_two, _plain_inputs(copy_id), use_cached_job=True, tool_id="collection_split_on_column"
+            )
+            assert self._copied_from_job_id(cached) == first["jobs"][0]["id"]
+            hdca = self.dataset_populator.get_history_collection_details(
+                history_id_two, content_id=cached["output_collections"][0]["id"]
+            )
+            elements = [
+                self.dataset_populator.get_history_dataset_details(history_id_two, dataset_id=e["object"]["id"])
+                for e in hdca["elements"]
+            ]
+            assert [(e["history_id"], e["hid"] > 0) for e in elements] == [(history_id_two, True)] * 2
+
     def _assert_pair_matches(self, history_id, cached, original):
         def pair_datasets(run_response):
             hdca_id = (run_response["output_collections"] or run_response["implicit_collections"])[0]["id"]
@@ -910,6 +939,7 @@ steps:
 
     def _run_tool_and_wait(self, history_id, inputs, use_cached_job=False, tool_id="identifier_single"):
         response = self.dataset_populator.run_tool(tool_id, inputs, history_id, use_cached_job=use_cached_job)
+        self.dataset_populator.wait_for_jobs(response["jobs"], assert_ok=True)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         return response
 

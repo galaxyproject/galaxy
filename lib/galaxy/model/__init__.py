@@ -1781,8 +1781,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 self_out_collection.copy_from(out_collection, history=self.history)
                 requires_addition_to_history = True
             if requires_addition_to_history:
-                assert job.history
-                job.history.add_pending_items()
+                self.history.add_pending_items()
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
         inp_data: dict[str, Optional[DatasetInstance]] = {da.name: da.dataset for da in self.input_datasets}
