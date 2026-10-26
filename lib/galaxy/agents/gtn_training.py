@@ -41,13 +41,26 @@ from .base import (
 
 log = logging.getLogger(__name__)
 
-# A markdown link with any target (protocol-relative ones render as links too),
-# or a bare URL. Bare URLs stop at characters that can't end one in prose so a
-# trailing ")" or "]" isn't swallowed, which also catches <...> autolinks.
-_URL_IN_TEXT_RE = re.compile(
-    r"\[([^\]]+)\]\(([^)\s]+)\)|(https?://[^\s<>()\[\]\"']+)",
-    re.IGNORECASE,
+# Markdown link syntax the chat's markdown-it renders as a link. It runs without
+# html or linkify, so bare URLs and raw <a> tags are never clickable and stay as
+# text. Labels and destinations allow one level of nested brackets/parens; deeper
+# nesting is caught by _LINK_START_RE, which breaks any "](" left pointing elsewhere.
+_LINK_DEST = r"(?:<[^<>\n]*>|(?:[^\s()]|\([^\s()]*\))*)"
+_LINK_TITLE = r"""(?:\s+(?:"[^"]*"|'[^']*'|\([^()]*\)))?"""
+_LINK_LABEL = r"(?:[^\[\]]|\[[^\[\]]*\])*"
+_INLINE_LINK_RE = re.compile(rf"!?\[({_LINK_LABEL})\]\(\s*({_LINK_DEST}){_LINK_TITLE}\s*\)")
+_LINK_START_RE = re.compile(r"\]\(\s*<?([^\s()<>]*)")
+# Definitions can sit inside blockquotes and list items, so allow those prefixes.
+_REFERENCE_DEF_RE = re.compile(
+    rf"^((?:[ \t>]|[-*+][ \t]|\d{{1,9}}[.)][ \t])*)\[({_LINK_LABEL})\]:\s*({_LINK_DEST}){_LINK_TITLE}[ \t]*$",
+    re.MULTILINE,
 )
+_REFERENCE_USE_RE = re.compile(rf"!?\[({_LINK_LABEL})\](?:\[({_LINK_LABEL})\]|(?![(:]))")
+_AUTOLINK_RE = re.compile(r"<([a-z][a-z0-9+.\-]{1,31}:[^\s<>]*)>", re.IGNORECASE)
+
+
+def _reference_label(label: str) -> str:
+    return " ".join(label.split()).casefold()
 
 
 def _normalize_url(url: str) -> str:
@@ -179,21 +192,40 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         return allowed
 
     def _strip_unverified_urls(self, text: str, allowed: set[str]) -> str:
-        """Unlink URLs in model-written prose that don't point at a retrieved
-        tutorial/FAQ or a real GTN topic page."""
+        """Unlink Markdown links in model-written prose that don't point at a
+        retrieved tutorial/FAQ or a real GTN topic page, keeping their text."""
 
-        def replace(match: re.Match[str]) -> str:
-            label, link_url, bare_url = match.groups()
-            if link_url is not None:
-                if _normalize_url(link_url) in allowed:
-                    return match.group(0)
-                # The label itself can hold a link, e.g. [<https://x>](https://x).
-                return _URL_IN_TEXT_RE.sub(replace, label)
-            url = bare_url.rstrip(".,;:!?")
-            trailing = bare_url[len(url) :]
-            return match.group(0) if _normalize_url(url) in allowed else trailing
+        def is_allowed(destination: str) -> bool:
+            return _normalize_url(destination.strip("<>")) in allowed
 
-        return _URL_IN_TEXT_RE.sub(replace, text)
+        dropped_labels: set[str] = set()
+
+        def drop_definition(match: re.Match[str]) -> str:
+            prefix, label, destination = match.groups()
+            if is_allowed(destination):
+                return match.group(0)
+            dropped_labels.add(_reference_label(label))
+            return prefix
+
+        def unlink_inline(match: re.Match[str]) -> str:
+            if is_allowed(match.group(2)):
+                return match.group(0)
+            # The label itself can hold a link, e.g. [[x](https://x)](https://y).
+            return _INLINE_LINK_RE.sub(unlink_inline, match.group(1))
+
+        def unlink_reference(match: re.Match[str]) -> str:
+            label_text, label = match.groups()
+            if _reference_label(label or label_text) in dropped_labels:
+                return label_text
+            return match.group(0)
+
+        text = _REFERENCE_DEF_RE.sub(drop_definition, text)
+        text = _INLINE_LINK_RE.sub(unlink_inline, text)
+        # A space between "]" and "(" stops it parsing as a link, however deeply nested.
+        text = _LINK_START_RE.sub(lambda m: m.group(0) if is_allowed(m.group(1)) else f"] ({m.group(0)[2:]}", text)
+        if dropped_labels:
+            text = _REFERENCE_USE_RE.sub(unlink_reference, text)
+        return _AUTOLINK_RE.sub(lambda m: m.group(0) if is_allowed(m.group(1)) else m.group(1), text)
 
     def _verify_response(self, response_data: GTNSearchResponse) -> GTNSearchResponse:
         # Verify the items first: database lookups add to the URLs the prose may link to.
