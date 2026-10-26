@@ -2449,27 +2449,14 @@ class ToolModule(WorkflowModule):
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def from_dict(Class, trans: "ProvidesUserContext", d, **kwds):
+    def resolve_tool_uuid(Class, trans: "ProvidesUserContext", d):
+        """Resolve embedded definitions using the importing user's tool permissions."""
         tool_id = d.get("content_id") or d.get("tool_id")
-        tool_version = d.get("tool_version")
-        if tool_version:
-            tool_version = str(tool_version)
-        tool_uuid = d.get("tool_uuid", None)
-        if tool_version == "latest":
-            # Resolve to the actual latest installed version via lineage rather than matching the exact GUID.
-            # This mirrors what &version=latest does in the tool form.
-            tool_version = None
-            if tool_id:
-                tool_id = remove_version_from_guid(tool_id) or tool_id
-            kwds = dict(kwds, exact_tools=False)
+        tool_uuid = d.get("tool_uuid")
         tool_representation = d.get("tool_representation")
         if tool_representation and tool_representation.get("class") == "GalaxyUserTool":
-            # User-defined tool embedded in the workflow. A referenced tool the
-            # importing user owns is reused; otherwise (an export by another
-            # user or from another Galaxy) the embedded definition becomes a
-            # private UDT owned by the importing user. Requires
-            # USER_TOOL_EXECUTE; create_unprivileged_tool raises
-            # InsufficientPermissionsException otherwise.
+            # Reuse a tool owned by this user, or create a private copy of the
+            # embedded definition when importing another user's workflow.
             if trans.user is None:
                 raise exceptions.InsufficientPermissionsException("User is not allowed to run unprivileged tools")
             if not (tool_uuid and trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)):
@@ -2482,6 +2469,22 @@ class ToolModule(WorkflowModule):
             create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
             dynamic_tool = trans.app.dynamic_tool_manager.create_tool(create_request)
             tool_uuid = dynamic_tool.uuid
+        return tool_uuid
+
+    @classmethod
+    def from_dict(Class, trans: "ProvidesUserContext", d, **kwds):
+        tool_id = d.get("content_id") or d.get("tool_id")
+        tool_version = d.get("tool_version")
+        if tool_version:
+            tool_version = str(tool_version)
+        tool_uuid = Class.resolve_tool_uuid(trans, d)
+        if tool_version == "latest":
+            # Resolve to the actual latest installed version via lineage rather than matching the exact GUID.
+            # This mirrors what &version=latest does in the tool form.
+            tool_version = None
+            if tool_id:
+                tool_id = remove_version_from_guid(tool_id) or tool_id
+            kwds = dict(kwds, exact_tools=False)
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException(f"No content id could be located for for step [{d}]")
         module = super().from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
