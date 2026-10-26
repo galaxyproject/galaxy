@@ -46,7 +46,7 @@ const emit = defineEmits<{
     (e: "refreshList", overlayLoading?: boolean, silent?: boolean): void;
     (e: "updateFilter", key: string, value: any): void;
     (e: "insertWorkflow", id: string, name: string): void;
-    (e: "insertWorkflowSteps", id: string, stepCount: number): void;
+    (e: "insertWorkflowSteps", id: string, stepCount?: number): void;
     (e: "on-key-down", workflow: WorkflowSummary, event: KeyboardEvent): void;
     (e: "on-workflow-card-click", workflow: WorkflowSummary, event: Event): void;
 }>();
@@ -86,7 +86,7 @@ function onInsert(workflow: WorkflowSummary) {
 }
 
 function onInsertSteps(workflow: WorkflowSummary) {
-    emit("insertWorkflowSteps", workflow.id, workflow.number_of_steps as any);
+    emit("insertWorkflowSteps", workflow.id, workflow.number_of_steps);
 }
 
 const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
