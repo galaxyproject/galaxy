@@ -183,6 +183,7 @@ def test_get_tutorial_looks_up_by_slugs(fixture_db: Path):
     assert result is not None
     assert result.title == "RNA-seq analysis introduction"
     assert result.url.endswith("/topics/transcriptomics/tutorials/rna-seq-intro/tutorial.html")
+    assert db.get_tutorial("Transcriptomics", "RNA-seq-intro") is not None
     assert db.get_tutorial("transcriptomics", "made-up") is None
     assert db.get_tutorial("variant-analysis", "rna-seq-intro") is None
 
@@ -193,6 +194,7 @@ def test_get_faq_looks_up_by_category_and_filename(fixture_db: Path):
     assert result is not None
     assert result.title == "How do I archive a history?"
     assert result.to_dict()["url"] == f"{GTN_FAQ_BASE_URL}/galaxy/archive-a-history.html"
+    assert db.get_faq("Galaxy", "archive-a-history") is not None
     assert db.get_faq("gtn", "archive-a-history") is None
 
 

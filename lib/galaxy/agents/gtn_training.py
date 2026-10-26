@@ -65,6 +65,10 @@ _REFERENCE_USE_RE = re.compile(rf"!?\[({_LINK_LABEL})\](?:\[({_LINK_LABEL})\]|(?
 _AUTOLINK_RE = re.compile(r"<([a-z][a-z0-9+.\-]{1,31}:[^\s<>]*|[^\s<>@:]+@[^\s<>]+)>", re.IGNORECASE)
 
 
+_GTN_TUTORIAL_PATH_RE = re.compile(r"/topics/([^/]+)/tutorials/([^/]+)/")
+_GTN_FAQ_PATH_RE = re.compile(r"/faqs/([^/]+)/([^/]+?)\.html")
+
+
 def _reference_label(label: str) -> str:
     return " ".join(label.split()).casefold()
 
@@ -162,11 +166,21 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         cite material from an earlier turn that this turn never searched for."""
         if not self.gtn_db:
             return None
+        category, filename = item.get("category"), item.get("filename")
+        topic, tutorial = item.get("topic"), item.get("tutorial")
+        # The prompt asks for GTN URLs, so a citation may carry no slugs of its own.
+        url = item.get("url")
+        if not isinstance(url, str):
+            url = ""
+        if not (category and filename) and (match := _GTN_FAQ_PATH_RE.search(url)):
+            category, filename = match.groups()
+        if not (topic and tutorial) and (match := _GTN_TUTORIAL_PATH_RE.search(url)):
+            topic, tutorial = match.groups()
         result: SearchResult | FAQResult | None = None
-        if item.get("filename"):
-            result = self.gtn_db.get_faq(str(item.get("category")), str(item["filename"]))
-        elif item.get("tutorial"):
-            result = self.gtn_db.get_tutorial(str(item.get("topic")), str(item["tutorial"]))
+        if category and filename:
+            result = self.gtn_db.get_faq(str(category), str(filename))
+        elif topic and tutorial:
+            result = self.gtn_db.get_tutorial(str(topic), str(tutorial))
         return self._record_retrieved([result])[0] if result else None
 
     def _verify_items(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:

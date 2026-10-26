@@ -1616,6 +1616,24 @@ class TestAgentUnitMocked:
         db.search.assert_not_called()
 
     @pytest.mark.asyncio
+    async def test_gtn_followup_verifies_tutorial_cited_only_by_url(self):
+        # The prompt asks the model to cite GTN URLs, so a follow-up may name the
+        # tutorial by URL alone; its slugs come from the URL path.
+        agent, db = self._gtn_agent_with_db()
+
+        def model(messages, info):
+            cited = {"title": "RNA-seq", "url": self._RNASEQ_TUTORIAL["url"]}
+            return ModelResponse(
+                parts=[ToolCallPart("final_result", {"tutorials": [cited], "summary": "Step 1 uploads reads."})]
+            )
+
+        with agent.agent.override(model=FunctionModel(model)):
+            response = await agent.process("tell me more about step 1 of that one")
+
+        assert [source.url for source in response.sources] == [self._RNASEQ_TUTORIAL["url"]]
+        db.get_tutorial.assert_called_once_with("transcriptomics", "ref-based")
+
+    @pytest.mark.asyncio
     async def test_gtn_keeps_stripped_summary_when_every_item_is_invented(self):
         # Verification dropping everything the model cited shouldn't swap its answer
         # for a search on the raw query text.

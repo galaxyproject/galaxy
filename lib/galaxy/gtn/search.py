@@ -551,7 +551,7 @@ class GTNSearchDB:
                     """
                     SELECT id, topic, tutorial, title, url, description,
                         difficulty, hands_on, time_estimation
-                    FROM tutorials WHERE topic = ? AND tutorial = ?
+                    FROM tutorials WHERE topic = ? COLLATE NOCASE AND tutorial = ? COLLATE NOCASE
                     """,
                     (topic, tutorial),
                 ).fetchone()
@@ -579,7 +579,10 @@ class GTNSearchDB:
         try:
             with self._get_connection() as conn:
                 row = conn.execute(
-                    "SELECT id, category, filename, title, area, content FROM faqs WHERE category = ? AND filename = ?",
+                    """
+                    SELECT id, category, filename, title, area, content
+                    FROM faqs WHERE category = ? COLLATE NOCASE AND filename = ? COLLATE NOCASE
+                    """,
                     (category, filename),
                 ).fetchone()
                 if not row:
