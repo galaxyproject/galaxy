@@ -46,6 +46,10 @@ class PulsarObjectStore(BaseObjectStore):
     def _get_data(self, obj, **kwds):
         return self.pulsar_client.get_data(**self.__build_kwds(obj, **kwds))
 
+    def _get_data_head(self, obj, size: int, **kwds) -> bytes:
+        # Pulsar's get_data reads the object as text and returns it as JSON, so it can't return raw bytes.
+        raise NotImplementedError("The Pulsar object store cannot read the raw bytes of an object.")
+
     def _get_filename(self, obj, **kwds) -> str:
         return self.pulsar_client.get_filename(**self.__build_kwds(obj, **kwds))
 
