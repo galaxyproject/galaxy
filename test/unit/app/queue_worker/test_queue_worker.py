@@ -126,8 +126,5 @@ def wait_for(condition, description, timeout=20, sleep=0.25):
         time.sleep(sleep)
 
 
-def wait_for_var(obj, var, value, timeout=20):
-    deadline = time.monotonic() + timeout
-    while getattr(obj, var) != value and time.monotonic() < deadline:
-        time.sleep(0.25)
-    assert getattr(obj, var) == value
+def wait_for_var(obj, var, value):
+    wait_for(lambda: getattr(obj, var) == value, f"{var} to become {value!r}")
