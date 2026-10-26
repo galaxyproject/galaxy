@@ -2,7 +2,7 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { ShowFullJobResponse } from "@/api/jobs";
@@ -60,6 +60,14 @@ function buildJob(overrides: Partial<ShowFullJobResponse> = {}): ShowFullJobResp
 }
 
 describe("JobPanel", () => {
+    /** Created to ensure each wrapper is properly unmounted after each test. */
+    let activeWrapper: VueWrapper | null = null;
+
+    afterEach(() => {
+        activeWrapper?.unmount();
+        activeWrapper = null;
+    });
+
     /** Mounts `JobPanel` against a fresh store/user, so each test gets its own isolated state
      * instead of sharing one `beforeEach`-mounted instance. `getLocalVue()` creates and activates
      * its own Pinia instance, so it must run before `useUserStore()` below -- otherwise the store
@@ -69,7 +77,8 @@ describe("JobPanel", () => {
         const userStore = useUserStore();
         userStore.currentUser = getFakeRegisteredUser({ id: "fakeUser", email: "fake_user_email" });
         userStore.showToolNamesInJobPanel = showToolNames;
-        return mount(JobPanel as object, { localVue, router });
+        activeWrapper = mount(JobPanel as object, { localVue, router });
+        return activeWrapper;
     }
 
     it("shows a job that lands in jobStore via another view while no filter is active", async () => {
@@ -281,6 +290,35 @@ describe("JobPanel", () => {
         await flushPromises();
 
         expect(wrapper.find("#g-card-job-job1").exists()).toBe(false);
+    });
+
+    it("picks up a new job matching the active filter via periodic re-check", async () => {
+        vi.useFakeTimers();
+        try {
+            let newJobVisible = false;
+            server.use(
+                http.get("/api/jobs", ({ response }) => {
+                    const jobs = newJobVisible ? [buildJob({ id: "newJob", state: "queued" })] : [];
+                    return response(200).json(jobs, { headers: { total_matches: `${jobs.length}` } });
+                }),
+            );
+
+            const wrapper = mountJobPanel();
+            await flushPromises();
+            wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "state:queued");
+            await flushPromises();
+
+            expect(wrapper.find("#g-card-job-newJob").exists()).toBe(false);
+
+            // The job starts matching the filter sometime after the panel's initial fetch.
+            newJobVisible = true;
+            await vi.advanceTimersByTimeAsync(3000);
+            await flushPromises();
+
+            expect(wrapper.find("#g-card-job-newJob").exists()).toBe(true);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it("shows an invalid filter error with a clear-search hint", async () => {
