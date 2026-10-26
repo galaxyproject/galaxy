@@ -675,14 +675,15 @@ export default class Filtering<T> {
      * @returns Parsed `filterText` string with added/removed filter(s)
      */
     applyFiltersToText(filters: Record<string, T>, existingText: string, remove = false) {
-        let { validFilters } = this.getValidFilters(filters);
         const existingFilters = Object.fromEntries(this.getFiltersForText(existingText, false));
         if (remove) {
-            validFilters = omit(existingFilters, Object.keys(validFilters));
-        } else {
-            validFilters = Object.assign(existingFilters, validFilters);
+            const keysToRemove = Object.keys(filters).filter((key) => this.validFilters[key] !== undefined);
+            const updatedFilters = omit(existingFilters, keysToRemove);
+            return this.getFilterText(updatedFilters, false, existingText);
         }
-        return this.getFilterText(validFilters, false, existingText);
+        const { validFilters } = this.getValidFilters(filters);
+        const updatedFilters = Object.assign(existingFilters, validFilters);
+        return this.getFilterText(updatedFilters, false, existingText);
     }
 
     /** Takes a filters object and returns a new object with only valid filters

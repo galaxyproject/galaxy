@@ -180,6 +180,11 @@ describe("filtering", () => {
         expect(HistoryFilters.applyFiltersToText({ deleted: "any" }, "deleted:any visible:true", true)).toEqual(
             "visible:true deleted:any",
         );
+        // a caller removing a filter has no real value to give it, so an empty string must
+        // still remove the key instead of being rejected as an invalid filter value
+        expect(HistoryFilters.applyFiltersToText({ tag: "" }, "tag:first state:success", true)).toEqual(
+            "state:success",
+        );
     });
     test("set a single valid filter to existing filterText", () => {
         expect(HistoryFilters.setFilterValue("", "deleted", "any")).toEqual("deleted:any visible:true");
