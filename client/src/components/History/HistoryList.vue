@@ -41,6 +41,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { updateHistoryFields } from "@/stores/services/history.services";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { pluralize } from "@/utils/strings";
 
 import { getHistoryListFilters } from "./historyList";
 
@@ -504,7 +505,7 @@ async function onBulkOpenInMultiview() {
     resetSelection();
 
     Toast.success(
-        `Opened ${totalSelectedHistories} ${totalSelectedHistories === 1 ? "history" : "histories"} in multiview.`,
+        `Opened ${totalSelectedHistories} ${pluralize(totalSelectedHistories, "history", "histories")} in multiview.`,
     );
 }
 
