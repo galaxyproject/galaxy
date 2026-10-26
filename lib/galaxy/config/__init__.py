@@ -45,7 +45,10 @@ from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dynamic import HasDynamicProperties
 from galaxy.util.facts import get_facts
-from galaxy.util.hash_util import HashFunctionNameEnum
+from galaxy.util.hash_util import (
+    COLLISION_RESISTANT_HASH_FUNCTIONS,
+    HashFunctionNameEnum,
+)
 from galaxy.util.properties import (
     read_properties_from_file,
     running_from_source,
@@ -969,6 +972,15 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         if self.hash_function not in HashFunctionNameEnum.__members__:
             raise ConfigurationError(f"Unrecognized value for hash_function option: {self.hash_function}")
         self.hash_function = HashFunctionNameEnum[self.hash_function]
+        if (
+            self.calculate_dataset_hash != "never"
+            and self.hash_function.value not in COLLISION_RESISTANT_HASH_FUNCTIONS
+        ):
+            log.warning(
+                "hash_function '%s' is not collision-resistant: the dataset hashes it computes will not be used to"
+                " match job inputs in the job cache",
+                self.hash_function.value,
+            )
         self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
         self.use_remote_user = bool(self.use_remote_user or self.single_user)
         self.fetch_url_allowlist_ips = parse_allowlist_ips(listify(kwargs.get("fetch_url_allowlist")))

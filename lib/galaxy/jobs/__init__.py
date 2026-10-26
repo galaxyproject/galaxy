@@ -138,6 +138,7 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
+from galaxy.util.hash_util import COLLISION_RESISTANT_HASH_FUNCTIONS
 from galaxy.util.path import external_chown
 from galaxy.util.properties import running_from_source
 from galaxy.util.xml_macros import load
@@ -2508,15 +2509,18 @@ class MinimalJobWrapper(HasResourceParameters):
                     ):
                         # Calculate dataset hash via a celery task
                         if self.app.config.enable_celery_tasks and not dataset.extra_files_path_exists():
-                            # By passing DatasetHash.FINAL as the extra_files_path,
-                            # DatasetManager.compute_hash() decides live, at the moment of
-                            # computation, whether this needs a primary-file-only hash or a full
-                            # composite one covering every extra file too.
+                            hash_function = self.app.config.hash_function
+                            # Only a collision-resistant hash can be matched on in the job cache;
+                            # any other is still worth keeping, e.g. as a DRS checksum.
+                            if hash_function.value in COLLISION_RESISTANT_HASH_FUNCTIONS:
+                                extra_files_path = DatasetHash.FINAL
+                            else:
+                                extra_files_path = None
                             hash_requests.append(
                                 ComputeDatasetHashTaskRequest(
                                     dataset_id=dataset.id,
-                                    extra_files_path=DatasetHash.FINAL,
-                                    hash_function=self.app.config.hash_function,
+                                    extra_files_path=extra_files_path,
+                                    hash_function=hash_function,
                                 )
                             )
 

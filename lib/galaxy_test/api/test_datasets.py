@@ -1126,6 +1126,14 @@ class TestDatasetsApi(ApiTestCase):
         hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
         self.assert_hash_value(hda_details, "940cbe15c94d7e339dc15550f6bdcf4d", "MD5")
 
+    def test_compute_hash_defaults_to_configured_hash_function(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_populator.compute_hash(hda["id"], hash_function=None)
+        hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
+        self.assert_hash_value(
+            hda_details, "a17dcdfd36f47303a4824f1309d43ac14d7491ab3b8abb28782ac8e8d3b680ea", "SHA-256"
+        )
+
     def test_compute_hash_refuses_reserved_extra_files_path(self, history_id):
         hda = self.dataset_populator.new_dataset(history_id, wait=True)
         response = self._put(f"datasets/{hda['id']}/hash", {"extra_files_path": DatasetHash.FINAL}, json=True)
@@ -1141,6 +1149,22 @@ class TestDatasetsApi(ApiTestCase):
             "SHA-256",
             extra_files_path=DatasetHash.FINAL,
         )
+
+    def test_compute_final_hash_defaults_to_configured_hash_function(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_populator.compute_hash(hda["id"], hash_function=None, final=True)
+        hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
+        self.assert_hash_value(
+            hda_details,
+            "a17dcdfd36f47303a4824f1309d43ac14d7491ab3b8abb28782ac8e8d3b680ea",
+            "SHA-256",
+            extra_files_path=DatasetHash.FINAL,
+        )
+
+    def test_compute_final_hash_refuses_non_collision_resistant_hash_function(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        response = self._put(f"datasets/{hda['id']}/hash", {"final": True, "hash_function": "MD5"}, json=True)
+        self._assert_status_code_is(response, 400)
 
     def test_compute_final_hash_refuses_composite_dataset(self, history_id):
         output = self.dataset_populator.fetch_hda(history_id, COMPOSITE_DATA_FETCH_REQUEST_1, wait=True)

@@ -123,6 +123,7 @@ from galaxy.util import (
     listify,
     string_as_bool_or_none,
 )
+from galaxy.util.hash_util import COLLISION_RESISTANT_HASH_FUNCTIONS
 from galaxy.util.search import (
     FilteredTerm,
     parse_filters_structured,
@@ -205,7 +206,9 @@ def has_same_hash(
 
     Only ``DatasetHash`` rows tagged ``DatasetHash.FINAL`` are considered authoritative to match
     on (see that attribute for why); any other row (``None`` for an untagged primary-file hash,
-    or a named extra file's hash) is ignored here.
+    or a named extra file's hash) is ignored here. So are ``FINAL`` rows computed with a hash
+    function not in ``COLLISION_RESISTANT_HASH_FUNCTIONS``, so that retiring a function from that
+    set immediately stops its existing hashes from being matched on.
 
     The set of datasets sharing ``b_id``'s ``FINAL`` hash is computed once from the literal
     ``b_id``, uncorrelated with ``a``, rather than as a join chain from ``a``'s side: joining
@@ -221,7 +224,11 @@ def has_same_hash(
         .select_from(matching_hda)
         .join(
             a_hash,
-            and_(a_hash.dataset_id == matching_hda.dataset_id, a_hash.extra_files_path == model.DatasetHash.FINAL),
+            and_(
+                a_hash.dataset_id == matching_hda.dataset_id,
+                a_hash.extra_files_path == model.DatasetHash.FINAL,
+                a_hash.hash_function.in_(COLLISION_RESISTANT_HASH_FUNCTIONS),
+            ),
         )
         .join(
             b_hash,
