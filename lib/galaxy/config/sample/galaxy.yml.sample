@@ -3296,6 +3296,9 @@ galaxy:
   # AI model to enable the wizard. Global fallback for all AI agents.
   #ai_model: gpt-4o
 
+  # Visualization plugin shown as Galaxy AI's chat. Unset by default.
+  #ai_chat_plugin: null
+
   # Configuration for AI inference services used by agents and
   # visualization plugins. Supports per-agent or per-plugin model,
   # temperature, max_tokens, retries, api_key, api_base_url, and enabled

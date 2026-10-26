@@ -259,6 +259,7 @@ class ConfigSerializer(base.ModelSerializer):
                 item.ai_api_key or item.ai_api_base_url or getattr(item, "inference_services", None)
             ),
             "llm_registry_type": lambda item, key, **context: _get_registry_type(item),
+            "ai_chat_plugin": _use_config,
             "install_tool_dependencies": _use_config,
             "install_repository_dependencies": _use_config,
             "install_resolver_dependencies": _use_config,

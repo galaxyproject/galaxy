@@ -24,6 +24,7 @@ from galaxy.exceptions import (
     ConfigurationError,
     MessageException,
     ObjectNotFound,
+    RequestParameterInvalidException,
 )
 from galaxy.managers.agents import AgentService
 from galaxy.managers.chat import ChatManager
@@ -41,6 +42,9 @@ from galaxy.schema.agents import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     ChatExchangeBatchDeletePayload,
+    ChatExchangeDocumentResponse,
+    ChatExchangeSavePayload,
+    ChatExchangeSaveResponse,
     ChatHistoryItemResponse,
     ChatPayload,
     ChatResponse,
@@ -189,6 +193,9 @@ class ChatAPI:
         exchange_id = None
         if payload is not None and hasattr(payload, "exchange_id") and payload.exchange_id:
             exchange_id = payload.exchange_id
+            exchange = await anyio.to_thread.run_sync(partial(self.chat_manager.get_exchange_by_id, trans, exchange_id))
+            if exchange is not None and exchange.document is not None:
+                raise RequestParameterInvalidException("This chat was saved by a chat plugin and continues there.")
 
         page_id = None
         page_obj = None
@@ -473,6 +480,48 @@ class ChatAPI:
     ) -> list[dict[str, Any]]:
         """Get all messages for a specific chat exchange."""
         return self.chat_manager.get_exchange_messages(trans, exchange_id)
+
+    @router.post("/api/chat/exchanges", unstable=True)
+    def create_document_exchange(
+        self,
+        payload: ChatExchangeSavePayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> ChatExchangeSaveResponse:
+        """Save a chat plugin's conversation."""
+        exchange = self.chat_manager.save_document_chat(
+            trans, payload.agent_type, [(turn.query, turn.response) for turn in payload.messages], payload.document
+        )
+        return ChatExchangeSaveResponse(id=exchange.id)
+
+    @router.put("/api/chat/exchange/{exchange_id}", unstable=True)
+    def update_document_exchange(
+        self,
+        exchange_id: DecodedDatabaseIdField,
+        payload: ChatExchangeSavePayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> ChatExchangeSaveResponse:
+        """Replace a chat plugin's conversation."""
+        exchange = self.chat_manager.save_document_chat(
+            trans,
+            payload.agent_type,
+            [(turn.query, turn.response) for turn in payload.messages],
+            payload.document,
+            exchange_id=exchange_id,
+        )
+        return ChatExchangeSaveResponse(id=exchange.id)
+
+    @router.get("/api/chat/exchange/{exchange_id}/document", unstable=True)
+    def get_exchange_document(
+        self,
+        exchange_id: DecodedDatabaseIdField,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> ChatExchangeDocumentResponse:
+        """Get a chat's plugin document."""
+        exchange = self.chat_manager.get_document_chat(trans, exchange_id)
+        return ChatExchangeDocumentResponse(id=exchange.id, document=exchange.document)
 
     def _format_exchange_history(self, exchanges) -> list[ChatHistoryItemResponse]:
         """Convert a list of ChatExchange ORM objects into API response models."""
