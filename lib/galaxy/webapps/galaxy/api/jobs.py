@@ -121,6 +121,13 @@ ViewQueryParam: JobIndexViewEnum = Query(
 )
 
 
+JobIdsQueryParam = Query(
+    default=None,
+    alias="job_id",
+    title="Job ID(s)",
+    description="Limit listing of jobs to those that match one of the included job ids. If none, all are returned. Lets a caller refresh a known set of jobs (e.g. the ones currently displayed) in a single request instead of one request per job.",
+)
+
 ToolIdQueryParam = Query(
     default=None,
     alias="tool_id",
@@ -297,6 +304,7 @@ class FastAPIJobs:
         user_details: bool = UserDetailsQueryParam,
         user_id: DecodedDatabaseIdField | None = UserIdQueryParam,
         view: JobIndexViewEnum = ViewQueryParam,
+        job_ids: list[str] | None = Depends(query_parameter_as_list(JobIdsQueryParam)),
         tool_ids: list[str] | None = Depends(query_parameter_as_list(ToolIdQueryParam)),
         tool_ids_like: list[str] | None = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
         date_range_min: datetime | date | None = DateRangeMinQueryParam,
@@ -312,11 +320,13 @@ class FastAPIJobs:
         offset: int = OffsetQueryParam,
         include_total_count: bool = IncludeTotalCountQueryParam,
     ) -> list[ShowFullJobResponse | EncodedJobDetails | JobSummary]:
+        decoded_job_ids = [trans.security.decode_id(job_id) for job_id in job_ids] if job_ids else None
         payload = JobIndexPayload.model_construct(
             states=states,
             user_details=user_details,
             user_id=user_id,
             view=view,
+            job_ids=decoded_job_ids,
             tool_ids=tool_ids,
             tool_ids_like=tool_ids_like,
             date_range_min=date_range_min,

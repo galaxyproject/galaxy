@@ -45417,6 +45417,8 @@ export interface operations {
                 include_total_count?: boolean;
                 /** @description A list or comma-separated list of states to filter job query on. If unspecified, jobs of any state may be returned. */
                 state?: string[] | null;
+                /** @description Limit listing of jobs to those that match one of the included job ids. If none, all are returned. Lets a caller refresh a known set of jobs (e.g. the ones currently displayed) in a single request instead of one request per job. */
+                job_id?: string[] | null;
                 /** @description Limit listing of jobs to those that match one of the included tool_ids. If none, all are returned */
                 tool_id?: string[] | null;
                 /** @description Limit listing of jobs to those that match one of the included tool ID sql-like patterns. If none, all are returned */

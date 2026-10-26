@@ -1973,6 +1973,7 @@ class JobIndexQueryPayload(Model):
     states: list[str] | None = None
     user_details: bool = False
     user_id: DecodedDatabaseIdField | None = None
+    job_ids: list[int] | None = None
     tool_ids: list[str] | None = None
     tool_ids_like: list[str] | None = None
     date_range_min: OffsetNaiveDatetime | date | None = None

@@ -171,6 +171,21 @@ class TestJobsApi(ApiTestCase, TestsTools):
         assert total_matches == 0
 
     @requires_new_history
+    def test_index_job_ids(self, history_id):
+        for _ in range(3):
+            self.__history_with_new_dataset(history_id)
+
+        all_jobs = self.__jobs_index(data={"history_id": history_id})
+        assert len(all_jobs) == 3
+        wanted_ids = [all_jobs[0]["id"], all_jobs[2]["id"]]
+
+        jobs = self.__jobs_index(data={"job_id": wanted_ids})
+        assert sorted(job["id"] for job in jobs) == sorted(wanted_ids)
+
+        bad_response = self._get("jobs", data={"job_id": "not-a-valid-id"})
+        self._assert_status_code_is(bad_response, 400)
+
+    @requires_new_history
     @skip_without_tool("cat1")
     def test_index_workflow_and_invocation_filter(self, history_id):
         workflow_simple = """
