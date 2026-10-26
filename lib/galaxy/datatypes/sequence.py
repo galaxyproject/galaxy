@@ -1245,6 +1245,18 @@ class Lav(data.Text):
     edam_format = "format_3014"
     file_ext = "lav"
 
+    def validate(self, dataset: DatasetProtocol, **kwd) -> DatatypeValidation:
+        """A complete LAV file starts with ``#:lav`` and ends with the ``#:eof`` line its writer adds last."""
+        path = dataset.get_file_name()
+        with open(path, "rb") as fh:
+            if not fh.read(5).startswith(b"#:lav"):
+                return DatatypeValidation.invalid("LAV file does not start with '#:lav'.")
+            fh.seek(max(0, os.path.getsize(path) - 64))
+            tail = fh.read().rstrip()
+        if not tail.endswith(b"#:eof"):
+            return DatatypeValidation.invalid("LAV file does not end with '#:eof'; it may be truncated.")
+        return DatatypeValidation.validated()
+
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in lav format

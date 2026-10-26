@@ -12,13 +12,14 @@ from .framework import (
 from .upload_activity_helpers import UsesUploadActivity
 
 BUTTON_TOOLTIPS = {
-    "display": "View data",
+    "display": "View",
     "edit": "Edit attributes",
     "delete": "Delete",
-    "download": "Download",
-    "info": "View details",
-    "rerun": "Run this job again",
+    "download": "Download (",
+    "info": "Dataset Details",
 }
+# Download tooltip ends with the file size.
+PARTIAL_TOOLTIP_BUTTONS = {"download"}
 EXPECTED_TOOLHELP_TITLE_TEXT = "Tool help for Data Fetch"
 TEST_DBKEY_TEXT = "Honeybee (Apis mellifera): apiMel3 (apiMel3)"
 FIRST_HID = 1
@@ -48,10 +49,10 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions, UsesU
         item = self._prepare_dataset()
         self.assert_item_dbkey_displayed_as(FIRST_HID, "?")
         item.dbkey.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.edit_dataset_attributes.dbkey_dropdown.wait_for_visible()
         self.screenshot("history_panel_edit_dbkey_post_click")
         self.edit_dataset_dbkey(TEST_DBKEY_TEXT)
-        self.sleep_for(self.wait_types.JOB_COMPLETION)
+        self._wait_on(lambda *_: "apiMel3" in item.dbkey.wait_for_text(), "history item dbkey to update")
         self.history_panel_wait_for_hid_ok(FIRST_HID)
         self.assert_item_dbkey_displayed_as(FIRST_HID, "apiMel3")
 
@@ -70,6 +71,11 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions, UsesU
         self.history_panel_wait_for_hid_state(FIRST_HID, state="discarded", allowed_force_refreshes=1)
         self.history_panel_click_item_title(hid=FIRST_HID, wait=True)
         self.screenshot("history_panel_dataset_discarded")
+        self._assert_title_buttons(FIRST_HID, ["display", "delete"])
+        # vGTooltip skips aria-disabled buttons, so the "not yet editable" title is never shown
+        edit_button = self.history_panel_item_component(hid=FIRST_HID).edit_button.wait_for_visible()
+        assert edit_button.get_attribute("aria-disabled") == "true"
+        self._assert_action_buttons(FIRST_HID, ["info"])
         self._assert_downloadable(FIRST_HID, is_downloadable=False)
 
         self.history_panel_item_view_dataset_details(FIRST_HID)
@@ -89,6 +95,8 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions, UsesU
         self.history_panel_wait_for_hid_state(FIRST_HID, state="deferred", allowed_force_refreshes=1)
         self.history_panel_click_item_title(hid=FIRST_HID, wait=True)
         self.screenshot("history_panel_dataset_deferred")
+        self._assert_title_buttons(FIRST_HID)
+        self._assert_action_buttons(FIRST_HID, ["info"])
         # Next if is a hack for recent changes to beta history...
         # https://github.com/galaxyproject/galaxy/pull/13477/files#r823842897
         self._assert_downloadable(FIRST_HID, is_downloadable=False)
@@ -127,13 +135,12 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions, UsesU
             assert item.download_button.is_displayed
         else:
             item.download_button.assert_absent_or_hidden()
-        item.dataset_operations.wait_for_visible()
-        self.sleep_for(self.wait_types.UX_RENDER)
 
     def _assert_buttons(self, hid, expected_buttons):
-        # TODO: Useful but unmigrated test from legacy history
-        # item = self.history_panel_item_component(hid=hid)
-        # for expected_button in expected_buttons:
-        #    button = item[f"{expected_button}_button"]
-        #    self.assert_tooltip_text(button.wait_for_visible(), BUTTON_TOOLTIPS[expected_button])'''
-        return
+        item = self.history_panel_item_component(hid=hid)
+        for expected_button in expected_buttons:
+            button = item[f"{expected_button}_button"].wait_for_visible()
+            if expected_button in PARTIAL_TOOLTIP_BUTTONS:
+                self.assert_tooltip_text_contains(button, BUTTON_TOOLTIPS[expected_button])
+            else:
+                self.assert_tooltip_text(button, BUTTON_TOOLTIPS[expected_button])

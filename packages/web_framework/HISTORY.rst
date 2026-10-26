@@ -4,10 +4,46 @@ History
 .. to_doc
 
 ---------
-26.2.dev0
+27.0.dev0
 ---------
 
 
+
+-------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Preserve numeric encoded history IDs in form submissions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23641 <https://github.com/galaxyproject/galaxy/pull/23641>`_
+* Return 400 for request bodies that webob cannot parse by `@rmz-oz <https://github.com/rmz-oz>`_ in `#23839 <https://github.com/galaxyproject/galaxy/pull/23839>`_
+* Fix serving and downloading of directory-backed datasets (Zarr, OME-Zarr, Directory subclasses) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23953 <https://github.com/galaxyproject/galaxy/pull/23953>`_
+
+-------------------
+26.0.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Return 400 for request bodies that webob cannot parse by `@rmz-oz <https://github.com/rmz-oz>`_ in `#23839 <https://github.com/galaxyproject/galaxy/pull/23839>`_
+
+-------------------
+25.1.3 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix legacy_expose_api error callable returning str instead of bytes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22106 <https://github.com/galaxyproject/galaxy/pull/22106>`_
+* Return 400 for request bodies that webob cannot parse by `@rmz-oz <https://github.com/rmz-oz>`_ in `#23839 <https://github.com/galaxyproject/galaxy/pull/23839>`_
 
 -------------------
 26.1.1 (2026-08-04)

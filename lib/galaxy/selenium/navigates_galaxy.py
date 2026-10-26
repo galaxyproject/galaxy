@@ -420,6 +420,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.navigate_to(self.build_url(path))
         self.components.workflow_run.run_workflow.wait_for_visible()
 
+    def go_to_tool_landing(
+        self, uuid: str, public: Literal["false", "true"] = "true", client_secret: str | None = None
+    ):
+        path = f"tool_landings/{uuid}?public={public}"
+        if client_secret:
+            path = f"{path}&client_secret={client_secret}"
+        self.navigate_to(self.build_url(path))
+
     def go_to_trs_search(self) -> None:
         self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
@@ -651,6 +659,17 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         self._wait_on(renamed, f"current history name to become [{name}]", wait_type=WAIT_TYPES.DATABASE_OPERATION)
 
+    def history_panel_switch_to(self, history_id: str):
+        """Make ``history_id`` current via the history panel's Switch to history modal."""
+        self.components.history_panel.switch_history_button.wait_for_and_click()
+        self.components.history_selector_modal.item(history_id=history_id).wait_for_and_click()
+        self.components.history_selector_modal._.wait_for_absent_or_hidden()
+        self._wait_on(
+            lambda driver=None: True if self.current_history_id() == history_id else None,
+            f"history {history_id} to become current",
+            wait_type=WAIT_TYPES.DATABASE_OPERATION,
+        )
+
     def history_panel_create_new(self):
         """Click create new and wait for the new history to become the current one."""
         previous_history_id = self.current_history_id()
@@ -874,6 +893,16 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             dbkey_text=dbkey_text
         ).wait_for_and_click()
         self.components.edit_dataset_attributes.save_button.wait_for_and_click()
+
+    def edit_dataset_permission_roles(self) -> dict[str, list[str]]:
+        """On the dataset edit view, open the Permissions tab; return its ``manage`` and ``access`` role names."""
+        edit = self.components.edit_dataset_attributes
+        edit.permissions_tab.wait_for_and_click()
+        edit.permission_field(permission="DATASET_ACCESS").wait_for_visible()
+        fields = {"manage": "DATASET_MANAGE_PERMISSIONS", "access": "DATASET_ACCESS"}
+        return {
+            key: [tag.text for tag in edit.permission_roles(permission=field).all()] for key, field in fields.items()
+        }
 
     def get_history_card(self, card_name):
         card_list = self.components.histories.history_cards.all()
@@ -1612,6 +1641,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.home()
         self.components.masthead.user.wait_for_and_click()
         self.components.masthead.preferences.wait_for_and_click()
+
+    def user_preferences_new_datasets_private(self) -> bool:
+        """Open Preferences > Set Dataset Permissions for New Histories; return its Make new datasets private switch."""
+        self.navigate_to_user_preferences()
+        preferences = self.components.preferences
+        preferences.dataset_permissions.wait_for_and_click()
+        return preferences.new_datasets_private_input.wait_for_present().is_selected()
+
+    def user_preferences_set_new_datasets_private(self, private: bool):
+        """Set Preferences > Set Dataset Permissions for New Histories' Make new datasets private switch."""
+        if self.user_preferences_new_datasets_private() != private:
+            self.components.preferences.new_datasets_private_label.wait_for_and_click()
+            self.components.toast.message_with_text(text="Permissions have been saved").wait_for_visible()
 
     def navigate_to_invocations_grid(self):
         self.home()
@@ -2780,6 +2822,32 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         _click_action_in_menu()
 
+    def history_panel_delete_selected(self, purge: bool = False):
+        """Delete the selected history items from the Selection menu, permanently with ``purge``, and confirm."""
+        self.use_bootstrap_dropdown(option="purge option" if purge else "delete option", menu="selected content menu")
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_absent_or_hidden()
+
+    def history_panel_item_delete(self, hid):
+        """Delete history item ``hid`` with its trash button."""
+        self.history_panel_item_component(hid=hid).delete_button.wait_for_and_click()
+
+    def history_panel_item_undelete(self, hid):
+        """Undelete history item ``hid`` with its Undelete button; deleted items must be shown."""
+        self.history_panel_item_component(hid=hid).undelete_button.wait_for_and_click()
+
+    def history_panel_include_deleted(self):
+        """Toggle the history panel's Include deleted filter (the deleted-items counter)."""
+        self.components.history_panel.include_deleted_button.wait_for_and_click()
+
+    def history_panel_item_unhide(self, hid):
+        """Unhide history item ``hid`` with its Unhide button; hidden items must be shown."""
+        self.history_panel_item_component(hid=hid).unhide_button.wait_for_and_click()
+
+    def history_panel_include_hidden(self):
+        """Toggle the history panel's Include hidden filter (the hidden-items counter)."""
+        self.components.history_panel.include_hidden_button.wait_for_and_click()
+
     def open_history_multi_view(self):
         self.components.history_panel.histories_operation_menu.wait_for_and_click()
         self.components.history_panel.multi_view_button.wait_for_and_click()
@@ -2909,6 +2977,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 details_component.wait_for_absent_or_hidden()
             else:
                 details_component.wait_for_visible()
+                # details are clipped until the expand transition ends
+                item_component.details_expanded.wait_for_present()
         return item_component
 
     def history_panel_ensure_showing_item_details(self, hid):
@@ -2959,10 +3029,18 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         list_wizard.wizard_next_button.wait_for_and_click()
 
     def list_wizard_click_cell_and_send_keys(self, column_identifier: str, row_index: int, text: str):
-        list_wizard = self.components.collection_builders.list_wizard
-        list_wizard.cell(row_index=row_index, column_identifier=column_identifier).wait_for_and_double_click()
-        input = list_wizard.cell_input(row_index=row_index, column_identifier=column_identifier)
-        input.wait_for_and_send_keys(text)
+        self.ag_grid_edit_cell(self.components.collection_builders.list_wizard, column_identifier, row_index, text)
+
+    def ag_grid_edit_cell(
+        self, grid: SmartComponent, column_identifier: str, row_index: int, text: str, clear: bool = False
+    ):
+        """Edit a cell of ``grid``, a component with ``cell`` and ``cell_input`` selectors."""
+        grid.cell(row_index=row_index, column_identifier=column_identifier).wait_for_and_double_click()
+        input = grid.cell_input(row_index=row_index, column_identifier=column_identifier)
+        if clear:
+            input.wait_for_and_clear_and_send_keys(text)
+        else:
+            input.wait_for_and_send_keys(text)
         self.send_enter(input.wait_for_present())
 
     def collection_builder_set_name(self, name):

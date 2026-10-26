@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faExclamation, faSpinner, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useElementSize } from "@vueuse/core";
 import { BBadge, BNav, BNavItem } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
@@ -38,6 +39,9 @@ import WorkflowInvocationShare from "./WorkflowInvocationShare.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+/** Below this tab height, the overview scrolls instead of fitting the graph and step details to the tab */
+const OVERVIEW_FIT_MIN_HEIGHT = 600;
+
 type InvocationViewTab = "steps" | "inputs" | "outputs" | "report" | "reports" | "export" | "metrics" | "debug";
 
 interface Props {
@@ -67,6 +71,10 @@ const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
 const cancellingInvocation = ref(false);
 const isPolling = ref(false);
+
+const tabContent = ref<HTMLElement | null>(null);
+const { height: tabContentHeight } = useElementSize(tabContent);
+const fitOverviewToTab = computed(() => props.isFullPage && tabContentHeight.value >= OVERVIEW_FIT_MIN_HEIGHT);
 
 const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("invocation-header-collapsed");
 
@@ -312,6 +320,7 @@ async function onCancel() {
     <div
         v-if="invocation"
         class="d-flex flex-column w-100 overflow-x-hidden"
+        :class="{ 'full-page': props.isFullPage }"
         data-description="workflow invocation state">
         <WorkflowNavigationTitle
             v-if="props.isFullPage"
@@ -468,13 +477,14 @@ async function onCancel() {
             </li>
         </BNav>
 
-        <div class="mt-1 d-flex flex-column overflow-auto tab-content-container">
-            <div v-if="onOverviewTab">
+        <div ref="tabContent" class="mt-1 d-flex flex-column overflow-auto tab-content-container">
+            <div v-if="onOverviewTab" :class="{ 'overview-tab-content': fitOverviewToTab }">
                 <WorkflowInvocationOverview
                     class="invocation-overview"
                     :invocation="invocation"
                     :steps-jobs-summary="stepsJobsSummary || undefined"
                     :is-full-page="props.isFullPage"
+                    :fit-to-page="fitOverviewToTab"
                     :is-subworkflow="isSubworkflow"
                     :invocation-messages="uniqueMessages" />
             </div>
@@ -570,9 +580,20 @@ async function onCancel() {
 </style>
 
 <style scoped lang="scss">
+@import "@/style/scss/mixins";
+
+.full-page {
+    min-height: 400px;
+}
+
 .tab-content-container {
     flex: 1;
     min-height: 0;
+}
+
+// Overview fills the tab area; the graph and step details size themselves within it.
+.overview-tab-content {
+    @include fill-column;
 }
 
 .steps-tab-content {

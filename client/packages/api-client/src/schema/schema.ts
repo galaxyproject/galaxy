@@ -7835,6 +7835,13 @@ export interface components {
              * @description The link to be opened when the button is clicked.
              */
             link: string;
+            /**
+             * Target
+             * @description Open the link in the current tab or a new tab.
+             * @default _self
+             * @enum {string}
+             */
+            target: "_self" | "_blank";
         };
         /**
          * ActionSuggestion

@@ -24,6 +24,7 @@ import sys
 
 sys.path.insert(0, str(galaxy_root / "lib"))
 
+from galaxy.app_unittest_utils.tool_source_support import populate_config
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.tools.source_store import populator
 from galaxy.tools.source_store.discover import discover_tools as actual_discover_tools
@@ -315,31 +316,6 @@ class TestToolFileWatcher:
         assert len(notification_sent) == 0
 
 
-def _populate_config(tmp_path, conf):
-    class _Cfg:
-        enable_beta_tool_formats = False
-        tool_source_stores: dict = {}
-        tool_search_index_dir = None
-        root = str(tmp_path)
-        tool_path = str(tmp_path)
-        tool_source_database_connection = f"sqlite:///{tmp_path}/ts.sqlite"
-        data_manager_config_file: str | None = None
-        shed_data_manager_config_file: str | None = None
-        biotools_content_directory = None
-        biotools_use_api = False
-        biotools_service_cache_type = "memory"
-        biotools_service_cache_data_dir = None
-        biotools_service_cache_lock_dir = None
-        biotools_service_cache_url = None
-        biotools_service_cache_table_name = None
-        biotools_service_cache_schema_name = None
-
-        def all_tool_config_files(self):
-            return [str(conf)]
-
-    return _Cfg()
-
-
 def _populate_default(config: Any, **kwds: Any) -> dict[str, int]:
     return populate_store_inline(config, target=DEFAULT_STORE_NAME, **kwds)
 
@@ -363,7 +339,7 @@ class TestIncrementalFastPath:
             tools_dir,
             '<tool file="itest_1.xml"/><tool file="itest_2.xml"/>',
         )
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
 
         r1 = _populate_default(cfg, pattern="itest_", incremental=True)
         assert (r1["stored"], r1["unchanged"]) == (2, 0)
@@ -377,7 +353,7 @@ class TestIncrementalFastPath:
         tools_dir = tmp_path / "shed_tools"
         tool_path = _write_tool(tools_dir / "fastp.xml", "fastp", version="0.20.1+galaxy0")
         conf = _write_tool_conf(tmp_path / "shed_tool_conf.xml", tools_dir)
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
         guid = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.20.1+galaxy0"
 
         _populate_default(
@@ -427,7 +403,7 @@ class TestIncrementalFastPath:
             tools_dir,
             f'<section id="shed_section" name="Shed Section">{"".join(items)}</section>',
         )
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
         requested = str(tools_dir / "shed_7.xml")
 
         discovered_paths: list[str] = []
@@ -450,7 +426,7 @@ class TestIncrementalFastPath:
         tools_dir = tmp_path / "tools"
         tool = _write_tool(tools_dir / "rescan.xml", "rescan")
         conf = _write_tool_conf(tmp_path / "tool_conf.xml", tools_dir, '<tool file="rescan.xml"/>')
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
         _populate_default(cfg)
 
         assert _populate_default(cfg, paths=[str(tool)], incremental=False)["indexes_written"] == 0
@@ -469,7 +445,7 @@ class TestIncrementalFastPath:
         macros = tools_dir / "macros.xml"
         macros.write_text('<macros><token name="@TOOL_VERSION@">1.0</token></macros>')
         conf = _write_tool_conf(tmp_path / "tool_conf.xml", tools_dir, '<tool file="macro_tool.xml"/>')
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
         _populate_default(cfg)
 
         macros.write_text('<macros><token name="@TOOL_VERSION@">2.0</token></macros>')
@@ -488,7 +464,7 @@ class TestIncrementalFastPath:
             tools_dir,
             '<tool file="keep.xml"/><tool file="doomed.xml"/>',
         )
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
         _populate_default(cfg)
 
         scan_complete = threading.Event()
@@ -545,7 +521,7 @@ class TestIncrementalFastPath:
             tools_dir,
             '<tool file="manifest_tool.xml"/>',
         )
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
         sidecar = tmp_path / "ts.sqlite.manifest.json"
 
         _populate_default(cfg, pattern="manifest_tool")
@@ -581,7 +557,7 @@ class TestTwinDeterminism:
             '<section id="sec_a" name="A"><tool file="twin_a.xml"/></section>'
             '<section id="sec_b" name="B"><tool file="twin_b.xml"/></section>',
         )
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
 
         # Run 2 is the interesting one: the run-1 winner (sec_b) comes back
         # via the unchanged fast path while its twin re-parses — the winner
@@ -603,7 +579,7 @@ class TestFreshnessStamping:
             tools_dir,
             '<tool file="ftest_1.xml"/>',
         )
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
 
         _populate_default(cfg, pattern="ftest_", incremental=True)
 

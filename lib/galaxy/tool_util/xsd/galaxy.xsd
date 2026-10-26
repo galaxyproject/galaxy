@@ -5007,6 +5007,12 @@ $both
 ]]]]><![CDATA[></command>
 ```
 
+After templating, Galaxy strips each line and joins the lines with spaces, so the
+command runs as a single line. Separate commands with ``&&`` or ``;``. A shell
+comment (``# ...``) would comment out the rest of the command, so use a Cheetah
+comment (``##``) instead, and a heredoc cannot work. To write a file for the
+tool to read, use a ``configfile``.
+
 The following example (taken from [xpath](https://github.com/galaxyproject/tools-iuc/blob/main/tools/xpath/xpath.xml) tool)
 uses an interpreted executable. In this case a Perl script is shipped with the
 tool and the directory of the tool itself is referenced with ``$__tool_directory__``.

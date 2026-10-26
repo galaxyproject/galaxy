@@ -70,7 +70,15 @@ def decode_access_token(token_str: str, backend: OpenIdConnectAuth) -> dict:
     :return: Decoded JWT payload as dict
     :raises InvalidTokenError: If token is invalid or verification fails
     """
+    issuer = backend.id_token_issuer()
+    # With several providers configured, Galaxy tries each in turn and moves on at an
+    # InvalidIssuerError. Check the issuer before looking for a signing key: another provider's
+    # token has no key here, and that must read as "not this provider", not a failure.
+    if jwt.decode(token_str, options={"verify_signature": False}).get("iss") != issuer:
+        raise jwt.InvalidIssuerError("Invalid issuer")
     signing_key = backend.find_valid_key(token_str)
+    if signing_key is None:
+        raise jwt.InvalidSignatureError("No signing key found for this token")
     jwk = jwt.PyJWK(signing_key)
 
     strategy = backend.strategy
@@ -81,7 +89,7 @@ def decode_access_token(token_str: str, backend: OpenIdConnectAuth) -> dict:
         key=jwk,
         algorithms=[jwk.algorithm_name],
         audience=strategy.config["accepted_audiences"],
-        issuer=backend.id_token_issuer(),
+        issuer=issuer,
         options={
             "verify_signature": True,
             "verify_exp": True,
