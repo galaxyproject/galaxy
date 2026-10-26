@@ -7,6 +7,7 @@ import type { RegisteredUser } from "@/api";
 import type { JobBaseModel, JobFetchExtraParams, ShowFullJobResponse } from "@/api/jobs";
 import { fetchJobs } from "@/api/jobs";
 import { type JobMatcher, jobsFilterParams, JobsFiltersById, JobsFiltersByName } from "@/components/Jobs/JobsFilters";
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useJobStore } from "@/stores/jobStore";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -18,6 +19,7 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
 const HIDDEN_TOOL_IDS = ["__DATA_FETCH__", "upload1"];
+const FETCH_LIMIT = 20;
 
 interface Props {
     inPanel?: boolean;
@@ -97,8 +99,6 @@ watch(filterKey, () => {
     updateTimeMsCache.clear();
 });
 
-onUnmounted(stopRetainingCurrentJobs);
-
 watch(
     showToolNamesInJobPanel,
     (showToolNames) => {
@@ -177,6 +177,47 @@ watch(storedJobIds, (ids) => {
     }
 });
 
+function buildFetchExtraProps(userId: string, includeTotalCount: boolean): JobFetchExtraParams {
+    return {
+        user_id: userId,
+        exclude_tool_id: HIDDEN_TOOL_IDS,
+        ...jobsFilterParams(filterText.value, showToolNamesInJobPanel.value).params,
+        include_total_count: includeTotalCount,
+    };
+}
+
+/** Flag indicating whether this is the first check for new matching jobs. */
+let isFirstCheck = true;
+
+/**
+ * Periodically rechecks the first page so a job that starts matching the current filter, or a
+ * brand new job no other view has touched, is found even though it was never fetched into
+ * `currentJobIds`.
+ */
+async function checkForNewMatchingJobs() {
+    if (isFirstCheck) {
+        isFirstCheck = false;
+        return;
+    }
+    if (!currentUser.value || currentUser.value.isAnonymous) {
+        return;
+    }
+    const extraProps = buildFetchExtraProps(currentUser.value.id, false);
+    const [data] = await fetchJobs(0, FETCH_LIMIT, extraProps, "create_time");
+    for (const item of data) {
+        addCurrentJob(item.id);
+        jobStore.updateJob(item.id, item);
+    }
+}
+
+const newJobsWatcher = useResourceWatcher(checkForNewMatchingJobs);
+newJobsWatcher.startWatchingResource();
+
+onUnmounted(() => {
+    stopRetainingCurrentJobs();
+    newJobsWatcher.dispose();
+});
+
 async function loadJobs(offset: number, limit: number) {
     if (!currentUser.value || currentUser.value.isAnonymous) {
         return { items: [], total: 0 };
@@ -185,13 +226,8 @@ async function loadJobs(offset: number, limit: number) {
     if (showToolNamesInJobPanel.value) {
         await loadTools();
     }
-    const extraProps: JobFetchExtraParams = {
-        user_id: currentUser.value.id,
-        exclude_tool_id: HIDDEN_TOOL_IDS,
-        ...jobsFilterParams(filterText.value, showToolNamesInJobPanel.value).params,
-        // Only the first page needs the count; it doesn't change page to page under the same filters.
-        include_total_count: offset === 0,
-    };
+    // Only the first page needs the count; it doesn't change page to page under the same filters.
+    const extraProps = buildFetchExtraProps(currentUser.value.id, offset === 0);
 
     loading.value = true;
     let data: JobBaseModel[];
@@ -254,6 +290,7 @@ const currentItemId = computed(() => {
             v-show="!showAdvanced"
             :key="filterKey"
             :loader="loadJobs"
+            :limit="FETCH_LIMIT"
             :item-key="(job) => job.id"
             :in-panel="props.inPanel"
             :prop-items="currentSortedJobs"
