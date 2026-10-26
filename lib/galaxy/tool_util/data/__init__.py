@@ -1132,6 +1132,8 @@ class ToolDataTableManager(Dictifiable):
             raise ValueError("Pass either config_sources or config_filename, not both")
         self.config_sources = config_sources
         self._loaded_config_definitions: Dict[str, List[Tuple[StrPath, str]]] = {}
+        # Tables whose definition was removed, reused if it returns so held references stay live.
+        self._removed_tables: Dict[str, ToolDataTable] = {}
         self.on_registration = on_registration
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
@@ -1389,17 +1391,20 @@ class ToolDataTableManager(Dictifiable):
                     elements, source.filename, self.tool_data_path, source.from_shed_config, table_names
                 )
         for name in table_names:
-            existing = self.data_tables.get(name)
+            existing = self.data_tables.get(name) or self._removed_tables.get(name)
             rebuilt = staging.data_tables.get(name)
             if existing is not None:
                 version = existing._loaded_content_version + 1
                 if rebuilt is None:
                     existing.data = []
                     existing._update_version(version)
-                    del self.data_tables[name]
+                    self.data_tables.pop(name, None)
+                    self._removed_tables[name] = existing
                 else:
                     rebuilt._update_version(version)
                     existing._replace_with(rebuilt)
+                    self.data_tables[name] = existing
+                    self._removed_tables.pop(name, None)
             elif rebuilt is not None:
                 self.data_tables[name] = rebuilt
             if name in definitions:

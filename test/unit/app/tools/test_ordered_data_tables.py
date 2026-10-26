@@ -372,6 +372,21 @@ def test_path_reload_discovers_new_table_using_an_already_known_file(tmp_path, r
     assert paths(peer) == paths(manager)
 
 
+def test_restored_definition_reuses_table_held_by_validators(tmp_path):
+    local = write_config(tmp_path, "local", "hg38\tHuman\t/local\n")
+    definition = local.read_text()
+    manager = make_manager(tmp_path, config_sources(local))
+    table = manager["references"]
+    local.write_text("<tables />")
+    manager.reload_tables(path=str(local))
+    assert "references" not in manager
+    assert table.data == []
+    local.write_text(definition)
+    manager.reload_tables(path=str(local))
+    assert manager["references"] is table
+    assert paths(manager) == ["/local"]
+
+
 # Application wiring: config resolution, peer control tasks, and watchers.
 
 
