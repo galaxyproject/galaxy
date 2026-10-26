@@ -218,6 +218,8 @@ class LegacyTestInputResolver:
 
     inputs: ToolSourceTestInputs
     consumed_discriminators: FrozenSet[str] = frozenset()
+    # Off at test load, which keeps resolving conflicting exact-name duplicates as it always has.
+    reject_conflicting_duplicates: bool = False
 
     def consuming(self, discriminator_name: Optional[str]) -> "LegacyTestInputResolver":
         if discriminator_name is None:
@@ -232,6 +234,8 @@ class LegacyTestInputResolver:
         # below, so a descendant's omitted discriminator does not re-match an ancestor's.
         exclude = self.consumed_discriminators
         exact_matching_inputs = [input for input in self.inputs if input["name"] == flat_state_path]
+        if not self.reject_conflicting_duplicates:
+            exact_matching_inputs = exact_matching_inputs[:1]
         resolved = _resolve_matching_inputs(
             exact_matching_inputs,
             f"Ambiguous test parameter ({flat_state_path}) specified more than once with different values",
@@ -320,6 +324,7 @@ def test_case_state(
     profile: str,
     validate: bool = True,
     name: Optional[str] = None,
+    reject_conflicting_duplicates: bool = False,
 ) -> TestCaseStateAndWarnings:
     warnings: List[str] = []
     inputs: ToolSourceTestInputs = test_dict["inputs"]
@@ -327,7 +332,12 @@ def test_case_state(
     state: Dict[str, Any] = {}
 
     state_representation = test_dict.get("value_state_representation", "test_case_xml")
-    context = MergeContext(LegacyTestInputResolver(inputs), profile, state_representation, warnings)
+    context = MergeContext(
+        LegacyTestInputResolver(inputs, reject_conflicting_duplicates=reject_conflicting_duplicates),
+        profile,
+        state_representation,
+        warnings,
+    )
     handled_inputs = _merge_level_into_state(tool_parameter_bundle, context, state, None)
 
     for test_input in inputs:
@@ -368,7 +378,9 @@ def test_case_validation(
     test_case_state_and_warnings = TestCaseStateAndWarnings(TestCaseToolState({}), [], [])
     exception: Optional[Exception] = None
     try:
-        test_case_state_and_warnings = test_case_state(test_dict, tool_parameter_bundle, profile, validate=False)
+        test_case_state_and_warnings = test_case_state(
+            test_dict, tool_parameter_bundle, profile, validate=False, reject_conflicting_duplicates=True
+        )
         test_case_state_and_warnings.tool_state.validate(tool_parameter_bundle, name=name)
         for input_name in test_case_state_and_warnings.unhandled_inputs:
             raise Exception(f"Invalid parameter name found {input_name}")
@@ -441,7 +453,9 @@ def _merge_into_state(
         if input_name not in state_at_level:
             state_at_level[input_name] = repeat_state_array
 
-        repeat_instance_inputs = _repeat_inputs_to_array(state_path, tool_input.parameters, context.inputs)
+        repeat_instance_inputs = _repeat_inputs_to_array(
+            state_path, tool_input.parameters, context.inputs, context.resolver.reject_conflicting_duplicates
+        )
         if tool_input.min is not None:
             while len(repeat_instance_inputs) < tool_input.min:
                 repeat_instance_inputs.append([])
@@ -515,7 +529,10 @@ def _merge_into_state(
 
 
 def _repeat_inputs_to_array(
-    state_path: str, parameters: List[ToolParameterT], inputs: ToolSourceTestInputs
+    state_path: str,
+    parameters: List[ToolParameterT],
+    inputs: ToolSourceTestInputs,
+    reject_conflicting_duplicates: bool = False,
 ) -> List[ToolSourceTestInputs]:
     inputs_by_name = _inputs_by_name(inputs)
     repeat_instance_input_dicts = repeat_inputs_to_array(state_path, inputs_by_name)
@@ -531,7 +548,12 @@ def _repeat_inputs_to_array(
             if repeat_instance_input_dicts:
                 break
     repeat_instance_inputs = [
-        [input for same_name_inputs in instance_inputs.values() for input in same_name_inputs]
+        [
+            input
+            for same_name_inputs in instance_inputs.values()
+            # Without rejection a repeat instance keeps the last of same-name inputs, as before.
+            for input in (same_name_inputs if reject_conflicting_duplicates else same_name_inputs[-1:])
+        ]
         for instance_inputs in repeat_instance_input_dicts
     ]
     if repeat_instance_inputs:

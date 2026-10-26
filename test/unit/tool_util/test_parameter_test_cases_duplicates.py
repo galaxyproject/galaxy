@@ -132,20 +132,28 @@ def test_duplicate_identical_qualified_test_param_is_tolerated(placement):
 @pytest.mark.parametrize(
     "placement", DUPLICATE_QUALIFIED_PLACEMENTS.values(), ids=DUPLICATE_QUALIFIED_PLACEMENTS.keys()
 )
-def test_duplicate_conflicting_qualified_test_param_is_rejected(placement):
+def test_duplicate_conflicting_qualified_test_param_is_rejected_by_validation(placement):
     tool_source = _duplicate_qualified_tool_source(placement, "A1", "A2")
     parsed_tool = parse_tool(tool_source)
     test_case = tool_source.parse_tests_to_dict()["tests"][0]
     expected_error = f"Ambiguous test parameter ({placement.flat_name})"
     with pytest.raises(Exception, match=re.escape(expected_error)):
-        case_state(test_case, parsed_tool.inputs, tool_source.parse_profile())
+        case_state(test_case, parsed_tool.inputs, tool_source.parse_profile(), reject_conflicting_duplicates=True)
 
     [lint_result] = validate_test_cases_for_tool_source(tool_source)
     assert expected_error in str(lint_result.validation_error)
 
+
+@pytest.mark.parametrize(
+    "placement", DUPLICATE_QUALIFIED_PLACEMENTS.values(), ids=DUPLICATE_QUALIFIED_PLACEMENTS.keys()
+)
+def test_duplicate_conflicting_qualified_test_param_still_loads(placement):
+    # Top level keeps the first value, a repeat instance the last, as before.
+    tool_source = _duplicate_qualified_tool_source(placement, "A1", "A2")
     [test_description] = parse_tool_test_descriptions(tool_source)
-    assert test_description.error
-    assert expected_error in str(test_description.exception)
+    assert not test_description.error
+    expected = "A1" if placement.flat_name == "top" else "A2"
+    dict_verify_each(test_description.request, [(placement.state_path, expected)])
 
 
 @pytest.mark.parametrize(
@@ -156,21 +164,21 @@ def test_duplicate_conflicting_qualified_test_param_legacy_profile_still_runs(pl
     tool_source = _duplicate_qualified_tool_source(placement, "A1", "A2", profile="23.0")
     [test_description] = parse_tool_test_descriptions(tool_source)
     assert not test_description.error
-    assert test_description.request is None
-    assert f"Ambiguous test parameter ({placement.flat_name})" in str(test_description.request_unavailable_reason)
     assert test_description.inputs[placement.flat_name] == "A2"
 
 
-def test_duplicate_data_test_param_with_conflicting_edit_attributes_is_rejected():
+def test_duplicate_data_test_param_with_conflicting_edit_attributes_is_rejected_by_validation():
     tool_source = raw_xml_tool_source(
         DUPLICATE_DATA_TOOL_TEMPLATE.format(
             first='<edit_attributes type="name" value="first" />',
             second='<edit_attributes type="name" value="second" />',
         )
     )
+    [lint_result] = validate_test_cases_for_tool_source(tool_source)
+    assert "Ambiguous test parameter (input)" in str(lint_result.validation_error)
+
     [test_description] = parse_tool_test_descriptions(tool_source)
-    assert test_description.error
-    assert "Ambiguous test parameter (input)" in str(test_description.exception)
+    assert not test_description.error
 
 
 def test_duplicate_identical_composite_collection_test_param_is_tolerated():
