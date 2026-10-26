@@ -27,6 +27,7 @@ from typing import (
     List,
     Optional,
     overload,
+    Sequence,
     Set,
     Tuple,
     Type,
@@ -1083,7 +1084,7 @@ class ToolDataTableConfigSource:
 
 
 def tool_data_table_config_sources(
-    config_paths: Optional[Union[StrPath, List[StrPath]]],
+    config_paths: Optional[Union[StrPath, Sequence[StrPath]]],
     managed: StrPath,
     from_shed_config: bool = False,
     managed_optional: bool = False,

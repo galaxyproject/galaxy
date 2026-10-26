@@ -21,6 +21,8 @@ def _write_source(directory, name, rows):
 
 class TestToolDataSourceOrderIntegration(integration_util.IntegrationTestCase):
     require_admin_user = True
+    source_dir: str
+    managed: str
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
