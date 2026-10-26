@@ -54,6 +54,9 @@ async function mountSelectionOperationsWrapper(config, propsData = {}) {
             $route: { path: "/" },
             $router: { push: jest.fn() },
         },
+        stubs: {
+            CollectionCreatorIndex: { name: "CollectionCreatorIndex", template: "<div />" },
+        },
     });
     await flushPromises();
     return wrapper;
@@ -342,6 +345,13 @@ describe("History Selection Operations", () => {
             wrapper.vm.listWizard(false);
             expect(useCollectionBuilderItemSelection().selectedItems).toEqual(Array.from(selection.values()));
             expect(wrapper.vm.$router.push).toHaveBeenCalledWith("/collection/new_list?advanced=false");
+        });
+
+        it("should leave selection mode when the creator modal creates a collection", async () => {
+            wrapper.vm.buildDatasetListAll();
+            await wrapper.vm.$nextTick();
+            wrapper.findComponent({ name: "CollectionCreatorIndex" }).vm.$emit("created-collection", { id: "c1" });
+            expect(wrapper.emitted("update:show-selection")).toEqual([[false]]);
         });
     });
 

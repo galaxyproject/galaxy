@@ -303,6 +303,7 @@ export default {
             const { setSelectedItems } = useCollectionBuilderItemSelection();
             const selection = Array.from(this.contentSelection.values());
             setSelectedItems(selection);
+            this.$emit("update:show-selection", false);
 
             if (this.$route.path === "/collection/new_list") {
                 // vue-router 4 supports a native force push with clean URLs, but we're using a __vkey__
@@ -311,6 +312,9 @@ export default {
             } else {
                 this.$router.push(`/collection/new_list?advanced=${advanced}`);
             }
+        },
+        createdCollection() {
+            this.$emit("update:show-selection", false);
         },
         // Selected content manipulation, hide/show/delete/purge
         hideSelected() {
