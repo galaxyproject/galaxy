@@ -1141,12 +1141,13 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_compute_final_hash_on_primary_dataset(self, history_id):
         hda = self.dataset_populator.new_dataset(history_id, wait=True)
-        self.dataset_populator.compute_hash(hda["id"], hash_function="SHA-256", final=True)
+        # Not the configured hash_function, which the upload job may still be computing concurrently.
+        self.dataset_populator.compute_hash(hda["id"], hash_function="SHA-512", final=True)
         hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
         self.assert_hash_value(
             hda_details,
-            "a17dcdfd36f47303a4824f1309d43ac14d7491ab3b8abb28782ac8e8d3b680ea",
-            "SHA-256",
+            "04f0df590d7614f12a1e5a8943b71afb99ed499aa23f3a54650d9f3dfa73bacd35b901c8ef3159888ea6154cfcb20f88820285dd9a1e761622fdf29eb8dc1057",
+            "SHA-512",
             extra_files_path=DatasetHash.FINAL,
         )
 
