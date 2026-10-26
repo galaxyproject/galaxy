@@ -1328,9 +1328,9 @@ class MinimalJobWrapper(HasResourceParameters):
             )
             if job_to_copy and isinstance(job_to_copy, model.Job):
                 job.copy_from_job(job_to_copy, copy_outputs=True)
-                # The copied job never reaches finish(), which is where hide actions run.
+                # The copied job never reaches finish(), so run its post job actions here.
                 for pjaa in job.post_job_actions:
-                    if pjaa.post_job_action.action_type == "HideDatasetAction":
+                    if pjaa.post_job_action.action_type not in ActionBox.immediate_actions:
                         ActionBox.execute(
                             self.app, self.sa_session, pjaa.post_job_action, job, final_job_state=job.state
                         )

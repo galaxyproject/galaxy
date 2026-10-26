@@ -6536,7 +6536,7 @@ steps:
             assert job["copied_from_job_id"] == first_job_id
 
     @skip_without_tool("cat1")
-    def test_workflow_rerun_hidden_step_with_use_cached_job_after_input_rename(self, history_id):
+    def test_workflow_step_reusing_plain_job_runs_post_job_actions(self, history_id):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """
 class: GalaxyWorkflow
@@ -6550,23 +6550,28 @@ steps:
     outputs:
       out_file1:
         hide: true
+        set_columns: {nameCol: 4}
 """
         )
-        hda = self.dataset_populator.new_dataset(history_id, content="a\n", wait=True)
-        inputs = {"0": {"src": "hda", "id": hda["id"]}}
-        first_invocation_id = self.workflow_populator.invoke_workflow_and_wait(
-            workflow_id, history_id=history_id, inputs=inputs
-        ).json()["id"]
+        hda = self.dataset_populator.new_dataset(
+            history_id, content="chr1\t10\t20\tx\n", file_type="interval", wait=True
+        )
+        plain = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_job(plain["jobs"][0]["id"], assert_ok=True)
         self.dataset_populator.rename_dataset(hda["id"])
         invocation_id = self.workflow_populator.invoke_workflow_and_wait(
-            workflow_id, history_id=history_id, inputs=inputs, request={"use_cached_job": True}
+            workflow_id,
+            history_id=history_id,
+            inputs={"0": {"src": "hda", "id": hda["id"]}},
+            request={"use_cached_job": True},
         ).json()["id"]
         job = self.dataset_populator.get_job_details(self._tool_job_id(invocation_id, "cat1"), full=True).json()
-        assert job["copied_from_job_id"] == self._tool_job_id(first_invocation_id, "cat1")
+        assert job["copied_from_job_id"] == plain["jobs"][0]["id"]
         output = self.dataset_populator.get_history_dataset_details(
             history_id, dataset_id=job["outputs"]["out_file1"]["id"]
         )
         assert not output["visible"]
+        assert output.get("metadata_nameCol") == 4
 
     def _tool_job_id(self, invocation_id, tool_id):
         jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
