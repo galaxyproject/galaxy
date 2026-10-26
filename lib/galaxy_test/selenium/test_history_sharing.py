@@ -114,7 +114,7 @@ class TestHistorySharing(SeleniumTestCase, UsesUploadActivity):
         for history_id in [kept_id, *removed_ids]:
             shared_histories.history_card(history_id=history_id).wait_for_visible()
 
-        self.toggle_card_selection_in_list("#history-list", removed_names)
+        self.toggle_card_selection_in_list(shared_histories.shared_list.selector, removed_names)
         assert "Remove from Shared (2)" in shared_histories.bulk_unshare_button.wait_for_text()
         shared_histories.bulk_unshare_button.wait_for_and_click()
         assert "Remove 2 histories" in self.components.confirm_dialog.message.wait_for_text()
