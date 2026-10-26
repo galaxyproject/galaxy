@@ -86,17 +86,36 @@ base name is checked (many tools use something like `tool-data/xyz.loc` and
 store example `loc` files in a `tool-data/` directory in the tool repository).
 Currently also `.loc.sample` may be used in case the specified `.loc` is absent.
 
-Galaxy uses two tool data table config files:
+### Configuration order
 
-- `tool_data_table_config_path`: by default `tool_data_table_conf.xml` in Galaxy's `config/` directory.
-- `shed_tool_data_table_config`: by default `shed_tool_data_table_conf.xml` in
-Galaxy's `config/` directory. This file lists all tool data tables of tools
-installed from a toolshed. Note that the entries are versioned, i.e. there is a
-separate entry for each tool and tool version.
+`tool_data_table_config_path` lists the files that describe the reference data
+available to tools. Put preferred files first: when several files provide the
+same reference, earlier files take precedence by default.
 
-The tool data table config files can (and do) contain multiple entries for the same data table
-(identified by the same name). These content of the corresponding `loc` files are merged when
-they are loaded.
+`shed_tool_data_table_config` is the file Galaxy updates when you install tools
+from a Tool Shed. Include it in the list to choose its priority; otherwise Galaxy
+reads it last. The other files can be read-only:
+
+```yaml
+galaxy:
+  shed_tool_data_table_config: /srv/galaxy/var/shed_tool_data_table_conf.xml
+  tool_data_table_config_path:
+    - /srv/galaxy/config/tool_data_table_conf.xml
+    - /srv/galaxy/var/shed_tool_data_table_conf.xml
+    - /mnt/idc/read_only_data_table_conf.xml
+```
+
+Relative paths in `tool_data_table_config_path` resolve against `config_dir`;
+`shed_tool_data_table_config` resolves against `managed_config_dir`. Equivalent
+paths, including symlinks, load the managed file once at its first position.
+A missing default managed file keeps its place when later created;
+explicitly configured missing files are errors.
+
+Tables with the same name must have matching columns. Rows retain source, XML,
+and file order, skipping identical rows when merging definitions.
+
+This order applies to tool installation, data-manager updates, and reloads across
+Galaxy processes. Changing the configured source order requires a restart.
 
 When a new tool is installed that uses a data table a new entry is added to
 `shed_tool_data_table_config` and a `loc` file is placed in a versioned
