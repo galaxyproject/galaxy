@@ -2550,7 +2550,10 @@ class MinimalJobWrapper(HasResourceParameters):
             from galaxy.celery.tasks import compute_dataset_hash
 
             for request in hash_requests:
-                compute_dataset_hash.delay(request=request)
+                try:
+                    compute_dataset_hash.delay(request=request)
+                except Exception:
+                    log.exception("Error queuing hash calculation for dataset %d", request.dataset_id)
 
         # The update_time bumps wake the workflow scheduler. Every job of a
         # mapped-over step bumps the same workflow_invocation_step row, so they

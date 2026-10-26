@@ -78,6 +78,16 @@ class TestJobWrapperFinish(TestCase, UsesTools):
         assert len(committed_when_queued) == 1
         assert (model.Job.states.OK, model.Dataset.states.OK) in [c[:2] for c in committed_when_queued[0]]
 
+    def test_hash_queue_failure_keeps_committed_job_state(self):
+        self.app.config.calculate_dataset_hash = "always"
+        self.app.config.enable_celery_tasks = True
+        self.app.config.hash_function = HashFunctionNameEnum.md5
+        with patch("galaxy.celery.tasks.compute_dataset_hash.delay", side_effect=ConnectionError):
+            committed = self._finish_and_record_commits()
+
+        assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
+        assert self.job.state == model.Job.states.OK
+
     def test_extended_metadata_outputs_and_final_job_state_are_committed_together(self):
         self.app.config.metadata_strategy = "extended"
         wrapper = MinimalJobWrapper(self.job, self.app, tool=self.tool)
