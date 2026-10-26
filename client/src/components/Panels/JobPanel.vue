@@ -106,6 +106,7 @@ watch(filterKey, () => {
     currentJobIds.value = new Set();
     serverOffset.value = 0;
     totalJobCount.value = undefined;
+    updateTimeMsCache.clear();
 });
 
 onUnmounted(stopRetainingCurrentJobs);
@@ -136,13 +137,28 @@ const currentJobMatcher = computed<JobMatcher>(() => {
     }
 });
 
+/** Caches each job's parsed `update_time`, keyed by id, so re-sorting doesn't reparse the date
+ * string for a job whose `update_time` hasn't changed since the last sort. Cleared on filter
+ * change, alongside the other per-filter state above. */
+const updateTimeMsCache = new Map<string, { update_time: string; ms: number }>();
+
+function getUpdateTimeMs(job: ShowFullJobResponse): number {
+    const cached = updateTimeMsCache.get(job.id);
+    if (cached && cached.update_time === job.update_time) {
+        return cached.ms;
+    }
+    const ms = new Date(job.update_time).getTime();
+    updateTimeMsCache.set(job.id, { update_time: job.update_time, ms });
+    return ms;
+}
+
 /** The sorted jobs matching the current filters, kept up to date reactively as the store updates
  * (e.g. job state changes polled elsewhere), same as `sortedStoredInvocations` for invocations. */
 const currentSortedJobs = computed(() => {
     return [...currentJobIds.value]
         .map((id) => storedJobs.value[id])
         .filter((job): job is ShowFullJobResponse => job !== undefined && currentJobMatcher.value(job))
-        .sort((a, b) => new Date(b.update_time).getTime() - new Date(a.update_time).getTime());
+        .sort((a, b) => getUpdateTimeMs(b) - getUpdateTimeMs(a));
 });
 
 /** For non-terminal (and non-paused) jobs that are currently displayed, so they can be polled for updates. */
