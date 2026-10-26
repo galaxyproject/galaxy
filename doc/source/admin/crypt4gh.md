@@ -62,8 +62,10 @@ which runs in two modes:
    checks, on the compute host, that every output starts with a Crypt4GH header,
    and records the result in the job's metadata directory.
 7. **Verification.** When the job finishes, Galaxy checks that every output it
-   knows about was encrypted. On a disk-based object store it re-reads each
-   output's header and compares its digest. Outputs that can't be verified are
+   knows about was encrypted. It re-reads each output's header from the object
+   store and compares its digest; from cloud object stores it reads only the
+   header, from the store rather than Galaxy's cache, which outputs written by
+   remote jobs leave out of date. Outputs that can't be verified are
    purged and the job fails. Outputs that pass get grants for the job's user, so
    they can be used by further jobs and workflow steps without authorizing them
    again.

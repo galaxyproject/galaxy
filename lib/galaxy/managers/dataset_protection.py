@@ -82,6 +82,7 @@ from galaxy.util.crypt4gh import (
     check_crypt4gh,
     is_crypt4gh_file_ext,
     iter_relpaths,
+    MAX_CRYPT4GH_HEADER_SIZE,
     read_crypt4gh_header,
     unwrap_crypt4gh_file_ext,
 )
@@ -732,17 +733,16 @@ class DatasetProtectionManager:
         if not header or hashlib.sha256(base64.b64decode(header)).hexdigest() != record.header_sha256:
             return False
         dataset = dataset_instance.dataset
-        assert dataset
-        # Data is checked independently of the compute host where it is local (e.g. disk object stores).
-        file_name = dataset.get_file_name(sync_cache=False)
-        if os.path.exists(file_name):
-            with open(file_name, "rb") as f:
-                try:
-                    stored_header = read_crypt4gh_header(f)
-                except ValueError:
-                    return False
-            if hashlib.sha256(stored_header).hexdigest() != record.header_sha256:
-                return False
+        assert dataset and dataset.object_store
+        # The stored data is checked independently of the compute host, read from the object store's backend:
+        # Galaxy's cached copy of data written from another host (e.g. by Pulsar to a cloud store) can be stale.
+        head = dataset.object_store.get_data_head(dataset, MAX_CRYPT4GH_HEADER_SIZE)
+        try:
+            stored_header = read_crypt4gh_header(io.BytesIO(head))
+        except ValueError:
+            return False
+        if hashlib.sha256(stored_header).hexdigest() != record.header_sha256:
+            return False
         if dataset.extra_files_path_exists() and os.path.isdir(extra_files_path := dataset.extra_files_path):
             for relpath in iter_relpaths(extra_files_path):
                 if relpath not in record.extra_files or not check_crypt4gh(os.path.join(extra_files_path, relpath)):
