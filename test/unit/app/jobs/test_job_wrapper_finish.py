@@ -2,6 +2,7 @@ import os
 from unittest.mock import patch
 
 from sqlalchemy import event
+from sqlalchemy.exc import OperationalError
 
 from galaxy import (
     job_metrics,
@@ -83,6 +84,13 @@ class TestJobWrapperFinish(TestCase, UsesTools):
         self.app.config.enable_celery_tasks = True
         self.app.config.hash_function = HashFunctionNameEnum.md5
         with patch("galaxy.celery.tasks.compute_dataset_hash.delay", side_effect=ConnectionError):
+            committed = self._finish_and_record_commits()
+
+        assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
+        assert self.job.state == model.Job.states.OK
+
+    def test_update_time_failure_keeps_committed_job_state(self):
+        with patch.object(model.Job, "touch_dependent_update_times", side_effect=OperationalError("", {}, Exception())):
             committed = self._finish_and_record_commits()
 
         assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)

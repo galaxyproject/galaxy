@@ -2558,9 +2558,15 @@ class MinimalJobWrapper(HasResourceParameters):
         # The update_time bumps wake the workflow scheduler. Every job of a
         # mapped-over step bumps the same workflow_invocation_step row, so they
         # run in their own short transaction after the outputs are visible,
-        # not in the one that holds the user's disk usage row.
-        job.touch_dependent_update_times()
-        self.sa_session.commit()
+        # not in the one that holds the user's disk usage row. A failure here
+        # leaves the committed job state alone; the scheduler also checks job
+        # states directly.
+        try:
+            job.touch_dependent_update_times()
+            self.sa_session.commit()
+        except Exception:
+            log.exception(f"Updating update_time of collections and invocation steps failed for job {self.job_id}")
+            self.sa_session.rollback()
         if job.state == job.states.ERROR:
             self._report_error()
         elif task_wrapper:
