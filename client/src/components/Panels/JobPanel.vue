@@ -182,7 +182,7 @@ async function loadJobs(_offset: number, limit: number) {
     let data: JobBaseModel[];
     let totalMatches: number;
     try {
-        [data, totalMatches] = await fetchJobs(serverOffset.value, limit, extraProps);
+        [data, totalMatches] = await fetchJobs(serverOffset.value, limit, extraProps, "create_time");
     } finally {
         loading.value = false;
     }
