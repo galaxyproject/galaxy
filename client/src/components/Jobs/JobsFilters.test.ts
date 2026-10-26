@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { JobBaseModel } from "@/api/jobs";
 import { type Tool, useToolStore } from "@/stores/toolStore";
 
-import { jobsFilterParams, MAX_TOOL_NAME_MATCHES } from "./JobsFilters";
+import { jobsFilterParams, JobsFiltersById, MAX_TOOL_NAME_MATCHES } from "./JobsFilters";
 
 function buildJob(overrides: Partial<JobBaseModel> = {}): JobBaseModel {
     return {
@@ -104,6 +104,21 @@ describe("jobsFilterParams", () => {
             const { matchesJob } = jobsFilterParams("");
             expect(matchesJob(buildJob({ tool_id: "anything", state: "error" }))).toBe(true);
         });
+
+        it("expands status into its member states, out of search", () => {
+            expect(jobsFilterParams("status:problem").params).toEqual({ state: ["error", "failed"] });
+        });
+
+        it("status wins over a plain state value set at the same time", () => {
+            expect(jobsFilterParams("state:ok status:problem").params).toEqual({ state: ["error", "failed"] });
+        });
+
+        it("matchesJob for status accepts any member state", () => {
+            const { matchesJob } = jobsFilterParams("status:problem");
+            expect(matchesJob(buildJob({ state: "error" }))).toBe(true);
+            expect(matchesJob(buildJob({ state: "failed" }))).toBe(true);
+            expect(matchesJob(buildJob({ state: "ok" }))).toBe(false);
+        });
     });
 
     describe("search by name mode", () => {
@@ -171,6 +186,31 @@ describe("jobsFilterParams", () => {
         it("matchesJob ignores the name/tool_id search here too", () => {
             const { matchesJob } = jobsFilterParams("cut", true);
             expect(matchesJob(buildJob({ tool_id: "unrelated" }))).toBe(true);
+        });
+    });
+
+    describe("status text manipulation (JobStatusFilter's own usage)", () => {
+        it("sets status on empty filter text", () => {
+            const text = JobsFiltersById.applyFiltersToText({ status: "active" }, "");
+            expect(text).toBe("status:active");
+        });
+
+        it("clears state when setting status", () => {
+            let text = JobsFiltersById.applyFiltersToText({ state: "" }, "state:ok", true);
+            text = JobsFiltersById.applyFiltersToText({ status: "problem" }, text);
+            expect(jobsFilterParams(text).params).toEqual({ state: ["error", "failed"] });
+        });
+
+        it("clears status entirely when toggled off", () => {
+            const text = JobsFiltersById.applyFiltersToText({ status: "" }, "status:active", true);
+            expect(text).toBe("");
+        });
+
+        it("removing a key works even with no value at all for it", () => {
+            // The whole point of the removal fix: a caller removing a filter has no real value to
+            // give it, so an empty string (or any placeholder) must not block the removal.
+            const text = JobsFiltersById.applyFiltersToText({ status: "" }, "status:active state:ok", true);
+            expect(text).toBe("state:ok");
         });
     });
 });

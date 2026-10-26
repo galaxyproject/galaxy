@@ -15,6 +15,7 @@ import { useUserStore } from "@/stores/userStore";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import JobCard from "@/components/JobInformation/JobCard.vue";
+import JobStatusFilter from "@/components/Jobs/JobStatusFilter.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
@@ -64,6 +65,28 @@ const filterKey = computed(() => {
     const filterPart = text ? `${showToolNamesInJobPanel.value ? "name" : "id"}:${text}` : "";
     return `${includeUploads.value}:${filterPart}`;
 });
+
+/** The active `status` quick-filter value, or `undefined` if none is toggled on. */
+const activeStatusFilter = computed(() => {
+    const JobsFilters = showToolNamesInJobPanel.value ? JobsFiltersByName : JobsFiltersById;
+    return JobsFilters.getFilterValue(filterText.value, "status") as string | undefined;
+});
+
+/**
+ * Toggles a `JobStatusFilter` quick-filter button.
+ *
+ * Setting a `status` filter also clears any manually-picked `state`, since `disablesFilters` can't do
+ * this for `status` the other way around (it's not a `FilterMenu` field, so no dropdown-change event
+ * exists to trigger it from that side).
+ */
+function setActiveStatusFilter(group: string | undefined) {
+    const JobsFilters = showToolNamesInJobPanel.value ? JobsFiltersByName : JobsFiltersById;
+    let newText = JobsFilters.applyFiltersToText({ state: "" }, filterText.value, true);
+    newText = group
+        ? JobsFilters.applyFiltersToText({ status: group }, newText)
+        : JobsFilters.applyFiltersToText({ status: "" }, newText, true);
+    filterText.value = newText;
+}
 
 /** IDs of jobs fetched for the *current* filters. `storedJobs` is a global, id-keyed
  * cache shared across the whole app, so it can hold jobs from a previous filter. This set
@@ -338,6 +361,12 @@ const currentItemId = computed(() => {
                 :placeholder="`search jobs by tool ${showToolNamesInJobPanel ? 'name' : 'ID'}`"
                 :filter-class="showToolNamesInJobPanel ? JobsFiltersByName : JobsFiltersById"
                 :loading="loading" />
+
+            <JobStatusFilter
+                v-if="!showAdvanced"
+                class="pt-2"
+                :active-group="activeStatusFilter"
+                @update:active-group="setActiveStatusFilter" />
         </template>
 
         <ScrollList

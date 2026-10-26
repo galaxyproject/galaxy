@@ -12,6 +12,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import JobPanel from "./JobPanel.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
+import JobStatusFilter from "@/components/Jobs/JobStatusFilter.vue";
 
 const { server, http } = useServerMock();
 
@@ -217,6 +218,56 @@ describe("JobPanel", () => {
         expect(requests.at(-1)?.get("order_by")).toBe("create_time");
         // `exclude_tool_ids`: hidden-tool jobs are excluded server-side, not fetched and dropped.
         expect(requests.at(-1)?.getAll("exclude_tool_ids")).toEqual(["__DATA_FETCH__", "upload1"]);
+    });
+
+    it("sets and clears the status quick-filter via JobStatusFilter", async () => {
+        const requests: URLSearchParams[] = [];
+        server.use(
+            http.get("/api/jobs", ({ request, response }) => {
+                requests.push(new URL(request.url).searchParams);
+                return response(200).json([], { headers: { total_matches: "0" } });
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+
+        wrapper.findComponent(JobStatusFilter).vm.$emit("update:active-group", "problem");
+        await flushPromises();
+        await scrollOnce();
+
+        expect(requests.at(-1)?.getAll("state")).toEqual(["error", "failed"]);
+
+        // Clicking the same group again toggles it off.
+        wrapper.findComponent(JobStatusFilter).vm.$emit("update:active-group", undefined);
+        await flushPromises();
+        await scrollOnce();
+
+        expect(requests.at(-1)?.has("state")).toBe(false);
+    });
+
+    it("clears a manually-picked state's stale text when a quick-filter group is toggled on", async () => {
+        server.use(
+            http.get("/api/jobs", ({ response }) => {
+                return response(200).json([], { headers: { total_matches: "0" } });
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "state:ok");
+        await flushPromises();
+
+        expect(wrapper.findComponent(FilterMenu).props("filterText")).toBe("state:ok");
+
+        wrapper.findComponent(JobStatusFilter).vm.$emit("update:active-group", "active");
+        await flushPromises();
+
+        // The stale `state:ok` text is removed, not just overridden -- jobsFilterParams already
+        // prefers status over state regardless, so this is about the visible text, not params.
+        const filterText = wrapper.findComponent(FilterMenu).props("filterText") as string;
+        expect(filterText).not.toContain("state:ok");
+        expect(filterText).toContain("status:active");
     });
 
     it("only requests the total count on the first page, keeping it stable on later pages", async () => {
