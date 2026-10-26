@@ -1,3 +1,7 @@
+// When merging forward: release_26.0+ runs vitest without globals and has neither tests/jest/helpers
+// nor axios-mock-adapter, so this file merges cleanly but fails there. Port the test to vitest
+// (vi.mock the Services class), and on release_26.1+ fold it into the existing PermissionsInputField.test.js.
+// Drop this comment in the port.
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
