@@ -1487,6 +1487,14 @@ class TestAgentUnitMocked:
             ("[t](https://evil.example/a(b(c)))", "t"),
             ("> [r]: //evil.example/x\n> [t][r]", "t"),
             ("- [t][r]\n\n   [r]: //evil.example/x", "t"),
+            ("[t][r]\n\n[r]: https://evil.example/a(b(c))", "t"),
+            ('[t][r]\n\n[r]: https://evil.example "my \\" title"', "t"),
+            ("[t][foo\\]bar]\n\n[foo\\]bar]: https://evil.example/", "t"),
+            ("[t][r]\n\n[r]:\nhttps://evil.example/", "t"),
+            ("[t][r]\n\n> [r]:\n> https://evil.example/", "t"),
+            ("![alt][r]\n\n[r]: https://evil.example/p.png", "alt"),
+            ('[t](https://evil.example/ "a \\" b")', "t"),
+            ("Mail <phish@evil.example> now", "phish@evil.example"),
             ("[a [b [c]] d](//evil.example/x)", "b"),
             ("![alt text](https://evil.example/pixel.png)", "alt text"),
             ("[](https://evil.example/empty)", ""),
@@ -1501,6 +1509,19 @@ class TestAgentUnitMocked:
 
         assert _rendered_link_targets(stripped) == []
         assert label in stripped
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "[Note]:\nKeep this line.",
+            "[Step 1]: upload your reads",
+            "Use https://usegalaxy.org to run it.",
+            "Options are [optional] here.",
+        ],
+    )
+    def test_gtn_strip_leaves_prose_that_isnt_a_link_alone(self, text):
+        agent = self._gtn_agent_with_retrieved([self._RNASEQ_RESULT])
+        assert agent._strip_unverified_urls(text, agent._allowed_urls()) == text
 
     def test_gtn_strip_keeps_allowed_inline_and_reference_links(self):
         agent = self._gtn_agent_with_retrieved([self._RNASEQ_RESULT])

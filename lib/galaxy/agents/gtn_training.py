@@ -46,17 +46,23 @@ log = logging.getLogger(__name__)
 # text. Labels and destinations allow one level of nested brackets/parens; deeper
 # nesting is caught by _LINK_START_RE, which breaks any "](" left pointing elsewhere.
 _LINK_DEST = r"(?:<[^<>\n]*>|(?:[^\s()]|\([^\s()]*\))*)"
-_LINK_TITLE = r"""(?:\s+(?:"[^"]*"|'[^']*'|\([^()]*\)))?"""
-_LINK_LABEL = r"(?:[^\[\]]|\[[^\[\]]*\])*"
+_LINK_TITLE = r"""(?:\s+(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^()\\])*\)))?"""
+_LINK_LABEL = r"(?:\\.|[^\[\]\\]|\[(?:\\.|[^\[\]\\])*\])*"
 _INLINE_LINK_RE = re.compile(rf"!?\[({_LINK_LABEL})\]\(\s*({_LINK_DEST}){_LINK_TITLE}\s*\)")
 _LINK_START_RE = re.compile(r"\]\(\s*<?([^\s()<>]*)")
-# Definitions can sit inside blockquotes and list items, so allow those prefixes.
+# Definitions can sit inside blockquotes and list items, so allow those prefixes,
+# including before a destination on the next line. Any non-space destination counts
+# (CommonMark allows arbitrarily nested parens there), but it must be non-empty and
+# end its line, or "[Note]: some prose" would be eaten. The continuation prefix is
+# bounded so ">" (also a valid destination start) can't backtrack quadratically.
 _REFERENCE_DEF_RE = re.compile(
-    rf"^((?:[ \t>]|[-*+][ \t]|\d{{1,9}}[.)][ \t])*)\[({_LINK_LABEL})\]:\s*({_LINK_DEST}){_LINK_TITLE}[ \t]*$",
+    r"^((?:[ \t>]|[-*+][ \t]|\d{1,9}[.)][ \t])*)\[((?:\\.|[^\[\]\\])+)\]:"
+    rf"[ \t]*(?:\n[ \t>]{{0,100}})?(<[^<>\n]*>|\S+){_LINK_TITLE}[ \t]*$",
     re.MULTILINE,
 )
 _REFERENCE_USE_RE = re.compile(rf"!?\[({_LINK_LABEL})\](?:\[({_LINK_LABEL})\]|(?![(:]))")
-_AUTOLINK_RE = re.compile(r"<([a-z][a-z0-9+.\-]{1,31}:[^\s<>]*)>", re.IGNORECASE)
+# URI autolinks, and email autolinks, which render as mailto: links.
+_AUTOLINK_RE = re.compile(r"<([a-z][a-z0-9+.\-]{1,31}:[^\s<>]*|[^\s<>@:]+@[^\s<>]+)>", re.IGNORECASE)
 
 
 def _reference_label(label: str) -> str:
