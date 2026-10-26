@@ -94,12 +94,6 @@ export const useJobStore = defineStore("jobStore", () => {
         evictIfOverCap();
     }
 
-    const sortedStoredJobs = computed(() => {
-        return Object.values(storedJobs.value)
-            .filter((job) => job !== undefined)
-            .sort((a, b) => new Date(b.update_time).getTime() - new Date(a.update_time).getTime());
-    });
-
     async function fetchJobFromApi(params: JobFetchParams): Promise<ShowFullJobResponse> {
         const { data, error, response } = await GalaxyApi().GET("/api/jobs/{job_id}", {
             params: { path: { job_id: params.id }, query: { full: params.full ?? true } },
@@ -377,7 +371,7 @@ export const useJobStore = defineStore("jobStore", () => {
         isLoadingJob,
         latestResponse,
         pollJobUntilTerminal,
-        sortedStoredJobs,
+        storedJobs,
         updateJob,
     };
 });
