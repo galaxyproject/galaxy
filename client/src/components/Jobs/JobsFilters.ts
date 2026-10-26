@@ -1,9 +1,22 @@
-import { JOB_STATES, type JobBaseModel, type JobsQueryParams } from "@/api/jobs";
+import { JOB_STATES, type JobBaseModel, type JobsQueryParams, type JobState } from "@/api/jobs";
 import { useToolStore } from "@/stores/toolStore";
 import Filtering, { compare, contains, equals, toDate, type ValidFilter } from "@/utils/filtering";
 
 /** Name mode sends every matching tool id in the query string, so keep the URL bounded. */
 export const MAX_TOOL_NAME_MATCHES = 50;
+
+/**
+ * A curated, quick-toggle grouping of job states (see `JobStatusFilter.vue`).
+ *
+ * Each job state belongs to exactly one group. Named so a group key never collides with an actual
+ * job state value (e.g. not `running`, which is itself a state).
+ */
+export const STATE_GROUPS: Record<string, JobState[]> = {
+    active: ["new", "queued", "running", "finishing", "waiting", "resubmitted", "upload"],
+    finished: ["ok", "skipped"],
+    problem: ["error", "failed"],
+    inactive: ["paused", "stop", "stopped", "deleting", "deleted"],
+};
 
 type UserJobsQueryParams = Pick<
     NonNullable<JobsQueryParams>,
@@ -18,6 +31,16 @@ const baseFilters: Record<string, ValidFilter<string | number>> = {
         handler: equals("state"),
         datalist: [...JOB_STATES],
         menuItem: true,
+        disablesFilters: { status: null },
+    },
+
+    // Set only by the quick-toggle buttons (`JobStatusFilter.vue`), never shown as its own menu
+    // field; see `STATE_GROUPS`.
+    status: {
+        type: "Dropdown",
+        handler: equals("status"),
+        datalist: Object.keys(STATE_GROUPS),
+        menuItem: false,
     },
 
     update_time: {
@@ -111,10 +134,17 @@ export function jobsFilterParams(
         }
     }
 
-    const state = JobsFilters.getFilterValue(filterText, "state") as string | undefined;
-    if (state) {
-        params.state = [state];
-        matchers.push((job) => job.state === state.toLowerCase());
+    const status = JobsFilters.getFilterValue(filterText, "status") as string | undefined;
+    const groupStates = status ? STATE_GROUPS[status] : undefined;
+    if (groupStates) {
+        params.state = groupStates;
+        matchers.push((job) => groupStates.includes(job.state));
+    } else {
+        const state = JobsFilters.getFilterValue(filterText, "state") as string | undefined;
+        if (state) {
+            params.state = [state];
+            matchers.push((job) => job.state === state.toLowerCase());
+        }
     }
 
     const updatedAfter = JobsFilters.getFilterValue(filterText, "update_time_gt") as string | undefined;
