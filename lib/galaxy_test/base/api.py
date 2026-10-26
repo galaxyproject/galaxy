@@ -32,6 +32,7 @@ from .api_util import (
     OTHER_USER,
     TEST_USER,
 )
+from .decorators import using_requirement
 from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 
 if TYPE_CHECKING:
@@ -146,6 +147,7 @@ class UsesApiTestCaseMixin:
             return ApiTestInteractor(self, api_key=api_key)
 
     def _setup_user(self, email, password=None):
+        using_requirement("admin")
         return self.galaxy_interactor.ensure_user_with_email(email, password=password)
 
     def _setup_user_get_key(self, email, password=None):

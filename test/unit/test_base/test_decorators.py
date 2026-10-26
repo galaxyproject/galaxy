@@ -9,6 +9,7 @@ from galaxy_test.base.decorators import (
     requires_celery,
     requires_new_history,
     requires_new_library,
+    requires_new_published_objects,
     requires_new_user,
 )
 
@@ -95,7 +96,15 @@ def test_requires_new_user_implies_requires_admin():
 
 
 @pytest.mark.parametrize(
-    "decorator", [requires_admin, requires_new_history, requires_new_library, requires_new_user, requires_celery]
+    "decorator",
+    [
+        requires_admin,
+        requires_new_history,
+        requires_new_library,
+        requires_new_user,
+        requires_celery,
+        requires_new_published_objects,
+    ],
 )
 @pytest.mark.parametrize("skip_value", [None, "0", "1"])
 def test_requirement_preserves_callable_and_skips(monkeypatch, decorator, skip_value):
