@@ -498,6 +498,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 result=result,
                 query=query,
                 suggestions=parsed_result.get("suggestions", []),
+                sources=parsed_result.get("sources", []),
                 agent_data={"tutorial_count": parsed_result.get("tutorial_count", 0)},
             )
 
@@ -659,11 +660,13 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             content_parts = [response_text]
 
         suggestions: list[ActionSuggestion] = []
+        sources: list[SourceCitation] = []
         if tutorials and tutorials.group(1).strip() and self.gtn_db:
             for tutorial_name in [t.strip() for t in tutorials.group(1).split(",")][:3]:
                 results = self.gtn_db.search(tutorial_name, limit=1)
                 if results:
                     result = results[0]
+                    sources.append(SourceCitation(title=result.title, url=result.url, source_type="gtn_tutorial"))
                     suggestions.append(
                         ActionSuggestion(
                             action_type=ActionType.VIEW_EXTERNAL,
@@ -690,6 +693,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             "confidence": confidence_level,
             "tutorial_count": len(tutorials.group(1).split(",")) if tutorials and tutorials.group(1).strip() else 0,
             "suggestions": suggestions,
+            "sources": sources,
         }
 
     def _get_fallback_content(self) -> str:

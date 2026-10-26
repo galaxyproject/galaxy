@@ -1551,11 +1551,11 @@ class TestAgentUnitMocked:
         time_estimation="1h",
     )
 
-    def _gtn_agent_with_db(self):
-        """A GTN agent on a structured-output model, backed by a mocked GTN database
-        that knows the RNA-seq tutorial and whose free-text search returns Galaxy 101."""
+    def _gtn_agent_with_db(self, structured_output=True):
+        """A GTN agent backed by a mocked GTN database that knows the RNA-seq
+        tutorial and whose free-text search returns Galaxy 101."""
         self.mock_config.ai_model = "gpt-4o"
-        self.mock_config.inference_services = {"default": {"structured_output_override": True}}
+        self.mock_config.inference_services = {"default": {"structured_output_override": structured_output}}
         db = MagicMock()
         db.search.return_value = [self._GALAXY_101_RESULT]
         db.search_faqs.return_value = []
@@ -1666,6 +1666,23 @@ class TestAgentUnitMocked:
                 url=record["url"],
                 source_type="gtn_faq" if section == "faqs" else "gtn_tutorial",
             )
+        ]
+
+    @pytest.mark.asyncio
+    async def test_gtn_simple_text_path_reports_sources(self):
+        agent, db = self._gtn_agent_with_db(structured_output=False)
+
+        def model(messages, info):
+            return ModelResponse(
+                parts=[TextPart("TUTORIALS: Galaxy 101\nSUMMARY: Start with Galaxy 101.\nCONFIDENCE: high")]
+            )
+
+        with agent.agent.override(model=FunctionModel(model)):
+            response = await agent.process("where do I start?")
+
+        assert response.metadata["method"] == "simple_text"
+        assert response.sources == [
+            SourceCitation(title="Galaxy 101", url=self._GALAXY_101_RESULT.url, source_type="gtn_tutorial")
         ]
 
     @pytest.mark.asyncio
