@@ -152,7 +152,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
  * Grid configuration
  */
 const gridConfig: GridConfig = {
-    id: "visualizations-published-grid",
+    id: "visualizations-shared-grid",
     batch: batch,
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false),
