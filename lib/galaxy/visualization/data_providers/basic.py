@@ -72,12 +72,11 @@ class ColumnDataProvider(BaseDataProvider):
 
         # skip comment lines (if any/avail)
         # pre: should have original_dataset and
-        if (
-            skip_comments
-            and self.original_dataset.metadata.comment_lines
-            and start_val < self.original_dataset.metadata.comment_lines
-        ):
-            start_val = int(self.original_dataset.metadata.comment_lines)
+        if skip_comments and self.original_dataset.metadata.comment_lines:
+            try:
+                start_val = max(start_val, int(self.original_dataset.metadata.comment_lines))
+            except (ValueError, TypeError):
+                pass
 
         # columns is an array of ints for now (should handle column names later)
         columns = loads(columns)
