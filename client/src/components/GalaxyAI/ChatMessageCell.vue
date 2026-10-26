@@ -10,6 +10,7 @@ import {
     faThumbsUp,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { onClickOutside } from "@vueuse/core";
 import { computed, ref } from "vue";
 
 import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
@@ -58,6 +59,11 @@ const emit = defineEmits<{
 const isClarification = computed(() => props.message.agentType === "clarification");
 const clarificationOptions = computed<string[]>(() => props.message.agentResponse?.metadata?.options ?? []);
 const linksExpanded = ref(false);
+const referenceLinks = ref<HTMLElement | null>(null);
+
+onClickOutside(referenceLinks, () => {
+    linksExpanded.value = false;
+});
 
 // Only sources the agent verified against its search results, never URLs
 // scraped from model-written text. The scheme check is defense in depth: the
@@ -149,7 +155,11 @@ const sources = computed(() =>
                             <span v-if="props.message.feedback" class="feedback-ack">Thanks!</span>
                         </div>
                         <div class="meta-right">
-                            <div v-if="sources.length" class="reference-links">
+                            <div
+                                v-if="sources.length"
+                                ref="referenceLinks"
+                                class="reference-links"
+                                @keydown.esc="linksExpanded = false">
                                 <button
                                     class="links-toggle"
                                     :aria-expanded="linksExpanded ? 'true' : 'false'"
@@ -369,7 +379,6 @@ const sources = computed(() =>
 }
 
 .meta-right {
-    position: relative;
     display: flex;
     align-items: center;
     gap: 0.5rem;
