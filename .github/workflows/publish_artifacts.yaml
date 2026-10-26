@@ -109,6 +109,11 @@ jobs:
         uses: pnpm/action-setup@v5
         with:
           package_json_file: client/package.json
+      # Runs before the client publish: `pnpm publish` rewrites the client's
+      # `workspace:*` api-client dep to the version in the api-client's package.json.
+      - name: sync client-api version
+        run: npm run sync-version
+        working-directory: 'client/packages/api-client'
       # TODO(post-26.1): the @galaxyproject/galaxy-client npm publish is now
       # redundant with the galaxy-web-client PyPI wheel used by
       # scripts/common_startup.sh and the install-client make target.  Keep
@@ -131,9 +136,6 @@ jobs:
           npm pkg delete scripts.postinstall
           pnpm publish --provenance --access public --no-git-checks
         working-directory: 'client'
-      - name: sync client-api version
-        run: npm run sync-version
-        working-directory: 'client/packages/api-client'
       - name: build client-api
         run: pnpm --filter @galaxyproject/galaxy-api-client run build
         working-directory: 'client'
