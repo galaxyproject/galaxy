@@ -76,7 +76,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_history)
         # Need to search for the history and select it before we can select datasets.
         self.sleep_for(self.wait_types.UX_RENDER)
-        self._search_and_select_history(1, "Unnamed history")
+        self._search_and_select_history(self.current_history_id())
         self.sleep_for(self.wait_types.UX_RENDER)
         self.libraries_dataset_import_from_history_select(["1.txt"])
         # Add
@@ -186,9 +186,9 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         self.screenshot("libraries_show_details_done")
 
     @retry_during_transitions
-    def _search_and_select_history(self, row_index=1, label_text="Unnamed history"):
+    def _search_and_select_history(self, history_id, label_text="Unnamed history"):
         self.libraries_dataset_import_from_history_search_for(label_text)
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.libraries.folder.import_datasets_from_history_modal_select_list_item_by_index(
-            row_index=row_index
+        self.components.libraries.folder.import_datasets_from_history_modal_select_history(
+            history_id=history_id
         ).wait_for_and_click()
