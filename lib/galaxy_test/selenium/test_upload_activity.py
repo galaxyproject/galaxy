@@ -137,7 +137,7 @@ class TestUploadActivity(SeleniumTestCase, UsesUploadActivity, UsesHistoryItemAs
 class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHistoryItemAssertions):
     run_as_admin = True
 
-    def setup_with_driver(self):
+    def setup_with_driver(self) -> None:
         super().setup_with_driver()
         self.admin_login()
 
@@ -235,7 +235,7 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
     @selenium_test
     @requires_admin
     @requires_new_library
-    def test_long_data_library_names_stay_in_their_column(self):
+    def test_long_data_library_names_stay_in_their_column(self) -> None:
         long_name = "bTaeGut1_pacbio_hifi_reads_m84091_230808_224522_s2_default_long_unbroken_name" * 2
         library_name = self._get_random_name(prefix=f"{long_name}_library_")
         folder_name = f"{long_name}_folder"

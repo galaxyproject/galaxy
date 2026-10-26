@@ -43,7 +43,7 @@ class TestUploadFtpSeleniumIntegration(SeleniumIntegrationTestCase, UsesUploadAc
         return user_ftp_dir
 
     @selenium_test
-    def test_ftp_directory_shows_upload_site(self):
+    def test_ftp_directory_shows_upload_site(self) -> None:
         self._create_ftp_dir()
         self.home()
         self.upload_context("remote-files").open_remote_folder("FTP Directory")

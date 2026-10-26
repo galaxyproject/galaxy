@@ -28,9 +28,9 @@ import { USER_FILE_PREFIX } from "@/utils/url";
 
 import { Model } from "./model";
 
-import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "../BaseComponents/GButton.vue";
 import FtpUploadHelp from "./FtpUploadHelp.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 const filesSources = useFileSources();

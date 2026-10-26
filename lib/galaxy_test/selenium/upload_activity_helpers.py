@@ -42,6 +42,7 @@ from typing import (
 )
 
 from galaxy.selenium.has_driver import exception_indicates_stale_element
+from galaxy.selenium.web_element_protocol import WebElementProtocol
 from galaxy.util.wait import TimeoutAssertionError
 from .framework import NavigatesGalaxyMixin
 
@@ -1077,7 +1078,7 @@ class UsesUploadActivity(NavigatesGalaxyMixin):
         context_class = _CONTEXT_CLASS_MAP[method_id]
         return context_class(base_context)  # type: ignore[return-value]
 
-    def assert_label_within_its_column(self, label, what: str) -> None:
+    def assert_label_within_its_column(self, label: WebElementProtocol, what: str) -> None:
         """Assert browser row ``label`` doesn't run past the right edge of its table cell."""
         overflow = self.execute_script(
             "const label = arguments[0];"
