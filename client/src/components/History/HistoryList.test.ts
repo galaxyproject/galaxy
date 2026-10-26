@@ -146,7 +146,7 @@ describe("HistoryList", () => {
         expect(raisedToasts()).toEqual([]);
     });
 
-    it("reports the histories whose share could not be removed", async () => {
+    it("reports the histories whose share could not be removed and keeps them selected", async () => {
         failSecond = true;
         const { unshared } = interceptRequests();
         confirm.mockResolvedValue(true);
@@ -163,6 +163,7 @@ describe("HistoryList", () => {
             { variant: "success", message: "Removed 1 history from your shared histories." },
             { variant: "error", message: "Failed to remove 1 shared history: 'Second Shared' (History not found)" },
         ]);
+        expect(wrapper.find("#history-list-footer-bulk-unshare-button").text()).toContain("Remove from Shared (1)");
     });
 
     it("does nothing on the Delete key in the shared view", async () => {

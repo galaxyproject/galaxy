@@ -49,7 +49,7 @@ import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { updateHistoryFields } from "@/stores/services/history.services";
 import { useUserStore } from "@/stores/userStore";
-import { describeFailures, settleEach } from "@/utils/settleEach";
+import { describeFailures, settleEach, type SettleFailure } from "@/utils/settleEach";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { pluralize } from "@/utils/strings";
 
@@ -465,11 +465,13 @@ async function onBulkUnshareWithMe() {
         return;
     }
 
+    let failures: SettleFailure<SelectedHistory>[] = [];
+
     try {
         overlay.value = true;
         bulkUnshareLoading.value = true;
 
-        const failures = await settleEach(selectedHistories.value, (h) => unshareHistoryWithMe(h.id));
+        failures = await settleEach(selectedHistories.value, (h) => unshareHistoryWithMe(h.id));
 
         const removed = totalSelected - failures.length;
         if (removed > 0) {
@@ -488,6 +490,20 @@ async function onBulkUnshareWithMe() {
         bulkUnshareLoading.value = false;
 
         await load(true);
+
+        selectTmpSelected(failures.map(({ item }) => item));
+    }
+}
+
+/**
+ * Reselects the given histories that are still loaded
+ */
+function selectTmpSelected(tmpSelected: SelectedHistory[]) {
+    for (const selected of tmpSelected) {
+        const history = historiesLoaded.value.find((h) => h.id === selected.id);
+        if (history) {
+            setSelected(history, true);
+        }
     }
 }
 
