@@ -31,7 +31,7 @@ TEMPLATE_SNIPPET_LENGTH = 80
 
 
 class ExpressionTemplateError(MessageException):
-    """A ``$(...)``/``${...}`` block in a tool template does not parse."""
+    """A ``$(...)``/``${...}`` block in a tool template does not parse or failed, with a message for the user."""
 
 
 def validate_expression_template(expression: str, description: str = "command template") -> None:
