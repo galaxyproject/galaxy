@@ -306,9 +306,7 @@ def to_cwl(
                 "format": value.extension,
                 "path": compute_environment.input_path_rewrite(value) if compute_environment else value.get_file_name(),
             }
-            set_basename_and_derived_properties(
-                properties, value.dataset.created_from_basename or element_identifier or value.name
-            )
+            set_basename_and_derived_properties(properties, value.dataset.created_from_basename or value.name)
             if element_identifier:
                 properties["element_identifier"] = element_identifier
             elif element_identifiers is not None:

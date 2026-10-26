@@ -177,7 +177,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
     def test_run_paired_input_writes_element_identifiers(self):
         tool = {
             **TOOL_WITH_SHELL_COMMAND,
-            "shell_command": "echo '$(inputs.input.forward.element_identifier) $(inputs.input.reverse.element_identifier)' > output.fastq",
+            "shell_command": "echo '$(inputs.input.forward.element_identifier) $(inputs.input.forward.basename) $(inputs.input.reverse.element_identifier) $(inputs.input.reverse.basename)' > output.fastq",
             "inputs": [{"type": "data_collection", "name": "input", "collection_type": "paired"}],
         }
         with (
@@ -204,7 +204,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             )
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             output_content = self.dataset_populator.get_history_dataset_content(history_id)
-        assert output_content == "forward reverse\n"
+        assert output_content == "forward r1.fq reverse r2.fq\n"
 
     def test_run_mapped_over_deferred_list_with_deferred_input_writes_element_identifiers(self):
         tool = {
