@@ -1711,15 +1711,19 @@ class TestAgentUnitMocked:
     async def test_gtn_simple_text_path_reports_sources(self):
         agent, db = self._gtn_agent_with_db(structured_output=False)
 
+        summary = f"Start with [Galaxy 101]({self._GALAXY_101_RESULT.url})."
+
         def model(messages, info):
+            # Both names resolve to the same tutorial through the mocked search.
             return ModelResponse(
-                parts=[TextPart("TUTORIALS: Galaxy 101\nSUMMARY: Start with Galaxy 101.\nCONFIDENCE: high")]
+                parts=[TextPart(f"TUTORIALS: Galaxy 101, Galaxy intro\nSUMMARY: {summary}\nCONFIDENCE: high")]
             )
 
         with agent.agent.override(model=FunctionModel(model)):
             response = await agent.process("where do I start?")
 
         assert response.metadata["method"] == "simple_text"
+        assert response.content.startswith(summary)
         assert response.sources == [
             SourceCitation(title="Galaxy 101", url=self._GALAXY_101_RESULT.url, source_type="gtn_tutorial")
         ]

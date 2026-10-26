@@ -684,8 +684,11 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         if tutorials and tutorials.group(1).strip() and self.gtn_db:
             for tutorial_name in [t.strip() for t in tutorials.group(1).split(",")][:3]:
                 results = self.gtn_db.search(tutorial_name, limit=1)
-                if results:
+                # Several names can resolve to the same tutorial.
+                if results and results[0].url not in {source.url for source in sources}:
                     result = results[0]
+                    # Recorded so the summary may link to it.
+                    self._record_retrieved([result])
                     sources.append(SourceCitation(title=result.title, url=result.url, source_type="gtn_tutorial"))
                     suggestions.append(
                         ActionSuggestion(
