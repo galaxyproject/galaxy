@@ -104,6 +104,14 @@ def test_expiration_dates_without_timezone_are_rejected():
         _payload(crypt4gh_compute_keypair_expiration_date=datetime.now() + timedelta(days=6))
 
 
+class _FakeObjectStore:
+    """Stores the data of each dataset in the file at its path."""
+
+    def get_data_head(self, dataset, size):
+        with open(dataset.path, "rb") as f:
+            return f.read(size)
+
+
 class _FakeDataset:
     def __init__(self, path, size=1):
         self.uuid = uuid.uuid4()
@@ -113,6 +121,7 @@ class _FakeDataset:
         self.state = "ok"
         self.file_size = size
         self.extra_files_path = f"{path}_files"
+        self.object_store = _FakeObjectStore()
 
     def get_file_name(self, sync_cache=True):
         return self.path
@@ -275,6 +284,27 @@ def test_finish_job_detects_plaintext_behind_a_record(tmp_path):
     output, record = _protected_output(tmp_path)
     # The file stored for the output is not the one that was protected.
     (tmp_path / "out.dat").write_bytes(b"@read1\nACGT\n")
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    assert _manager().finish_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+
+
+def test_finish_job_checks_the_stored_data_rather_than_a_stale_cached_copy(tmp_path):
+    output, record = _protected_output(tmp_path)
+    # Written to a cloud object store from the Pulsar host: Galaxy's cached copy is still the empty
+    # file created with the output.
+    stale_cached_copy = tmp_path / "cached.dat"
+    stale_cached_copy.write_bytes(b"")
+    output.dataset.get_file_name = lambda sync_cache=True: str(stale_cached_copy)
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert _manager().finish_job(_job(output), str(tmp_path)) is None
+    assert not output.dataset.purged
+
+
+def test_finish_job_fails_when_the_stored_data_is_missing(tmp_path):
+    output, record = _protected_output(tmp_path)
+    os.remove(output.dataset.path)
     _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
     assert _manager().finish_job(_job(output), str(tmp_path))
     assert output.dataset.purged
