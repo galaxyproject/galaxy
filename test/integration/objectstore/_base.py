@@ -444,9 +444,15 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
         return True
 
 
-def start_seaweedfs(container_name):
+def start_seaweedfs(container_name, require_auth=False):
     ports = [(OBJECT_STORE_PORT, 8333)]
-    docker_run("chrislusf/seaweedfs:latest", container_name, "server", "-s3", ports=ports)
+    # Without credentials the S3 gateway accepts any request, signed or not.
+    env_vars = (
+        {"AWS_ACCESS_KEY_ID": OBJECT_STORE_ACCESS_KEY, "AWS_SECRET_ACCESS_KEY": OBJECT_STORE_SECRET_KEY}
+        if require_auth
+        else None
+    )
+    docker_run("chrislusf/seaweedfs:latest", container_name, "server", "-s3", ports=ports, env_vars=env_vars)
     wait_seaweedfs_ready()
 
 

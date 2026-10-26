@@ -419,6 +419,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         extra_dir=None,
         extra_dir_at_root=False,
         alt_name=None,
+        expires_in: int | None = None,
     ) -> str | None:
         """Return a URL a client can be redirected to in order to download `obj` directly from the backing store.
 
@@ -426,7 +427,8 @@ class ObjectStore(metaclass=abc.ABCMeta):
         ``enable_direct_download`` configuration flag. ``content_disposition`` and ``content_type``, when
         supported by the backend, are baked into the URL so the client receives the right download filename
         and content type. ``extra_dir``, ``extra_dir_at_root`` and ``alt_name`` address a file stored with
-        `obj` (e.g. a metadata file) as in ``get_filename``.
+        `obj` (e.g. a metadata file) as in ``get_filename``. ``expires_in`` is how long a presigned URL
+        lasts, in seconds; without it the store uses its own default.
         """
         raise NotImplementedError()
 
@@ -825,6 +827,7 @@ class BaseObjectStore(ObjectStore):
         extra_dir=None,
         extra_dir_at_root=False,
         alt_name=None,
+        expires_in: int | None = None,
     ) -> str | None:
         return self._invoke(
             "get_direct_download_url",
@@ -834,6 +837,7 @@ class BaseObjectStore(ObjectStore):
             extra_dir=extra_dir,
             extra_dir_at_root=extra_dir_at_root,
             alt_name=alt_name,
+            expires_in=expires_in,
         )
 
     def _get_direct_download_url(self, obj, content_disposition=None, content_type=None, **kwargs) -> str | None:

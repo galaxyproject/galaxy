@@ -37,6 +37,12 @@ StagedInputKind = Literal["dataset", "metadata_file"]
 # job leaving Job.non_ready_states ends them sooner.
 INPUT_URL_LIFETIME_SECONDS = 7 * 24 * 60 * 60
 
+# A presigned URL Galaxy redirects to outlives the job, as Galaxy cannot revoke it.
+# The runner follows it at once and comes back to the staging URL to resume or
+# retry, so it need only last one request, with a margin for clock skew between
+# Galaxy and the store.
+REDIRECT_URL_LIFETIME_SECONDS = 15 * 60
+
 
 @dataclass
 class StagedInput:
@@ -103,7 +109,11 @@ class JobObjectStagingManager:
         size = self._object_store.size(obj, **path_kwargs)
         if head:
             return StagedInput(size=size)
-        if redirect and (redirect_url := self._object_store.get_direct_download_url(obj, **path_kwargs)):
+        if redirect and (
+            redirect_url := self._object_store.get_direct_download_url(
+                obj, expires_in=REDIRECT_URL_LIFETIME_SECONDS, **path_kwargs
+            )
+        ):
             return StagedInput(size=size, redirect_url=redirect_url)
         if (stream := self._object_store.get_data_stream(obj, write_cache=False, **path_kwargs)) is not None:
             return StagedInput(size=size, stream=stream)
