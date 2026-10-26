@@ -13,6 +13,9 @@ _:  # global stuff
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip, .g-tooltip-d'
     tooltip_inner: '.tooltip-inner, .g-tooltip-d-inner'
+    tooltip_balloon_with_text:
+      type: xpath
+      selector: '//*[contains(concat(" ", normalize-space(@class), " "), " g-tooltip-d ")][contains(string(.), "${text}")]'
     left_panel: '#left'
     left_panel_drag: '.flex-panel.left .drag-handle'
     left_panel_collapse: '.collapse-button.left'
@@ -1749,6 +1752,7 @@ upload_activity:
     composite_type_options_visible: '#composite-type-selector .single-item-selector.multiselect--active [data-test-id="single-item-selector-option"]'
     composite_first_slot: '.composite-file-upload .composite-slot-row:nth-of-type(1)'
     start_button: '[data-test-id="start-upload"]'
+    start_button_enabled: '[data-test-id="start-upload"]:not([aria-disabled])'
     cancel_button:
       type: xpath
       selector: '//button[normalize-space() = "Cancel"]'
@@ -1762,6 +1766,7 @@ upload_activity:
     paste_links_row_deferred_checkbox: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"]'
     paste_links_row_deferred_label: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] + label'
     # Target-history selectors (TargetHistorySelector inside UploadMethodView)
+    target_history_banner: '.target-history-banner'
     target_history_change_link: '.target-history-banner .change-history-link'
     # Upload panel advanced mode switch
     advanced_mode_toggle_checkbox: '[data-test-id="upload-advanced-mode-toggle"]'
@@ -1789,11 +1794,12 @@ upload_activity:
     # Data-library selectors
     data_library_library_label: '[data-test-id="data-library-browser-library-label"][data-label="${label}"]'
     data_library_item_label: '[data-test-id="data-library-browser-item-label"][data-label="${label}"]'
-    data_library_select_all: '[data-test-id="data-library-select-all"] input[type="checkbox"]'
+    data_library_select_all: '.custom-control:has(> [data-test-id="data-library-select-all"])'
     data_library_item_checkbox:
       type: xpath
       selector: '//span[contains(@data-test-id, "data-library-browser-item-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'
     data_library_add_selected: '[data-test-id="data-library-add-selected"]'
+    data_library_add_selected_enabled: '[data-test-id="data-library-add-selected"]:not([aria-disabled])'
 
 upload_method_inline:
   selectors:

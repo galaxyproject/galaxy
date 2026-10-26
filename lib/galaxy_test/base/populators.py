@@ -3875,6 +3875,25 @@ class LibraryPopulator:
         )
         api_asserts.assert_status_code_is(response, 200)
 
+    def remove_library_dataset_restrictions(self, library_dataset_id: str) -> None:
+        using_requirement("admin")
+        response = self.galaxy_interactor.post(
+            f"libraries/datasets/{library_dataset_id}/permissions",
+            {"action": "remove_restrictions"},
+            admin=True,
+            json=True,
+        )
+        api_asserts.assert_status_code_is_ok(response)
+
+    def fetch_to_folder(self, folder_id: str, items: list[dict[str, Any]], history_id: str | None = None) -> Response:
+        """Fetch ``items`` into the library folder with encoded (``F``-prefixed) id ``folder_id``."""
+        destination = {"type": "library_folder", "library_folder_id": folder_id[1:]}
+        payload = {
+            "history_id": history_id or self.dataset_populator.new_history(),
+            "targets": [{"destination": destination, "items": items}],
+        }
+        return self.dataset_populator.fetch(payload)
+
     def user_email(self):
         # deprecated - use DatasetPopulator
         return self.dataset_populator.user_email()

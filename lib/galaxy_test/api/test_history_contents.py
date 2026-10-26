@@ -405,10 +405,7 @@ class TestHistoryContentsApi(ApiTestCase):
         combined_user_role_id = self.dataset_populator.create_role([user_id, different_user_id])["id"]
 
         ld = self.library_populator.new_library_dataset("test_inheritance_dataset")
-        remove_restrictions_response = self._post(
-            f"libraries/datasets/{ld['id']}/permissions", {"action": "remove_restrictions"}, admin=True, json=True
-        )
-        self._assert_status_code_is_ok(remove_restrictions_response)
+        self.library_populator.remove_library_dataset_restrictions(ld["id"])
         self.library_populator.set_access_permission(ld["parent_library_id"], combined_user_role_id)
 
         with self._different_user():
