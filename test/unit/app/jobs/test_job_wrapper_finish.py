@@ -14,6 +14,11 @@ from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.unittest import TestCase
 
 
+class FixedJobMetrics(job_metrics.JobMetrics):
+    def collect_properties(self, destination_id, job, job_directory):
+        return {"core": {"runtime_seconds": 1}}
+
+
 class TestJobWrapperFinish(TestCase, UsesTools):
     def setUp(self):
         self.setup_app()
@@ -53,8 +58,8 @@ class TestJobWrapperFinish(TestCase, UsesTools):
                 assert job_state == model.Job.states.OK
 
     def test_metrics_are_committed_with_final_job_state(self):
-        with patch.object(self.app.job_metrics, "collect_properties", return_value={"core": {"runtime_seconds": 1}}):
-            committed = self._finish_and_record_commits()
+        self.app.job_metrics = FixedJobMetrics()
+        committed = self._finish_and_record_commits()
 
         assert committed[-1] == (model.Job.states.OK, model.Dataset.states.OK, True)
         for job_state, _, has_metrics in committed:
