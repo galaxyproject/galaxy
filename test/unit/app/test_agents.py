@@ -34,6 +34,7 @@ from unittest.mock import (
 
 import pytest
 import yaml
+from markdown_it import MarkdownIt
 
 # Skip entire module if pydantic_ai is not installed
 pydantic_ai = pytest.importorskip("pydantic_ai")
@@ -134,6 +135,18 @@ def _stub_error_analysis_run(agent, captured_prompts: list[str]):
         return mock_result
 
     return mock.patch.object(agent, "_run_with_retry", side_effect=fake_run_with_retry)
+
+
+def _rendered_link_targets(text: str) -> list[str]:
+    """Every href/src the chat's markdown-it (default preset: no HTML, no linkify) would render."""
+    targets: list[str] = []
+    for token in MarkdownIt("js-default").parse(text):
+        for child in token.children or []:
+            if child.type == "link_open":
+                targets.append(str(child.attrGet("href")))
+            elif child.type == "image":
+                targets.append(str(child.attrGet("src")))
+    return targets
 
 
 class TestAgentUnitMocked:
@@ -1380,13 +1393,14 @@ class TestAgentUnitMocked:
 
         verified = agent._verify_response(response_data)
 
+        # Bare URLs aren't clickable in the chat (no linkify), so they stay as text.
         assert verified.summary == (
             f"Follow [the RNA-seq tutorial]({tutorial_url}) or this one. "
             "Browse https://training.galaxyproject.org/training-material/topics/transcriptomics/. "
-            "Also see ."
+            "Also see https://example.org/not-a-gtn-page."
         )
         assert verified.learning_path == "Then try proteomics"
-        assert verified.prerequisites == ["Galaxy basics ()"]
+        assert verified.prerequisites == ["Galaxy basics (http://169.254.169.254/latest/meta-data)"]
 
     @pytest.mark.asyncio
     async def test_router_handoff_carries_sources(self):
@@ -1426,9 +1440,54 @@ class TestAgentUnitMocked:
 
         verified = agent._verify_response(response_data)
 
-        assert "evil" not in verified.summary.lower()
-        assert verified.summary == "<> shouty relative <> <>"
+        assert verified.summary == (
+            "https://evil.example/x shouty relative https://evil.example/auto HTTPS://EVIL.EXAMPLE/AUTO"
+        )
+        assert _rendered_link_targets(verified.summary) == []
         assert verified.total_time == "2h; details"
+
+    @pytest.mark.parametrize(
+        "text,label",
+        [
+            ("[t][1]\n\n[1]: //evil.example/ref", "t"),
+            ("[t][]\n\n[t]: https://evil.example/", "t"),
+            ("[Shortcut]\n\n[shortcut]: https://evil.example/ 'title'", "Shortcut"),
+            ("[t][r]\n\n[r]:\n  https://evil.example/\n  'title on its own line'", "t"),
+            ("[t]( //evil.example/x )", "t"),
+            ('[t](//evil.example/x "title")', "t"),
+            ("[t](https://evil.example/x 'single')", "t"),
+            ("[t](https://evil.example/x (paren title))", "t"),
+            ("[t](<//evil.example/x y>)", "t"),
+            ("[t](\n//evil.example/x\n)", "t"),
+            ("[t](https://evil.example/a_(b))", "t"),
+            ("[a [b [c]] d](//evil.example/x)", "b"),
+            ("![alt text](https://evil.example/pixel.png)", "alt text"),
+            ("[](https://evil.example/empty)", ""),
+            ("[t](<https://evil.example/x>)", "t"),
+        ],
+    )
+    def test_gtn_strip_unlinks_every_markdown_link_form(self, text, label):
+        agent = self._gtn_agent_with_retrieved([self._RNASEQ_RESULT])
+        allowed = agent._allowed_urls()
+
+        stripped = agent._strip_unverified_urls(text, allowed)
+
+        assert _rendered_link_targets(stripped) == []
+        assert label in stripped
+
+    def test_gtn_strip_keeps_allowed_inline_and_reference_links(self):
+        agent = self._gtn_agent_with_retrieved([self._RNASEQ_RESULT])
+        tutorial_url = self._RNASEQ_TUTORIAL["url"]
+        text = (
+            f'[inline]({tutorial_url} "RNA-seq") and [ref][rna] but not [bad][evil].\n\n'
+            f"[rna]: {tutorial_url}\n"
+            "[evil]: https://evil.example/\n"
+        )
+
+        stripped = agent._strip_unverified_urls(text, agent._allowed_urls())
+
+        assert _rendered_link_targets(stripped) == [tutorial_url, tutorial_url]
+        assert "but not bad." in stripped
 
     @pytest.mark.asyncio
     async def test_gtn_text_fallback_unlinks_unverified_urls(self):
