@@ -123,6 +123,8 @@ export const useToolStore = defineStore("toolStore", () => {
     const panels = ref<Record<string, Panel>>({});
     const searchWorker = ref<Worker | undefined>(undefined);
     const toolTagsLoaded = ref(false);
+    /** Whether `toolsById` contains the full tool list, not just individually fetched tools. */
+    const allToolsLoaded = ref(false);
     const toolsById = shallowRef<Record<string, Tool>>({});
     const toolResults = ref<Record<string, string[]>>({});
     const toolSections = ref<Record<string, Record<string, ToolPanelItem>>>({});
@@ -313,8 +315,9 @@ export const useToolStore = defineStore("toolStore", () => {
                 }
             }
 
-            // Fetch all tools by IDs if not already fetched.
-            if (Object.keys(toolsById.value).length === 0) {
+            // `toolsById` may already contain some tools fetched individually, so we check
+            // `allToolsLoaded` to determine if we need to fetch the full list.
+            if (!allToolsLoaded.value) {
                 const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { in_panel: false } });
                 saveAllTools(data as Tool[]);
             }
@@ -407,6 +410,7 @@ export const useToolStore = defineStore("toolStore", () => {
             },
             {} as Record<string, Tool>,
         );
+        allToolsLoaded.value = true;
         // The bulk /api/tools payload doesn't carry tool_tags; reset the loaded
         // flag so the next mount of the My Tools panel re-fetches the mapping.
         toolTagsLoaded.value = false;
