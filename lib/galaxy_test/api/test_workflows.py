@@ -6529,17 +6529,50 @@ steps:
                 inputs={"0": {"src": "hdca", "id": copy["id"]}},
                 request={"use_cached_job": True},
             ).json()["id"]
-            first_job_id = self._identifier_single_job_id(first_invocation_id)
+            first_job_id = self._tool_job_id(first_invocation_id, "identifier_single")
             job = self.dataset_populator.get_job_details(
-                self._identifier_single_job_id(invocation_id), full=True
+                self._tool_job_id(invocation_id, "identifier_single"), full=True
             ).json()
             assert job["copied_from_job_id"] == first_job_id
 
-    def _identifier_single_job_id(self, invocation_id):
+    @skip_without_tool("cat1")
+    def test_workflow_rerun_hidden_step_with_use_cached_job_after_input_rename(self, history_id):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  cat:
+    tool_id: cat1
+    in:
+      input1: input1
+    outputs:
+      out_file1:
+        hide: true
+"""
+        )
+        hda = self.dataset_populator.new_dataset(history_id, content="a\n", wait=True)
+        inputs = {"0": {"src": "hda", "id": hda["id"]}}
+        first_invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+            workflow_id, history_id=history_id, inputs=inputs
+        ).json()["id"]
+        self.dataset_populator.rename_dataset(hda["id"])
+        invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+            workflow_id, history_id=history_id, inputs=inputs, request={"use_cached_job": True}
+        ).json()["id"]
+        job = self.dataset_populator.get_job_details(self._tool_job_id(invocation_id, "cat1"), full=True).json()
+        assert job["copied_from_job_id"] == self._tool_job_id(first_invocation_id, "cat1")
+        output = self.dataset_populator.get_history_dataset_details(
+            history_id, dataset_id=job["outputs"]["out_file1"]["id"]
+        )
+        assert not output["visible"]
+
+    def _tool_job_id(self, invocation_id, tool_id):
         jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
-        identifier_jobs = [j for j in jobs if j["tool_id"] == "identifier_single"]
-        assert len(identifier_jobs) == 1
-        return identifier_jobs[0]["id"]
+        tool_jobs = [j for j in jobs if j["tool_id"] == tool_id]
+        assert len(tool_jobs) == 1
+        return tool_jobs[0]["id"]
 
     @skip_without_tool("cat1")
     def test_workflow_rerun_with_use_cached_job(self):
