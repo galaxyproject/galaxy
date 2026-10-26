@@ -140,6 +140,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         """ """
         super().__init__(app)
         self.workflow_manager = app.workflow_manager
+        self.history_manager = app.history_manager
 
     def index_query(
         self, trans: ProvidesUserContext, payload: PageIndexQueryPayload, include_total_count: bool = False
@@ -431,7 +432,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(
                 "Workflow extraction is only available for history-backed pages (notebooks)."
             )
-        history = self.app.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
+        history = self.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
         return page, history
 
     def list_revisions(self, trans: ProvidesUserContext, page, sort_desc: bool = False):
