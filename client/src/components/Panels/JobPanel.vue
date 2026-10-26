@@ -51,6 +51,9 @@ const filterText = ref("");
 const showAdvanced = ref(false);
 const loading = ref(false);
 
+/** Whether upload jobs are fetched */
+const includeUploads = ref(false);
+
 /** Total number of jobs matching the current filters. */
 const totalJobCount = ref<number | undefined>(undefined);
 
@@ -58,7 +61,8 @@ const totalJobCount = ref<number | undefined>(undefined);
  * requests the first page again with the new filters. Name mode changes what the text matches. */
 const filterKey = computed(() => {
     const text = filterText.value.trim();
-    return text ? `${showToolNamesInJobPanel.value ? "name" : "id"}:${text}` : "";
+    const filterPart = text ? `${showToolNamesInJobPanel.value ? "name" : "id"}:${text}` : "";
+    return `${includeUploads.value}:${filterPart}`;
 });
 
 /** IDs of jobs fetched for the *current* filters. `storedJobs` is a global, id-keyed
@@ -202,7 +206,7 @@ watch(storedJobIds, (ids) => {
     }
     for (const id of ids) {
         const job = storedJobs.value[id];
-        if (job && !HIDDEN_TOOL_IDS.includes(job.tool_id) && !belongsToAnotherUser(job)) {
+        if (job && (includeUploads.value || !HIDDEN_TOOL_IDS.includes(job.tool_id)) && !belongsToAnotherUser(job)) {
             addCurrentJob(id);
         }
     }
@@ -211,7 +215,7 @@ watch(storedJobIds, (ids) => {
 function buildFetchExtraProps(userId: string, includeTotalCount: boolean): JobFetchExtraParams {
     return {
         user_id: userId,
-        exclude_tool_ids: HIDDEN_TOOL_IDS,
+        exclude_tool_ids: includeUploads.value ? undefined : HIDDEN_TOOL_IDS,
         ...jobsFilterParams(filterText.value, showToolNamesInJobPanel.value).params,
         include_total_count: includeTotalCount,
     };
@@ -296,16 +300,26 @@ const currentItemId = computed(() => {
 <template>
     <ActivityPanel title="Jobs">
         <template v-slot:header-buttons>
-            <GCheckbox
-                v-model="showToolNamesInJobPanel"
-                v-g-tooltip.hover
-                data-test-id="job-panel-name-mode-toggle"
-                size="small"
-                switch
-                class="mx-2"
-                title="Show/Search tool names instead of IDs">
-                <span class="small unselectable">Tool Names</span>
-            </GCheckbox>
+            <div class="job-panel-header-toggles">
+                <GCheckbox
+                    v-model="showToolNamesInJobPanel"
+                    v-g-tooltip.hover
+                    data-test-id="job-panel-name-mode-toggle"
+                    size="small"
+                    switch
+                    title="Show/Search tool names instead of IDs">
+                    <span class="text-nowrap small unselectable">Tool Names</span>
+                </GCheckbox>
+                <GCheckbox
+                    v-model="includeUploads"
+                    v-g-tooltip.hover
+                    data-test-id="job-panel-include-uploads-toggle"
+                    size="small"
+                    switch
+                    title="Include upload jobs in this list">
+                    <span class="small unselectable">Uploads</span>
+                </GCheckbox>
+            </div>
         </template>
 
         <template v-slot:header>
@@ -338,3 +352,13 @@ const currentItemId = computed(() => {
         </ScrollList>
     </ActivityPanel>
 </template>
+
+<style scoped lang="scss">
+.job-panel-header-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+    justify-content: flex-end;
+}
+</style>

@@ -241,6 +241,28 @@ describe("JobPanel", () => {
         expect(wrapper.text()).toContain("All jobs loaded");
     });
 
+    it("includes upload jobs once the Include Uploads toggle is switched on", async () => {
+        server.use(
+            http.get("/api/jobs", ({ request, response }) => {
+                const excludesUploads = new URL(request.url).searchParams.getAll("exclude_tool_ids").length > 0;
+                const jobs = excludesUploads ? [] : [buildJob({ id: "uploadJob", tool_id: "__DATA_FETCH__" })];
+                return response(200).json(jobs, { headers: { total_matches: `${jobs.length}` } });
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+        await scrollOnce();
+
+        expect(wrapper.find("#g-card-job-uploadJob").exists()).toBe(false);
+
+        await wrapper.find('[data-test-id="job-panel-include-uploads-toggle"]').setValue(true);
+        await flushPromises();
+        await scrollOnce();
+
+        expect(wrapper.find("#g-card-job-uploadJob").exists()).toBe(true);
+    });
+
     it("loads the tool store to search and title jobs by tool name", async () => {
         const requests: URLSearchParams[] = [];
         server.use(
