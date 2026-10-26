@@ -17,7 +17,7 @@ import {
     faPlay,
     faSitemap,
     faTable,
-    faTrain,
+    faTasks,
     faUpload,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
@@ -83,15 +83,15 @@ export const defaultActivities = [
     },
     {
         anonymous: false,
-        description: "Displays all job runs.",
-        icon: faTrain,
+        description: "Displays your jobs.",
+        icon: faTasks,
         id: "jobs",
         mutable: false,
         optional: true,
         panel: true,
         title: "Jobs",
         to: null,
-        tooltip: "Show all job runs",
+        tooltip: "Show your jobs",
         visible: true,
     },
     {
