@@ -170,6 +170,10 @@ class TestJobsApi(ApiTestCase, TestsTools):
         assert jobs == []
         assert total_matches == 0
 
+        no_count_response = self._get("jobs", data={"history_id": history_id, "limit": 1})
+        self._assert_status_code_is(no_count_response, 200)
+        assert "total_matches" not in no_count_response.headers
+
     @requires_new_history
     def test_index_job_ids(self, history_id):
         for _ in range(3):

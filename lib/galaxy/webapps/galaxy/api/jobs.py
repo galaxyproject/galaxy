@@ -351,7 +351,8 @@ class FastAPIJobs:
             offset=offset,
         )
         jobs, total_matches = self.service.index(trans, payload, include_total_count=include_total_count)
-        response.headers["total_matches"] = str(total_matches)
+        if total_matches is not None:
+            response.headers["total_matches"] = str(total_matches)
         # Ignoring type checking here because `service.index` returns plain dicts, not response models.
         return jobs  # type: ignore[return-value]
 
