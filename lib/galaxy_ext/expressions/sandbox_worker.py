@@ -19,6 +19,17 @@ import sys
 MAX_MESSAGE_BYTES = 16 * 1024 * 1024
 STACK_LIMIT_BYTES = 1024 * 1024
 
+# Runs the program with an indirect eval, so it keeps its own strict global-level scope, and turns
+# what it throws into ``String(e)``: the error without the stack QuickJS appends to JSException.
+CATCH_THROWN = """(function (program) {
+    try {
+        var value = (0, eval)(program);
+        return typeof value === "string" ? value : undefined;
+    } catch (e) {
+        return {thrown: String(e)};
+    }
+})(%s)"""
+
 
 class ProgramError(Exception):
     """The program raised or produced a result the protocol cannot carry."""
@@ -36,9 +47,13 @@ def run_program(program: str, timeout: float, memory_limit: int) -> str:
     ctx.set_time_limit(timeout)
     ctx.set_max_stack_size(STACK_LIMIT_BYTES)
     try:
-        raw = ctx.eval(program)
+        raw = ctx.eval(CATCH_THROWN % json.dumps(program))
     except quickjs.JSException as e:
-        raise ProgramError(str(e)) from e
+        # The program cannot catch QuickJS interrupting it at the time limit. That error's message is
+        # one line of QuickJS's own, followed by the stack.
+        raise ProgramError(str(e).partition("\n")[0]) from e
+    if isinstance(raw, quickjs.Object):
+        raise ProgramError(json.loads(raw.json())["thrown"])
     if not isinstance(raw, str):
         # JSON.stringify(undefined) yields JS ``undefined``; treat as null.
         return "null"
