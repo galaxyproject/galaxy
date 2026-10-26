@@ -297,8 +297,12 @@ describe("ChatMessageCell", () => {
                 await wrapper.find(".links-toggle").trigger("click");
                 expect(wrapper.find(".links-popover").exists()).toBe(true);
 
-                await wrapper.find(".links-toggle").trigger("keydown", { key: "Escape" });
+                const link = wrapper.find(".reference-link");
+                (link.element as HTMLElement).focus();
+                await link.trigger("keydown", { key: "Escape" });
                 expect(wrapper.find(".links-popover").exists()).toBe(false);
+                // focus would otherwise fall to <body> with the link gone
+                expect(document.activeElement).toBe(wrapper.find(".links-toggle").element);
                 wrapper.unmount();
             });
 

@@ -60,10 +60,17 @@ const isClarification = computed(() => props.message.agentType === "clarificatio
 const clarificationOptions = computed<string[]>(() => props.message.agentResponse?.metadata?.options ?? []);
 const linksExpanded = ref(false);
 const referenceLinks = ref<HTMLElement | null>(null);
+const linksToggle = ref<HTMLButtonElement | null>(null);
 
 onClickOutside(referenceLinks, () => {
     linksExpanded.value = false;
 });
+
+function closeLinksFromKeyboard() {
+    linksExpanded.value = false;
+    // The focused link is about to unmount; keep focus on the disclosure.
+    linksToggle.value?.focus();
+}
 
 // Only sources the agent verified against its search results, never URLs
 // scraped from model-written text. The scheme check is defense in depth: the
@@ -159,8 +166,9 @@ const sources = computed(() =>
                                 v-if="sources.length"
                                 ref="referenceLinks"
                                 class="reference-links"
-                                @keydown.esc="linksExpanded = false">
+                                @keydown.esc="closeLinksFromKeyboard">
                                 <button
+                                    ref="linksToggle"
                                     class="links-toggle"
                                     :aria-expanded="linksExpanded ? 'true' : 'false'"
                                     title="References"
