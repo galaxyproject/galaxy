@@ -259,19 +259,27 @@ async function loadJobs(offset: number, limit: number) {
         return { items: [], total: 0 };
     }
     const requestGeneration = filterGeneration;
-    if (showToolNamesInJobPanel.value) {
-        await loadTools();
-    }
-    // Only the first page needs the count; it doesn't change page to page under the same filters.
-    const extraProps = buildFetchExtraProps(currentUser.value.id, offset === 0);
+    const userId = currentUser.value.id;
 
+    // Set before anything that can throw (loadTools, buildFetchExtraProps), so a failure here
+    // still goes through the same generation-aware clearing below instead of leaving a stale
+    // in-flight request from an earlier generation as the only thing that could have cleared it.
     loading.value = true;
     let data: JobBaseModel[];
     let totalMatches: number;
     try {
+        if (showToolNamesInJobPanel.value) {
+            await loadTools();
+        }
+        // Only the first page needs the count; it doesn't change page to page under the same filters.
+        const extraProps = buildFetchExtraProps(userId, offset === 0);
         [data, totalMatches] = await fetchJobs(offset, limit, extraProps, "create_time");
     } finally {
-        loading.value = false;
+        // A discarded page's own cleanup must not clear the spinner out from under a newer,
+        // still-in-flight request for the current filter.
+        if (requestGeneration === filterGeneration) {
+            loading.value = false;
+        }
     }
     if (requestGeneration !== filterGeneration) {
         // Filters changed while loading; this page belongs to the discarded list.

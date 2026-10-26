@@ -384,6 +384,78 @@ describe("JobPanel", () => {
         expect(wrapper.find("#g-card-job-staleJob").exists()).toBe(false);
     });
 
+    it("keeps the spinner on for a still-in-flight request even if an older, discarded one resolves first", async () => {
+        let resolveOld: (() => void) | undefined;
+        let resolveNew: (() => void) | undefined;
+        server.use(
+            http.get("/api/jobs", async ({ request, response }) => {
+                const isNewFilter = new URL(request.url).searchParams.get("search") === "tool:cat1";
+                await new Promise<void>((resolve) => {
+                    if (isNewFilter) {
+                        resolveNew = resolve;
+                    } else {
+                        resolveOld = resolve;
+                    }
+                });
+                return response(200).json([], { headers: { total_matches: "0" } });
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+        loadMore?.();
+        await flushPromises();
+        // The initial (soon-to-be-discarded) fetch is now in flight.
+
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "tool_id:cat1");
+        await flushPromises();
+        loadMore?.(); // now bound to the remounted ScrollList for the new filter
+        await flushPromises();
+        // The new filter's own fetch is now also in flight; both requests are pending.
+
+        expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(true);
+
+        resolveOld?.();
+        await flushPromises();
+
+        // The old, discarded request resolving must not clear the spinner for the still-pending new one.
+        expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(true);
+
+        resolveNew?.();
+        await flushPromises();
+
+        expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(false);
+    });
+
+    it("doesn't leave the spinner stuck if typing an invalid filter fails before a prior request resolves", async () => {
+        let resolveOld: (() => void) | undefined;
+        server.use(
+            http.get("/api/jobs", async ({ response }) => {
+                await new Promise<void>((resolve) => {
+                    resolveOld = resolve;
+                });
+                return response(200).json([], { headers: { total_matches: "0" } });
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+        loadMore?.();
+        await flushPromises();
+
+        expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(true);
+
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "xx:ss");
+        await flushPromises();
+        loadMore?.(); // now bound to the remounted ScrollList for the invalid filter
+        await flushPromises();
+
+        resolveOld?.();
+        await flushPromises();
+
+        expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(false);
+    });
+
     it("keeps showing more jobs once scrolling has loaded past jobStore's cache cap", async () => {
         // Pages through a pool larger than MAX_CACHED_JOBS, so later pages' `updateJob` calls
         // would evict earlier pages' jobs from the store if the panel didn't retain them
