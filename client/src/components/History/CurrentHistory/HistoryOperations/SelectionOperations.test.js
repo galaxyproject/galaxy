@@ -5,6 +5,7 @@ import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
 import { setupMockConfig } from "tests/jest/mockConfig";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
 
 import SelectionOperations from "./SelectionOperations.vue";
 
@@ -32,7 +33,7 @@ const getHiddenSelection = () => new Map([["FAKE_ID", { visible: false }]]);
 const getDeletedSelection = () => new Map([["FAKE_ID", { deleted: true }]]);
 const getActiveSelection = () => new Map([["FAKE_ID", { deleted: false }]]);
 
-async function mountSelectionOperationsWrapper(config) {
+async function mountSelectionOperationsWrapper(config, propsData = {}) {
     setupMockConfig(config);
 
     const pinia = createPinia();
@@ -45,9 +46,14 @@ async function mountSelectionOperationsWrapper(config) {
             isQuerySelection: false,
             totalItemsInQuery: 5,
             isMultiViewItem: false,
+            ...propsData,
         },
         localVue,
         pinia,
+        mocks: {
+            $route: { path: "/" },
+            $router: { push: jest.fn() },
+        },
     });
     await flushPromises();
     return wrapper;
@@ -319,6 +325,23 @@ describe("History Selection Operations", () => {
                 expect(errorEvent).toHaveProperty("result");
                 expect(errorEvent.result).toEqual(BULK_ERROR_RESPONSE);
             });
+        });
+    });
+
+    describe("Collection Building", () => {
+        const selection = new Map([
+            ["dataset-1", { id: "1", history_content_type: "dataset" }],
+            ["dataset-2", { id: "2", history_content_type: "dataset" }],
+        ]);
+
+        beforeEach(async () => {
+            wrapper = await mountSelectionOperationsWrapper(TASKS_CONFIG, { contentSelection: selection });
+        });
+
+        it("should hand the selection to the list wizard", async () => {
+            wrapper.vm.listWizard(false);
+            expect(useCollectionBuilderItemSelection().selectedItems).toEqual(Array.from(selection.values()));
+            expect(wrapper.vm.$router.push).toHaveBeenCalledWith("/collection/new_list?advanced=false");
         });
     });
 
