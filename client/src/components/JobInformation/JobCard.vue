@@ -11,6 +11,7 @@ import type { CardAction } from "@/components/Common/GCard.types";
 import { useRerunnableTool } from "@/composables/rerunnableTool";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useToolStore } from "@/stores/toolStore";
+import { getShortToolId } from "@/utils/tool";
 
 import GCard from "@/components/Common/GCard.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -46,10 +47,11 @@ const actions = computed(() => {
 });
 
 const cardTitle = computed(() => {
+    const shortId = getShortToolId(props.job.tool_id);
     if (props.showToolName) {
-        return toolStore.getToolNameById(props.job.tool_id, props.job.tool_id);
+        return toolStore.getToolNameById(props.job.tool_id, shortId);
     }
-    return props.job.tool_id;
+    return shortId;
 });
 
 function cardClicked(job: JobBaseModel) {
