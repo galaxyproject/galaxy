@@ -147,7 +147,7 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
 
     @selenium_test
     @managed_history
-    def test_hide_and_unhide_items(self):
+    def test_hide_and_unhide_items(self) -> None:
         history_id = self.current_history_id()
         for content in ("1\n", "2\n", "3\n"):
             self.dataset_populator.new_dataset(history_id, content=content, wait=True)

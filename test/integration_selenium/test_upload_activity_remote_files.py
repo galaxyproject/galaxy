@@ -12,7 +12,7 @@ from .framework import (
 class TestUploadActivityRemoteFiles(PosixFileSourceSetup, SeleniumIntegrationTestCase, UsesUploadActivity):
     run_as_admin = True
 
-    def setup_with_driver(self):
+    def setup_with_driver(self) -> None:
         super().setup_with_driver()
         self.admin_login()
 
@@ -29,7 +29,7 @@ class TestUploadActivityRemoteFiles(PosixFileSourceSetup, SeleniumIntegrationTes
 
     @selenium_test
     @managed_history
-    def test_upload_from_remote_file_source_folder(self):
+    def test_upload_from_remote_file_source_folder(self) -> None:
         item = self.upload_context("remote-files").stage_remote_file("Posix", "b", path="subdir1")
         self.screenshot("upload_remote_files_subfolder_staged")
         item.start()
@@ -38,7 +38,7 @@ class TestUploadActivityRemoteFiles(PosixFileSourceSetup, SeleniumIntegrationTes
         assert self.dataset_populator.get_history_dataset_content(self.current_history_id(), hid=1) == "b\n"
 
     @selenium_test
-    def test_long_remote_file_name_stays_in_its_column(self):
+    def test_long_remote_file_name_stays_in_its_column(self) -> None:
         long_name = "m84091_230808_224522_s2.hifi_reads.bc2001.default_long_unbroken_run_name" * 2
         with open(os.path.join(self.root_dir, long_name), "w") as f:
             f.write("long\n")
