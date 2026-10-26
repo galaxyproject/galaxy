@@ -32,7 +32,7 @@ const userStore = useUserStore();
 const { currentUser, showToolNamesInJobPanel } = storeToRefs(userStore);
 
 const jobStore = useJobStore();
-const { sortedStoredJobs } = storeToRefs(jobStore);
+const { storedJobs } = storeToRefs(jobStore);
 
 const toolStore = useToolStore();
 
@@ -70,7 +70,7 @@ const filterKey = computed(() => {
     return text ? `${showToolNamesInJobPanel.value ? "name" : "id"}:${text}` : "";
 });
 
-/** IDs of jobs fetched for the *current* filters. `sortedStoredJobs` is a global, id-keyed
+/** IDs of jobs fetched for the *current* filters. `storedJobs` is a global, id-keyed
  * cache shared across the whole app, so it can hold jobs from a previous filter. This set
  * scopes the list back down to just what matches the current filters. */
 const currentJobIds = ref(new Set<string>());
@@ -136,10 +136,13 @@ const currentJobMatcher = computed<JobMatcher>(() => {
     }
 });
 
-/** The jobs matching the current filters, kept up to date reactively as the store updates
+/** The sorted jobs matching the current filters, kept up to date reactively as the store updates
  * (e.g. job state changes polled elsewhere), same as `sortedStoredInvocations` for invocations. */
 const currentSortedJobs = computed(() => {
-    return sortedStoredJobs.value.filter((job) => currentJobIds.value.has(job.id) && currentJobMatcher.value(job));
+    return [...currentJobIds.value]
+        .map((id) => storedJobs.value[id])
+        .filter((job): job is ShowFullJobResponse => job !== undefined && currentJobMatcher.value(job))
+        .sort((a, b) => new Date(b.update_time).getTime() - new Date(a.update_time).getTime());
 });
 
 /** For non-terminal (and non-paused) jobs that are currently displayed, so they can be polled for updates. */
@@ -185,15 +188,19 @@ function belongsToAnotherUser(job: ShowFullJobResponse): boolean {
     return false;
 }
 
+/** The IDs of all jobs currently stored in the job store. */
+const storedJobIds = computed(() => Object.keys(storedJobs.value));
+
 // Ensure any jobs added to the store while no filter is active are included in `currentJobIds`
 // (these would be jobs not already included in the paginated set; think a job submitted while the panel is open)
-watch(sortedStoredJobs, (jobs) => {
+watch(storedJobIds, (ids) => {
     if (filterText.value.trim()) {
         return;
     }
-    for (const job of jobs) {
-        if (!HIDDEN_TOOL_IDS.includes(job.tool_id) && !belongsToAnotherUser(job)) {
-            addCurrentJob(job.id);
+    for (const id of ids) {
+        const job = storedJobs.value[id];
+        if (job && !HIDDEN_TOOL_IDS.includes(job.tool_id) && !belongsToAnotherUser(job)) {
+            addCurrentJob(id);
         }
     }
 });
