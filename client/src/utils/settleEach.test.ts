@@ -1,16 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { describeFailures, settleEach } from "./settleEach";
 
 describe("settleEach", () => {
     it("runs every item in order and continues past failures", async () => {
         const seen: number[] = [];
-        const operation = vi.fn(async (n: number) => {
+        const operation = async (n: number) => {
             seen.push(n);
             if (n === 2) {
                 throw new Error("boom");
             }
-        });
+        };
         const failures = await settleEach([1, 2, 3], operation);
         expect(seen).toEqual([1, 2, 3]);
         expect(failures).toEqual([{ item: 2, error: "boom" }]);

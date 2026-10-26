@@ -134,7 +134,9 @@ class TestWorkflowSharing(SeleniumTestCase, UsesWorkflowAssertions):
         self.logout_if_needed()
 
         self.register(self._get_random_email())
-        owner_populator.share_with_user(workflow_id, self.get_user_id())
+        recipient_id = self.get_user_id()
+        assert recipient_id
+        owner_populator.share_with_user(workflow_id, recipient_id)
         return workflow_id
 
     def setup_two_users_with_one_shared_workflow(self, screenshot=False, share_by_id=False):
