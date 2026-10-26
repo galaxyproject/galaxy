@@ -35,6 +35,7 @@ export const NON_TERMINAL_STATES = [
     "new",
     "queued",
     "running",
+    "finishing",
     "waiting",
     "paused",
     "resubmitted",
