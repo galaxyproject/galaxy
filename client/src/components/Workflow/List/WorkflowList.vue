@@ -259,7 +259,7 @@ async function onBulkDelete() {
 
     const confirmed = await confirm(
         `${hasPublished ? "Some of the selected workflows are published and will be removed from public view. " : ""}
-            Are you sure you want to delete ${totalSelected} workflows?`,
+            Are you sure you want to delete ${totalSelected} ${pluralize(totalSelected, "workflow")}?`,
         {
             title: "Delete workflows",
             okText: "Delete workflows",
@@ -284,7 +284,7 @@ async function onBulkDelete() {
                 );
             }
 
-            Toast.success(`Deleted ${totalSelected} workflows.`);
+            Toast.success(`Deleted ${totalSelected} ${pluralize(totalSelected, "workflow")}.`);
 
             resetSelection();
         } catch {
@@ -302,10 +302,13 @@ async function onBulkDelete() {
 async function onBulkRestore() {
     const totalSelected = selectedWorkflowIds.value.length;
 
-    const confirmed = await confirm(`Are you sure you want to restore ${totalSelected} workflows?`, {
-        okText: "Restore workflows",
-        okIcon: faTrashRestore,
-    });
+    const confirmed = await confirm(
+        `Are you sure you want to restore ${totalSelected} ${pluralize(totalSelected, "workflow")}?`,
+        {
+            okText: "Restore workflows",
+            okIcon: faTrashRestore,
+        },
+    );
 
     if (confirmed) {
         const tmpSelected = [...selectedWorkflowIds.value];
@@ -323,7 +326,7 @@ async function onBulkRestore() {
                 );
             }
 
-            Toast.success(`Restored ${totalSelected} workflows.`);
+            Toast.success(`Restored ${totalSelected} ${pluralize(totalSelected, "workflow")}.`);
 
             resetSelection();
         } catch {
@@ -416,7 +419,7 @@ async function onBulkTagsAdd(tags: string[]) {
             );
         }
 
-        Toast.success(`Added tag(s) to ${totalSelected} workflows.`);
+        Toast.success(`Added tag(s) to ${totalSelected} ${pluralize(totalSelected, "workflow")}.`);
     } catch (e) {
         Toast.error(`Failed to add tag(s) to some workflows. ${e}`);
     } finally {

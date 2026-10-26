@@ -199,7 +199,9 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         self.app = app
         self.dynamic_tool_manager = dynamic_tool_manager
 
-    def unshare_with(self, item: StoredWorkflow, user: model.User, flush: bool = True):
+    def unshare_with(
+        self, item: StoredWorkflow, user: model.User, flush: bool = True
+    ) -> model.StoredWorkflowUserShareAssociation:
         """Delete a user share along with that user's tool panel bookmark of the workflow."""
         user_share_assoc = super().unshare_with(item, user, flush=False)
         menu_entries = self.session().scalars(

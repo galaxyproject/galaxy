@@ -353,7 +353,7 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
 
     const confirmed = await confirm(
         `${hasPublished ? "Some of the selected histories are published and will be removed from public view. " : ""}
-            Are you sure you want to ${purge ? "purge" : "delete"} ${totalSelected} histories?`,
+            Are you sure you want to ${purge ? "purge" : "delete"} ${totalSelected} ${pluralize(totalSelected, "history", "histories")}?`,
         {
             title: purge ? "Purge histories" : "Delete histories",
             okText: purge ? "Purge histories" : "Delete histories",
@@ -383,7 +383,9 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
                 );
             }
 
-            Toast.success(`${purge ? "Purged" : "Deleted"} ${totalSelected} histories.`);
+            Toast.success(
+                `${purge ? "Purged" : "Deleted"} ${totalSelected} ${pluralize(totalSelected, "history", "histories")}.`,
+            );
 
             resetSelection();
         } catch {
@@ -404,11 +406,14 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
 async function onBulkRestore() {
     const totalSelected = selectedHistories.value.length;
 
-    const confirmed = await confirm(`Are you sure you want to restore ${totalSelected} histories?`, {
-        title: "Restore histories",
-        okText: "Restore histories",
-        okIcon: faTrashRestore,
-    });
+    const confirmed = await confirm(
+        `Are you sure you want to restore ${totalSelected} ${pluralize(totalSelected, "history", "histories")}?`,
+        {
+            title: "Restore histories",
+            okText: "Restore histories",
+            okIcon: faTrashRestore,
+        },
+    );
 
     if (confirmed) {
         const tmpSelected = [...selectedHistories.value];
@@ -426,7 +431,7 @@ async function onBulkRestore() {
                 );
             }
 
-            Toast.success(`Restored ${totalSelected} histories.`);
+            Toast.success(`Restored ${totalSelected} ${pluralize(totalSelected, "history", "histories")}.`);
 
             resetSelection();
         } catch {
@@ -516,7 +521,7 @@ async function onBulkTagsAdd(tags: string[]) {
             );
         }
 
-        Toast.success(`Added tag(s) to ${totalSelected} histories.`);
+        Toast.success(`Added tag(s) to ${totalSelected} ${pluralize(totalSelected, "history", "histories")}.`);
     } catch (e) {
         Toast.error(`Failed to add tag(s) to some histories. ${e}`);
     } finally {

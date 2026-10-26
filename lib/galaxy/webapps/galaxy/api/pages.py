@@ -353,7 +353,7 @@ class FastAPIPages:
         self,
         id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> Response:
         """Removes the current user's own share of this item. Other users' shares are left unchanged."""
         self.service.shareable_service.unshare_with_me(trans, id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
