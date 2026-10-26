@@ -46,6 +46,7 @@ from pydantic_ai.messages import (
     ModelResponse,
     SystemPromptPart,
     TextPart,
+    ToolCallPart,
     UserPromptPart,
 )
 from pydantic_ai.models.function import FunctionModel
@@ -1450,6 +1451,110 @@ class TestAgentUnitMocked:
 
         assert response.metadata["method"] == "text_fallback"
         assert response.content == "See this tutorial."
+
+    _GALAXY_101_RESULT = SearchResult(
+        id=3,
+        topic="introduction",
+        tutorial="galaxy-intro-101",
+        title="Galaxy 101",
+        url="https://training.galaxyproject.org/training-material/topics/introduction/tutorials/galaxy-intro-101/tutorial.html",
+        snippet="Galaxy basics",
+        score=1.0,
+        difficulty="Introductory",
+        hands_on=True,
+        time_estimation="1h",
+    )
+
+    def _gtn_agent_with_db(self):
+        """A GTN agent on a structured-output model, backed by a mocked GTN database
+        that knows the RNA-seq tutorial and whose free-text search returns Galaxy 101."""
+        self.mock_config.ai_model = "gpt-4o"
+        self.mock_config.inference_services = {"default": {"structured_output_override": True}}
+        db = MagicMock()
+        db.search.return_value = [self._GALAXY_101_RESULT]
+        db.search_faqs.return_value = []
+        db.get_topics.return_value = ["transcriptomics", "introduction"]
+        db.get_tutorial_content.return_value = "Step 1: upload reads..."
+        db.get_tutorial.side_effect = lambda topic, tutorial: (
+            self._RNASEQ_RESULT if (topic, tutorial) == ("transcriptomics", "ref-based") else None
+        )
+        db.get_faq.return_value = None
+        with patch("galaxy.agents.gtn_training.GTNSearchDB", return_value=db):
+            return GTNTrainingAgent(self.deps), db
+
+    @pytest.mark.asyncio
+    async def test_gtn_followup_keeps_tutorial_read_with_get_tutorial_content(self):
+        # On a follow-up the model reads a tutorial from the previous answer by its
+        # slugs without searching again; the answer must survive verification.
+        agent, db = self._gtn_agent_with_db()
+        summary = f"Step 1 of [the ref-based tutorial]({self._RNASEQ_TUTORIAL['url']}) uploads reads."
+
+        def model(messages, info):
+            if len(messages) == 1:
+                return ModelResponse(
+                    parts=[ToolCallPart("get_tutorial_content", {"topic": "transcriptomics", "tutorial": "ref-based"})]
+                )
+            return ModelResponse(
+                parts=[
+                    ToolCallPart("final_result", {"tutorials": [self._RNASEQ_TUTORIAL], "faqs": [], "summary": summary})
+                ]
+            )
+
+        with agent.agent.override(model=FunctionModel(model)):
+            response = await agent.process("tell me more about step 1 of that one")
+
+        assert response.metadata["method"] == "structured"
+        assert response.content.startswith(summary)
+        assert [source.url for source in response.sources] == [self._RNASEQ_TUTORIAL["url"]]
+        db.search.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_gtn_keeps_stripped_summary_when_every_item_is_invented(self):
+        # Verification dropping everything the model cited shouldn't swap its answer
+        # for a search on the raw query text.
+        agent, db = self._gtn_agent_with_db()
+
+        def model(messages, info):
+            return ModelResponse(
+                parts=[
+                    ToolCallPart(
+                        "final_result",
+                        {
+                            "tutorials": [
+                                {
+                                    "title": "Invented",
+                                    "topic": "transcriptomics",
+                                    "tutorial": "made-up",
+                                    "url": "https://training.galaxyproject.org/training-material/topics/transcriptomics/tutorials/made-up/tutorial.html",
+                                }
+                            ],
+                            "summary": "Try [this one](https://training.galaxyproject.org/made-up/).",
+                        },
+                    )
+                ]
+            )
+
+        with agent.agent.override(model=FunctionModel(model)):
+            response = await agent.process("tell me more about step 1 of that one")
+
+        assert response.metadata["method"] == "structured"
+        assert response.content == "Try this one."
+        assert response.sources == []
+        db.search.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_gtn_falls_back_to_search_when_model_cites_nothing(self):
+        agent, db = self._gtn_agent_with_db()
+
+        def model(messages, info):
+            return ModelResponse(parts=[ToolCallPart("final_result", {"summary": "Not sure."})])
+
+        with agent.agent.override(model=FunctionModel(model)):
+            response = await agent.process("galaxy basics")
+
+        assert response.metadata["method"] == "structured_with_fallback"
+        assert [source.title for source in response.sources] == ["Galaxy 101"]
+        db.search.assert_called_once_with("galaxy basics", limit=5)
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_combines_sources(self):
