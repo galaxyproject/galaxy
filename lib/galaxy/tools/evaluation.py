@@ -59,6 +59,7 @@ from galaxy.tools.expressions import (
     do_eval,
     expression_error_message,
     ExpressionTemplateError,
+    ExpressionWorkerError,
 )
 from galaxy.tools.parameters import (
     visit_input_values,
@@ -138,15 +139,14 @@ def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool
         # The job runner reports these to the user as they are; wrapping would hide the message.
         global_tool_errors.add_error(config_file, action_str, e)
         raise
-    except WorkflowException as e:
-        # A JavaScript expression in the tool failed: the error names the user's mistake.
-        global_tool_errors.add_error(config_file, action_str, e)
-        raise ExpressionTemplateError(
-            f"Error occurred while {action_str.lower()} for tool '{tool.id}': {expression_error_message(e)}"
-        ) from e
     except Exception as e:
         # capture and log parsing errors
         global_tool_errors.add_error(config_file, action_str, e)
+        if isinstance(e, WorkflowException) and not isinstance(e.__cause__, ExpressionWorkerError):
+            # A JavaScript expression in the tool failed: the error names the user's mistake.
+            raise ExpressionTemplateError(
+                f"Error occurred while {action_str.lower()} for tool '{tool.id}': {expression_error_message(e)}"
+            ) from e
         raise ToolTemplatingException(
             f"Error occurred while {action_str.lower()} for tool '{tool.id}'",
             tool_id=tool.id,

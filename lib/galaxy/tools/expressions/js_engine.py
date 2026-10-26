@@ -70,6 +70,10 @@ BUBBLEWRAP_SYSTEM_PATHS = (
 log = logging.getLogger(__name__)
 
 
+class ExpressionWorkerError(JavascriptException):
+    """The worker failed to evaluate a program, for reasons other than the program raising."""
+
+
 def _bubblewrap_command(bwrap: str) -> tuple[str, ...]:
     """Build the built-in bubblewrap jail command.
 
@@ -185,14 +189,14 @@ def evaluate_program(
 def _evaluate_in_subprocess(program: str, timeout: float, sandbox_command: Sequence[str]) -> CWLOutputType:
     argv = [*sandbox_command, sys.executable, WORKER_SCRIPT]
     if len(program) > MAX_MESSAGE_BYTES:
-        raise JavascriptException("Expression request exceeds protocol limit")
+        raise ExpressionWorkerError("Expression request exceeds protocol limit")
     request = json.dumps({"program": program, "timeout": timeout, "memory_limit": MEMORY_LIMIT_BYTES}).encode("utf-8")
     if len(request) > MAX_MESSAGE_BYTES:
-        raise JavascriptException("Expression request exceeds protocol limit")
+        raise ExpressionWorkerError("Expression request exceeds protocol limit")
     # Files avoid unbounded pipe capture, including diagnostics from custom wrappers.
     # The worker also bounds its response before writing it.
-    with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
-        try:
+    try:
+        with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
             with subprocess.Popen(
                 argv, stdin=subprocess.PIPE, stdout=stdout, stderr=stderr, start_new_session=True
             ) as proc:
@@ -205,26 +209,28 @@ def _evaluate_in_subprocess(program: str, timeout: float, sandbox_command: Seque
                     except ProcessLookupError:
                         pass
                     proc.wait()
-                    raise JavascriptException("Expression evaluation timed out in worker subprocess") from e
-        except OSError as e:
-            raise JavascriptException(f"Could not run expression worker: {e}") from e
-        if proc.returncode != 0:
-            stderr.seek(0)
-            detail = stderr.read(500).decode("utf-8", "replace").strip()
-            raise JavascriptException(f"Expression worker exited with code {proc.returncode}: {detail}")
-        stdout.seek(0)
-        output = stdout.read(MAX_MESSAGE_BYTES + 1)
+                    raise ExpressionWorkerError("Expression evaluation timed out in worker subprocess") from e
+            if proc.returncode != 0:
+                stderr.seek(0)
+                detail = stderr.read(500).decode("utf-8", "replace").strip()
+                raise ExpressionWorkerError(f"Expression worker exited with code {proc.returncode}: {detail}")
+            stdout.seek(0)
+            output = stdout.read(MAX_MESSAGE_BYTES + 1)
+    except OSError as e:
+        raise ExpressionWorkerError(f"Could not run expression worker: {e}") from e
     if len(output) > MAX_MESSAGE_BYTES:
-        raise JavascriptException("Expression response exceeds protocol limit")
+        raise ExpressionWorkerError("Expression response exceeds protocol limit")
     try:
         response = json.loads(output)
         if not isinstance(response, dict):
             raise ValueError("Expected a response object")
+        if "worker_error" in response:
+            raise ExpressionWorkerError(str(response["worker_error"])[:500])
         if "error" in response:
             raise JavascriptException(str(response["error"])[:500])
         return cast(CWLOutputType, response["result"])
     except (ValueError, KeyError, RecursionError) as e:
-        raise JavascriptException("Malformed response from expression worker") from e
+        raise ExpressionWorkerError("Malformed response from expression worker") from e
 
 
 class SandboxedJSEngine(NodeJSEngine):
