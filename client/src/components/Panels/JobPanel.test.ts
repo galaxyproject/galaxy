@@ -140,6 +140,22 @@ describe("JobPanel", () => {
         expect(requests.at(-1)?.getAll("tool_id")).toEqual(["cat1"]);
     });
 
+    it("pages by create_time, not update_time, so a job can't skip past the offset when it changes state", async () => {
+        const requests: URLSearchParams[] = [];
+        server.use(
+            http.get("/api/jobs", ({ request, response }) => {
+                requests.push(new URL(request.url).searchParams);
+                return response(200).json([], { headers: { total_matches: "0" } });
+            }),
+        );
+
+        mountJobPanel();
+        await flushPromises();
+        await scrollOnce();
+
+        expect(requests.at(-1)?.get("order_by")).toBe("create_time");
+    });
+
     it("loads the tool store to search and title jobs by tool name", async () => {
         const requests: URLSearchParams[] = [];
         server.use(

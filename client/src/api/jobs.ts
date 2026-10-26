@@ -16,6 +16,7 @@ export type JobDisplayParametersSummary = components["schemas"]["JobDisplayParam
 export type JobMetric = components["schemas"]["JobMetric"];
 export type JobRequest = components["schemas"]["JobRequest"];
 export type JobsQueryParams = GalaxyApiPaths["/api/jobs"]["get"]["parameters"]["query"];
+type JobIndexSortByEnum = components["schemas"]["JobIndexSortByEnum"];
 
 export type JobMessage =
     | components["schemas"]["ExitCodeJobMessage"]
@@ -150,13 +151,19 @@ export async function submitJobRequest(jobRequest: JobRequest) {
  * @param offset Return jobs starting from this position
  * @param limit Maximum number of jobs to return
  * @param extraProps Additional query params, e.g. `user_id` or the filters built by `jobsFilterParams`
+ * @param orderBy How to sort/paginate the results. Defaults to `update_time`
  * @returns A tuple of the list of jobs and the total number of matching jobs
  */
-export async function fetchJobs(offset = 0, limit = 20, extraProps?: JobFetchExtraParams) {
+export async function fetchJobs(
+    offset = 0,
+    limit = 20,
+    extraProps?: JobFetchExtraParams,
+    orderBy: JobIndexSortByEnum = "update_time",
+) {
     const params: JobsQueryParams = {
         limit,
         offset,
-        order_by: "update_time",
+        order_by: orderBy,
         include_total_count: true,
         ...extraProps,
     };
