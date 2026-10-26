@@ -96,18 +96,18 @@ def test_requires_new_user_implies_requires_admin():
 
 
 @pytest.mark.parametrize(
-    "decorator",
+    "decorator,requirement",
     [
-        requires_admin,
-        requires_new_history,
-        requires_new_library,
-        requires_new_user,
-        requires_celery,
-        requires_new_published_objects,
+        (requires_admin, "admin"),
+        (requires_new_history, "new_history"),
+        (requires_new_library, "new_library"),
+        (requires_new_user, "new_user"),
+        (requires_celery, "celery"),
+        (requires_new_published_objects, "new_published_objects"),
     ],
 )
 @pytest.mark.parametrize("skip_value", [None, "0", "1"])
-def test_requirement_preserves_callable_and_skips(monkeypatch, decorator, skip_value):
+def test_requirement_preserves_callable_and_skips(monkeypatch, decorator, requirement, skip_value):
     calls = []
 
     def method(value):
@@ -117,12 +117,12 @@ def test_requirement_preserves_callable_and_skips(monkeypatch, decorator, skip_v
     decorated = decorator(method)
     assert callable(decorated)
     assert decorated.__name__ == method.__name__
-    for requirement in decorated.__required_galaxy_features:
-        variable = f"GALAXY_TEST_SKIP_IF_REQUIRES_{requirement.upper()}"
-        if skip_value is None:
-            monkeypatch.delenv(variable, raising=False)
-        else:
-            monkeypatch.setenv(variable, skip_value)
+    monkeypatch.delenv("GALAXY_TEST_SKIP_IF_REQUIRES_ADMIN", raising=False)
+    variable = f"GALAXY_TEST_SKIP_IF_REQUIRES_{requirement.upper()}"
+    if skip_value is None:
+        monkeypatch.delenv(variable, raising=False)
+    else:
+        monkeypatch.setenv(variable, skip_value)
     if skip_value == "1":
         with pytest.raises(unittest.SkipTest):
             decorated("result")
