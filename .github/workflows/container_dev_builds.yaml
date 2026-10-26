@@ -1,0 +1,106 @@
+name: Build and Test Container (Dev Branch)
+
+on:
+  push:
+    branches:
+      - dev
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test dev container
+    if: github.repository_owner == 'galaxyproject'
+    uses: ./.github/workflows/container_build_test.yaml
+    with:
+      ref: ${{ github.sha }}
+      image_tag: dev
+
+  notify-dev-failure:
+    name: Notify on dev build failure
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: always() && needs.build-and-test.result == 'failure'
+    steps:
+      - name: Determine which step failed
+        id: failure-info
+        run: |
+          if [[ "${{ needs.build-and-test.outputs.build_status }}" == "failure" ]]; then
+            echo "failed_job=Container build" >> $GITHUB_OUTPUT
+          elif [[ "${{ needs.build-and-test.outputs.smoke_test_status }}" == "failure" ]]; then
+            echo "failed_job=Smoke test" >> $GITHUB_OUTPUT
+          else
+            echo "failed_job=Build or test" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack notification for failure
+        uses: slackapi/slack-github-action@v3.0.1
+        with:
+          webhook: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":x: *Galaxy Dev Build Failed*",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ":x: Galaxy Dev Build Failed",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "The Galaxy development build has failed."
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.ref_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Failed Job:*\n${{ steps.failure-info.outputs.failed_job }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Galaxy Version:*\n${{ needs.build-and-test.outputs.galaxy_version }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n${{ needs.build-and-test.outputs.commit_sha }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Triggered by:*\n${{ github.actor }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Workflow Run",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
