@@ -4434,6 +4434,61 @@ class ChatExchangeBatchDeletePayload(Model):
     )
 
 
+class ChatExchangeTurn(Model):
+    query: str = Field(
+        ...,
+        title="Query",
+        description="The user's question.",
+    )
+    response: str = Field(
+        ...,
+        title="Response",
+        description="The answer.",
+    )
+
+
+class ChatExchangeSavePayload(Model):
+    agent_type: str = Field(
+        ...,
+        title="Agent Type",
+        description="The chat plugin's name.",
+        pattern=r"^[A-Za-z0-9_.-]+$",
+        max_length=255,
+    )
+    messages: list[ChatExchangeTurn] = Field(
+        ...,
+        title="Messages",
+        description="One entry per turn.",
+        min_length=1,
+    )
+    document: dict[str, Any] = Field(
+        ...,
+        title="Document",
+        description="The plugin's state, stored as given.",
+    )
+
+
+class ChatExchangeSaveResponse(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Exchange ID",
+        description="The encoded ID of the chat exchange.",
+    )
+
+
+class ChatExchangeDocumentResponse(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Exchange ID",
+        description="The encoded ID of the chat exchange.",
+    )
+    document: dict[str, Any] | None = Field(
+        None,
+        title="Document",
+        description="The plugin's state, or null for a chat it did not save.",
+    )
+
+
 class GenerateTourResponse(Model):
     use_datasets: bool = Field(
         ...,

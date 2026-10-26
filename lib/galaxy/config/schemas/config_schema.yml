@@ -4511,6 +4511,12 @@ mapping:
         desc: |
           AI model to enable the wizard. Global fallback for all AI agents.
 
+      ai_chat_plugin:
+        type: str
+        required: false
+        desc: |
+          Visualization plugin shown as Galaxy AI's chat. Unset by default.
+
       inference_services:
         type: any
         required: false
