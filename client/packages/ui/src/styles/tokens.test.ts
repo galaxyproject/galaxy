@@ -153,10 +153,14 @@ describe("galaxy-ui design tokens", () => {
         expect(resolveToken("--color-input")).toBe(brandColor("--color-ebony-clay-400"));
     });
 
-    it("shares no names with brand-tokens beyond the known accent overlap", () => {
-        // The Tool Shed loads brand-tokens before galaxy-ui, so a shared name is silently overridden.
+    it("agrees with brand-tokens on every shared name except accent", () => {
+        // The Tool Shed loads brand-tokens before galaxy-ui, so a differing shared name is silently overridden.
+        // Accent is fixed on the brand-tokens side (galaxy-brand-tokens#2); this flips to [] then.
         const brand = parseCustomProperties(brandTokensSource);
-        expect([...tokens.keys()].filter((name) => brand.has(name))).toEqual(["--color-accent"]);
+        const conflicts = [...tokens.keys()]
+            .filter((name) => brand.has(name))
+            .filter((name) => resolveToken(name) !== resolveIn(brand, name));
+        expect(conflicts).toEqual(["--color-accent"]);
     });
 
     it("gives every X / X-foreground pair at least 4.5:1 contrast (WCAG 1.4.3)", () => {
