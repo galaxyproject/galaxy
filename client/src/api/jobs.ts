@@ -39,7 +39,6 @@ export const NON_TERMINAL_STATES = [
     "paused",
     "resubmitted",
     "upload",
-    "stopping",
     "deleting",
 ];
 export const ERROR_STATES = ["error", "deleted", "failed"];
