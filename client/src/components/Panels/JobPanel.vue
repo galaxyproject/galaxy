@@ -50,18 +50,8 @@ const filterText = ref("");
 const showAdvanced = ref(false);
 const loading = ref(false);
 
-/** Total number of jobs matching the current filters. Doesn't necessarily match the total count
- * returned by the API because that count includes jobs from hidden tools, which we filter out client side.
- */
+/** Total number of jobs matching the current filters. */
 const totalJobCount = ref<number | undefined>(undefined);
-
-/** Offset to request from the API. Tracked separately from `ScrollList`'s own offset (which is
- * derived from the *rendered* item count), because jobs from `HIDDEN_TOOL_IDS` are filtered out
- * client side. So for the same reason as using `totalJobCount`; we want to ensure we use an
- * offset that considers only non-hidden-tool jobs, so we don't have an infinite fetch due to
- * the mismatch between the API's total count and the number of jobs we actually render.
- */
-const serverOffset = ref(0);
 
 /** Changing this key remounts the `ScrollList`, so it drops the jobs it has loaded and
  * requests the first page again with the new filters. Name mode changes what the text matches. */
@@ -104,7 +94,6 @@ watch(filterKey, () => {
     filterGeneration++;
     stopRetainingCurrentJobs();
     currentJobIds.value = new Set();
-    serverOffset.value = 0;
     totalJobCount.value = undefined;
     updateTimeMsCache.clear();
 });
@@ -221,7 +210,7 @@ watch(storedJobIds, (ids) => {
     }
 });
 
-async function loadJobs(_offset: number, limit: number) {
+async function loadJobs(offset: number, limit: number) {
     if (!currentUser.value || currentUser.value.isAnonymous) {
         return { items: [], total: 0 };
     }
@@ -231,6 +220,7 @@ async function loadJobs(_offset: number, limit: number) {
     }
     const extraProps: JobFetchExtraParams = {
         user_id: currentUser.value.id,
+        exclude_tool_ids: HIDDEN_TOOL_IDS,
         ...jobsFilterParams(filterText.value, showToolNamesInJobPanel.value).params,
     };
 
@@ -238,7 +228,7 @@ async function loadJobs(_offset: number, limit: number) {
     let data: JobBaseModel[];
     let totalMatches: number;
     try {
-        [data, totalMatches] = await fetchJobs(serverOffset.value, limit, extraProps, "create_time");
+        [data, totalMatches] = await fetchJobs(offset, limit, extraProps, "create_time");
     } finally {
         loading.value = false;
     }
@@ -246,18 +236,13 @@ async function loadJobs(_offset: number, limit: number) {
         // Filters changed while loading; this page belongs to the discarded list.
         return { items: [], total: 0 };
     }
-    serverOffset.value += data.length;
 
-    const items = data.filter((job) => !HIDDEN_TOOL_IDS.includes(job.tool_id));
-    for (const item of items) {
+    for (const item of data) {
         addCurrentJob(item.id);
         jobStore.updateJob(item.id, item);
     }
 
-    // `totalMatches` counts hidden-tool jobs too, which we are not showing.
-    // Since the fetch gets all jobs, we set the job count as the number of jobs loaded so far if we got fewer than
-    // the requested limit, otherwise we use the total matches count.
-    totalJobCount.value = data.length < limit ? currentSortedJobs.value.length : totalMatches;
+    totalJobCount.value = totalMatches;
     return { items: currentSortedJobs.value, total: totalJobCount.value };
 }
 

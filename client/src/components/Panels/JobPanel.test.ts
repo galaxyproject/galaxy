@@ -191,7 +191,7 @@ describe("JobPanel", () => {
         expect(requests.at(-1)?.getAll("tool_id")).toEqual(["cat1"]);
     });
 
-    it("pages by create_time, not update_time, so a job can't skip past the offset when it changes state", async () => {
+    it("pages by create_time and excludes hidden-tool jobs server-side", async () => {
         const requests: URLSearchParams[] = [];
         server.use(
             http.get("/api/jobs", ({ request, response }) => {
@@ -204,7 +204,10 @@ describe("JobPanel", () => {
         await flushPromises();
         await scrollOnce();
 
+        // `create_time`: a job can't skip past the offset when it changes state mid-scroll.
         expect(requests.at(-1)?.get("order_by")).toBe("create_time");
+        // `exclude_tool_ids`: hidden-tool jobs are excluded server-side, not fetched and dropped.
+        expect(requests.at(-1)?.getAll("exclude_tool_ids")).toEqual(["__DATA_FETCH__", "upload1"]);
     });
 
     it("loads the tool store to search and title jobs by tool name", async () => {
