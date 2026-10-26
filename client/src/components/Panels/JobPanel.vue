@@ -5,8 +5,9 @@ import { useRoute } from "vue-router";
 
 import type { RegisteredUser } from "@/api";
 import type { JobBaseModel, JobFetchExtraParams, ShowFullJobResponse } from "@/api/jobs";
-import { fetchJobs } from "@/api/jobs";
+import { fetchJobs, TERMINAL_STATES } from "@/api/jobs";
 import { type JobMatcher, jobsFilterParams, JobsFiltersById, JobsFiltersByName } from "@/components/Jobs/JobsFilters";
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useJobStore } from "@/stores/jobStore";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -140,6 +141,38 @@ const currentJobMatcher = computed<JobMatcher>(() => {
 const currentSortedJobs = computed(() => {
     return sortedStoredJobs.value.filter((job) => currentJobIds.value.has(job.id) && currentJobMatcher.value(job));
 });
+
+/** For non-terminal (and non-paused) jobs that are currently displayed, so they can be polled for updates. */
+const pollableJobIds = computed(() =>
+    currentSortedJobs.value
+        .filter((job) => !TERMINAL_STATES.includes(job.state) && job.state !== "paused")
+        .map((job) => job.id),
+);
+
+/** Refreshes every currently-pollable job in one request. */
+async function pollActiveJobs() {
+    const ids = pollableJobIds.value;
+    if (ids.length === 0) {
+        return;
+    }
+    const [jobs] = await fetchJobs(0, ids.length, { job_id: ids });
+    for (const job of jobs) {
+        jobStore.updateJob(job.id, job);
+    }
+}
+
+const activeJobsWatcher = useResourceWatcher(pollActiveJobs);
+
+/**
+ * Used to trigger the watcher whenever the set of pollable job IDs changes, ensuring non-terminal
+ * (and non-paused) jobs are polled immediately.
+ */
+const pollableJobIdsKey = computed(() => [...pollableJobIds.value].sort().join(","));
+
+// Restarting on every change picks up newly displayed jobs immediately, instead of waiting for
+// the next scheduled tick.
+watch(pollableJobIdsKey, () => activeJobsWatcher.startWatchingResource(), { immediate: true });
+onUnmounted(() => activeJobsWatcher.dispose());
 
 /** If user information is available, determines whether the job belongs to another user. */
 function belongsToAnotherUser(job: ShowFullJobResponse): boolean {

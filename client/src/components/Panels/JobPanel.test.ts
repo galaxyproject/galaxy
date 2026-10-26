@@ -116,6 +116,57 @@ describe("JobPanel", () => {
         expect(wrapper.text()).toContain("cat1");
     });
 
+    it.each(["running", "finishing"] as const)("updates the state of a listed %s job", async (state) => {
+        server.use(
+            http.get("/api/jobs", ({ request, response }) => {
+                /** Is a poll for active/non-terminal jobs */
+                const isActivePoll = new URL(request.url).searchParams.has("job_id");
+                return response(200).json([buildJob({ id: "activeJob", state: isActivePoll ? "ok" : state })], {
+                    headers: { total_matches: "1" },
+                });
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+        await scrollOnce();
+
+        expect(wrapper.find("#g-card-job-activeJob .job-state-badge").text()).toContain("ok");
+    });
+
+    it("polls all active jobs in one batched request instead of one per card", async () => {
+        const singleJobRequests: string[] = [];
+        const activePollRequests: string[][] = [];
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ params, response }) => {
+                singleJobRequests.push(params.job_id as string);
+                return response(200).json(buildJob({ id: params.job_id as string, state: "ok" }));
+            }),
+            http.get("/api/jobs", ({ request, response }) => {
+                const jobIds = new URL(request.url).searchParams.getAll("job_id");
+                if (jobIds.length > 0) {
+                    activePollRequests.push(jobIds);
+                    return response(200).json(
+                        jobIds.map((id) => buildJob({ id, state: "ok" })),
+                        { headers: { total_matches: `${jobIds.length}` } },
+                    );
+                }
+                return response(200).json(
+                    [buildJob({ id: "job1", state: "running" }), buildJob({ id: "job2", state: "running" })],
+                    { headers: { total_matches: "2" } },
+                );
+            }),
+        );
+
+        mountJobPanel();
+        await flushPromises();
+        await scrollOnce();
+
+        // There were no individual job requests because all active jobs were polled in a single batched request.
+        expect(singleJobRequests).toEqual([]);
+        expect(activePollRequests[0]?.sort()).toEqual(["job1", "job2"]);
+    });
+
     it("refetches in name mode when the name toggle flips with filter text present", async () => {
         const requests: URLSearchParams[] = [];
         server.use(
