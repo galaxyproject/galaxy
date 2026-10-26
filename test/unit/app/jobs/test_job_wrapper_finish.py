@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from unittest.mock import patch
 
 from sqlalchemy import event
@@ -55,8 +56,7 @@ class TestJobWrapperFinish(TestCase, UsesTools):
 
         assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
         for job_state, dataset_state, _ in committed:
-            if dataset_state == model.Dataset.states.OK:
-                assert job_state == model.Job.states.OK
+            assert (job_state == model.Job.states.OK) == (dataset_state == model.Dataset.states.OK)
 
     def test_metrics_are_committed_with_final_job_state(self):
         self.app.job_metrics = FixedJobMetrics()
@@ -89,6 +89,22 @@ class TestJobWrapperFinish(TestCase, UsesTools):
         assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
         assert self.job.state == model.Job.states.OK
 
+    def test_collection_update_time_is_bumped(self):
+        session = self.app.model.context
+        old_update_time = datetime(2020, 1, 1)
+        hdca = model.HistoryDatasetCollectionAssociation(
+            history=self.job.history, collection=model.DatasetCollection(collection_type="list"), job=self.job
+        )
+        session.add(hdca)
+        session.commit()
+        hdca.update_time = old_update_time
+        session.commit()
+
+        self._finish_and_record_commits()
+
+        session.refresh(hdca)
+        assert hdca.update_time > old_update_time
+
     def test_update_time_failure_keeps_committed_job_state(self):
         with patch.object(model.Job, "touch_dependent_update_times", side_effect=OperationalError("", {}, Exception())):
             committed = self._finish_and_record_commits()
@@ -115,8 +131,7 @@ class TestJobWrapperFinish(TestCase, UsesTools):
 
         assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
         for job_state, dataset_state, _ in committed:
-            if dataset_state == model.Dataset.states.OK:
-                assert job_state == model.Job.states.OK
+            assert (job_state == model.Job.states.OK) == (dataset_state == model.Dataset.states.OK)
 
     def _finish_and_record_commits(self, wrapper=None):
         wrapper = wrapper or MinimalJobWrapper(self.job, self.app, tool=self.tool)
