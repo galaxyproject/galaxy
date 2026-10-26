@@ -10793,6 +10793,29 @@ outer_input:
                 t["representation"]["name"] == TOOL_WITH_SHELL_COMMAND["name"] for t in owned
             ), f"Expected an owned UDT after workflow import: {owned}"
 
+    @pytest.mark.parametrize("annotated", [False, True])
+    def test_import_embedded_user_tools_after_step_metadata(self, annotated):
+        workflow: dict[str, Any] = {
+            "class": "GalaxyWorkflow",
+            "inputs": {"input": {"type": "data"}},
+            "outputs": {"result": {"outputSource": "b/output"}},
+            "steps": {
+                "a": {"run": TOOL_WITH_SHELL_COMMAND, "in": {"input": "input"}},
+                "b": {"run": TOOL_WITH_SHELL_COMMAND, "in": {"input": "a/output"}},
+            },
+        }
+        if annotated:
+            workflow["steps"]["a"]["doc"] = "An annotated earlier step"
+        with self.dataset_populator.user_tool_execute_permissions():
+            workflow_id = self.workflow_populator.upload_yaml_workflow(yaml.safe_dump(workflow))
+            downloaded = self.workflow_populator.download_workflow(workflow_id)
+            tools = [s for s in downloaded["steps"].values() if s["type"] == "tool"]
+            assert len(tools) == 2
+            assert all(s["tool_representation"]["class"] == "GalaxyUserTool" for s in tools)
+            assert tools[1]["workflow_outputs"][0]["label"] == "result"
+            if annotated:
+                assert tools[0]["annotation"] == "An annotated earlier step"
+
     def _build_user_defined_tool_run_workflow_dict(
         self,
         content_id: Optional[str],
