@@ -321,6 +321,9 @@ class JobManager:
         if payload.job_ids is not None:
             stmt = stmt.where(model.Job.id.in_(payload.job_ids))
 
+        if payload.exclude_tool_ids is not None:
+            stmt = stmt.where(model.Job.tool_id.notin_(payload.exclude_tool_ids))
+
         stmt = build_and_apply_filters(stmt, payload.states, lambda s: model.Job.state == s)
         stmt = build_and_apply_filters(stmt, payload.tool_ids, lambda t: model.Job.tool_id == t)
         stmt = build_and_apply_filters(stmt, payload.tool_ids_like, lambda t: model.Job.tool_id.like(t))

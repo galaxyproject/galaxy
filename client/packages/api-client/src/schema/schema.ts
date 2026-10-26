@@ -45423,6 +45423,8 @@ export interface operations {
                 tool_id?: string[] | null;
                 /** @description Limit listing of jobs to those that match one of the included tool ID sql-like patterns. If none, all are returned */
                 tool_id_like?: string[] | null;
+                /** @description Exclude jobs whose tool_id matches one of the given values. If none, no jobs are excluded on this basis. */
+                exclude_tool_ids?: string[] | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */

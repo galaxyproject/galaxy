@@ -187,6 +187,25 @@ class TestJobsApi(ApiTestCase, TestsTools):
 
     @requires_new_history
     @skip_without_tool("cat1")
+    def test_index_exclude_tool_ids(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": hda["id"]}},
+            history_id=history_id,
+        )
+
+        all_jobs = self.__jobs_index(data={"history_id": history_id})
+        tool_ids = {job["tool_id"] for job in all_jobs}
+        assert "__DATA_FETCH__" in tool_ids
+        assert "cat1" in tool_ids
+
+        jobs = self.__jobs_index(data={"history_id": history_id, "exclude_tool_ids": "__DATA_FETCH__"})
+        assert all(job["tool_id"] != "__DATA_FETCH__" for job in jobs)
+        assert any(job["tool_id"] == "cat1" for job in jobs)
+
+    @requires_new_history
+    @skip_without_tool("cat1")
     def test_index_workflow_and_invocation_filter(self, history_id):
         workflow_simple = """
 class: GalaxyWorkflow

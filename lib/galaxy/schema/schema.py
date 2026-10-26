@@ -1976,6 +1976,7 @@ class JobIndexQueryPayload(Model):
     job_ids: list[int] | None = None
     tool_ids: list[str] | None = None
     tool_ids_like: list[str] | None = None
+    exclude_tool_ids: list[str] | None = None
     date_range_min: OffsetNaiveDatetime | date | None = None
     date_range_max: OffsetNaiveDatetime | date | None = None
     history_id: DecodedDatabaseIdField | None = None
