@@ -200,10 +200,10 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         self.app = app
         self.dynamic_tool_manager = dynamic_tool_manager
 
-    def unshare_with(
-        self, item: StoredWorkflow, user: model.User, flush: bool = True
+    def unshare_with_recipient(
+        self, item: StoredWorkflow, user: model.User
     ) -> model.StoredWorkflowUserShareAssociation:
-        """Delete a user share along with that user's tool panel bookmark of the workflow."""
+        """Delete the recipient's own share along with their tool panel bookmark of the workflow."""
         user_share_assoc = super().unshare_with(item, user, flush=False)
         self.session().execute(
             delete(model.StoredWorkflowMenuEntry).where(
@@ -211,8 +211,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                 model.StoredWorkflowMenuEntry.user_id == user.id,
             )
         )
-        if flush:
-            self.session().commit()
+        self.session().commit()
         return user_share_assoc
 
     def copy_workflow_for_user(self, user: model.User, workflow: model.Workflow) -> model.Workflow:

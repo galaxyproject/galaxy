@@ -213,6 +213,12 @@ class SharableModelManager(
             session.commit()
         return user_share_assoc
 
+    def unshare_with_recipient(self, item, user: User):
+        """
+        Delete a share at the recipient's request.
+        """
+        return self.unshare_with(item, user)
+
     def _query_shared_with(self, user, eagerloads=True, **kwargs):
         """
         Return a query for this model already filtered to models shared

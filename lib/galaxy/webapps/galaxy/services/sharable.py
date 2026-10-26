@@ -121,7 +121,7 @@ class ShareableService:
         if not self.manager.get_share_assocs(item, user=trans.user):
             # Same error as a missing item so recipients can't probe for item ids.
             raise exceptions.ObjectNotFound(f"{self.manager.model_class.__name__} not found")
-        self.manager.unshare_with(item, trans.user)
+        self.manager.unshare_with_recipient(item, trans.user)
 
     def _share_with_options(
         self,

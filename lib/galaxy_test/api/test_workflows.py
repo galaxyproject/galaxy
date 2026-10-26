@@ -278,11 +278,14 @@ class TestWorkflowSharingApi(ApiTestCase, SharingApiTests):
             self._assert_status_code_is(self._unshare_with_me(workflow_id), 204)
         self._assert_bookmarks_after_reshare(workflow_id, dropped=recipient_email, kept=other_email)
 
-    def test_owner_unshare_drops_recipient_bookmark(self):
+    def test_owner_unshare_keeps_recipient_bookmark(self):
         recipient_email, other_email = self._setup_recipients(2)
         workflow_id = self._share_bookmarked_workflow([recipient_email, other_email])
         self._share_with(workflow_id, [other_email])
-        self._assert_bookmarks_after_reshare(workflow_id, dropped=recipient_email, kept=other_email)
+        self._share_with(workflow_id, [recipient_email, other_email])
+        for email in (recipient_email, other_email):
+            with self._different_user(email):
+                assert workflow_id in self._bookmarked_workflow_ids()
 
     def _share_bookmarked_workflow(self, recipient_emails: list[str]) -> str:
         """Share a new workflow that the owner and every recipient have bookmarked."""
