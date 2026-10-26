@@ -543,6 +543,61 @@ class GTNSearchDB:
             log.warning(f"Failed to get tutorial content for {topic}/{tutorial}: {e}")
             return None
 
+    def get_tutorial(self, topic: str, tutorial: str) -> SearchResult | None:
+        """Look up a single tutorial by its topic and tutorial slugs."""
+        try:
+            with self._get_connection() as conn:
+                row = conn.execute(
+                    """
+                    SELECT id, topic, tutorial, title, url, description,
+                        difficulty, hands_on, time_estimation
+                    FROM tutorials WHERE topic = ? AND tutorial = ?
+                    """,
+                    (topic, tutorial),
+                ).fetchone()
+                if not row:
+                    return None
+                return SearchResult(
+                    id=row["id"],
+                    topic=row["topic"],
+                    tutorial=row["tutorial"],
+                    title=row["title"],
+                    url=row["url"],
+                    snippet=row["description"] or "",
+                    score=0.0,
+                    difficulty=row["difficulty"],
+                    hands_on=bool(row["hands_on"]),
+                    time_estimation=row["time_estimation"] or "",
+                    description=row["description"] or "",
+                )
+        except sqlite3.Error as e:
+            log.warning(f"Failed to look up tutorial {topic}/{tutorial}: {e}")
+            return None
+
+    def get_faq(self, category: str, filename: str) -> FAQResult | None:
+        """Look up a single FAQ by its category and filename."""
+        try:
+            with self._get_connection() as conn:
+                row = conn.execute(
+                    "SELECT id, category, filename, title, area, content FROM faqs WHERE category = ? AND filename = ?",
+                    (category, filename),
+                ).fetchone()
+                if not row:
+                    return None
+                return FAQResult(
+                    id=row["id"],
+                    category=row["category"],
+                    filename=row["filename"],
+                    title=row["title"],
+                    area=row["area"] or "",
+                    content=row["content"],
+                    snippet="",
+                    score=0.0,
+                )
+        except sqlite3.Error as e:
+            log.warning(f"Failed to look up FAQ {category}/{filename}: {e}")
+            return None
+
     def get_topics(self) -> list[str]:
         """List all available topics."""
         try:

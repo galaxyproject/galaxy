@@ -128,8 +128,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         return None
 
     def _record_retrieved(self, results: Sequence[SearchResult | FAQResult]) -> list[dict[str, Any]]:
-        """Remember what the search tools actually returned this turn, so the
-        answer can only link to real GTN material."""
+        """Remember GTN records seen this turn (search results and database
+        lookups), so the answer can only link to real GTN material."""
         records = [result.to_dict() for result in results]
         for record in records:
             key = _record_key(record)
@@ -138,9 +138,21 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             self._retrieved_by_url[_normalize_url(record["url"])] = record
         return records
 
+    def _lookup_record(self, item: dict[str, Any]) -> dict[str, Any] | None:
+        """Find a tutorial/FAQ in the GTN database by its slugs. Follow-ups often
+        cite material from an earlier turn that this turn never searched for."""
+        if not self.gtn_db:
+            return None
+        result: SearchResult | FAQResult | None = None
+        if item.get("filename"):
+            result = self.gtn_db.get_faq(str(item.get("category")), str(item["filename"]))
+        elif item.get("tutorial"):
+            result = self.gtn_db.get_tutorial(str(item.get("topic")), str(item["tutorial"]))
+        return self._record_retrieved([result])[0] if result else None
+
     def _verify_items(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Swap each tutorial/FAQ the model surfaced for the record the search
-        returned, dropping any the search never returned."""
+        """Swap each tutorial/FAQ the model surfaced for its GTN database record,
+        dropping any that don't exist."""
         verified: list[dict[str, Any]] = []
         seen: set[str] = set()
         for item in items:
@@ -149,7 +161,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             if record is None and isinstance(item.get("url"), str):
                 record = self._retrieved_by_url.get(_normalize_url(item["url"]))
             if record is None:
-                log.info("Dropping GTN item the search never returned: %s", item.get("url") or item.get("title"))
+                record = self._lookup_record(item)
+            if record is None:
+                log.info("Dropping GTN item not in the GTN database: %s", item.get("url") or item.get("title"))
                 continue
             url = _normalize_url(record["url"])
             if url not in seen:
@@ -182,6 +196,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         return _URL_IN_TEXT_RE.sub(replace, text)
 
     def _verify_response(self, response_data: GTNSearchResponse) -> GTNSearchResponse:
+        # Verify the items first: database lookups add to the URLs the prose may link to.
+        tutorials = self._verify_items(response_data.tutorials)
+        faqs = self._verify_items(response_data.faqs)
         allowed = self._allowed_urls()
 
         def strip(text: str | None) -> str | None:
@@ -189,8 +206,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         return response_data.model_copy(
             update={
-                "tutorials": self._verify_items(response_data.tutorials),
-                "faqs": self._verify_items(response_data.faqs),
+                "tutorials": tutorials,
+                "faqs": faqs,
                 "summary": strip(response_data.summary),
                 "learning_path": strip(response_data.learning_path),
                 "prerequisites": [strip(prerequisite) for prerequisite in response_data.prerequisites],
@@ -403,9 +420,13 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                         error="invalid_structured_output",
                     )
 
+                cited_anything = bool(response_data.tutorials or response_data.faqs)
                 response_data = self._verify_response(response_data)
                 used_fallback = False
-                if not response_data.tutorials and not response_data.faqs:
+                # Only search on the user's wording when the model cited nothing. If it
+                # cited material that failed verification, its (unlinked) answer is still
+                # more relevant than a search on a follow-up like "tell me more".
+                if not cited_anything:
                     log.info("No tutorials or FAQs in response, falling back to direct search")
                     fallback_results = self.gtn_db.search(query, limit=5)
                     if fallback_results:
