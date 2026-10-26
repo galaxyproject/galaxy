@@ -116,7 +116,9 @@ jobs:
         working-directory: 'client'
       - name: publish client
         if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
-        run: npm publish --provenance --access public
+        # 26.0 is no longer the newest release line, so publish under its own
+        # dist-tag and leave ``latest`` to the current release.
+        run: npm publish --provenance --access public --tag release-26.0
         working-directory: 'client'
       - name: sync client-api version
         run: npm run sync-version
@@ -126,5 +128,5 @@ jobs:
         working-directory: 'client-api'
       - name: publish client-api
         if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --tag release-26.0
         working-directory: 'client-api'
