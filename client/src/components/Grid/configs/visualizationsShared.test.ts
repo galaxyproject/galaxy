@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -13,6 +13,34 @@ function removeOperation(): Operation | undefined {
 }
 
 describe("visualizationsShared grid", () => {
+    beforeEach(() => {
+        vi.stubGlobal(
+            "confirm",
+            vi.fn(() => true),
+        );
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it("keeps the share when removal is not confirmed", async () => {
+        const unshared: string[] = [];
+        server.use(
+            http.put("/api/visualizations/{id}/unshare_with_me", ({ params, response }) => {
+                unshared.push(params.id);
+                return response(204).empty();
+            }),
+        );
+        vi.mocked(confirm).mockReturnValue(false);
+
+        const result = await removeOperation()?.handler({ id: "viz_id", title: "Shared Viz" });
+
+        expect(confirm).toHaveBeenCalledWith(expect.stringContaining("owner will need to share it again"));
+        expect(unshared).toEqual([]);
+        expect(result).toBeUndefined();
+    });
+
     it("removes the current user's share of a visualization", async () => {
         const unshared: string[] = [];
         server.use(
@@ -87,7 +115,7 @@ describe("visualizationsShared grid batch", () => {
 
         const result = await batchRemove()?.handler(ROWS);
 
-        expect(confirm).toHaveBeenCalledTimes(1);
+        expect(confirm).toHaveBeenCalledWith(expect.stringContaining("owners will need to share them again"));
         expect(unshared).toEqual(["viz_1", "viz_2"]);
         expect(result).toEqual({
             status: "success",

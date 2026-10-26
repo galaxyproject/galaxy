@@ -57,6 +57,13 @@ const fields: FieldArray = [
                 title: "Remove from Shared",
                 icon: faUserSlash,
                 handler: async (data: VisualizationEntry) => {
+                    if (
+                        !confirm(
+                            `Remove '${data.title}' from your shared visualizations? Its owner will need to share it again for you to see it.`,
+                        )
+                    ) {
+                        return;
+                    }
                     try {
                         await unshareVisualizationWithMe(String(data.id));
                     } catch (error) {
@@ -105,7 +112,11 @@ const batch: BatchOperationArray = [
         icon: faUserSlash,
         handler: async (rows: Array<VisualizationEntry>) => {
             const total = rows.length;
-            if (!confirm(`Remove ${total} ${pluralize(total, "visualization")} from your shared visualizations?`)) {
+            if (
+                !confirm(
+                    `Remove ${total} ${pluralize(total, "visualization")} from your shared visualizations? Their owners will need to share them again for you to see them.`,
+                )
+            ) {
                 return;
             }
             const failures = await settleEach(rows, (row) => unshareVisualizationWithMe(String(row.id)));
