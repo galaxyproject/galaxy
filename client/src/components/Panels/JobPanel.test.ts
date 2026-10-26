@@ -210,6 +210,28 @@ describe("JobPanel", () => {
         expect(requests.at(-1)?.getAll("exclude_tool_ids")).toEqual(["__DATA_FETCH__", "upload1"]);
     });
 
+    it("only requests the total count on the first page, keeping it stable on later pages", async () => {
+        /** Tracks the values of the `include_total_count` query parameter for each request. */
+        const includeTotalCountValues: (string | null)[] = [];
+        server.use(
+            http.get("/api/jobs", ({ request, response }) => {
+                const url = new URL(request.url);
+                includeTotalCountValues.push(url.searchParams.get("include_total_count"));
+                const offset = Number(url.searchParams.get("offset") ?? "0");
+                const jobs = offset === 0 ? [buildJob({ id: "job1" })] : [buildJob({ id: "job2" })];
+                return response(200).json(jobs, offset === 0 ? { headers: { total_matches: "2" } } : {});
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+        await scrollOnce(); // completes the first page
+        await scrollOnce(); // triggers and completes the second page
+
+        expect(includeTotalCountValues).toEqual(["true", "false"]);
+        expect(wrapper.text()).toContain("All jobs loaded");
+    });
+
     it("loads the tool store to search and title jobs by tool name", async () => {
         const requests: URLSearchParams[] = [];
         server.use(

@@ -222,6 +222,8 @@ async function loadJobs(offset: number, limit: number) {
         user_id: currentUser.value.id,
         exclude_tool_ids: HIDDEN_TOOL_IDS,
         ...jobsFilterParams(filterText.value, showToolNamesInJobPanel.value).params,
+        // Only the first page needs the count; it doesn't change page to page under the same filters.
+        include_total_count: offset === 0,
     };
 
     loading.value = true;
@@ -242,8 +244,10 @@ async function loadJobs(offset: number, limit: number) {
         jobStore.updateJob(item.id, item);
     }
 
-    totalJobCount.value = totalMatches;
-    return { items: currentSortedJobs.value, total: totalJobCount.value };
+    if (offset === 0) {
+        totalJobCount.value = totalMatches;
+    }
+    return { items: currentSortedJobs.value, total: totalJobCount.value ?? 0 };
 }
 
 const route = useRoute();
