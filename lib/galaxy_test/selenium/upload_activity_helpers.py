@@ -248,6 +248,11 @@ class _UploadStaging:
 
         return item
 
+    def sort_by(self, field: str) -> "_UploadStaging":
+        """Click a staged-items table header to sort by that column."""
+        self.components.upload_activity.table_sortable_header(field=field).wait_for_and_click()
+        return self
+
     def _row_number(self, index: int) -> int:
         return index + 1
 
@@ -477,8 +482,8 @@ class UploadContext(_UploadStaging):
 
     def select_target_history(self, history_id: str) -> "UploadContext":
         self.components.upload_activity.target_history_change_link.wait_for_and_click()
-        self.components.upload_activity.history_selector_modal_item(history_id=history_id).wait_for_and_click()
-        self.components.upload_activity.history_selector_modal.wait_for_absent_or_hidden()
+        self.components.history_selector_modal.item(history_id=history_id).wait_for_and_click()
+        self.components.history_selector_modal._.wait_for_absent_or_hidden()
         return self
 
     def to_list(self, name: str) -> "UploadContext":
@@ -674,6 +679,10 @@ class BaseUploadContext:
 
     def to_paired_list(self, name: str) -> "BaseUploadContext":
         self._context.to_paired_list(name)
+        return self
+
+    def sort_by(self: TUploadContext, field: str) -> TUploadContext:
+        self._context.sort_by(field)
         return self
 
     def _start_and_wait_for_uploaded_hids(self) -> list[int]:

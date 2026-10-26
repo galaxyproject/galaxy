@@ -8,6 +8,7 @@ import type { InvocationStep } from "@/api/invocations";
 import type { WorkflowStepTyped } from "@/api/workflows";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { type GraphStep, statePlaceholders } from "@/composables/useInvocationGraph";
+import { useUid } from "@/composables/utils/uid";
 import { useInvocationStore } from "@/stores/invocationStore";
 
 import ToolLinkPopover from "../Tool/ToolLinkPopover.vue";
@@ -26,20 +27,23 @@ const props = defineProps<Props>();
 
 const invocationStore = useInvocationStore();
 
+/** Per-instance id, since the same step header can render twice (step card and expanded modal) */
+const stepIconId = useUid("step-icon-");
+
 const isPolling = computed(() =>
     props.invocationStep ? invocationStore.isLoadingInvocationStep(props.invocationStep.id) : false,
 );
 </script>
 
 <template>
-    <div class="d-flex justify-content-between">
+    <div class="d-flex justify-content-between align-items-center w-100">
         <div>
-            <span :id="`step-icon-${props.workflowStep.id}`">
+            <span :id="stepIconId">
                 <WorkflowStepIcon class="portlet-title-icon" :step-type="workflowStep.type" />
             </span>
             <ToolLinkPopover
                 v-if="props.workflowStep.tool_id && props.workflowStep.tool_version"
-                :target="`step-icon-${props.workflowStep.id}`"
+                :target="stepIconId"
                 :tool-id="props.workflowStep.tool_id"
                 :tool-version="props.workflowStep.tool_version" />
             <span class="portlet-title-text">
@@ -49,7 +53,7 @@ const isPolling = computed(() =>
             </span>
         </div>
 
-        <span v-if="props.graphStep">
+        <span v-if="props.graphStep" class="text-nowrap">
             <BBadge v-if="isPolling" v-g-tooltip.hover class="mr-1" title="Polling for updates" variant="link">
                 <FontAwesomeIcon :icon="faSpinner" spin />
             </BBadge>

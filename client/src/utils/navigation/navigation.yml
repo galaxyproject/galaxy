@@ -61,6 +61,11 @@ masthead:
     window_manager: '#enable-window-manager > .nav-link'
     workflow: '#workflow .nav-link'
 
+history_selector_modal:
+  selectors:
+    _: 'dialog.g-dialog[open]'
+    item: 'dialog.g-dialog[open] [data-pk="${history_id}"]'
+
 command_palette:
 
   selectors:
@@ -83,6 +88,10 @@ preferences:
     toolbox_filters: '#g-card-edit-preferences-toolbox-filters'
     manage_api_key: '#g-card-edit-preferences-api-key'
     custom_builds: '#g-card-edit-preferences-custom-builds'
+    dataset_permissions: '#g-card-edit-preferences-permissions'
+    # Set Dataset Permissions for New Histories' "Make new datasets private" switch
+    new_datasets_private_input: '[data-description="make new datasets private"]'
+    new_datasets_private_label: '[data-description="make new datasets private"] + .g-checkbox-label'
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
@@ -104,6 +113,26 @@ preferences:
       option_card: '#g-card-${object_store_id}'
       option_card_select: '#g-card-action-select-${object_store_id}'
       confirm_button: '#modal-select-preferred-object-store .g-modal-close-button'
+
+custom_builds:
+  selectors:
+    name: 'input#name'
+    key: 'input#id'
+    definition: 'select#type'
+    fasta_file: 'select#fasta-file'
+    save: 'button#save'
+    len_text: 'textarea#len-file-text-area'
+    success_alert: '.alert-success.alert-dismissible'
+    table: 'table.g-table'
+    row:
+      type: xpath
+      selector: '//table[contains(@class, "g-table")]//tr[td[1][normalize-space(.)="${name}"]]'
+    row_count:
+      type: xpath
+      selector: '//table[contains(@class, "g-table")]//tr[td[1][normalize-space(.)="${name}"]]/td[3]'
+    row_delete:
+      type: xpath
+      selector: '//table[contains(@class, "g-table")]//tr[td[1][normalize-space(.)="${name}"]]//button[@data-title="Delete build"]'
 
 object_store_instances:
   index:
@@ -243,6 +272,7 @@ history_panel:
       _: '.history-index .content-item${suffix}'
       title: '${_} .content-title'
       details: '${_} .details'
+      details_expanded: '${_} > .g-collapse-shown'
       summary: '${_} .not-loading .summary'
 
       hid: '${_} .hid'
@@ -256,13 +286,16 @@ history_panel:
 
       # Title buttons...
       display_button: '${_} .display-btn'
+      edit_button: '${_} .edit-btn'
       delete_button: '${_} .delete-btn'
+      undelete_button: '${_} .undelete-btn'
+      unhide_button: '${_} .unhide-btn'
       rerun_button: '${_} .rerun-btn'
       collection_job_details_button: '${_} .collection-job-details-btn'
 
       # Action buttons...
       download_button: '${_} .download-btn'
-      info_button: '${_} .params-btn'
+      info_button: '${_} .info-btn'
       highlight_button: '${_} .highlight-btn'
       alltags: '${_} .stateless-tags .tag'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
@@ -333,6 +366,8 @@ history_panel:
     _: '#current-history-panel'
     search: '#current-history-panel input.search-query'
     refresh_button: '.history-refresh-button'
+    include_deleted_button: '[data-description="include deleted items button"]'
+    include_hidden_button: '[data-description="include hidden items button"]'
     name: '.history-title span:last-child'
     name_edit_input:
       selector: 'name input'
@@ -373,6 +408,7 @@ history_panel:
     collection_menu_edit_attributes: '.edit-btn'
 
     new_history_button: '[data-description="create new history"]'
+    switch_history_button: '[data-description="switch to another history"]'
     histories_operation_menu: '[data-description="history options"]'
     multi_view_button: '[data-description="switch to multi history view"]'
 
@@ -408,6 +444,10 @@ edit_dataset_attributes:
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
     datatypes_tab: '.dataset-edit-datatype-tab'
+    permissions_tab: '.dataset-edit-permissions-tab'
+    # permission: DATASET_MANAGE_PERMISSIONS or DATASET_ACCESS
+    permission_field: '#form-element-${permission}'
+    permission_roles: '#form-element-${permission} .multiselect__tag'
     datatype_dropdown: '#datatype-container .multiselect'
     dbkey_dropdown: '#dbkey-container .multiselect'
     save_button: '#dataset-attributes-default-save'
@@ -543,6 +583,13 @@ collection_builders:
         _: '[row-index="${index}"]'
         link_button: '${_} .paired-action-icon.fa-link'
         unlink_button: '${_} .paired-action-icon.fa-unlink'
+
+data_landing:
+  selectors:
+    cell: '[data-description="fetch grid"] [aria-rowindex="${row_index}"] [col-id="${column_identifier}"]'
+    cell_input: '[data-description="fetch grid"] [aria-rowindex="${row_index}"] [col-id="${column_identifier}"] input'
+    execute: 'button#execute'
+    success: '[data-description="fetch landing success"]'
 
 histories:
   selectors:
@@ -1361,6 +1408,11 @@ invocations:
     step_card_hide: '[data-description="invocation graph hide step button"]'
     step_card_config_tab: '.invocation-step-card .invocation-step-config-tab > a.nav-link'
     step_card_config_form: '.invocation-step-card .invocation-view-step-config fieldset[disabled]'
+    step_card_expand: '[data-description="invocation graph expand step button"]'
+    step_card_modal: 'dialog[open][data-description="invocation graph expanded step modal"]'
+    step_card_modal_close: 'dialog[open][data-description="invocation graph expanded step modal"] .g-modal-close-button'
+    step_card_modal_config_tab: 'dialog[open][data-description="invocation graph expanded step modal"] .invocation-step-config-tab > a.nav-link'
+    step_card_body_config_tab: '.invocation-step-card > .card-body .invocation-step-config-tab > a.nav-link'
     export_tab: '.invocation-export-tab'
     export_tab_disabled: '.invocation-export-tab .nav-link[aria-disabled="true"]'
     # Click the card title: until the RO-Crate logo loads, the card's centre is its "Learn more" link.
@@ -1730,6 +1782,7 @@ upload_activity:
       type: xpath
       selector: '//button[normalize-space() = "Cancel"]'
     row_name_input: '[data-test-id="upload-row-${row}-name"]'
+    table_sortable_header: 'th.g-table-sortable[id^="g-table-field-${field}-"]'
     row_extension_select: '[data-test-id="upload-row-${row}-extension"] .single-item-selector'
     row_dbkey_select: '[data-test-id="upload-row-${row}-dbkey"] .single-item-selector'
     paste_content_row_toggle_button: '[data-test-id="paste-content-toggle-${row}"]'
@@ -1739,8 +1792,6 @@ upload_activity:
     paste_links_row_deferred_label: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] + .g-checkbox-label'
     # Target-history selectors (TargetHistorySelector inside UploadMethodView)
     target_history_change_link: '.target-history-banner .change-history-link'
-    history_selector_modal: '.g-dialog'
-    history_selector_modal_item: '.g-dialog [data-pk="${history_id}"]'
     # Upload panel advanced mode switch
     advanced_mode_toggle_checkbox: '[data-test-id="upload-advanced-mode-toggle"]'
     # Target-object-store selectors (TargetObjectStoreSelector inside UploadMethodView)

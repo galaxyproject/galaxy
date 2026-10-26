@@ -1292,8 +1292,6 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.dependencies: list = []
         # populate toolshed repository info, if available
         self.populate_tool_shed_info(tool_shed_repository)
-        # add tool resource parameters
-        self.populate_resource_parameters(tool_source)
         self.tool_errors: str | None = None
         # Parse XML element containing configuration
         self.tool_source = tool_source
@@ -1606,6 +1604,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 tool_classes.append("user_defined")
 
             self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids, tool_classes)
+            # Adds the job resource conditional to the tool's XML inputs, so it must run before parse_inputs.
+            self.populate_resource_parameters(tool_source)
 
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = tool_source.parse_hidden()
@@ -2021,12 +2021,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def populate_resource_parameters(self, tool_source):
         root = getattr(tool_source, "root", None)
-        if (
-            root is not None
-            and hasattr(self.app, "job_config")
-            and hasattr(self.app.job_config, "get_tool_resource_xml")
-        ):
-            resource_xml = self.app.job_config.get_tool_resource_xml(root.get("id", "").lower(), self.tool_type)
+        if root is not None and hasattr(self.app.job_config, "get_tool_resource_xml"):
+            resource_xml = self.app.job_config.get_tool_resource_xml(self.all_ids, self.tool_type)
             if resource_xml is not None:
                 inputs = root.find("inputs")
                 if inputs is None:

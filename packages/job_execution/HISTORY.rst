@@ -4,10 +4,46 @@ History
 .. to_doc
 
 ---------
-26.2.dev0
+27.0.dev0
 ---------
 
 
+
+-------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Harden user-defined tool output declarations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23388 <https://github.com/galaxyproject/galaxy/pull/23388>`_
+* Harden tool-provided dynamic output collection by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23404 <https://github.com/galaxyproject/galaxy/pull/23404>`_
+* Fix dataset permissions set when upload and discovery jobs finish by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24233 <https://github.com/galaxyproject/galaxy/pull/24233>`_
+
+-------------------
+26.0.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix dataset permissions set when upload and discovery jobs finish by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24233 <https://github.com/galaxyproject/galaxy/pull/24233>`_
+
+-------------------
+25.1.3 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix \`\`preferred_object_store_id\`\` not respected for discovered outputs with extended metadata by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22056 <https://github.com/galaxyproject/galaxy/pull/22056>`_
+* Fix dataset permissions set when upload and discovery jobs finish by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24233 <https://github.com/galaxyproject/galaxy/pull/24233>`_
 
 -------------------
 26.1.1 (2026-08-04)

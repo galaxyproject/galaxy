@@ -171,11 +171,14 @@ from galaxy.workflow.map_over import (
     MapOverPlanner,
 )
 from galaxy.workflow.workflow_parameter_input_definitions import (
+    check_validators,
     get_default_parameter,
     INPUT_PARAMETER_TYPES,
     numeric_bounds_inverted,
     NumericBounds,
     split_numeric_bounds,
+    validators_from_form,
+    validators_to_form,
 )
 
 if TYPE_CHECKING:
@@ -1505,6 +1508,14 @@ class InputParameterModule(WorkflowModule):
                             "help": "This message will be shown if the regular does not match the input",
                         },
                     ),
+                    "regex_negate": BooleanToolParameter(
+                        None,
+                        {
+                            "name": "regex_negate",
+                            "label": "Reject values matching this expression",
+                            "help": "If set, input values matching the regular expression are invalid",
+                        },
+                    ),
                 }
 
                 return add_validators_repeat
@@ -1653,6 +1664,9 @@ class InputParameterModule(WorkflowModule):
                 )
             if param_type == "directory_uri":
                 when_this_type.inputs["validators"] = regex_validator_definition()
+            when_this_type.inputs["extra_validators"] = HiddenToolParameter(
+                None, {"name": "extra_validators", "value": ""}
+            )
 
             cases.append(when_this_type)
 
@@ -1903,6 +1917,7 @@ class InputParameterModule(WorkflowModule):
 
     def step_state_to_tool_state(self, state):
         state = safe_loads(state)
+        parameter_type = state["parameter_type"]
         default_set, default_value = False, None
         if "default" in state:
             default_set = True
@@ -1922,29 +1937,16 @@ class InputParameterModule(WorkflowModule):
 
         state = {
             "parameter_definition": {
-                "parameter_type": state["parameter_type"],
+                "parameter_type": parameter_type,
                 "optional": {"optional": str(state.get("optional", False))},
             }
         }
         if multiple is not None:
             state["parameter_definition"]["multiple"] = multiple
         if source_validators is not None:
-            form_validators = []
             # the form definition can change from Galaxy to Galaxy fairly freely, but the source validators are persisted
             # and need to be consistent - here we convert the persisted/YAML tool definition version to the "tool form" version.
-            for source_validator in source_validators:
-                source_type = source_validator["type"]
-                if source_type == "regex":
-                    form_validators.append(
-                        {
-                            "regex_doc": source_validator.get("message"),
-                            "regex_match": source_validator.get("expression"),
-                        }
-                    )
-                elif source_type == "in_range":
-                    state["parameter_definition"]["min"] = source_validator.get("min")
-                    state["parameter_definition"]["max"] = source_validator.get("max")
-            state["parameter_definition"]["validators"] = form_validators
+            state["parameter_definition"].update(validators_to_form(parameter_type, source_validators))
         state["parameter_definition"]["restrictions"] = {}
         state["parameter_definition"]["restrictions"]["how"] = restrictions_how
 
@@ -1988,32 +1990,7 @@ class InputParameterModule(WorkflowModule):
                 optional = False
             if "multiple" in parameters_def:
                 rval["multiple"] = parameters_def["multiple"]
-            source_validators = []
-            if "min" in parameters_def or "max" in parameters_def:
-                min = parameters_def.get("min")
-                max = parameters_def.get("max")
-                source_validators.append(
-                    {
-                        "min": min,
-                        "max": max,
-                        "negate": False,
-                        "type": "in_range",
-                    }
-                )
-
-            if "validators" in parameters_def:
-                form_validators = parameters_def["validators"]
-                # convert the current tool form structure to the persisted YAML-definition style
-                for form_validator in form_validators:
-                    source_validators.append(
-                        {
-                            "message": form_validator["regex_doc"],
-                            "expression": form_validator["regex_match"],
-                            "negate": False,
-                            "type": "regex",
-                        }
-                    )
-            rval["validators"] = source_validators
+            rval["validators"] = validators_from_form(parameters_def)
             restrictions_cond_values = parameters_def.get("restrictions")
             if restrictions_cond_values:
 
@@ -2050,7 +2027,15 @@ class InputParameterModule(WorkflowModule):
 
     def save_to_step(self, step, detached=False):
         step.type = self.type
-        step.tool_inputs = self._parse_state_into_dict()
+        tool_inputs = self._parse_state_into_dict()
+        try:
+            check_validators(tool_inputs["parameter_type"], tool_inputs.get("validators", []))
+        except ValueError as e:
+            label = f"'{self.label}'" if self.label else "(unlabeled)"
+            raise exceptions.RequestParameterInvalidException(
+                f"Invalid validator on workflow parameter input {label}: {e}"
+            )
+        step.tool_inputs = tool_inputs
 
 
 class PauseModule(WorkflowModule):
@@ -2615,6 +2600,12 @@ def _capture_workflow_tool_request_state(
     # source, or a unique-constraint race we cannot recover) must not abort
     # workflow scheduling. Savepoint scopes the flush so a failure rolls back
     # to clean transaction state instead of poisoning the outer session.
+    # begin_nested() flushes everything already pending in the session before
+    # it emits SAVEPOINT, and a failure there rolls back the whole transaction.
+    # Flush that unrelated scheduler state here, outside the best-effort block,
+    # so its errors reach the scheduler instead of being reported as a
+    # ToolRequest failure on a session that can no longer be used.
+    trans.sa_session.flush()
     try:
         with trans.sa_session.no_autoflush, trans.sa_session.begin_nested():
             tool_source = get_or_create_tool_source(trans.sa_session, tool)

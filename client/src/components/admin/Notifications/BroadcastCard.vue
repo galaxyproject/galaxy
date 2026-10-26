@@ -11,6 +11,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCol, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
+import type { components } from "@/api/schema";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useMarkdown } from "@/composables/markdown";
 import type { BroadcastNotification } from "@/stores/broadcastsStore";
@@ -19,6 +20,8 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
 import UtcDate from "@/components/UtcDate.vue";
+
+type ActionLink = components["schemas"]["ActionLink"];
 
 const { confirm } = useConfirmDialog();
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
@@ -32,7 +35,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
     (e: "edit", broadcastNotification: BroadcastNotification): void;
     (e: "expire", broadcastNotification: BroadcastNotification): void;
-    (e: "go-to-link", link: string): void;
+    (e: "go-to-link", actionLink: ActionLink): void;
 }>();
 
 const notification = computed(() => props.broadcastNotification);
@@ -85,8 +88,8 @@ async function onForceExpirationClick() {
     }
 }
 
-function onActionClick(link: string) {
-    emit("go-to-link", link);
+function onActionClick(actionLink: ActionLink) {
+    emit("go-to-link", actionLink);
 }
 </script>
 
@@ -143,7 +146,7 @@ function onActionClick(link: string) {
                         class="mr-1"
                         :title="actionLink.action_name"
                         color="blue"
-                        @click="onActionClick(actionLink.link)">
+                        @click="onActionClick(actionLink)">
                         {{ actionLink.action_name }}
                     </GButton>
                 </BRow>

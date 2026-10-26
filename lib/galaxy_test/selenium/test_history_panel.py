@@ -1,5 +1,6 @@
 from galaxy.selenium.navigates_galaxy import edit_details
 from .framework import (
+    managed_history,
     retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase,
@@ -50,6 +51,97 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
         history_editor.tags_input.wait_for_clickable()
 
     @selenium_test
+    @managed_history
+    def test_delete_undelete_and_purge_items(self):
+        history_id = self.current_history_id()
+        for content in ("1\n", "2\n", "3\n", "4\n"):
+            self.dataset_populator.new_dataset(history_id, content=content, wait=True)
+        self.home()
+        self.history_panel_wait_for_hid_ok(4)
+
+        self.history_panel_item_delete(1)
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_multi_operations_show()
+        self.history_panel_muli_operation_select_hid(2)
+        self.history_panel_delete_selected()
+        self.history_panel_wait_for_hid_hidden(2)
+        # A bulk delete ends selection mode.
+        self.history_panel_multi_operations_show()
+        self.history_panel_muli_operation_select_hid(3)
+        self.history_panel_delete_selected(purge=True)
+        self.history_panel_wait_for_hid_hidden(3)
+        self._wait_for_history_item_states(
+            history_id,
+            ("deleted", "purged"),
+            {1: (True, False), 2: (True, False), 3: (True, True), 4: (False, False)},
+            "hids 1 and 2 to be deleted and hid 3 purged",
+        )
+
+        self.history_panel_include_deleted()
+        self.history_panel_item_component(hid=2).undelete_button.wait_for_visible()
+        # a purged item can't be undeleted
+        self.history_panel_wait_for_hid_visible(3)
+        self.history_panel_item_component(hid=3).undelete_button.assert_absent()
+        self.screenshot("history_panel_deleted_items_shown")
+        self.history_panel_item_undelete(1)
+        self.history_panel_wait_for_hid_visible(1)
+        self.history_panel_item_component(hid=1).delete_button.wait_for_visible()
+        self.screenshot("history_panel_undeleted_item_still_listed")
+        # a deleted item stays listed while Include deleted is on
+        self.history_panel_item_delete(4)
+        self.history_panel_item_component(hid=4).undelete_button.wait_for_visible()
+        self._wait_for_history_item_states(
+            history_id,
+            ("deleted", "purged"),
+            {1: (False, False), 2: (True, False), 3: (True, True), 4: (True, False)},
+            "hid 1 to be undeleted and hid 4 deleted",
+        )
+
+        self.history_panel_include_deleted()
+        self.history_panel_wait_for_hid_visible(1)
+        self.history_panel_item_component(hid=1).delete_button.wait_for_visible()
+        self.history_panel_wait_for_hid_hidden(2)
+        self.history_panel_wait_for_hid_hidden(3)
+        self.history_panel_wait_for_hid_hidden(4)
+
+    @selenium_test
+    @managed_history
+    def test_unhide_item_with_include_hidden(self):
+        history_id = self.current_history_id()
+        self.dataset_populator.new_dataset(history_id, content="1\n", wait=True)
+        hda2 = self.dataset_populator.new_dataset(history_id, content="2\n", wait=True)
+        self.dataset_populator.hide_dataset(hda2["id"])
+        self.home()
+        self.history_panel_wait_for_hid_ok(1)
+        self.history_panel_wait_for_hid_hidden(2)
+
+        self.history_panel_include_hidden()
+        self.history_panel_item_unhide(2)
+        # an unhidden item stays listed while Include hidden is on
+        self.history_panel_item_component(hid=2).unhide_button.wait_for_absent_or_hidden()
+        self.history_panel_item_component(hid=2).delete_button.wait_for_visible()
+        self.screenshot("history_panel_hidden_item_unhidden")
+        # a deleted item still leaves the list
+        self.history_panel_item_delete(1)
+        self.history_panel_wait_for_hid_hidden(1)
+        self._wait_for_history_item_states(
+            history_id,
+            ("deleted", "visible"),
+            {1: (True, True), 2: (False, True)},
+            "hid 1 to be deleted and hid 2 unhidden",
+        )
+
+    def _wait_for_history_item_states(self, history_id, keys, expected, description):
+        """Wait until the API reports ``{hid: (values of keys)}`` equal to ``expected``."""
+        data = {"v": "dev", "keys": ",".join(("hid", *keys))}
+
+        def states():
+            contents = self.dataset_populator.get_history_contents(history_id, data=data)
+            return {item["hid"]: tuple(item[key] for key in keys) for item in contents}
+
+        self._wait_on(lambda: states() == expected, description)
+
+    @selenium_test
     def test_history_panel_annotations_change(self):
         history_panel = self.components.history_panel
 
@@ -86,6 +178,19 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
             error_message="History annotation was changed, but annotation text is wrong!",
             is_equal=True,
         )
+
+    @selenium_test
+    def test_history_panel_switch_history(self):
+        target_id = self.dataset_populator.new_history("switch target")
+        self.home()
+        self.history_panel_switch_to(target_id)
+
+        @retry_assertion_during_transitions
+        def assert_switched():
+            assert self.history_panel_name() == "switch target"
+
+        assert_switched()
+        self.screenshot("history_panel_switched_history")
 
     @selenium_test
     def test_history_panel_tags_change(self):

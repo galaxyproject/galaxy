@@ -1,7 +1,6 @@
 from galaxy.selenium.axe_results import FORMS_VIOLATIONS
 from .framework import (
     managed_history,
-    retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase,
 )
@@ -90,12 +89,14 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
         assert edit_dataset_attributes.alert.has_class("alert-success")
         assert name_component.wait_for_value() == new_name
 
-        # The success alert can appear before the asynchronous history refresh finishes.
-        @retry_assertion_during_transitions
-        def assert_history_name_updated():
-            assert self.history_panel_item_component(hid=hid).name.wait_for_text() == new_name
+        # the history panel picks up the new name on its next history poll
+        item_name = self.history_panel_item_component(hid=hid).name
 
-        assert_history_name_updated()
+        def item_has_new_name(driver=None):
+            name = item_name.wait_for_text()
+            return name if name == new_name else None
+
+        self._wait_on_custom(item_has_new_name, f"history item {hid} to be named [{new_name}]")
 
     @selenium_test
     @managed_history

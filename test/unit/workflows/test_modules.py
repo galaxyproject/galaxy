@@ -7,6 +7,7 @@ from typing import (
 from unittest import mock
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
@@ -256,9 +257,56 @@ def test_split_numeric_bounds(parameter_type, min, max, expected_bounds):
     assert validators == expected_validators
 
 
+@pytest.mark.parametrize(
+    "parameter_type,range_validator",
+    [
+        ("integer", {"type": "in_range", "min": 1, "max": 5, "negate": True}),
+        ("integer", {"type": "in_range", "min": 1, "max": 5, "exclude_min": True}),
+        ("integer", {"type": "in_range", "min": 1, "max": 5, "message": "1-5 only"}),
+        ("integer", {"type": "in_range", "min": 1.5, "max": 5}),
+    ],
+)
+def test_split_numeric_bounds_keeps_ranges_bounds_cannot_express(parameter_type, range_validator):
+    bounds, validators = split_numeric_bounds({"parameter_type": parameter_type, "validators": [range_validator]})
+    assert bounds is None
+    assert validators == [range_validator]
+
+
+def test_split_numeric_bounds_separates_inverted_bounds():
+    bounds, validators = split_numeric_bounds(
+        {"parameter_type": "integer", "validators": [{"type": "in_range", "min": 5, "max": 1, "negate": False}]}
+    )
+    assert bounds == {"min": 5, "max": 1}
+    assert validators == []
+
+
 def test_parameter_input_ordered_bounds_have_no_errors():
     assert __numeric_editor_module("integer", 1, 5).get_errors() is None
     assert __numeric_editor_module("float", 2.5, 2.5).get_errors() is None
+
+
+@pytest.mark.parametrize("form_value,negate", [("true", True), ("false", False)])
+def test_text_input_regex_validator_negate_from_tool_form(form_value, negate):
+    trans = MockTrans()
+    trans.workflow_building_mode = workflow_building_modes.ENABLED
+    module = modules.module_factory.from_dict(trans, {"type": "parameter_input"}, from_tool_form=True)
+    incoming = {
+        "parameter_definition|parameter_type": "text",
+        "parameter_definition|optional|optional": "false",
+        "parameter_definition|validators_0|regex_match": "cow",
+        "parameter_definition|validators_0|regex_doc": "no cows",
+        "parameter_definition|validators_0|regex_negate": form_value,
+    }
+    module_state = {}
+    errors = {}
+    populate_state(trans, module.get_inputs(), incoming, module_state, errors=errors, check=True)
+    assert not errors
+    module.recover_state(module_state, from_tool_form=True)
+    step = model.WorkflowStep()
+    module.save_to_step(step)
+    assert step.tool_inputs["validators"] == [
+        {"type": "regex", "expression": "cow", "negate": negate, "message": "no cows"}
+    ]
 
 
 def test_cannot_create_tool_modules_for_missing_tools():
@@ -1047,6 +1095,29 @@ def test_capture_unexpected_error_returns_none_loudly():
         assert _capture(resolve) == (None, None, None)
 
     log.warning.assert_called_once()
+
+
+class _PersistableFakeTool(_CaptureFakeTool):
+    version = "1.0"
+    dynamic_tool = None
+    tool_source = bunch.Bunch(to_string=lambda: "<tool/>")
+
+
+def test_capture_propagates_failure_flushing_unrelated_pending_objects():
+    trans = MockTrans()
+    history = model.History(name="target")
+    existing = model.History(name="existing")
+    trans.sa_session.add_all([history, existing])
+    trans.sa_session.commit()
+    existing_id = existing.id
+    trans.sa_session.expunge(existing)
+    trans.sa_session.add(model.History(id=existing_id, name="duplicate"))
+
+    def resolve(iteration_elements):
+        return bunch.Bunch(inputs={}), None, None
+
+    with pytest.raises(IntegrityError):
+        modules._capture_workflow_tool_request_state(trans, _PersistableFakeTool(), None, None, history, resolve, [])
 
 
 def test_to_decoded_json_lowers_connected_value_in_repeat():

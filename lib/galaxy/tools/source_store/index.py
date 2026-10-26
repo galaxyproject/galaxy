@@ -1,6 +1,7 @@
 """Index metadata used by cached tool APIs and search."""
 
 import json
+from collections.abc import Iterator
 from datetime import datetime
 from typing import (
     Any,
@@ -155,6 +156,20 @@ class ToolIndex(BaseModel):
             if versions.get(version) == default:
                 versions[version] = default
         return self
+
+    def iter_entries(self) -> Iterator[ToolIndexEntry]:
+        """Every indexed entry, yielding a default shared with ``entries_by_version`` once.
+
+        Also covers indexes serialized before ``entries_by_version`` existed.
+        """
+        seen: set[int] = set()
+        for versions in self.entries_by_version.values():
+            for entry in versions.values():
+                seen.add(id(entry))
+                yield entry
+        for entry in self.entries.values():
+            if id(entry) not in seen:
+                yield entry
 
     def invalidate_caches(self) -> None:
         """Invalidate all cached computations."""

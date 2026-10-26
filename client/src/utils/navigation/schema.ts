@@ -105,6 +105,7 @@ interface Roothistory_panelcontent_item extends Component {
     _: SelectorTemplate;
     title: SelectorTemplate;
     details: SelectorTemplate;
+    details_expanded: SelectorTemplate;
     summary: SelectorTemplate;
     hid: SelectorTemplate;
     name: SelectorTemplate;
