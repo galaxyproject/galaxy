@@ -95,4 +95,36 @@ describe("toolStore", () => {
         expect(store.getToolIdsByName("cut").sort()).toEqual(["adv_cut1", "cut1"]);
         expect(store.getToolIdsByName("CUT", true)).toEqual(["cut1"]);
     });
+
+    it("still fetches the full tool list even if some tools were already fetched one at a time", async () => {
+        vi.mocked(axios.get)
+            .mockResolvedValueOnce({ data: { id: "cat1", name: "Concatenate" } })
+            .mockResolvedValueOnce({
+                data: [
+                    { id: "cat1", name: "Concatenate" },
+                    { id: "random_lines1", name: "Select random lines" },
+                ],
+            });
+        const store = useToolStore();
+
+        // A single tool landing in `toolsById` (e.g. a job card's own rerunnable-tool check)
+        // must not look like the full list is already loaded.
+        await store.fetchToolForId("cat1");
+        await store.fetchTools();
+
+        expect(axios.get).toHaveBeenCalledWith(expect.stringContaining("api/tools"), {
+            params: { in_panel: false },
+        });
+        expect(store.getToolIdsByName("random lines")).toEqual(["random_lines1"]);
+    });
+
+    it("does not re-fetch the full tool list once it's already loaded", async () => {
+        vi.mocked(axios.get).mockResolvedValue({ data: [{ id: "cat1", name: "Concatenate" }] });
+        const store = useToolStore();
+
+        await store.fetchTools();
+        await store.fetchTools();
+
+        expect(axios.get).toHaveBeenCalledTimes(1);
+    });
 });
