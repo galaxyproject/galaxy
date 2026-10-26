@@ -47,9 +47,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.10'
-      # The 25.1 package Makefiles call ``python -m build`` and ``twine`` from PATH.
+      # Plain pip rather than ``uv tool install``: the 25.1 package Makefiles call
+      # ``python -m build`` and ``twine`` from PATH, and galaxy-release-util
+      # depends on both.
       - name: Install script dependencies
-        run: pip install galaxy-release-util build twine
+        run: pip install galaxy-release-util
       - name: Build Python packages
         run: |
           galaxy-release-util build
@@ -83,15 +85,19 @@ jobs:
           repository-url: ${{ ((github.event_name == 'workflow_dispatch' && inputs.release_type == 'prerelease') || (github.event_name == 'release' && github.event.release.prerelease)) && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
 
   build-and-publish-npm:
-    # Release events only: a manual dispatch for an old 25.1 tag must not move
-    # the npm ``latest`` dist-tag back from a newer release.
-    if: github.repository_owner == 'galaxyproject' && github.event_name == 'release'
+    if: |
+      github.repository_owner == 'galaxyproject' &&
+      (github.event_name == 'release' ||
+       (github.event_name == 'workflow_dispatch' && !cancelled() && !failure()))
+    needs: [check-permissions]
     name: Build and Publish to NPM
     runs-on: ubuntu-24.04
     permissions:
       id-token: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || '' }}
       - name: Read Node.js version
         id: node-version
         run: echo "version=$(cat client/.node_version)" >> $GITHUB_OUTPUT
@@ -110,6 +116,8 @@ jobs:
       - run: npm install -g npm@11
         working-directory: 'client'
       - name: publish client
-        if: "!github.event.release.prerelease"
-        run: npm publish --provenance --access public
+        if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
+        # 25.1 is no longer the newest release line, so publish under its own
+        # dist-tag and leave ``latest`` to the current release.
+        run: npm publish --provenance --access public --tag release-25.1
         working-directory: 'client'
