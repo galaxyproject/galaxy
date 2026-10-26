@@ -2450,7 +2450,7 @@ class ToolModule(WorkflowModule):
 
     @classmethod
     def resolve_tool_uuid(Class, trans: "ProvidesUserContext", d):
-        """Resolve embedded definitions using the importing user's tool permissions."""
+        """Resolve embedded tools with the user's permissions, creating and committing them if needed."""
         tool_id = d.get("content_id") or d.get("tool_id")
         tool_uuid = d.get("tool_uuid")
         tool_representation = d.get("tool_representation")
