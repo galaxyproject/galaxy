@@ -30,6 +30,7 @@ from pydantic import (
 )
 from sqlalchemy import (
     and_,
+    delete,
     desc,
     false,
     func,
@@ -204,14 +205,12 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
     ) -> model.StoredWorkflowUserShareAssociation:
         """Delete a user share along with that user's tool panel bookmark of the workflow."""
         user_share_assoc = super().unshare_with(item, user, flush=False)
-        menu_entries = self.session().scalars(
-            select(model.StoredWorkflowMenuEntry).where(
+        self.session().execute(
+            delete(model.StoredWorkflowMenuEntry).where(
                 model.StoredWorkflowMenuEntry.stored_workflow_id == item.id,
                 model.StoredWorkflowMenuEntry.user_id == user.id,
             )
         )
-        for menu_entry in menu_entries:
-            self.session().delete(menu_entry)
         if flush:
             self.session().commit()
         return user_share_assoc
