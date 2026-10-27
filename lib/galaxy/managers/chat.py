@@ -412,18 +412,23 @@ class ChatManager:
             return False
         return (data.get("agent_response") or {}).get("agent_type") == "clarification"
 
-    def get_routing_history(self, trans: ProvidesUserContext, exchange_id: int) -> tuple[list[ModelMessage], bool]:
-        """The pydantic-ai conversation history plus whether the last turn was a clarification.
+    def get_routing_history(self, trans: ProvidesUserContext, exchange_id: int) -> tuple[list[ModelMessage], int]:
+        """The pydantic-ai conversation history plus how many turns at its end were clarifications.
 
         Both are derived from a single exchange fetch. The router emits
-        ``agent_type="clarification"`` when it needs more info; the next user message answers it.
-        Routing withholds history, so routing that elliptical answer ("the second one") needs the
-        flag to re-include the clarification turn.
+        ``agent_type="clarification"`` when it needs more info, and routes on only the last turn.
+        After one or more clarifications that turn is just the question, so the router uses the
+        count to reach back to the turn the clarifications followed, where the subject was named.
         """
         exchange = self.get_exchange_by_id(trans, exchange_id)
         if not exchange or not exchange.messages:
-            return [], False
-        return self._messages_to_pydantic_ai(exchange.messages), self._message_is_clarification(exchange.messages[-1])
+            return [], 0
+        clarification_turns = 0
+        for message in reversed(exchange.messages):
+            if not self._message_is_clarification(message):
+                break
+            clarification_turns += 1
+        return self._messages_to_pydantic_ai(exchange.messages), clarification_turns
 
     def delete_exchange(self, trans: ProvidesUserContext, exchange_id: int) -> None:
         """Delete a single chat exchange and its messages."""
