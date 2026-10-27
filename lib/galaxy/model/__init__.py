@@ -1705,6 +1705,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     tool_request_id: Mapped[int | None] = mapped_column(ForeignKey("tool_request.id"), index=True)
     tool_state: Mapped[dict[str, Any] | None] = mapped_column(JSON().with_variant(JSONB, "postgresql"))
 
+    __table_args__ = (Index("ix_job_user_id_update_time", "user_id", "update_time"),)
+
     dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
     tool_request: Mapped[Optional["ToolRequest"]] = relationship(back_populates="jobs")
     user: Mapped[Optional["User"]] = relationship()
