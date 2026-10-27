@@ -128,6 +128,7 @@ jobs:
       # publishes under `release-<major>.<minor>` instead.
       - name: choose client dist-tag
         id: client-dist-tag
+        if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
         run: |
           name=$(node -p "require('./package.json').name")
           version=$(node -p "require('./package.json').version")
@@ -155,6 +156,7 @@ jobs:
         working-directory: 'client'
       - name: choose client-api dist-tag
         id: client-api-dist-tag
+        if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
         run: |
           name=$(node -p "require('./package.json').name")
           version=$(node -p "require('./package.json').version")
