@@ -1,7 +1,19 @@
+import re
 import string
 import time
+from urllib.parse import urljoin
+from uuid import uuid4
 
-from galaxy_test.base.populators import DatasetPopulator
+import requests
+
+from galaxy_test.base.api_asserts import (
+    assert_status_code_is,
+    assert_status_code_is_ok,
+)
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    wait_on_state,
+)
 from galaxy_test.driver.integration_util import IntegrationTestCase
 from .objectstore._base import BaseObjectStoreIntegrationTestCase
 from .objectstore.test_selection_with_resource_parameters import DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE
@@ -106,6 +118,47 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         config["allow_user_dataset_purge"] = True
+
+    def test_anonymous_job_finishing_after_login_is_counted(self):
+        email = f"user_{uuid4()}@bx.psu.edu"
+        password = "testpass"
+        self._setup_user(email, password)
+        with requests.Session() as session:
+            login_page = session.get(urljoin(self.url, "login/start"))
+            csrf_token_match = re.search(r'session_csrf_token": "(.*?)"', login_page.text)
+            assert csrf_token_match, "session_csrf_token not found on login page"
+
+            # Run create_2 without logging in, it writes "1\n" and "2\n" to its outputs, then sleeps
+            history_id = session.get(urljoin(self.url, "history/current_history_json")).json()["id"]
+            run_response = session.post(
+                urljoin(self.url, "api/tools"),
+                json={"tool_id": "create_2", "history_id": history_id, "inputs": {"sleep_time": 10}},
+            )
+            assert_status_code_is_ok(run_response)
+            output_ids = [output["id"] for output in run_response.json()["outputs"]]
+            job_url = urljoin(self.url, f"api/jobs/{run_response.json()['jobs'][0]['id']}")
+            wait_on_state(lambda: session.get(job_url), desc="job state", ok_states=["running"])
+
+            # Log in while the job runs, which gives the history to the user
+            login_response = session.post(
+                urljoin(self.url, "user/login"),
+                data={"login": email, "password": password, "session_csrf_token": csrf_token_match.group(1)},
+            )
+            assert_status_code_is(login_response, 200)
+            assert session.get(job_url).json()["state"] == "running"
+
+        with self._different_user(email):
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            # The outputs are counted when the job finishes, and a recalculation agrees
+            assert self.dataset_populator.total_disk_usage() == 4
+            self.recalculate_disk_usage()
+            assert self.dataset_populator.total_disk_usage() == 4
+
+            # Purging them brings the usage back to 0
+            for output_id in output_ids:
+                self.dataset_populator.delete_dataset(history_id, output_id, purge=True, wait_for_purge=True)
+            assert self.dataset_populator.total_disk_usage() == 0
 
 
 class TestFailedJobDiskUsageIntegration(IntegrationTestCase):
