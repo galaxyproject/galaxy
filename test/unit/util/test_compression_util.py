@@ -1,3 +1,4 @@
+import os
 import shutil
 import tempfile
 import zipfile
@@ -82,3 +83,10 @@ def test_get_fileobj_raw_zip_skips_directory_entries(tmp_path):
     with fh:
         assert fmt == "zip"
         assert fh.read() == b"content\n"
+
+
+def test_compressed_file_tar_with_stray_zip_end_record(tmp_path):
+    with CompressedFile("test-data/tar_with_stray_zip_end_record.tar") as cf:
+        assert cf.file_type == "tar"
+        outdir = cf.extract(str(tmp_path))
+    assert os.path.isfile(os.path.join(outdir, "member.bin"))

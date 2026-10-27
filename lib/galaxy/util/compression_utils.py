@@ -207,7 +207,14 @@ class CompressedFile:
         self.type = self.file_type
         method = f"open_{self.file_type}"
         if hasattr(self, method):
-            self.archive = getattr(self, method)(file_path, mode)
+            try:
+                self.archive = getattr(self, method)(file_path, mode)
+            except zipfile.BadZipFile:
+                # is_zipfile also matches a tar that merely contains a zip end record.
+                if not tarfile.is_tarfile(file_path):
+                    raise
+                self.file_type = self.type = "tar"
+                self.archive = self.open_tar(file_path, mode)
         else:
             raise NameError(f"File type {self.file_type} specified, no open method found.")
 
