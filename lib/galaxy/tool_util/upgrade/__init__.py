@@ -268,7 +268,7 @@ class ProfileMigration26_0(ProfileMigration):
         input_references = InputReferences(tool_xml)
         for output in tool_xml.findall("./outputs/collection[@structured_like]"):
             structured_like = output.attrib["structured_like"]
-            if "|" in structured_like or input_references.qualified(input_references.normalize(structured_like)):
+            if input_references.qualified(input_references.normalize(structured_like)):
                 continue
             qualified_names = sorted({r.qualified for r in input_references.legacy(structured_like)})
             if qualified_names:

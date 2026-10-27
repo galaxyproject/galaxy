@@ -26,6 +26,26 @@ SECTION_INPUT = """<tool id="nested_collection_reference" name="nested_collectio
   </outputs>
 </tool>
 """
+NESTED_CONDITIONAL_INPUT = """<tool id="nested_collection_reference" name="nested_collection_reference" version="1.0">
+  <command>cat '$outer.inner.input1.forward' > '$output.forward'</command>
+  <inputs>
+    <conditional name="outer">
+      <param name="outer_select" type="select"><option value="a">A</option></param>
+      <when value="a">
+        <conditional name="inner">
+          <param name="inner_select" type="select"><option value="b">B</option></param>
+          <when value="b">
+            <param name="input1" type="data_collection" collection_type="paired" format="txt" />
+          </when>
+        </conditional>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <collection name="output" type="paired" {reference} />
+  </outputs>
+</tool>
+"""
 
 
 def test_does_not_work_on_non_xml_tools():
@@ -151,6 +171,12 @@ def test_26_0_qualified_reference(tmp_path):
     tool = _write_tool(tmp_path, SECTION_INPUT, 'structured_like="sect|input1"')
     advice = advise_on_upgrade(tool)
     assert_not_has_advice(advice, UNQUALIFIED_STRUCTURED_LIKE)
+
+
+def test_26_0_partially_qualified_reference(tmp_path):
+    tool = _write_tool(tmp_path, NESTED_CONDITIONAL_INPUT, 'structured_like="outer|input1"')
+    advice = advise_on_upgrade(tool)
+    assert "'outer|inner|input1'" in _advice_message(advice, UNQUALIFIED_STRUCTURED_LIKE)
 
 
 def test_21_09_data_source_advice():
