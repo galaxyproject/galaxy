@@ -169,7 +169,7 @@ jobs:
             echo "--- Describing $pod ---"
             kubectl describe -n galaxy pod/$pod
             echo "--- Logs of $pod ---"
-            kubectl logs -n galaxy pod/$pod --all-containers --tail=300
+            kubectl logs -n galaxy pod/$pod --all-containers --tail=300 || true
             echo "--- Logs of $pod (previous containers) ---"
             kubectl logs -n galaxy pod/$pod --all-containers --previous --tail=300 || true
           done
