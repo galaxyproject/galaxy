@@ -158,7 +158,10 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             if "error" not in job_details:
                 enhanced_query += f"\n\nJob Details:\n{self._format_job_context(job_details)}"
 
-        result = await self._run_with_retry(enhanced_query)
+        # The router's handoff task is often a one-liner ("diagnose the error") written from a
+        # follow-up that never names the tool or job; the conversation is where those live.
+        message_history = self._extract_message_history(context)
+        result = await self._run_with_retry(enhanced_query, message_history=message_history)
 
         if self._supports_structured_output():
             analysis_result = extract_structured_output(result, ErrorAnalysisResult, log)
