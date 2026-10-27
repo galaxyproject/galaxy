@@ -249,22 +249,24 @@ class HDAManager(
         """
         Purge this HDA and the dataset underlying it.
         """
+        # super().purge() checks this too, but only after the usage below has been decreased
+        self.dataset_manager.error_unless_dataset_purge_allowed()
         user = hda.history.user or None
         if user:
             # Need to calculate this before purging
             quota_amount_reduction = hda.quota_amount(user)
-        super().purge(hda, flush=flush)
-        # decrease the user's space used
-        if user:
             quota_source_info = hda.dataset.quota_source_info
             if quota_amount_reduction and quota_source_info.use:
+                # Mark the HDA purged and decrease the user's space used in the same transaction, so a
+                # concurrent disk usage recalculation sees both changes or neither.
+                hda.deleted = True
+                hda.purged = True
+                session = self.session()
                 user.adjust_total_disk_usage(
                     -quota_amount_reduction, quota_source_info.label, preserve_update_time=preserve_owner_update_time
                 )
-                # TODO: don't flush above if we're going to re-flush here
-                session = object_session(user)
-                assert session
                 session.commit()
+        super().purge(hda, flush=flush)
 
     # .... states
     def error_if_uploading(self, hda):

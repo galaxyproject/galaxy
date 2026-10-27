@@ -34,6 +34,18 @@ class HDATestCase(BaseTestCase):
         dataset1 = self.dataset_manager.create()
         return self.hda_manager.create(history=history1, dataset=dataset1)
 
+    def _create_charged_hda(self, size: int):
+        """Create an HDA of a finished dataset of `size` bytes, counted in its owner's disk usage."""
+        owner = self.user_manager.create(**user2_data)
+        history1 = self.history_manager.create(name="history1", user=owner)
+        dataset1 = self.dataset_manager.create()
+        item1 = self.hda_manager.create(history=history1, dataset=dataset1)
+        dataset1.state = model.Dataset.states.OK
+        dataset1.total_size = size
+        owner.disk_usage = size
+        self.trans.sa_session.commit()
+        return owner, item1
+
 
 # =============================================================================
 class TestHDAManager(HDATestCase):
@@ -162,11 +174,7 @@ class TestHDAManager(HDATestCase):
 
     def test_purge_not_allowed(self):
         self.trans.app.config.allow_user_dataset_purge = False
-
-        owner = self.user_manager.create(**user2_data)
-        history1 = self.history_manager.create(name="history1", user=owner)
-        dataset1 = self.dataset_manager.create()
-        item1 = self.hda_manager.create(history=history1, dataset=dataset1)
+        owner, item1 = self._create_charged_hda(size=10)
 
         self.log("should raise an error when purging an hda if config does not allow")
         assert not item1.purged
@@ -174,6 +182,22 @@ class TestHDAManager(HDATestCase):
             self.hda_manager.purge(item1)
         assert not item1.deleted
         assert not item1.purged
+        assert owner.disk_usage == 10
+
+    def test_purge_adjusts_usage_with_purged_flag(self):
+        self.trans.app.config.allow_user_dataset_purge = True
+        owner, item1 = self._create_charged_hda(size=10)
+
+        self.log("should decrease the usage in the same commit that marks the hda purged")
+        with mock.patch.object(
+            self.hda_manager.dataset_manager, "purge", side_effect=OSError("Failed to remove the dataset files")
+        ):
+            with self.assertRaises(OSError):
+                self.hda_manager.purge(item1)
+        # discard what wasn't committed before the failure
+        self.trans.sa_session.rollback()
+        assert item1.purged
+        assert owner.disk_usage == 0
 
     def test_ownable(self):
         owner = self.user_manager.create(**user2_data)
