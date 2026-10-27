@@ -52,10 +52,11 @@ watch(
 const stepsWithErrors = computed(() => {
     if (steps.value) {
         const findStepJobSummary = stepJobSummaryLookup(props.stepsJobsSummary);
+        const invocationSteps = new Map(props.invocation.steps.map((step) => [step.order_index, step]));
         return Object.entries(steps.value)
             .filter(([index, step]) => {
                 if (!isWorkflowInput(step.type)) {
-                    const invocationStep = props.invocation.steps[Number(index)];
+                    const invocationStep = invocationSteps.get(Number(index));
                     const invocationStepSummary = invocationStep && findStepJobSummary(invocationStep);
                     if (invocationStepSummary) {
                         return errorCount(invocationStepSummary) > 0;

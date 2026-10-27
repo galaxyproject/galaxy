@@ -36,7 +36,16 @@ const currentQuery = ref("");
 const selection = useInvocationSelection();
 const stepsContainer = ref<HTMLElement>();
 const expandedSteps = ref<Record<number, boolean>>({});
+let locallySelectedIndex: number | undefined;
+function selectLocally(index: number) {
+    if (selection && selection.stepIndex.value !== index) {
+        locallySelectedIndex = index;
+    }
+}
 function setExpanded(index: number, expanded: boolean) {
+    if (expanded) {
+        selectLocally(index);
+    }
     expandedSteps.value = { ...expandedSteps.value, [index]: expanded };
     if (selection && expanded) {
         selection.stepIndex.value = index;
@@ -47,6 +56,8 @@ function setExpanded(index: number, expanded: boolean) {
 
 const workflowId = computed(() => workflow.value?.id);
 const workflowVersion = computed(() => workflow.value?.version);
+
+const invocationSteps = computed(() => new Map(props.invocation.steps.map((step) => [step.order_index, step])));
 
 const filteredWorkflowSteps = computed(() => {
     if (!workflow.value) {
@@ -62,7 +73,7 @@ const filteredWorkflowSteps = computed(() => {
     // Filter steps based on the search query matching the step title
     const query = currentQuery.value.toLowerCase().trim();
     return steps.filter((step) => {
-        const invocationStep = props.invocation.steps.find((candidate) => candidate.order_index === step.id);
+        const invocationStep = invocationSteps.value.get(step.id);
 
         const toolId = step.tool_uuid || step.tool_id;
         const toolName = toolId ? toolStore.getToolNameById(toolId) : undefined;
@@ -102,6 +113,11 @@ const {
 watch(
     [() => selection?.stepIndex.value, workflow, graphLoading],
     async ([index]) => {
+        const local = index === locallySelectedIndex;
+        locallySelectedIndex = undefined;
+        if (local) {
+            return;
+        }
         if (index === undefined || index === null || !workflow.value || graphLoading.value) {
             return;
         }
@@ -160,7 +176,11 @@ watch(
     </GAlert>
     <div v-else-if="graphSteps && workflow" ref="stepsContainer" class="steps-container">
         <div class="px-1 pt-1 pb-2">
-            <DelayedInput placeholder="search steps" :delay="200" @change="(v: string) => (currentQuery = v)" />
+            <DelayedInput
+                placeholder="search steps"
+                :value="currentQuery"
+                :delay="200"
+                @change="(v: string) => (currentQuery = v)" />
         </div>
 
         <div v-if="filteredWorkflowSteps.length" class="steps-content">
@@ -196,6 +216,7 @@ watch(
                     :workflow-step="step"
                     :graph-step="graphSteps[step.id]"
                     :expanded="selection ? Boolean(expandedSteps[step.id]) : undefined"
+                    @select="selectLocally(step.id)"
                     @update:expanded="setExpanded(step.id, $event)" />
             </div>
         </div>

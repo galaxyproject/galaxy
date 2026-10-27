@@ -25,7 +25,7 @@ const props = defineProps<{
 
 const selection = useInvocationSelection();
 function selectOutput(name: string, expanded: boolean) {
-    if (selection) {
+    if (selection && (expanded || selection.output.value === name)) {
         selection.output.value = expanded ? name : undefined;
     }
 }
@@ -97,7 +97,7 @@ const parameters = computed(() => Object.values(props.invocation.input_step_para
                     :item-id="output.id ?? ''"
                     :item-src="output.src"
                     data-description="terminal invocation output item"
-                    :expanded="selection ? selection.output.value === key : undefined"
+                    :expanded="selection?.output.value === key ? true : undefined"
                     scroll-on-expand
                     @update:expanded="selectOutput(key, $event)" />
             </div>

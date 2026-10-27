@@ -156,6 +156,39 @@ describe.each(["hda", "hdca"])("GenericItem (%s)", (itemSrc) => {
         scroll.mockRestore();
     });
 
+    it("waits for the output content before scrolling to a URL target", async () => {
+        let resolveItem!: (value: unknown) => void;
+        fetchItem.mockReturnValue(
+            new Promise((resolve) => {
+                resolveItem = resolve;
+            }) as never,
+        );
+        if (itemSrc === "hdca") {
+            vi.mocked(fetchCollectionDetails).mockReturnValue(
+                new Promise((resolve) => {
+                    resolveItem = resolve;
+                }) as never,
+            );
+        }
+        const scroll = vi.spyOn(Element.prototype, "scrollIntoView");
+        mountItem(true, true);
+        await flushPromises();
+        expect(scroll).not.toHaveBeenCalled();
+        resolveItem(itemSrc === "hdca" ? { data: item } : item);
+        await flushPromises();
+        expect(wrapper.findComponent(ContentItem).exists()).toBe(true);
+        expect(scroll).toHaveBeenCalledOnce();
+        // Moving the URL target elsewhere preserves this item's local expansion.
+        await wrapper.setProps({ expanded: undefined });
+        await flushPromises();
+        if (itemSrc === "hda") {
+            expect(wrapper.findComponent(ContentItem).props("expandDataset")).toBe(true);
+        } else {
+            expect(wrapper.findComponent({ name: "GenericElement" }).exists()).toBe(true);
+        }
+        scroll.mockRestore();
+    });
+
     it("replaces content with the error when an automatic refresh fails", async () => {
         vi.useFakeTimers();
         fetchItem.mockResolvedValueOnce(item as never).mockRejectedValueOnce(new TypeError("Failed to fetch"));

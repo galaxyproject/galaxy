@@ -204,6 +204,7 @@ export function useInvocationGraph(
             : steps.value;
         const stepCount = Object.keys(fullSteps).length;
         const findStepJobSummary = stepJobSummaryLookup(stepsJobsSummary);
+        const invocationSteps = new Map(invocation.value.steps.map((step) => [step.order_index, step]));
         /** The first failed input fetch */
         let inputError: Error | undefined;
 
@@ -219,7 +220,7 @@ export function useInvocationGraph(
             }
 
             /** The raw invocation step */
-            const invocationStep = invocation.value.steps.find((step) => step.order_index === i);
+            const invocationStep = invocationSteps.get(i);
 
             // `updateStep` only writes what changed, so unchanged steps don't re-render
             if (!isWorkflowInput(graphStepFromWfStep.type)) {

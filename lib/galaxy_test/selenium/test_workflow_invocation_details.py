@@ -160,6 +160,7 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
         invocations.step_details(order_index=order_index).wait_for_and_click()
         invocations.step_job_details(order_index=order_index).wait_for_visible()
 
+    @selenium_test
     @managed_history
     def test_mapped_job_selection_urls(self):
         """All step aliases open a mapped job; graph navigation preserves the mounted view."""

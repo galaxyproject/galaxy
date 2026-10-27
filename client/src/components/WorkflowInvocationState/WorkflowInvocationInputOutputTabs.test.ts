@@ -225,11 +225,15 @@ describe("workflow output URL selection", () => {
         });
         const items = wrapper.findAllComponents(GenericItem);
         expect(items[0]!.props("expanded")).toBe(true);
-        expect(items[1]!.props("expanded")).toBe(false);
+        expect(items[1]!.props("expanded")).toBeUndefined();
         selection.output.value = "collection";
         await flushPromises();
-        expect(items[0]!.props("expanded")).toBe(false);
+        expect(items[0]!.props("expanded")).toBeUndefined();
         expect(items[1]!.props("expanded")).toBe(true);
+        // Collapsing a different output must not clear the current URL target.
+        items[0]!.vm.$emit("update:expanded", false);
+        await flushPromises();
+        expect(selection.output.value).toBe("collection");
         items[0]!.vm.$emit("update:expanded", true);
         await flushPromises();
         expect(selection.output.value).toBe("dataset");
