@@ -19,6 +19,8 @@ export const useAuthStore = defineStore({
                 localStorage.setItem("user", user ? JSON.stringify(user) : "null")
             } catch (e) {
                 console.debug(`Failed to get current user: ${errorMessageAsString(e)}`)
+                this.user = null
+                localStorage.setItem("user", "null")
             }
         },
         async login(username: string, password: string, returnTo: string | null = null) {
