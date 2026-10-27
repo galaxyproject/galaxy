@@ -108,6 +108,48 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
         config["allow_user_dataset_purge"] = True
 
 
+class TestFailedJobDiskUsageIntegration(IntegrationTestCase):
+    framework_tool_and_types = True
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["allow_user_dataset_purge"] = True
+        config.pop("job_config_file", None)
+        # Jobs running longer than the walltime are stopped by the runner, which fails them
+        config["job_config"] = {
+            "runners": {"local": {"load": "galaxy.jobs.runners.local:LocalJobRunner", "workers": 1}},
+            "execution": {"default": "local", "environments": {"local": {"runner": "local"}}},
+            "limits": [{"type": "walltime", "value": "00:00:05"}],
+        }
+
+    def test_failed_job_outputs_are_counted(self):
+        initial_usage = self.dataset_populator.total_disk_usage()
+        history_id = self.dataset_populator.new_history()
+        # create_2 writes "1\n" and "2\n" to its outputs, then sleeps past the walltime
+        run_response = self.dataset_populator.run_tool("create_2", {"sleep_time": 60}, history_id)
+        output_ids = [output["id"] for output in run_response["outputs"]]
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True, ok_states=["error"])
+
+        # The partial outputs of the failed job are counted, and a recalculation agrees
+        expected_usage = initial_usage + 4
+        assert self.dataset_populator.total_disk_usage() == expected_usage
+        recalculate_response = self.dataset_populator._put("users/current/recalculate_disk_usage")
+        assert self.dataset_populator.wait_on_task(recalculate_response)
+        assert self.dataset_populator.total_disk_usage() == expected_usage
+
+        # Purging them brings the usage back to where it started
+        for output_id in output_ids:
+            self.dataset_populator.delete_dataset(history_id, output_id, purge=True, wait_for_purge=True)
+        assert self.dataset_populator.total_disk_usage() == initial_usage
+
+
 class TestRecalculateUserDiskUsageHierarchicalIntegration(BaseObjectStoreIntegrationTestCase, RecalculateDiskUsage):
     task_based = True
     dataset_populator: DatasetPopulator
