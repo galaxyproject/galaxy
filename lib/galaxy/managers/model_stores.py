@@ -310,11 +310,13 @@ class ModelStoreManager:
             with model_import_store.target_history(legacy_history_naming=False) as new_history:
                 object_tracker = model_import_store.perform_import(new_history, new_history=True)
                 object_tracker.new_history = new_history
+                object_tracker.charge_imported_datasets(new_history)
         else:
             object_tracker = model_import_store.perform_import(
                 history=history,
                 new_history=create_new_history,
             )
+            object_tracker.charge_imported_datasets(history)
         return object_tracker
 
     def _build_user_context(self, user_id: int):
@@ -350,9 +352,11 @@ def create_objects_from_store(
         with model_import_store.target_history(legacy_history_naming=False) as new_history:
             object_tracker = model_import_store.perform_import(new_history, new_history=True)
             object_tracker.new_history = new_history
+            object_tracker.charge_imported_datasets(new_history)
     else:
         object_tracker = model_import_store.perform_import(
             history=history,
             new_history=create_new_history,
         )
+        object_tracker.charge_imported_datasets(history)
     return object_tracker

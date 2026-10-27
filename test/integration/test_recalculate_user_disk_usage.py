@@ -251,6 +251,27 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
                 self.dataset_populator.delete_dataset(other_history_id, output["id"], purge=True, wait_for_purge=True)
             assert self.dataset_populator.total_disk_usage() == 0
 
+    def test_imported_history_is_counted(self):
+        history_name = f"for_export_{uuid4()}"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        self.dataset_populator.new_dataset(history_id, content="0" * 99, wait=True)
+        usage_before_import = self.dataset_populator.total_disk_usage()
+
+        imported_history_id = self.dataset_populator.reimport_history(
+            history_id, history_name, wait_on_history_length=1, export_kwds={}, task_based=True
+        )
+
+        # The imported dataset is a new dataset, counted on top, and a recalculation agrees
+        expected_usage = usage_before_import + 100
+        assert self.dataset_populator.total_disk_usage() == expected_usage
+        self.recalculate_disk_usage()
+        assert self.dataset_populator.total_disk_usage() == expected_usage
+
+        # Purging it brings the usage back to where it was before the import
+        imported_dataset_id = self.dataset_populator.get_history_contents(imported_history_id)[0]["id"]
+        self.dataset_populator.delete_dataset(imported_history_id, imported_dataset_id, purge=True, wait_for_purge=True)
+        assert self.dataset_populator.total_disk_usage() == usage_before_import
+
 
 class TestFailedJobDiskUsageIntegration(IntegrationTestCase):
     framework_tool_and_types = True
