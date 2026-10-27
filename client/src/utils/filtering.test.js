@@ -193,6 +193,11 @@ describe("filtering", () => {
             "2024-01-01t10:30:00",
         );
     });
+    test("parses a quoted value containing its own colon, like a name:value tag", () => {
+        // Same bug, different shape: a quoted tag value (e.g. clicking a `project:lung` tag chip)
+        // also has its own colon, which the greedy regex matched instead of the key's.
+        expect(HistoryFilters.getFilterValue("tag:'project:lung'", "tag")).toBe("project:lung");
+    });
     test("set a single valid filter to existing filterText", () => {
         expect(HistoryFilters.setFilterValue("", "deleted", "any")).toEqual("deleted:any visible:true");
         expect(HistoryFilters.setFilterValue("deleted:any visible:true", "deleted", "false")).toEqual("");
