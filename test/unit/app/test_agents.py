@@ -1120,9 +1120,9 @@ class TestAgentUnitMocked:
         # The older, unrelated first turn stays out of the routing decision.
         assert "wrapper flaw" not in routed_on
 
-    def test_router_skips_a_run_of_clarifications_back_to_the_subject(self):
-        """Several "which tool?" questions in a row: the routing window is the turn they all
-        followed plus the latest one, not every clarification in between."""
+    def test_router_keeps_a_run_of_clarifications_and_the_turn_before_it(self):
+        """Several "which tool?" questions in a row: the routing window is the whole run plus the
+        turn it followed, but nothing older."""
         router = QueryRouterAgent(self.deps)
         history = SUBJECT_THEN_CLARIFICATION_HISTORY + [
             ModelRequest(parts=[UserPromptPart(content="correcting the wrapper seems to be the only solution")]),
@@ -1136,18 +1136,48 @@ class TestAgentUnitMocked:
         window = _message_texts(routing_history)
 
         assert MIRDEEP2_TOOL_ID in window
+        assert "Which upstream tool" in window
         assert "review our chat and try again" in window
-        assert "Which upstream tool" not in window
-        assert "correcting the wrapper" not in window
         assert "wrapper flaw" not in window
 
-    def test_router_routing_window_ignores_an_impossible_clarification_count(self):
-        """A count reaching past the start of the history (every turn a clarification) falls back
-        to the plain last-turn window rather than slicing from a negative index."""
+    def test_router_keeps_the_answers_to_earlier_clarifications(self):
+        """The subject can be the request that started the run ("variant calling"), and each
+        answer narrows it ("somatic"); both have to survive the second question."""
+        router = QueryRouterAgent(self.deps)
+        history: list[ModelMessage] = [
+            ModelRequest(parts=[UserPromptPart(content="What histories do I have?")]),
+            ModelResponse(parts=[TextPart(content="You have 3.")]),
+            ModelRequest(parts=[UserPromptPart(content="I need help with variant calling")]),
+            ModelResponse(parts=[TextPart(content="Germline or somatic?")]),
+            ModelRequest(parts=[UserPromptPart(content="somatic")]),
+            ModelResponse(parts=[TextPart(content="A tool recommendation or a tutorial?")]),
+        ]
+
+        routing_history = router._routing_history(history, clarification_turns=2)
+        assert routing_history is not None
+        window = _message_texts(routing_history)
+
+        assert "variant calling" in window
+        assert "somatic" in window
+        assert "A tool recommendation or a tutorial?" in window
+
+    def test_router_routing_window_caps_a_long_run_of_clarifications(self):
+        """A long run of clarifications can't widen the window into the whole chat."""
+        router = QueryRouterAgent(self.deps)
+        history: list[ModelMessage] = []
+        for i in range(10):
+            history.append(ModelRequest(parts=[UserPromptPart(content=f"answer {i}")]))
+            history.append(ModelResponse(parts=[TextPart(content=f"question {i}?")]))
+
+        routing_history = router._routing_history(history, clarification_turns=10)
+        assert routing_history == history[-2 * (router.MAX_CLARIFICATION_TURNS + 1) :]
+
+    def test_router_routing_window_when_every_turn_was_a_clarification(self):
+        """A conversation that's been clarifications from the start routes on all of it."""
         router = QueryRouterAgent(self.deps)
         history = SUBJECT_THEN_CLARIFICATION_HISTORY
 
-        assert router._routing_history(history, clarification_turns=3) == history[-2:]
+        assert router._routing_history(history, clarification_turns=3) == history
         assert router._routing_history(history, clarification_turns=0) == history[-2:]
 
     @pytest.mark.asyncio
