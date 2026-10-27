@@ -36,22 +36,27 @@ class StubApp:
         pass
 
 
-def test_conflicting_shed_data_table_halts_startup_with_fix(tmp_path):
+@pytest.mark.parametrize("shed_first", [False, True])
+def test_conflicting_shed_data_table_halts_startup_with_fix(tmp_path, shed_first):
     (tmp_path / "testalpha.loc").write_text("data1\tdata1name\t/data1\n")
     (tmp_path / "testalpha_shed.loc").write_text("data2\tdata2name\t/data2\textra2\n")
     tool_data_table_config = tmp_path / "tool_data_table_conf.xml"
     tool_data_table_config.write_text(TOOL_DATA_TABLE_CONF_XML.format(tool_data_path=tmp_path))
     shed_tool_data_table_config = tmp_path / "shed_tool_data_table_conf.xml"
     shed_tool_data_table_config.write_text(SHED_TOOL_DATA_TABLE_CONF_XML.format(tool_data_path=tmp_path))
+    config_paths = [str(tool_data_table_config)]
+    if shed_first:
+        config_paths.insert(0, str(shed_tool_data_table_config))
     config = GalaxyAppConfiguration(
         override_tempdir=False,
         tool_data_path=str(tmp_path),
-        tool_data_table_config_path=str(tool_data_table_config),
+        tool_data_table_config_path=",".join(config_paths),
         shed_tool_data_table_config=str(shed_tool_data_table_config),
     )
     with pytest.raises(ConfigurationError) as exc_info:
         MinimalGalaxyApplication._configure_tool_data_tables(StubApp(config), from_shed_config=False)
     assert isinstance(exc_info.value.__cause__, DataTableColumnMismatch)
     message = str(exc_info.value)
-    assert "iuc/data_manager_example revision abc123" in message
-    assert f"remove this <table name=\"testalpha\"> element from '{shed_tool_data_table_config}'" in message
+    if not shed_first:
+        assert "iuc/data_manager_example revision abc123" in message
+    assert f"remove the <table name=\"testalpha\"> element from '{shed_tool_data_table_config}'" in message

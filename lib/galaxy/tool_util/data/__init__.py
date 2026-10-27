@@ -200,8 +200,10 @@ class DataTableColumnMismatch(Exception):
         incoming_columns: Dict[str, int],
         config_filename: Optional[StrPath] = None,
         repository_info: Optional[Dict[str, Optional[str]]] = None,
+        existing_config_filenames: Optional[List[StrPath]] = None,
     ):
         self.table_name = table_name
+        self.existing_config_filenames = existing_config_filenames or []
         self.existing_columns = existing_columns
         self.incoming_columns = incoming_columns
         self.config_filename = config_filename
@@ -294,6 +296,11 @@ class ToolDataTable(Dictifiable):
             },
         )
         self._merged_load_info: List[Tuple[Type[ToolDataTable], Tuple[Tuple[Element, StrPath], Dict[str, Any]]]] = []
+
+    def config_filenames(self) -> List[StrPath]:
+        """Config files this table and its merged definitions were loaded from."""
+        load_infos = [self._load_info] + [load_info for _, load_info in self._merged_load_info]
+        return [load_info[1]["filename"] for load_info in load_infos if load_info[1]["filename"]]
 
     def _update_version(self, version: Optional[int] = None) -> int:
         if version is not None:
@@ -1210,6 +1217,7 @@ class ToolDataTableManager(Dictifiable):
                 candidate_columns,
                 config_filename=config_filename,
                 repository_info=repository_info,
+                existing_config_filenames=existing.config_filenames(),
             )
 
     def to_dict(

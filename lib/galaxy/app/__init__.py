@@ -218,6 +218,22 @@ log = logging.getLogger(__name__)
 app = None
 
 
+def data_table_conflict_message(e: DataTableColumnMismatch, shed_tool_data_table_config: str) -> str:
+    # Point at the shed definition even when admin-ordered sources load the shed config first.
+    remove_from = e.config_filename
+    if e.repository_info is None:
+        shed_identity = os.path.realpath(shed_tool_data_table_config)
+        remove_from = next(
+            (f for f in e.existing_config_filenames if os.path.realpath(f) == shed_identity),
+            remove_from,
+        )
+    return (
+        f"{e} To start Galaxy, remove the <table name=\"{e.table_name}\"> element from '{remove_from}' "
+        f"or remove the other definition of {e.table_name!r}; tools that rely on the removed definition will "
+        "not work until the conflict is resolved."
+    )
+
+
 class HaltableContainer(Container):
     haltables: list[tuple[str, Callable]]
 
@@ -477,11 +493,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 on_registration=self._tool_data_tables_registered,
             )
         except DataTableColumnMismatch as e:
-            raise ConfigurationError(
-                f"{e} To start Galaxy, remove this <table name=\"{e.table_name}\"> element from '{e.config_filename}' "
-                f"or remove the other definition of {e.table_name!r}; tools that rely on the removed definition will "
-                "not work until the conflict is resolved."
-            ) from e
+            raise ConfigurationError(data_table_conflict_message(e, self.config.shed_tool_data_table_config)) from e
 
     def _tool_data_tables_registered(self, table_names: list[str]) -> None:
         if isinstance(self, StructuredApp):
