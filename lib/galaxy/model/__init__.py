@@ -129,7 +129,10 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_keyed_dict
 from sqlalchemy.orm.session import Session
-from sqlalchemy.sql.expression import FromClause
+from sqlalchemy.sql.expression import (
+    ClauseElement,
+    FromClause,
+)
 from typing_extensions import (
     deprecated,
     Literal,
@@ -851,6 +854,8 @@ class User(Base, Dictifiable, RepresentById):
     deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     disk_usage: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0), index=True)
+    # Sum of the adjustments to disk_usage not flushed yet, see adjust_total_disk_usage
+    _pending_disk_usage_delta = 0
     # Column("person_metadata", JSONType),  # TODO: add persistent, configurable metadata rep for workflow creator
     active: Mapped[bool] = mapped_column(index=True, default=True)
     activation_token: Mapped[Optional[str]] = mapped_column(TrimmedString(64), index=True)
@@ -1049,12 +1054,20 @@ class User(Base, Dictifiable, RepresentById):
                     roles.append(role)
         return roles
 
+    @property
+    def _has_pending_disk_usage_adjustment(self) -> bool:
+        """Whether disk_usage holds an adjustment that is written when the user is flushed."""
+        return isinstance(self.__dict__.get("disk_usage"), ClauseElement)
+
     def get_disk_usage(self, nice_size=False, quota_source_label=None):
         """
         Return byte count of disk space used by user or a human-readable
         string if `nice_size` is `True`.
         """
         if quota_source_label is None:
+            if self._has_pending_disk_usage_adjustment:
+                # Write the pending adjustment so the value can be read
+                required_object_session(self).flush([self])
             rval = 0
             if self.disk_usage is not None:
                 rval = self.disk_usage
@@ -1090,19 +1103,31 @@ WHERE user_id = :user_id and quota_source_label = :label
         assert amount is not None
         if amount != 0:
             if quota_source_label is None:
-                if preserve_update_time:
-                    # Use explicit SQL UPDATE to preserve update_time (avoids triggering onupdate=now)
+                if not inspect(self).has_identity:
+                    # Not in the database yet, the usage is written when the user is flushed
+                    self.disk_usage = (self.disk_usage or 0) + amount
+                elif preserve_update_time:
+                    # Update right away, setting update_time explicitly: a flush would trigger onupdate=now
                     session = required_object_session(self)
                     session.execute(
                         update(User)
                         .where(User.id == self.id)
-                        .values(
-                            disk_usage=User.disk_usage + amount,
-                            update_time=self.update_time,
-                        )
+                        .values(disk_usage=func.coalesce(User.disk_usage, 0) + amount, update_time=self.update_time)
+                        .execution_options(synchronize_session=False)
                     )
+                    if not self._has_pending_disk_usage_adjustment:
+                        # Reload the value on the next read (expiring would drop a pending adjustment)
+                        session.expire(self, ["disk_usage"])
                 else:
-                    self.disk_usage = (self.disk_usage or 0) + amount
+                    # Increment in the database rather than in Python, so concurrent adjustments (job finish,
+                    # purges in celery tasks) don't overwrite each other: the flush writes
+                    # `disk_usage = coalesce(disk_usage, 0) + delta`. Adjustments before the flush add up
+                    # to the same delta, so they cost a single UPDATE.
+                    if self._has_pending_disk_usage_adjustment:
+                        self._pending_disk_usage_delta += amount
+                    else:
+                        self._pending_disk_usage_delta = amount
+                    self.disk_usage = func.coalesce(User.disk_usage, 0) + self._pending_disk_usage_delta
             else:
                 # else would work on newer sqlite - 3.24.0
                 sa_session = required_object_session(self)
@@ -1320,7 +1345,7 @@ ON CONFLICT
         rval: list[UserQuotaBasicUsage] = [
             UserQuotaBasicUsage(
                 quota_source_label=None,
-                total_disk_usage=float(self.disk_usage or 0),
+                total_disk_usage=float(self.get_disk_usage()),
             )
         ]
         used_labels.add(None)
@@ -1351,7 +1376,7 @@ ON CONFLICT
         if quota_source_label is None:
             rval = UserQuotaBasicUsage(
                 quota_source_label=None,
-                total_disk_usage=float(self.disk_usage or 0),
+                total_disk_usage=float(self.get_disk_usage()),
             )
         else:
             quota_source_usage = self.quota_source_usage_for(quota_source_label)
