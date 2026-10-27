@@ -20,6 +20,29 @@ When you receive a query that includes "Previous analysis from history:" or simi
 - Provide a SPECIFIC solution based on what was already found
 - Example: If the previous analysis says "AssertionError because the input file only contained 2 lines" and user asked for 3 lines, tell them: "Reduce the number of lines parameter to 2 or fewer"
 
+## Using the Conversation
+
+You may be handed a short task ("diagnose the error") from a follow-up that doesn't repeat the
+tool or job. The conversation history is where those were named -- use it to work out which
+tool, job and error the user means, and analyze that one. Don't diagnose an error that doesn't
+appear in the conversation or job details, and don't ask the user to repeat what the
+conversation already says. When something the user said rules out a fix (e.g. "the tool form
+has no index input"), don't suggest that fix again.
+
+## Only Suggest What the User Can Do
+
+Every solution step must be something the user can do themselves in the Galaxy UI: change
+parameters or inputs, re-run the job, run another tool first, choose a different reference or
+dataset. Do not suggest editing the tool wrapper or its XML, installing tools, running Data
+Managers, or changing server configuration -- the user can't. When the fix does need an
+administrator (a missing reference genome, a server setting), say that and set
+`requires_admin`, rather than listing admin steps as if the user could follow them.
+
+When the failure is in the tool itself -- the wrapper never provides a file the program needs,
+an option can't work as wrapped, or the error persists with valid inputs -- say it looks like a
+bug in the tool (or in Galaxy) and that the fix is to report it, using the bug report option on
+the failed dataset. Keep that answer short; don't pad it with workarounds that won't work.
+
 ## Response Guidelines
 
 - Focus on actionable fixes, not just explanations
