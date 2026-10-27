@@ -67,6 +67,20 @@ class TestFrontendLogin(PlaywrightTestCase):
         self.login(email, RESET_PASSWORD, username=user)
         self._playwright_browser.expect_logged_in()
 
+    def test_login_returns_to_redirect(self):
+        user = random_name(prefix="shduser")
+        email = f"{user}@galaxyproject.org"
+        self.create(email=email, password=TEST_PASSWORD, username=user)
+        self.visit_url("/")
+        self._playwright_browser.logout_if_logged_in()
+        self.visit_url("/login", params={"redirect": "/repositories_by_category"})
+        page = self._page
+        page.fill("input[name='login']", email)
+        page.fill("input[name='password']", TEST_PASSWORD)
+        page.click(Locators.login_submit_button)
+        expect(page).to_have_url(re.compile(r"/repositories_by_category$"))
+        self._playwright_browser.expect_logged_in()
+
     def _create_and_login(self):
         user = random_name(prefix="shduser")
         email = f"{user}@galaxyproject.org"
