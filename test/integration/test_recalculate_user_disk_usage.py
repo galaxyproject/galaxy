@@ -11,6 +11,7 @@ from galaxy_test.base.api_asserts import (
     assert_status_code_is_ok,
 )
 from galaxy_test.base.populators import (
+    DatasetCollectionPopulator,
     DatasetPopulator,
     wait_on_state,
 )
@@ -113,6 +114,7 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -189,6 +191,37 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
             self.dataset_populator.delete_dataset(
                 other_history_id, copy_response.json()["id"], purge=True, wait_for_purge=True
             )
+            assert self.dataset_populator.total_disk_usage() == 0
+
+    def test_copies_of_another_users_datasets_are_counted(self):
+        history_id = self.dataset_populator.new_history()
+        hda_id = self.dataset_populator.new_dataset(history_id, content="0" * 9, wait=True)["id"]
+        hdca_id = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0" * 19, "0" * 29], wait=True
+        ).json()["output_collections"][0]["id"]
+        self.dataset_populator.make_public(history_id)
+
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            other_history_id = self.dataset_populator.new_history()
+            # Copy a dataset, and a collection with its datasets
+            copy_response = self.dataset_populator._post(
+                f"histories/{other_history_id}/contents",
+                {"source": "hda", "content": hda_id, "type": "dataset"},
+                json=True,
+            )
+            assert_status_code_is_ok(copy_response)
+            hdca_copy = self.dataset_collection_populator.copy_collection(other_history_id, hdca_id).json()
+
+            # The copies are counted, and a recalculation agrees
+            expected_usage = 10 + 20 + 30
+            assert self.dataset_populator.total_disk_usage() == expected_usage
+            self.recalculate_disk_usage()
+            assert self.dataset_populator.total_disk_usage() == expected_usage
+
+            # Purging them brings the usage back to 0
+            copy_ids = [copy_response.json()["id"]] + [element["object"]["id"] for element in hdca_copy["elements"]]
+            for copy_id in copy_ids:
+                self.dataset_populator.delete_dataset(other_history_id, copy_id, purge=True, wait_for_purge=True)
             assert self.dataset_populator.total_disk_usage() == 0
 
 

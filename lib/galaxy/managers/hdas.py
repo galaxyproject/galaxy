@@ -220,6 +220,7 @@ class HDAManager(
             copy.visible = False
         if history:
             history.stage_addition(copy)
+            history.charge_added_datasets([copy])
 
         # The copy shares the dataset, whose size isn't final until its job finishes
         if copy.dataset.state not in model.Dataset.uncharged_states:

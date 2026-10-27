@@ -3636,6 +3636,38 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         )
         self._pending_additions = []
 
+    def charge_added_datasets(self, hdas: Iterable["DatasetInstance"]) -> None:
+        """
+        Increase the user's disk usage by the datasets of HDAs just added to this history, such as copies of
+        another user's datasets. A dataset counts once, and not at all if the user already had it.
+
+        Outputs of jobs that haven't finished are skipped, they are charged when the job finishes.
+        """
+        user = self.user
+        if not user:
+            return
+        added = [
+            hda for hda in hdas if isinstance(hda, HistoryDatasetAssociation) and hda.history is self and not hda.purged
+        ]
+        added_set = set(added)
+        datasets = {hda.dataset for hda in added}
+        usage_by_quota_source: dict[Optional[str], int] = defaultdict(int)
+        for dataset in datasets:
+            if dataset.purged or dataset.library_associations or dataset.state in Dataset.uncharged_states:
+                continue
+            if any(
+                hda not in added_set and not hda.purged and hda.history and hda.user == user
+                for hda in dataset.history_associations
+            ):
+                continue
+            quota_source_info = dataset.quota_source_info
+            if quota_source_info.use:
+                # Unlike get_total_size(), this doesn't commit, the callers may still be building the copies
+                total_size = dataset.total_size if dataset.total_size is not None else dataset.set_total_size()
+                usage_by_quota_source[quota_source_info.label] += int(total_size)
+        for label, usage in usage_by_quota_source.items():
+            user.adjust_total_disk_usage(usage, label)
+
     def _next_hid(self, n=1):
         """
         Generate next_hid from the database in a concurrency safe way:
@@ -3789,10 +3821,12 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             hdas = self.datasets
         else:
             hdas = self.active_datasets
+        new_hdas = set()
         for hda in hdas:
             # Copy HDA.
             new_hda = hda.copy(flush=False)
             new_history.add_dataset(new_hda, set_hid=False, quota=applies_to_quota)
+            new_hdas.add(new_hda)
 
             if target_user:
                 new_hda.copy_item_annotation(db_session, self.user, hda, target_user, new_hda)
@@ -3813,6 +3847,12 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             )
             new_history.add_dataset_collection(new_hdca, set_hid=False)
             db_session.add(new_hdca)
+            if applies_to_quota:
+                # Elements that aren't copies of the datasets above, such as deleted ones, were copied with the
+                # collection
+                new_history.charge_added_datasets(
+                    [element_hda for element_hda in new_hdca.dataset_instances if element_hda not in new_hdas]
+                )
 
             if target_user:
                 new_hdca.copy_item_annotation(db_session, self.user, hdca, target_user, new_hdca)
@@ -6069,7 +6109,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         #   have an association of the same dataset
         if not self.dataset.library_associations and not self.purged and not self.dataset.purged:
             for hda in self.dataset.history_associations:
-                if hda.id == self.id:
+                if hda is self:
                     continue
                 if not hda.purged and hda.history and hda.user and hda.user == user:
                     break
