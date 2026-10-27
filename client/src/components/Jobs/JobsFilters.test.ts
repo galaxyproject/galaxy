@@ -1,10 +1,16 @@
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { JobBaseModel } from "@/api/jobs";
 import { type Tool, useToolStore } from "@/stores/toolStore";
 
-import { jobsFilterParams, JobsFiltersById, MAX_TOOL_NAME_MATCHES } from "./JobsFilters";
+import {
+    getActiveTimeRange,
+    jobsFilterParams,
+    JobsFiltersById,
+    MAX_TOOL_NAME_MATCHES,
+    setActiveTimeRange,
+} from "./JobsFilters";
 
 function buildJob(overrides: Partial<JobBaseModel> = {}): JobBaseModel {
     return {
@@ -103,6 +109,24 @@ describe("jobsFilterParams", () => {
         it("matchesJob matches everything when no filter text is given", () => {
             const { matchesJob } = jobsFilterParams("");
             expect(matchesJob(buildJob({ tool_id: "anything", state: "error" }))).toBe(true);
+        });
+
+        it("matchesJob compares update_time as a parsed date, not a string", () => {
+            const { matchesJob } = jobsFilterParams("update_time>2024-01-01t01:00:00.000z");
+            expect(matchesJob(buildJob({ update_time: "2024-01-01T02:00:00.000123" }))).toBe(true);
+        });
+
+        it("matchesJob reads a job's timezone-less update_time as UTC, not local time", () => {
+            const originalTz = process.env.TZ;
+            process.env.TZ = "America/Chicago"; // UTC-6 (or UTC-5 in DST): any non-UTC zone works here
+            try {
+                const { matchesJob } = jobsFilterParams("update_time>2024-01-01t01:00:00.000z");
+                // 00:30 UTC is before the 01:00 UTC cutoff; misread as 00:30 local (UTC-6) it would
+                // become 06:30 UTC and wrongly appear to be after it.
+                expect(matchesJob(buildJob({ update_time: "2024-01-01T00:30:00.000000" }))).toBe(false);
+            } finally {
+                process.env.TZ = originalTz;
+            }
         });
 
         it("expands status into its member states, out of search", () => {
@@ -211,6 +235,69 @@ describe("jobsFilterParams", () => {
             // give it, so an empty string (or any placeholder) must not block the removal.
             const text = JobsFiltersById.applyFiltersToText({ status: "" }, "status:active state:ok", true);
             expect(text).toBe("state:ok");
+        });
+    });
+
+    describe("setActiveTimeRange (JobTimeRangeFilter's own usage)", () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date("2024-01-01T12:00:00.000Z"));
+        });
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it("sets a quick-pick range as update_time_gt on empty filter text", () => {
+            const { filterText, appliedRange } = setActiveTimeRange("", "1h");
+            expect(filterText).toBe("update_time>2024-01-01T11:00:00.000Z");
+            expect(appliedRange).toEqual({ key: "1h", value: "2024-01-01t11:00:00.000z" });
+        });
+
+        it("clears update_time_gt entirely when range is undefined", () => {
+            const { filterText, appliedRange } = setActiveTimeRange("update_time>2024-01-01T11:00:00.000Z", undefined);
+            expect(filterText).toBe("");
+            expect(appliedRange).toBeUndefined();
+        });
+
+        it("clears update_time_gt entirely when range is 'custom'", () => {
+            const { filterText, appliedRange } = setActiveTimeRange("update_time>2024-01-01t00:00:00", "custom");
+            expect(filterText).toBe("");
+            expect(appliedRange).toBeUndefined();
+        });
+
+        it("replaces a previously-applied range with a new one", () => {
+            const first = setActiveTimeRange("", "1h");
+            const second = setActiveTimeRange(first.filterText, "30m");
+            expect(second.filterText).toBe("update_time>2024-01-01T11:30:00.000Z");
+            expect(second.appliedRange).toEqual({ key: "30m", value: "2024-01-01t11:30:00.000z" });
+        });
+    });
+
+    describe("getActiveTimeRange (JobTimeRangeFilter's own usage)", () => {
+        it("is undefined for 'Anytime' (no update_time filter at all)", () => {
+            expect(getActiveTimeRange("", undefined)).toBeUndefined();
+            expect(getActiveTimeRange("state:ok", undefined)).toBeUndefined();
+        });
+
+        it("reports the applied range when its value still matches the filter text", () => {
+            const { filterText, appliedRange } = setActiveTimeRange("", "1h");
+            expect(getActiveTimeRange(filterText, appliedRange)).toBe("1h");
+        });
+
+        it("is 'custom' for a manually-entered update_time filter", () => {
+            expect(getActiveTimeRange("update_time>2024-01-01T00:00:00", undefined)).toBe("custom");
+        });
+
+        it("is 'custom' once the filter text no longer matches the last-applied value", () => {
+            const { appliedRange } = setActiveTimeRange("", "1h");
+            // The text was edited since (e.g. by hand), so it no longer matches what was applied.
+            expect(getActiveTimeRange("update_time>2024-06-01T00:00:00", appliedRange)).toBe("custom");
+        });
+
+        it("is 'custom' when a manually-entered update_time_lt is also present", () => {
+            const { filterText, appliedRange } = setActiveTimeRange("", "1h");
+            const withUpperBound = `${filterText} update_time<2024-06-01T00:00:00`;
+            expect(getActiveTimeRange(withUpperBound, appliedRange)).toBe("custom");
         });
     });
 });
