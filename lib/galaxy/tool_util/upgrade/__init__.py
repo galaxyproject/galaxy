@@ -19,11 +19,21 @@ from typing_extensions import (
     TypedDict,
 )
 
-from galaxy.tool_util.linters._util import InputReferences
+from galaxy.tool_util.linters._util import (
+    InputReferences,
+    writes_galaxy_json,
+)
 from galaxy.tool_util.parameters.case import validate_test_cases_for_tool_source
 from galaxy.tool_util.parser.factory import get_tool_source
-from galaxy.tool_util.parser.xml import XmlToolSource
-from galaxy.util import Element
+from galaxy.tool_util.parser.output_objects import tool_requests_provided_metadata
+from galaxy.tool_util.parser.xml import (
+    parse_citation_elem,
+    XmlToolSource,
+)
+from galaxy.util import (
+    Element,
+    string_as_bool,
+)
 from galaxy.util.resources import resource_string
 
 TOOL_TOO_NEW = "Target tool has a profile that is too new, consider upgrading this script for the latest advice."
@@ -279,6 +289,51 @@ class ProfileMigration26_0(ProfileMigration):
                 )
 
 
+class ProfileMigration26_1(ProfileMigration):
+    from_version = "26.0"
+    to_version = "26.1"
+
+    @classmethod
+    def advise(cls, advice_collection: AdviceCollection, xml_file: str) -> None:
+        tool_source = _xml_tool_source(xml_file)
+        for citation_el in _find_all(tool_source, "./citations/citation"):
+            try:
+                parse_citation_elem(citation_el)
+            except Exception as e:
+                advice_collection.add(
+                    "26_1_fix_invalid_citation", f"Citation '{(citation_el.text or '').strip()}': {e}"
+                )
+
+        before = validate_test_cases_for_tool_source(tool_source, profile="26.0")
+        after = validate_test_cases_for_tool_source(tool_source, profile="26.1")
+        for index, (old, new) in enumerate(zip(before, after)):
+            # only failures introduced by 26.1; others are reported by 24_2_fix_test_case_validation
+            if new.validation_error and not old.validation_error:
+                advice_collection.add("26_1_fix_empty_multiple_test_value", f"Test {index + 1}: {new.validation_error}")
+
+
+class ProfileMigration26_2(ProfileMigration):
+    from_version = "26.1"
+    to_version = "26.2"
+
+    @classmethod
+    def advise(cls, advice_collection: AdviceCollection, xml_file: str) -> None:
+        tool_source = _xml_tool_source(xml_file)
+        for param in _find_all(tool_source, ".//inputs//param[@type='boolean']"):
+            if string_as_bool(param.get("optional", "false")) and param.get("checked") is None:
+                advice_collection.add(
+                    "26_2_consider_optional_boolean_unset", f"Optional boolean parameter '{param.get('name')}'."
+                )
+
+        if tool_source.parse_tool_type() != "interactive" and writes_galaxy_json(tool_source.xml_tree):
+            outputs, _ = tool_source.parse_outputs(None)
+            if not tool_requests_provided_metadata(tool_source, list(outputs.values())):
+                advice_collection.add("26_2_consider_tool_provided_metadata")
+
+        if any("sep" not in el.attrib for el in _find_all(tool_source, ".//tests//has_n_columns")):
+            advice_collection.add("26_2_consider_tabular_assertion_separator")
+
+
 profile_migrations: list[type[ProfileMigration]] = [
     ProfileMigration16_04,
     ProfileMigration17_09,
@@ -291,9 +346,11 @@ profile_migrations: list[type[ProfileMigration]] = [
     ProfileMigration24_0,
     ProfileMigration24_2,
     ProfileMigration26_0,
+    ProfileMigration26_1,
+    ProfileMigration26_2,
 ]
 
-latest_supported_version = "26.0"
+latest_supported_version = "26.2"
 
 
 def advise_on_upgrade(xml_file: str, to_version: str | None = None) -> list[Advice]:

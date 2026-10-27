@@ -90,5 +90,31 @@
         "level": "must_fix",
         "message": "Starting with 26.0 tools, a collection output's 'structured_like' attribute must use the qualified name ('cond|input1') of an input nested in a conditional or section. Unqualified names are no longer resolved when the tool is mapped over a collection, and the job fails with 'Failed to find referenced collection in inputs.'",
         "url": "https://github.com/galaxyproject/galaxy/pull/22432"
+    },
+    "26_1_fix_invalid_citation": {
+        "level": "must_fix",
+        "message": "Starting with 26.1 tools, an invalid citation (e.g. a malformed DOI) prevents the tool from loading. Older profiles skip the citation with a warning. Fix or remove the citation.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/22799"
+    },
+    "26_1_fix_empty_multiple_test_value": {
+        "level": "must_fix",
+        "message": "Starting with 26.1 tools, test cases no longer treat value=\"\" on a multiple select parameter as an empty selection. Use value_json=\"[]\" instead.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/22894"
+    },
+    "26_2_consider_optional_boolean_unset": {
+        "level": "consider",
+        "message": "Starting with 26.2 tools, an optional boolean parameter without a 'checked' attribute starts unset (None) rather than false. Set checked=\"false\" to keep the old default, or make sure the command handles an unset value.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/23414"
+    },
+    "26_2_consider_tool_provided_metadata": {
+        "level": "consider",
+        "message": "Starting with 26.2 tools, Galaxy only reads tool provided metadata (galaxy.json) when the tool asks for it: an output with format=\"auto\", discover_datasets with from_provided_metadata=\"true\", or provided_metadata_file/provided_metadata_style on the outputs tag. This tool appears to write galaxy.json without one of these.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/23404",
+        "niche": true
+    },
+    "26_2_consider_tabular_assertion_separator": {
+        "level": "consider",
+        "message": "Starting with 26.2 tools, has_n_columns assertions without 'sep' split on the output datatype's delimiter (e.g. comma for csv) rather than always on tabs. Set sep explicitly if the test relies on the old behavior.",
+        "url": "https://github.com/galaxyproject/galaxy/pull/23593"
     }
 }
