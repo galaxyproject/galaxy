@@ -1,5 +1,6 @@
 import shutil
 import tempfile
+import zipfile
 
 from galaxy.util.compression_utils import (
     CompressedFile,
@@ -26,6 +27,17 @@ class TestCompressionUtil(TestCase):
         self.assert_format_detected("test-data/4.bed.gz", None, ["bz2", "zip"])
         self.assert_format_detected("test-data/4.bed.bz2", "bz2")
         self.assert_format_detected("test-data/4.bed.bz2", None, ["gzip", "zip"])
+
+    def test_get_fileobj_raw_tar_with_stray_zip_end_record(self):
+        # A zip end-of-central-directory record near the end of a tar fools zipfile.is_zipfile.
+        path = "test-data/tar_with_stray_zip_end_record.tar"
+        assert zipfile.is_zipfile(path)
+        with open(path, "rb") as expected:
+            expected_bytes = expected.read()
+        fmt, fh = get_fileobj_raw(path, "rb")
+        with fh:
+            assert fmt is None
+            assert fh.read() == expected_bytes
 
     def assert_safety(self, path, expected_to_be_safe):
         temp_dir = tempfile.mkdtemp()
