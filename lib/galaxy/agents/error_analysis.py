@@ -302,6 +302,15 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         SOLUTION: Reduce the "number of lines" parameter to 2 or fewer, or use a larger input file
         CONFIDENCE: high
 
+        If the query is a short follow-up that doesn't name the tool or job, work out which one the
+        user means from the conversation so far; don't ask them to repeat it.
+
+        Only suggest steps the user can take in the Galaxy UI (parameters, inputs, re-running,
+        running another tool first). Never suggest editing the tool wrapper or XML, installing
+        tools, Data Managers, or server changes. If an administrator has to fix it, say so. If the
+        tool itself is broken, say it looks like a bug and to report it with the bug report option
+        on the failed dataset.
+
         CRITICAL: Never invent URLs or external references. Only state facts you are certain about.
 
         Respond in this exact format:
