@@ -62,3 +62,23 @@ class TestCompressionUtil(TestCase):
             fmt, fh = get_fileobj_raw(path, mode, allowed_fmts)
             assert fmt == expected_fmt
             assert isinstance(fh.read(0), expected_type)
+
+
+def test_get_fileobj_raw_empty_zip_read_raw(tmp_path):
+    path = str(tmp_path / "empty.zip")
+    zipfile.ZipFile(path, "w").close()
+    fmt, fh = get_fileobj_raw(path, "rb")
+    with fh:
+        assert fmt is None
+        assert fh.read(4) == b"PK\x05\x06"
+
+
+def test_get_fileobj_raw_zip_skips_directory_entries(tmp_path):
+    path = str(tmp_path / "dir_first.zip")
+    with zipfile.ZipFile(path, "w") as zf:
+        zf.writestr("d/", "")
+        zf.writestr("d/a.txt", "content\n")
+    fmt, fh = get_fileobj_raw(path, "rb")
+    with fh:
+        assert fmt == "zip"
+        assert fh.read() == b"content\n"
