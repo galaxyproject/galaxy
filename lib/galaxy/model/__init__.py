@@ -724,8 +724,21 @@ def calculate_user_disk_usage_statements(user_id: int, quota_source_map: "QuotaS
     default_usage = UNIQUE_DATASET_USER_USAGE.format(
         and_dataset_condition=default_usage_dataset_condition, user_objects_scheme=USER_OBJECTS_SCHEME
     )
-    default_usage = f"""
+    if for_sqlite:
+        default_usage = f"""
 UPDATE galaxy_user SET disk_usage = ({default_usage})
+WHERE id = :id
+"""
+    else:
+        # Apply the difference between the recalculated usage and the stored usage, both read from the
+        # statement's snapshot, instead of overwriting the stored usage. If a concurrent purge or job
+        # adjusts the usage while this runs, the UPDATE waits for it and then applies the difference on
+        # top of the adjusted value, so the adjustment isn't lost and no lock is held during the scan.
+        default_usage = f"""
+UPDATE galaxy_user SET disk_usage = COALESCE(disk_usage, 0) + (
+    ({default_usage})
+    - COALESCE((SELECT snapshot.disk_usage FROM galaxy_user AS snapshot WHERE snapshot.id = :id), 0)
+)
 WHERE id = :id
 """
     params: dict[str, Any] = {"id": user_id}
@@ -754,12 +767,19 @@ FROM new
             AND new.quota_source_label = old.quota_source_label
 """
         else:
+            # Apply the difference to the stored usage, see the default usage statement above
             statement = f"""
 INSERT INTO user_quota_source_usage(user_id, quota_source_label, disk_usage)
 VALUES(:id, :label, ({label_usage}))
 ON CONFLICT
 ON constraint uqsu_unique_label_per_user
-DO UPDATE SET disk_usage = excluded.disk_usage
+DO UPDATE SET disk_usage = COALESCE(user_quota_source_usage.disk_usage, 0) + (
+    excluded.disk_usage
+    - COALESCE((
+        SELECT snapshot.disk_usage FROM user_quota_source_usage AS snapshot
+        WHERE snapshot.user_id = :id AND snapshot.quota_source_label = :label
+    ), 0)
+)
 """
         statements.append(
             (statement, {"id": user_id, "label": quota_source_label, "include_object_store_ids": object_store_ids})
