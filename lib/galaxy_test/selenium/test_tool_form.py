@@ -151,12 +151,12 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         self.tool_open("gx_conditional_select")
         parameters = self.tool_form_parameters("gx_conditional_select")
         test_path = "conditional_parameter|test_parameter"
-        shown = [p.path for p in parameters if p.condition in (None, f"{test_path}=a")]
+        shown = [p.path for p in parameters if all(condition == f"{test_path}=a" for condition in p.conditions)]
         assert shown == [test_path, "conditional_parameter|integer_parameter"]
         for path in shown:
             self.components.tool_form.parameter_div(parameter=path).wait_for_visible()
 
-        boolean = next(p for p in parameters if p.condition == f"{test_path}=b")
+        boolean = next(p for p in parameters if p.conditions == (f"{test_path}=b",))
         # Same depth, so the boolean is tried first, before case b shows it, and must be retried.
         self.tool_form_fill(values={boolean.path: True, test_path: "b"})
         checkbox = self.components.tool_form.parameter_checkbox_input(parameter=boolean.path).wait_for_present()
