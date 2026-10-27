@@ -149,6 +149,29 @@ SUBJECT_THEN_CLARIFICATION_HISTORY: list[ModelMessage] = [
 ]
 
 
+def _structured_error_analysis(seen: list[ModelMessage]):
+    """A FunctionModel callback that records what error analysis was sent and returns a canned diagnosis."""
+
+    def model_fn(messages, info):
+        seen.extend(messages)
+        return ModelResponse(
+            parts=[
+                ToolCallPart(
+                    tool_name=info.output_tools[0].name,
+                    args={
+                        "error_category": "tool_configuration",
+                        "error_severity": "high",
+                        "likely_cause": "The wrapper never stages the index.",
+                        "solution_steps": ["Report it as a tool bug."],
+                        "confidence": "medium",
+                    },
+                )
+            ]
+        )
+
+    return model_fn
+
+
 def _message_texts(messages: list[ModelMessage]) -> str:
     return "\n".join(str(getattr(part, "content", "")) for message in messages for part in message.parts)
 
@@ -1186,30 +1209,34 @@ class TestAgentUnitMocked:
         agent = ErrorAnalysisAgent(self.deps)
         seen: list[ModelMessage] = []
 
-        def model_fn(messages, info):
-            seen.extend(messages)
-            return ModelResponse(
-                parts=[
-                    ToolCallPart(
-                        tool_name=info.output_tools[0].name,
-                        args={
-                            "error_category": "tool_configuration",
-                            "error_severity": "high",
-                            "likely_cause": "The wrapper never stages the index.",
-                            "solution_steps": ["Report it as a tool bug."],
-                            "confidence": "medium",
-                        },
-                    )
-                ]
-            )
-
-        with agent.agent.override(model=FunctionModel(model_fn)):
+        with agent.agent.override(model=FunctionModel(_structured_error_analysis(seen))):
             await agent.process(
                 "the tool for the current error we are investigating",
                 context={"conversation_history": SUBJECT_THEN_CLARIFICATION_HISTORY},
             )
 
         assert MIRDEEP2_TOOL_ID in _message_texts(seen)
+
+    @pytest.mark.asyncio
+    async def test_error_analysis_trims_a_pasted_log_in_the_conversation(self):
+        """A raw stderr dump posted as the first query is trimmed when it's analyzed, but the
+        stored chat keeps all of it. Replayed as history it has to be trimmed again, keeping the
+        tail where the failure is, or every later turn re-sends the whole log."""
+        self.mock_config.ai_model = "gpt-4o"
+        agent = ErrorAnalysisAgent(self.deps)
+        seen: list[ModelMessage] = []
+        pasted_log = "progress line\n" * 20_000 + "FATAL: bowtie index not found"
+        history: list[ModelMessage] = [
+            ModelRequest(parts=[UserPromptPart(content=pasted_log)]),
+            ModelResponse(parts=[TextPart(content="The index is missing.")]),
+        ]
+
+        with agent.agent.override(model=FunctionModel(_structured_error_analysis(seen))):
+            await agent.process("what else could cause it?", context={"conversation_history": history})
+
+        replayed = _message_texts(seen)
+        assert "FATAL: bowtie index not found" in replayed
+        assert len(replayed) < len(pasted_log) // 10
 
     @pytest.mark.asyncio
     async def test_subject_survives_routing_into_error_analysis(self):
@@ -1233,26 +1260,9 @@ class TestAgentUnitMocked:
                 ]
             )
 
-        def error_fn(messages, info):
-            analyzed_with.extend(messages)
-            return ModelResponse(
-                parts=[
-                    ToolCallPart(
-                        tool_name=info.output_tools[0].name,
-                        args={
-                            "error_category": "tool_configuration",
-                            "error_severity": "high",
-                            "likely_cause": "The wrapper never stages the index.",
-                            "solution_steps": ["Report it as a tool bug."],
-                            "confidence": "medium",
-                        },
-                    )
-                ]
-            )
-
         with (
             router.agent.override(model=FunctionModel(router_fn)),
-            error_agent.agent.override(model=FunctionModel(error_fn)),
+            error_agent.agent.override(model=FunctionModel(_structured_error_analysis(analyzed_with))),
         ):
             response = await router.process(
                 "the tool for the error we are investigating, we discussed this already",
