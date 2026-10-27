@@ -76,7 +76,7 @@ def test_conditional_lists_every_case_with_its_condition():
             "integer",
             "1",
             [],
-            "conditional_parameter|test_parameter=a",
+            ("conditional_parameter|test_parameter=a",),
         ),
         ToolFormParameter(
             "conditional_parameter|boolean_parameter",
@@ -84,7 +84,7 @@ def test_conditional_lists_every_case_with_its_condition():
             "boolean",
             False,
             [],
-            "conditional_parameter|test_parameter=b",
+            ("conditional_parameter|test_parameter=b",),
         ),
     ]
 
@@ -201,3 +201,47 @@ def test_repeat_instance_candidates_are_every_numbered_segment_above_the_field_o
         ("cond|outer_0|sec|inner_options", 1),
         ("cond|outer_0|sec|inner_options_1|deep", 2),
     ]
+
+
+def test_nested_conditionals_preserve_every_ancestor_through_sections_and_repeats():
+    inner = {
+        "name": "inner",
+        "type": "conditional",
+        "test_param": {"name": "sel2", "type": "select", "value": "x"},
+        "cases": [
+            {
+                "value": "x",
+                "inputs": [
+                    {
+                        "name": "section",
+                        "type": "section",
+                        "inputs": [
+                            {
+                                "name": "repeat",
+                                "type": "repeat",
+                                "inputs": [{"name": "deep", "type": "text", "value": "deep"}],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    outer = {
+        "name": "outer",
+        "type": "conditional",
+        "test_param": {"name": "sel", "type": "select", "value": "b"},
+        "cases": [{"value": "a", "inputs": [inner]}, {"value": "b", "inputs": []}],
+    }
+    parameters = tool_form_parameters_from_build([outer])
+    assert parameters[0].conditions == ()
+    assert parameters[1].conditions == ("outer|sel=a",)
+    assert parameters[-1].conditions == ("outer|sel=a", "outer|inner|sel2=x")
+    selected = {"outer|sel=b", "outer|inner|sel2=x"}
+    assert [p.path for p in parameters if all(c in selected for c in p.conditions)] == ["outer|sel"]
+
+
+def test_unset_data_values_preserve_cardinality():
+    single = {**_data("single", "Single"), "value": None}
+    multiple = {**single, "name": "multiple", "multiple": True}
+    assert [p.value for p in tool_form_parameters_from_build([single, multiple])] == [None, []]

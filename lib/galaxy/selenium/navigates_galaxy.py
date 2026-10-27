@@ -2317,12 +2317,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             input_element.send_keys(value)
 
     def tool_form_select_collection(self, expanded_parameter_id, name):
-        tool_form = self.components.tool_form
-        tool_form.parameter_data_input_collection(parameter=expanded_parameter_id).wait_for_and_click()
-        tool_form.parameter_data_input_collection_pressed(parameter=expanded_parameter_id).wait_for_visible()
+        ToolFormFiller(self).enter_collection_mode(expanded_parameter_id)
         # multiple=True sends escape so the select's dropdown closes rather than lingering open
         self.tool_form_select_data(expanded_parameter_id, name, multiple=True)
-
 
     def tool_form_parameters(
         self, tool_id: str | None = None, tool_version: str | None = None, job_id: str | None = None
@@ -2347,8 +2344,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         """Fill the open tool form by parameter path, such as ``cond|param`` or ``repeat_0|param``.
 
         ``values`` sets non-data parameters, detecting each one's widget. ``data`` selects a dataset or
-        collection per parameter, by hid or by option label such as ``"3: reads.fq"``. Adds the repeat
-        instances the paths need, expands sections, and retries parameters a conditional reveals late.
+        collection per parameter, by integer hid, digit-only string hid, or option label such as
+        ``"3: reads.fq"``. Adds the repeat instances the paths need, expands sections, and retries
+        parameters a conditional reveals late.
         ``values`` paths the form never shows, such as inactive conditional cases, are skipped.
         """
         ToolFormFiller(self).fill(values, data)

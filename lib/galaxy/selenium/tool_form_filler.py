@@ -74,16 +74,30 @@ class ToolFormFiller:
 
         for key, value in data.items():
             self._prepare_parameter(key)
-            if isinstance(value, int):
-                self._select_data_by_hid(key, value)
+            if isinstance(value, int) or value.isdecimal():
+                self._select_data_by_hid(key, int(value))
             else:
                 self._select_data(key, value)
 
     def _select_data_by_hid(self, path: str, hid: int) -> None:
         label = f"{hid}: "
         if hid in self._collection_hids:
-            self._enter_collection_mode(path)
-        self._select_data(path, label)
+            self.enter_collection_mode(path)
+        multiple = not self._tool_form.parameter_form_selection(parameter=path).is_absent
+        if multiple:
+            self._clear_multiselect_tags(path)
+        select = self._tool_form.parameter_data_select(parameter=path).wait_for_visible()
+        trigger = select.find_element(By.CSS_SELECTOR, ".multiselect__select")
+        self._navigator.scroll_into_view(trigger)
+        trigger.click()
+        search = select.find_element(By.CSS_SELECTOR, "input.multiselect__input")
+        search.clear()
+        # An all-digit query lets the server find hids outside the first options page.
+        search.send_keys(str(hid))
+        # Older clients don't rank exact hids first: 13 can appear before 3. Never use Enter here.
+        self._tool_form.parameter_data_option_by_hid(parameter=path, hid=hid).wait_for_and_click()
+        if multiple:
+            self._navigator.send_escape(search)
         self._tool_form.parameter_data_select(parameter=path).wait_for_visible()
         selected = [e.text for e in self._tool_form.parameter_data_selected(parameter=path).all()]
         assert any(text.startswith(label) for text in selected), f"{path} shows {selected}, not hid {hid}"
@@ -102,7 +116,7 @@ class ToolFormFiller:
             if item["history_content_type"] == "dataset_collection"
         }
 
-    def _enter_collection_mode(self, path: str) -> None:
+    def enter_collection_mode(self, path: str) -> None:
         # A dataset field lists collections only in its collection (map over) mode.
         collection_mode = self._tool_form.parameter_data_input_collection(parameter=path)
         if collection_mode.is_absent:

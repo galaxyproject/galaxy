@@ -8,23 +8,35 @@
     <!-- Shaped like FormCard sections: "sec" is collapsed and holds a repeat, "open" is expanded and
          holds the collapsed "inner_sec". data-path exists only to drive this page. -->
     <span data-description="galaxy tool version">1.0</span>
-    <div class="ui-portlet-section" id="sec">
-      <div class="portlet-header">Sec</div>
-      <div class="portlet-content" style="display: none">
-        <span
-          data-description="repeat insert"
-          data-repeat-name="queries"
-          data-path="sec|queries"
-          >Insert Queries</span
-        >
+    <div>
+      <h2>Tool Parameters</h2>
+      <div class="ui-portlet-section" id="sec">
+        <div class="portlet-header">Sec</div>
+        <div class="portlet-content" style="display: none">
+          <span
+            data-description="repeat insert"
+            data-repeat-name="queries"
+            data-path="sec|queries"
+            >Insert Queries</span
+          >
+        </div>
+      </div>
+      <div class="ui-portlet-section" id="open">
+        <div class="portlet-header">Open</div>
+        <div class="portlet-content">
+          <div class="ui-portlet-section" id="inner_sec">
+            <div class="portlet-header">Inner Sec</div>
+            <div class="portlet-content" style="display: none">inner</div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="ui-portlet-section" id="open">
-      <div class="portlet-header">Open</div>
-      <div class="portlet-content">
-        <div class="ui-portlet-section" id="inner_sec">
-          <div class="portlet-header">Inner Sec</div>
-          <div class="portlet-content" style="display: none">inner</div>
+    <div>
+      <h2>Additional Options</h2>
+      <div class="ui-portlet-section" id="output">
+        <div class="portlet-header">Configure Output</div>
+        <div class="portlet-content" style="display: none">
+          <div class="ui-form-element"><input /></div>
         </div>
       </div>
     </div>

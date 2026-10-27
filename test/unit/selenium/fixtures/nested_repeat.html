@@ -9,7 +9,10 @@
          "wrap" instances hold a field and a collapsed section holding "inner", "bare" instances hold only
          an empty "inner", and two same-named "dup" repeats sit in sibling sections. -->
     <span data-description="galaxy tool version">1.0</span>
-    <div id="form"></div>
+    <div>
+      <h2>Tool Parameters</h2>
+      <div id="form"></div>
+    </div>
     <script>
       const element = (id) => {
         const div = document.createElement("div");
@@ -33,6 +36,11 @@
       };
       // Instance contents by repeat path; nested "inner" instances hold one field.
       const bodies = {
+        same: (instance) => [repeat("inner", `${instance}|inner`, 1)],
+        "same_0|inner": (instance) => [
+          element(`${instance}|x`),
+          repeat("inner", `${instance}|inner`),
+        ],
         outer: (instance) => [repeat("inner", `${instance}|inner`, 1)],
         wrap: (instance) => [
           element(`${instance}|y`),
@@ -66,6 +74,7 @@
         .getElementById("form")
         .append(
           repeat("outer", "outer", 1),
+          repeat("same", "same", 1),
           repeat("wrap", "wrap"),
           repeat("bare", "bare"),
           section([repeat("dup", "a|dup")], false),

@@ -45,3 +45,41 @@ def test_tool_form_fill_in_a_collapsed_section_keeps_open_sections_open(fixture_
     # Clicking a header toggles it, so the expanded "open" must stay open while its nested section opens.
     assert page.find_element_by_selector("#open > .portlet-content").is_displayed()
     assert page.find_element_by_selector("#inner_sec > .portlet-content").is_displayed()
+
+
+@pytest.mark.parametrize("hid", [3, "3"])
+def test_data_hid_selects_exact_hid_outside_the_first_page(fixture_page, monkeypatch, hid):
+    page = fixture_page("data_hid.html")
+    monkeypatch.setattr(page, "history_contents", lambda: [])
+    page.tool_form_fill(data={"input1": hid})
+    assert page.components.tool_form.parameter_data_selected(parameter="input1").wait_for_text() == "3: older.txt"
+
+
+@pytest.mark.parametrize("pressed_class", ["g-pressed", "active"])
+def test_select_collection_waits_even_while_tooltip_blanks_title(fixture_page, pressed_class):
+    page = fixture_page("data_hid.html")
+    page.execute_script("window.pressedClass = arguments[0];", pressed_class)
+    page.tool_form_select_collection("input1", "62: newer.txt")
+    assert page.components.tool_form.parameter_data_selected(parameter="input1").wait_for_text() == "62: newer.txt"
+
+
+def test_nested_repeat_with_same_name_only_inserts_in_the_enclosing_instance(fixture_page):
+    page = fixture_page("nested_repeat.html")
+    page.tool_form_fill(values={"same_0|inner_1|x": "v"})
+    assert _value(page, "same_0|inner_1|x") == "v"
+    page.components.tool_form.parameter_div(parameter="same_0|inner_0|inner_0|x").assert_absent()
+
+
+def test_fill_leaves_workflow_output_cards_collapsed(fixture_page):
+    page = fixture_page("sections.html")
+    page.tool_form_fill(values={"sec|queries_0|x": "v"})
+    assert _value(page, "sec|queries_0|x") == "v"
+    assert not page.find_element_by_selector("#output > .portlet-content").is_displayed()
+
+
+def test_fill_collection_by_hid_uses_collection_mode(fixture_page, monkeypatch):
+    page = fixture_page("data_hid.html")
+    monkeypatch.setattr(page, "history_contents", lambda: [{"hid": 3, "history_content_type": "dataset_collection"}])
+    page.tool_form_fill(data={"input1": 3})
+    assert page.find_element_by_selector("#collection").get_attribute("class") == "g-pressed"
+    assert page.components.tool_form.parameter_data_selected(parameter="input1").wait_for_text() == "3: older.txt"

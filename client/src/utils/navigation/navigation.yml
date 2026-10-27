@@ -884,6 +884,9 @@ tool_form:
     parameter_data_input_collection_pressed: 'div.ui-form-element[id="form-element-${parameter}"] button.g-pressed[title="Dataset collection"]'
     parameter_data_label: 'div.ui-form-element[id="form-element-${parameter}"] [data-description="form data label"]'
     parameter_data_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
+    parameter_data_option_by_hid:
+      type: xpath
+      selector: '//div[@id="form-element-${parameter}"]//*[@role="option"]//*[contains(concat(" ", normalize-space(@class), " "), " multiselect__option ")][starts-with(normalize-space(.), "${hid}: ")]'
     parameter_data_selected: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect :is(.multiselect__single, .multiselect__tag)'
     parameter_color_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="color"]'
     parameter_text_input: 'div.ui-form-element[id="form-element-${parameter}"] input'
@@ -906,7 +909,7 @@ tool_form:
       selector: '//*[@data-description="repeat insert"][@data-repeat-name="${name}"][not(ancestor::*[@data-description="repeat block"])]'
     repeat_insert_in_instance:
       type: xpath
-      selector: '//*[@id="${instance}_up"]/ancestor::*[@data-description="repeat block"][1]//*[@data-description="repeat insert"][@data-repeat-name="${name}"]'
+      selector: '//*[@id="${instance}_up"]/ancestor::*[@data-description="repeat block"][1]//*[@data-description="repeat insert"][@data-repeat-name="${name}"][ancestor::*[@data-description="repeat block"][1][.//*[@id="${instance}_up"]]]'
     # A repeat instance by its move-up button, which every instance has, even one holding no field.
     repeat_instance:
       type: xpath
@@ -915,10 +918,11 @@ tool_form:
     repeat_move_down: '#${parameter}_down'
     repeat_clone: '#${parameter}_clone'
     section_header: '.ui-portlet-section .portlet-header'
+    # Only tool parameters, excluding workflow output cards in Additional Options.
     # A collapsed section's content is v-show'n out; skip headers that are themselves hidden in one.
     section_header_collapsed:
       type: xpath
-      selector: '//*[contains(@class, "ui-portlet-section")]/*[contains(@class, "portlet-header")][following-sibling::*[contains(@class, "portlet-content")][contains(@style, "display: none")]][not(ancestor::*[contains(@style, "display: none")])]'
+      selector: '//div[h2[normalize-space(.)="Tool Parameters"]]//*[contains(@class, "ui-portlet-section")]/*[contains(@class, "portlet-header")][following-sibling::*[contains(@class, "portlet-content")][contains(@style, "display: none")]][not(ancestor::*[contains(@style, "display: none")])]'
     # Relative to a section header: the content its click shows or hides.
     section_header_content:
       type: xpath
