@@ -130,7 +130,8 @@ class ToolIndex(BaseModel):
 
     entries: dict[str, ToolIndexEntry] = Field(default_factory=dict)
     # Every indexed version; ``entries`` stores the default per id. Both maps
-    # hold the same default entry object.
+    # hold the same default entry object. Includes storage-only versions:
+    # lookups that offer versions to users use :meth:`configured_versions`.
     entries_by_version: dict[str, dict[str, ToolIndexEntry]] = Field(default_factory=dict)
     by_section: dict[str, list[str]] = Field(default_factory=dict)
     # Configuration-order placements, including repeated tool ids.
@@ -155,6 +156,7 @@ class ToolIndex(BaseModel):
             version = default.version or ""
             if versions.get(version) == default:
                 versions[version] = default
+        self.select_configured_defaults()
         return self
 
     def iter_entries(self) -> Iterator[ToolIndexEntry]:
@@ -171,6 +173,38 @@ class ToolIndex(BaseModel):
             if id(entry) not in seen:
                 yield entry
 
+    def select_configured_defaults(self) -> None:
+        """Replace storage-only defaults that shadow a configured version.
+
+        Indexes persisted before :meth:`add_entry` preferred configured
+        entries can hold an unconfigured bundled version as the default;
+        repair them on load rather than invalidating published stores.
+        """
+        for tool_id, default in list(self.entries.items()):
+            if default.in_panel:
+                continue
+            for entry in self.entries_by_version.get(tool_id, {}).values():
+                if entry.in_panel and _preferred_default(entry, self.entries[tool_id]):
+                    self.entries[tool_id] = entry
+
+    def configured_versions(self, tool_id: str) -> dict[str, ToolIndexEntry]:
+        """The versions of ``tool_id`` the toolbox offers.
+
+        When a tool conf names some versions of an id, only those are
+        offered, as the eager toolbox loads only them; storage-only versions
+        (unconfigured bundled files) stay reachable by path. Ids with no
+        configured version (converters, data managers) offer every version.
+        """
+        versions = self.entries_by_version.get(tool_id, {})
+        configured = {version: entry for version, entry in versions.items() if entry.in_panel}
+        return configured or versions
+
+    def get_configured(self, tool_id: str, tool_version: str | None = None) -> ToolIndexEntry | None:
+        """:meth:`get`, restricted to :meth:`configured_versions` for an explicit version."""
+        if tool_version is None or tool_id not in self.entries_by_version:
+            return self.get(tool_id, tool_version)
+        return self.configured_versions(tool_id).get(tool_version)
+
     def invalidate_caches(self) -> None:
         """Invalidate all cached computations."""
         self._requirements_cache = None
@@ -179,9 +213,10 @@ class ToolIndex(BaseModel):
     def get(self, tool_id: str, tool_version: str | None = None) -> ToolIndexEntry | None:
         """Get a tool entry by ID, optionally honoring a specific version.
 
-        ``tool_version=None`` returns the default (newest indexed) entry.
+        ``tool_version=None`` returns the default entry (see :meth:`add_entry`).
         ``tool_version`` provided returns the matching version's entry, or
-        ``None`` if that exact version isn't indexed.
+        ``None`` if that exact version isn't indexed, storage-only ones
+        included; toolbox lookups use :meth:`get_configured`.
         """
         if tool_version is not None:
             versions = self.entries_by_version.get(tool_id)
@@ -195,7 +230,7 @@ class ToolIndex(BaseModel):
             return versions.get(tool_version)
         return self.entries.get(tool_id)
 
-    def add_entry(self, entry: ToolIndexEntry, *, new_placements_first: bool = False) -> None:
+    def add_entry(self, entry: ToolIndexEntry, *, new_placements_first: bool = False, supersede: bool = False) -> None:
         """Add an entry, populating both the default and per-version maps.
 
         The "default" entry per id (used by ``ToolIndex.get(tool_id)`` and
@@ -203,7 +238,9 @@ class ToolIndex(BaseModel):
         :func:`galaxy.tool_util.version.parse_version`. Pure
         string comparison fails on e.g. ``"0.1+galaxy6"`` vs ``"0.2"``
         (which compares as ``"0.1+..." < "0.2"`` lexically only by
-        accident — a different prefix would flip the sign).
+        accident — a different prefix would flip the sign). A configured
+        (``in_panel``) entry outranks every storage-only one, so a newer
+        unconfigured bundled version never displaces the configured tool.
 
         ``new_placements_first``: place a not-yet-seen panel placement at
         the head of its section instead of the tail. Partial updates (a shed
@@ -211,22 +248,61 @@ class ToolIndex(BaseModel):
         eager runtime behaviour, where ``update_or_append`` inserts the new
         tool at its conf-fragment position — the top of the section. Full
         rebuilds append, preserving conf order.
+
+        ``supersede``: a storage-only shed entry, or a rescan of the slot's
+        own file, replaces its id/version slot even when a configured entry
+        holds it. Rescans and runtime writes pass this: a shed update indexes
+        the new revision ad hoc before its conf entry catches up, and the old
+        path may already be gone. A local storage-only twin at another path
+        (a bundled copy) never displaces the configured entry.
         """
         self.invalidate_caches()
-        self.entries_by_version.setdefault(entry.id, {})[entry.version or ""] = entry
+        version = entry.version or ""
+        versions = self.entries_by_version.setdefault(entry.id, {})
+        slot = versions.get(version)
+        if slot is not None and not _preferred_default(entry, slot, replace_equal=True):
+            # ``entry`` is storage-only and ``slot`` is configured.
+            if not (supersede and (not entry.is_local or entry.source_path == slot.source_path)):
+                return
+        versions[version] = entry
         self._record_panel_item(entry, new_placements_first=new_placements_first)
         existing = self.entries.get(entry.id)
-        if existing is None:
+        if existing is not None and (existing.version or "") == version:
+            self._select_default(entry.id)
+        elif existing is None or _preferred_default(entry, existing, replace_equal=True):
             self.entries[entry.id] = entry
-            return
-        try:
-            new_v = parse_version(entry.version or "0")
-            old_v = parse_version(existing.version or "0")
-            replace = new_v >= old_v
-        except Exception:
-            replace = (entry.version or "") >= (existing.version or "")
-        if replace:
-            self.entries[entry.id] = entry
+
+    def _select_default(self, tool_id: str) -> None:
+        """Point ``entries[tool_id]`` at the preferred one of its versions."""
+        remaining = iter(self.entries_by_version[tool_id].values())
+        default = next(remaining)
+        for candidate in remaining:
+            if _preferred_default(candidate, default):
+                default = candidate
+        self.entries[tool_id] = default
+
+    def remove_version(self, tool_id: str, version: str | None, keep_placements: bool = False) -> bool:
+        """Remove one version of ``tool_id``, re-selecting its default.
+
+        ``keep_placements`` keeps the id's panel placements, and their order,
+        for a caller about to add the id again. Otherwise placements go with
+        the last configured version, so a storage-only survivor stays out of
+        the panel.
+        """
+        versions = self.entries_by_version.get(tool_id)
+        if versions is None or (version or "") not in versions:
+            return False
+        versions.pop(version or "")
+        if not versions:
+            return self.remove_entry(tool_id, keep_placements=keep_placements)
+        default = self.entries.get(tool_id)
+        if default is None or (default.version or "") == (version or ""):
+            self._select_default(tool_id)
+        if not keep_placements and not any(entry.in_panel for entry in versions.values()):
+            if self._drop_placements(tool_id):
+                self.rebuild_panel_projections()
+        self.invalidate_caches()
+        return True
 
     def holds(self, entry: ToolIndexEntry) -> bool:
         """Whether the index already has ``entry`` and its placement, ignoring ``indexed_at``."""
@@ -298,17 +374,25 @@ class ToolIndex(BaseModel):
                 section_tool_ids.append(item.tool_id)
         self.by_section = by_section
 
-    def remove_entry(self, tool_id: str) -> bool:
-        """Remove a tool and every projection derived from it."""
+    def remove_entry(self, tool_id: str, keep_placements: bool = False) -> bool:
+        """Remove a tool and every projection derived from it.
+
+        ``keep_placements``: see :meth:`remove_version`.
+        """
         removed = self.entries.pop(tool_id, None)
         removed_versions = self.entries_by_version.pop(tool_id, None)
-        original_panel_size = len(self.panel_items)
-        self.panel_items = [item for item in self.panel_items if item.tool_id != tool_id]
-        if removed is None and removed_versions is None and len(self.panel_items) == original_panel_size:
+        dropped = not keep_placements and self._drop_placements(tool_id)
+        if removed is None and removed_versions is None and not dropped:
             return False
         self.rebuild_panel_projections()
         self.invalidate_caches()
         return True
+
+    def _drop_placements(self, tool_id: str) -> bool:
+        """Remove ``tool_id``'s panel placements; whether any were removed."""
+        original_panel_size = len(self.panel_items)
+        self.panel_items = [item for item in self.panel_items if item.tool_id != tool_id]
+        return len(self.panel_items) != original_panel_size
 
     def list_all(
         self,
@@ -390,6 +474,19 @@ class ToolIndex(BaseModel):
     def get_panel_views(self) -> dict[str, dict]:
         """Return pre-computed panel view dictionaries."""
         return self.panel_views
+
+
+def _preferred_default(entry: ToolIndexEntry, other: ToolIndexEntry, replace_equal: bool = False) -> bool:
+    """Whether ``entry`` should be the default over ``other``: configured first, then newest."""
+    if entry.in_panel != other.in_panel:
+        return entry.in_panel
+    new_v: Any
+    old_v: Any
+    try:
+        new_v, old_v = parse_version(entry.version or "0"), parse_version(other.version or "0")
+    except Exception:
+        new_v, old_v = entry.version or "", other.version or ""
+    return bool(new_v >= old_v if replace_equal else new_v > old_v)
 
 
 # md5 of the ToolIndex JSON schema and semantic revision (the pattern

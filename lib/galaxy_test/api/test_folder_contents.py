@@ -421,6 +421,29 @@ class TestFolderContentsApi(ApiTestCase):
             self._allow_dataset_access(hda_id)
             assert self._get_readme(folder_id) is not None
 
+    @requires_new_library
+    def test_index_folder_without_description(self, history_id):
+        folder_id = self._create_folder_in_library("Test Folder Contents No Description")
+        items = [
+            {
+                "name": "No Description",
+                "elements": [{"src": "pasted", "paste_content": "chr1\t1\t2\n", "name": "1.bed", "ext": "bed"}],
+            }
+        ]
+        self.library_populator.fetch_to_folder(folder_id, items, history_id)
+
+        response = self._get(f"folders/{folder_id}/contents")
+        index_response = self._assert_index_count_is_correct(response, expected_contents_count=1)
+        sub_folder = index_response["folder_contents"][0]
+        assert sub_folder["name"] == "No Description"
+        assert sub_folder["description"] is None
+
+        response = self._get(f"folders/{sub_folder['id']}/contents")
+        index_response = self._assert_index_count_is_correct(response, expected_contents_count=1)
+        assert index_response["metadata"]["folder_name"] == "No Description"
+        assert index_response["metadata"]["folder_description"] is None
+        assert index_response["folder_contents"][0]["name"] == "1.bed"
+
     def _assert_folder_order_by_is_expected(
         self, folder_id: str, order_by: str, sort_desc: str, expected_order_by_name: list[str]
     ):

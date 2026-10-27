@@ -162,9 +162,13 @@ a published cohort directory:
         cvmfs_main:
           external_store_directory: /cvmfs/example.org/config/tool_source_store
 
-External stores are read-only. If no compatible bundle is available, Galaxy
-logs a warning and parses the tools normally. Galaxy versions predating
-automatic selection should configure a specific bundle with ``url`` instead.
+External stores are read-only. With ``use_cached_toolbox`` enabled, Galaxy
+does not start when a read-only store has no bundle this Galaxy version can
+read, and a toolbox reload keeps the current tools. The error names the store.
+Publish a bundle built with this Galaxy version's ``populate_store.py``, or
+remove the store from ``tool_source_stores`` and from its tool conf. Galaxy
+versions predating automatic selection should configure a specific bundle
+with ``url`` instead.
 
 Populating the Tool Source Store
 --------------------------------
@@ -298,6 +302,14 @@ This is useful for:
 - Installations using shared storage where tools may be updated externally
 - CI/CD pipelines that deploy tool updates
 - Development environments where tools are being actively edited
+
+Applying Local Tool Edits
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A toolbox reload (``PUT /api/configuration/toolbox``) re-indexes tool files
+in writable stores whose contents changed since they were indexed. Edits made
+only to an imported macro file are not detected this way; run
+``populate_store.py --full``, or keep watch mode running, to pick those up.
 
 Troubleshooting
 ---------------

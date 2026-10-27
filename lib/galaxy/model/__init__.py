@@ -2472,6 +2472,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
+        self.touch_dependent_update_times()
+
+    def touch_dependent_update_times(self):
+        """Bump update_time on the collections and workflow invocation steps this job contributes to."""
         sa_session = required_object_session(self)
         update_time = now()
         self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)

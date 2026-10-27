@@ -2348,11 +2348,13 @@ class MinimalJobWrapper(HasResourceParameters):
                     import_options=import_options,
                     user=job.user,
                     tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
+                    # The imported outputs are committed together with the final job state below.
+                    commit=False,
                 )
                 object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
                 # Datasets discovered by the job are created by the import, without permissions.
                 # Precreated outputs (hdas_by_id) got their permissions when the job was created.
-                # The import's commit expired the new HDAs, so load them and their dataset permissions in one go.
+                # Load the new HDAs and their dataset permissions in one go.
                 if discovered_hda_ids := [
                     inspect(hda, raiseerr=True).identity[0] for hda in object_import_tracker.hdas_by_key.values()
                 ]:
@@ -2493,6 +2495,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         # Calculate dataset hash - only if the job completed successfully,
         # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).
+        hash_requests: list[ComputeDatasetHashTaskRequest] = []
         if final_job_state == job.states.OK:
             for dataset_assoc in output_dataset_associations:
                 dataset = dataset_assoc.dataset.dataset
@@ -2504,15 +2507,14 @@ class MinimalJobWrapper(HasResourceParameters):
                     ):
                         # Calculate dataset hash via a celery task
                         if self.app.config.enable_celery_tasks:
-                            from galaxy.celery.tasks import compute_dataset_hash
-
                             extra_files_path = dataset.extra_files_path if dataset.extra_files_path_exists() else None
-                            request = ComputeDatasetHashTaskRequest(
-                                dataset_id=dataset.id,
-                                extra_files_path=extra_files_path,
-                                hash_function=self.app.config.hash_function,
+                            hash_requests.append(
+                                ComputeDatasetHashTaskRequest(
+                                    dataset_id=dataset.id,
+                                    extra_files_path=extra_files_path,
+                                    hash_function=self.app.config.hash_function,
+                                )
                             )
-                            compute_dataset_hash.delay(request=request)
 
         user = job.user
         if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:
@@ -2545,23 +2547,37 @@ class MinimalJobWrapper(HasResourceParameters):
         self._set_unknown_output_extensions_to_data(job)
         self._fix_output_permissions()
 
-        # Empirically, we need to update job.user and
-        # job.workflow_invocation_step.workflow_invocation in separate
-        # transactions. Best guess as to why is that the workflow_invocation
-        # may or may not exist when the job is first loaded by the handler -
-        # and depending on whether it is or not sqlalchemy orders the updates
-        # differently and deadlocks can occur (one thread updates user and
-        # waits on invocation and the other updates invocation and waits on
-        # user).
-        self.sa_session.commit()
-
-        # Finally set the job state.  This should only happen *after* all
-        # dataset creation, and will allow us to eliminate force_history_refresh.
-        job.set_final_state(final_job_state)
+        # Outputs, metrics and the final job state are committed together, so
+        # readers never see finished outputs on a job that is still running, or
+        # a finished job without its metrics.
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
+        job.set_state(final_job_state)
         self.sa_session.commit()
+
+        # The hash tasks load the datasets, which may have been created in the commit above.
+        if hash_requests:
+            from galaxy.celery.tasks import compute_dataset_hash
+
+            for request in hash_requests:
+                try:
+                    compute_dataset_hash.delay(request=request)
+                except Exception:
+                    log.exception("Error queuing hash calculation for dataset %d", request.dataset_id)
+
+        # The update_time bumps wake the workflow scheduler. Every job of a
+        # mapped-over step bumps the same workflow_invocation_step row, so they
+        # run in their own short transaction after the outputs are visible,
+        # not in the one that holds the user's disk usage row. A failure here
+        # leaves the committed job state alone; the scheduler also checks job
+        # states directly.
+        try:
+            job.touch_dependent_update_times()
+            self.sa_session.commit()
+        except Exception:
+            log.exception(f"Updating update_time of collections and invocation steps failed for job {self.job_id}")
+            self.sa_session.rollback()
         if job.state == job.states.ERROR:
             self._report_error()
         elif task_wrapper:

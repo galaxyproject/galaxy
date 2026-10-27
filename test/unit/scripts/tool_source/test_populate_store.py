@@ -18,6 +18,8 @@ from typing import (
     Any,
 )
 
+import pytest
+
 # Add Galaxy lib to path for imports
 galaxy_root = Path(__file__).parent.parent.parent.parent.parent
 import sys
@@ -26,7 +28,10 @@ sys.path.insert(0, str(galaxy_root / "lib"))
 
 from galaxy.app_unittest_utils.tool_source_support import populate_config
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.tools.source_store import populator
+from galaxy.tools.source_store import (
+    discover,
+    populator,
+)
 from galaxy.tools.source_store.discover import discover_tools as actual_discover_tools
 from galaxy.tools.source_store.factory import _build_default_store
 from galaxy.tools.source_store.freshness import tool_confs_token
@@ -392,6 +397,32 @@ class TestIncrementalFastPath:
         assert entry.panel_section_id == "test_section_multi"
         assert [(item.tool_id, item.section_id) for item in index.panel_items] == [(guid, "test_section_multi")]
 
+    def test_adhoc_shed_update_replaces_configured_entry_before_conf_catches_up(self, tmp_path):
+        # A shed update indexes the new revision ad hoc while the conf still
+        # names the old one, whose directory the update may already have moved.
+        guid = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.20.1+galaxy0"
+        old_tool = _write_tool(tmp_path / "shed_tools" / "rev1" / "fastp.xml", "fastp", version="0.20.1+galaxy0")
+        conf = _write_tool_conf(
+            tmp_path / "shed_tool_conf.xml",
+            old_tool.parent,
+            f'<section id="s" name="S"><tool file="{old_tool.name}" guid="{guid}">'
+            "<tool_shed>toolshed.g2.bx.psu.edu</tool_shed>"
+            "<repository_name>fastp</repository_name>"
+            "<repository_owner>iuc</repository_owner>"
+            "<installed_changeset_revision>rev1</installed_changeset_revision>"
+            "</tool></section>",
+        )
+        cfg = populate_config(tmp_path, conf)
+        _populate_default(cfg)
+        new_tool = _write_tool(tmp_path / "shed_tools" / "rev2" / "fastp.xml", "fastp", version="0.20.1+galaxy0")
+
+        _populate_default(cfg, paths=[str(new_tool)], path_guids={str(new_tool): guid}, incremental=True)
+
+        _, index = _load_default_index(cfg)
+        assert index.get(guid, "0.20.1+galaxy0").source_path == str(new_tool)
+        assert index.entries[guid].source_path == str(new_tool)
+        assert [(item.tool_id, item.section_id) for item in index.panel_items] == [(guid, "s")]
+
     def test_partial_populate_discovers_only_requested_paths(self, tmp_path, monkeypatch):
         tools_dir = tmp_path / "shed_tools"
         items = []
@@ -453,6 +484,27 @@ class TestIncrementalFastPath:
 
         _, index = _load_default_index(cfg)
         assert index.entries["macro_tool"].version == "2.0"
+
+    def test_partial_populate_drops_version_an_edited_file_no_longer_defines(self, tmp_path):
+        tools_dir = tmp_path / "tools"
+        tool = _write_tool(tools_dir / "probe.xml", "probe", version="1.1")
+        _write_tool(tools_dir / "other.xml", "other")
+        conf = _write_tool_conf(
+            tmp_path / "tool_conf.xml",
+            tools_dir,
+            '<section id="s" name="S"><tool file="probe.xml"/><tool file="other.xml"/></section>',
+        )
+        cfg = populate_config(tmp_path, conf)
+        _populate_default(cfg)
+
+        _write_tool(tool, "probe", version="1.2")
+        assert _populate_default(cfg, paths=[str(tool)], incremental=False)["indexes_written"] == 1
+
+        _, index = _load_default_index(cfg)
+        assert set(index.entries_by_version["probe"]) == {"1.2"}
+        assert index.entries["probe"].version == "1.2"
+        # The bump keeps the tool's place instead of moving it to the section head.
+        assert [item.tool_id for item in index.panel_items] == ["probe", "other"]
 
     def test_in_process_population_is_atomic_with_tool_removal(self, tmp_path, monkeypatch):
         """A stale scan must commit before a concurrent uninstall can prune it."""
@@ -535,6 +587,52 @@ class TestIncrementalFastPath:
         payload = json.loads(sidecar.read_text())
         assert payload["store"] == DEFAULT_STORE_NAME
         assert payload["tool_snapshot"]["default_tool_count"] == 1
+
+
+class TestDefaultTargetConverters:
+    """A populate that writes the default store indexes the datatype converters."""
+
+    @staticmethod
+    def _setup(tmp_path, monkeypatch):
+        converters_dir = tmp_path / "converters"
+        _write_tool(converters_dir / "probe_converter.xml", "CONVERTER_probe")
+        registry = SimpleNamespace(
+            converters_path=str(converters_dir), converters=[("probe_converter.xml", "txt", "tabular")]
+        )
+        monkeypatch.setattr(populator, "_get_datatypes_registry", lambda: registry)
+        monkeypatch.setattr(discover, "_get_datatypes_registry", lambda: registry)
+        tool = _write_tool(tmp_path / "tools" / "probe.xml", "probe")
+        conf = _write_tool_conf(tmp_path / "tool_conf.xml", tool.parent, '<tool file="probe.xml"/>')
+        return populate_config(tmp_path, conf), tool
+
+    def test_default_target_rebuild_keeps_converters(self, tmp_path, monkeypatch):
+        cfg, _ = self._setup(tmp_path, monkeypatch)
+        _populate_default(cfg)
+        assert "CONVERTER_probe" in _load_default_index(cfg)[1].entries
+
+        _populate_default(cfg, prune=True)
+        assert "CONVERTER_probe" in _load_default_index(cfg)[1].entries
+
+    def test_registry_failure_fails_full_rebuild(self, tmp_path, monkeypatch):
+        cfg, _ = self._setup(tmp_path, monkeypatch)
+        monkeypatch.setattr(populator, "_ensure_datatypes_registry", _raise_registry_error)
+        with pytest.raises(RuntimeError, match="no registry"):
+            _populate_default(cfg)
+
+    def test_registry_failure_only_warns_on_partial_populate(self, tmp_path, monkeypatch, caplog):
+        cfg, tool = self._setup(tmp_path, monkeypatch)
+        _populate_default(cfg)
+        monkeypatch.setattr(populator, "_ensure_datatypes_registry", _raise_registry_error)
+        _write_tool(tool, "probe", version="1.1")
+
+        _populate_default(cfg, paths=[str(tool)], incremental=False)
+
+        assert "Could not build a datatypes registry" in caplog.text
+        assert _load_default_index(cfg)[1].entries["probe"].version == "1.1"
+
+
+def _raise_registry_error(config):
+    raise RuntimeError("no registry")
 
 
 class TestTwinDeterminism:

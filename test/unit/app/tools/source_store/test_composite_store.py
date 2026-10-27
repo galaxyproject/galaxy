@@ -6,7 +6,6 @@ import tempfile
 
 import pytest
 
-from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.source_store import StoredToolSource
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.index import (
@@ -223,6 +222,43 @@ def test_load_index_merges_entries_by_version(two_paths):
         assert entry.name == name
 
 
+def test_load_index_prefers_configured_version_across_members(two_paths):
+    pa, pb = two_paths
+    a = SqliteToolSourceStore(url=_sqlite_url(pa))
+    b = SqliteToolSourceStore(url=_sqlite_url(pb))
+    idx_a = ToolIndex()
+    idx_a.add_entry(ToolIndexEntry(id="multi", version="2.0", in_panel=False))
+    a.store_index(idx_a)
+    idx_b = ToolIndex()
+    idx_b.add_entry(ToolIndexEntry(id="multi", version="1.0"))
+    b.store_index(idx_b)
+    composite = CompositeToolSourceStore(members=[("a", a), ("b", b)], default="b")
+    merged = composite.load_index()
+    assert merged is not None
+    assert merged.entries["multi"].version == "1.0"
+
+
+def test_load_index_keeps_configured_entry_over_storage_only_twin(two_paths):
+    # The earlier member ships 2.0 and 3.0 storage-only; the later one
+    # configures 2.0. The configured 2.0 must survive the per-version merge.
+    pa, pb = two_paths
+    a = SqliteToolSourceStore(url=_sqlite_url(pa))
+    b = SqliteToolSourceStore(url=_sqlite_url(pb))
+    idx_a = ToolIndex()
+    for version in ("2.0", "3.0"):
+        idx_a.add_entry(ToolIndexEntry(id="multi", version=version, in_panel=False))
+    a.store_index(idx_a)
+    idx_b = ToolIndex()
+    idx_b.add_entry(ToolIndexEntry(id="multi", version="2.0"))
+    b.store_index(idx_b)
+    composite = CompositeToolSourceStore(members=[("a", a), ("b", b)], default="b")
+    merged = composite.load_index()
+    assert merged is not None
+    assert merged.entries["multi"].version == "2.0"
+    assert merged.entries["multi"].in_panel
+    assert list(merged.configured_versions("multi")) == ["2.0"]
+
+
 def test_list_source_paths_unions_members(two_paths):
     pa, pb = two_paths
     a = SqliteToolSourceStore(url=_sqlite_url(pa))
@@ -246,14 +282,10 @@ def test_read_only_member_names(two_paths):
     assert composite.read_only_member_names == {"ro"}
 
 
-def test_unavailable_read_only_member_disables_index_only_panel_initialization(two_paths):
+def test_unavailable_read_only_member_names(two_paths):
     writable_path, _unused = two_paths
     writable = SqliteToolSourceStore(url=_sqlite_url(writable_path))
     unavailable = UnavailableToolSourceStore("no compatible cohort")
     composite = CompositeToolSourceStore(members=[("cvmfs", unavailable), ("rw", writable)], default="rw")
-    box = CachedToolBox.__new__(CachedToolBox)
-    box._store = composite
-    box._tool_index = ToolIndex(entries={"local": ToolIndexEntry(id="local")})
 
     assert composite.unavailable_read_only_member_names == {"cvmfs"}
-    assert box._init_tools_from_index([]) is False
