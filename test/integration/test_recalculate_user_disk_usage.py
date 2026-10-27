@@ -160,6 +160,37 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
                 self.dataset_populator.delete_dataset(history_id, output_id, purge=True, wait_for_purge=True)
             assert self.dataset_populator.total_disk_usage() == 0
 
+    def test_copy_of_running_output_by_another_user_is_counted(self):
+        history_id = self.dataset_populator.new_history()
+        # create_2 writes "1\n" and "2\n" to its outputs, then sleeps
+        run_response = self.dataset_populator.run_tool("create_2", {"sleep_time": 10}, history_id)
+        output_id = run_response["outputs"][0]["id"]
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, ok_states=["running"])
+        self.dataset_populator.make_public(history_id)
+
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            other_history_id = self.dataset_populator.new_history()
+            # Copy an output while its job runs, before the job charges it
+            copy_response = self.dataset_populator._post(
+                f"histories/{other_history_id}/contents",
+                {"source": "hda", "content": output_id, "type": "dataset"},
+                json=True,
+            )
+            assert_status_code_is_ok(copy_response)
+            self.dataset_populator.wait_for_history(other_history_id, assert_ok=True)
+
+            # The copy is counted when the job finishes, and a recalculation agrees
+            assert self.dataset_populator.total_disk_usage() == 2
+            self.recalculate_disk_usage()
+            assert self.dataset_populator.total_disk_usage() == 2
+
+            # Purging it brings the usage back to 0
+            self.dataset_populator.delete_dataset(
+                other_history_id, copy_response.json()["id"], purge=True, wait_for_purge=True
+            )
+            assert self.dataset_populator.total_disk_usage() == 0
+
 
 class TestFailedJobDiskUsageIntegration(IntegrationTestCase):
     framework_tool_and_types = True

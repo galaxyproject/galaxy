@@ -15,6 +15,7 @@ import shutil
 import sys
 import time
 import traceback
+from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import (
     dataclass,
@@ -1235,13 +1236,30 @@ class MinimalJobWrapper(HasResourceParameters):
         assert job
         return job
 
-    @staticmethod
-    def _disk_usage_owner(job: Job) -> Optional[model.User]:
-        """Return the user whose disk usage the job's outputs count towards."""
-        if job.user:
-            return job.user
-        # A job run before logging in has no user, its history is given to the user at login
-        return job.history.user if job.history else None
+    def _charge_outputs(self, datasets: list[model.Dataset]) -> None:
+        """
+        Increase the disk usage of every user with an HDA of the outputs: the owner of the job's history, who is
+        the user who logged in for a job run before logging in, and the owners of copies made while the job ran.
+        """
+        usage_by_user: dict[model.User, dict[Optional[str], int]] = defaultdict(lambda: defaultdict(int))
+        for dataset in dict.fromkeys(datasets):
+            if dataset.purged or not dataset.total_size:
+                continue
+            quota_source_info = dataset.quota_source_info
+            if not quota_source_info.use:
+                continue
+            users = {
+                hda.history.user
+                for hda in dataset.history_associations
+                if not hda.purged and hda.history and hda.history.user
+            }
+            for user in users:
+                usage_by_user[user][quota_source_info.label] += int(dataset.total_size)
+        # Lock the users' rows in the order of their ids, so jobs charging the same users can't deadlock
+        for user in sorted(usage_by_user, key=lambda user: user.id):
+            for label, usage in usage_by_user[user].items():
+                user.adjust_total_disk_usage(usage, label)
+            self.sa_session.flush([user])
 
     def get_id_tag(self):
         # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
@@ -1561,13 +1579,7 @@ class MinimalJobWrapper(HasResourceParameters):
                         "Execution of this dataset's job is paused because its input datasets are in an error state.",
                     )
             # Failed outputs keep their partial content, charge it like finish() does
-            collected_bytes = sum(dataset.total_size or 0 for dataset in uncharged_datasets if not dataset.purged)
-            user = self._disk_usage_owner(job)
-            if user and collected_bytes > 0:
-                # assume all datasets in a job get written to the same objectstore
-                quota_source_info = uncharged_datasets[0].quota_source_info
-                if quota_source_info.use:
-                    user.adjust_total_disk_usage(collected_bytes, quota_source_info.label)
+            self._charge_outputs(uncharged_datasets)
             job.set_final_state(job.states.ERROR)
             job.command_line = self.command_line
             job.info = message
@@ -2331,20 +2343,13 @@ class MinimalJobWrapper(HasResourceParameters):
             job.exit_code = tool_exit_code
         # custom post process setup
 
-        collected_bytes = 0
-        quota_source_info = None
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset.dataset
-            # assume all datasets in a job get written to the same objectstore
-            quota_source_info = dataset.quota_source_info
-            total_size = dataset.set_total_size()
+            dataset.set_total_size()
             if dataset.purged:
                 # Purge, in case job wrote directly to object store
                 dataset.full_delete()
-            else:
-                # Purged outputs don't count towards the user's disk usage
-                collected_bytes += total_size
 
         # Calculate dataset hash
         for dataset_assoc in output_dataset_associations:
@@ -2365,9 +2370,7 @@ class MinimalJobWrapper(HasResourceParameters):
                         )
                         compute_dataset_hash.delay(request=request)
 
-        user = self._disk_usage_owner(job)
-        if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:
-            user.adjust_total_disk_usage(collected_bytes, quota_source_info.label)
+        self._charge_outputs([dataset_assoc.dataset.dataset for dataset_assoc in job.output_datasets])
 
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
