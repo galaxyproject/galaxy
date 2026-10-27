@@ -498,9 +498,26 @@ class NavigatesGalaxy(HasDriver):
         self.history_panel_create_new()
         self.history_panel_rename(name)
 
+        # A rename typed while the panel is still swapping histories is dropped silently,
+        # leaving "Unnamed history" behind to fail a name lookup in some later test.
+        def renamed(driver=None):
+            return True if self.current_history()["name"] == name else None
+
+        self._wait_on(renamed, f"current history name to become [{name}]", wait_type=WAIT_TYPES.DATABASE_OPERATION)
+
     def history_panel_create_new(self):
-        """Click create new and pause a bit for the history to begin to refresh."""
+        """Click create new and wait for the new history to become the current one."""
+        previous_history_id = self.current_history_id()
         self.history_click_create_new()
+
+        # Callers act on whichever history is current, so wait for the switch rather than
+        # trusting a fixed render delay.
+        def switched(driver=None):
+            return True if self.current_history_id() != previous_history_id else None
+
+        self._wait_on(
+            switched, "current history to switch to the newly created history", wait_type=WAIT_TYPES.DATABASE_OPERATION
+        )
         self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
@@ -663,7 +680,17 @@ class NavigatesGalaxy(HasDriver):
         target_card = self.get_history_card(card_name)
 
         if is_in_extra:
+            # Bootstrap-vue keeps menu items in the DOM for every card, so look up the item
+            # within target_card and wait for its dropdown to open before clicking it.
             target_card.find_element(By.CSS_SELECTOR, '[id^="g-card-extra-actions-history-"]').click()
+            action_element = target_card.find_element(By.CSS_SELECTOR, action_selector)
+            self._wait_on(
+                lambda *_: action_element.is_displayed(),
+                f"history card action [{action_selector}] to be displayed",
+                wait_type=self.wait_types.UX_TRANSITION,
+            )
+            action_element.click()
+            return
 
         action_chains = self.action_chains()
         action_selector = target_card.find_element(By.CSS_SELECTOR, action_selector)
