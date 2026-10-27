@@ -4,6 +4,7 @@ Error analysis agent for tool error diagnosis.
 
 import logging
 import re
+from dataclasses import replace
 from functools import partial
 from pathlib import Path
 from typing import (
@@ -13,6 +14,10 @@ from typing import (
 import anyio
 from pydantic import BaseModel
 from pydantic_ai import Agent
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelRequest,
+)
 
 from galaxy.schema.agents import ConfidenceLevel
 from .base import (
@@ -44,6 +49,20 @@ class ErrorAnalysisResult(BaseModel):
     alternative_approaches: list[str] = []
     confidence: ConfidenceLiteral
     requires_admin: bool = False
+
+
+def _trim_part(part: Any) -> Any:
+    content = getattr(part, "content", None)
+    if isinstance(content, str) and len(content) > JOB_LOG_EXCERPT_CHARS:
+        return replace(part, content=truncate_middle(content, JOB_LOG_EXCERPT_CHARS))
+    return part
+
+
+def _trim_message(message: ModelMessage) -> ModelMessage:
+    # Two identical branches so mypy can narrow the union for ``replace``.
+    if isinstance(message, ModelRequest):
+        return replace(message, parts=[_trim_part(part) for part in message.parts])
+    return replace(message, parts=[_trim_part(part) for part in message.parts])
 
 
 class ErrorAnalysisAgent(BaseGalaxyAgent):
@@ -160,7 +179,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
 
         # The router's handoff task is often a one-liner ("diagnose the error") written from a
         # follow-up that never names the tool or job; the conversation is where those live.
-        message_history = self._extract_message_history(context)
+        message_history = self._bounded_message_history(context)
         result = await self._run_with_retry(enhanced_query, message_history=message_history)
 
         if self._supports_structured_output():
@@ -205,6 +224,17 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 suggestions=parsed_result.get("suggestions", []),
                 agent_data={"error_category": parsed_result.get("error_category", "unknown")},
             )
+
+    def _bounded_message_history(self, context: dict[str, Any] | None) -> list[ModelMessage] | None:
+        """The conversation, with each message trimmed like a job log.
+
+        The wizard posts a job's raw stderr as the query and the chat stores it untrimmed, so
+        without this one big paste would ride along, whole, on every later turn.
+        """
+        history = self._extract_message_history(context)
+        if not history:
+            return history
+        return [_trim_message(message) for message in history]
 
     def _format_job_context(self, job_details: dict[str, Any]) -> str:
         parts = []
