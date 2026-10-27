@@ -1,0 +1,31 @@
+# Resubmission to a dynamic destination whose rule cannot map the job.
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  failure_runner:
+    load: integration.resubmission_runners:FailsJobRunner
+    workers: 1
+  dynamic:
+    rules_module: integration.resubmission_rules
+
+execution:
+  default: local
+  environments:
+    local:
+      runner: local
+
+    fail_then_unmappable:
+      runner: failure_runner
+      resubmit:
+      - condition: any_failure
+        environment: unmappable_destination
+
+    unmappable_destination:
+      runner: dynamic
+      type: python
+      function: dynamic_unmappable_resubmission
+
+tools:
+  - id: exit_code_oom
+    environment: fail_then_unmappable
