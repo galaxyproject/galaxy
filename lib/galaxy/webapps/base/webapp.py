@@ -7,6 +7,7 @@ import os
 import re
 import socket
 import time
+from collections import Counter
 from contextlib import ExitStack
 from http.cookies import CookieError
 from typing import (
@@ -806,9 +807,14 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             history = prev_galaxy_session.current_history
             if prev_galaxy_session.user is None:
                 # Increase the user's disk usage by the amount of the previous history's datasets if they didn't already
-                # own it.
+                # own it, with one adjustment per quota source.
+                usage_by_quota_source: Counter[Optional[str]] = Counter()
                 for hda in history.datasets:
-                    user.adjust_total_disk_usage(hda.quota_amount(user), hda.dataset.quota_source_info.label)
+                    quota_source_info = hda.dataset.quota_source_info
+                    if quota_source_info.use:
+                        usage_by_quota_source[quota_source_info.label] += hda.quota_amount(user)
+                for label, usage in usage_by_quota_source.items():
+                    user.adjust_total_disk_usage(usage, label)
                 # Only set default history permissions if the history is from the previous session and anonymous
                 set_permissions = True
         elif self.galaxy_session.current_history:

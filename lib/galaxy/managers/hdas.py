@@ -8,6 +8,7 @@ history.
 import gettext
 import logging
 import os
+from collections import Counter
 from typing import (
     Any,
     Optional,
@@ -448,13 +449,16 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         total_free_bytes = 0
         errors: list[StorageItemCleanupError] = []
         dataset_ids_to_remove: set[int] = set()
+        freed_bytes_by_quota_source: Counter[Optional[str]] = Counter()
 
         for hda_id in item_ids:
             try:
                 hda: HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
                 hda.deleted = True
                 quota_amount = int(hda.quota_amount(user))
-                hda.purge_usage_from_quota(user, hda.dataset.quota_source_info)
+                quota_source_info = hda.dataset.quota_source_info
+                if quota_source_info.use:
+                    freed_bytes_by_quota_source[quota_source_info.label] += quota_amount
                 hda.purged = True
                 dataset_ids_to_remove.add(hda.dataset.id)
                 success_item_count += 1
@@ -463,6 +467,9 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
                 errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
 
         if success_item_count:
+            # One adjustment per quota source instead of one per item
+            for label, freed_bytes in freed_bytes_by_quota_source.items():
+                user.adjust_total_disk_usage(-freed_bytes, label)
             session = self.hda_manager.session()
             session.commit()
 
