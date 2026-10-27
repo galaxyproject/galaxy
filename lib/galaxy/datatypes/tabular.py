@@ -47,6 +47,7 @@ from galaxy.datatypes.dataproviders.line import (
     RegexLineDataProvider,
 )
 from galaxy.datatypes.metadata import (
+    IntParameter,
     MetadataElement,
     MetadataParameter,
 )
@@ -91,7 +92,13 @@ class TabularData(Text):
     max_peek_columns = 50
 
     MetadataElement(
-        name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0
+        name="comment_lines",
+        default=0,
+        desc="Number of comment lines",
+        param=IntParameter,
+        readonly=False,
+        optional=True,
+        no_value=0,
     )
     MetadataElement(
         name="data_lines",

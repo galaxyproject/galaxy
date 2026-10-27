@@ -415,6 +415,10 @@ class InvolucroContext(installable.InstallableContext):
         finally:
             # delete build directory in any case
             if created_build_dir:
+                # build/dist is written by root inside the container and removed by the
+                # cleanup task; run that task if involucro stopped before reaching it.
+                if os.path.exists("./build/dist"):
+                    self.shell_exec(self.build_command(involucro_args[:-1] + ["cleanup"]))
                 shutil.rmtree("./build")
         return res
 

@@ -49,6 +49,17 @@ def test_mulled_build_files_cli(use_mamba: bool, tmpdir) -> None:
     assert singularity_image_dir.join("zlib:1.2.13--h166bdaf_4").exists()
 
 
+@external_dependency_management
+def test_mulled_build_removes_root_owned_build_dir(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    target = build_target("zlib", version="1.2.13", build="h166bdaf_4")
+    involucro_context = InvolucroContext(involucro_bin=str(tmp_path / "involucro"))
+    # the build task leaves build/dist (written by root in the container) behind
+    exit_code = mull_targets([target], determine_base_image=False, involucro_context=involucro_context, command="build")
+    assert exit_code == 0
+    assert not (tmp_path / "build").exists()
+
+
 def test_target_str_to_targets():
     target_str = "samtools=1.3.1--4,bedtools=2.22"
     targets = target_str_to_targets(target_str)

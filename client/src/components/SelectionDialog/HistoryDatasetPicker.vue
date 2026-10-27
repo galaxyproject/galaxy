@@ -160,7 +160,8 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
 
         const limit = ctx.perPage;
         const offset = (ctx.currentPage ? ctx.currentPage - 1 : 0) * ctx.perPage;
-        const sortDesc = ctx.sortDesc;
+        // Without a user-selected sort column, list the most recently updated histories first.
+        const sortDesc = ctx.sortBy ? ctx.sortDesc : true;
         const sortBy: HistorySortByLiteral =
             ctx.sortBy === "label" ? "name" : (ctx.sortBy as HistorySortByLiteral) || "update_time";
         const queryDict = HistoriesFilters.getQueryDict(ctx.filter ?? "");

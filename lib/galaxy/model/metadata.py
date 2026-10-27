@@ -27,6 +27,7 @@ from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.security.object_wrapper import sanitize_lists_to_string
 from galaxy.util import (
     form_builder,
@@ -456,6 +457,28 @@ MetadataElement = Statement(MetadataElementSpec)
 """
 MetadataParameter sub-classes.
 """
+
+
+class IntParameter(MetadataParameter):
+    @classmethod
+    def marshal(cls, value):
+        if isinstance(value, bool) or (isinstance(value, float) and not value.is_integer()):
+            raise RequestParameterInvalidException(f"Expected an integer, got {value!r}")
+        if value is None or isinstance(value, int):
+            return value
+        if isinstance(value, str) and not value.strip():
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            raise RequestParameterInvalidException(f"Expected an integer, got {value!r}")
+
+    def wrap(self, value, session):
+        # Values saved by older releases may still be stored as strings.
+        try:
+            return self.marshal(value)
+        except RequestParameterInvalidException:
+            return value
 
 
 class SelectParameter(MetadataParameter):
