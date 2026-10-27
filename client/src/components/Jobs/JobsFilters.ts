@@ -5,6 +5,8 @@ import Filtering, { compare, contains, equals, toDate, type ValidFilter } from "
 /** Name mode sends every matching tool id in the query string, so keep the URL bounded. */
 export const MAX_TOOL_NAME_MATCHES = 50;
 
+export type JobTimeRangeKey = "30m" | "1h" | "24h" | "7d" | "custom";
+
 /**
  * A curated, quick-toggle grouping of job states (see `JobStatusFilter.vue`).
  *
