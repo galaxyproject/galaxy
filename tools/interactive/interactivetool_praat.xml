@@ -1,0 +1,80 @@
+<tool id="interactive_tool_praat" tool_type="interactive" name="Praat" version="@VERSION@+galaxy0" profile="24.0">
+    <description>interactive speech analysis and annotation</description>
+    <macros>
+        <token name="@VERSION@">7.0.02-26.04</token>
+    </macros>
+    <requirements>
+        <!-- Planned publishing location. Build locally with this tag or publish before deployment. -->
+        <!-- <container type="docker">quay.io/galaxy/praat-headless:@VERSION@</container> -->
+        <container type="docker">praat-headless:@VERSION@</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Praat desktop" requires_domain="True">
+            <port>5800</port>
+        </entry_point>
+    </entry_points>
+    <command detect_errors="exit_code"><![CDATA[
+        export HOME=\$PWD &&
+        mkdir -p ./inputs ./outputs &&
+        chown 1000:1000 ./inputs || true && ## the app user of the container (in NFS export with root-shash this will fail and is not needed)
+        chown 1000:1000 ./outputs || true && ## the app user of the container (in NFS export with root-shash this will fail and is not needed)
+        echo "=== Process identity ===" &&
+        echo "User ID: " &&
+        id -u &&
+        echo "Group ID: " &&
+        id -g &&
+
+        echo "=== Current directory ===" &&
+        pwd &&
+
+        echo "=== Directory permissions ===" &&
+        ls -ld / /config ./inputs ./outputs &&
+        echo "=== Directory contents ===" &&
+        ls -l ./inputs &&
+        ls -l ./outputs &&
+        ls -l /config &&
+
+        #if $datasets
+            #for $i, $dataset in enumerate($datasets)
+                cp '$dataset' '/config/dataset_${i}.${dataset.ext}' &&
+            #end for
+        #end if
+        ls -l ./inputs &&
+
+        echo "=== Starting /init with debugging ===" &&
+        /bin/sh -x /init 2>&1
+
+        rc=\$?
+        echo "=== /init exited with code: \$rc ==="
+        exit "\$rc"
+        praat --version > version.txt &&
+        /init
+    ]]></command>
+    <inputs>
+        <param name="datasets" type="data" format="data" multiple="true" optional="true"
+            label="Files to open in Praat"
+            help="Select audio, TextGrids, or other Praat-readable files. Files open automatically when the desktop starts." />
+    </inputs>
+    <outputs>
+        <!-- <data name="version" format="txt" label="${tool.name}: version" from_work_dir="version.txt" /> -->
+        <collection name="outputs" type="list" label="Praat outputs">
+            <discover_datasets pattern="(?P&lt;name&gt;.+)" directory="outputs" format="auto" />
+        </collection>
+    </outputs>
+    <help><![CDATA[
+Praat provides interactive speech analysis, visualization, and annotation.
+
+Launch this tool and open the desktop from Active Interactive Tools.
+Selected files are copied into the inputs directory and opened automatically.
+They have numbered filenames; your original Galaxy datasets are not modified.
+
+Save results directly in the outputs directory, then choose Quit in Praat.
+The container finishes and Galaxy collects the saved files into a collection.
+Saving an input file in inputs does not include it in the output collection.
+Closing the browser tab leaves the desktop running.
+
+Browser audio is enabled in the image. If playback is silent, enable audio in
+the web interface and select PulseAudio under Praat's Sound playing preferences.
+Browser microphone recording is not provided by this setup.
+    ]]></help>
+</tool>
