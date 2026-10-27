@@ -7,8 +7,6 @@ import pytest
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.tool_util.upgrade import (
     Advice,
-    _find_all,
-    _xml_tool_source,
     advise_on_upgrade,
     TARGET_TOO_NEW,
 )
@@ -81,6 +79,19 @@ EMPTY_MULTIPLE_TEST_TOOL = """<tool id="empty_multiple" name="empty_multiple" ve
     <test>
       <param name="parameter" {reference} />
       <output name="output"><assert_contents><has_text text="a" /></assert_contents></output>
+    </test>
+  </tests>
+</tool>
+"""
+N_COLUMNS_TOOL = """<tool id="n_columns" name="n_columns" version="1.0" profile="26.1">
+  <command>echo 'a,b' > '$output'</command>
+  <inputs />
+  <outputs>
+    <data name="output" format="txt" />
+  </outputs>
+  <tests>
+    <test>
+      <output name="output"><assert_contents><has_n_columns n="2" {reference} /></assert_contents></output>
     </test>
   </tests>
 </tool>
@@ -245,11 +256,6 @@ def test_21_09_from_work_dir_whitespace(tmp_path):
     assert_not_has_advice(advice, "21_09_fix_from_work_dir_whitespace")
 
 
-def test_find_all_uses_xpath(tmp_path):
-    tool_source = _xml_tool_source(_write_tool(tmp_path, FROM_WORK_DIR_TOOL, "out.txt"))
-    assert [el.tag for el in _find_all(tool_source, "./command")] == ["command"]
-
-
 def test_21_09_data_source_advice():
     test_data_source = _tool_path("test_data_source.xml")
     advice = advise_on_upgrade(test_data_source)
@@ -346,9 +352,12 @@ def test_26_2_tabular_assertion_separator():
     assert_not_has_advice(advice, "26_2_consider_tabular_assertion_separator")
 
 
-def test_26_2_tool_is_supported():
-    advice = advise_on_upgrade(_tool_path("column_assertion_delimiter.xml"))
+def test_26_2_tabular_assertion_with_separator(tmp_path):
+    advice = advise_on_upgrade(_write_tool(tmp_path, N_COLUMNS_TOOL, 'sep=","'))
     assert_not_has_advice(advice, "26_2_consider_tabular_assertion_separator")
+
+    advice = advise_on_upgrade(_write_tool(tmp_path, N_COLUMNS_TOOL, ""))
+    assert_has_advice(advice, "26_2_consider_tabular_assertion_separator")
 
 
 def _write_tool(tmp_path, template: str, reference: str) -> str:
