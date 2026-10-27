@@ -60,6 +60,9 @@ kepler:
 locuszoom:
     package: "@galaxyproject/locuszoom"
     version: 0.0.9
+markdown:
+    package: "@galaxyproject/markdown"
+    version: 0.0.0
 molstar:
     package: "@galaxyproject/molstar"
     version: 0.0.4
@@ -75,6 +78,9 @@ niivue:
 nora:
     package: "@galaxyproject/nora"
     version: 1.2.4
+olit:
+    package: "@galaxyproject/olit"
+    version: 0.0.13
 openlayers:
     package: "@galaxyproject/openlayers"
     version: 0.0.9
@@ -84,6 +90,9 @@ openseadragon:
 pca:
     package: "@galaxyproject/pca"
     version: 0.0.9
+pdf:
+    package: "@galaxyproject/pdf"
+    version: 0.0.0
 phylocanvas:
     package: "@galaxyproject/phylocanvas"
     version: 0.0.11
@@ -114,6 +123,9 @@ rerunio:
 rmsxflipbook:
     package: "@galaxyproject/rmsxflipbook"
     version: 0.0.4
+rustgis:
+    package: "@galaxyproject/rustgis"
+    version: 0.0.1
 seqviz:
     package: "@galaxyproject/seqviz"
     version: 0.0.2
