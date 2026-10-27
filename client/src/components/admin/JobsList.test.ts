@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { deleteJob } from "@/api/jobs";
+import { stopJobs } from "@/api/jobs";
 import { jobsProvider } from "@/components/providers/JobProvider";
 
 import JobsList from "./JobsList.vue";
@@ -17,7 +17,7 @@ vi.mock("@/components/providers/JobProvider", () => ({
 
 vi.mock("@/api/jobs", async (importOriginal) => ({
     ...(await importOriginal<object>()),
-    deleteJob: vi.fn(async () => true),
+    stopJobs: vi.fn(async (jobIds: string[]) => ({ stopped: jobIds, failed: [] })),
 }));
 
 const localVue = getLocalVue();
@@ -45,7 +45,7 @@ function isChecked(box: { element: Element }) {
 
 describe("JobsList", () => {
     beforeEach(() => {
-        vi.mocked(deleteJob).mockClear();
+        vi.mocked(stopJobs).mockClear();
     });
 
     it("selects every unfinished job from the header checkbox", async () => {
@@ -71,9 +71,9 @@ describe("JobsList", () => {
         await stopForm?.trigger("submit");
         await flushPromises();
 
-        expect(deleteJob).toHaveBeenCalledTimes(2);
-        expect(deleteJob).toHaveBeenCalledWith("job1", "maintenance");
-        expect(deleteJob).toHaveBeenCalledWith("job2", "maintenance");
+        expect(stopJobs).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(stopJobs).mock.calls[0]?.slice(0, 2)).toEqual([["job1", "job2"], "maintenance"]);
+        expect(wrapper.find(".alert-success").text()).toContain("Stopped 2 of 2 jobs.");
     });
 
     it("checks the header once every row is ticked", async () => {
@@ -108,7 +108,29 @@ describe("JobsList", () => {
         await stopForm?.trigger("submit");
         await flushPromises();
 
-        expect(deleteJob).toHaveBeenCalledTimes(1);
-        expect(deleteJob).toHaveBeenCalledWith("job1", "maintenance");
+        expect(stopJobs).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(stopJobs).mock.calls[0]?.slice(0, 2)).toEqual([["job1"], "maintenance"]);
+    });
+
+    it("reports jobs that could not be stopped and keeps them selected", async () => {
+        vi.mocked(stopJobs).mockResolvedValueOnce({
+            stopped: ["job1"],
+            failed: [{ jobId: "job2", error: new Error("Too Many Requests") }],
+        });
+        const wrapper = await mountJobsList();
+        await headerBox(wrapper).setChecked(true);
+        await flushPromises();
+
+        await wrapper.find("#stop-message").setValue("maintenance");
+        const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
+        await stopForm?.trigger("submit");
+        await flushPromises();
+
+        const alert = wrapper.find(".alert-danger");
+        expect(alert.text()).toContain("Stopped 1 of 2 jobs.");
+        expect(alert.text()).toContain("1 could not be stopped and remain selected: Too Many Requests");
+        // Rows list the most recently updated job (job2) first.
+        expect(rowBoxes(wrapper).map(isChecked)).toEqual([true, false]);
+        expect((wrapper.find("#stop-message").element as HTMLInputElement).value).toBe("maintenance");
     });
 });

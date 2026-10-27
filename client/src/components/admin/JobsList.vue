@@ -108,7 +108,7 @@
                         <b-form-input id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
                         </b-form-input>
                         <b-input-group-append>
-                            <b-btn type="submit">Submit</b-btn>
+                            <b-btn type="submit" :disabled="stopping">Submit</b-btn>
                         </b-input-group-append>
                     </b-input-group>
                 </b-form-group>
@@ -169,7 +169,7 @@
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { deleteJob, NON_TERMINAL_STATES } from "@/api/jobs";
+import { NON_TERMINAL_STATES, stopJobs } from "@/api/jobs";
 import { jobsProvider } from "@/components/providers/JobProvider";
 import { getAppRoot } from "@/onload/loadConfig";
 import Filtering, { contains } from "@/utils/filtering";
@@ -234,6 +234,7 @@ export default {
             showAllRunning: false,
             titleSearch: `search jobs`,
             sendNotification: false,
+            stopping: false,
         };
     },
     computed: {
@@ -331,9 +332,9 @@ export default {
         onRefresh() {
             this.update();
         },
-        async sendNotificationToUsers() {
+        async sendNotificationToUsers(jobIds) {
             const cancelReason = this.stopMessage || "No reason provided";
-            const jobsToCancel = this.unfinishedJobs.filter((job) => this.selectedStopJobIds.includes(job.id));
+            const jobsToCancel = this.unfinishedJobs.filter((job) => jobIds.includes(job.id));
             // Group jobs by user
             const userJobsMap = jobsToCancel.reduce((acc, job) => {
                 if (job.user_id) {
@@ -379,24 +380,38 @@ export default {
             }
 
             if (errors.length) {
-                this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users. ${errors.length} errors occurred.`;
-                this.status = "warning";
-            } else {
-                this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users.`;
-                this.status = "success";
+                return `Notification sent to ${numSuccess} out of ${totalUsers} users. ${errors.length} errors occurred.`;
             }
+            return `Notification sent to ${numSuccess} out of ${totalUsers} users.`;
         },
         getJobViewLink(jobId) {
             return `${getAppRoot()}jobs/${jobId}/view`;
         },
         async onStopJobs() {
-            await Promise.all(this.selectedStopJobIds.map((jobId) => deleteJob(jobId, this.stopMessage)));
-            if (this.sendNotification) {
-                this.sendNotificationToUsers();
+            const jobIds = [...this.selectedStopJobIds];
+            const total = jobIds.length;
+            this.stopping = true;
+            this.status = "info";
+            this.message = `Stopping ${total} jobs...`;
+            const { stopped, failed } = await stopJobs(jobIds, this.stopMessage, (done) => {
+                this.message = `Stopping jobs (${done}/${total})...`;
+            });
+            let message = `Stopped ${stopped.length} of ${total} jobs.`;
+            if (failed.length) {
+                message += ` ${failed.length} could not be stopped and remain selected: ${failed[0].error.message}`;
             }
-            this.update();
-            this.selectedStopJobIds = [];
-            this.stopMessage = "";
+            if (this.sendNotification && stopped.length) {
+                message += ` ${await this.sendNotificationToUsers(stopped)}`;
+            }
+            // Keep failed jobs selected (and the stop message) so the admin can resubmit.
+            this.selectedStopJobIds = failed.map(({ jobId }) => jobId);
+            if (!failed.length) {
+                this.stopMessage = "";
+            }
+            this.stopping = false;
+            await this.update();
+            this.message = message;
+            this.status = failed.length ? "danger" : "success";
         },
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.unfinishedJobs.map((job) => job.id) : [];
