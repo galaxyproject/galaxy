@@ -307,8 +307,8 @@ def advise_on_upgrade(xml_file: str, to_version: str | None = None) -> list[Advi
     advice_collection = AdviceCollection()
 
     for migration in profile_migrations:
-        if migration.to_version < initial_version:
-            # tool started past here... just skip this advice
+        if migration.to_version <= initial_version:
+            # tool already at or past this profile
             continue
         if migration.to_version > to_version:
             # we're not advising on upgrading past this point

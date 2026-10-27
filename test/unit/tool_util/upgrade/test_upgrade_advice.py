@@ -79,6 +79,12 @@ def test_old_advice_does_not_appear_when_upgrading_past_it():
     assert_not_has_advice(advice, "16_04_consider_implicit_extra_file_collection")
 
 
+def test_advice_skipped_for_tool_already_at_profile(tmp_path):
+    tool = SECTION_INPUT.replace('version="1.0"', 'version="1.0" profile="26.0"')
+    advice = advise_on_upgrade(_write_tool(tmp_path, tool, 'structured_like="input1"'))
+    assert_not_has_advice(advice, UNQUALIFIED_STRUCTURED_LIKE)
+
+
 def test_interpreter_advice_positive():
     legacy_interpreter = _tool_path("legacy_interpreter.xml")
     advice = advise_on_upgrade(legacy_interpreter, "16.04")
