@@ -85,7 +85,7 @@ const fields: FieldArray = [
                 handler: (data: PageEntry) => {
                     const Galaxy = getGalaxyInstance();
                     Galaxy?.frame?.add({
-                        url: `/published/page?id=${data.id}&embed=true`,
+                        url: `/widgets/pages/${data.id}`,
                         title: GRID_LABELS.windowTitle(data.title),
                     });
                 },
