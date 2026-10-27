@@ -203,6 +203,61 @@ class TestFailedJobDiskUsageIntegration(IntegrationTestCase):
         assert self.dataset_populator.total_disk_usage() == initial_usage
 
 
+class TestCopiedRunningOutputDiskUsageIntegration(IntegrationTestCase):
+    framework_tool_and_types = True
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["allow_user_dataset_purge"] = True
+        # Outputs are moved to the object store when the job finishes, and their size isn't set when importing
+        # extended metadata
+        config["outputs_to_working_directory"] = True
+        config["metadata_strategy"] = "directory"
+
+    def test_copying_output_of_running_job_keeps_its_size(self):
+        initial_usage = self.dataset_populator.total_disk_usage()
+        history_id = self.dataset_populator.new_history()
+        other_history_id = self.dataset_populator.new_history()
+        # create_2 writes "1\n" and "2\n" to its outputs, then sleeps
+        run_response = self.dataset_populator.run_tool("create_2", {"sleep_time": 10}, history_id)
+        output_ids = [output["id"] for output in run_response["outputs"]]
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, ok_states=["running"])
+
+        # Copy an output while the job runs, before its file is in the object store
+        copy_response = self.dataset_populator._post(
+            f"histories/{other_history_id}/contents",
+            {"source": "hda", "content": output_ids[0], "type": "dataset"},
+            json=True,
+        )
+        assert_status_code_is_ok(copy_response)
+        assert self.dataset_populator.get_job_details(job_id).json()["state"] == "running"
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+
+        # The copied output gets its full size, it is counted once, and a recalculation agrees
+        details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=output_ids[0])
+        assert details["file_size"] == 2
+        expected_usage = initial_usage + 4
+        assert self.dataset_populator.total_disk_usage() == expected_usage
+        recalculate_response = self.dataset_populator._put("users/current/recalculate_disk_usage")
+        assert self.dataset_populator.wait_on_task(recalculate_response)
+        assert self.dataset_populator.total_disk_usage() == expected_usage
+
+        # Purging the outputs and the copy brings the usage back to where it started
+        for output_id in output_ids:
+            self.dataset_populator.delete_dataset(history_id, output_id, purge=True, wait_for_purge=True)
+        self.dataset_populator.delete_dataset(
+            other_history_id, copy_response.json()["id"], purge=True, wait_for_purge=True
+        )
+        assert self.dataset_populator.total_disk_usage() == initial_usage
+
+
 class TestRecalculateUserDiskUsageHierarchicalIntegration(BaseObjectStoreIntegrationTestCase, RecalculateDiskUsage):
     task_based = True
     dataset_populator: DatasetPopulator

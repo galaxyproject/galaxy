@@ -218,7 +218,9 @@ class HDAManager(
         if history:
             history.stage_addition(copy)
 
-        copy.set_size()
+        # The copy shares the dataset, whose size isn't final until its job finishes
+        if copy.dataset.state not in model.Dataset.uncharged_states:
+            copy.set_size()
 
         original_annotation = self.annotation(hda)
         self.annotate(copy, original_annotation, user=hda.user, flush=False)
