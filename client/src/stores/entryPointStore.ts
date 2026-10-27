@@ -123,9 +123,7 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
                 if (!hasChanged && !isEqual(olderEntryPoint, ep)) {
                     hasChanged = true;
                 }
-                if (olderEntryPoint) {
-                    newEntryPoints.push(mergeEntryPoints(olderEntryPoint, ep));
-                }
+                newEntryPoints.push(olderEntryPoint ? mergeEntryPoints(olderEntryPoint, ep) : ep);
             }
             if (hasChanged) {
                 entryPoints.value = newEntryPoints;
