@@ -885,6 +885,10 @@ class BaseJobRunner:
                 job_stderr=job_stderr,
             )
         except Exception:
+            if getattr(getattr(job_wrapper, "finish_context", None), "enabled", False) is True:
+                # The opt-in runner owns retries and must resolve any uncertain
+                # SQL commit using its durable receipt before reporting failure.
+                raise
             log.exception(f"({job_id or ''}/{external_job_id or ''}) Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 

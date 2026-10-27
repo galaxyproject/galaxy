@@ -422,6 +422,83 @@ python -m pytest test/integration/test_htcondor_runner.py -k "not Container" -v
 
 Runs jobs via Galaxy [Pulsar](https://pulsar.readthedocs.io/). Pulsar does not require an existing cluster or a shared filesystem and can also run jobs on Windows hosts. It also has the ability to interface with all of the DRMs supported by Galaxy. Pulsar provides a much looser coupling between Galaxy job execution and the Galaxy server host than is possible with Galaxy's native job execution code.
 
+#### Embedded Pulsar with detached local execution
+
+The existing `galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner` can use Pulsar's
+`detached_local` manager to keep local commands running across Galaxy restarts.
+Galaxy embeds the Pulsar controller; independent supervisor processes run the
+commands and retain execution records for the replacement controller to recover.
+No separately managed Pulsar service is required.
+
+This requires a Pulsar build containing the detached local manager and its
+capability, execution-policy, asynchronous-cancellation, and collection-acknowledgment
+interfaces, together with matching Galaxy integration. Unmodified Pulsar 0.16.0
+does not provide these features. Ordinary Pulsar managers retain their existing
+behavior; configuring the embedded runner alone does not make its jobs detached.
+
+For example, configure `job_conf.yml` with persistent local staging and state
+directories:
+
+```yaml
+runners:
+  pulsar_embedded:
+    load: galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner
+    workers: 4
+    pulsar_app_config:
+      staging_directory: /path/to/persistent/staging
+      persistence_directory: /path/to/persistent/state
+      managers:
+        local:
+          type: detached_local
+          num_concurrent_jobs: 2
+
+execution:
+  default: detached_local
+  environments:
+    detached_local:
+      runner: pulsar_embedded
+      manager: local
+      default_file_action: copy
+      rewrite_parameters: true
+      remote_container_handling: false
+      remote_metadata: false
+      metadata_strategy: directory
+      dependency_resolution: local
+      cleanup_job: onsuccess
+```
+
+Choose staging on a filesystem suitable for job execution, such as a local SSD,
+and retain both directories across restarts. Galaxy still imports finished
+datasets into its configured object store. Managers sharing a staging directory
+share one durable FIFO execution pool. `num_concurrent_jobs` defaults to one;
+a positive integer sets the cap, `null` or `0` removes it, and `"*"` uses the
+host CPU count. The runner's `workers` option controls management threads rather
+than this execution cap.
+
+The manager supports host commands, locally resolved Conda dependencies, Docker,
+and foreground Apptainer/Singularity execution on a POSIX host. Container
+destinations use Galaxy's normal container configuration and Galaxy-side command
+generation, as selected by `remote_container_handling: false`. Interactive tools
+can also use this manager with the usual interactive-tool and proxy configuration.
+
+Galaxy persists each execution's unique attempt ID before submission. After a
+restart or an ambiguous submission response, it monitors that attempt without
+replaying the command. Stop requests wait for confirmed process and container
+termination before collection; uncertain executions retain their records and
+staging for inspection. Retried interactive callbacks respect revoked entry
+points. After successful metadata processing and output import, Galaxy
+acknowledges collection, allowing Pulsar to clean staging according to
+`cleanup_job`. Failed imports or missing acknowledgment retain staging.
+If acknowledgment fails after the job finishes, an operator must arrange an
+idempotent acknowledgment and cleanup retry after resolving the failure;
+completed jobs do not receive automatic acknowledgment retries.
+
+Recovery requires the same execution host, persistent records, and surviving
+processes. Host reboot, process termination, and removal of staging are outside
+the Galaxy restart guarantee. Galaxy's ordinary metadata and completion behavior
+still applies; detached supervision does not make arbitrary tool completion
+hooks safe to repeat after interruption.
+
 
 ### CLI
 
