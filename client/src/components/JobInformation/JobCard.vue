@@ -54,6 +54,9 @@ const cardTitle = computed(() => {
     return shortId;
 });
 
+/** Last 8 characters of the encoded job ID, same as `JobIdChip`. */
+const shortJobId = computed(() => props.job.id.slice(-8));
+
 function cardClicked(job: JobBaseModel) {
     router.push(`/jobs/${job.id}/view`);
 }
@@ -79,18 +82,39 @@ function cardClicked(job: JobBaseModel) {
             </div>
         </template>
         <template v-slot:description>
-            <Heading v-if="props.job.history_id" class="m-0" size="text">
-                <FontAwesomeIcon :icon="faHdd" fixed-width />
+            <div class="d-flex align-items-center justify-content-between flex-gapx-1">
+                <Heading v-if="props.job.history_id" class="job-card-history m-0" size="text">
+                    <FontAwesomeIcon :icon="faHdd" fixed-width />
 
-                <small class="text-muted truncate-n-lines two-lines">
-                    {{ getHistoryNameById(props.job.history_id) }}
-                </small>
-            </Heading>
+                    <small class="text-muted truncate-n-lines two-lines">
+                        {{ getHistoryNameById(props.job.history_id) }}
+                    </small>
+                </Heading>
+                <span v-g-tooltip.hover class="job-card-id-chip flex-shrink-0" :title="`Job API ID: ${props.job.id}`">
+                    {{ shortJobId }}
+                </span>
+            </div>
         </template>
     </GCard>
 </template>
 
 <style scoped lang="scss">
+.job-card-history {
+    min-width: 0;
+}
+
+.job-card-id-chip {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    color: var(--color-blue-600);
+    background: var(--color-blue-100);
+    border: 1px solid var(--color-grey-200);
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    white-space: nowrap;
+}
+
 .job-card-title {
     display: flex;
     align-items: baseline;
