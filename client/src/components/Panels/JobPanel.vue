@@ -7,11 +7,14 @@ import type { RegisteredUser } from "@/api";
 import type { JobBaseModel, JobFetchExtraParams, ShowFullJobResponse } from "@/api/jobs";
 import { fetchJobs, TERMINAL_STATES } from "@/api/jobs";
 import {
+    type AppliedTimeRange,
+    getActiveTimeRange,
     type JobMatcher,
     jobsFilterParams,
     JobsFiltersById,
     JobsFiltersByName,
     type JobTimeRangeKey,
+    setActiveTimeRange as applyTimeRangeFilter,
 } from "@/components/Jobs/JobsFilters";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useJobStore } from "@/stores/jobStore";
@@ -95,8 +98,29 @@ function setActiveStatusFilter(group: string | undefined) {
     filterText.value = newText;
 }
 
-// TODO: dummy only -- not yet wired to the `update_time_gt` filter or "Custom range" detection.
-const activeTimeRange = ref<JobTimeRangeKey | undefined>(undefined);
+/**
+ * The range `setActiveTimeRange` itself last applied, so `activeTimeRange` can tell a quick-pick
+ * range apart from a manually-entered `update_time` filter ("custom").
+ */
+let lastAppliedTimeRange: AppliedTimeRange | undefined;
+
+/**
+ * The active quick-pick time range, "custom" for a manually-entered `update_time` filter, or
+ * `undefined` for "Anytime".
+ */
+const activeTimeRange = computed<JobTimeRangeKey | undefined>(() =>
+    getActiveTimeRange(filterText.value, lastAppliedTimeRange, showToolNamesInJobPanel.value),
+);
+
+/**
+ * Sets or clears the `JobTimeRangeFilter` quick-pick, overloading the existing `update_time_gt`
+ * filter instead of introducing a new one.
+ */
+function setActiveTimeRange(range: JobTimeRangeKey | undefined) {
+    const result = applyTimeRangeFilter(filterText.value, range, showToolNamesInJobPanel.value);
+    filterText.value = result.filterText;
+    lastAppliedTimeRange = result.appliedRange;
+}
 
 /** IDs of jobs fetched for the *current* filters. `storedJobs` is a global, id-keyed
  * cache shared across the whole app, so it can hold jobs from a previous filter. This set
@@ -327,6 +351,10 @@ async function loadJobs(offset: number, limit: number) {
     if (offset === 0) {
         totalJobCount.value = totalMatches;
     }
+    // Nothing left to fetch once this page reaches the backend total, so adjust the total count accordingly.
+    if (offset + data.length >= (totalJobCount.value ?? Infinity)) {
+        totalJobCount.value = currentSortedJobs.value.length;
+    }
     return { items: currentSortedJobs.value, total: totalJobCount.value ?? 0 };
 }
 
@@ -382,7 +410,7 @@ const currentItemId = computed(() => {
                 v-if="!showAdvanced"
                 class="pt-2"
                 :active-range="activeTimeRange"
-                @update:active-range="(range) => (activeTimeRange = range)" />
+                @update:active-range="setActiveTimeRange" />
         </template>
 
         <ScrollList

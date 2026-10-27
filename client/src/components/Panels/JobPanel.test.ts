@@ -13,6 +13,7 @@ import { useUserStore } from "@/stores/userStore";
 import JobPanel from "./JobPanel.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import JobStatusFilter from "@/components/Jobs/JobStatusFilter.vue";
+import JobTimeRangeFilter from "@/components/Jobs/JobTimeRangeFilter.vue";
 
 const { server, http } = useServerMock();
 
@@ -268,6 +269,90 @@ describe("JobPanel", () => {
         const filterText = wrapper.findComponent(FilterMenu).props("filterText") as string;
         expect(filterText).not.toContain("state:ok");
         expect(filterText).toContain("status:active");
+    });
+
+    it("sets and clears the time-range quick-filter via JobTimeRangeFilter", async () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date("2024-01-01T12:00:00.000Z"));
+            const requests: URLSearchParams[] = [];
+            server.use(
+                http.get("/api/jobs", ({ request, response }) => {
+                    requests.push(new URL(request.url).searchParams);
+                    return response(200).json([], { headers: { total_matches: "0" } });
+                }),
+            );
+
+            const wrapper = mountJobPanel();
+            await flushPromises();
+
+            wrapper.findComponent(JobTimeRangeFilter).vm.$emit("update:active-range", "1h");
+            await flushPromises();
+            await scrollOnce();
+
+            expect(requests.at(-1)?.get("date_range_min")).toBe("2024-01-01t11:00:00.000z");
+
+            wrapper.findComponent(JobTimeRangeFilter).vm.$emit("update:active-range", undefined);
+            await flushPromises();
+            await scrollOnce();
+
+            expect(requests.at(-1)?.has("date_range_min")).toBe(false);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it("shows a manually-entered update_time filter as the 'custom' range, not a quick-pick one", async () => {
+        server.use(
+            http.get("/api/jobs", ({ response }) => {
+                return response(200).json([], { headers: { total_matches: "0" } });
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+
+        expect(wrapper.findComponent(JobTimeRangeFilter).props("activeRange")).toBeUndefined();
+
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "update_time>2024-01-01T00:00:00");
+        await flushPromises();
+
+        expect(wrapper.findComponent(JobTimeRangeFilter).props("activeRange")).toBe("custom");
+    });
+
+    it("stops retrying once an exhausted page is entirely rejected by the client matcher", async () => {
+        const requests: URLSearchParams[] = [];
+        server.use(
+            http.get("/api/jobs", ({ request, response }) => {
+                requests.push(new URL(request.url).searchParams);
+                // The server claims 3 jobs match `state:ok` but actually returns jobs in a
+                // different state (e.g. a server/client filter disagreement). The client
+                // matcher correctly rejects all of them.
+                const jobs = [
+                    buildJob({ id: "job1", state: "error" }),
+                    buildJob({ id: "job2", state: "error" }),
+                    buildJob({ id: "job3", state: "error" }),
+                ];
+                return response(200).json(jobs, { headers: { total_matches: "3" } });
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "state:ok");
+        await flushPromises();
+        await scrollOnce();
+        await flushPromises();
+
+        expect(wrapper.text()).toContain("No jobs found");
+
+        const requestCountAfterSettling = requests.length;
+        await scrollOnce();
+        await flushPromises();
+
+        // The page has been exhausted and all jobs were rejected by the client matcher,
+        // so no further requests should be made for this page.
+        expect(requests.length).toBe(requestCountAfterSettling);
     });
 
     it("only requests the total count on the first page, keeping it stable on later pages", async () => {
