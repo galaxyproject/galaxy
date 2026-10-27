@@ -25,11 +25,6 @@
         "message": "Starting with 16.04 tools the exit code of the command executed will be used to detect errors by default. This tool previously would have discovered errors by checking if any content is written to standard error. Add '<stdio><regex match=\".*\" source=\"stderr\" level=\"fatal\" description=\"Unknown error encountered\" /></stdio>' to your tool to restore the legacy behavior or restructure your command block to rely on the exit code.",
         "url": "https://github.com/galaxyproject/galaxy/pull/1688"
     },
-    "18_01_consider_structured_like": {
-        "level": "consider",
-        "message": "Starting with 18.01 tools, the 'structured_like` attribute must reference inputs in a fully qualified manner - using '|' to describe parent conditionals for instance.",
-        "url": "https://github.com/galaxyproject/galaxy/pull/6162"
-    },
     "20_05_consider_inputs_as_json_changes": {
         "level": "consider",
         "message": "Starting with 20.05, the format of data in 'inputs' config files changed slightly. Unselected optional `select` and `data_column` parameters get json null values instead of the string 'None' and multiple `select` and `data_column` parameters are lists (instead of comma separated strings).",
@@ -90,5 +85,10 @@
         "level": "must_fix",
         "message": "Starting with 24.2 tools, test cases must validate against a more stringent schema. Unknown parameters are disallowed (prevents misspellings), select parameters must be specified by value (to prevent ambiguity and match the API), column parameters must be specified as integers, and parameters must be full qualified ('|' separation to include parent repeat, cond, and sections).",
         "url": "https://github.com/galaxyproject/galaxy/pull/18679"
+    },
+    "26_0_fix_unqualified_structured_like": {
+        "level": "must_fix",
+        "message": "Starting with 26.0 tools, a collection output's 'structured_like' attribute must use the qualified name ('cond|input1') of an input nested in a conditional or section. Unqualified names are no longer resolved when the tool is mapped over a collection, and the job fails with 'Failed to find referenced collection in inputs.'",
+        "url": "https://github.com/galaxyproject/galaxy/pull/22432"
     }
 }

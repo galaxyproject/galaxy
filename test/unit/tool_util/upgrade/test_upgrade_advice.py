@@ -13,6 +13,19 @@ from galaxy.tool_util.upgrade import (
 )
 
 FUTURE_GALAXY_VERSION = "29.6"
+UNQUALIFIED_STRUCTURED_LIKE = "26_0_fix_unqualified_structured_like"
+SECTION_INPUT = """<tool id="nested_collection_reference" name="nested_collection_reference" version="1.0">
+  <command>cat '$sect.input1.forward' > '$output.forward'</command>
+  <inputs>
+    <section name="sect" title="Section">
+      <param name="input1" type="data_collection" collection_type="paired" format="txt" />
+    </section>
+  </inputs>
+  <outputs>
+    <collection name="output" type="paired" {reference} />
+  </outputs>
+</tool>
+"""
 
 
 def test_does_not_work_on_non_xml_tools():
@@ -115,14 +128,29 @@ def test_1801_consider_home_directory():
     assert_has_advice(advice, "18_01_consider_home_directory")
 
 
-def test_1801_consider_structured_like():
-    simple_constructs = _tool_path("collection_paired_conditional_structured_like.xml")
-    advice = advise_on_upgrade(simple_constructs)
-    assert_has_advice(advice, "18_01_consider_structured_like")
+def test_26_0_unqualified_structured_like():
+    nested_unqualified = _tool_path("collection_paired_conditional_structured_like.xml")
+    advice = advise_on_upgrade(nested_unqualified)
+    assert "'cond|input1'" in _advice_message(advice, UNQUALIFIED_STRUCTURED_LIKE)
 
-    simple_constructs = _tool_path("simple_constructs.xml")
-    advice = advise_on_upgrade(simple_constructs)
-    assert_not_has_advice(advice, "18_01_consider_structured_like")
+    advice = advise_on_upgrade(nested_unqualified, "24.2")
+    assert_not_has_advice(advice, UNQUALIFIED_STRUCTURED_LIKE)
+
+    top_level_unqualified = _tool_path("collection_paired_structured_like.xml")
+    advice = advise_on_upgrade(top_level_unqualified)
+    assert_not_has_advice(advice, UNQUALIFIED_STRUCTURED_LIKE)
+
+
+def test_26_0_unqualified_reference_in_section(tmp_path):
+    tool = _write_tool(tmp_path, SECTION_INPUT, 'structured_like="input1"')
+    advice = advise_on_upgrade(tool)
+    assert "'sect|input1'" in _advice_message(advice, UNQUALIFIED_STRUCTURED_LIKE)
+
+
+def test_26_0_qualified_reference(tmp_path):
+    tool = _write_tool(tmp_path, SECTION_INPUT, 'structured_like="sect|input1"')
+    advice = advise_on_upgrade(tool)
+    assert_not_has_advice(advice, UNQUALIFIED_STRUCTURED_LIKE)
 
 
 def test_21_09_data_source_advice():
@@ -153,6 +181,17 @@ def test_24_2_test_case_validation():
     int_param = _tool_path("parameters/gx_int.xml")
     advice = advise_on_upgrade(int_param)
     assert_not_has_advice(advice, "24_2_fix_test_case_validation")
+
+
+def _write_tool(tmp_path, template: str, reference: str) -> str:
+    tool_path = tmp_path / "tool.xml"
+    tool_path.write_text(template.format(reference=reference))
+    return str(tool_path)
+
+
+def _advice_message(advice_list: list[Advice], advice_code: str) -> str:
+    assert_has_advice(advice_list, advice_code)
+    return "\n".join(a.message or "" for a in advice_list if a.advice_code["name"] == advice_code)
 
 
 def _tool_path(tool_name: str):

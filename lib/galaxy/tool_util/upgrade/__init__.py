@@ -7,7 +7,6 @@
 #   the messaging on 17.09 for that. We can't be absolutely sure these would or would not be
 #   problems but we can be more confident they might be.
 # - Ditto for $HOME and the 18.01 migration.
-# - We could try to walk parameters and give more specific advice on structured_like qualification.
 from json import loads
 from typing import (
     Any,
@@ -20,6 +19,7 @@ from typing_extensions import (
     TypedDict,
 )
 
+from galaxy.tool_util.linters._util import InputReferences
 from galaxy.tool_util.parameters.case import validate_test_cases_for_tool_source
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tool_util.parser.xml import XmlToolSource
@@ -152,9 +152,6 @@ class ProfileMigration18_01(ProfileMigration):
         if command_el is not None and command_el.get("use_shared_home", None) is None:
             advice_collection.add("18_01_consider_home_directory")
 
-        if _has_matching_xpath(tool_source, ".//outputs/collection[@structured_like]"):
-            advice_collection.add("18_01_consider_structured_like")
-
 
 class ProfileMigration18_09(ProfileMigration):
     from_version = "18.01"
@@ -261,6 +258,27 @@ class ProfileMigration24_2(ProfileMigration):
                 advice_collection.add("24_2_fix_test_case_validation", str(result.validation_error))
 
 
+class ProfileMigration26_0(ProfileMigration):
+    from_version = "24.2"
+    to_version = "26.0"
+
+    @classmethod
+    def advise(cls, advice_collection: AdviceCollection, xml_file: str) -> None:
+        tool_xml = _xml_tool_source(xml_file).xml_tree
+        input_references = InputReferences(tool_xml)
+        for output in tool_xml.findall("./outputs/collection[@structured_like]"):
+            structured_like = output.attrib["structured_like"]
+            if "|" in structured_like or input_references.qualified(input_references.normalize(structured_like)):
+                continue
+            qualified_names = sorted({r.qualified for r in input_references.legacy(structured_like)})
+            if qualified_names:
+                advice_collection.add(
+                    "26_0_fix_unqualified_structured_like",
+                    f"Output '{output.attrib.get('name', 'unknown')}' uses structured_like='{structured_like}', "
+                    f"use the qualified name {' or '.join(repr(n) for n in qualified_names)}.",
+                )
+
+
 profile_migrations: list[type[ProfileMigration]] = [
     ProfileMigration16_04,
     ProfileMigration17_09,
@@ -272,9 +290,10 @@ profile_migrations: list[type[ProfileMigration]] = [
     ProfileMigration23_0,
     ProfileMigration24_0,
     ProfileMigration24_2,
+    ProfileMigration26_0,
 ]
 
-latest_supported_version = "24.2"
+latest_supported_version = "26.0"
 
 
 def advise_on_upgrade(xml_file: str, to_version: str | None = None) -> list[Advice]:
