@@ -1376,7 +1376,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
         with self.drag_over(source_element, sink_element):
             # Idle terminals also carry can-not-accept; only judge once the drag has registered.
-            sink_terminal = sink_node.input_terminal(name=sink_input_name)
+            sink_terminal = sink_node.input_terminal(name=css_attribute_value(sink_input_name))
             dragged_over = self.wait_for_present(sink_terminal.with_class("is-dragging"))
             if screenshot_partial:
                 self.screenshot(screenshot_partial)
@@ -1395,20 +1395,21 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return node._(id=node_ref) if isinstance(node_ref, int) else node._(label=css_attribute_value(node_ref))
 
     def workflow_editor_node_and_terminal(self, terminal: EditorTerminalReference) -> tuple[SmartTarget, str]:
-        """Resolve a ``label#terminal`` or ``(node, terminal)`` reference to a node component and CSS-escaped terminal name."""
+        """Resolve a ``label#terminal`` or ``(node, terminal)`` reference to a node component and terminal name."""
         if isinstance(terminal, tuple):
             node_ref, terminal_name = terminal
         else:
             node_ref, terminal_name = terminal.split("#", 1)
-        return self.workflow_editor_node(node_ref), css_attribute_value(terminal_name)
+        return self.workflow_editor_node(node_ref), terminal_name
 
     def workflow_editor_source_sink_terminal_ids(
         self, source: EditorTerminalReference, sink: EditorTerminalReference
     ) -> tuple[str, str]:
         source_element, sink_element = self.workflow_editor_source_sink_terminal_elements(source, sink)
-        source_id = css_attribute_value(source_element.get_attribute("id"))
-        sink_id = css_attribute_value(sink_element.get_attribute("id"))
-        return source_id, sink_id
+        source_id = source_element.get_attribute("id")
+        sink_id = sink_element.get_attribute("id")
+        assert source_id and sink_id, "editor terminals always render an id"
+        return css_attribute_value(source_id), css_attribute_value(sink_id)
 
     def workflow_editor_source_sink_terminal_elements(
         self, source: EditorTerminalReference, sink: EditorTerminalReference
@@ -1416,15 +1417,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         source_node, source_output = self.workflow_editor_node_and_terminal(source)
         sink_node, sink_input = self.workflow_editor_node_and_terminal(sink)
         return (
-            source_node.output_terminal(name=source_output).wait_for_present(),
-            sink_node.input_terminal(name=sink_input).wait_for_present(),
+            source_node.output_terminal(name=css_attribute_value(source_output)).wait_for_present(),
+            sink_node.input_terminal(name=css_attribute_value(sink_input)).wait_for_present(),
         )
 
     def workflow_editor_destroy_connection(self, sink: EditorTerminalReference):
         sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
-        sink_input = sink_node.input_terminal(name=sink_input_name).wait_for_visible()
+        sink_input = sink_node.input_terminal(name=css_attribute_value(sink_input_name)).wait_for_visible()
         self.hover_over(sink_input)
-        sink_node.connector_destroy_callout(name=sink_input_name).wait_for_and_click()
+        sink_node.connector_destroy_callout(name=css_attribute_value(sink_input_name)).wait_for_and_click()
 
     def workflow_editor_assert_connected(self, source: EditorTerminalReference, sink: EditorTerminalReference):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
@@ -1447,11 +1448,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def workflow_editor_assert_input_mapped(self, sink: EditorTerminalReference):
         sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
-        sink_node.input_mapping_icon(name=sink_input_name).wait_for_visible()
+        sink_node.input_mapping_icon(name=css_attribute_value(sink_input_name)).wait_for_visible()
 
     def workflow_editor_assert_input_not_mapped(self, sink: EditorTerminalReference):
         sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
-        sink_node.input_mapping_icon(name=sink_input_name).wait_for_absent_or_hidden()
+        sink_node.input_mapping_icon(name=css_attribute_value(sink_input_name)).wait_for_absent_or_hidden()
 
     def workflow_editor_set_license(self, license: str) -> None:
         license_selector = self.components.workflow_editor.license_selector

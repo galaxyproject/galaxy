@@ -15,7 +15,10 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
 
 from galaxy.selenium.keys import Key
-from galaxy.selenium.navigates_galaxy import ColumnDefinition
+from galaxy.selenium.navigates_galaxy import (
+    ColumnDefinition,
+    css_attribute_value,
+)
 from galaxy.selenium.web_element_protocol import WebElementProtocol
 from galaxy_test.base.workflow_fixtures import (
     parameter_input_workflow,
@@ -2320,7 +2323,7 @@ steps:
         node.wait_for_present()
         # Dismiss any stale tooltip before hovering so retry gets fresh text
         self.click_center()
-        output_element = node.output_terminal(name=output_name).wait_for_visible()
+        output_element = node.output_terminal(name=css_attribute_value(output_name)).wait_for_visible()
         self.hover_over(output_element)
         element = self.components._.tooltip_inner.wait_for_present()
         assert f"output is {output_type}" in element.text, element.text
