@@ -2514,11 +2514,13 @@ class MinimalJobWrapper(HasResourceParameters):
             dataset = dataset_assoc.dataset.dataset
             # assume all datasets in a job get written to the same objectstore
             quota_source_info = dataset.quota_source_info
-            collected_bytes += dataset.set_total_size()
+            total_size = dataset.set_total_size()
             if dataset.purged:
                 # Purge, in case job wrote directly to object store
                 dataset.full_delete()
-                collected_bytes = 0
+            else:
+                # Purged outputs don't count towards the user's disk usage
+                collected_bytes += total_size
 
         # Calculate dataset hash - only if the job completed successfully,
         # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).
