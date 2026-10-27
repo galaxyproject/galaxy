@@ -37,6 +37,7 @@ function setExpanded(value: boolean) {
     userToggled = true;
     expandDataset.value = value;
     emit("update:expanded", value);
+    void nextTick(() => (userToggled = false));
 }
 const view = ref(props.itemSrc === "hdca" ? "collection" : "element");
 
@@ -56,6 +57,8 @@ const providerComponent = computed(() => {
 
 const containerEl = ref<HTMLElement | null>(null);
 const hasBeenVisible = ref(false);
+const contentEl = ref<HTMLElement | null>(null);
+const scrollPending = ref(false);
 const { stop: stopObserver } = useIntersectionObserver(containerEl, ([entry]) => {
     if (entry?.isIntersecting) {
         hasBeenVisible.value = true;
@@ -65,8 +68,8 @@ const { stop: stopObserver } = useIntersectionObserver(containerEl, ([entry]) =>
 
 watch(
     () => props.expanded,
-    async (value) => {
-        const scroll = props.scrollOnExpand && !userToggled;
+    (value) => {
+        scrollPending.value = Boolean(value && props.scrollOnExpand && !userToggled);
         userToggled = false;
         if (value === undefined) {
             return;
@@ -79,16 +82,22 @@ watch(
             if (props.itemSrc === "hdca") {
                 view.value = "element";
             }
-            await nextTick();
-            if (scroll) {
-                // The target is still loading and will grow, so align its top. Jump rather than
-                // smooth scroll: lazy items passed mid-scroll load, grow and push the target off screen.
-                containerEl.value?.scrollIntoView({ block: "start" });
-            }
         }
     },
     { immediate: true },
 );
+
+// Wait for the provider to render content: at mount the empty output list may fit
+// entirely in the viewport, making an earlier scroll a no-op.
+watch([contentEl, scrollPending], async ([content, pending]) => {
+    if (content && pending) {
+        await nextTick();
+        if (scrollPending.value) {
+            containerEl.value?.scrollIntoView({ block: "start" });
+            scrollPending.value = false;
+        }
+    }
+});
 
 async function onDelete(item: HistoryItemSummary, recursive = false) {
     try {
@@ -137,6 +146,7 @@ function onViewCollection(collection: any) {
     userToggled = true;
     viewCollection.value = !viewCollection.value;
     emit("update:expanded", viewCollection.value);
+    void nextTick(() => (userToggled = false));
 }
 </script>
 
@@ -152,7 +162,7 @@ function onViewCollection(collection: any) {
             auto-refresh>
             <GAlert v-if="error" variant="danger" show>{{ errorMessageAsString(error) }}</GAlert>
             <LoadingSpan v-else-if="loading" message="Loading dataset" />
-            <div v-else>
+            <div v-else ref="contentEl">
                 <ContentItem
                     :id="item.hid ?? item.element_index + 1"
                     add-highlight-btn

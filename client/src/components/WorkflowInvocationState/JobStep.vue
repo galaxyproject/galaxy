@@ -20,6 +20,8 @@ const props = defineProps<{
     stepIndex?: number;
 }>();
 
+const emit = defineEmits<{ (e: "select"): void }>();
+
 const selection = useInvocationSelection();
 const selectedJob = computed(() =>
     selection && selection.stepIndex.value === props.stepIndex ? selection.job.value : undefined,
@@ -30,6 +32,7 @@ function selectJob(id: string | undefined) {
         props.stepIndex !== undefined &&
         (id !== undefined || selection.stepIndex.value === props.stepIndex)
     ) {
+        emit("select");
         // Switching cards clears the old card's subordinate selection first.
         selection.stepIndex.value = props.stepIndex;
         selection.stepTab.value = "jobs";

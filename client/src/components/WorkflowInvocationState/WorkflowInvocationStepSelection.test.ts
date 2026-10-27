@@ -74,8 +74,8 @@ it("keeps output selection scoped to the active card and follows same-mounted st
     const active = mountStep(1);
     const other = mountStep(2);
     await flushPromises();
-    expect(active.findAllComponents(GenericItem).map((item) => item.props("expanded"))).toEqual([true, false]);
-    expect(other.findAllComponents(GenericItem).map((item) => item.props("expanded"))).toEqual([false, false]);
+    expect(active.findAllComponents(GenericItem).map((item) => item.props("expanded"))).toEqual([true, undefined]);
+    expect(other.findAllComponents(GenericItem).map((item) => item.props("expanded"))).toEqual([undefined, undefined]);
     expect(selection.output.value).toBe("first");
     const secondOutput = other.findAllComponents(GenericItem)[1]!;
     secondOutput.vm.$emit("update:expanded", true);
@@ -84,6 +84,9 @@ it("keeps output selection scoped to the active card and follows same-mounted st
     expect(selection.output.value).toBe("second");
     expect(active.findAllComponents(GenericItem).every((item) => !item.props("expanded"))).toBe(true);
     expect(secondOutput.props("expanded")).toBe(true);
+    other.findAllComponents(GenericItem)[0]!.vm.$emit("update:expanded", false);
+    await flushPromises();
+    expect(selection.output.value).toBe("second");
     selection.output.value = "first";
     await flushPromises();
     expect(other.findAllComponents(GenericItem)[0]!.props("expanded")).toBe(true);

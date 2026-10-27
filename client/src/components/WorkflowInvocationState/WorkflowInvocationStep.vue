@@ -44,6 +44,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "update:expanded", value: boolean): void;
+    (e: "select"): void;
 }>();
 
 const invocationStore = useInvocationStore();
@@ -178,6 +179,7 @@ const selectedTab = computed({
         const tab = availableTabs.value[index];
         localTab.value = tab;
         if (selection) {
+            emit("select");
             selection.stepIndex.value = props.workflowStep.id;
             selection.stepTab.value = tab;
             if (tab !== "jobs") {
@@ -269,7 +271,11 @@ async function fetchStepConfig() {
 }
 
 function selectOutput(name: string, expanded: boolean) {
-    if (selection && (expanded || selection.stepIndex.value === props.workflowStep.id)) {
+    if (
+        selection &&
+        (expanded || (selection.stepIndex.value === props.workflowStep.id && selection.output.value === name))
+    ) {
+        emit("select");
         selection.stepIndex.value = props.workflowStep.id;
         selection.stepTab.value = "outputs";
         selection.job.value = undefined;
@@ -376,7 +382,8 @@ onUnmounted(() => {
                                                 class="mt-1"
                                                 :jobs="stepDetails.jobs"
                                                 :step-index="props.workflowStep.id"
-                                                :invocation-id="props.invocation.id" />
+                                                :invocation-id="props.invocation.id"
+                                                @select="emit('select')" />
                                             <GAlert v-else v-localize variant="info" show>This step has no jobs</GAlert>
                                         </div>
                                     </GTab>
@@ -395,9 +402,9 @@ onUnmounted(() => {
                                                     :item-id="value.id"
                                                     :item-src="value.src"
                                                     :expanded="
-                                                        selection
-                                                            ? selection.stepIndex.value === props.workflowStep.id &&
-                                                              selection.output.value === name
+                                                        selection?.stepIndex.value === props.workflowStep.id &&
+                                                        selection.output.value === name
+                                                            ? true
                                                             : undefined
                                                     "
                                                     scroll-on-expand
@@ -419,9 +426,9 @@ onUnmounted(() => {
                                                     :item-id="value.id"
                                                     :item-src="value.src"
                                                     :expanded="
-                                                        selection
-                                                            ? selection.stepIndex.value === props.workflowStep.id &&
-                                                              selection.output.value === name
+                                                        selection?.stepIndex.value === props.workflowStep.id &&
+                                                        selection.output.value === name
+                                                            ? true
                                                             : undefined
                                                     "
                                                     scroll-on-expand

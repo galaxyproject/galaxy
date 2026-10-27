@@ -128,3 +128,42 @@ it("expands the grouped input when a selection clears a previous search", async 
     expect(inputs.find((card) => card.props("workflowStep").id === 0)?.props("expanded")).toBe(true);
     wrapper.unmount();
 });
+
+it("keeps the search and scroll position when selecting inside the filtered list", async () => {
+    mocks.steps = { 0: toolStep, 1: { ...toolStep, id: 1 }, 2: { ...toolStep, id: 2 } };
+    mocks.selection = { stepIndex: ref<number | null>(null), stepTab: ref(), job: ref(), output: ref() };
+    const wrapper = shallowMount(WorkflowInvocationSteps as object, {
+        propsData: { invocation, stepsJobsSummary: [] },
+        localVue,
+        pinia: createTestingPinia({ createSpy: vi.fn }),
+    });
+    await flushPromises();
+    const scroll = vi.spyOn(Element.prototype, "scrollIntoView");
+    const search = wrapper.findComponent(DelayedInput);
+    search.vm.$emit("change", "Step 3");
+    await flushPromises();
+    const card = wrapper.findComponent(WorkflowInvocationStep);
+    card.vm.$emit("update:expanded", true);
+    await flushPromises();
+    expect(mocks.selection.stepIndex.value).toBe(2);
+    expect(wrapper.findAllComponents(WorkflowInvocationStep)).toHaveLength(1);
+    expect(search.props("value")).toBe("Step 3");
+    expect(scroll).not.toHaveBeenCalled();
+    // Job and output selection from a different, already expanded card uses the same guard.
+    mocks.selection.stepIndex.value = null;
+    await flushPromises();
+    card.vm.$emit("select");
+    mocks.selection.stepIndex.value = 2;
+    await flushPromises();
+    expect(wrapper.findAllComponents(WorkflowInvocationStep)).toHaveLength(1);
+    expect(search.props("value")).toBe("Step 3");
+    expect(scroll).not.toHaveBeenCalled();
+    // External navigation still reveals its target and synchronizes the input.
+    mocks.selection.stepIndex.value = 0;
+    await flushPromises();
+    expect(wrapper.findAllComponents(WorkflowInvocationStep)).toHaveLength(3);
+    expect(search.props("value")).toBe("");
+    expect(scroll).toHaveBeenCalledOnce();
+    scroll.mockRestore();
+    wrapper.unmount();
+});
