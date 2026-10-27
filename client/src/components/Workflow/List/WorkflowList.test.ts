@@ -8,18 +8,27 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { loadWorkflows } from "@/api/workflows";
+import { raisedToasts } from "@/composables/__mocks__/toast";
 import { useUserStore } from "@/stores/userStore";
 
 import { generateRandomWorkflowList } from "../testUtils";
 
+import WorkflowCardList from "./WorkflowCardList.vue";
 import WorkflowList from "./WorkflowList.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const { server, http } = useServerMock();
 
-vi.mock("@/api/workflows", () => ({
+const { confirm } = vi.hoisted(() => ({ confirm: vi.fn() }));
+
+vi.mock("@/api/workflows", async (importOriginal) => ({
+    ...(await importOriginal<object>()),
     loadWorkflows: vi.fn(),
 }));
+vi.mock("@/composables/confirmDialog", () => ({
+    useConfirmDialog: () => ({ confirm }),
+}));
+vi.mock("@/composables/toast");
 
 const mockedLoadWorkflows = loadWorkflows as ReturnType<typeof vi.fn>;
 
@@ -35,11 +44,12 @@ const FAKE_USER = getFakeRegisteredUser({
     username: FAKE_USERNAME,
 });
 
-async function mountWorkflowList() {
+async function mountWorkflowList(activeList: "my" | "shared_with_me" = "my") {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     const wrapper = mount(WorkflowList as object, {
+        props: { activeList },
         global: localVue,
         pinia,
         router,
@@ -51,6 +61,12 @@ async function mountWorkflowList() {
     await flushPromises();
 
     return wrapper;
+}
+
+function deleteKeyEvent(): KeyboardEvent {
+    const target = document.createElement("div");
+    target.classList.add("workflow-card-in-list");
+    return { key: "Delete", shiftKey: false, target, preventDefault: () => {} } as unknown as KeyboardEvent;
 }
 
 describe("WorkflowList", () => {
@@ -133,5 +149,149 @@ describe("WorkflowList", () => {
 
         expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("");
         await flushPromises();
+    });
+
+    it("asks to delete on the Delete key in my view", async () => {
+        const workflows = generateRandomWorkflowList(FAKE_USERNAME, 1);
+        mockedLoadWorkflows.mockResolvedValue({ data: workflows, totalMatches: 1 });
+        confirm.mockResolvedValue(false);
+        const wrapper = await mountWorkflowList("my");
+
+        wrapper.findComponent(WorkflowCardList).vm.$emit("on-key-down", workflows[0], deleteKeyEvent());
+        await flushPromises();
+
+        expect(confirm).toHaveBeenCalledTimes(1);
+        expect(confirm.mock.calls[0]?.[1]).toMatchObject({ title: "Delete workflow" });
+    });
+
+    describe("shared with me", () => {
+        const OTHER = "other_user";
+
+        function sharedWorkflows() {
+            const workflows = generateRandomWorkflowList(OTHER, 2);
+            workflows.forEach((w, i) => {
+                w.name = `Shared ${i + 1}`;
+                w.published = false;
+            });
+            return workflows;
+        }
+
+        async function selectCards(wrapper: Awaited<ReturnType<typeof mountWorkflowList>>, ids: string[]) {
+            for (const id of ids) {
+                await wrapper.find(`#g-card-select-${id}`).setValue(true);
+            }
+            await flushPromises();
+        }
+
+        function interceptUnshare(failId?: string) {
+            const unshared: string[] = [];
+            server.use(
+                http.put("/api/workflows/{workflow_id}/unshare_with_me", ({ params, response }) => {
+                    unshared.push(params.workflow_id);
+                    if (params.workflow_id === failId) {
+                        return response("4XX").json({ err_msg: "Workflow not found", err_code: 404 }, { status: 404 });
+                    }
+                    return response(204).empty();
+                }),
+            );
+            return unshared;
+        }
+
+        it("offers only Remove from Shared for selected shared workflows", async () => {
+            const workflows = sharedWorkflows();
+            mockedLoadWorkflows.mockResolvedValue({ data: workflows, totalMatches: 2 });
+            const wrapper = await mountWorkflowList("shared_with_me");
+
+            await selectCards(
+                wrapper,
+                workflows.map((w) => w.id),
+            );
+
+            expect(wrapper.find("#workflow-list-footer-bulk-unshare-button").text()).toContain(
+                "Remove from Shared (2)",
+            );
+            expect(wrapper.find("#workflow-list-footer-bulk-delete-button").exists()).toBe(false);
+            expect(wrapper.find("#workflow-list-footer-bulk-add-tags-button").exists()).toBe(false);
+        });
+
+        it("removes every selected share once confirmed and refreshes", async () => {
+            const workflows = sharedWorkflows();
+            mockedLoadWorkflows.mockResolvedValue({ data: workflows, totalMatches: 2 });
+            const unshared = interceptUnshare();
+            confirm.mockResolvedValue(true);
+            const wrapper = await mountWorkflowList("shared_with_me");
+            await selectCards(
+                wrapper,
+                workflows.map((w) => w.id),
+            );
+            mockedLoadWorkflows.mockClear();
+
+            await wrapper.find("#workflow-list-footer-bulk-unshare-button").trigger("click");
+            await flushPromises();
+
+            expect(confirm).toHaveBeenCalledTimes(1);
+            expect(unshared).toEqual(workflows.map((w) => w.id));
+            expect(mockedLoadWorkflows).toHaveBeenCalledTimes(1);
+            expect(raisedToasts()).toEqual([
+                { variant: "success", message: "Removed 2 workflows from your shared workflows." },
+            ]);
+        });
+
+        it("keeps every share when removal is not confirmed", async () => {
+            const workflows = sharedWorkflows();
+            mockedLoadWorkflows.mockResolvedValue({ data: workflows, totalMatches: 2 });
+            const unshared = interceptUnshare();
+            confirm.mockResolvedValue(false);
+            const wrapper = await mountWorkflowList("shared_with_me");
+            await selectCards(
+                wrapper,
+                workflows.map((w) => w.id),
+            );
+
+            await wrapper.find("#workflow-list-footer-bulk-unshare-button").trigger("click");
+            await flushPromises();
+
+            expect(confirm).toHaveBeenCalledTimes(1);
+            expect(unshared).toEqual([]);
+            expect(raisedToasts()).toEqual([]);
+        });
+
+        it("reports the workflows whose share could not be removed and keeps them selected", async () => {
+            const workflows = sharedWorkflows();
+            mockedLoadWorkflows.mockResolvedValue({ data: workflows, totalMatches: 2 });
+            const unshared = interceptUnshare(workflows[1]!.id);
+            confirm.mockResolvedValue(true);
+            const wrapper = await mountWorkflowList("shared_with_me");
+            await selectCards(
+                wrapper,
+                workflows.map((w) => w.id),
+            );
+
+            await wrapper.find("#workflow-list-footer-bulk-unshare-button").trigger("click");
+            await flushPromises();
+
+            expect(unshared).toEqual(workflows.map((w) => w.id));
+            expect(raisedToasts()).toEqual([
+                { variant: "success", message: "Removed 1 workflow from your shared workflows." },
+                { variant: "error", message: "Failed to remove 1 shared workflow: 'Shared 2' (Workflow not found)" },
+            ]);
+            expect(wrapper.find("#workflow-list-footer-bulk-unshare-button").text()).toContain(
+                "Remove from Shared (1)",
+            );
+        });
+
+        it("does nothing on the Delete key in the shared with me view", async () => {
+            const workflows = sharedWorkflows();
+            mockedLoadWorkflows.mockResolvedValue({ data: workflows, totalMatches: 2 });
+            const unshared = interceptUnshare();
+            confirm.mockResolvedValue(true);
+            const wrapper = await mountWorkflowList("shared_with_me");
+
+            wrapper.findComponent(WorkflowCardList).vm.$emit("on-key-down", workflows[0], deleteKeyEvent());
+            await flushPromises();
+
+            expect(confirm).not.toHaveBeenCalled();
+            expect(unshared).toEqual([]);
+        });
     });
 });

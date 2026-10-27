@@ -7,13 +7,14 @@ import {
     faTrashRestore,
     faUndo,
     faUsersCog,
+    faUserSlash,
 } from "@fortawesome/free-solid-svg-icons";
 import type { ComputedRef, Ref } from "vue";
 import { computed } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { AnyHistoryEntry } from "@/api/histories";
-import { isArchivedHistory, isMyHistory } from "@/api/histories";
+import { isArchivedHistory, isMyHistory, unshareHistoryWithMe } from "@/api/histories";
 import type { ArchivedHistorySummary } from "@/api/histories.archived";
 import type { CardAction } from "@/components/Common/GCard.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -33,6 +34,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
  * @param {Ref<AnyHistoryEntry>} history - Reactive reference to the history entry
  * @param {boolean} archivedView - Whether the card is displayed in archived view
  * @param {() => void} refreshCallBack - Callback function to refresh the parent list
+ * @param {boolean} sharedView - Whether the card is displayed in the "Histories Shared with Me" view
  * @returns {Object} Object containing computed action lists for different action categories
  *
  * @example
@@ -43,6 +45,7 @@ export function useHistoryCardActions(
     history: Ref<AnyHistoryEntry>,
     archivedView: boolean,
     refreshCallBack: () => void,
+    sharedView: boolean = false,
 ): {
     historyCardExtraActions: ComputedRef<CardAction[]>;
     historyCardSecondaryActions: ComputedRef<CardAction[]>;
@@ -93,6 +96,35 @@ export function useHistoryCardActions(
         } catch (e) {
             Toast.error(`Failed to restore history: ${errorMessageAsString(e)}`);
         }
+    }
+
+    /**
+     * Removes the current user's share of a history someone else shared with them
+     */
+    async function onUnshareWithMe() {
+        const name = history.value.name;
+        const confirmed = await confirm(
+            localize(
+                `Remove '${name}' from your shared histories? Its owner will need to share it again for you to see it.`,
+            ),
+            {
+                title: localize("Remove Shared History"),
+                okText: localize("Remove"),
+                okColor: "red",
+                okIcon: faUserSlash,
+            },
+        );
+        if (!confirmed) {
+            return;
+        }
+        try {
+            await unshareHistoryWithMe(String(history.value.id));
+        } catch (error) {
+            Toast.error(`Failed to remove shared history: ${errorMessageAsString(error)}`);
+            return;
+        }
+        refreshCallBack();
+        Toast.success(localize(`Removed '${name}' from your shared histories`));
     }
 
     /**
@@ -189,7 +221,7 @@ export function useHistoryCardActions(
 
     /**
      * Extra actions shown in the history card dropdown menu
-     * Includes destructive actions like delete and purge
+     * Includes destructive actions like delete, purge and removing a share
      * Computed because ownership is only known once the current user has loaded
      * @type {ComputedRef<CardAction[]>}
      */
@@ -209,6 +241,14 @@ export function useHistoryCardActions(
             icon: faBurn,
             handler: async () => await onDeleteHistory(true),
             visible: !history.value.purged && isMyHistory(history.value),
+        },
+        {
+            id: "unshare-with-me",
+            label: localize("Remove from Shared"),
+            title: localize("Remove this history from the histories shared with you"),
+            icon: faUserSlash,
+            handler: onUnshareWithMe,
+            visible: sharedView,
         },
     ]);
 

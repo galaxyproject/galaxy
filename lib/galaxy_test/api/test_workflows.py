@@ -271,6 +271,48 @@ class TestWorkflowSharingApi(ApiTestCase, SharingApiTests):
         super().setUp()
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
+    def test_unshare_with_me_drops_recipient_bookmark(self):
+        recipient_email, other_email = self._setup_recipients(2)
+        workflow_id = self._share_bookmarked_workflow([recipient_email, other_email])
+        with self._different_user(recipient_email):
+            self._assert_status_code_is(self._unshare_with_me(workflow_id), 204)
+        self._assert_bookmarks_after_reshare(workflow_id, dropped=recipient_email, kept=other_email)
+
+    def test_owner_unshare_keeps_recipient_bookmark(self):
+        recipient_email, other_email = self._setup_recipients(2)
+        workflow_id = self._share_bookmarked_workflow([recipient_email, other_email])
+        self._share_with(workflow_id, [other_email])
+        self._share_with(workflow_id, [recipient_email, other_email])
+        for email in (recipient_email, other_email):
+            with self._different_user(email):
+                assert workflow_id in self._bookmarked_workflow_ids()
+
+    def _share_bookmarked_workflow(self, recipient_emails: list[str]) -> str:
+        """Share a new workflow that the owner and every recipient have bookmarked."""
+        workflow_id = self.create("workflow-to-bookmark-and-unshare")
+        self._share_with(workflow_id, recipient_emails)
+        self._bookmark(workflow_id)
+        for email in recipient_emails:
+            with self._different_user(email):
+                self._bookmark(workflow_id)
+        return workflow_id
+
+    def _assert_bookmarks_after_reshare(self, workflow_id: str, dropped: str, kept: str):
+        self._share_with(workflow_id, [dropped, kept])
+        assert workflow_id in self._bookmarked_workflow_ids()
+        with self._different_user(dropped):
+            assert workflow_id not in self._bookmarked_workflow_ids()
+        with self._different_user(kept):
+            assert workflow_id in self._bookmarked_workflow_ids()
+
+    def _bookmark(self, workflow_id: str):
+        response = self._put(f"workflows/{workflow_id}", data={"show_in_tool_panel": True}, json=True)
+        self._assert_status_code_is(response, 200)
+        assert workflow_id in self._bookmarked_workflow_ids()
+
+    def _bookmarked_workflow_ids(self) -> list[str]:
+        return self.workflow_populator.index_ids(show_shared=True, search="is:bookmarked")
+
 
 # Workflow API TODO:
 # - Allow history_id as param to workflow run action. (hist_id)

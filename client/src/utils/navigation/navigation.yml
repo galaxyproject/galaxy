@@ -546,6 +546,10 @@ shared_histories:
   selectors:
     shared_list: '.history-card-list'
     history_cards: '.history-card-list .g-card'
+    history_card: '#g-card-history-${history_id}'
+    extra_actions: '#g-card-extra-actions-history-${history_id}'
+    unshare_with_me_button: '#g-card-action-unshare-with-me-history-${history_id}'
+    bulk_unshare_button: 'button[id="history-list-footer-bulk-unshare-button"]'
     shared_tab: '#histories-shared-tab'
 
 history_copy_elements:
@@ -953,6 +957,7 @@ workflows:
     workflow_not_found_message: '#no-workflow-found'
     workflow_cards: '.workflow-card-list'
     workflow_card: '.g-card.workflow-card'
+    workflow_card_by_id: '#g-card-${id}'
     curated_workflow_card: '.g-card.curated-workflow-card'
     curated_workflow_card_title: '.g-card.curated-workflow-card [id^="g-card-title-text-"]'
     curated_workflow_not_found_message: '#no-curated-workflow-found'
@@ -975,6 +980,7 @@ workflows:
     rename_input: '#workflow-name-input'
     workflow_drop_down: '[id^="g-card-extra-actions-"]'
     delete_button: '[id^="g-card-action-workflow-delete-"]'
+    unshare_with_me_button: '#g-card-action-workflow-unshare-with-me-${id}'
     view_button: '[id^="g-card-title-link-"]'
     workflow_preview_container: '.workflow-card-preview-modal .workflow-published .published-workflow'
     workflow_preview_information: '.workflow-information'

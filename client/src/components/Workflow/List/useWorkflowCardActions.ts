@@ -11,12 +11,13 @@ import {
     faTrash,
     faTrashRestore,
     faUpload,
+    faUserSlash,
 } from "@fortawesome/free-solid-svg-icons";
 import { storeToRefs } from "pinia";
 import { computed, type Ref } from "vue";
 
 import type { WorkflowSummary } from "@/api/workflows";
-import { undeleteWorkflow } from "@/api/workflows";
+import { undeleteWorkflow, unshareWorkflowWithMe } from "@/api/workflows";
 import { getFullAppUrl } from "@/app/utils";
 import type { CardAction } from "@/components/Common/GCard.types";
 import {
@@ -29,6 +30,7 @@ import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 export function useWorkflowCardActions(
     workflow: Ref<WorkflowSummary>,
@@ -37,6 +39,7 @@ export function useWorkflowCardActions(
     refreshCallback: () => void,
     insertSteps: () => void,
     insert: () => void,
+    sharedWithMeView: boolean = false,
 ) {
     const userStore = useUserStore();
     const { isAnonymous } = storeToRefs(userStore);
@@ -149,6 +152,30 @@ export function useWorkflowCardActions(
         }
     }
 
+    async function unshareWithMe() {
+        const name = workflow.value.name;
+        const confirmed = await confirm(
+            `Remove '${name}' from your shared workflows? Its owner will need to share it again for you to see it.`,
+            {
+                title: "Remove shared workflow",
+                okText: "Remove",
+                okIcon: faUserSlash,
+                okColor: "red",
+            },
+        );
+        if (!confirmed) {
+            return;
+        }
+        try {
+            await unshareWorkflowWithMe(workflow.value.id);
+        } catch (error) {
+            toast.error(`Failed to remove shared workflow: ${errorMessageAsString(error)}`);
+            return;
+        }
+        refreshCallback();
+        toast.success(`Removed '${name}' from your shared workflows`);
+    }
+
     function copyPublicLink() {
         copy(fullLink.value, "Link to workflow copied");
     }
@@ -226,6 +253,14 @@ export function useWorkflowCardActions(
             title: "Delete workflow",
             handler: deleteWorkflow,
             visible: !isAnonymous.value && !shared.value && !workflow.value.deleted && !current,
+        },
+        {
+            id: "workflow-unshare-with-me",
+            label: "Remove from Shared",
+            icon: faUserSlash,
+            title: "Remove this workflow from the workflows shared with you",
+            handler: unshareWithMe,
+            visible: sharedWithMeView,
         },
         {
             id: "workflow-export",

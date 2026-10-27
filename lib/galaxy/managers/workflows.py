@@ -30,6 +30,7 @@ from pydantic import (
 )
 from sqlalchemy import (
     and_,
+    delete,
     desc,
     false,
     func,
@@ -198,6 +199,20 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         super().__init__(app)
         self.app = app
         self.dynamic_tool_manager = dynamic_tool_manager
+
+    def unshare_with_recipient(
+        self, item: StoredWorkflow, user: model.User
+    ) -> model.StoredWorkflowUserShareAssociation:
+        """Delete the recipient's own share along with their tool panel bookmark of the workflow."""
+        user_share_assoc = super().unshare_with(item, user, flush=False)
+        self.session().execute(
+            delete(model.StoredWorkflowMenuEntry).where(
+                model.StoredWorkflowMenuEntry.stored_workflow_id == item.id,
+                model.StoredWorkflowMenuEntry.user_id == user.id,
+            )
+        )
+        self.session().commit()
+        return user_share_assoc
 
     def copy_workflow_for_user(self, user: model.User, workflow: model.Workflow) -> model.Workflow:
         """Copy ``workflow`` for ``user``, with private copies of the user-defined tools they don't own."""

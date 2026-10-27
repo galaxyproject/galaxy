@@ -18,6 +18,7 @@ interface Props {
     hideRuns?: boolean;
     filterable?: boolean;
     publishedView?: boolean;
+    sharedWithMeView?: boolean;
     editorView?: boolean;
     current?: boolean;
     selected?: boolean;
@@ -29,6 +30,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     gridView: false,
     publishedView: false,
+    sharedWithMeView: false,
     hideRuns: false,
     filterable: true,
     editorView: false,
@@ -88,6 +90,7 @@ const { workflowCardExtraActions, workflowCardSecondaryActions, workflowCardPrim
         () => emit("refreshList", true),
         () => emit("insertSteps"),
         () => emit("insert"),
+        props.sharedWithMeView,
     );
 
 const { workflowCardIndicators } = useWorkflowCardIndicators(
@@ -142,7 +145,7 @@ function onKeyDown(event: KeyboardEvent) {
         :primary-actions="workflowCardPrimaryActions"
         :secondary-actions="workflowCardSecondaryActions"
         :published="workflow.published"
-        :selectable="props.selectable && !shared"
+        :selectable="props.selectable && (!shared || props.sharedWithMeView)"
         :selected="props.selected"
         :show-bookmark="!props.workflow.deleted"
         :tags="workflow.tags"

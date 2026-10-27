@@ -25,7 +25,7 @@
 
 import { reactive, type Ref, ref } from "vue";
 
-import type { AnyHistoryEntry, MyHistory } from "@/api/histories";
+import type { AnyHistoryEntry } from "@/api/histories";
 import { isMyHistory } from "@/api/histories";
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -120,7 +120,7 @@ const emit = defineEmits<{
      * Emitted when a history item is selected for bulk operations
      * @event select
      */
-    (e: "select", history: MyHistory): void;
+    (e: "select", history: AnyHistoryEntry): void;
 
     /**
      * Emitted when a tag is clicked on a history card
@@ -193,7 +193,7 @@ function onRename(id: string, name: string) {
             :clickable="props.clickable"
             :highlighted="props.rangeSelectAnchor?.id === history.id"
             class="history-card-in-list"
-            @select="isMyHistory(history) && emit('select', history)"
+            @select="(isMyHistory(history) || props.sharedView) && emit('select', history)"
             @tagClick="(tag: string) => emit('tagClick', tag)"
             @refreshList="(overlayLoading?: boolean, silent?: boolean) => emit('refreshList', overlayLoading, silent)"
             @updateFilter="(key: string, value: any) => emit('updateFilter', key, value)"

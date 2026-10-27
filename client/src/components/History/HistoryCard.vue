@@ -177,6 +177,7 @@ const { historyCardExtraActions, historyCardSecondaryActions, historyCardPrimary
     computed(() => props.history),
     props.archivedView,
     () => emit("refreshList", true),
+    props.sharedView,
 );
 
 /**
@@ -246,7 +247,7 @@ function onKeyDown(event: KeyboardEvent) {
         :clickable="props.clickable"
         :highlighted="props.highlighted"
         @rename="emit('rename', history.id, history.name)"
-        @select="isMyHistory(history) && emit('select', history)"
+        @select="(isMyHistory(history) || props.sharedView) && emit('select', history)"
         @tagsUpdate="(tags: string[]) => onTagsUpdate(history.id, tags)"
         @tagClick="(tag: string) => emit('tagClick', tag)"
         @click="onClick"
