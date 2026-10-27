@@ -1,4 +1,5 @@
 import os
+import re
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -182,6 +183,24 @@ class UsesApiTestCaseMixin:
     def _get_current_history_id(self) -> str:
         """Return the current session's history ID (works for anonymous users)."""
         return self._get(urljoin(self.url, "history/current_history_json")).json()["id"]
+
+    @contextmanager
+    def _browser_session(self, email: str, password: str = "testpass"):
+        """Yield a ``requests.Session`` logged in as ``email`` via the web login form.
+
+        For legacy controller routes outside /api that reject API keys.
+        """
+        self._setup_user(email, password)
+        with requests.Session() as session:
+            login_page = session.get(urljoin(self.url, "login/start"))
+            csrf_token_match = re.search(r'session_csrf_token = "(.*?)"', login_page.text)
+            assert csrf_token_match, "session_csrf_token not found on login page"
+            login_response = session.post(
+                urljoin(self.url, "user/login"),
+                data={"login": email, "password": password, "session_csrf_token": csrf_token_match.group(1)},
+            )
+            assert_status_code_is(login_response, 200)
+            yield session
 
     def _get(self, *args, **kwds):
         return self.galaxy_interactor.get(*args, **kwds)
