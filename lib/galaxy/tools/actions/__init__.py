@@ -736,6 +736,12 @@ class DefaultToolAction(ToolAction):
                 # don't add already existing datasets, i.e. async created
                 history.stage_addition(data)
         history.add_pending_items(set_output_hid=set_output_hid)
+        if completed_job:
+            # The outputs are the cached job's datasets, possibly another user's from a published history
+            output_hdas = list(out_data.values())
+            for hdca in output_collections.out_collection_instances.values():
+                output_hdas.extend(hdca.dataset_instances)
+            history.charge_added_datasets(output_hdas)
 
         log.info(add_datasets_timer)
         job_setup_timer = ExecutionTimer()

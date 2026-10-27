@@ -1354,6 +1354,14 @@ class MinimalJobWrapper(HasResourceParameters):
             )
             if job_to_copy and isinstance(job_to_copy, model.Job):
                 job.copy_from_job(job_to_copy, copy_outputs=True)
+                if job.history:
+                    # The outputs are the cached job's datasets, possibly another user's from a published history
+                    output_hdas = [assoc.dataset for assoc in job.output_datasets]
+                    for collection_assoc in job.output_dataset_collection_instances:
+                        output_hdas.extend(collection_assoc.dataset_collection_instance.dataset_instances)
+                    for implicit_collection_assoc in job.output_dataset_collections:
+                        output_hdas.extend(implicit_collection_assoc.dataset_collection.dataset_instances)
+                    job.history.charge_added_datasets(output_hdas)
                 # The copied job never reaches finish(), so run its post job actions here.
                 for pjaa in job.post_job_actions:
                     if pjaa.post_job_action.action_type not in ActionBox.immediate_actions:

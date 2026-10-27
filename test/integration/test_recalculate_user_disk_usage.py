@@ -224,6 +224,33 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
                 self.dataset_populator.delete_dataset(other_history_id, copy_id, purge=True, wait_for_purge=True)
             assert self.dataset_populator.total_disk_usage() == 0
 
+    def test_cached_job_from_another_user_is_counted(self):
+        history_id = self.dataset_populator.new_history()
+        run_response = self.dataset_populator.run_tool("create_2", {"sleep_time": 0}, history_id)
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        self.dataset_populator.make_public(history_id)
+
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            other_history_id = self.dataset_populator.new_history()
+            cached_run_response = self.dataset_populator.run_tool(
+                "create_2", {"sleep_time": 0}, other_history_id, use_cached_job=True
+            )
+            cached_job_id = cached_run_response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(cached_job_id, assert_ok=True)
+            cached_job = self.dataset_populator.get_job_details(cached_job_id, full=True).json()
+            assert cached_job["copied_from_job_id"] == job_id
+
+            # The outputs of the cached job are counted, and a recalculation agrees
+            assert self.dataset_populator.total_disk_usage() == 4
+            self.recalculate_disk_usage()
+            assert self.dataset_populator.total_disk_usage() == 4
+
+            # Purging them brings the usage back to 0
+            for output in cached_run_response["outputs"]:
+                self.dataset_populator.delete_dataset(other_history_id, output["id"], purge=True, wait_for_purge=True)
+            assert self.dataset_populator.total_disk_usage() == 0
+
 
 class TestFailedJobDiskUsageIntegration(IntegrationTestCase):
     framework_tool_and_types = True
