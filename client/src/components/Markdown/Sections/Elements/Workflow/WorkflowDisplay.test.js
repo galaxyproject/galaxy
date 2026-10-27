@@ -34,7 +34,7 @@ afterEach(() => {
     Object.keys(translations).forEach((text) => delete translations[text]);
 });
 
-function mountDefault(data = { name: "workflow_name" }) {
+function mountDefault(data = { name: "workflow_name" }, provide = {}) {
     server.use(
         http.untyped.get("/api/workflows/workflow_id/download", ({ request }) => {
             getRequests.push({ url: request.url });
@@ -48,7 +48,7 @@ function mountDefault(data = { name: "workflow_name" }) {
             expanded: false,
         },
         // ToolLinkPopover fetches tool details we don't mock here
-        global: { ...localVue, stubs: { ...localVue.stubs, ToolLinkPopover: true } },
+        global: { ...localVue, provide, stubs: { ...localVue.stubs, ToolLinkPopover: true } },
     });
 }
 
@@ -92,6 +92,15 @@ function mountWithSteps(steps) {
 }
 
 describe("WorkflowDisplay", () => {
+    it.each([
+        [true, "_blank"],
+        [false, undefined],
+    ])("opens the import in a new tab when embedded is %s", async (embed, target) => {
+        const wrapper = mountDefault(undefined, { embed });
+        await flushPromises();
+        expect(wrapper.find('[data-description="workflow import"]').attributes("target")).toBe(target);
+    });
+
     it("renders a tool step's details button before its title, controlling the tool dialog", async () => {
         const wrapper = mountWithSteps([
             { order_index: 0, type: "data_input" },

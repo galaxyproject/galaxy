@@ -12,6 +12,7 @@
                 </GButton>
 
                 <GButton
+                    v-if="!embed"
                     data-description="import dataset button"
                     tooltip
                     transparent
@@ -102,7 +103,7 @@ import { faAngleDoubleDown, faAngleDoubleUp, faDownload, faFileImport } from "@f
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCard, BCardBody, BCardHeader, BEmbed, BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref } from "vue";
+import { computed, inject, onMounted, ref } from "vue";
 
 import { copyDataset } from "@/api/datasets";
 import { getFields, getItems } from "@/components/Markdown/Utilities/tabularData";
@@ -134,6 +135,8 @@ const props = defineProps<{
     datasetId: string;
     embedded?: boolean;
 }>();
+
+const embed = inject("embed", false);
 
 // Reactive state
 const currentPage = ref(1);
