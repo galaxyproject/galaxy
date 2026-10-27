@@ -43,6 +43,7 @@ from galaxy_test.base.populators import (
     LibraryPopulator,
     RunJobsSummary,
     skip_without_tool,
+    TOOL_WITH_ELEMENT_IDENTIFIER,
     TOOL_WITH_SHELL_COMMAND,
     wait_on,
     workflow_str,
@@ -10792,7 +10793,14 @@ outer_input:
                 t["representation"]["name"] == TOOL_WITH_SHELL_COMMAND["name"] for t in owned
             ), f"Expected an owned UDT after workflow import: {owned}"
 
-    def _build_user_defined_tool_run_workflow_dict(self, content_id: Optional[str], tool_uuid: str) -> dict[str, Any]:
+    def _build_user_defined_tool_run_workflow_dict(
+        self,
+        content_id: Optional[str],
+        tool_uuid: str,
+        tool_representation: dict[str, Any] = TOOL_WITH_SHELL_COMMAND,
+        collection_type: Optional[str] = None,
+    ) -> dict[str, Any]:
+        input_state = {"name": "input", **({"collection_type": collection_type} if collection_type else {})}
         return {
             "a_galaxy_workflow": "true",
             "name": "wf running a UDT",
@@ -10801,9 +10809,9 @@ outer_input:
             "steps": {
                 "0": {
                     "id": 0,
-                    "type": "data_input",
+                    "type": "data_collection_input" if collection_type else "data_input",
                     "label": "input",
-                    "tool_state": json.dumps({"name": "input"}),
+                    "tool_state": json.dumps(input_state),
                     "inputs": [{"name": "input", "description": ""}],
                     "input_connections": {},
                     "workflow_outputs": [],
@@ -10815,7 +10823,7 @@ outer_input:
                     "content_id": content_id,
                     "tool_uuid": tool_uuid,
                     # Export shape: the representation lets a mismatched stored content_id import.
-                    "tool_representation": TOOL_WITH_SHELL_COMMAND,
+                    "tool_representation": tool_representation,
                     "tool_state": "{}",
                     "input_connections": {"input": {"id": 0, "output_name": "output"}},
                     "workflow_outputs": [{"output_name": "output", "label": "udt_output"}],
@@ -10892,6 +10900,28 @@ outer_input:
                 crate = self.workflow_populator.get_ro_crate(invocation_id)
                 step_names = [e["name"] for e in crate.get_entities() if e.type == "HowToStep"]
                 assert "basecommand" in step_names
+
+    def test_user_defined_tool_step_mapped_over_writes_element_identifier(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_ELEMENT_IDENTIFIER)
+            )
+            workflow = self._build_user_defined_tool_run_workflow_dict(
+                "basecommand", unprivileged_tool["uuid"], TOOL_WITH_ELEMENT_IDENTIFIER, collection_type="list"
+            )
+            workflow_id = self.workflow_populator.create_workflow(workflow)
+            with self.dataset_populator.test_history() as history_id:
+                hdca = self.dataset_collection_populator.create_list_of_named_datasets(
+                    history_id, [("sample_a", "a"), ("sample_b", "b")]
+                )
+                invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                    workflow_id, history_id=history_id, inputs={"0": {"src": "hdca", "id": hdca["id"]}}
+                )
+                self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+                invocation = self.workflow_populator.get_invocation(invocation_id)
+                output_hdca_id = invocation["output_collections"]["udt_output"]["id"]
+                contents = self.dataset_populator.get_collection_element_contents(history_id, output_hdca_id)
+        assert contents == {"sample_a": "sample_a\n", "sample_b": "sample_b\n"}
 
     def test_user_defined_tool_workflow_export_round_trip(self):
         with self.dataset_populator.user_tool_execute_permissions():
