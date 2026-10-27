@@ -243,16 +243,24 @@ def make_router_clarification_task(
 ) -> Callable[[dict], Awaitable[str]]:
     """Build an async callable for the clarification-followup dataset.
 
-    The case input is ``{"original_query", "clarification_question", "answer"}``.
-    Reconstructs the prior turn (the ambiguous request + the question the router asked) as
+    The case input is ``{"original_query", "clarification_question", "answer"}``, optionally
+    with an earlier ``subject_query``/``subject_reply`` turn. Reconstructs the prior turn(s) as
     conversation_history and routes the elliptical ``answer``. With
-    ``responding_to_clarification=True`` the router includes that turn (the seam fix); with
-    ``False`` it withholds history as usual -- the A/B that quantifies the seam's value.
+    ``responding_to_clarification=True`` the context marks the last turn as a clarification
+    (``clarification_turns=1``), so the router also keeps the subject turn behind it; with
+    ``False`` it routes on the last turn alone -- the A/B for the subject scenarios. (The router
+    always forwards the last turn now, so the plain scenarios score the same either way.)
     Returns the router's chosen agent_type.
     """
 
     async def router_clarification_task(case_input: dict) -> str:
-        history = [
+        history = []
+        if case_input.get("subject_query"):
+            history += [
+                {"role": "user", "content": case_input["subject_query"]},
+                {"role": "assistant", "content": case_input["subject_reply"]},
+            ]
+        history += [
             {"role": "user", "content": case_input["original_query"]},
             {"role": "assistant", "content": case_input["clarification_question"]},
         ]
@@ -262,6 +270,7 @@ def make_router_clarification_task(
             context={
                 "conversation_history": history,
                 "responding_to_clarification": responding_to_clarification,
+                "clarification_turns": 1 if responding_to_clarification else 0,
             },
         )
         _record_response_usage(usage_buffer, response)

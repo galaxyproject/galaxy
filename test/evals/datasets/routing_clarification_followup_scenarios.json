@@ -110,5 +110,25 @@
     "answer": "the first option",
     "expected": "tool_recommendation",
     "answer_kind": "referential"
+  },
+  {
+    "name": "subject_behind_clarification_error_followup",
+    "subject_query": "are you able to see the full job details? do you know which tool we are looking at?",
+    "subject_reply": "Job 4838ba20a6d86765675e074f820ddad2 used MiRDeep2 Quantifier (toolshed.g2.bx.psu.edu/repos/rnateam/mirdeep2_quantifier/rbc_mirdeep2_quantifier/2.0.0) and ended in the error state (exit code 1). The stderr ends with: Mature mapping file dataset_0270abc6.dat.dummy_mapped.bwt not found",
+    "original_query": "did the upstream tool not need or create this index?",
+    "clarification_question": "Which upstream tool generated this dataset, and what type of index are you referring to?",
+    "answer": "the tool for the error we are investigating, we discussed this already. why did it fail?",
+    "expected": "error_analysis",
+    "answer_kind": "subject"
+  },
+  {
+    "name": "subject_behind_clarification_explain_error",
+    "subject_query": "which job in my history failed?",
+    "subject_reply": "The failed job is BWA-MEM (toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa_mem/0.7.17.2), exit code 1. stderr: [E::bwa_idx_load_from_disk] fail to locate the index files",
+    "original_query": "is that the same problem as before?",
+    "clarification_question": "Which tool and error are you comparing it to?",
+    "answer": "never mind that, just explain what this error means and how I fix it",
+    "expected": "error_analysis",
+    "answer_kind": "subject"
   }
 ]
