@@ -507,8 +507,31 @@ function clearSearch() {
     searchQuery.value = "";
 }
 
+/**
+ * Reloads or refilters for a search the user typed. Navigation resets the search and page
+ * itself and loads once, so neither change may trigger a load on its own.
+ */
 function updateSearchQuery(newQuery: string) {
     searchQuery.value = newQuery;
+    currentPage.value = 1;
+    if (urlTracker.isAtRoot.value || supportsServerSearch.value) {
+        load();
+    } else if (allFetchedItems.value.length > 0) {
+        updateClientSideView();
+    }
+}
+
+function onPageChange(page: number) {
+    currentPage.value = page;
+    if (urlTracker.isAtRoot.value) {
+        return;
+    }
+
+    if (supportsServerPagination.value) {
+        load();
+    } else if (allFetchedItems.value.length > 0) {
+        updateClientSideView();
+    }
 }
 
 function startUpload() {
@@ -526,31 +549,12 @@ function startUpload() {
     selectionCount.value = 0;
     clearSearch();
     urlTracker.reset();
+    currentPage.value = 1;
+    load();
 }
 
 onMounted(() => {
     load();
-});
-
-watch(searchQuery, () => {
-    currentPage.value = 1;
-    if (urlTracker.isAtRoot.value || supportsServerSearch.value) {
-        load();
-    } else if (allFetchedItems.value.length > 0) {
-        updateClientSideView();
-    }
-});
-
-watch(currentPage, () => {
-    if (urlTracker.isAtRoot.value) {
-        return;
-    }
-
-    if (supportsServerPagination.value) {
-        load();
-    } else if (allFetchedItems.value.length > 0) {
-        updateClientSideView();
-    }
 });
 
 function onErrorRetry() {
@@ -704,7 +708,8 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     :total-rows="totalMatches"
                     :per-page="perPage"
                     align="center"
-                    size="sm" />
+                    size="sm"
+                    @change="onPageChange" />
             </div>
 
             <!-- Action buttons -->
