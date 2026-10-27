@@ -54,9 +54,6 @@ const cardTitle = computed(() => {
     return shortId;
 });
 
-/** Last 8 characters of the encoded job ID, same as `JobIdChip`. */
-const shortJobId = computed(() => props.job.id.slice(-8));
-
 function cardClicked(job: JobBaseModel) {
     router.push(`/jobs/${job.id}/view`);
 }
@@ -91,7 +88,7 @@ function cardClicked(job: JobBaseModel) {
                     </small>
                 </Heading>
                 <span v-g-tooltip.hover class="job-card-id-chip flex-shrink-0" :title="`Job API ID: ${props.job.id}`">
-                    {{ shortJobId }}
+                    <span class="job-card-id-chip-value">{{ props.job.id }}</span>
                 </span>
             </div>
         </template>
@@ -104,6 +101,8 @@ function cardClicked(job: JobBaseModel) {
 }
 
 .job-card-id-chip {
+    display: inline-flex;
+    align-items: center;
     font-family: "JetBrains Mono", ui-monospace, monospace;
     font-size: var(--font-size-small);
     font-weight: 600;
@@ -113,6 +112,17 @@ function cardClicked(job: JobBaseModel) {
     border-radius: 999px;
     padding: 0.1rem 0.5rem;
     white-space: nowrap;
+}
+
+// Only show tail of id because jobs submitted together often share a leading
+// prefix, so a trailing slice is more likely to actually distinguish them at a glance.
+.job-card-id-chip-value {
+    display: inline-block;
+    max-width: 8ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    direction: rtl;
+    text-align: left;
 }
 
 .job-card-title {
