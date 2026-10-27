@@ -1161,6 +1161,11 @@ SELECT old.id, new.user_id, new.quota_source_label, COALESCE(old.disk_usage + :a
 FROM new LEFT JOIN user_quota_source_usage AS old ON new.user_id = old.user_id AND NEW.quota_source_label = old.quota_source_label;
 """
                 else:
+                    # Lock the user row before the label row, in the same order as a recalculation and as an
+                    # adjustment of the default source in the same transaction, so they can't deadlock
+                    sa_session.execute(
+                        text("SELECT id FROM galaxy_user WHERE id = :user_id FOR UPDATE"), {"user_id": self.id}
+                    )
                     sql = """
 INSERT INTO user_quota_source_usage(user_id, disk_usage, quota_source_label)
 VALUES(:user_id, :amount, :label)
