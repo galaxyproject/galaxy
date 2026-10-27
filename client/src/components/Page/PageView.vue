@@ -2,7 +2,7 @@
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, provide, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import type { PublishedItem as PublishedItemType } from "@/components/Common/models/PublishedItem";
@@ -40,6 +40,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const router = useRouter();
+
+provide("embed", props.embed);
 
 const { config, isConfigLoaded } = useConfig();
 const userStore = useUserStore();

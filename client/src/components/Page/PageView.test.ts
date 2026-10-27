@@ -4,7 +4,7 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { defineComponent, h, inject, ref } from "vue";
 
 import PageView from "./PageView.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -103,6 +103,22 @@ describe("PageView", () => {
 
             expect(wrapper.find(".page-display-toolbar").exists()).toBe(false);
         });
+    });
+
+    it("tells the page sections whether they are embedded", async () => {
+        const Markdown = defineComponent({
+            setup: () => () => h("pre", { class: "embed-probe" }, String(inject("embed"))),
+        });
+        for (const embed of [true, false]) {
+            const wrapper = shallowMount(PageView as object, {
+                localVue,
+                pinia,
+                propsData: { pageId: PAGE_ID, embed },
+                stubs: { FontAwesomeIcon: true, LoadingSpan: true, Markdown, PageHtml: true, PublishedItem: false },
+            });
+            await flushPromises();
+            expect(wrapper.find(".embed-probe").text()).toBe(String(embed));
+        }
     });
 
     describe("displayOnly mode", () => {
