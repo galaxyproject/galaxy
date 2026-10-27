@@ -130,5 +130,15 @@
     "answer": "never mind that, just explain what this error means and how I fix it",
     "expected": "error_analysis",
     "answer_kind": "subject"
+  },
+  {
+    "name": "subject_behind_clarification_no_error_words",
+    "subject_query": "did anything in my history fail?",
+    "subject_reply": "Yes -- the HISAT2 job (toolshed.g2.bx.psu.edu/repos/iuc/hisat2/hisat2/2.2.1+galaxy1) ended in the error state with exit code 1. stderr: Error: could not open index file genome.1.ht2",
+    "original_query": "can you take a look at it?",
+    "clarification_question": "Which dataset or job would you like me to look at?",
+    "answer": "the one you just found",
+    "expected": "error_analysis",
+    "answer_kind": "subject"
   }
 ]
