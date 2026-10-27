@@ -1120,6 +1120,36 @@ class TestAgentUnitMocked:
         # The older, unrelated first turn stays out of the routing decision.
         assert "wrapper flaw" not in routed_on
 
+    def test_router_skips_a_run_of_clarifications_back_to_the_subject(self):
+        """Several "which tool?" questions in a row: the routing window is the turn they all
+        followed plus the latest one, not every clarification in between."""
+        router = QueryRouterAgent(self.deps)
+        history = SUBJECT_THEN_CLARIFICATION_HISTORY + [
+            ModelRequest(parts=[UserPromptPart(content="correcting the wrapper seems to be the only solution")]),
+            ModelResponse(parts=[TextPart(content="Could you share the name of the tool?")]),
+            ModelRequest(parts=[UserPromptPart(content="review our chat and try again")]),
+            ModelResponse(parts=[TextPart(content="Could you remind me which tool you're troubleshooting?")]),
+        ]
+
+        routing_history = router._routing_history(history, clarification_turns=3)
+        assert routing_history is not None
+        window = _message_texts(routing_history)
+
+        assert MIRDEEP2_TOOL_ID in window
+        assert "review our chat and try again" in window
+        assert "Which upstream tool" not in window
+        assert "correcting the wrapper" not in window
+        assert "wrapper flaw" not in window
+
+    def test_router_routing_window_ignores_an_impossible_clarification_count(self):
+        """A count reaching past the start of the history (every turn a clarification) falls back
+        to the plain last-turn window rather than slicing from a negative index."""
+        router = QueryRouterAgent(self.deps)
+        history = SUBJECT_THEN_CLARIFICATION_HISTORY
+
+        assert router._routing_history(history, clarification_turns=3) == history[-2:]
+        assert router._routing_history(history, clarification_turns=0) == history[-2:]
+
     @pytest.mark.asyncio
     async def test_error_analysis_sees_the_conversation_on_a_vague_handoff(self):
         """A vague follow-up ("the tool for the current error") hands error analysis a task that

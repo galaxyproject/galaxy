@@ -56,7 +56,9 @@ class QueryRouterAgent(BaseGalaxyAgent):
     # forwarding the whole deep conversation degrades routing -- it biases the model toward
     # answering directly (the #22791 finding) -- but forwarding the last turn does not. It's
     # the whole turn, request and reply: a bare user message with no assistant reply reads as
-    # a dangling/compound request and mis-routes. Specialists always receive the full
+    # a dangling/compound request and mis-routes. After a clarifying question the last turn is
+    # just that question, so _routing_history also keeps the turn the clarifications followed,
+    # which is where the subject was named. Specialists always receive the full
     # conversation_history via the handoff context.
     ROUTING_HISTORY_TURNS = 1
 
@@ -523,17 +525,26 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         return [i for i, message in enumerate(full_history) if _is_turn_start(message)]
 
-    def _routing_history(self, full_history: list | None) -> list | None:
+    def _routing_history(self, full_history: list | None, clarification_turns: int = 0) -> list | None:
         """The most recent ``ROUTING_HISTORY_TURNS`` turn(s) of ``full_history``, or None when
-        capped to 0 or there's no history. See ``ROUTING_HISTORY_TURNS`` for the rationale."""
+        capped to 0 or there's no history. See ``ROUTING_HISTORY_TURNS`` for the rationale.
+
+        When the last ``clarification_turns`` turns were clarifying questions, the turn just
+        before them is prepended so the subject they were asking about stays in view. The
+        clarifications in between are skipped -- a run of "which tool?" adds nothing to route on.
+        """
         if not full_history or self.ROUTING_HISTORY_TURNS <= 0:
             return None
         turn_starts = self._turn_start_indices(full_history)
         if not turn_starts:
             return None
-        if len(turn_starts) > self.ROUTING_HISTORY_TURNS:
-            return full_history[turn_starts[-self.ROUTING_HISTORY_TURNS] :]
-        return full_history
+        if len(turn_starts) <= self.ROUTING_HISTORY_TURNS:
+            return full_history
+        recent = full_history[turn_starts[-self.ROUTING_HISTORY_TURNS] :]
+        if self.ROUTING_HISTORY_TURNS <= clarification_turns < len(turn_starts):
+            subject_turn = full_history[turn_starts[-clarification_turns - 1] : turn_starts[-clarification_turns]]
+            return subject_turn + recent
+        return recent
 
     async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
@@ -542,12 +553,12 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         try:
             full_history = self._extract_message_history(context)
-            # Route on the current message plus the most recent turn(s) (see ROUTING_HISTORY_TURNS).
-            # The responding_to_clarification context flag is intentionally not consulted: forwarding
-            # the last turn handles clarification answers and ordinary follow-ups the same way.
-            message_history = self._routing_history(full_history)
+            # Route on the current message plus the most recent turn(s) (see ROUTING_HISTORY_TURNS),
+            # and the turn behind any run of clarifying questions.
+            clarification_turns = (context or {}).get("clarification_turns") or 0
+            message_history = self._routing_history(full_history, clarification_turns)
             if message_history:
-                log.info(f"Router: routing on the current message plus the last turn ({len(message_history)} msgs)")
+                log.info(f"Router: routing on the current message plus recent turns ({len(message_history)} msgs)")
             elif full_history:
                 log.info(f"Router: routing on the current message, withholding {len(full_history)} history messages")
             else:
