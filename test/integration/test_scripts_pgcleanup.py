@@ -1,6 +1,11 @@
 import string
+from typing import Any
 
-from galaxy_test.base.populators import skip_without_tool
+from galaxy import model
+from galaxy_test.base.populators import (
+    LibraryPopulator,
+    skip_without_tool,
+)
 from galaxy_test.driver import integration_util
 from .test_scripts import BaseScriptsIntegrationTestCase
 
@@ -32,6 +37,34 @@ SCRIPT = "cleanup_datasets/pgcleanup.py"
 
 
 class TestScriptsPgCleanupIntegration(BaseScriptsIntegrationTestCase):
+    def setUp(self):
+        super().setUp()
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
+
+    def _db_get(self, model_class, encoded_id: str) -> Any:
+        """Fetch a model instance reflecting state committed by the pgcleanup subprocess.
+
+        The session is rolled back first so the identity map is not used as a cache of state
+        that predates the subprocess' writes.
+        """
+        sa_session = self._app.model.session
+        sa_session.rollback()
+        return sa_session.get(model_class, self._decode_id(encoded_id))
+
+    def _library_dataset_state(self, library_dataset: dict[str, Any]) -> dict[str, bool]:
+        """Return the cleanup flags of a library dataset, its current version, and its dataset."""
+        ld = self._db_get(model.LibraryDataset, library_dataset["id"])
+        ldda = self._db_get(model.LibraryDatasetDatasetAssociation, library_dataset["ldda_id"])
+        dataset = self._app.model.session.get(model.Dataset, ldda.dataset_id)
+        assert dataset is not None
+        return {
+            "library_dataset_deleted": bool(ld.deleted),
+            "library_dataset_purged": bool(ld.purged),
+            "version_deleted": bool(ldda.deleted),
+            "dataset_deleted": bool(dataset.deleted),
+            "dataset_purged": bool(dataset.purged),
+        }
+
     def test_help(self):
         self._skip_unless_postgres()
         self._scripts_check_argparse_help(SCRIPT)
@@ -209,6 +242,80 @@ class TestScriptsPgCleanupIntegration(BaseScriptsIntegrationTestCase):
         )
 
         assert not self.is_purged(history_id, hda)
+
+    def test_delete_library_datasets(self):
+        self._skip_unless_postgres()
+
+        _, library_dataset = self.library_populator.new_library_dataset_in_private_library("pgcleanup_library_dataset")
+
+        # a library dataset that was never deleted is not touched
+        self._pgcleanup_check_output(["--older-than", "0", "delete_library_datasets"])
+        assert self._library_dataset_state(library_dataset)["version_deleted"] is False
+
+        # deleting a library dataset through the API only flags the library dataset, its versions
+        # (and therefore the dataset they reference) are left alone - which is why datasets that
+        # only live in libraries are never deleted or purged by any other cleanup action
+        self._assert_status_code_is_ok(self._delete(f"libraries/datasets/{library_dataset['id']}"))
+        assert self._library_dataset_state(library_dataset) == {
+            "library_dataset_deleted": True,
+            "library_dataset_purged": False,
+            "version_deleted": False,
+            "dataset_deleted": False,
+            "dataset_purged": False,
+        }
+
+        # the library dataset is not old enough to be acted on
+        self._pgcleanup_check_output(["--older-than", "1", "delete_library_datasets"])
+        assert self._library_dataset_state(library_dataset)["version_deleted"] is False
+
+        # with no retention window the version is marked deleted and the library dataset purged
+        self._pgcleanup_check_output(["--older-than", "0", "delete_library_datasets"])
+        assert self._library_dataset_state(library_dataset) == {
+            "library_dataset_deleted": True,
+            "library_dataset_purged": True,
+            "version_deleted": True,
+            "dataset_deleted": False,
+            "dataset_purged": False,
+        }
+
+        # chaining the pre-existing actions now reaches the dataset itself
+        self._pgcleanup_check_output(
+            ["--older-than", "0", "delete_library_datasets", "delete_datasets", "purge_datasets"]
+        )
+        assert self._library_dataset_state(library_dataset) == {
+            "library_dataset_deleted": True,
+            "library_dataset_purged": True,
+            "version_deleted": True,
+            "dataset_deleted": True,
+            "dataset_purged": True,
+        }
+
+    def test_delete_library_datasets_force_retry(self):
+        self._skip_unless_postgres()
+
+        _, library_dataset = self.library_populator.new_library_dataset_in_private_library(
+            "pgcleanup_library_dataset_force_retry"
+        )
+        self._assert_status_code_is_ok(self._delete(f"libraries/datasets/{library_dataset['id']}"))
+        self._pgcleanup_check_output(
+            ["--older-than", "0", "delete_library_datasets", "delete_datasets", "purge_datasets"]
+        )
+        assert self._library_dataset_state(library_dataset)["dataset_purged"] is True
+
+        # simulate a version left behind by the legacy scripts: the dataset is already purged but the
+        # association itself was never marked deleted
+        ldda = self._db_get(model.LibraryDatasetDatasetAssociation, library_dataset["ldda_id"])
+        ldda.deleted = False
+        self._app.model.session.commit()
+        assert self._library_dataset_state(library_dataset)["version_deleted"] is False
+
+        # purged library datasets are skipped by default...
+        self._pgcleanup_check_output(["--older-than", "0", "delete_library_datasets"])
+        assert self._library_dataset_state(library_dataset)["version_deleted"] is False
+
+        # ...but --force-retry revisits them to reconcile the missing flags
+        self._pgcleanup_check_output(["--older-than", "0", "--force-retry", "delete_library_datasets"])
+        assert self._library_dataset_state(library_dataset)["version_deleted"] is True
 
     def test_purge_historyless_hdas(self):
         # same as above - this is just a negative test for things being broken

@@ -1161,6 +1161,64 @@ class DeleteExportedHistories(Action):
     """
 
 
+class DeleteLibraryDatasets(Action):
+    """
+    - Mark deleted all versions (LibraryDatasetDatasetAssociations) of LibraryDatasets that are marked
+      deleted and are older than the specified number of days.
+    - Mark those LibraryDatasets purged: a purged LibraryDataset can no longer be undeleted.
+    - This is the library half of the legacy cleanup_datasets.py "delete_datasets" action, which
+      pgcleanup.py did not port; it is what allows the datasets referenced only by library
+      associations to be marked deleted by the "delete_datasets" action below.
+    """
+
+    # ldda.update_time is deliberately left untouched: it is what keeps the "delete_datasets" action from
+    # touching a dataset whose associations were just marked deleted (or undeleted recently), so a stale
+    # timestamp here allows the two actions to be chained in a single run. The retention decision is made
+    # on library_dataset.update_time instead.
+    _action_sql = """
+        WITH target_lds
+          AS (SELECT ld.id
+                FROM library_dataset ld
+               WHERE deleted{force_retry_sql}
+                     AND update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
+             ),
+             deleted_ldda_ids
+          AS (     UPDATE library_dataset_dataset_association ldda
+                      SET deleted = true
+                     FROM target_lds ld
+                    WHERE ldda.library_dataset_id = ld.id
+                          AND ldda.deleted IS NOT TRUE
+                RETURNING ldda.id,
+                          ldda.library_dataset_id),
+             ldda_events
+          AS (INSERT INTO cleanup_event_ldda_association
+                          (create_time, cleanup_event_id, ldda_id)
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
+                     FROM deleted_ldda_ids),
+             purged_lds
+          AS (     UPDATE library_dataset ld
+                      SET purged = true{update_time_sql}
+                     FROM target_lds t
+                    WHERE ld.id = t.id
+                          AND NOT ld.purged
+                RETURNING ld.id),
+             ld_events
+          AS (INSERT INTO cleanup_event_library_dataset_association
+                          (create_time, cleanup_event_id, library_dataset_id)
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
+                     FROM purged_lds)
+      SELECT t.id AS library_dataset_id,
+             deleted_ldda_ids.id AS deleted_ldda_id,
+             purged_lds.id AS purged_library_dataset_id
+        FROM target_lds t
+             LEFT OUTER JOIN deleted_ldda_ids ON t.id = deleted_ldda_ids.library_dataset_id
+             LEFT OUTER JOIN purged_lds ON t.id = purged_lds.id
+    ORDER BY t.id
+    """
+
+    causals = (("library_dataset_id", "deleted_ldda_id"), ("library_dataset_id", "purged_library_dataset_id"))
+
+
 class DeleteDatasets(Action):
     """
     - Mark deleted all Datasets whose associations are all marked as deleted (LDDA) or purged (HDA)
