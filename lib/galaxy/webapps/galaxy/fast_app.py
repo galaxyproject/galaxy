@@ -44,6 +44,7 @@ from galaxy.webapps.base.webapp import (
     _is_embed_request,
     config_allows_origin,
 )
+from galaxy.webapps.galaxy.api import API_KEY_HEADER_NAME
 from galaxy.webapps.galaxy.api.mcp import get_mcp_app
 from galaxy.webapps.openapi._compat.v2 import GenerateJsonSchema
 from galaxy.webapps.openapi.utils import get_openapi
@@ -387,7 +388,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
 
 
 def galaxy_rate_limit_key(request: Request) -> str:
-    api_key = request.headers.get("x-api-key") or request.query_params.get("key")
+    api_key = request.headers.get(API_KEY_HEADER_NAME) or request.query_params.get("key")
     if api_key:
         return f"api_key:{api_key}"
     if session_key := request.cookies.get("galaxysession"):

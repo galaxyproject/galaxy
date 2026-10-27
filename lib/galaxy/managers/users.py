@@ -444,6 +444,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             raise exceptions.AuthenticationFailed("Provided API key has expired.")
         return provided_key.user
 
+    def by_credentials(self, api_key: str | None, access_token: str | None) -> model.User | None:
+        """Find the user for a Galaxy API key or, failing that, an OIDC access token.
+
+        The API key is tried first, and a bad one raises. An access token returns None when no OIDC
+        provider is configured or none of them accepts the token.
+        """
+        if api_key:
+            return self.by_api_key(api_key=api_key)
+        if access_token:
+            return self.by_oidc_access_token(access_token=access_token)
+        return None
+
     def by_oidc_access_token(self, access_token: str):
         if hasattr(self.app, "authnz_manager") and self.app.authnz_manager:
             user = self.app.authnz_manager.match_access_token_to_user(self.app.model.session, access_token)
@@ -547,14 +559,14 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # TODO: trans
         return trans.user
 
-    def user_can_do_run_as(self, user) -> bool:
+    def user_can_do_run_as(self, user: model.User | schema.BootstrapAdminUser | None) -> bool:
         run_as_users = [u for u in self.app.config.get("api_allow_run_as", "").split(",") if u]
         if not run_as_users:
             return False
-        user_in_run_as_users = user and user.email in run_as_users
+        if user is None:
+            return False
         # Can do if explicitly in list or master_api_key supplied.
-        can_do_run_as = user_in_run_as_users or user.bootstrap_admin_user
-        return can_do_run_as
+        return user.email in run_as_users or user.bootstrap_admin_user
 
     # ---- preferences
     def preferences(self, user):
