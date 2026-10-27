@@ -75,11 +75,14 @@ class TestFrontendLogin(PlaywrightTestCase):
         self._playwright_browser.logout_if_logged_in()
         self.visit_url("/login", params={"redirect": "/repositories_by_category"})
         page = self._page
-        page.fill("input[name='login']", email)
-        page.fill("input[name='password']", TEST_PASSWORD)
+        expect(page.locator(Locators.login_submit_button)).to_be_visible()
+        self.screenshot("login_with_redirect")
+        page.fill(Locators.login_input, email)
+        page.fill(Locators.login_password_input, TEST_PASSWORD)
         page.click(Locators.login_submit_button)
         expect(page).to_have_url(re.compile(r"/repositories_by_category$"))
         self._playwright_browser.expect_logged_in()
+        self.screenshot("login_redirect_landing")
 
     def _create_and_login(self):
         user = random_name(prefix="shduser")
