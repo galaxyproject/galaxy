@@ -37,6 +37,10 @@ const props = withDefaults(defineProps<RepositoryExploreProps>(), {
 
 const changelog = computed(() => `/repos/${props.repository.owner}/${[props.repository.name]}/shortlog`)
 const contents = computed(() => `/repos/${props.repository.owner}/${[props.repository.name]}/file/tip`)
+const hgwebLinks = computed(() => [
+    { key: "changelog", icon: faCodeCompare, label: "Changelog", target: { href: changelog.value } },
+    { key: "contents", icon: faList, label: "Contents", target: { href: contents.value } },
+])
 </script>
 <template>
     <ActionMenu v-if="!dense" :icon="faCompass" label="Explore repository">
@@ -44,13 +48,9 @@ const contents = computed(() => `/repos/${props.repository.owner}/${[props.repos
             <FontAwesomeIcon :icon="faCircleInfo" fixed-width />
             Details
         </GDropdownItemButton>
-        <GDropdownItem :href="changelog">
-            <FontAwesomeIcon :icon="faCodeCompare" fixed-width />
-            Changelog
-        </GDropdownItem>
-        <GDropdownItem :href="contents">
-            <FontAwesomeIcon :icon="faList" fixed-width />
-            Contents
+        <GDropdownItem v-for="link in hgwebLinks" :key="link.key" v-bind="link.target">
+            <FontAwesomeIcon :icon="link.icon" fixed-width />
+            {{ link.label }}
         </GDropdownItem>
         <GDropdownItemButton @click="goToMetadataInspector(props.repository.id)">
             <FontAwesomeIcon :icon="faFileCode" fixed-width />
@@ -76,11 +76,16 @@ const contents = computed(() => `/repos/${props.repository.owner}/${[props.repos
         >
             <FontAwesomeIcon :icon="faFileCode" />
         </GButton>
-        <GButton icon-only transparent title="Changelog" aria-label="Changelog" :href="changelog">
-            <FontAwesomeIcon :icon="faCodeCompare" />
-        </GButton>
-        <GButton icon-only transparent title="Contents" aria-label="Contents" :href="contents">
-            <FontAwesomeIcon :icon="faList" />
+        <GButton
+            v-for="link in hgwebLinks"
+            :key="link.key"
+            icon-only
+            transparent
+            :title="link.label"
+            :aria-label="link.label"
+            v-bind="link.target"
+        >
+            <FontAwesomeIcon :icon="link.icon" />
         </GButton>
         <GButton
             v-if="repository.homepage_url"
