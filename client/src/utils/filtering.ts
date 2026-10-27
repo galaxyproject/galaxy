@@ -404,7 +404,9 @@ export default class Filtering<T> {
      * has no such shape (i.e. it is raw text).
      */
     private splitKeyOpValue(pair: string): { field: string; op: ":" | ">" | "<"; value: string } | null {
-        const match = /(\S+)([:><])(.+)/g.exec(pair);
+        // Non-greedy field match: splits on the FIRST `:`/`>`/`<`, since a value may itself contain
+        // one (e.g. a timestamp's `10:30:00`), and a key never does.
+        const match = /(\S+?)([:><])(.+)/g.exec(pair);
         if (!match) {
             return null;
         }
@@ -675,14 +677,15 @@ export default class Filtering<T> {
      * @returns Parsed `filterText` string with added/removed filter(s)
      */
     applyFiltersToText(filters: Record<string, T>, existingText: string, remove = false) {
-        let { validFilters } = this.getValidFilters(filters);
         const existingFilters = Object.fromEntries(this.getFiltersForText(existingText, false));
         if (remove) {
-            validFilters = omit(existingFilters, Object.keys(validFilters));
-        } else {
-            validFilters = Object.assign(existingFilters, validFilters);
+            const keysToRemove = Object.keys(filters).filter((key) => this.validFilters[key] !== undefined);
+            const updatedFilters = omit(existingFilters, keysToRemove);
+            return this.getFilterText(updatedFilters, false, existingText);
         }
-        return this.getFilterText(validFilters, false, existingText);
+        const { validFilters } = this.getValidFilters(filters);
+        const updatedFilters = Object.assign(existingFilters, validFilters);
+        return this.getFilterText(updatedFilters, false, existingText);
     }
 
     /** Takes a filters object and returns a new object with only valid filters
