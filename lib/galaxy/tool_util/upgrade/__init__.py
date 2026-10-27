@@ -211,7 +211,7 @@ class ProfileMigration21_09(ProfileMigration):
         for el in _find_all(tool_source, ".//data[@from_work_dir]"):
             from_work_dir = el.get("from_work_dir") or ""
             if from_work_dir != from_work_dir.strip():
-                advice_collection.add("")
+                advice_collection.add("21_09_fix_from_work_dir_whitespace")
 
         tool_type = tool_source.parse_tool_type()
         if tool_type == "data_source":

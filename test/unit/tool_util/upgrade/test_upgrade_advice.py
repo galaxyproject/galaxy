@@ -1,5 +1,4 @@
 # Not yet tested:
-# - 21_09_fix_from_work_dir_whitespace
 # - 23_0_consider_optional_text
 import os
 
@@ -43,6 +42,14 @@ NESTED_CONDITIONAL_INPUT = """<tool id="nested_collection_reference" name="neste
   </inputs>
   <outputs>
     <collection name="output" type="paired" {reference} />
+  </outputs>
+</tool>
+"""
+FROM_WORK_DIR_TOOL = """<tool id="from_work_dir" name="from_work_dir" version="1.0" profile="21.01">
+  <command>echo hi > out.txt</command>
+  <inputs />
+  <outputs>
+    <data name="output" format="txt" from_work_dir="{reference}" />
   </outputs>
 </tool>
 """
@@ -190,6 +197,14 @@ def test_26_0_reference_in_repeat_not_advised(tmp_path):
     )
     advice = advise_on_upgrade(tool)
     assert_not_has_advice(advice, UNQUALIFIED_STRUCTURED_LIKE)
+
+
+def test_21_09_from_work_dir_whitespace(tmp_path):
+    advice = advise_on_upgrade(_write_tool(tmp_path, FROM_WORK_DIR_TOOL, " out.txt "))
+    assert_has_advice(advice, "21_09_fix_from_work_dir_whitespace")
+
+    advice = advise_on_upgrade(_write_tool(tmp_path, FROM_WORK_DIR_TOOL, "out.txt"))
+    assert_not_has_advice(advice, "21_09_fix_from_work_dir_whitespace")
 
 
 def test_21_09_data_source_advice():
