@@ -1,17 +1,17 @@
 """Routing clarification-followup dataset: route the user's ANSWER to a clarifying question.
 
-The router withholds conversation history when routing (route-on-current-message). That
-collides with the ask-when-uncertain feature: the answer to "tool recommendation or a
-tutorial?" is elliptical ("the second one", "a tutorial") and routes on the fragment alone.
-The seam fix includes just the last turn (original request + the question we asked) when the
-previous turn was a clarification, so the answer routes correctly.
+The router routes on the current message plus the last turn, so the answer to "tool
+recommendation or a tutorial?" -- elliptical ("the second one", "a tutorial") -- routes with
+the question it answers in view.
 
 Each case reconstructs that prior turn and provides the elliptical answer as the current
-message. The task sets ``responding_to_clarification=True``. Scored by HandoffMatch on the
-router's chosen ``agent_type`` against the gold specialist.
+message. Scored by HandoffMatch on the router's chosen ``agent_type`` against the gold
+specialist.
 
-Run with the flag OFF (plain ``make_router_multiturn_task``-style, no flag) vs ON to quantify
-the seam's value: without it, referential answers fall through to a direct router answer.
+With ``responding_to_clarification=True`` the task sets ``clarification_turns=1``, which widens
+the window to the turn before the clarification; with ``False`` it routes on the last turn
+alone. The plain scenarios score the same either way, since the last turn is always kept; only
+the ``subject`` scenarios below differ.
 
 ``answer_kind: "subject"`` scenarios add an earlier ``subject_query``/``subject_reply`` turn
 that names the tool or job, before the clarification. The answer doesn't name it again, so it

@@ -247,7 +247,8 @@ def make_router_clarification_task(
     with an earlier ``subject_query``/``subject_reply`` turn. Reconstructs the prior turn(s) as
     conversation_history and routes the elliptical ``answer``. With
     ``responding_to_clarification=True`` the context marks the last turn as a clarification
-    (``clarification_turns=1``), so the router also keeps the subject turn behind it; with
+    (``clarification_turns=1``, as the chat API does), so the router also keeps the subject turn
+    behind it; with
     ``False`` it routes on the last turn alone -- the A/B for the subject scenarios. (The router
     always forwards the last turn now, so the plain scenarios score the same either way.)
     Returns the router's chosen agent_type.
@@ -269,7 +270,6 @@ def make_router_clarification_task(
             case_input["answer"],
             context={
                 "conversation_history": history,
-                "responding_to_clarification": responding_to_clarification,
                 "clarification_turns": 1 if responding_to_clarification else 0,
             },
         )

@@ -998,7 +998,7 @@ class TestAgentUnitMocked:
 
     @pytest.mark.asyncio
     async def test_router_does_not_leak_routing_flags_into_prompt(self):
-        """Routing-only bookkeeping (responding_to_clarification, clarification_turns) is for
+        """Routing-only bookkeeping (clarification_turns) is for
         the router's own logic, not the model -- it must never surface in the prompt text."""
         router = QueryRouterAgent(self.deps)
 
@@ -1009,11 +1009,10 @@ class TestAgentUnitMocked:
 
             await router.process(
                 "the second one",
-                context={"responding_to_clarification": True, "clarification_turns": 1},
+                context={"clarification_turns": 1},
             )
 
             prompt = mock_run.call_args[0][0]
-            assert "responding_to_clarification" not in prompt
             assert "clarification_turns" not in prompt
 
     @pytest.mark.asyncio
@@ -1048,10 +1047,9 @@ class TestAgentUnitMocked:
             assert kwargs["message_history"] is None
 
     @pytest.mark.asyncio
-    async def test_router_includes_last_turn_when_responding_to_clarification(self):
-        """When the previous turn asked a clarifying question, the router includes just that
-        turn (the original request + the question) in routing context so an elliptical answer
-        like "the second one" can be routed -- a narrow exception to history-withholding."""
+    async def test_router_routes_on_the_last_turn_only(self):
+        """The router routes on the last turn (the original request + the question it asked), so
+        an elliptical answer like "the second one" can be routed, but not on older turns."""
         router = QueryRouterAgent(self.deps)
         history: list[ModelMessage] = [
             ModelRequest(parts=[UserPromptPart(content="What histories do I have?")]),
@@ -1067,7 +1065,7 @@ class TestAgentUnitMocked:
 
             await router.process(
                 "the second one",
-                context={"conversation_history": history, "responding_to_clarification": True},
+                context={"conversation_history": history},
             )
 
             _, kwargs = mock_run.call_args

@@ -236,7 +236,6 @@ class ChatAPI:
                         partial(self.chat_manager.get_routing_history, trans, exchange_id)
                     )
                     full_context["conversation_history"] = db_history or []
-                    full_context["responding_to_clarification"] = clarification_turns > 0
                     full_context["clarification_turns"] = clarification_turns
                 else:
                     full_context["conversation_history"] = []
