@@ -206,7 +206,7 @@ function goToResetPassword() {
                                         <BFormText v-if="showResetLink" class="text-nowrap">
                                             <span v-localize>Forgot password?</span>
 
-                                            <GLink id="reset-password-link" @click="goToResetPassword">
+                                            <GLink id="reset-password-link" type="button" @click="goToResetPassword">
                                                 <span v-localize>Click here to reset your password.</span>
                                             </GLink>
                                         </BFormText>
