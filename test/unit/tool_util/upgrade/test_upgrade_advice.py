@@ -179,6 +179,19 @@ def test_26_0_partially_qualified_reference(tmp_path):
     assert "'outer|inner|input1'" in _advice_message(advice, UNQUALIFIED_STRUCTURED_LIKE)
 
 
+def test_26_0_reference_in_repeat_not_advised(tmp_path):
+    tool = _write_tool(
+        tmp_path,
+        SECTION_INPUT.replace(
+            '<section name="sect" title="Section">',
+            '<repeat name="queries" title="Q"><section name="sect" title="Section">',
+        ).replace("</section>", "</section></repeat>"),
+        'structured_like="queries_0|input1"',
+    )
+    advice = advise_on_upgrade(tool)
+    assert_not_has_advice(advice, UNQUALIFIED_STRUCTURED_LIKE)
+
+
 def test_21_09_data_source_advice():
     test_data_source = _tool_path("test_data_source.xml")
     advice = advise_on_upgrade(test_data_source)

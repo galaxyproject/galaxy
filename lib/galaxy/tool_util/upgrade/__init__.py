@@ -270,7 +270,7 @@ class ProfileMigration26_0(ProfileMigration):
             structured_like = output.attrib["structured_like"]
             if input_references.qualified(input_references.normalize(structured_like)):
                 continue
-            qualified_names = sorted({r.qualified for r in input_references.legacy(structured_like)})
+            qualified_names = sorted({r.qualified for r in input_references.legacy(structured_like) if not r.in_repeat})
             if qualified_names:
                 advice_collection.add(
                     "26_0_fix_unqualified_structured_like",
