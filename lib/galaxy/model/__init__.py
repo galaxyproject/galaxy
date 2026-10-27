@@ -4442,6 +4442,10 @@ class Dataset(Base, StorableObject, Serializable):
     states = DatasetState
 
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
+    # Outputs of jobs that haven't finished, which aren't charged to the user's disk usage yet; they are
+    # charged when the job finishes. Unlike non_ready_states, this excludes SETTING_METADATA, which also
+    # applies to existing (already charged) datasets whose metadata is being regenerated.
+    uncharged_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.PAUSED)
     ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
     valid_input_states = tuple(
         set(states.__members__.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA}
@@ -6007,6 +6011,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         rval = 0
         # Anon users are handled just by their single history size.
         if not user:
+            return rval
+        # Outputs of jobs that haven't finished are charged when the job finishes
+        if self.dataset.state in Dataset.uncharged_states:
             return rval
         # Gets an HDA disk usage, if the user does not already
         #   have an association of the same dataset

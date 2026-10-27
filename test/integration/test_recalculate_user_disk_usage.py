@@ -60,6 +60,30 @@ class RecalculateDiskUsage:
         current_usage = self.dataset_populator.get_usage_for(None)
         assert current_usage["total_disk_usage"] == 0
 
+    def test_purging_output_of_running_job_keeps_other_outputs_counted(self):
+        initial_usage = self.dataset_populator.total_disk_usage()
+        history_id = self.dataset_populator.new_history()
+        # create_2 writes "1\n" to out_file1 and "2\n" to out_file2, then sleeps
+        run_response = self.dataset_populator.run_tool("create_2", {"sleep_time": 10}, history_id)
+        outputs = {output["output_name"]: output["id"] for output in run_response["outputs"]}
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, ok_states=["running"])
+
+        # Purge out_file2 while the job runs, before the job charges its outputs
+        self.dataset_populator.delete_dataset(history_id, outputs["out_file2"], purge=True, wait_for_purge=True)
+        assert self.dataset_populator.get_job_details(job_id).json()["state"] == "running"
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+
+        # Only out_file1 is counted, and a recalculation agrees
+        expected_usage = initial_usage + 2
+        assert self.dataset_populator.total_disk_usage() == expected_usage
+        self.recalculate_disk_usage()
+        assert self.dataset_populator.total_disk_usage() == expected_usage
+
+        # Purging out_file1 brings the usage back to where it started
+        self.dataset_populator.delete_dataset(history_id, outputs["out_file1"], purge=True, wait_for_purge=True)
+        assert self.dataset_populator.total_disk_usage() == initial_usage
+
     def recalculate_disk_usage(self):
         recalculate_response = self.dataset_populator._put("users/current/recalculate_disk_usage")
         if self.task_based:
@@ -70,6 +94,7 @@ class RecalculateDiskUsage:
 
 
 class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDiskUsage):
+    framework_tool_and_types = True
     task_based = True
     dataset_populator: DatasetPopulator
 

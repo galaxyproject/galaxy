@@ -38,6 +38,7 @@ class TestPurgeUsage(BaseModelTestCase):
             extension="txt", history=self.h, create_dataset=True, sa_session=self.model.session
         )
         d1.dataset.total_size = 10
+        d1.dataset.state = model.Dataset.states.OK
         self.persist(d1)
         return d1
 
@@ -47,6 +48,15 @@ class TestPurgeUsage(BaseModelTestCase):
         d1.purge_usage_from_quota(self.u, quota_source_info)
         self.persist(self.u)
         assert self.u.disk_usage == Decimal(15)
+
+    def test_calculate_usage_running_job_output(self):
+        # outputs of running jobs are only charged once the job finishes
+        d1 = self._setup_dataset()
+        d1.dataset.state = model.Dataset.states.RUNNING
+        quota_source_info = QuotaSourceInfo(None, True)
+        d1.purge_usage_from_quota(self.u, quota_source_info)
+        self.persist(self.u)
+        assert self.u.disk_usage == Decimal(25)
 
     def test_calculate_usage_untracked(self):
         # test quota tracking off on the objectstore
@@ -88,6 +98,7 @@ class TestCalculateUsage(BaseModelTestCase):
         )
         d1.dataset.total_size = total_size
         d1.dataset.object_store_id = object_store_id
+        d1.dataset.state = model.Dataset.states.OK
         self.persist(d1)
         return d1
 
