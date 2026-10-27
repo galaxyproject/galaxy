@@ -1604,6 +1604,13 @@ class MinimalJobWrapper(HasResourceParameters):
                             log.warning("fail(): Missing output file in working directory: %s", unicodify(e))
             except Exception as e:
                 log.exception(str(e))
+            # finish() sets the total size of the outputs in the same transaction that charges them to the user,
+            # so outputs without a total size haven't been charged yet
+            uncharged_datasets = [
+                output_dataset
+                for dataset_assoc in job.output_datasets
+                if (output_dataset := dataset_assoc.dataset.dataset) is not None and output_dataset.total_size is None
+            ]
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -1629,6 +1636,14 @@ class MinimalJobWrapper(HasResourceParameters):
                         "Execution of this dataset's job is paused because its input datasets are in an error state.",
                     )
             self._set_unknown_output_extensions_to_data(job)
+            # Failed outputs keep their partial content, charge it like finish() does
+            collected_bytes = sum(dataset.total_size or 0 for dataset in uncharged_datasets if not dataset.purged)
+            user = job.user
+            if user and collected_bytes > 0:
+                # assume all datasets in a job get written to the same objectstore
+                quota_source_info = uncharged_datasets[0].quota_source_info
+                if quota_source_info.use:
+                    user.adjust_total_disk_usage(collected_bytes, quota_source_info.label)
             job.set_final_state(job.states.ERROR)
             job.command_line = self.command_line
             job.info = message
