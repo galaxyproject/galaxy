@@ -323,10 +323,12 @@ export default {
                 this.loading = false;
                 this.busy = false;
                 this.status = "info";
+                return true;
             } catch (error) {
                 console.log(error);
                 this.message = errorMessageAsString(error);
                 this.status = "danger";
+                return false;
             }
         },
         onRefresh() {
@@ -401,7 +403,11 @@ export default {
                 message += ` ${failed.length} could not be stopped and remain selected: ${failed[0].error.message}`;
             }
             if (this.sendNotification && stopped.length) {
-                message += ` ${await this.sendNotificationToUsers(stopped)}`;
+                try {
+                    message += ` ${await this.sendNotificationToUsers(stopped)}`;
+                } catch (error) {
+                    message += ` Notifications could not be sent: ${errorMessageAsString(error)}`;
+                }
             }
             // Keep failed jobs selected (and the stop message) so the admin can resubmit.
             this.selectedStopJobIds = failed.map(({ jobId }) => jobId);
@@ -409,9 +415,13 @@ export default {
                 this.stopMessage = "";
             }
             this.stopping = false;
-            await this.update();
-            this.message = message;
-            this.status = failed.length ? "danger" : "success";
+            if (await this.update()) {
+                this.message = message;
+                this.status = failed.length ? "danger" : "success";
+            } else {
+                // Keep the refresh error visible next to the stop summary.
+                this.message = `${message} Refreshing the job list failed: ${this.message}`;
+            }
         },
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.unfinishedJobs.map((job) => job.id) : [];

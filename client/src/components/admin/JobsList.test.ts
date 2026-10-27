@@ -133,4 +133,42 @@ describe("JobsList", () => {
         expect(rowBoxes(wrapper).map(isChecked)).toEqual([true, false]);
         expect((wrapper.find("#stop-message").element as HTMLInputElement).value).toBe("maintenance");
     });
+
+    it("reports a failed refresh after stopping instead of hiding it", async () => {
+        const wrapper = await mountJobsList();
+        await headerBox(wrapper).setChecked(true);
+        await flushPromises();
+
+        vi.mocked(jobsProvider).mockRejectedValueOnce(new Error("Too Many Requests"));
+        vi.spyOn(console, "log").mockImplementationOnce(() => {});
+        await wrapper.find("#stop-message").setValue("maintenance");
+        const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
+        await stopForm?.trigger("submit");
+        await flushPromises();
+
+        expect(wrapper.find(".alert-danger").text()).toBe(
+            "Stopped 2 of 2 jobs. Refreshing the job list failed: Too Many Requests",
+        );
+    });
+
+    it("finishes stopping when sending notifications fails", async () => {
+        const wrapper = await mountJobsList();
+        await headerBox(wrapper).setChecked(true);
+        await flushPromises();
+
+        await wrapper.find("#send-notification").setChecked(true);
+        await wrapper.find("#stop-message").setValue("maintenance");
+        vi.spyOn(
+            wrapper.vm as unknown as { sendNotificationToUsers: () => Promise<string> },
+            "sendNotificationToUsers",
+        ).mockRejectedValueOnce(new Error("Network Error"));
+        const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
+        await stopForm?.trigger("submit");
+        await flushPromises();
+
+        expect(wrapper.find(".alert-success").text()).toBe(
+            "Stopped 2 of 2 jobs. Notifications could not be sent: Network Error",
+        );
+        expect((wrapper.vm as unknown as { stopping: boolean }).stopping).toBe(false);
+    });
 });
