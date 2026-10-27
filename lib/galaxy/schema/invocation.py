@@ -567,7 +567,15 @@ class WorkflowInvocationCollectionView(Model, WithModelClass):
     uuid: UUID4 | UUID1 | None = Field(
         default=None, title="UUID", description="Universal unique identifier of the workflow invocation."
     )
-    state: InvocationState = Field(default=..., title="Invocation state", description="State of workflow invocation.")
+    state: InvocationState = Field(
+        default=...,
+        title="Invocation state",
+        description=(
+            "State of workflow invocation. `completed` means every job reached a terminal state "
+            "(ok, error, deleted, skipped, paused or stopped), not that every job succeeded; "
+            "see `job_state_summary` in `/api/invocations/{invocation_id}/completion`."
+        ),
+    )
     landing_uuid: UUID4 | None = Field(
         default=None,
         title="Landing UUID",
