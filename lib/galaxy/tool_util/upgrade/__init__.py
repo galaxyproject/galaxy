@@ -330,4 +330,4 @@ def _has_matching_xpath(tool_source: XmlToolSource, xpath: str) -> bool:
 
 
 def _find_all(tool_source: XmlToolSource, xpath: str) -> list[Element]:
-    return cast(list[Element], tool_source.xml_tree.findall(".//data[@from_work_dir]") or [])
+    return cast(list[Element], tool_source.xml_tree.findall(xpath) or [])

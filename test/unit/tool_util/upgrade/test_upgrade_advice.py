@@ -7,6 +7,8 @@ import pytest
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.tool_util.upgrade import (
     Advice,
+    _find_all,
+    _xml_tool_source,
     advise_on_upgrade,
     TARGET_TOO_NEW,
 )
@@ -211,6 +213,11 @@ def test_21_09_from_work_dir_whitespace(tmp_path):
 
     advice = advise_on_upgrade(_write_tool(tmp_path, FROM_WORK_DIR_TOOL, "out.txt"))
     assert_not_has_advice(advice, "21_09_fix_from_work_dir_whitespace")
+
+
+def test_find_all_uses_xpath(tmp_path):
+    tool_source = _xml_tool_source(_write_tool(tmp_path, FROM_WORK_DIR_TOOL, "out.txt"))
+    assert [el.tag for el in _find_all(tool_source, "./command")] == ["command"]
 
 
 def test_21_09_data_source_advice():
