@@ -128,20 +128,51 @@ jobs:
       # 22.20.0.
       - run: npm install -g npm@11
         working-directory: 'client'
+      # npm publish without --tag always moves `latest`, whatever the version
+      # order.  Only move it forward: a release from an older release line
+      # publishes under `release-<major>.<minor>` instead.
+      - name: choose client dist-tag
+        id: client-dist-tag
+        if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          latest=$(npm view "$name" dist-tags.latest)
+          if [ "$(printf '%s\n%s\n' "$latest" "$version" | sort -V | tail -n 1)" = "$version" ]; then
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=release-${version%.*}" >> "$GITHUB_OUTPUT"
+          fi
+          cat "$GITHUB_OUTPUT"
+        working-directory: 'client'
       - name: publish client
         if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
         # `pnpm publish` rewrites `workspace:*` deps to real versions; `npm publish` would ship the literal protocol and break downstream installs.
         # Strip the workspace-only `postinstall` so it doesn't run in consumers' node_modules.
         run: |
           npm pkg delete scripts.postinstall
-          pnpm publish --provenance --access public --no-git-checks
+          pnpm publish --provenance --access public --no-git-checks --tag "${{ steps.client-dist-tag.outputs.tag }}"
         working-directory: 'client'
       - name: build client-api
         run: pnpm --filter @galaxyproject/galaxy-api-client run build
         working-directory: 'client'
+      - name: choose client-api dist-tag
+        id: client-api-dist-tag
+        if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          latest=$(npm view "$name" dist-tags.latest)
+          if [ "$(printf '%s\n%s\n' "$latest" "$version" | sort -V | tail -n 1)" = "$version" ]; then
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=release-${version%.*}" >> "$GITHUB_OUTPUT"
+          fi
+          cat "$GITHUB_OUTPUT"
+        working-directory: 'client/packages/api-client'
       - name: publish client-api
         if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
         # Publish like the client: pnpm + --no-git-checks (CI publishes from a detached
         # tag checkout with a dirty tree, which pnpm's default git checks would block).
-        run: pnpm publish --provenance --access public --no-git-checks
+        run: pnpm publish --provenance --access public --no-git-checks --tag "${{ steps.client-api-dist-tag.outputs.tag }}"
         working-directory: 'client/packages/api-client'
