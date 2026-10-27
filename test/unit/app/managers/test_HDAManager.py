@@ -199,6 +199,20 @@ class TestHDAManager(HDATestCase):
         assert item1.purged
         assert owner.disk_usage == 0
 
+    def test_history_purge_decreases_usage_before_marking_history_purged(self):
+        self.trans.app.config.allow_user_dataset_purge = True
+        self.trans.app.config.enable_celery_tasks = True
+        owner, item1 = self._create_charged_hda(size=10)
+
+        self.log("should keep the usage right when it is recalculated before the dataset purge tasks run")
+        with mock.patch("galaxy.celery.tasks.purge_hda.delay") as purge_hda:
+            self.history_manager.purge(item1.history)
+        owner.calculate_and_set_disk_usage(model.Dataset.object_store)
+        assert owner.disk_usage == 0
+        for task_call in purge_hda.call_args_list:
+            self.hda_manager._purge(self.hda_manager.by_id(task_call.kwargs["hda_id"]))
+        assert owner.get_disk_usage() == 0
+
     def test_ownable(self):
         owner = self.user_manager.create(**user2_data)
         non_owner = self.user_manager.create(**user3_data)

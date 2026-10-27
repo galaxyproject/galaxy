@@ -250,24 +250,38 @@ class HDAManager(
         """
         Purge this HDA and the dataset underlying it.
         """
-        # super().purge() checks this too, but only after the usage below has been decreased
+        # super().purge() checks this too, but only after the usage has been decreased
         self.dataset_manager.error_unless_dataset_purge_allowed()
-        user = hda.history.user or None
-        if user:
-            # Need to calculate this before purging
-            quota_amount_reduction = hda.quota_amount(user)
-            quota_source_info = hda.dataset.quota_source_info
-            if quota_amount_reduction and quota_source_info.use:
-                # Mark the HDA purged and decrease the user's space used in the same transaction, so a
-                # concurrent disk usage recalculation sees both changes or neither.
-                hda.deleted = True
-                hda.purged = True
-                session = self.session()
-                user.adjust_total_disk_usage(
-                    -quota_amount_reduction, quota_source_info.label, preserve_update_time=preserve_owner_update_time
-                )
-                session.commit()
+        self.mark_purged(hda.history.user, [hda], preserve_owner_update_time=preserve_owner_update_time)
         super().purge(hda, flush=flush)
+
+    def mark_purged(self, user: Optional[model.User], hdas, preserve_owner_update_time: bool = False):
+        """
+        Mark the HDAs purged and decrease the user's disk usage in one transaction, so a concurrent disk usage
+        recalculation sees both changes or neither. Their files are not removed, purge() does that.
+
+        Outputs of jobs that haven't finished are skipped, they aren't charged until their job finishes and
+        purge() handles them.
+        """
+        freed_bytes_by_quota_source: Counter[Optional[str]] = Counter()
+        marked = False
+        for hda in hdas:
+            if hda.purged or hda.dataset.state in model.Dataset.uncharged_states:
+                continue
+            marked = True
+            # quota_amount() counts a dataset once per user, so it must see the HDAs marked so far
+            quota_amount = hda.quota_amount(user)
+            quota_source_info = hda.dataset.quota_source_info
+            if quota_source_info.use:
+                freed_bytes_by_quota_source[quota_source_info.label] += quota_amount
+            hda.deleted = True
+            hda.purged = True
+        if not marked:
+            return
+        if user:
+            for label, freed_bytes in freed_bytes_by_quota_source.items():
+                user.adjust_total_disk_usage(-freed_bytes, label, preserve_update_time=preserve_owner_update_time)
+        self.session().commit()
 
     # .... states
     def error_if_uploading(self, hda):
