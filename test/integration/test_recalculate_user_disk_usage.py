@@ -162,6 +162,42 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
                 self.dataset_populator.delete_dataset(history_id, output_id, purge=True, wait_for_purge=True)
             assert self.dataset_populator.total_disk_usage() == 0
 
+    def test_anonymous_history_is_counted_once_per_dataset_at_login(self):
+        email = f"user_{uuid4()}@bx.psu.edu"
+        password = "testpass"
+        self._setup_user(email, password)
+        with requests.Session() as session:
+            login_page = session.get(urljoin(self.url, "login/start"))
+            csrf_token_match = re.search(r'session_csrf_token": "(.*?)"', login_page.text)
+            assert csrf_token_match, "session_csrf_token not found on login page"
+
+            # Without logging in, create "1\n" and "2\n" and copy the first within the history
+            history_id = session.get(urljoin(self.url, "history/current_history_json")).json()["id"]
+            run_response = session.post(
+                urljoin(self.url, "api/tools"),
+                json={"tool_id": "create_2", "history_id": history_id, "inputs": {"sleep_time": 0}},
+            )
+            assert_status_code_is_ok(run_response)
+            job_url = urljoin(self.url, f"api/jobs/{run_response.json()['jobs'][0]['id']}")
+            wait_on_state(lambda: session.get(job_url), desc="job state")
+            copy_response = session.post(
+                urljoin(self.url, f"api/histories/{history_id}/contents"),
+                json={"source": "hda", "content": run_response.json()["outputs"][0]["id"], "type": "dataset"},
+            )
+            assert_status_code_is_ok(copy_response)
+
+            login_response = session.post(
+                urljoin(self.url, "user/login"),
+                data={"login": email, "password": password, "session_csrf_token": csrf_token_match.group(1)},
+            )
+            assert_status_code_is(login_response, 200)
+
+        with self._different_user(email):
+            # Logging in counts each dataset once, and a recalculation agrees
+            assert self.dataset_populator.total_disk_usage() == 4
+            self.recalculate_disk_usage()
+            assert self.dataset_populator.total_disk_usage() == 4
+
     def test_copy_of_running_output_by_another_user_is_counted(self):
         history_id = self.dataset_populator.new_history()
         # create_2 writes "1\n" and "2\n" to its outputs, then sleeps

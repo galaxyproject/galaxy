@@ -7,7 +7,6 @@ import os
 import re
 import socket
 import time
-from collections import Counter
 from contextlib import ExitStack
 from http.cookies import CookieError
 from typing import (
@@ -791,6 +790,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         """
         history = None
         set_permissions = False
+        charge_history = False
         try:
             users_last_session = user.current_galaxy_session
         except Exception:
@@ -806,15 +806,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             # belong to a different user.
             history = prev_galaxy_session.current_history
             if prev_galaxy_session.user is None:
-                # Increase the user's disk usage by the amount of the previous history's datasets if they didn't already
-                # own it, with one adjustment per quota source.
-                usage_by_quota_source: Counter[Optional[str]] = Counter()
-                for hda in history.datasets:
-                    quota_source_info = hda.dataset.quota_source_info
-                    if quota_source_info.use:
-                        usage_by_quota_source[quota_source_info.label] += hda.quota_amount(user)
-                for label, usage in usage_by_quota_source.items():
-                    user.adjust_total_disk_usage(usage, label)
+                # The user is charged for the datasets of an anonymous history once it is theirs
+                charge_history = history.user is None
                 # Only set default history permissions if the history is from the previous session and anonymous
                 set_permissions = True
         elif self.galaxy_session.current_history:
@@ -832,6 +825,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             history = self.new_history()
         if history.user is None:
             history.user = user
+        if charge_history:
+            history.charge_added_datasets(history.datasets)
         self.galaxy_session.current_history = history
         if set_permissions:
             self.app.security_agent.history_set_default_permissions(
