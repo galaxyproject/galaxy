@@ -1311,6 +1311,14 @@ class MinimalJobWrapper(HasResourceParameters):
         assert job
         return job
 
+    @staticmethod
+    def _disk_usage_owner(job: Job) -> Optional[model.User]:
+        """Return the user whose disk usage the job's outputs count towards."""
+        if job.user:
+            return job.user
+        # A job run before logging in has no user, its history is given to the user at login
+        return job.history.user if job.history else None
+
     def get_id_tag(self):
         # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
         return self.get_job().get_id_tag()
@@ -1638,7 +1646,7 @@ class MinimalJobWrapper(HasResourceParameters):
             self._set_unknown_output_extensions_to_data(job)
             # Failed outputs keep their partial content, charge it like finish() does
             collected_bytes = sum(dataset.total_size or 0 for dataset in uncharged_datasets if not dataset.purged)
-            user = job.user
+            user = self._disk_usage_owner(job)
             if user and collected_bytes > 0:
                 # assume all datasets in a job get written to the same objectstore
                 quota_source_info = uncharged_datasets[0].quota_source_info
@@ -2559,7 +2567,7 @@ class MinimalJobWrapper(HasResourceParameters):
                                 )
                             )
 
-        user = job.user
+        user = self._disk_usage_owner(job)
         if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:
             user.adjust_total_disk_usage(collected_bytes, quota_source_info.label)
 
