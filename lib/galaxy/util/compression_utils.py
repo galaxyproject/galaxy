@@ -78,6 +78,22 @@ def get_fileobj(filename: str, mode: str = "r", compressed_formats: list[str] | 
     return get_fileobj_raw(filename, mode, compressed_formats)[1]
 
 
+def _open_first_zip_member(filename: str, mode: str) -> IO[bytes] | None:
+    if not zipfile.is_zipfile(filename):
+        return None
+    # 'b' is not allowed in the ZipFile mode argument since it always opens
+    # files in binary mode. For emulating text mode, the caller wraps the
+    # binary fh in a TextIOWrapper.
+    zf_mode = cast(Literal["r", "w"], mode.replace("b", ""))
+    try:
+        with zipfile.ZipFile(filename, zf_mode) as zh:
+            return zh.open(zh.namelist()[0], zf_mode)
+    except zipfile.BadZipFile:
+        # is_zipfile only looks for an end-of-central-directory record, which
+        # other files (e.g. a tar containing a zip) can contain too.
+        return None
+
+
 @overload
 def get_fileobj_raw(
     filename: str, mode: Literal["r"], compressed_formats: list[str] | None = None
@@ -122,15 +138,8 @@ def get_fileobj_raw(
         mode = cast(Literal["a", "ab", "r", "rb", "w", "wb", "x", "xb"], mode)
         fh = lzma.LZMAFile(filename, mode)
         compressed_format = "xz"
-    elif "zip" in compressed_formats and zipfile.is_zipfile(filename):
-        # Return fileobj for the first file in a zip file.
-        # 'b' is not allowed in the ZipFile mode argument
-        # since it always opens files in binary mode.
-        # For emulating text mode, we will be returning the binary fh in a
-        # TextIOWrapper.
-        zf_mode = cast(Literal["r", "w"], mode.replace("b", ""))
-        with zipfile.ZipFile(filename, zf_mode) as zh:
-            fh = zh.open(zh.namelist()[0], zf_mode)
+    elif "zip" in compressed_formats and (zip_fh := _open_first_zip_member(filename, mode)) is not None:
+        fh = zip_fh
         compressed_format = "zip"
     elif "b" in mode:
         return compressed_format, open(filename, mode)
