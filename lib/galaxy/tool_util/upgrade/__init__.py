@@ -277,10 +277,16 @@ class ProfileMigration26_0(ProfileMigration):
         tool_xml = _xml_tool_source(xml_file).xml_tree
         input_references = InputReferences(tool_xml)
         for output in tool_xml.findall("./outputs/collection[@structured_like]"):
-            structured_like = output.attrib["structured_like"]
+            structured_like = str(output.attrib["structured_like"])
             if input_references.qualified(input_references.normalize(structured_like)):
                 continue
-            qualified_names = sorted({r.qualified for r in input_references.legacy(structured_like) if not r.in_repeat})
+            qualified_names = sorted(
+                {
+                    r.qualified
+                    for r in input_references.legacy(structured_like)
+                    if r.is_dataset_input and not r.in_repeat
+                }
+            )
             if qualified_names:
                 advice_collection.add(
                     "26_0_fix_unqualified_structured_like",

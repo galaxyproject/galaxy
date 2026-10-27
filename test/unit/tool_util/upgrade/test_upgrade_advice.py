@@ -248,6 +248,12 @@ def test_26_0_reference_in_repeat_not_advised(tmp_path):
     assert_not_has_advice(advice, UNQUALIFIED_STRUCTURED_LIKE)
 
 
+def test_26_0_non_data_reference_not_advised(tmp_path):
+    text_input = SECTION_INPUT.replace('type="data_collection" collection_type="paired" format="txt"', 'type="text"')
+    advice = advise_on_upgrade(_write_tool(tmp_path, text_input, 'structured_like="input1"'))
+    assert_not_has_advice(advice, UNQUALIFIED_STRUCTURED_LIKE)
+
+
 def test_21_09_from_work_dir_whitespace(tmp_path):
     advice = advise_on_upgrade(_write_tool(tmp_path, FROM_WORK_DIR_TOOL, " out.txt "))
     assert_has_advice(advice, "21_09_fix_from_work_dir_whitespace")
