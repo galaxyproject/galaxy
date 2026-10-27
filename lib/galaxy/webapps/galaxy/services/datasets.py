@@ -12,6 +12,7 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    model_validator,
     RootModel,
 )
 from starlette.datastructures import URL
@@ -86,7 +87,10 @@ from galaxy.schema.schema import (
 from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.schema.types import RelativeUrl
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.util.hash_util import HashFunctionNameEnum
+from galaxy.util.hash_util import (
+    COLLISION_RESISTANT_HASH_FUNCTIONS,
+    HashFunctionNameEnum,
+)
 from galaxy.util.path import safe_walk
 from galaxy.visualization.data_providers.genome import (
     BamDataProvider,
@@ -281,10 +285,34 @@ class DeleteDatasetBatchPayload(Model):
 
 class ComputeDatasetHashPayload(Model):
     hash_function: HashFunctionNameEnum | None = Field(
-        default=HashFunctionNameEnum.md5, description="Hash function name to use to compute dataset hashes."
+        default=None,
+        description=(
+            "Hash function name to use to compute dataset hashes. Defaults to the server's configured "
+            "`hash_function`."
+        ),
     )
     extra_files_path: str | None = Field(default=None, description="If set, extra files path to compute a hash for.")
+    final: bool = Field(
+        default=False,
+        description=(
+            "If set, mark the computed hash as the authoritative value to match this dataset on for "
+            "job-cache purposes. Requires a collision-resistant `hash_function` (SHA-256 or SHA-512). "
+            "Mutually exclusive with `extra_files_path`, and currently only supported for datasets with no "
+            "extra files."
+        ),
+    )
     model_config = ConfigDict(use_enum_values=True)
+
+    @model_validator(mode="after")
+    def validate_final(self) -> "ComputeDatasetHashPayload":
+        if self.final and self.extra_files_path is not None:
+            raise ValueError("Cannot request `final` together with `extra_files_path`.")
+        if self.extra_files_path == model.DatasetHash.FINAL:
+            raise ValueError(
+                f"extra_files_path {self.extra_files_path!r} is reserved and cannot be requested;"
+                " use `final` instead."
+            )
+        return self
 
 
 class UpdateObjectStoreIdPayload(Model):
@@ -534,10 +562,26 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         hda_ldda: DatasetSourceType = DatasetSourceType.hda,
     ) -> AsyncTaskResultSummary:
         dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
+        if payload.final and dataset_instance.extra_files_path_exists():
+            # TODO: lift this restriction once a later phase of the plan at
+            # https://github.com/galaxyproject/galaxy/issues/21676#issuecomment-5564696076 can compute a
+            # FINAL hash that actually covers a composite dataset's extra files too.
+            raise galaxy_exceptions.RequestParameterInvalidException(
+                "Cannot compute the final hash for a dataset with extra files yet."
+            )
+        hash_function = (
+            HashFunctionNameEnum(payload.hash_function) if payload.hash_function else trans.app.config.hash_function
+        )
+        if payload.final and hash_function.value not in COLLISION_RESISTANT_HASH_FUNCTIONS:
+            raise galaxy_exceptions.RequestParameterInvalidException(
+                f"Cannot compute a final hash with the non-collision-resistant {hash_function.value} hash function,"
+                " specify a collision-resistant `hash_function`."
+            )
+        extra_files_path = model.DatasetHash.FINAL if payload.final else payload.extra_files_path
         request = ComputeDatasetHashTaskRequest(
             dataset_id=dataset_instance.dataset.id,
-            extra_files_path=payload.extra_files_path,
-            hash_function=payload.hash_function,
+            extra_files_path=extra_files_path,
+            hash_function=hash_function,
             user=trans.async_request_user,
         )
         result = compute_dataset_hash.delay(request=request, task_user_id=getattr(trans.user, "id", None))
@@ -579,11 +623,12 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self_uri = f"drs://drs.{request_url.components.netloc}/{object_id}"
         checksums: list[Checksum] = []
         for dataset_hash in dataset_instance.dataset.hashes:
-            if dataset_hash.extra_files_path:
+            # A FINAL hash is only ever set for a dataset without extra files, i.e. a hash of the primary file.
+            if dataset_hash.extra_files_path and dataset_hash.extra_files_path != model.DatasetHash.FINAL:
                 continue
-            type = dataset_hash.hash_function
-            checksum = dataset_hash.hash_value
-            checksums.append(Checksum(type=type, checksum=checksum))
+            checksum = Checksum(type=dataset_hash.hash_function, checksum=dataset_hash.hash_value)
+            if checksum not in checksums:
+                checksums.append(checksum)
 
         if len(checksums) == 0:
             hash_function = HashFunctionNameEnum.md5

@@ -826,9 +826,10 @@ class BaseDatasetPopulator(BasePopulator):
         dataset_id: str,
         hash_function: str | None = "MD5",
         extra_files_path: str | None = None,
+        final: bool = False,
         wait: bool = True,
     ) -> Response:
-        data: dict[str, Any] = {}
+        data: dict[str, Any] = {"final": final}
         if hash_function:
             data["hash_function"] = hash_function
         if extra_files_path:

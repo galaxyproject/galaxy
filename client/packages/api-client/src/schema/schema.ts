@@ -9744,10 +9744,13 @@ export interface components {
              */
             extra_files_path?: string | null;
             /**
-             * @description Hash function name to use to compute dataset hashes.
-             * @default MD5
+             * Final
+             * @description If set, mark the computed hash as the authoritative value to match this dataset on for job-cache purposes. Requires a collision-resistant `hash_function` (SHA-256 or SHA-512). Mutually exclusive with `extra_files_path`, and currently only supported for datasets with no extra files.
+             * @default false
              */
-            hash_function: components["schemas"]["HashFunctionNameEnum"] | null;
+            final: boolean;
+            /** @description Hash function name to use to compute dataset hashes. Defaults to the server's configured `hash_function`. */
+            hash_function?: components["schemas"]["HashFunctionNameEnum"] | null;
         };
         /** ConcreteObjectStoreModel */
         ConcreteObjectStoreModel: {
