@@ -186,6 +186,13 @@ describe("filtering", () => {
             "state:success",
         );
     });
+    test("parses a key:value pair whose value itself contains a colon, like a timestamp", () => {
+        // splitKeyOpValue's regex used to match the LAST `:`/`>`/`<` in the pair instead of the
+        // first, so a value like a full timestamp (which has its own colons) got misparsed
+        expect(HistoryFilters.getFilterValue("update_time>2024-01-01T10:30:00", "update_time_gt")).toBe(
+            "2024-01-01t10:30:00",
+        );
+    });
     test("set a single valid filter to existing filterText", () => {
         expect(HistoryFilters.setFilterValue("", "deleted", "any")).toEqual("deleted:any visible:true");
         expect(HistoryFilters.setFilterValue("deleted:any visible:true", "deleted", "false")).toEqual("");

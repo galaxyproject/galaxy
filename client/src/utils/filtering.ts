@@ -404,7 +404,9 @@ export default class Filtering<T> {
      * has no such shape (i.e. it is raw text).
      */
     private splitKeyOpValue(pair: string): { field: string; op: ":" | ">" | "<"; value: string } | null {
-        const match = /(\S+)([:><])(.+)/g.exec(pair);
+        // Non-greedy field match: splits on the FIRST `:`/`>`/`<`, since a value may itself contain
+        // one (e.g. a timestamp's `10:30:00`), and a key never does.
+        const match = /(\S+?)([:><])(.+)/g.exec(pair);
         if (!match) {
             return null;
         }
