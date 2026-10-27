@@ -358,4 +358,7 @@ def test_exchange_messages_load_in_insertion_order():
 
     order_by = ChatExchange.messages.property.order_by
     assert order_by, "ChatExchange.messages has no order_by"
-    assert [column.key for column in order_by] == [ChatExchangeMessage.__table__.c.id.key]
+    # Accept a bare column or asc(column); both order by id ascending.
+    columns = [getattr(clause, "element", clause) for clause in order_by]
+    assert columns == [ChatExchangeMessage.__table__.c.id]
+    assert "DESC" not in " ".join(str(clause) for clause in order_by)

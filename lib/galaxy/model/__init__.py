@@ -3463,7 +3463,10 @@ class ChatExchange(Base, RepresentById):
     page_id: Mapped[int | None] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="chat_exchanges")
-    messages: Mapped[list["ChatExchangeMessage"]] = relationship(back_populates="chat_exchange")
+    # Routing reads the last turn off this list, so it must not depend on the database's row order.
+    messages: Mapped[list["ChatExchangeMessage"]] = relationship(
+        back_populates="chat_exchange", order_by=lambda: asc(ChatExchangeMessage.id)
+    )
     page: Mapped[Optional["Page"]] = relationship()
 
     def __init__(self, user, job_id=None, page_id=None, message=None, **kwargs):
