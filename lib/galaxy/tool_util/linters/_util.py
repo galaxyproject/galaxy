@@ -21,6 +21,13 @@ def is_valid_cheetah_placeholder(name):
     return re.match(r"^[a-zA-Z_]\w*$", name) is not None
 
 
+def writes_galaxy_json(tool_xml: "ElementTree") -> bool:
+    """Whether the command or a configfile writes galaxy.json."""
+    if (command := tool_xml.find("./command")) is not None and "galaxy.json" in (command.text or ""):
+        return True
+    return tool_xml.find("./configfiles/configfile[@filename='galaxy.json']") is not None
+
+
 class InputReference(NamedTuple):
     qualified: str
     legacy: str
@@ -30,6 +37,10 @@ class InputReference(NamedTuple):
     @property
     def is_collection(self) -> bool:
         return self.param_type == "data_collection"
+
+    @property
+    def is_dataset_input(self) -> bool:
+        return self.param_type in ("data", "data_collection")
 
     @property
     def name(self) -> str:

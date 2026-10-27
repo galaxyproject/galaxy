@@ -11,6 +11,7 @@ from ._util import (
     InputReference,
     InputReferences,
     is_valid_cheetah_placeholder,
+    writes_galaxy_json,
 )
 from ..parser.output_collection_def import NAMED_PATTERNS
 
@@ -364,7 +365,7 @@ def _check_structured_like_reference(
             linter=linter_name,
             node=node,
         )
-    elif not any(r.param_type in ("data", "data_collection") for r in matches):
+    elif not any(r.is_dataset_input for r in matches):
         lint_ctx.error(
             f"Output '{_output_name(node)}' references structured_like='{ref_value}' which is not a dataset or collection input.",
             linter=linter_name,
@@ -427,10 +428,4 @@ def _has_tool_provided_metadata(tool_xml: "ElementTree") -> bool:
     if (outputs := tool_xml.find("./outputs")) is not None:
         if "provided_metadata_file" in outputs.attrib or "provided_metadata_style" in outputs.attrib:
             return True
-    if (command := tool_xml.find("./command")) is not None:
-        if "galaxy.json" in command.text:
-            return True
-    config = tool_xml.find("./configfiles/configfile[@filename='galaxy.json']")
-    if config is not None:
-        return True
-    return False
+    return writes_galaxy_json(tool_xml)
