@@ -6,7 +6,13 @@ import { useRoute } from "vue-router";
 import type { RegisteredUser } from "@/api";
 import type { JobBaseModel, JobFetchExtraParams, ShowFullJobResponse } from "@/api/jobs";
 import { fetchJobs, TERMINAL_STATES } from "@/api/jobs";
-import { type JobMatcher, jobsFilterParams, JobsFiltersById, JobsFiltersByName } from "@/components/Jobs/JobsFilters";
+import {
+    type JobMatcher,
+    jobsFilterParams,
+    JobsFiltersById,
+    JobsFiltersByName,
+    type JobTimeRangeKey,
+} from "@/components/Jobs/JobsFilters";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useJobStore } from "@/stores/jobStore";
 import { useToolStore } from "@/stores/toolStore";
@@ -16,6 +22,7 @@ import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import JobCard from "@/components/JobInformation/JobCard.vue";
 import JobStatusFilter from "@/components/Jobs/JobStatusFilter.vue";
+import JobTimeRangeFilter from "@/components/Jobs/JobTimeRangeFilter.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
@@ -87,6 +94,9 @@ function setActiveStatusFilter(group: string | undefined) {
         : JobsFilters.applyFiltersToText({ status: "" }, newText, true);
     filterText.value = newText;
 }
+
+// TODO: dummy only -- not yet wired to the `update_time_gt` filter or "Custom range" detection.
+const activeTimeRange = ref<JobTimeRangeKey | undefined>(undefined);
 
 /** IDs of jobs fetched for the *current* filters. `storedJobs` is a global, id-keyed
  * cache shared across the whole app, so it can hold jobs from a previous filter. This set
@@ -367,6 +377,12 @@ const currentItemId = computed(() => {
                 class="pt-2"
                 :active-group="activeStatusFilter"
                 @update:active-group="setActiveStatusFilter" />
+
+            <JobTimeRangeFilter
+                v-if="!showAdvanced"
+                class="pt-2"
+                :active-range="activeTimeRange"
+                @update:active-range="(range) => (activeTimeRange = range)" />
         </template>
 
         <ScrollList
