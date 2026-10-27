@@ -28,7 +28,10 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import (
+    selectinload,
+    Session,
+)
 from sqlalchemy.orm.session import object_session
 
 from galaxy import (
@@ -467,9 +470,25 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         dataset_ids_to_remove: set[int] = set()
         freed_bytes_by_quota_source: Counter[Optional[str]] = Counter()
 
+        # Load the items with what quota_amount() reads in one go, rather than one item at a time
+        stmt = (
+            select(HistoryDatasetAssociation)
+            .where(HistoryDatasetAssociation.id.in_(item_ids))
+            .options(
+                selectinload(HistoryDatasetAssociation.history),
+                selectinload(HistoryDatasetAssociation.dataset).options(
+                    selectinload(model.Dataset.history_associations).selectinload(HistoryDatasetAssociation.history),
+                    selectinload(model.Dataset.library_associations),
+                ),
+            )
+        )
+        hdas_by_id = {hda.id: hda for hda in self.hda_manager.session().scalars(stmt)}
+
         for hda_id in item_ids:
             try:
-                hda: HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
+                if hda_id not in hdas_by_id:
+                    raise exceptions.ObjectNotFound("HistoryDatasetAssociation not found")
+                hda = self.hda_manager.error_unless_owner(hdas_by_id[hda_id], user)
                 hda.deleted = True
                 quota_amount = int(hda.quota_amount(user))
                 quota_source_info = hda.dataset.quota_source_info
