@@ -423,6 +423,8 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         identifier = self._element_identifier
         if identifier is None:
             identifier = self.name
+        elif self.tool_evaluator:
+            self.tool_evaluator.consumes_identifiers = True
         return identifier
 
     @property
