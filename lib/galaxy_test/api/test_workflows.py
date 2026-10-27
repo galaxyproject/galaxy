@@ -10833,7 +10833,10 @@ outer_input:
                 "steps": {"nested": {"run": workflow, "in": {"input": "input"}}},
             }
         with self.dataset_populator.user_tool_execute_permissions():
+            tools_before = len(self.dataset_populator.get_unprivileged_tools())
             workflow_id = self.workflow_populator.upload_yaml_workflow(yaml.safe_dump(workflow))
+            # One persisted tool per embedded user-tool step.
+            assert len(self.dataset_populator.get_unprivileged_tools()) == tools_before + (1 if stock_first else 2)
             downloaded = self.workflow_populator.download_workflow(workflow_id)
             if nested:
                 downloaded = next(s["subworkflow"] for s in downloaded["steps"].values() if s["type"] == "subworkflow")
