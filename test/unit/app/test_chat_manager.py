@@ -201,6 +201,20 @@ class TestGetRoutingHistory:
         )
         assert self._routing_history(mgr, trans, fresh)[1] is True
 
+    def test_counts_the_trailing_run_of_clarifications(self):
+        """A user can answer several clarifying questions in a row without satisfying the
+        router; the router needs to know how far back the last substantive turn is."""
+        mgr = ChatManager()
+        trans = _make_trans()
+        exchange = self._exchange_with(
+            {"query": "q1", "response": "a1", "agent_response": {"agent_type": "clarification"}},
+            {"query": "q2", "response": "a2", "agent_response": {"agent_type": "history"}},
+            {"query": "q3", "response": "a3", "agent_response": {"agent_type": "clarification"}},
+            {"query": "q4", "response": "a4", "agent_response": {"agent_type": "clarification"}},
+            {"query": "q5", "response": "a5", "agent_response": {"agent_type": "clarification"}},
+        )
+        assert self._routing_history(mgr, trans, exchange)[1] == 3
+
     def test_empty_when_no_exchange(self):
         mgr = ChatManager()
         trans = _make_trans()
@@ -332,3 +346,16 @@ class TestGetExchangeMessagesAttribution:
             }
         )
         assert self._assistant_turn(message)["agent_type"] == "gtn_training"
+
+
+def test_exchange_messages_load_in_insertion_order():
+    """Routing reads "the last turn" off ``exchange.messages``; without an ORDER BY the database
+    may hand the rows back in any order (a feedback update on the first message can move it)."""
+    from galaxy.model import (
+        ChatExchange,
+        ChatExchangeMessage,
+    )
+
+    order_by = ChatExchange.messages.property.order_by
+    assert order_by, "ChatExchange.messages has no order_by"
+    assert [column.key for column in order_by] == [ChatExchangeMessage.__table__.c.id.key]
