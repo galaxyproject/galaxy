@@ -24,7 +24,10 @@ const props = defineProps<{
     pluralName: string;
     modelClass: string;
     noHeading?: boolean;
+    resource?: string;
 }>();
+
+const resource = computed(() => props.resource ?? props.pluralName.toLowerCase());
 
 const errors = ref<string[]>([]);
 
@@ -66,7 +69,7 @@ watch(
     { immediate: true },
 );
 
-const slugUrl = computed(() => `${getAppRoot()}api/${props.pluralName.toLowerCase()}/${props.id}/slug`);
+const slugUrl = computed(() => `${getAppRoot()}api/${resource.value}/${props.id}/slug`);
 
 function onChangeSlug(newValue: string) {
     itemUrl.slug = newValue;
@@ -83,7 +86,7 @@ async function onSubmitSlug(newValue: string) {
 }
 
 const itemStatus = computed(() => (item.value.published ? "accessible via link and published" : "accessible via link"));
-const publishedUrl = computed(() => `${getAppRoot()}${props.pluralName.toLocaleLowerCase()}/list_published`);
+const publishedUrl = computed(() => `${getAppRoot()}${resource.value}/list_published`);
 
 function onError(axiosError: unknown) {
     addError(errorMessageAsString(axiosError));
@@ -94,9 +97,7 @@ const ready = ref(false);
 async function getSharing() {
     ready.value = false;
     try {
-        const response = await axios.get(
-            `${getAppRoot()}api/${props.pluralName.toLocaleLowerCase()}/${props.id}/sharing`,
-        );
+        const response = await axios.get(`${getAppRoot()}api/${resource.value}/${props.id}/sharing`);
         assignItem(response.data, true);
     } catch (e) {
         onError(e);
@@ -141,10 +142,7 @@ async function setSharing(
     };
 
     try {
-        const response = await axios.put(
-            `${getAppRoot()}api/${props.pluralName.toLocaleLowerCase()}/${props.id}/${action}`,
-            data,
-        );
+        const response = await axios.put(`${getAppRoot()}api/${resource.value}/${props.id}/${action}`, data);
 
         errors.value = [];
         const userIdsSaved = userIds && !permissionsChangeRequired(response.data) && response.data.errors.length === 0;
