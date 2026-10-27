@@ -262,7 +262,7 @@ class ProfileMigration24_2(ProfileMigration):
     @classmethod
     def advise(cls, advice_collection: AdviceCollection, xml_file: str) -> None:
         tool_source = _xml_tool_source(xml_file)
-        results = validate_test_cases_for_tool_source(tool_source, use_latest_profile=True)
+        results = validate_test_cases_for_tool_source(tool_source, profile="24.2")
         for result in results:
             if result.validation_error:
                 advice_collection.add("24_2_fix_test_case_validation", str(result.validation_error))

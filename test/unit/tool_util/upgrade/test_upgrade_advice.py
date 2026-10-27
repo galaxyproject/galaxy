@@ -286,6 +286,16 @@ def test_24_2_test_case_validation():
     assert_not_has_advice(advice, "24_2_fix_test_case_validation")
 
 
+def test_24_2_validates_at_target_profile(tmp_path):
+    tool = _write_tool(tmp_path, EMPTY_MULTIPLE_TEST_TOOL.replace('profile="26.0"', 'profile="24.0"'), 'value=""')
+    advice = advise_on_upgrade(tool, "24.2")
+    assert_not_has_advice(advice, "24_2_fix_test_case_validation")
+
+    advice = advise_on_upgrade(tool)
+    assert_not_has_advice(advice, "24_2_fix_test_case_validation")
+    assert_has_advice(advice, "26_1_fix_empty_multiple_test_value")
+
+
 def test_26_1_invalid_citation(tmp_path):
     advice = advise_on_upgrade(_write_tool(tmp_path, CITATION_TOOL, "not a doi"))
     assert "not a doi" in _advice_message(advice, "26_1_fix_invalid_citation")
