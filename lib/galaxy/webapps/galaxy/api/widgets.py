@@ -1,6 +1,8 @@
 from galaxy.schema.widgets import (
     HistoryGraphParameters,
+    PageParameters,
     Widget,
+    WorkflowParameters,
 )
 from . import Router
 
@@ -13,6 +15,20 @@ WIDGETS = [
         description="Provenance graph of one history: its datasets, collections and the tool runs connecting them.",
         path="histories/{history_id}/graph",
         parameters_schema=HistoryGraphParameters.model_json_schema(),
+    ),
+    Widget(
+        id="page",
+        name="Page",
+        description="Rendered content of one page.",
+        path="pages/{page_id}",
+        parameters_schema=PageParameters.model_json_schema(),
+    ),
+    Widget(
+        id="workflow",
+        name="Workflow",
+        description="Read-only graph of one workflow, with its information panel.",
+        path="workflows/{workflow_id}",
+        parameters_schema=WorkflowParameters.model_json_schema(),
     ),
 ]
 

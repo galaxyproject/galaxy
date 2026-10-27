@@ -20,7 +20,7 @@ def widget(widget_id: str):
 def client_paths() -> dict[str, str]:
     """Each named client route as a path template, e.g. `histories/{history_id}/graph`."""
     with open(WIDGET_ROUTES) as fh:
-        routes = re.findall(r'name: "(\w+)",\s*path: `/([^`]+)`', fh.read())
+        routes = re.findall(r'name: "(\w+)",\s*path: `/widgets/([^`]+)`', fh.read())
     return {name: re.sub(r":(\w+)\([^)]*\)", r"{\1}", path) for name, path in routes}
 
 
@@ -62,3 +62,54 @@ def test_history_graph_accepts(parameters):
 def test_history_graph_rejects(parameters):
     with pytest.raises(ValidationError):
         Draft202012Validator(widget("history_graph").parameters_schema).validate(parameters)
+
+
+@pytest.mark.parametrize("parameters", [{"page_id": "1a"}, {"page_id": "1a", "heading": False}])
+def test_page_accepts(parameters):
+    Draft202012Validator(widget("page").parameters_schema).validate(parameters)
+
+
+@pytest.mark.parametrize(
+    "parameters",
+    [{}, {"page_id": "not-hex"}, {"page_id": "1a", "displayOnly": True}, {"page_id": "1a", "embed": True}],
+)
+def test_page_rejects(parameters):
+    with pytest.raises(ValidationError):
+        Draft202012Validator(widget("page").parameters_schema).validate(parameters)
+
+
+@pytest.mark.parametrize(
+    "parameters",
+    [
+        {"workflow_id": "1a"},
+        {
+            "workflow_id": "1a",
+            "version": 2,
+            "zoom": 0.5,
+            "buttons": True,
+            "about": False,
+            "heading": False,
+            "minimap": True,
+            "zoom_controls": True,
+            "initialX": -20,
+            "initialY": -20,
+        },
+    ],
+)
+def test_workflow_accepts(parameters):
+    Draft202012Validator(widget("workflow").parameters_schema).validate(parameters)
+
+
+@pytest.mark.parametrize(
+    "parameters",
+    [
+        {},
+        {"workflow_id": "not-hex"},
+        {"workflow_id": "1a", "zoom": "large"},
+        {"workflow_id": "1a", "initial_x": 1},
+        {"workflow_id": "1a", "embed": True},
+    ],
+)
+def test_workflow_rejects(parameters):
+    with pytest.raises(ValidationError):
+        Draft202012Validator(widget("workflow").parameters_schema).validate(parameters)

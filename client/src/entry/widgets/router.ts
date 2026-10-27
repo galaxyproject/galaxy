@@ -4,6 +4,6 @@ import { getAppRoot } from "@/onload/loadConfig";
 
 import { widgetRoutes } from "./routes";
 
-export function getRouter(history: RouterHistory = createWebHistory(`${getAppRoot()}widgets/`)) {
+export function getRouter(history: RouterHistory = createWebHistory(getAppRoot())) {
     return createRouter({ history, routes: widgetRoutes });
 }

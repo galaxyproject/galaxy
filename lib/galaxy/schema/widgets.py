@@ -46,6 +46,30 @@ class HistoryGraphParameters(BaseModel):
     seed_id: EncodedId | None = Field(None, title="Seed", description="Encoded id of the item to focus the graph on.")
 
 
+class PageParameters(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    page_id: EncodedId = Field(title="Page", description="Encoded id of the page.")
+    heading: bool | None = Field(None, title="Heading", description="Whether to show the page title.")
+
+
+class WorkflowParameters(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    workflow_id: EncodedId = Field(title="Workflow", description="Encoded id of the workflow.")
+    version: int | None = Field(None, title="Version", description="Version of the workflow, the latest by default.")
+    zoom: float | None = Field(None, title="Zoom", description="Initial zoom level of the graph.")
+    buttons: bool | None = Field(
+        None, title="Buttons", description="Whether to show the button opening the workflow in Galaxy."
+    )
+    about: bool | None = Field(None, title="About", description="Whether to show the workflow information panel.")
+    heading: bool | None = Field(None, title="Heading", description="Whether to show the workflow name.")
+    minimap: bool | None = Field(None, title="Minimap", description="Whether to show the minimap.")
+    zoom_controls: bool | None = Field(None, title="Zoom controls", description="Whether to show the zoom controls.")
+    initialX: int | None = Field(None, title="Initial x", description="Initial horizontal offset of the graph.")
+    initialY: int | None = Field(None, title="Initial y", description="Initial vertical offset of the graph.")
+
+
 class Widget(BaseModel):
     id: str = Field(title="Identifier", description="Stable identifier of the widget.")
     name: str = Field(title="Name", description="Display name of the widget.")
