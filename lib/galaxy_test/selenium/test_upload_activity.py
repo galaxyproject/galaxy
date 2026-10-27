@@ -3,7 +3,9 @@
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_history,
+    requires_new_library,
 )
+from galaxy_test.base.populators import LibraryPopulator
 from .framework import (
     managed_history,
     selenium_test,
@@ -139,19 +141,112 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
     @selenium_test
     @managed_history
     @requires_admin
+    @requires_new_library
     def test_upload_from_data_library(self):
         """Upload Activity can import a selected dataset from a data library."""
         library_name = self._create_and_populate_library()
 
-        self.upload_context("data-library").stage_data_library_dataset(library_name, "1.bed").start()
+        item = self.upload_context("data-library").stage_data_library_dataset(library_name, "1.bed")
+        self._screenshot_when_startable("upload_activity_data_library_staged")
+        item.start()
 
         self.history_panel_wait_for_hid_ok(1)
         self.history_panel_click_item_title(hid=1, wait=True)
         self.assert_item_name(1, "1.bed")
 
-    def _create_and_populate_library(self):
+    @selenium_test
+    @requires_admin
+    @requires_new_library
+    def test_upload_from_data_library_as_other_user(self):
+        """A non-admin user can import a public library dataset uploaded by someone else."""
+        library_name = self._create_and_populate_library()
+        self.logout_if_needed()
+        self.register()
+
+        self.upload_context("data-library").stage_data_library_dataset(library_name, "1.bed").start()
+
+        self.history_panel_wait_for_hid_ok(1)
+        self.assert_item_name(1, "1.bed")
+        self.screenshot("upload_activity_data_library_other_user_imported")
+
+    @selenium_test
+    @managed_history
+    @requires_admin
+    @requires_new_library
+    def test_upload_list_from_data_library_to_target_history(self):
+        """Select-all in a library subfolder builds a list in the picked target history, not the current one."""
+        library_name = self._create_and_populate_library(["3.bed"], subfolders={"list folder": ["1.bed", "2.bed"]})
+        current_history_id = self.current_history_id()
+        # a long unbroken name must not push the target history change link out of view
+        self.dataset_populator.rename_history(current_history_id, "library_list_current_" + "x" * 60)
+        target_history_id = self.dataset_populator.new_history(name="library list target")
+        # reload so the target history selector sees the new history
+        self.home()
+
+        context = self.upload_context("data-library")
+        context.stage_data_library_datasets(
+            library_name, ["1.bed", "2.bed"], folder_label="list folder", select_all=True
+        )
+        context.to_list("library list")
+        self._assert_target_history_change_link_in_banner()
+        context.select_target_history(target_history_id)
+        # focus returns to the change link when the selector closes; that must not pop its tooltip
+        self.components._.tooltip_balloon_with_text(text="Change target history for this upload").assert_absent()
+        # collection config is applied by start(), so this shows the staged items and target history
+        self._screenshot_when_startable("upload_activity_data_library_target_history_staged")
+        context.start()
+
+        self._wait_on(
+            lambda: any(
+                c["history_content_type"] == "dataset_collection" for c in self.history_contents(target_history_id)
+            ),
+            "list in target history",
+        )
+        hdca = self.dataset_populator.get_history_collection_details(target_history_id)
+        assert hdca["name"] == "library list"
+        assert hdca["collection_type"] == "list"
+        assert [e["element_identifier"] for e in hdca["elements"]] == ["1.bed", "2.bed"]
+        # the list's own elements are the only datasets imported, all hidden
+        datasets = [c for c in self.history_contents(target_history_id) if c["history_content_type"] == "dataset"]
+        assert sorted(d["id"] for d in datasets) == sorted(e["object"]["id"] for e in hdca["elements"])
+        assert not any(d["visible"] for d in datasets)
+        assert self.history_contents(current_history_id) == []
+
+    def _assert_target_history_change_link_in_banner(self):
+        upload_activity = self.components.upload_activity
+        banner = upload_activity.target_history_banner.wait_for_present()
+        link = upload_activity.target_history_change_link.wait_for_present()
+        overflow = self.execute_script(
+            "return arguments[1].getBoundingClientRect().right - arguments[0].getBoundingClientRect().right;",
+            banner,
+            link,
+        )
+        assert overflow <= 0, f"target history change link overflows the banner by {overflow}px"
+
+    def _screenshot_when_startable(self, label):
+        self.components.upload_activity.start_button_enabled.wait_for_visible()
+        # let the button's enable color transition finish so the screenshot doesn't show it greyed out
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot(label)
+
+    def _create_and_populate_library(self, filenames=("1.bed",), subfolders=None):
         self.logout_if_needed()
         self.admin_login()
-        library_name = self.create_new_library()
-        self.populate_library_folder_from_import_dir(library_name, ["1.bed"])
-        return library_name
+        library_populator = LibraryPopulator(self.api_interactor_for_logged_in_user())
+        library = library_populator.new_library(self._get_random_name(prefix="upload_library"))
+        items = self._library_items(filenames)
+        for folder_name, folder_filenames in (subfolders or {}).items():
+            items.append({"name": folder_name, "elements": self._library_items(folder_filenames)})
+        library_populator.fetch_to_folder(library["root_folder_id"], items)
+        # library uploads are restricted to the uploader's private role
+        for entry in library_populator.get_library_contents(library["id"]):
+            if entry["type"] == "file":
+                library_populator.remove_library_dataset_restrictions(entry["id"])
+        return library["name"]
+
+    def _library_items(self, filenames):
+        items = []
+        for filename in filenames:
+            with open(self.get_filename(filename)) as f:
+                items.append({"src": "pasted", "paste_content": f.read(), "name": filename, "ext": "bed"})
+        return items

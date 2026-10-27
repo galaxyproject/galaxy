@@ -49,9 +49,6 @@
     <!-- Elements for visibility testing -->
     <div id="visible-element" class="visible">I am visible</div>
     <div id="hidden-element" class="hidden">I am hidden</div>
-    <div id="delayed-element" class="delayed-visible">
-      I will become visible
-    </div>
     <div id="enter-element" class="hidden">I clicked enter.</div>
 
     <!-- Form elements -->
@@ -135,6 +132,13 @@
       src="frame.html"
       style="width: 300px; height: 200px"
     ></iframe>
+
+    <!-- Last in the page: when it appears it pushes down everything below it,
+         and pointer actions aimed at an element that moves mid-sequence land on
+         its neighbour. -->
+    <div id="delayed-element" class="delayed-visible">
+      I will become visible
+    </div>
 
     <script>
       // Make element visible after delay

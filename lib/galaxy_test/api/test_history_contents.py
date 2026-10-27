@@ -405,10 +405,7 @@ class TestHistoryContentsApi(ApiTestCase):
         combined_user_role_id = self.dataset_populator.create_role([user_id, different_user_id])["id"]
 
         ld = self.library_populator.new_library_dataset("test_inheritance_dataset")
-        remove_restrictions_response = self._post(
-            f"libraries/datasets/{ld['id']}/permissions", {"action": "remove_restrictions"}, admin=True, json=True
-        )
-        self._assert_status_code_is_ok(remove_restrictions_response)
+        self.library_populator.remove_library_dataset_restrictions(ld["id"])
         self.library_populator.set_access_permission(ld["parent_library_id"], combined_user_role_id)
 
         with self._different_user():
@@ -500,6 +497,34 @@ class TestHistoryContentsApi(ApiTestCase):
         # we don't distinguish between this is a valid ID you don't have access to
         # and this is an invalid ID.
         assert update_response.status_code == 400, update_response.content
+
+    @requires_new_user
+    def test_set_edit_stores_comment_lines_as_int(self):
+        email = "comment-lines-edit@test.galaxyproject.org"
+        with self._different_user(email):
+            history_id = self.dataset_populator.new_history()
+            hda = self.dataset_populator.new_dataset(
+                history_id, content="#a\n#b\nx\t1\ny\t5\n", file_type="tabular", wait=True
+            )
+        with self._browser_session(email) as session:
+            edit_response = session.put(
+                urllib.parse.urljoin(self.url, "dataset/set_edit"),
+                json={
+                    "dataset_id": hda["id"],
+                    "operation": "attributes",
+                    "name": "commented",
+                    "info": "",
+                    "dbkey": "?",
+                    "comment_lines": "3",
+                },
+            )
+            self._assert_status_code_is(edit_response, 200)
+        with self._different_user(email):
+            details = self.dataset_populator.get_history_dataset_details(history_id, content_id=hda["id"])
+            columns_response = self._get(f"datasets/{hda['id']}", data={"data_type": "raw_data", "columns": "[0]"})
+        assert details["metadata_comment_lines"] == 3
+        self._assert_status_code_is(columns_response, 200)
+        assert columns_response.json()["data"] == [["y"]]
 
     def test_rename_dataset(self, history_id):
         dataset = self.dataset_populator.new_dataset(history_id, wait=True)
