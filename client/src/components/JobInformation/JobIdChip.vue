@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import DecodedId from "@/components/DecodedId.vue";
@@ -8,10 +8,6 @@ const props = defineProps<{
     /** The encoded job ID to display. */
     id: string;
 }>();
-
-/** Last 8 characters of the encoded job ID. Jobs submitted together often share a leading
- * prefix, so a trailing slice is more likely to actually distinguish them at a glance. */
-const shortId = computed(() => props.id.slice(-8));
 
 /** Briefly true right after `id` changes (e.g. paginating between jobs), to replay the reveal
  * animation on the short id text so the change is noticeable even if the text looks similar. */
@@ -34,7 +30,7 @@ watch(
 
 <template>
     <span id="encoded-job-id" v-g-tooltip.hover class="job-id-chip" :title="`Job API ID: ${props.id}`">
-        <span class="job-id-chip-value" :class="{ 'job-id-chip-value-reveal': justChanged }">{{ shortId }}</span>
+        <span class="job-id-chip-value" :class="{ 'job-id-chip-value-reveal': justChanged }">{{ props.id }}</span>
         <DecodedId :id="props.id" />
         <CopyToClipboard message="Job API ID was copied to your clipboard" :text="props.id" title="Copy Job API ID" />
     </span>
