@@ -90,12 +90,7 @@ def parse_config_xml(config_xml):
             "transfer": transfer_dict,
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
-            "enable_direct_download": CachingConcreteObjectStore.parse_enable_direct_download_from_config_xml(
-                config_xml
-            ),
-            "direct_download_expires_in": CachingConcreteObjectStore.parse_direct_download_expires_in_from_config_xml(
-                config_xml
-            ),
+            **CachingConcreteObjectStore.parse_direct_download_config_from_config_xml(config_xml),
         }
         name = config_xml.attrib.get("name", None)
         if name is not None:

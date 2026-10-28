@@ -862,11 +862,14 @@ class BaseObjectStore(ObjectStore):
         return enable_direct_download
 
     @classmethod
-    def parse_direct_download_expires_in_from_config_xml(clazz, config_xml):
+    def parse_direct_download_config_from_config_xml(clazz, config_xml: Any) -> dict[str, Any]:
         expires_in = DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN
         if config_xml is not None:
             expires_in = int(config_xml.attrib.get("direct_download_expires_in", DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN))
-        return expires_in
+        return {
+            "enable_direct_download": clazz.parse_enable_direct_download_from_config_xml(config_xml),
+            "direct_download_expires_in": expires_in,
+        }
 
     @classmethod
     def parse_badges_from_config_xml(clazz, badges_xml):
