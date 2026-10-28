@@ -143,6 +143,9 @@ def parse_config_xml(config_xml):
             "enable_direct_download": CachingConcreteObjectStore.parse_enable_direct_download_from_config_xml(
                 config_xml
             ),
+            "direct_download_expires_in": CachingConcreteObjectStore.parse_direct_download_expires_in_from_config_xml(
+                config_xml
+            ),
         }
         name = config_xml.attrib.get("name", None)
         if name is not None:
@@ -470,7 +473,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 url = self._client.generate_presigned_url(
                     ClientMethod="get_object",
                     Params=params,
-                    ExpiresIn=3600,
+                    ExpiresIn=self.direct_download_expires_in,
                     HttpMethod="GET",
                 )
                 return url

@@ -902,13 +902,52 @@ def test_boto3_direct_download_url_lifetime():
 @patch_object_stores_to_skip_initialize
 def test_s3_direct_download_url_lifetime():
     with TestConfig(S3_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
-        assert _s3_direct_download_expires_in(object_store) == 86400
+        assert _s3_direct_download_expires_in(object_store) == 3600
 
 
 @patch_object_stores_to_skip_initialize
 def test_azure_direct_download_url_lifetime():
     with TestConfig(AZURE_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
         assert _azure_direct_download_expires_in(object_store) == 3600
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_direct_download_expires_in():
+    for config_str in [
+        get_example("boto3_direct_download.xml").replace(
+            'enable_direct_download="true"', 'enable_direct_download="true" direct_download_expires_in="600"'
+        ),
+        get_example("boto3_direct_download.yml").replace(
+            "enable_direct_download: true", "enable_direct_download: true\ndirect_download_expires_in: 600"
+        ),
+    ]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.direct_download_expires_in == 600
+            _assert_key_has_value(object_store.to_dict(), "direct_download_expires_in", 600)
+            assert _boto3_direct_download_expires_in(object_store) == 600
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_direct_download_expires_in_default():
+    for config_str in [get_example("boto3_direct_download.xml"), get_example("boto3_direct_download.yml")]:
+        with TestConfig(config_str) as (directory, object_store):
+            _assert_key_has_value(object_store.to_dict(), "direct_download_expires_in", 3600)
+
+
+@patch_object_stores_to_skip_initialize
+def test_s3_direct_download_url_configured_lifetime():
+    config_str = S3_DIRECT_DOWNLOAD_CONFIG_YAML.replace("type: s3", "type: s3\ndirect_download_expires_in: 600")
+    with TestConfig(config_str) as (directory, object_store):
+        assert _s3_direct_download_expires_in(object_store) == 600
+
+
+@patch_object_stores_to_skip_initialize
+def test_azure_direct_download_url_configured_lifetime():
+    config_str = AZURE_DIRECT_DOWNLOAD_CONFIG_YAML.replace(
+        "type: azure_blob", "type: azure_blob\ndirect_download_expires_in: 600"
+    )
+    with TestConfig(config_str) as (directory, object_store):
+        assert _azure_direct_download_expires_in(object_store) == 600
 
 
 BOTO3_TEE_STREAMING_TEST_CONFIG_YAML = """
@@ -2098,10 +2137,25 @@ def test_cloud_get_direct_download_url_forwards_response_headers():
             )
         assert url == "https://cloud.example.org/signed"
         key.generate_url.assert_called_once_with(
-            expires_in=86400,
+            expires_in=3600,
             content_disposition='attachment; filename="Galaxy1-[data].txt"',
             content_type="application/octet-stream",
         )
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_get_direct_download_url_configured_lifetime():
+    config_str = CLOUD_DIRECT_DOWNLOAD_CONFIG.replace(
+        'enable_direct_download="true"', 'enable_direct_download="true" direct_download_expires_in="600"'
+    )
+    with TestConfig(config_str) as (directory, object_store):
+        key = _cloud_object()
+        bucket = _cloud_bucket()
+        bucket.objects.get.return_value = key
+        object_store.bucket = bucket
+        with patch.object(object_store, "_exists", return_value=True):
+            object_store.get_direct_download_url(MockDataset(1))
+        assert key.generate_url.call_args.kwargs["expires_in"] == 600
 
 
 @patch_object_stores_to_skip_initialize
