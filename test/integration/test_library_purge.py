@@ -22,7 +22,7 @@ class TestLibraryPurgeIntegration(IntegrationTestCase):
         payload = {"folder_id": library["root_folder_id"], "create_type": "file", "from_hda_id": hda_id}
         response = self._post(f"/api/libraries/{library['id']}/contents", data=payload, json=True)
         self._assert_status_code_is(response, 200)
-        file_id = response.json()["id"]
+        file_id = response.json()["library_dataset_id"]
         expired_ldda_id = self._add_version(file_id)
 
         self.library_populator.delete_library_item(library["id"], file_id, purge=True)

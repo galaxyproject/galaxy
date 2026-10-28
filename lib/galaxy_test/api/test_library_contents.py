@@ -158,7 +158,7 @@ class TestLibraryContentsApi(ApiTestCase):
 
     def test_delete_library_item_from_hda(self):
         library_id = self.library["id"]
-        file_id = self._create_library_content(type="from_hda")["id"]
+        file_id = self._create_library_content(type="from_hda")["library_dataset_id"]
         ldda_id = self.library_populator.show_ld(library_id, file_id)["ldda_id"]
 
         self.library_populator.delete_library_item(library_id, file_id)
@@ -174,14 +174,14 @@ class TestLibraryContentsApi(ApiTestCase):
 
     def test_delete_library_item_from_hda_purged(self):
         library_id = self.library["id"]
-        file_id = self._create_library_content(type="from_hda")["id"]
+        file_id = self._create_library_content(type="from_hda")["library_dataset_id"]
         ldda_id = self.library_populator.show_ld(library_id, file_id)["ldda_id"]
         self.library_populator.delete_library_item(library_id, file_id, purge=True)
         assert self.library_populator.show_ldda(ldda_id)["deleted"] is True
 
     def test_delete_library_item_from_hdca_purged(self):
         library_id = self.library["id"]
-        file_id = self._create_library_content(type="from_hdca")[0]["id"]
+        file_id = self._create_library_content(type="from_hdca")[0]["library_dataset_id"]
         ldda_id = self.library_populator.show_ld(library_id, file_id)["ldda_id"]
         self.library_populator.delete_library_item(library_id, file_id, purge=True)
         assert self.library_populator.show_ldda(ldda_id)["deleted"] is True
@@ -200,7 +200,7 @@ class TestLibraryContentsApi(ApiTestCase):
 
     def test_purge_library_item_keeps_shared_dataset(self):
         library_id = self.library["id"]
-        file_id = self._create_library_content(type="from_hda")["id"]
+        file_id = self._create_library_content(type="from_hda")["library_dataset_id"]
         self.library_populator.delete_library_item(library_id, file_id, purge=True)
         assert self.dataset_populator.get_history_dataset_content(self.history) == "TestData123\n"
 
