@@ -1539,6 +1539,12 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
 
+    def get_converted_dataset_raw(self, dataset_id: str, ext: str) -> Response:
+        return self._get(f"datasets/{dataset_id}/converted/{ext}")
+
+    def search_dataset_features_raw(self, dataset_id: str, query: str) -> Response:
+        return self._get(f"datasets/{dataset_id}", {"data_type": "features", "query": query})
+
     def get_dataset_permissions(self, dataset_id: str) -> dict[str, list[str]]:
         response = self._get(f"datasets/{dataset_id}")
         api_asserts.assert_status_code_is_ok(response)

@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from galaxy.exceptions import error_codes
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.api_asserts import (
@@ -344,6 +346,59 @@ class TestUsersApi(ApiTestCase):
         url = self._api_url("users/current")
         current_user = self._get(url).json()
         assert specified_user == current_user
+
+    def test_custom_build_from_fasta(self):
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        user_id = dataset_populator.user_id()
+        with dataset_populator.test_history() as history_id:
+            hda = dataset_populator.new_dataset(
+                history_id, content=">chr1\nACGT\n>chr2\nAC\n", file_type="fasta", wait=True
+            )
+            newer_history_id = dataset_populator.new_history()
+            response = dataset_populator.create_custom_build_raw(
+                user_id, "fasta_build", {"name": "FASTA build", "len|type": "fasta", "len|value": hda["id"]}
+            )
+            self._assert_status_code_is(response, 204)
+            dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
+            extensions = {c["extension"] for c in dataset_populator.get_history_contents(history_id)}
+            assert extensions == {"fasta", "len", "linecount"}
+            assert dataset_populator.get_history_contents(newer_history_id) == []
+            builds = dataset_populator.get_custom_builds(user_id)
+            build = next(build for build in builds if build["id"] == "fasta_build")
+            assert build["count"] == 2
+
+    @requires_admin
+    @requires_new_user
+    def test_custom_build_from_unowned_fasta(self):
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        with dataset_populator.test_history() as owner_history_id:
+            hda = dataset_populator.new_dataset(owner_history_id, content=">chr1\nACGT\n", file_type="fasta", wait=True)
+            self._assert_status_code_is_ok(dataset_populator.make_dataset_public_raw(owner_history_id, hda["id"]))
+            payload = {"name": "Unowned FASTA build", "len|type": "fasta", "len|value": hda["id"]}
+            with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+                user_id = dataset_populator.user_id()
+                assert dataset_populator.get_histories() == []
+                response = dataset_populator.create_custom_build_raw(user_id, "unowned_fasta_build", payload)
+                self._assert_status_code_is(response, 400)
+                assert_error_message_contains(response, "A history is required")
+                history_id = dataset_populator.new_history()
+                response = dataset_populator.create_custom_build_raw(user_id, "unowned_fasta_build", payload)
+                self._assert_status_code_is(response, 204)
+                dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
+                extensions = {c["extension"] for c in dataset_populator.get_history_contents(history_id)}
+                assert extensions == {"len", "linecount"}
+                builds = dataset_populator.get_custom_builds(user_id)
+                build = next(build for build in builds if build["id"] == "unowned_fasta_build")
+                assert build["count"] == 1
+            with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+                user_id = dataset_populator.user_id()
+                assert dataset_populator.get_histories() == []
+                response = dataset_populator.create_custom_build_raw(user_id, "converted_fasta_build", payload)
+                self._assert_status_code_is(response, 204)
+                builds = dataset_populator.get_custom_builds(user_id)
+                assert "converted_fasta_build" in [build["id"] for build in builds]
+            owner_extensions = {c["extension"] for c in dataset_populator.get_history_contents(owner_history_id)}
+            assert owner_extensions == {"fasta"}
 
     def __url(self, action, user):
         return self._api_url(f"users/{user['id']}/{action}", params=dict(key=self.master_api_key))

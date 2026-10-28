@@ -289,8 +289,35 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         return self.session().scalars(stmt).first()
 
     def get_converted_dataset(self, trans: ProvidesHistoryContext, dataset: model.DatasetInstance, target_ext: str):
-        """Return ``dataset`` converted to ``target_ext``, running the conversion if needed."""
-        return dataset.get_converted_dataset(trans, target_ext)
+        """Like ``dataset.get_converted_dataset``, but runs a new conversion in one of the user's active histories."""
+        history = None
+        if dataset.can_convert_to(target_ext):  # otherwise the model raises NoConverterException
+            existing = dataset.get_metadata_dataset(target_ext) or dataset.get_converted_files_by_type(target_ext)
+            if existing:
+                return existing
+            history = self._history_for_conversion(trans.user, dataset, trans.history)
+            if history is None:
+                raise RequestParameterInvalidException("A history is required to convert the dataset.")
+        return dataset.get_converted_dataset(trans, target_ext, history=history)
+
+    def _history_for_conversion(
+        self, user: Optional[model.User], dataset: model.DatasetInstance, current_history: Optional[History]
+    ) -> Optional[History]:
+        """Dataset's own history if the user owns it, else the current history, else the most recent; all active."""
+        user_id = user.id if user else None
+
+        def usable(history: Optional[History]) -> bool:
+            # Compare user ids: is_owner() lets admins write jobs into other users' histories.
+            return history is not None and history.user_id == user_id and not history.deleted and not history.archived
+
+        if user is None:
+            # All anonymous histories have user_id None; only the session's own one is theirs.
+            return current_history if usable(current_history) else None
+        if isinstance(dataset, model.HistoryDatasetAssociation) and usable(dataset.history):
+            return dataset.history
+        if usable(current_history):
+            return current_history
+        return self.most_recent(user, filters=[History.deleted == false(), History.archived == false()])
 
     # .... purgable
     def purge(self, item, flush=True, **kwargs):

@@ -2,6 +2,7 @@ import textwrap
 import zipfile
 from io import BytesIO
 from urllib.parse import quote
+from uuid import uuid4
 
 import pytest
 
@@ -19,6 +20,7 @@ from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_history,
     requires_new_library,
+    requires_new_user,
 )
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -539,6 +541,71 @@ class TestDatasetsApi(ApiTestCase):
         )
         self._assert_status_code_is(response, 400)
         assert_error_message_contains(response, "Conversion")
+
+    def test_converted_ext_creates_conversion_in_dataset_history(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, content=">chr1\nACGT\n", file_type="fasta", wait=True)
+        newer_history_id = self.dataset_populator.new_history()
+        response = self.dataset_populator.get_converted_dataset_raw(hda["id"], "len")
+        self._assert_status_code_is(response, 200)
+        converted = response.json()
+        assert converted["extension"] == "len"
+        assert converted["history_id"] == history_id
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
+        contents = self.dataset_populator.get_history_contents(history_id)
+        assert converted["id"] in [c["id"] for c in contents]
+        assert self.dataset_populator.get_history_contents(newer_history_id) == []
+
+    @requires_admin
+    @requires_new_user
+    def test_converted_ext_without_history(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, content=">chr1\nACGT\n", file_type="fasta", wait=True)
+        self._assert_status_code_is_ok(self.dataset_populator.make_dataset_public_raw(history_id, hda["id"]))
+        response = self.dataset_populator.get_converted_dataset_raw(hda["id"], "len")
+        self._assert_status_code_is(response, 200)
+        converted_id = response.json()["id"]
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            assert self.dataset_populator.get_histories() == []
+            response = self.dataset_populator.get_converted_dataset_raw(hda["id"], "len")
+            self._assert_status_code_is(response, 200)
+            assert response.json()["id"] == converted_id
+            response = self.dataset_populator.get_converted_dataset_raw(hda["id"], "bam")
+            self._assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "Conversion not possible")
+            response = self.dataset_populator.get_converted_dataset_raw(hda["id"], "fai")
+            self._assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "A history is required")
+
+    @requires_admin
+    @requires_new_user
+    def test_converted_ext_skips_archived_and_deleted_histories(self):
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            history_id = self.dataset_populator.new_history()
+            hda = self.dataset_populator.new_dataset(history_id, content=">chr1\nACGT\n", file_type="fasta", wait=True)
+            active_history_id = self.dataset_populator.new_history()
+            self._assert_status_code_is_ok(self.dataset_populator.archive_history(history_id))
+            response = self.dataset_populator.get_converted_dataset_raw(hda["id"], "len")
+            self._assert_status_code_is(response, 200)
+            assert response.json()["history_id"] == active_history_id
+            self.dataset_populator.wait_for_history_jobs(active_history_id, assert_ok=True)
+            self.dataset_populator.delete_history(active_history_id)
+            response = self.dataset_populator.get_converted_dataset_raw(hda["id"], "fai")
+            self._assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "A history is required")
+
+    def test_search_features_converts_in_dataset_history(self, history_id):
+        content = "chr1\t10\t20\tgeneA\nchr1\t30\t40\tgeneB\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=content, file_type="bed", wait=True)
+        newer_history_id = self.dataset_populator.new_history()
+        # First request queues the fli conversion.
+        self.dataset_populator.search_dataset_features_raw(hda["id"], "genea")
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
+        response = self.dataset_populator.search_dataset_features_raw(hda["id"], "genea")
+        self._assert_status_code_is(response, 200)
+        assert response.json() == [["geneA", "chr1:10-20"]]
+        extensions = {c["extension"] for c in self.dataset_populator.get_history_contents(history_id)}
+        assert extensions == {"bed", "fli"}
+        assert self.dataset_populator.get_history_contents(newer_history_id) == []
 
     def test_raw_data_tabular_numeric_column_stats(self, history_id):
         # columns: even-count ints, uncastable NA among odd-count castables, all NA, non-finite floats
