@@ -190,7 +190,8 @@ class TestLibraryContentsApi(ApiTestCase):
         # Deleting a library dataset is reversible as long as it has not been purged
         response = self._delete(f"/api/libraries/datasets/{file_id}")
         self._assert_status_code_is(response, 200)
-        undelete_response = self._delete(f"/api/libraries/datasets/{file_id}?undelete=true")
+        # Only admins can access deleted library datasets.
+        undelete_response = self._delete(f"/api/libraries/datasets/{file_id}?undelete=true", admin=True)
         self._assert_status_code_is(undelete_response, 200)
         assert undelete_response.json()["deleted"] is False
 
@@ -204,12 +205,13 @@ class TestLibraryContentsApi(ApiTestCase):
             f"/api/libraries/{library_id}/contents/{file_id}", data={"purge": True}, json=True
         )
         self._assert_status_code_is(purge_response, 200)
-        undelete_response = self._delete(f"/api/libraries/datasets/{file_id}?undelete=true")
+        # Use an admin so the request reaches the purge guard instead of returning 404.
+        undelete_response = self._delete(f"/api/libraries/datasets/{file_id}?undelete=true", admin=True)
         self._assert_status_code_is(undelete_response, 400)
         # Same message as for purged history items
         assert "permanently deleted" in undelete_response.json()["err_msg"]
         # The rejected undelete must not have changed the state of the library dataset
-        show_response = self._get(f"/api/libraries/datasets/{file_id}")
+        show_response = self._get(f"/api/libraries/datasets/{file_id}", admin=True)
         self._assert_status_code_is(show_response, 200)
         assert show_response.json()["deleted"] is True
 
