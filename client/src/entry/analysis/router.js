@@ -562,7 +562,6 @@ export function getRouter(Galaxy) {
                             id: route.query.id,
                             pluralName: "Notebooks",
                             modelClass: "Page",
-                            resource: "pages",
                         }),
                     },
                     {

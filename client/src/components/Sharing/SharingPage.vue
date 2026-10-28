@@ -24,10 +24,9 @@ const props = defineProps<{
     pluralName: string;
     modelClass: string;
     noHeading?: boolean;
-    resource?: string;
 }>();
 
-const resource = computed(() => props.resource ?? props.pluralName.toLowerCase());
+const resource = computed(() => (props.modelClass === "History" ? "histories" : `${props.modelClass.toLowerCase()}s`));
 
 const errors = ref<string[]>([]);
 
