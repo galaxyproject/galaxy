@@ -160,9 +160,12 @@ class TestLibraryContentsApi(ApiTestCase):
     def test_delete_library_item_from_hda(self):
         library_id = self.library["id"]
         file_id = self._create_library_content(type="from_hda")["id"]
+        ldda_id = self.library_populator.show_ld(library_id, file_id)["ldda_id"]
 
         response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}")
         self._assert_status_code_is(response, 200)
+        # deleting is reversible, so the current version stays live
+        assert self.library_populator.show_ldda(ldda_id)["deleted"] is False
 
     def test_delete_library_item_from_hdca(self):
         library_id = self.library["id"]
@@ -188,26 +191,6 @@ class TestLibraryContentsApi(ApiTestCase):
         response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}", data=payload, json=True)
         self._assert_status_code_is(response, 200)
         assert self.library_populator.show_ldda(ldda_id)["deleted"] is True
-
-    def test_purge_library_item_retires_current_version(self):
-        library_id = self.library["id"]
-        # deleting is reversible, so the current version must stay usable
-        deleted_file_id = self._create_library_content(type="from_hda")["id"]
-        response = self._delete(f"/api/libraries/{library_id}/contents/{deleted_file_id}")
-        self._assert_status_code_is(response, 200)
-        library_dataset = self._db_get_library_dataset(deleted_file_id)
-        assert library_dataset.purged is False
-        assert library_dataset.library_dataset_dataset_association.deleted is False
-        # purging is not, so the current version is retired along with the library dataset
-        purged_file_id = self._create_library_content(type="from_hda")["id"]
-        response = self._delete(
-            f"/api/libraries/{library_id}/contents/{purged_file_id}", data={"purge": True}, json=True
-        )
-        self._assert_status_code_is(response, 200)
-        library_dataset = self._db_get_library_dataset(purged_file_id)
-        assert library_dataset.deleted is True
-        assert library_dataset.purged is True
-        assert library_dataset.library_dataset_dataset_association.deleted is True
 
     def test_purge_library_item_retires_all_versions(self):
         library_id = self.library["id"]
