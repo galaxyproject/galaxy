@@ -1575,6 +1575,32 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.histories.activity.wait_for_and_click()
         self.components.histories.history_cards.wait_for_present()
 
+    def navigate_to_storage_dashboard(self):
+        self.home()
+        self.components.masthead.storage_dashboard_link.wait_for_and_click()
+        self.components.storage_dashboard.free_space_link.wait_for_visible()
+
+    def storage_dashboard_cleanup(self, operation: str, screenshot_prefix: str | None = None):
+        """Storage Dashboard > Free up disk space: review an operation's items, select all, permanently delete.
+
+        ``operation`` is a cleanup id: ``deleted_datasets``, ``deleted_histories`` or ``archived_histories``.
+        """
+        self.navigate_to_storage_dashboard()
+        self.components.storage_dashboard.free_space_link.wait_for_and_click()
+        cleanup = self.components.storage_dashboard.cleanup
+        cleanup.review_link(operation=operation).wait_for_and_click()
+        cleanup.review_item.wait_for_visible()
+        # before selecting: checkbox and button CSS transitions would be caught mid-way
+        self.screenshot_if(screenshot_prefix and f"{screenshot_prefix}_review")
+        # bootstrap-vue hides the checkbox inputs behind their labels
+        self.execute_script_click(cleanup.select_all.wait_for_present())
+        cleanup.delete_button_enabled.wait_for_and_click()
+        agreement = cleanup.agreement.wait_for_present()
+        self.screenshot_if(screenshot_prefix and f"{screenshot_prefix}_confirm")
+        self.execute_script_click(agreement)
+        cleanup.confirm_enabled.wait_for_and_click()
+        cleanup.success.wait_for_visible()
+
     def navigate_to_saved_visualizations(self):
         self.home()
         visualizations = self.components.visualization
@@ -2455,6 +2481,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def click_history_option_sharing(self):
         self.use_bootstrap_dropdown(option="share and manage access", menu="history options")
+
+    def click_history_option_resume_paused_jobs(self):
+        """Open History options > Resume Paused Jobs."""
+        self.use_bootstrap_dropdown(option="resume paused jobs", menu="history options")
 
     def click_history_option_extract_workflow(self):
         self.use_bootstrap_dropdown(option="extract workflow", menu="history options")

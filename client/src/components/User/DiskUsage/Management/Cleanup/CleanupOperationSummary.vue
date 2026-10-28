@@ -67,7 +67,7 @@ function onReviewItems() {
 </script>
 
 <template>
-    <BCard class="d-flex flex-column">
+    <BCard class="d-flex flex-column" :data-description="`${props.operation.id} cleanup`">
         <h5 class="mb-2">{{ props.operation.name }}</h5>
         <p class="text-muted small flex-grow-1">{{ operation.description }}</p>
         <div>
