@@ -1144,6 +1144,7 @@ class BaseDatasetPopulator(BasePopulator):
             yield history_id
         except Exception:
             cleanup_callback and cleanup_callback(history_id)
+            raise
 
     def new_history(self, name="API Test History", **kwds) -> str:
         create_history_response = self._post("histories", data=dict(name=name))
@@ -1675,6 +1676,7 @@ class BaseDatasetPopulator(BasePopulator):
         return users[0]["id"]
 
     def user_private_role_id(self) -> str:
+        using_requirement("admin")
         userid = self.user_id()
         response = self._get(f"users/{userid}/roles", admin=True)
         assert response.status_code == 200
@@ -2388,6 +2390,7 @@ class BaseDatasetPopulator(BasePopulator):
         return response.json()
 
     def make_page_public(self, page_id: str) -> dict[str, Any]:
+        using_requirement("new_published_objects")
         sharing_response = self._put(f"pages/{page_id}/publish")
         assert sharing_response.status_code == 200
         return sharing_response.json()

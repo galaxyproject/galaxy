@@ -1583,7 +1583,7 @@ Config keys map to environment variables:
 
 | Config Key | Environment Variable |
 |------------|---------------------|
-| ``local_galaxy_url`` | ``GALAXY_TEST_SELENIUM_URL`` |
+| ``local_galaxy_url`` | ``GALAXY_TEST_EXTERNAL`` |
 | ``login_email`` | ``GALAXY_TEST_SELENIUM_USER_EMAIL`` |
 | ``login_password`` | ``GALAXY_TEST_SELENIUM_USER_PASSWORD`` |
 | ``admin_api_key`` | ``GALAXY_TEST_SELENIUM_ADMIN_API_KEY`` |

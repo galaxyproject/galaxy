@@ -394,6 +394,25 @@ class TestSnapshot:
 class GalaxyTestSeleniumContext(GalaxySeleniumContext):
     """Extend GalaxySeleniumContext with Selenium-aware galaxy_test.base.populators."""
 
+    def register(
+        self,
+        email: str | None = None,
+        password: str | None = None,
+        username: str | None = None,
+        confirm: str | None = None,
+        assert_valid: bool | None = True,
+        via_masthead: bool = False,
+    ) -> None:
+        using_requirement("new_user")
+        super().register(
+            email=email,
+            password=password,
+            username=username,
+            confirm=confirm,
+            assert_valid=assert_valid,
+            via_masthead=via_masthead,
+        )
+
     @property
     def dataset_populator(self) -> "SeleniumSessionDatasetPopulator":
         """A dataset populator connected to the Galaxy session described by Selenium context."""
