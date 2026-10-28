@@ -24,6 +24,10 @@ from gxformat2 import (
 )
 from gxformat2.interface import ImporterGalaxyInterface
 from requests.models import Response
+from selenium.common.exceptions import (
+    StaleElementReferenceException,
+    TimeoutException,
+)
 
 from galaxy.selenium import driver_factory
 from galaxy.selenium.axe_results import assert_baseline_accessible
@@ -670,6 +674,30 @@ class UsesLibraryAssertions(NavigatesGalaxyMixin):
 
     def num_displayed_items(self) -> int:
         return len(self.libraries_table_elements())
+
+    def wait_for_num_displayed_items(self, n):
+        # Imports send one request per item and refresh the folder list only after the last one returns.
+        num_displayed: Optional[int] = None
+
+        def has_n_items(driver):
+            nonlocal num_displayed
+            try:
+                num_displayed = self.num_displayed_items()
+            except StaleElementReferenceException:
+                # The folder refresh re-rendered the table between finding it and counting its rows.
+                return False
+            return num_displayed == n
+
+        try:
+            self._wait_on(
+                has_n_items,
+                f"{n} items to be displayed in the library folder",
+                wait_type=self.wait_types.DATABASE_OPERATION,
+            )
+        except TimeoutException as e:
+            raise AssertionError(
+                f"Expected number of displayed items is {n} but actual was {num_displayed} after waiting"
+            ) from e
 
 
 class UsesHistoryItemAssertions(NavigatesGalaxyMixin):

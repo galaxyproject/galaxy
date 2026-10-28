@@ -100,9 +100,14 @@ export default {
     },
     methods: {
         getSelectOptions(searchChanged = false) {
+            const searchValue = this.searchValue;
             this.services
-                .getSelectOptions(this.apiRootUrl, this.id, true, this.page, this.page_limit, this.searchValue)
+                .getSelectOptions(this.apiRootUrl, this.id, true, this.page, this.page_limit, searchValue)
                 .then((response) => {
+                    // Each keystroke sends a search; drop responses that arrive after the search text moved on.
+                    if (searchValue !== this.searchValue) {
+                        return;
+                    }
                     this.options = response;
                     if (searchChanged) {
                         this.fetched_options = this.options.roles;
