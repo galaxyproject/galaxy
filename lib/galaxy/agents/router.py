@@ -64,13 +64,15 @@ class QueryRouterAgent(BaseGalaxyAgent):
     MAX_CLARIFICATION_TURNS = 3
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
+        # ``instructions`` rather than ``system_prompt``: pydantic-ai drops ``system_prompt`` from
+        # any run given message_history, and every follow-up routes with some.
         model_name = self._get_agent_config("model", "")
 
         if "deepseek" in model_name.lower():
             return Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
-                system_prompt=self._get_simple_system_prompt(),
+                instructions=self._get_simple_system_prompt(),
                 retries=self._get_retries(),
             )
 
@@ -97,7 +99,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 clarification_output,
                 str,  # Default: answer directly
             ],
-            system_prompt=self.get_system_prompt(),
+            instructions=self.get_system_prompt(),
             retries=self._get_retries(),
         )
 
