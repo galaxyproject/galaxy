@@ -52,6 +52,7 @@ from galaxy.objectstore.unittest_utils import (
 )
 from galaxy.util import (
     directory_hash_id,
+    now,
     unlink,
 )
 from galaxy.util.unittest_utils import skip_unless_environ
@@ -851,6 +852,63 @@ def test_get_direct_download_url_disk_store_returns_none():
     with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
         url = object_store.get_direct_download_url(MockDataset(1))
         assert url is None
+
+
+S3_DIRECT_DOWNLOAD_CONFIG_YAML = get_example("s3_simple.yml").replace(
+    "type: s3", "type: s3\nenable_direct_download: true"
+)
+AZURE_DIRECT_DOWNLOAD_CONFIG_YAML = get_example("azure_simple.yml").replace(
+    "type: azure_blob", "type: azure_blob\nenable_direct_download: true"
+)
+
+
+def _boto3_direct_download_expires_in(object_store) -> int:
+    object_store._client = MagicMock()
+    object_store._client.generate_presigned_url.return_value = "https://s3.example.org/signed"
+    with patch.object(object_store, "_exists", return_value=True):
+        assert object_store.get_direct_download_url(MockDataset(1)) == "https://s3.example.org/signed"
+    return object_store._client.generate_presigned_url.call_args.kwargs["ExpiresIn"]
+
+
+def _s3_direct_download_expires_in(object_store) -> int:
+    object_store._bucket = MagicMock()
+    with patch("galaxy.objectstore.s3.Key", create=True) as key_class:
+        key_class.return_value.generate_url.return_value = "https://s3.example.org/signed"
+        with patch.object(object_store, "_exists", return_value=True):
+            assert object_store.get_direct_download_url(MockDataset(1)) == "https://s3.example.org/signed"
+    return key_class.return_value.generate_url.call_args.kwargs["expires_in"]
+
+
+def _azure_direct_download_expires_in(object_store) -> int:
+    signed_at = now()
+    with (
+        patch("galaxy.objectstore.azure_blob.now", return_value=signed_at),
+        patch("galaxy.objectstore.azure_blob.generate_blob_sas", return_value="sig", create=True) as generate_blob_sas,
+        patch("galaxy.objectstore.azure_blob.BlobSasPermissions", create=True),
+        patch.object(object_store, "_blob_client") as blob_client,
+        patch.object(object_store, "_exists", return_value=True),
+    ):
+        blob_client.return_value.url = "https://azure.example.org/blob"
+        assert object_store.get_direct_download_url(MockDataset(1)) == "https://azure.example.org/blob?sig"
+    return int((generate_blob_sas.call_args.kwargs["expiry"] - signed_at).total_seconds())
+
+
+@patch_object_stores_to_skip_initialize
+def test_boto3_direct_download_url_lifetime():
+    with TestConfig(get_example("boto3_direct_download.yml")) as (directory, object_store):
+        assert _boto3_direct_download_expires_in(object_store) == 3600
+
+
+@patch_object_stores_to_skip_initialize
+def test_s3_direct_download_url_lifetime():
+    with TestConfig(S3_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
+        assert _s3_direct_download_expires_in(object_store) == 86400
+
+
+@patch_object_stores_to_skip_initialize
+def test_azure_direct_download_url_lifetime():
+    with TestConfig(AZURE_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
+        assert _azure_direct_download_expires_in(object_store) == 3600
 
 
 BOTO3_TEE_STREAMING_TEST_CONFIG_YAML = """
