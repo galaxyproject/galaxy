@@ -240,9 +240,13 @@ def collect_dynamic_outputs(
                 change_datatype_actions=job_context.change_datatype_actions,
             )
             collection_builder.populate()
-            if job_context.final_job_state == "error" and not collection.elements:
+            is_direct_output = hasattr(has_collection, "collection")
+            if job_context.final_job_state == "error" and not collection.elements and is_direct_output:
                 # A failed job that discovered nothing is not an empty success: consumers would map
-                # over zero elements and the workflow would complete with no data.
+                # over zero elements and the workflow would complete with no data. Only a direct output
+                # (an HDCA) is failed; a mapped job's element of an implicit collection is left as it
+                # was, so one failed element does not fail the whole collection and failed elements
+                # can still be filtered out downstream.
                 collection.handle_population_failed("Job failed before producing any datasets for this collection.")
         except MaxDiscoveredFilesExceededError:
             # Mark the collection as population-failed so it is not left in NEW,

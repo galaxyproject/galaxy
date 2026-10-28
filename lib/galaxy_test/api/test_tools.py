@@ -2989,6 +2989,25 @@ class TestToolsApi(ApiTestCase, TestsTools):
         hdca = self._get(f"histories/{history_id}/contents/dataset_collections/{implicit_collections[0]['id']}").json()
         assert hdca["elements"][0]["object"]["elements"][0]["object"]["elements"][0]["element_identifier"] == "forward"
 
+    @skip_without_tool("collection_creates_dynamic_list_failbool")
+    def test_map_over_discovered_list_one_element_fails(self, history_id):
+        # Mapped over a list, a job that fails before discovering anything leaves only its own element
+        # empty: the implicit collection is not marked failed, so the other elements stay usable and
+        # failed elements can be filtered out downstream.
+        hdca_id = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=[("ok_a", "ok\n"), ("fail_b", "fail\n")], wait=True
+        ).json()["outputs"][0]["id"]
+        inputs = {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}}
+        create = self._run("collection_creates_dynamic_list_failbool", history_id, inputs).json()
+        for job in create["jobs"]:
+            self.dataset_populator.wait_for_job(job["id"], assert_ok=False)
+        implicit_id = create["implicit_collections"][0]["id"]
+        hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=implicit_id)
+        assert hdca["populated"], hdca
+        elements = {e["element_identifier"]: e["object"] for e in hdca["elements"]}
+        assert elements["ok_a"]["element_count"] == 2, elements["ok_a"]
+        assert elements["fail_b"]["populated"], elements["fail_b"]
+
     @skip_without_tool("discover_long_name")
     def test_long_output_name_fails_gracefully(self, history_id):
         # Short name succeeds
