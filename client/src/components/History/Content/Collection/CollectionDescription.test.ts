@@ -210,14 +210,14 @@ describe("CollectionDescription", () => {
 
     it("counts purged elements separately from deleted ones", async () => {
         await setElementCounts({ ok: 4 }, 3, 1);
-        expect(wrapper.find(".deleted-elements").text()).toContain("2");
-        expect(wrapper.find(".purged-elements").text()).toContain("1");
+        expect(wrapper.find(".deleted-elements").text()).toBe("2 deleted");
+        expect(wrapper.find(".purged-elements").text()).toBe("1 purged");
     });
 
     it("shows only the purged count when all elements are purged", async () => {
         await setElementCounts({ ok: 2 }, 2, 2);
         expect(wrapper.find(".deleted-elements").exists()).toBe(false);
-        expect(wrapper.find(".purged-elements").text()).toContain("2");
+        expect(wrapper.find(".purged-elements").text()).toBe("2 purged");
     });
 
     it("can leave out the purged count of an all-purged collection", async () => {
@@ -226,7 +226,7 @@ describe("CollectionDescription", () => {
         expect(wrapper.find(".purged-elements").exists()).toBe(false);
 
         await setElementCounts({ ok: 2 }, 1, 1);
-        expect(wrapper.find(".purged-elements").text()).toContain("1");
+        expect(wrapper.find(".purged-elements").text()).toBe("1 purged");
     });
 
     it("names the collection type on hover", async () => {
