@@ -849,11 +849,14 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert output_details["state"] == "error", output_details
             assert "has not sent back a URL parameter" in output_details["misc_info"], output_details
 
+    def _show_tool(self, tool_id, **params):
+        return self._get(f"tools/{tool_id}", data=params)
+
     def _show_valid_tool(self, tool_id, tool_version=None):
         data = dict(io_details=True)
         if tool_version:
             data["tool_version"] = tool_version
-        tool_show_response = self._get(f"tools/{tool_id}", data=data)
+        tool_show_response = self._show_tool(tool_id, **data)
         self._assert_status_code_is(tool_show_response, 200)
         tool_info = tool_show_response.json()
         self._assert_has_keys(tool_info, "inputs", "outputs", "panel_section_id")
@@ -2220,15 +2223,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("multiple_versions")
     def test_show_exact_version(self):
-        # Without exact, a version that is not installed falls back to another version of the tool.
-        response = self._get("tools/multiple_versions", data={"tool_version": "0.3"})
-        self._assert_status_code_is(response, 200)
-        assert response.json()["version"] != "0.3"
-        response = self._get("tools/multiple_versions", data={"tool_version": "0.3", "exact": True})
+        # Without exact, a missing version falls back (test_show_with_wrong_tool_version_in_tool_id).
+        response = self._show_tool("multiple_versions", tool_version="0.3", exact=True)
         self._assert_status_code_is(response, 404)
-        response = self._get("tools/multiple_versions", data={"tool_version": "0.1", "exact": True})
+        assert response.json()["err_msg"] == (
+            "Tool 'multiple_versions' version 0.3 is not installed; "
+            "the closest match is 'multiple_versions' version 0.2."
+        )
+        response = self._show_tool("multiple_versions", tool_version="0.1", exact=True)
         self._assert_status_code_is(response, 200)
         assert response.json()["version"] == "0.1"
+        response = self._show_tool("multiple_versions", exact=True)
+        self._assert_status_code_is(response, 200)
+        assert response.json()["version"] == "0.2"
 
     @skip_without_tool("multiple_versions")
     def test_run_by_versions(self):

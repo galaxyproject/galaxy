@@ -474,7 +474,14 @@ class TestToolBox(BaseToolBoxTestCase):
         assert exact_version("test_tool") == "0.2"
         assert exact_version(f"{guid}0.1") == "0.1"
         assert exact_version(f"{guid}0.1", "0.1") == "0.1"
-        for tool_id, tool_version in [("test_tool", "0.3"), (f"{guid}0.3", None), (f"{guid}0.1", "0.2")]:
+        assert exact_version(guid.rstrip("/"), "0.1") == "0.1"
+        assert exact_version(guid.rstrip("/")) == "0.2"
+        for tool_id, tool_version in [
+            ("test_tool", "0.3"),
+            (f"{guid}0.3", None),
+            (f"{guid}0.1", "0.2"),
+            (guid.rstrip("/"), "0.3"),
+        ]:
             with pytest.raises(exceptions.ObjectNotFound):
                 exact_version(tool_id, tool_version)
 
