@@ -42,6 +42,7 @@ from galaxy.tools.source_store.populator import (
     send_reload_notification,
     ToolFileWatcher,
 )
+from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 
 # --- Fakes for testing ---
 
@@ -751,7 +752,7 @@ class TestToolsMissingFromReadOnlyStore:
         assert index.entries["installed"].in_panel is True
         assert "published" not in index.entries
 
-    def test_confs_sharing_a_read_only_store_each_keep_their_installed_tools(self, tmp_path):
+    def test_confs_sharing_a_read_only_store_list_it_once(self, tmp_path, monkeypatch):
         confs = {name: tmp_path / f"{name}_tool_conf.xml" for name in ("first", "second")}
 
         def write_confs(*tool_kinds: str) -> None:
@@ -770,8 +771,19 @@ class TestToolsMissingFromReadOnlyStore:
         write_confs("published")
         populate_store_inline(self._config(tmp_path, tool_config_file, read_only=False), target="published")
         write_confs("published", "installed")
+        listings: list[str] = []
+        list_source_paths = SqlAlchemyToolSourceStore.list_source_paths
+
+        def counting_list_source_paths(store: SqlAlchemyToolSourceStore) -> set[str]:
+            if store.read_only:
+                listings.append(store.url)
+            return list_source_paths(store)
+
+        monkeypatch.setattr(SqlAlchemyToolSourceStore, "list_source_paths", counting_list_source_paths)
 
         populate_store_inline(self._config(tmp_path, tool_config_file, read_only=True), prune=True)
+
+        assert listings == [f"sqlite:///{tmp_path}/published.sqlite"]
 
         _, index = _load_default_index(self._config(tmp_path, tool_config_file, read_only=True))
         assert sorted(tool_id for tool_id in index.entries if tool_id.startswith(("first_", "second_"))) == [
