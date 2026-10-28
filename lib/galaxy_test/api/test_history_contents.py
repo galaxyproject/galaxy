@@ -775,6 +775,28 @@ class TestHistoryContentsApi(ApiTestCase):
         states = jobs_summary["states"]
         assert states.get("ok") == 2, states
 
+    @skip_without_tool("cat1")
+    def test_implicit_hdca_updated_when_jobs_finish(self, history_id):
+        hdca_id = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["123", "456", "789"], wait=True
+        ).json()["outputs"][0]["id"]
+        inputs = {
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
+        }
+        run = self.dataset_populator.run_tool("cat1", inputs=inputs, history_id=history_id)
+        implicit_hdca_id = run["implicit_collections"][0]["id"]
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
+        last_output_update_time = max(
+            self.dataset_populator.get_history_dataset_details(history_id, content_id=output["id"])["update_time"]
+            for output in run["outputs"]
+        )
+        # Incremental history updates only deliver the final state of the implicit collection if its update
+        # time is at least that of its last element change.
+        contents = self._get(
+            f"histories/{history_id}/contents?v=dev&q=update_time-ge&qv={last_output_update_time}"
+        ).json()
+        assert implicit_hdca_id in [item["id"] for item in contents], contents
+
     def test_dataset_collection_hide_originals(self, history_id):
         payload = self.dataset_collection_populator.create_pair_payload(
             history_id, type="dataset_collection", direct_upload=False, copy_elements=False

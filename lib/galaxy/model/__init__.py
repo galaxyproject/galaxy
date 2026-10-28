@@ -2413,8 +2413,37 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         sa_session = required_object_session(self)
         update_time = now()
         self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
+        # The job wrapper sets the final output dataset states directly, so this is the last chance to let the
+        # collections containing them, such as the implicit output collections of a mapped tool, know about it.
+        self.touch_output_collections_update_time()
         params = {"job_id": self.id, "update_time": update_time}
         sa_session.execute(statement, params)
+
+    def touch_output_collections_update_time(self, supports_skip_locked=None):
+        """
+        Update the update time of the collections containing the output datasets of this job, including
+        collections that aren't directly job-associated and the collections containing those.
+        """
+        sa_session = required_object_session(self)
+        dialect_name = sa_session.bind.dialect.name
+        job_dataset_ids = select(Dataset.id).where(Dataset.job_id == self.id)
+        # A failed statement aborts the whole transaction on PostgreSQL, so isolate the update in a savepoint
+        savepoint = sa_session.begin_nested() if dialect_name == "postgresql" else None
+        try:
+            if dialect_name in ("postgresql", "sqlite"):
+                if dialect_name == "postgresql" and supports_skip_locked is None:
+                    supports_skip_locked = _check_supports_skip_locked(sa_session.get_bind())
+                Dataset._touch_collection_update_time_cte(sa_session, job_dataset_ids, supports_skip_locked)
+            else:
+                for dataset in sa_session.scalars(select(Dataset).where(Dataset.id.in_(job_dataset_ids))):
+                    dataset._touch_collection_update_time_fallback(sa_session)
+            if savepoint:
+                savepoint.commit()
+        except Exception:
+            if savepoint:
+                savepoint.rollback()
+            # Don't let collection update failures prevent job completion
+            log.exception(f"Failed to update collection times for the outputs of job {self.id}")
 
     def get_destination_configuration(self, dest_params, config, key, default=None):
         """Get a destination parameter that can be defaulted back
@@ -2476,15 +2505,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             update_time=update_time,
             sa_session=sa_session,
         )
-        # Update general collection associations for all datasets in this job
-        # This handles collections that contain datasets from this job but aren't directly job-associated
-        job_datasets = sa_session.query(Dataset).filter(Dataset.job_id == self.id).all()
-        for dataset in job_datasets:
-            try:
-                dataset.touch_collection_update_time(supports_skip_locked=supports_skip_locked)
-            except Exception:
-                # Don't let collection update failures prevent job comion
-                log.error(f"Failed to update collection times for dataset {dataset.id} from job {self.id}")
+        self.touch_output_collections_update_time(supports_skip_locked=supports_skip_locked)
 
         params = {"job_id": self.id, "state": self.state, "info": self.info, "update_time": update_time}
         for statement in statements:
@@ -5100,7 +5121,7 @@ class Dataset(Base, StorableObject, Serializable):
 
         Args:
             supports_skip_locked: Boolean to indicate if database supports
-                FOR UPDATE SKIP LOCKED. Defaults to False.
+                FOR UPDATE SKIP LOCKED. Checked against the database if None.
         """
         session = object_session(self)
         if not session:
@@ -5110,13 +5131,17 @@ class Dataset(Base, StorableObject, Serializable):
         if dialect_name in ("postgresql", "sqlite"):
             if dialect_name == "postgresql" and supports_skip_locked is None:
                 supports_skip_locked = _check_supports_skip_locked(session.get_bind())
-            self._touch_collection_update_time_cte(session, supports_skip_locked)
+            self._touch_collection_update_time_cte(session, [self.id], supports_skip_locked)
         else:
             # Fallback for other databases
             self._touch_collection_update_time_fallback(session)
 
-    def _touch_collection_update_time_cte(self, session, supports_skip_locked):
-        """CTE implementation using SQLAlchemy core constructs"""
+    @staticmethod
+    def _touch_collection_update_time_cte(session, dataset_ids, supports_skip_locked):
+        """
+        CTE implementation using SQLAlchemy core constructs, for the collections containing any of
+        ``dataset_ids``, a list of IDs or a select statement returning them.
+        """
 
         # Base case columns
         base_columns = [
@@ -5133,7 +5158,7 @@ class Dataset(Base, StorableObject, Serializable):
                     HistoryDatasetAssociation.__table__, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id
                 )
             )
-            .where(HistoryDatasetAssociation.dataset_id == self.id)
+            .where(HistoryDatasetAssociation.dataset_id.in_(dataset_ids))
             .union(
                 select(*base_columns)
                 .select_from(
@@ -5142,7 +5167,7 @@ class Dataset(Base, StorableObject, Serializable):
                         DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id,
                     )
                 )
-                .where(LibraryDatasetDatasetAssociation.dataset_id == self.id)
+                .where(LibraryDatasetDatasetAssociation.dataset_id.in_(dataset_ids))
             )
         ).subquery()
 
