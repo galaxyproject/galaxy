@@ -1733,6 +1733,36 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             assert hdca["elements_deleted"] == num_expected_datasets
             assert hdca["elements_purged"] == 0
 
+    def test_partially_purged_nested_collection_counts(self):
+        with self.dataset_populator.test_history() as history_id:
+            pair = [
+                {"src": "pasted", "paste_content": "TestData123", "name": "forward"},
+                {"src": "pasted", "paste_content": "TestData123", "name": "reverse"},
+            ]
+            fetch_response = self.dataset_collection_populator.upload_collection(
+                history_id,
+                "list:paired",
+                elements=[{"name": "test0", "elements": pair}, {"name": "test1", "elements": pair}],
+                wait=True,
+            )
+            hdca = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+            purged_id = hdca["elements"][0]["object"]["elements"][0]["object"]["id"]
+            deleted_id = hdca["elements"][1]["object"]["elements"][0]["object"]["id"]
+            self.dataset_populator.delete_dataset(history_id, purged_id, purge=True, wait_for_purge=True)
+            self.dataset_populator.delete_dataset(history_id, deleted_id)
+
+            hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca["id"])
+            assert hdca["elements_deleted"] == 2
+            assert hdca["elements_purged"] == 1
+            subcollections = [element["object"] for element in hdca["elements"]]
+            assert [(c["elements_deleted"], c["elements_purged"]) for c in subcollections] == [(1, 1), (1, 0)]
+
+            history_contents = self._get_history_contents(
+                history_id, "?v=dev&keys=id,history_content_type,elements_deleted,elements_purged"
+            )
+            listed = self._get_collection_with_id_from_history_contents(history_contents, hdca["id"])
+            assert (listed["elements_deleted"], listed["elements_purged"]) == (2, 1)
+
     @requires_new_user
     def test_only_owner_can_apply_bulk_operations(self):
         with self.dataset_populator.test_history() as history_id:
