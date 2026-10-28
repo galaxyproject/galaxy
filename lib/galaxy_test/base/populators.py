@@ -1009,16 +1009,41 @@ class BaseDatasetPopulator(BasePopulator):
         )
         return self._create_tool_raw(payload)
 
+    def _unprivileged_tool_request(
+        self,
+        route: str,
+        representation: Union[UserToolSource, dict[str, Any]],
+        active: bool = True,
+        hidden: bool = False,
+        uuid: Optional[str] = None,
+    ) -> Response:
+        if isinstance(representation, UserToolSource):
+            data = DynamicUnprivilegedToolCreatePayload(
+                active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
+            ).model_dump(by_alias=True, exclude_unset=True)
+        else:
+            data = {"src": "representation", "representation": representation, "active": active, "hidden": hidden}
+            if uuid is not None:
+                data["uuid"] = uuid
+        return self._post(route, data=data, json=True)
+
     def create_unprivileged_tool(
-        self, representation: UserToolSource, active=True, hidden=False, uuid=None, assert_ok=True
+        self,
+        representation: Union[UserToolSource, dict[str, Any]],
+        active=True,
+        hidden=False,
+        uuid=None,
+        assert_ok=True,
     ):
-        data = DynamicUnprivilegedToolCreatePayload(
-            active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
-        ).model_dump(by_alias=True, exclude_unset=True)
-        response = self._post("unprivileged_tools", data=data, json=True)
+        response = self.create_unprivileged_tool_raw(representation, active, hidden, uuid)
         if assert_ok:
             assert response.status_code == 200, response.text
         return response.json()
+
+    def create_unprivileged_tool_raw(
+        self, representation: Union[UserToolSource, dict[str, Any]], active=True, hidden=False, uuid=None
+    ) -> Response:
+        return self._unprivileged_tool_request("unprivileged_tools", representation, active, hidden, uuid)
 
     def deactivate_unprivileged_tool(self, uuid: str, assert_ok=True):
         response = self._delete(f"unprivileged_tools/{uuid}", json=True)
@@ -1028,36 +1053,50 @@ class BaseDatasetPopulator(BasePopulator):
 
     def build_unprivileged_tool(
         self,
-        representation: UserToolSource,
+        representation: Union[UserToolSource, dict[str, Any]],
         history_id: str,
         active=True,
         hidden=False,
         uuid=None,
         assert_ok=True,
     ):
-        data = DynamicUnprivilegedToolCreatePayload(
-            active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
-        ).model_dump(by_alias=True, exclude_unset=True)
-        response = self._post(f"unprivileged_tools/build?history_id={history_id}", data=data, json=True)
+        response = self.build_unprivileged_tool_raw(representation, history_id, active, hidden, uuid)
         if assert_ok:
             assert response.status_code == 200, response.text
         return response.json()
 
+    def build_unprivileged_tool_raw(
+        self,
+        representation: Union[UserToolSource, dict[str, Any]],
+        history_id: str,
+        active=True,
+        hidden=False,
+        uuid=None,
+    ) -> Response:
+        return self._unprivileged_tool_request(
+            f"unprivileged_tools/build?history_id={history_id}", representation, active, hidden, uuid
+        )
+
     def build_runtime_model_for_tool(
         self,
-        representation: UserToolSource,
+        representation: Union[UserToolSource, dict[str, Any]],
         active=True,
         hidden=False,
         uuid=None,
         assert_ok=True,
     ):
-        data = DynamicUnprivilegedToolCreatePayload(
-            active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
-        ).model_dump(by_alias=True, exclude_unset=True)
-        response = self._post("unprivileged_tools/runtime_model", data=data, json=True)
+        response = self.build_runtime_model_for_tool_raw(representation, active, hidden, uuid)
         if assert_ok:
             assert response.status_code == 200, response.text
         return response.json()
+
+    def build_runtime_model_for_tool_raw(
+        self, representation: Union[UserToolSource, dict[str, Any]], active=True, hidden=False, uuid=None
+    ) -> Response:
+        return self._unprivileged_tool_request("unprivileged_tools/runtime_model", representation, active, hidden, uuid)
+
+    def describe_user_tool(self, source: Union[StrPath, dict[str, Any]], history_id: str) -> "DescribeUserTool":
+        return DescribeUserTool(self, source, history_id)
 
     def get_unprivileged_tools(self, active=True, assert_ok=True):
         response = self._get("unprivileged_tools", data={"active": active})
@@ -1290,8 +1329,10 @@ class BaseDatasetPopulator(BasePopulator):
         tool_response = self._post(url, data=payload)
         return tool_response
 
-    def describe_tool_execution(self, tool_id: str) -> "DescribeToolExecution":
-        return DescribeToolExecution(self, tool_id)
+    def describe_tool_execution(
+        self, tool_id: Optional[str] = None, *, tool_uuid: Optional[str] = None
+    ) -> "DescribeToolExecution":
+        return DescribeToolExecution(self, tool_id, tool_uuid=tool_uuid)
 
     def materialize_dataset_instance(self, history_id: str, id: str, source: str = "hda"):
         payload: dict[str, Any]
@@ -4822,16 +4863,68 @@ class DescribeFailure:
 
 class RequiredTool:
 
-    def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str, default_history_id: Optional[str]):
+    def __init__(
+        self,
+        dataset_populator: BaseDatasetPopulator,
+        tool_id: Optional[str] = None,
+        default_history_id: Optional[str] = None,
+        *,
+        tool_uuid: Optional[str] = None,
+    ):
+        assert (tool_id is None) != (tool_uuid is None), "a required tool needs exactly one of tool_id or tool_uuid"
         self._dataset_populator = dataset_populator
         self._tool_id = tool_id
+        self._tool_uuid = tool_uuid
         self._default_history_id = default_history_id
 
+    def build(self) -> dict[str, Any]:
+        assert self._tool_id and self._default_history_id, "building a tool form requires a tool ID and history"
+        return self._dataset_populator.build_tool_state(self._tool_id, self._default_history_id)
+
     def execute(self, use_cached_job: bool = False) -> "DescribeToolExecution":
-        execution = DescribeToolExecution(self._dataset_populator, self._tool_id, use_cached_job=use_cached_job)
+        execution = DescribeToolExecution(
+            self._dataset_populator, self._tool_id, use_cached_job=use_cached_job, tool_uuid=self._tool_uuid
+        )
         if self._default_history_id:
             execution.in_history(self._default_history_id)
         return execution
+
+
+class DescribeUserTool:
+    """Build and execute a user tool through the API without normalizing its source."""
+
+    def __init__(
+        self, dataset_populator: BaseDatasetPopulator, source: Union[StrPath, dict[str, Any]], history_id: str
+    ):
+        if isinstance(source, dict):
+            representation = source
+        else:
+            with open(source) as source_file:
+                representation = (
+                    json.load(source_file) if os.fspath(source).endswith(".json") else yaml.safe_load(source_file)
+                )
+        if not isinstance(representation, dict):
+            raise TypeError("User tool source must be a mapping")
+        self._dataset_populator = dataset_populator
+        self._representation = representation
+        self._history_id = history_id
+        self._required_tool: Optional[RequiredTool] = None
+
+    def build(self) -> dict[str, Any]:
+        return self._dataset_populator.build_unprivileged_tool(self._representation, self._history_id)
+
+    def create(self) -> RequiredTool:
+        if self._required_tool is None:
+            created = self._dataset_populator.create_unprivileged_tool(self._representation)
+            tool_uuid = created["uuid"]
+            assert tool_uuid, "Dynamic tool UUID not found in response"
+            self._required_tool = RequiredTool(
+                self._dataset_populator, default_history_id=self._history_id, tool_uuid=tool_uuid
+            )
+        return self._required_tool
+
+    def execute(self, use_cached_job: bool = False) -> "DescribeToolExecution":
+        return self.create().execute(use_cached_job=use_cached_job)
 
 
 class DescribeToolInputs:
@@ -4878,9 +4971,17 @@ class DescribeToolExecution:
     _inputs: dict[str, Any]
     _tool_request_id: Optional[str] = None  # if input_format == "request" request ID
 
-    def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str, use_cached_job: bool = False) -> None:
+    def __init__(
+        self,
+        dataset_populator: BaseDatasetPopulator,
+        tool_id: Optional[str] = None,
+        use_cached_job: bool = False,
+        *,
+        tool_uuid: Optional[str] = None,
+    ) -> None:
         self._dataset_populator = dataset_populator
         self._tool_id = tool_id
+        self._tool_uuid = tool_uuid
         self.use_cached_job = use_cached_job
         self._inputs = {}
 
@@ -4911,15 +5012,18 @@ class DescribeToolExecution:
         return self
 
     def _execute(self):
-        kwds: dict[str, Any] = {
-            "use_cached_job": self.use_cached_job,
-        }
+        kwds: dict[str, Any] = {}
+        if self.use_cached_job:
+            # Form-encoded "False" is truthy to the tools API, so omit the flag unless requested.
+            kwds["use_cached_job"] = True
         if self._input_format is not None:
             kwds["input_format"] = self._input_format
+        if self._tool_uuid is not None:
+            kwds["tool_uuid"] = self._tool_uuid
         history_id = self._ensure_history_id
         if self._input_format == "request":
             execute_response = self._dataset_populator.tool_request_raw(
-                self._tool_id, self._inputs, history_id, strict=False
+                self._tool_id, self._inputs, history_id, strict=False, tool_uuid=self._tool_uuid
             )
             if execute_response.status_code == 200:
                 response_json = execute_response.json()
