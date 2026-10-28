@@ -1309,6 +1309,26 @@ class TestAgentUnitMocked:
         assert MIRDEEP2_TOOL_ID in _message_texts(seen)
 
     @pytest.mark.asyncio
+    async def test_error_analysis_bounds_the_whole_replayed_conversation(self):
+        """Each pasted log is trimmed, but a chat full of them still adds up -- 40 trimmed logs
+        is ~160k characters, past a 32k-token model's context. The oldest turns go first."""
+        self.mock_config.ai_model = "gpt-4o"
+        agent = ErrorAnalysisAgent(self.deps)
+        seen: list[ModelMessage] = []
+        history: list[ModelMessage] = []
+        for i in range(20):
+            history.append(ModelRequest(parts=[UserPromptPart(content=f"log {i}\n" + "progress line\n" * 2_000)]))
+            history.append(ModelResponse(parts=[TextPart(content=f"reply {i}")]))
+
+        with agent.agent.override(model=FunctionModel(_structured_error_analysis(seen))):
+            await agent.process("why did it fail?", context={"conversation_history": history})
+
+        replayed = _message_texts(seen)
+        assert "reply 19" in replayed
+        assert "reply 0\n" not in replayed
+        assert len(replayed) < 50_000
+
+    @pytest.mark.asyncio
     async def test_subject_survives_routing_into_error_analysis(self):
         """End to end through the router: tool named by a History reply, then a clarification,
         then a follow-up without the tool's name that routes to error analysis. The tool has to
