@@ -121,7 +121,7 @@ async function updatePanelView(panel: Panel) {
 
 <template>
     <BDropdown
-        v-g-tooltip.hover.top
+        v-g-tooltip.hover.right
         right
         block
         no-caret
