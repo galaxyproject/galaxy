@@ -165,6 +165,22 @@ def test_dataset_dbkeys_and_extensions_summary(
     assert hdca.dataset_dbkeys_and_extensions_summary[1] == {"bam", "txt"}
 
 
+def test_hdca_dbkeys_and_extensions_view_keeps_summary(
+    session, make_hda, make_dataset_collection, make_dataset_collection_element, make_hdca
+):
+    d1 = make_hda(extension="bam", dbkey="hg19", create_dataset=True, sa_session=session)
+    c1 = make_dataset_collection(collection_type="list")
+    make_dataset_collection_element(collection=c1, element=d1)
+
+    hdca = make_hdca(collection=c1)
+    for _ in range(2):
+        rval = hdca.to_dict(view="dbkeysandextensions")
+        assert rval["dbkey"] == "hg19"
+        assert rval["extension"] == "bam"
+    assert hdca.dataset_dbkeys_and_extensions_summary[0] == {"hg19"}
+    assert hdca.dataset_dbkeys_and_extensions_summary[1] == {"bam"}
+
+
 def test_populated_optimized_ok(session, make_dataset_collection, make_dataset_collection_element, make_hda):
     c1 = make_dataset_collection(collection_type="paired")
     make_dataset_collection_element(collection=c1, element=make_hda(create_dataset=True, sa_session=session))

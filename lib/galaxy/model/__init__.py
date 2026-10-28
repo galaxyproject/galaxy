@@ -8451,8 +8451,8 @@ class HistoryDatasetCollectionAssociation(
         if view == "dbkeysandextensions":
             dbkeys, extensions, *_ = self.dataset_dbkeys_and_extensions_summary
             dict_value = dict(
-                dbkey=dbkeys.pop() if len(dbkeys) == 1 else "?",
-                extension=extensions.pop() if len(extensions) == 1 else "auto",
+                dbkey=next(iter(dbkeys)) if len(dbkeys) == 1 else "?",
+                extension=next(iter(extensions)) if len(extensions) == 1 else "auto",
             )
         else:
             dict_value = dict(
