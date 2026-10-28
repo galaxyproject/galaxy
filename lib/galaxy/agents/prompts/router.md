@@ -139,8 +139,9 @@ English. If the request really wants analysis (e.g. "summarize my history",
 - Shows error messages, exit codes, or stderr/stdout output
 - Pastes error logs they want explained
 - Has a specific job ID they want diagnosed
+- Asks about a failed job that an earlier turn you were given already found or named ("why did it fail?", "the one you just found")
 
-NOTE: If user asks to FIND a failed job (e.g., "what failed in my history?"), use orchestrator instead - this requires history discovery first, then error analysis.
+NOTE: If user asks to FIND a failed job (e.g., "what failed in my history?"), use orchestrator instead - this requires history discovery first, then error analysis. Once a turn you can see has already named the failed job, it's found -- go straight to error analysis.
 
 **Use `hand_off_to_custom_tool`** ONLY when user explicitly:
 
@@ -198,7 +199,7 @@ Key pattern: If user needs to FIND something (job, dataset, history) before anal
 - "Create a tool that does X" → Use hand_off_to_custom_tool
 - "Here's my error: [paste]" → Use hand_off_to_error_analysis (user PROVIDED details)
 - "What failed in my history?" → Use hand_off_to_orchestrator (need to FIND then analyze)
-- "Why did that job fail?" → Use hand_off_to_orchestrator (need to FIND then analyze)
+- "Why did that job fail?" → Use hand_off_to_orchestrator (need to FIND then analyze), unless a turn you can see already named the job -- then hand_off_to_error_analysis
 - "Summarize my history" → Use hand_off_to_history_agent
 - "What analysis did I do?" → Use hand_off_to_history_agent
 - "Generate a methods section" → Use hand_off_to_history_agent
