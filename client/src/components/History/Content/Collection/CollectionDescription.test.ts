@@ -220,6 +220,15 @@ describe("CollectionDescription", () => {
         expect(wrapper.find(".purged-elements").text()).toContain("2");
     });
 
+    it("can leave out the purged count of an all-purged collection", async () => {
+        await wrapper.setProps({ hideAllPurgedCount: true });
+        await setElementCounts({ ok: 2 }, 2, 2);
+        expect(wrapper.find(".purged-elements").exists()).toBe(false);
+
+        await setElementCounts({ ok: 2 }, 1, 1);
+        expect(wrapper.find(".purged-elements").text()).toContain("1");
+    });
+
     it("names the collection type on hover", async () => {
         await describeType("list:record", 3);
         expect(wrapper.find(".description").attributes("title")).toBe("List of Records (list:record)");

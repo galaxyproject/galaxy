@@ -425,7 +425,11 @@ function unexpandedClick(event: Event) {
         <ContentExpirationIndicator :item="item" class="ml-auto align-self-start btn-group p-1" />
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
         <span @click.stop="unexpandedClick">
-            <CollectionDescription v-if="!isDataset" class="px-2 pb-2 cursor-pointer" :hdca="item" />
+            <CollectionDescription
+                v-if="!isDataset"
+                class="px-2 pb-2 cursor-pointer"
+                :hdca="item"
+                :hide-all-purged-count="isPurged" />
             <StatelessTags
                 v-if="!tagsDisabled || hasTags"
                 class="px-2 pb-2"

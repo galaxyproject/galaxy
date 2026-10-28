@@ -16,9 +16,13 @@ import DatasetProgress from "./DatasetProgress.vue";
 
 interface Props {
     hdca: HDCASummary;
+    /** Leave out the purged count when every element is purged, for hosts that show their own "Purged" badge. */
+    hideAllPurgedCount?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    hideAllPurgedCount: false,
+});
 
 const knownCollectionType = computed(() => findKnownCollectionType(props.hdca.collection_type));
 
@@ -36,7 +40,10 @@ const datasetStateSummary = computed(() => {
 });
 
 const deletedCount = computed(() => datasetStateSummary.value.deletedNotPurgedCount);
-const purgedCount = computed(() => datasetStateSummary.value.elements_purged);
+const purgedCount = computed(() => {
+    const summary = datasetStateSummary.value;
+    return props.hideAllPurgedCount && summary.allElementsPurged ? 0 : summary.elements_purged;
+});
 
 const collectionLabel = computed(() => {
     const collectionType = props.hdca.collection_type;
