@@ -3155,14 +3155,7 @@ steps: []
                         f"Legacy 'type: {v['type']}' form in job input '{k}' is not allowed with "
                         "test_data_format='cwl_style'. Use 'class: File' + path/location/contents."
                     )
-                elif test_data_format == "cwl_style" and not isinstance(v, (dict, list)):
-                    raw_params[k] = v
-                    del job_copy[k]
-                elif (
-                    test_data_format == "cwl_style"
-                    and isinstance(v, list)
-                    and not any(isinstance(x, (dict, list)) for x in v)
-                ):
+                elif test_data_format == "cwl_style" and _is_scalar_or_scalar_list(v):
                     raw_params[k] = v
                     del job_copy[k]
             staged_job, datasets = stage_inputs(
@@ -4496,6 +4489,13 @@ def _uses_class_syntax(test_data_dict: dict) -> bool:
         if isinstance(value, list):  # CWL list shorthand
             return True
     return False
+
+
+def _is_scalar_or_scalar_list(value: Any) -> bool:
+    """Shape of a cwl_style parameter value: a bare scalar or a flat list of scalars."""
+    if isinstance(value, list):
+        return not any(isinstance(x, (dict, list)) for x in value)
+    return not isinstance(value, dict)
 
 
 LoadDataDictResponseT = tuple[dict[str, Any], dict[str, Any], bool]
