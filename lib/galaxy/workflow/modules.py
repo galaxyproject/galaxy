@@ -2813,7 +2813,7 @@ class ToolModule(WorkflowModule):
                 return
 
             index = int(index)
-            repeat = self.tool.inputs[repeat_name]
+            repeat = self.tool.inputs.get(repeat_name)
             if not isinstance(repeat, Repeat):
                 return
 
@@ -2823,14 +2823,13 @@ class ToolModule(WorkflowModule):
             repeat_values = inputs_states[repeat_name]
             repeat_instance_state = None
             while index >= len(repeat_values):
-                repeat_instance_state = {"__index__": len(repeat_values)}
-                if not kwds.get("fill_defaults", False):
-                    # Nothing else fills a new instance without fill_defaults; give its non-data inputs
-                    # their defaults (connected data inputs are marked connected on import).
-                    context = ExpressionContext(repeat_instance_state)
-                    for child in repeat.inputs.values():
-                        if child.type not in ("data", "data_collection"):
-                            repeat_instance_state[child.name] = child.get_initial_value(self.trans, context)
+                if kwds.get("fill_defaults", False):
+                    repeat_instance_state = {"__index__": len(repeat_values)}
+                else:
+                    # Nothing else fills a new instance without fill_defaults.
+                    repeat_instance_state = repeat.get_initial_instance(
+                        self.trans, ExpressionContext(inputs_states), len(repeat_values)
+                    )
                 repeat_values.append(repeat_instance_state)
 
             if repeat_instance_state:
