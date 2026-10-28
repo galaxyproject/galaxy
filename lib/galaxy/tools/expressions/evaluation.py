@@ -4,7 +4,10 @@ from typing import (
     Optional,
 )
 
-from cwl_utils.errors import SubstitutionError
+from cwl_utils.errors import (
+    JavascriptException,
+    SubstitutionError,
+)
 from cwl_utils.expression import (
     do_eval as _do_eval,
     needs_parsing,
@@ -28,7 +31,7 @@ TEMPLATE_SNIPPET_LENGTH = 80
 
 
 class ExpressionTemplateError(MessageException):
-    """A ``$(...)``/``${...}`` block in a tool template does not parse."""
+    """A ``$(...)``/``${...}`` block in a tool template does not parse or failed, with a message for the user."""
 
 
 def validate_expression_template(expression: str, description: str = "command template") -> None:
@@ -68,9 +71,9 @@ def _unterminated_message(expression: str, scan: str, consumed: int, description
 
 
 def expression_error_message(exc: Exception) -> str:
-    """The JavaScript error from a failed evaluation (e.g. ``TypeError: ...``), without the script positions."""
-    lines = [line.strip() for line in str(exc).splitlines()]
-    return next((line for line in lines[1:] if line and not line.startswith("at ")), lines[0] if lines else "")
+    """The JavaScript error from a failed evaluation (e.g. ``TypeError: ...``), without cwl_utils' header."""
+    cause = exc.__cause__
+    return str(cause if isinstance(cause, JavascriptException) else exc)
 
 
 def do_eval(

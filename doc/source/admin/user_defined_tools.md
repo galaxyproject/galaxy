@@ -54,6 +54,8 @@ See https://training.galaxyproject.org/training-material/topics/admin/tutorials/
 and see https://github.com/galaxyproject/galaxy/blob/dev/test/integration/embedded_pulsar_job_conf.yml#L29 for a simple example that uses embedded pulsar to isolate mounts and disables network access.
 While the feature is in beta we recommend that only trusted users are allowed to use this feature.
 
+When a JavaScript expression in a user-defined tool fails while Galaxy builds the job, the job fails with the JavaScript error, for example `TypeError: cannot read property '0' of undefined`. This happens regardless of `expose_dataset_path`. The error can quote the job's input values, including input dataset paths.
+
 ## Routing user-defined tool jobs
 
 Because a user-defined tool runs an arbitrary command in an arbitrary image, it should be routed to an isolated destination rather than to wherever ordinary tools run. Galaxy exposes user-defined tools to the job configuration in two ways.

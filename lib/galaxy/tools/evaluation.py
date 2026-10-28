@@ -59,6 +59,7 @@ from galaxy.tools.expressions import (
     do_eval,
     expression_error_message,
     ExpressionTemplateError,
+    ExpressionWorkerError,
 )
 from galaxy.tools.parameters import (
     visit_input_values,
@@ -131,22 +132,30 @@ class ToolTemplatingException(Exception):
         self.is_latest = is_latest
 
 
+def _reports_expression_error(exc: Exception, tool: "Tool") -> bool:
+    """Whether a failed JavaScript expression is reported to the user with its error message.
+
+    The message can quote values from the job's inputs, including dataset paths, so outside
+    user-defined tools it is only shown where users may see dataset paths anyway.
+    """
+    if not isinstance(exc, WorkflowException) or isinstance(exc.__cause__, ExpressionWorkerError):
+        return False
+    return tool.tool_type == "user_defined" or tool.app.config.expose_dataset_path
+
+
 def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool: "Tool"):
     try:
         return func()
-    except ExpressionTemplateError as e:
-        # The job runner reports these to the user as they are; wrapping would hide the message.
-        global_tool_errors.add_error(config_file, action_str, e)
-        raise
-    except WorkflowException as e:
-        # A JavaScript expression in the tool failed: the error names the user's mistake.
-        global_tool_errors.add_error(config_file, action_str, e)
-        raise ExpressionTemplateError(
-            f"Error occurred while {action_str.lower()} for tool '{tool.id}': {expression_error_message(e)}"
-        ) from e
     except Exception as e:
         # capture and log parsing errors
         global_tool_errors.add_error(config_file, action_str, e)
+        if isinstance(e, ExpressionTemplateError):
+            # The job runner reports these to the user as they are; wrapping would hide the message.
+            raise
+        if _reports_expression_error(e, tool):
+            raise ExpressionTemplateError(
+                f"Error occurred while {action_str.lower()} for tool '{tool.id}': {expression_error_message(e)}"
+            ) from e
         raise ToolTemplatingException(
             f"Error occurred while {action_str.lower()} for tool '{tool.id}'",
             tool_id=tool.id,

@@ -6,6 +6,7 @@ from .evaluation import (
     validate_expression_template,
 )
 from .js_engine import (
+    ExpressionWorkerError,
     register,
     resolve_isolation_command,
 )
@@ -23,6 +24,7 @@ __all__ = (
     "EXPRESSION_SCRIPT_CALL",
     "EXPRESSION_SCRIPT_NAME",
     "ExpressionTemplateError",
+    "ExpressionWorkerError",
     "find_engine",
     "register",
     "resolve_isolation_command",

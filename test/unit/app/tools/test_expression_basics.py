@@ -4,7 +4,7 @@ import platform
 import shutil
 import subprocess
 import sys
-import time
+import tempfile
 
 import psutil
 import pytest
@@ -18,6 +18,7 @@ from galaxy.tools.expressions import (
     evaluate,
     expression_error_message,
     ExpressionTemplateError,
+    ExpressionWorkerError,
     js_engine,
     validate_expression_template,
 )
@@ -204,20 +205,19 @@ def test_do_eval_process_is_undefined():
     assert result == "undefined"
 
 
-@pytest.mark.parametrize("body", ["{while (true) {}}", "{return {toJSON() {while (true) {}}};}"])
+@pytest.mark.parametrize(
+    "body",
+    [
+        "{while (true) {}}",
+        "{return {toJSON() {while (true) {}}};}",
+        "{throw {toString() {while (true) {}}};}",
+    ],
+)
 def test_sandbox_engine_timeout(body):
     # A runaway expression is killed rather than hanging the scheduler.
     engine = SandboxedJSEngine()
     with pytest.raises(JavascriptException, match="interrupted"):
         engine.eval(body, timeout=0.1)
-
-
-def test_parent_timeout_during_exception_formatting(short_timeout_grace):
-    started = time.monotonic()
-    with pytest.raises(JavascriptException, match="timed out in worker subprocess") as exc:
-        SandboxedJSEngine().eval("{throw {toString() {while (true) {}}};}", timeout=0.1)
-    assert isinstance(exc.value.__cause__, subprocess.TimeoutExpired)
-    assert time.monotonic() - started < 5
 
 
 @pytest.mark.parametrize("constructor", ["Uint8Array", "ArrayBuffer", "SharedArrayBuffer"])
@@ -242,8 +242,30 @@ def test_no_host_apis():
 
 @pytest.mark.parametrize("program", ["JSON.stringify(()", "throw new Error('bad expression')"])
 def test_javascript_errors_are_translated(program):
-    with pytest.raises(JavascriptException):
+    with pytest.raises(JavascriptException) as exc:
         evaluate_program(program)
+    assert not isinstance(exc.value, ExpressionWorkerError)
+
+
+def test_worker_that_cannot_start_is_a_worker_error():
+    with pytest.raises(ExpressionWorkerError, match="Could not run expression worker"):
+        evaluate_program("JSON.stringify(42)", sandbox_command=["/nonexistent/jail/binary"])
+
+
+def test_missing_temporary_directory_is_a_worker_error(monkeypatch, tmp_path):
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path / "missing"))
+    with pytest.raises(ExpressionWorkerError, match="No such file or directory"):
+        evaluate_program("JSON.stringify(42)")
+
+
+def test_worker_without_quickjs_is_a_worker_error():
+    wrapper = [
+        sys.executable,
+        "-c",
+        "import runpy, sys; sys.modules['quickjs'] = None; runpy.run_path(sys.argv[2], run_name='__main__')",
+    ]
+    with pytest.raises(ExpressionWorkerError, match="requires Python 3.10\\+ and the quickjs-ng package"):
+        evaluate_program("JSON.stringify(42)", sandbox_command=wrapper)
 
 
 @pytest.mark.parametrize("character", ["x", "é"])
@@ -309,13 +331,14 @@ def test_timeout_kills_worker_under_waiting_wrapper(tmp_path, short_timeout_grac
     wrapper = tmp_path / "wrapper.py"
     wrapper.write_text(
         "import pathlib, subprocess, sys\n"
-        "child = subprocess.Popen(sys.argv[2:])\n"
+        # The worker waits for its request on a stdin that stays open.
+        "child = subprocess.Popen(sys.argv[2:], stdin=subprocess.PIPE)\n"
         "pathlib.Path(sys.argv[1]).write_text(str(child.pid))\n"
         "child.wait()\n"
     )
     with pytest.raises(JavascriptException, match="timed out in worker subprocess"):
         evaluate_program(
-            "throw {toString() {while (true) {}}}",
+            "JSON.stringify(42)",
             timeout=0.1,
             sandbox_command=[sys.executable, str(wrapper), str(pid_file)],
         )
@@ -431,12 +454,18 @@ def test_unterminated_expression_reports_a_description():
         validate_expression_template('echo "$(date"', "shell_command")
 
 
-def test_expression_error_message_names_the_javascript_error():
+@pytest.mark.parametrize(
+    "expression, message",
+    [
+        ("cat '$(inputs.x.elements[0].path)' > out.txt", "TypeError: cannot read property '0' of undefined"),
+        ("${ throw new Error('first line\\nsecond line'); }", "Error: first line\nsecond line"),
+        ("${ throw 'at least one input is required'; }", "at least one input is required"),
+    ],
+)
+def test_expression_error_message_is_the_javascript_error(expression, message):
     with pytest.raises(WorkflowException) as exc:
-        do_eval("cat '$(inputs.x.elements[0].path)' > out.txt", {"x": []})
-    message = expression_error_message(exc.value)
-    assert message.startswith("TypeError"), message
-    assert "<input>" not in message  # script positions are left out
+        do_eval(expression, {"x": []})
+    assert expression_error_message(exc.value) == message
 
 
 def test_escaped_command_substitution_survives_evaluation():

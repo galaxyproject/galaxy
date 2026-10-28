@@ -3514,6 +3514,9 @@ mapping:
           This option allows users to see the full path of datasets via the "View
           Details" option in the history. This option also exposes the command line to
           non-administrative users. Administrators can always see dataset paths.
+          It also shows users the error from a failing JavaScript expression in a
+          YAML tool, which can quote the job's input values, including dataset
+          paths. User-defined tools always show this error.
 
       enable_tool_source_display:
         type: bool
