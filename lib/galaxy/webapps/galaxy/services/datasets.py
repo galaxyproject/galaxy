@@ -846,7 +846,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
         try:
-            original.get_converted_dataset(trans, target_ext)
+            self.history_manager.get_converted_dataset(trans, original, target_ext)
             converted = original.get_converted_files_by_type(target_ext)
             return converted
 
@@ -925,7 +925,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 "Parameter `query` is required when searching features."
             )
         if dataset.can_convert_to("fli"):
-            converted_dataset = dataset.get_converted_dataset(trans, "fli")
+            converted_dataset = self.history_manager.get_converted_dataset(trans, dataset, "fli")
             if converted_dataset:
                 data_provider = FeatureLocationIndexDataProvider(converted_dataset=converted_dataset)
                 if data_provider:

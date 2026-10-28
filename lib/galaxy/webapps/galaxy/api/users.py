@@ -33,6 +33,7 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.hdas import HDAManager
+from galaxy.managers.histories import HistoryManager
 from galaxy.model import (
     Dataset,
     FormDefinition,
@@ -157,6 +158,7 @@ class FastAPIUsers:
     service: UsersService = depends(UsersService)
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
     hda_manager: HDAManager = depends(HDAManager)
+    history_manager: HistoryManager = depends(HistoryManager)
 
     @router.put(
         "/api/users/current/recalculate_disk_usage",
@@ -463,7 +465,7 @@ class FastAPIUsers:
         self,
         user_id: UserIdPathParam,
         key: str = CustomBuildKeyPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         payload: CustomBuildCreationPayload = CustomBuildCreationBody,
     ) -> Any:
         user = self.service.get_user(trans, user_id)
@@ -525,8 +527,8 @@ class FastAPIUsers:
                 build_dict["fasta"] = trans.security.decode_id(len_value)
                 dataset = self.hda_manager.get_accessible(build_dict["fasta"], trans.user)
                 try:
-                    new_len = dataset.get_converted_dataset(trans, "len")
-                    new_linecount = new_len.get_converted_dataset(trans, "linecount")
+                    new_len = self.history_manager.get_converted_dataset(trans, dataset, "len")
+                    new_linecount = self.history_manager.get_converted_dataset(trans, new_len, "linecount")
                     build_dict["len"] = new_len.id
                     build_dict["linecount"] = new_linecount.id
                 except NoConverterException as e:

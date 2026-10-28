@@ -47,7 +47,10 @@ from galaxy.managers.base import (
     SortableManager,
     StorageCleanerManager,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.model import (
     History,
@@ -284,6 +287,10 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         filters = combine_lists(filters, History.user_id == user.id)
         stmt = select(History).where(*filters).order_by(History.update_time.desc()).limit(1)
         return self.session().scalars(stmt).first()
+
+    def get_converted_dataset(self, trans: ProvidesHistoryContext, dataset: model.DatasetInstance, target_ext: str):
+        """Return ``dataset`` converted to ``target_ext``, running the conversion if needed."""
+        return dataset.get_converted_dataset(trans, target_ext)
 
     # .... purgable
     def purge(self, item, flush=True, **kwargs):
