@@ -24,6 +24,7 @@ from galaxy.jobs.handler import (
 )
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.mapper import (
+    JobMappingException,
     JobNotReadyException,
     JobRunnerMapper,
     STOCK_RULES,
@@ -41,9 +42,10 @@ WINDOW = 2
 class HandlerJobWrapper:
     """Keep destination mapping real; replace runner preparation and output handling."""
 
-    def __init__(self, job, queue, **kwds):
+    def __init__(self, job, harness, **kwds):
         self.job_id = job.id
-        self.app = queue.app
+        self.harness = harness
+        self.app = harness.app
         self.tool = SimpleNamespace(
             id="handler_test",
             get_job_destination=lambda params: JobDestination(runner="dynamic", params={"type": "handler_test"}),
@@ -57,8 +59,22 @@ class HandlerJobWrapper:
     def job_destination(self):
         return self.job_runner_mapper.get_job_destination({})
 
+    def set_cached_job_destination(self, job_destination):
+        return self.job_runner_mapper.cache_job_destination(job_destination)
+
     def fail(self, message):
-        self.get_job().set_state(model.Job.states.ERROR)
+        # Like JobWrapper.fail, resolve the destination first, mapping the job
+        # if no destination is cached yet.
+        attempts = len(self.harness.attempts)
+        try:
+            self.job_destination  # noqa: B018
+        except JobMappingException:
+            self.set_cached_job_destination(JobDestination(id="__fail__"))
+        if len(self.harness.attempts) > attempts:
+            self.harness.remapped_on_fail.append(self.job_id)
+        job = self.get_job()
+        job.info = str(message)
+        job.set_state(model.Job.states.ERROR)
 
     def pause(self, job, message):
         job.set_state(model.Job.states.PAUSED)
@@ -73,6 +89,9 @@ class HandlerHarness:
         self.attempts = []
         self.dispatched = []
         self.deferred = {}
+        self.unmappable: set[int] = set()
+        self.remapped_on_fail: list[int] = []
+        self.undispatchable: set[int] = set()
         self.selected: list[tuple[int | None, int | None]] = []
         self.destination = JobDestination(id="local", runner="local")
         app.job_config = SimpleNamespace(
@@ -89,7 +108,7 @@ class HandlerHarness:
         app.execution_timer_factory = Mock()
         monkeypatch.setitem(STOCK_RULES, "handler_test", self.map_destination)
         self.queue = JobHandlerQueue(app, SimpleNamespace(put=self.dispatch, url_to_destination=Mock()))
-        monkeypatch.setattr(self.queue, "job_wrapper", lambda job, **kwds: HandlerJobWrapper(job, self.queue, **kwds))
+        monkeypatch.setattr(self.queue, "job_wrapper", lambda job, **kwds: HandlerJobWrapper(job, self, **kwds))
         select_ready_jobs = self.queue._select_ready_jobs
 
         def record_candidates():
@@ -103,9 +122,13 @@ class HandlerHarness:
         self.attempts.append(job_id)
         if job_id in self.deferred:
             raise JobNotReadyException(job_state=self.deferred[job_id])
+        if job_id in self.unmappable:
+            raise JobMappingException("No destination can run this job.")
         return self.destination
 
     def dispatch(self, wrapper):
+        if wrapper.job_id in self.undispatchable:
+            raise RuntimeError("Runner unavailable.")
         self.dispatched.append(wrapper.job_id)
         job = wrapper.get_job()
         job.set_state(model.Job.states.QUEUED)
@@ -124,6 +147,14 @@ class HandlerHarness:
         self.app.model.context.add(session)
         self.app.model.context.commit()
         return session.id
+
+    def resubmitted_job(self, user_id):
+        """A job awaiting resubmission through the dynamic test destination."""
+        job_id = self.job(user_id, state="resubmitted")
+        self.update_job(
+            job_id, destination_id="dynamic", job_runner_name="dynamic", destination_params={"type": "handler_test"}
+        )
+        return job_id
 
     def update_job(self, job_id, **values):
         job = self.app.model.context.get(model.Job, job_id)
@@ -402,3 +433,54 @@ def test_unwindowed_queues_still_retry_deferred_jobs(handler, database_queue):
     assert handler.poll() == jobs[:5]
     assert Counter(handler.dispatched) == Counter(jobs)
     assert handler.queue._ready_job_cursors == {}
+
+
+@pytest.mark.parametrize("handler", ["sqlite", "postgresql"], indirect=True)
+def test_deferred_resubmission_does_not_interrupt_other_jobs(handler):
+    user = handler.user()
+    resubmit = handler.resubmitted_job(user)
+    handler.deferred[resubmit] = None
+    ready = handler.job(user)
+    handler.poll()
+    assert handler.dispatched == [ready]
+    assert handler.app.model.context.get(model.Job, resubmit).state == "resubmitted"
+    handler.deferred.clear()
+    handler.poll()
+    assert handler.dispatched == [ready, resubmit]
+
+
+@pytest.mark.parametrize("handler", ["sqlite", "postgresql"], indirect=True)
+def test_unmappable_resubmission_fails_without_interrupting_other_jobs(handler):
+    user = handler.user()
+    resubmit = handler.resubmitted_job(user)
+    handler.unmappable.add(resubmit)
+    ready = handler.job(user)
+    assert resubmit in handler.poll()
+    # Failing the job must not map it again from the tool's default.
+    assert handler.remapped_on_fail == []
+    assert handler.dispatched == [ready]
+    failed = handler.app.model.context.get(model.Job, resubmit)
+    assert failed.state == "error"
+    assert failed.info == "No destination can run this job."
+
+
+@pytest.mark.parametrize("handler", ["sqlite", "postgresql"], indirect=True)
+def test_resubmission_dispatch_error_does_not_interrupt_other_jobs(handler):
+    user = handler.user()
+    resubmit = handler.resubmitted_job(user)
+    handler.undispatchable.add(resubmit)
+    ready = handler.job(user)
+    handler.poll()
+    assert handler.dispatched == [ready]
+    assert handler.app.model.context.get(model.Job, resubmit).state == "resubmitted"
+
+
+@pytest.mark.parametrize("handler", ["sqlite", "postgresql"], indirect=True)
+def test_unmappable_new_job_fails_without_mapping_again(handler):
+    job = handler.job(handler.user())
+    handler.unmappable.add(job)
+    assert job in handler.poll()
+    assert handler.remapped_on_fail == []
+    failed = handler.app.model.context.get(model.Job, job)
+    assert failed.state == "error"
+    assert failed.info == "No destination can run this job."
