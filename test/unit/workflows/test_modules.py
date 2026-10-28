@@ -552,7 +552,7 @@ def test_to_cwl_purged_dataset():
 
 
 def test_to_cwl_nested_collection():
-    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda = model.HistoryDatasetAssociation(name="reads.fq", create_dataset=True, flush=False)
     hda.dataset.state = model.Dataset.states.OK
     dc_inner = model.DatasetCollection(collection_type="list")
     model.DatasetCollectionElement(collection=dc_inner, element_identifier="inner", element=hda)
@@ -561,11 +561,12 @@ def test_to_cwl_nested_collection():
     hdca = model.HistoryDatasetCollectionAssociation(name="the collection", collection=dc_outer)
     result = modules.to_cwl(hdca, [], model.WorkflowStep())
     assert result["outer"][0]["class"] == "File"
-    assert result["outer"][0]["basename"] == "inner"
+    assert result["outer"][0]["basename"] == "reads.fq"
+    assert result["outer"][0]["element_identifier"] == "inner"
 
 
 def test_to_cwl_dataset_collection_element():
-    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda = model.HistoryDatasetAssociation(name="reads.fq", create_dataset=True, flush=False)
     hda.dataset.state = model.Dataset.states.OK
     dc_inner = model.DatasetCollection(collection_type="list")
     model.DatasetCollectionElement(collection=dc_inner, element_identifier="inner", element=hda)
@@ -573,7 +574,22 @@ def test_to_cwl_dataset_collection_element():
     dce_outer = model.DatasetCollectionElement(collection=dc_outer, element_identifier="outer", element=dc_inner)
     result = modules.to_cwl(dce_outer, [], model.WorkflowStep())
     assert result[0]["class"] == "File"
-    assert result[0]["basename"] == "inner"
+    assert result[0]["basename"] == "reads.fq"
+    assert result[0]["element_identifier"] == "inner"
+
+
+def test_to_cwl_record_collection():
+    dc = model.DatasetCollection(collection_type="paired")
+    for identifier, name in (("forward", "r1.fq"), ("reverse", "r2.fq")):
+        hda = model.HistoryDatasetAssociation(name=name, create_dataset=True, flush=False)
+        hda.dataset.state = model.Dataset.states.OK
+        model.DatasetCollectionElement(collection=dc, element_identifier=identifier, element=hda)
+    hdca = model.HistoryDatasetCollectionAssociation(name="the pair", collection=dc)
+    result = modules.to_cwl(hdca, [], model.WorkflowStep())
+    assert {k: (v["basename"], v["element_identifier"]) for k, v in result.items()} == {
+        "forward": ("r1.fq", "forward"),
+        "reverse": ("r2.fq", "reverse"),
+    }
 
 
 def _expression_json_hda(path, content: str | None, seconds_since_updated: int = 0):

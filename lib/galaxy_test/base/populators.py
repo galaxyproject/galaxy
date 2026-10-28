@@ -175,6 +175,10 @@ TOOL_WITH_SHELL_COMMAND = {
         }
     ],
 }
+TOOL_WITH_ELEMENT_IDENTIFIER: dict[str, Any] = {
+    **TOOL_WITH_SHELL_COMMAND,
+    "shell_command": "echo '$(inputs.input.element_identifier)' > output.fastq",
+}
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
 
@@ -1267,18 +1271,22 @@ class BaseDatasetPopulator(BasePopulator):
 
     def tool_request_raw(
         self,
-        tool_id: str,
+        tool_id: str | None,
         inputs: dict[str, Any],
         history_id: str,
         strict: bool = True,
         preferred_object_store_id: str | None = None,
+        tool_uuid: str | None = None,
     ) -> Response:
-        payload = {
-            "tool_id": tool_id,
+        payload: dict[str, Any] = {
             "history_id": history_id,
             "inputs": inputs,
             "strict": strict,
         }
+        if tool_id is not None:
+            payload["tool_id"] = tool_id
+        if tool_uuid is not None:
+            payload["tool_uuid"] = tool_uuid
         if preferred_object_store_id is not None:
             payload["preferred_object_store_id"] = preferred_object_store_id
         response = self._post("jobs", data=payload, json=True)
@@ -1402,6 +1410,16 @@ class BaseDatasetPopulator(BasePopulator):
         icj_id = details.get("implicit_collection_jobs_id")
         assert icj_id, f"HDCA {hdca_id} has no implicit_collection_jobs_id"
         return icj_id
+
+    def get_collection_element_contents(self, history_id: str, hdca_id: str) -> dict[str, str]:
+        """Map each element identifier of a flat dataset collection to its dataset's content."""
+        elements = self.get_history_collection_details(history_id, content_id=hdca_id)["elements"]
+        return {
+            element["element_identifier"]: self.get_history_dataset_content(
+                history_id, dataset_id=element["object"]["id"]
+            )
+            for element in elements
+        }
 
     def run_collection_creates_list(self, history_id: str, hdca_id: str) -> Response:
         inputs = {
@@ -4200,6 +4218,20 @@ class BaseDatasetCollectionPopulator:
     def create_list_in_history(self, history_id: str, wait: bool = False, **kwds):
         payload = self.create_list_payload(history_id, instance_type="history", **kwds)
         return self.__create(payload, wait=wait)
+
+    def create_list_of_named_datasets(
+        self, history_id: str, contents: list[tuple[str, str]], ext: str = "txt"
+    ) -> dict[str, Any]:
+        """Create a list from datasets named ``<element identifier>.<ext>``, so names and identifiers differ."""
+        element_identifiers = []
+        for identifier, content in contents:
+            hda = self.dataset_populator.new_dataset(
+                history_id, content=content, name=f"{identifier}.{ext}", file_type=ext, wait=True
+            )
+            element_identifiers.append({"name": identifier, "src": "hda", "id": hda["id"]})
+        response = self.create_list_in_history(history_id, direct_upload=False, element_identifiers=element_identifiers)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
 
     def copy_collection(self, history_id: str, hdca_id: str, copy_elements: bool = True, wait: bool = False):
         """Copy an existing dataset collection to a history."""

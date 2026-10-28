@@ -12,7 +12,10 @@ from galaxy.util import now
 from galaxy.util.unittest_utils import transient_failure
 from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
-from galaxy_test.base.decorators import requires_new_history
+from galaxy_test.base.decorators import (
+    requires_new_history,
+    requires_new_user,
+)
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -883,6 +886,176 @@ steps:
         self._search(search_payload, expected_search_count=0)
 
     @requires_new_history
+    def test_use_cached_job_plain_cat1_run_reuses_mapped_job(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        mapped = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), tool_id="cat1")
+        plain = self._run_tool_and_wait(history_id, _plain_inputs(hda_id), use_cached_job=True, tool_id="cat1")
+        assert self._copied_from_job_id(plain) == mapped["jobs"][0]["id"]
+        assert self._output_details(history_id, plain)["visible"]
+
+    @requires_new_history
+    def test_use_cached_job_mapped_cat1_run_reuses_plain_job(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        plain = self._run_tool_and_wait(history_id, _plain_inputs(hda_id), tool_id="cat1")
+        mapped = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), use_cached_job=True, tool_id="cat1")
+        assert self._copied_from_job_id(mapped) == plain["jobs"][0]["id"]
+        assert not self._output_details(history_id, mapped)["visible"]
+
+    @requires_new_history
+    def test_use_cached_job_plain_identifier_single_run_does_not_reuse_mapped_job(self, history_id):
+        hdca_id, hda_id, hda_name = self._list_of_existing_dataset(history_id)
+        self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id))
+        plain = self._run_tool_and_wait(history_id, _plain_inputs(hda_id), use_cached_job=True)
+        assert self._copied_from_job_id(plain) is None
+        assert hda_name in self._output_words(history_id, plain)
+
+    @requires_new_history
+    def test_use_cached_job_mapped_identifier_single_run_does_not_reuse_plain_job(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        self._run_tool_and_wait(history_id, _plain_inputs(hda_id))
+        mapped = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), use_cached_job=True)
+        assert self._copied_from_job_id(mapped) is None
+        assert "sample_a" in self._output_words(history_id, mapped)
+
+    @requires_new_history
+    def test_use_cached_job_mapped_identifier_single_run_does_not_reuse_job_with_other_identifier(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        other_hdca_id = self._list_with_identifier(history_id, hda_id, "sample_b")
+        self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id))
+        mapped = self._run_tool_and_wait(history_id, _mapped_inputs(other_hdca_id), use_cached_job=True)
+        assert self._copied_from_job_id(mapped) is None
+        assert "sample_b" in self._output_words(history_id, mapped)
+
+    @requires_new_history
+    def test_use_cached_job_mapped_identifier_single_run_reuses_job_after_input_rename(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        first = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id))
+        self.dataset_populator.rename_dataset(hda_id, "renamed")
+        mapped = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), use_cached_job=True)
+        assert self._copied_from_job_id(mapped) == first["jobs"][0]["id"]
+        assert "sample_a" in self._output_words(history_id, mapped)
+
+    @requires_new_user
+    def test_use_cached_job_mapped_model_attributes_run_does_not_reuse_job_after_input_rename(self):
+        # model_attributes also renders $__user__.addresses[0].desc, which fails for a user without an address.
+        with self._different_user_with_address("lab"), self.dataset_populator.test_history() as history_id:
+            hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+            self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), tool_id="model_attributes")
+            self.dataset_populator.rename_dataset(hda_id, "renamed")
+            mapped = self._run_tool_and_wait(
+                history_id, _mapped_inputs(hdca_id), use_cached_job=True, tool_id="model_attributes"
+            )
+            assert self._copied_from_job_id(mapped) is None
+            out_file1 = next(o for o in mapped["outputs"] if o["output_name"] == "out_file1")
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=out_file1["id"])
+            assert content == "renamed\n"
+
+    @requires_new_history
+    def test_use_cached_job_plain_collection_creates_pair_run_reuses_mapped_job(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        mapped = self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), tool_id="collection_creates_pair")
+        plain = self._run_tool_and_wait(
+            history_id, _plain_inputs(hda_id), use_cached_job=True, tool_id="collection_creates_pair"
+        )
+        assert self._copied_from_job_id(plain) == mapped["jobs"][0]["id"]
+        self._assert_pair_matches(history_id, plain, mapped)
+
+    @requires_new_history
+    def test_use_cached_job_mapped_collection_creates_pair_run_reuses_plain_job(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        plain = self._run_tool_and_wait(history_id, _plain_inputs(hda_id), tool_id="collection_creates_pair")
+        mapped = self._run_tool_and_wait(
+            history_id, _mapped_inputs(hdca_id), use_cached_job=True, tool_id="collection_creates_pair"
+        )
+        assert self._copied_from_job_id(mapped) == plain["jobs"][0]["id"]
+        self._assert_pair_matches(history_id, mapped, plain)
+
+    def test_use_cached_job_discovered_collection_run_in_other_history_reuses_job_after_input_rename(self):
+        with (
+            self.dataset_populator.test_history() as history_id_one,
+            self.dataset_populator.test_history() as history_id_two,
+        ):
+            hda = self.dataset_populator.new_dataset(
+                history_id_one, content="a\t1\nb\t2\n", file_type="tabular", wait=True
+            )
+            first = self._run_tool_and_wait(
+                history_id_one, _plain_inputs(hda["id"]), tool_id="collection_split_on_column"
+            )
+            copy_payload = {"content": hda["id"], "source": "hda", "type": "dataset"}
+            copy_response = self._post(f"histories/{history_id_two}/contents", data=copy_payload, json=True)
+            self._assert_status_code_is(copy_response, 200)
+            copy_id = copy_response.json()["id"]
+            self.dataset_populator.rename_dataset(copy_id, "renamed")
+            cached = self._run_tool_and_wait(
+                history_id_two, _plain_inputs(copy_id), use_cached_job=True, tool_id="collection_split_on_column"
+            )
+            assert self._copied_from_job_id(cached) == first["jobs"][0]["id"]
+            hdca = self.dataset_populator.get_history_collection_details(
+                history_id_two, content_id=cached["output_collections"][0]["id"]
+            )
+            elements = [
+                self.dataset_populator.get_history_dataset_details(history_id_two, dataset_id=e["object"]["id"])
+                for e in hdca["elements"]
+            ]
+            assert [(e["history_id"], e["hid"] > 0) for e in elements] == [(history_id_two, True)] * 2
+
+    def _assert_pair_matches(self, history_id, cached, original):
+        def pair_datasets(run_response):
+            hdca_id = (run_response["output_collections"] or run_response["implicit_collections"])[0]["id"]
+            hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
+            elements = hdca["elements"]
+            if elements[0]["element_type"] == "dataset_collection":
+                elements = elements[0]["object"]["elements"]
+            return {
+                e["element_identifier"]: (
+                    self.dataset_populator.get_history_dataset_details(history_id, dataset_id=e["object"]["id"])[
+                        "dataset_id"
+                    ],
+                    self.dataset_populator.get_history_dataset_content(history_id, dataset_id=e["object"]["id"]),
+                )
+                for e in elements
+            }
+
+        assert pair_datasets(cached) == pair_datasets(original)
+
+    def _list_of_existing_dataset(self, history_id):
+        # Element identifier differs from the dataset name.
+        hdca = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=[("sample_a", "a\n")], direct_upload=False, wait=True
+        ).json()
+        hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca["id"])
+        hda_id = hdca["elements"][0]["object"]["id"]
+        hda_name = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=hda_id)["name"]
+        assert hda_name != "sample_a"
+        return hdca["id"], hda_id, hda_name
+
+    def _list_with_identifier(self, history_id, hda_id, identifier):
+        return self.dataset_collection_populator.create_nested_collection(
+            history_id, "list", element_identifiers=[{"name": identifier, "src": "hda", "id": hda_id}]
+        ).json()["id"]
+
+    def _run_tool_and_wait(self, history_id, inputs, use_cached_job=False, tool_id="identifier_single"):
+        response = self.dataset_populator.run_tool(tool_id, inputs, history_id, use_cached_job=use_cached_job)
+        self.dataset_populator.wait_for_jobs(response["jobs"], assert_ok=True)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return response
+
+    def _copied_from_job_id(self, run_response):
+        job = self.dataset_populator.get_job_details(run_response["jobs"][0]["id"], full=True).json()
+        return job["copied_from_job_id"]
+
+    def _output_details(self, history_id, run_response):
+        return self.dataset_populator.get_history_dataset_details(
+            history_id, dataset_id=run_response["outputs"][0]["id"]
+        )
+
+    def _output_words(self, history_id, run_response):
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id, dataset_id=run_response["outputs"][0]["id"]
+        )
+        return content.split()
+
+    @requires_new_history
     def test_search_delete_outputs(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
@@ -1439,3 +1612,11 @@ class TestDataManagerJobsApi(ApiTestCase):
             assert submitted, self.dataset_populator.get_tool_request(tool_request_id)
             jobs = self.galaxy_interactor.jobs_for_tool_request(tool_request_id)
             self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
+
+
+def _mapped_inputs(hdca_id):
+    return {"input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}}
+
+
+def _plain_inputs(hda_id):
+    return {"input1": {"src": "hda", "id": hda_id}}

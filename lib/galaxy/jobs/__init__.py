@@ -1376,6 +1376,13 @@ class MinimalJobWrapper(HasResourceParameters):
             assert self.tool
             params = self.tool.params_from_strings(param_dump)
             json_internal = params_to_json_internal(self.tool.inputs, params, self.app)
+            element_identifiers = None
+            if tool_evaluator.consumes_identifiers:
+                element_identifiers = {
+                    name.removesuffix("|__identifier__"): json.loads(value)
+                    for name, value in param_dump.items()
+                    if name.endswith("|__identifier__")
+                }
             job_to_copy = self.app.job_search.by_tool_input(
                 job.user,
                 job.tool_id,
@@ -1383,9 +1390,16 @@ class MinimalJobWrapper(HasResourceParameters):
                 param=params,
                 param_dump=json_internal,
                 require_name_match=False,
+                element_identifiers=element_identifiers,
             )
             if job_to_copy and isinstance(job_to_copy, Job):
                 job.copy_from_job(job_to_copy, copy_outputs=True)
+                # The copied job never reaches finish(), so run its post job actions here.
+                for pjaa in job.post_job_actions:
+                    if pjaa.post_job_action.action_type not in ActionBox.immediate_actions:
+                        ActionBox.execute(
+                            self.app, self.sa_session, pjaa.post_job_action, job, final_job_state=job.state
+                        )
                 self.sa_session.commit()
                 return False
         job.command_line = self.command_line
