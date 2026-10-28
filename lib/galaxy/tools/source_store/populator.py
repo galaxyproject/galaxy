@@ -742,6 +742,10 @@ def _populate_store_inline_unlocked(
                 try:
                     published_paths_by_store[store_name] = store.list_source_paths()
                 except Exception as e:
+                    # A full rebuild that skipped these tools would drop them
+                    # from the default index.
+                    if paths is None or prune:
+                        raise
                     log.warning(
                         "Skipping tools of %s missing from read-only store %s: %s",
                         ", ".join(c for c, name in conf_to_store.items() if name == store_name),
