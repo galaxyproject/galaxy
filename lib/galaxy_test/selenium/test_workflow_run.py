@@ -714,6 +714,70 @@ steps:
 
     @selenium_test
     @managed_history
+    def test_run_from_editor_and_cancel(self):
+        history_id = self.current_history_id()
+        chosen = self.dataset_populator.new_dataset(history_id, content="chosen\n", wait=True)
+        # The run form preselects the newest dataset, so only a real selection picks ``chosen``.
+        self.dataset_populator.new_dataset(history_id, content="newest\n", wait=True)
+        name = self.workflow_upload_yaml_with_random_name("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  sleep:
+    tool_id: cat_data_and_sleep
+    state:
+      sleep_time: 300
+    in:
+      input1: input1
+""")
+        self.workflow_index_open_with_name(name)
+        editor = self.components.workflow_editor
+        editor.canvas_body.wait_for_visible()
+        # The canvas renders before the workflow loads, and loading briefly marks it changed.
+        editor.canvas_loading.wait_for_absent()
+        assert editor.save_button.has_class("g-disabled"), "editor marked an untouched workflow as changed"
+        self.workflow_editor_click_run()
+        workflow_run = self.components.workflow_run
+        workflow_run.run_workflow.wait_for_visible()
+        assert workflow_run.expanded_form.is_absent
+        self.workflow_run_specify_inputs({"input1": {"hid": chosen["hid"]}})
+        self.screenshot("workflow_run_from_editor_input_selected")
+        self.workflow_run_submit()
+        cancel_button = self.components.invocations.cancel_button
+        cancel_button.wait_for_visible()
+
+        # Step progress (and later the cancelled note) renders only once the step summary loads.
+        @partial(retry_assertion_during_transitions, attempts=50, sleep=0.2)
+        def assert_step_summary_loaded():
+            note = self.components.invocations.progress_steps_note.wait_for_text()
+            assert "Loading step state summary" not in note, note
+
+        assert_step_summary_loaded()
+        self.screenshot("workflow_run_from_editor_invocation_running")
+        cancel_button.wait_for_and_click()
+
+        [invocation_summary] = self.workflow_populator.history_invocations(history_id)
+
+        # The click sends the cancel request asynchronously; the scheduler then marks the invocation cancelled.
+        def cancelled_invocation():
+            invocation = self.workflow_populator.get_invocation(invocation_summary["id"])
+            return invocation if invocation["state"] == "cancelled" else None
+
+        invocation = self._wait_on(cancelled_invocation, "invocation to be cancelled")
+        assert invocation["inputs"]["0"]["id"] == chosen["id"]
+
+        # The invocation page polls every 3s; give it a few cycles to show the cancellation.
+        @partial(retry_assertion_during_transitions, attempts=50, sleep=0.2)
+        def assert_cancelled_in_ui():
+            note = self.components.invocations.progress_steps_note.wait_for_text()
+            assert "Invocation scheduling cancelled" in note, note
+
+        assert_cancelled_in_ui()
+        self.screenshot("workflow_run_from_editor_invocation_cancelled")
+
+    @selenium_test
+    @managed_history
     def test_execution_with_multiple_integer_parameter(self):
         history_id, inputs = self.workflow_run_setup_inputs("""
 input:
@@ -721,6 +785,8 @@ input:
   file_type: tabular
   type: File
 """)
+        # The run form preselects the newest dataset, so only a real selection picks the test data.
+        decoy = self.dataset_populator.new_dataset(history_id, content="1\t2\n", file_type="tabular", wait=True)
         self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
 inputs:
@@ -749,6 +815,9 @@ steps:
         invocation_id = self.workflow_populator.history_invocations(history_id)[0]["id"]
         invocation = self.workflow_populator.get_invocation(invocation_id)
         assert invocation["input_step_parameters"]["columns"]["parameter_value"] == [1, 2]
+        selected_id = invocation["inputs"]["0"]["id"]
+        assert selected_id != decoy["id"], "run form kept the preselected newest dataset"
+        assert selected_id == inputs["input"]["id"]
         content = self.dataset_populator.get_history_dataset_content(
             history_id, dataset_id=invocation["outputs"]["output"]["id"]
         )
@@ -833,11 +902,18 @@ steps:
         history_id = self.workflow_run_and_submit(
             WORKFLOW_WITH_CUSTOM_REPORT_1,
             WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
+            inputs_specified_screenshot_name="workflow_run_invocation_report_inputs",
             ensure_expanded=True,
         )
         self.screenshot("workflow_run_invocation_report")
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
         invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
+        # Both untyped data inputs share one preselected default, so distinct names need real selections.
+        invocation = self.workflow_populator.get_invocation(invocation_0["id"])
+        selected = {i["label"]: i["id"] for i in invocation["inputs"].values()}
+        for label, name in (("input_1", "my bed file"), ("image_input", "my input image")):
+            details = self.dataset_populator.get_history_dataset_details(history_id, content_id=selected[label])
+            assert details["name"] == name, f"{label} got {details['name']!r}"
         self.get(f"workflows/invocations/report?id={invocation_0['id']}")
         self.wait_for_selector_visible(".markdown-component")
         self.screenshot("workflow_report_custom_1")
