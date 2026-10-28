@@ -502,10 +502,14 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
             Use this ONLY when you are genuinely uncertain, e.g.:
             - The message names no analysis, tool, dataset, or goal ("Can you help with my data?")
-            - A failure is reported with no error text, exit code, or tool name ("It keeps failing")
+            - A failure is reported with no error text, exit code, or tool name ("It keeps failing"),
+              and no earlier turn you were given names the failed job or tool
             - The intent could plausibly mean several different things -- a tool, a tutorial,
               usage help, or debugging ("I need help with variant calling")
-            - A follow-up's referent cannot be resolved even from the recent turn provided
+            - A follow-up's referent cannot be resolved even from the recent turn provided, and
+              you'd be answering it yourself -- a specialist's task (diagnosing a failed job,
+              looking through the history) gets handed off, since specialists see more of the
+              conversation than you do
 
             Do NOT use this when the current message is clear enough to route or answer on its
             own -- a confident route or answer is always better than an unnecessary question.
