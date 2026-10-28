@@ -75,6 +75,7 @@ from galaxy_test.base.env import (
     get_ip_address,
 )
 from galaxy_test.base.populators import (
+    Cat1Run,
     load_data_dict,
     stage_inputs,
 )
@@ -1470,14 +1471,9 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
         assert cat1_jobs, "Expected cat1 job to be present"
         return cat1_jobs[0]["id"]
 
-    def run_cat1(self, history_id: str) -> tuple[str, str]:
-        """Run a single cat1 over two fresh uploads. Returns (job_id, output_id)."""
-        hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
-        hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
-        inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
-        run = self.dataset_populator.run_tool("cat1", inputs, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return run["jobs"][0]["id"], run["outputs"][0]["id"]
+    def run_cat1(self, history_id: str) -> Cat1Run:
+        """Run a single cat1 over two fresh uploads."""
+        return self.dataset_populator.run_cat1(history_id, ("foo\nbar", "baz"))
 
     def setup_two_independent_cat1_runs(self, history_id: str) -> tuple[str, str, str]:
         """Two independent cat1 runs in one history. Returns (job_a, output_a, job_b).
@@ -1486,9 +1482,9 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
         should select run A's subgraph and leave run B unchecked — the
         differentiator vs. the form's default whole-history check.
         """
-        job_a, output_a = self.run_cat1(history_id)
-        job_b, _ = self.run_cat1(history_id)
-        return job_a, output_a, job_b
+        run_a = self.run_cat1(history_id)
+        run_b = self.run_cat1(history_id)
+        return run_a.job_id, run_a.output_id, run_b.job_id
 
     def run_random_lines_mapped(self, history_id: str) -> str:
         """Map random_lines1 over a fresh pair. Returns the implicit output

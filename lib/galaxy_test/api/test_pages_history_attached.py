@@ -500,12 +500,8 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             assert input_row["seeded"] is True, input_row
 
     def _cat1_history(self, history_id):
-        hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
-        hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
-        inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
-        run = self.dataset_populator.run_tool("cat1", inputs, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return run["outputs"][0]["id"], run["jobs"][0]["id"]
+        run = self.dataset_populator.run_cat1(history_id, ("foo\nbar", "baz"))
+        return run.output_id, run.job_id
 
     @skip_without_tool("cat1")
     def test_referenced_output_seeds_producer_and_exposes_output(self):
