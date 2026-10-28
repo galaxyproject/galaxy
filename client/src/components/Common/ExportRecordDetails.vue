@@ -152,7 +152,7 @@ function onMessageDismissed() {
                     administrator.
                 </span>
 
-                <GAlert :show="props.record.errorMessage" variant="danger">{{ props.record.errorMessage }}</GAlert>
+                <GAlert :show="!!props.record.errorMessage" variant="danger">{{ props.record.errorMessage }}</GAlert>
             </span>
             <span v-if="props.record.isUpToDate" title="Up to date">
                 <FontAwesomeIcon :icon="faCheckCircle" class="text-success record-up-to-date-icon" />
