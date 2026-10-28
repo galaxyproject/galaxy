@@ -742,7 +742,7 @@ class UsesLibraryAssertions(NavigatesGalaxyMixin):
         # Imports send one request per item and refresh the folder list only after the last one returns.
         num_displayed: int | None = None
 
-        def has_n_items(driver):
+        def has_n_items(driver=None):
             nonlocal num_displayed
             try:
                 num_displayed = self.num_displayed_items()
