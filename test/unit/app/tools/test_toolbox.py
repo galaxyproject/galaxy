@@ -2,6 +2,7 @@ import logging
 import time
 from pathlib import Path
 from typing import (
+    Any,
     cast,
     TYPE_CHECKING,
 )
@@ -14,7 +15,10 @@ from uuid import (
 import pytest
 import routes
 
-from galaxy import model
+from galaxy import (
+    exceptions,
+    model,
+)
 from galaxy.app import UniverseApplication
 from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
 from galaxy.managers.tools import DynamicToolManager
@@ -25,6 +29,7 @@ from galaxy.tool_util.unittest_utils.sample_data import (
     SIMPLE_TOOL_WITH_MACRO,
 )
 from galaxy.tools import ToolBox
+from galaxy.webapps.galaxy.services.tools import ToolsService
 
 if TYPE_CHECKING:
     from galaxy.tools import Tool
@@ -448,6 +453,30 @@ class TestToolBox(BaseToolBoxTestCase):
         # there is no version 3, return newest version
         test_tool = self.toolbox.get_tool("test_tool", tool_version="3")
         assert test_tool.version == "0.2"
+
+    def test_tools_service_exact_lookup(self):
+        self._init_tool()
+        self._setup_two_versions_in_config(section=False)
+        self._setup_two_versions()
+        service = ToolsService(
+            config=self.app.config,
+            toolbox_search=cast(Any, None),
+            security=self.app.security,
+            history_manager=cast(Any, None),
+        )
+        trans = cast(Any, MagicMock(app=MagicMock(toolbox=self.toolbox)))
+        guid = "github.com/galaxyproject/example/test_tool/"
+
+        def exact_version(tool_id, tool_version=None):
+            return service._get_tool(trans, tool_id, tool_version=tool_version, exact=True).version
+
+        assert exact_version("test_tool", "0.1") == "0.1"
+        assert exact_version("test_tool") == "0.2"
+        assert exact_version(f"{guid}0.1") == "0.1"
+        assert exact_version(f"{guid}0.1", "0.1") == "0.1"
+        for tool_id, tool_version in [("test_tool", "0.3"), (f"{guid}0.3", None), (f"{guid}0.1", "0.2")]:
+            with pytest.raises(exceptions.ObjectNotFound):
+                exact_version(tool_id, tool_version)
 
     def test_load_file_in_section(self):
         self._init_tool_in_section()

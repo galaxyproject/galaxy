@@ -530,6 +530,7 @@ class ToolsService(ServiceBase):
         tool_version=None,
         tool_uuid=None,
         user: User | None = None,
+        exact: bool = False,
     ) -> ToolLike:
         if tool_uuid:
             try:
@@ -544,6 +545,16 @@ class ToolsService(ServiceBase):
                 raise exceptions.ObjectNotFound(f"Could not find tool with id '{id or tool_uuid}'.")
         if not tool.allow_user_access(user):
             raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
+        # A short id matches the old_id of a Tool Shed tool, whose id is the full guid.
+        if (
+            exact
+            and not tool_uuid
+            and (id not in (tool.id, tool.old_id) or (tool_version and tool.version != str(tool_version)))
+        ):
+            raise exceptions.ObjectNotFound(
+                f"Tool '{id}'{f' version {tool_version}' if tool_version else ''} is not installed; "
+                f"the closest match is '{tool.id}' version {tool.version}."
+            )
         return tool
 
     def _get_materialized_tool(
@@ -555,8 +566,9 @@ class ToolsService(ServiceBase):
         user: User | None = None,
         *,
         materialization_reason: MaterializationReasonName,
+        exact: bool = False,
     ) -> Tool:
-        tool = self._get_tool(trans, id, tool_version, tool_uuid, user)
+        tool = self._get_tool(trans, id, tool_version, tool_uuid, user, exact=exact)
         return trans.app.toolbox.materialize_tool(tool, reason=materialization_reason)
 
     def _detect(self, trans: ProvidesUserContext, tool_id):
