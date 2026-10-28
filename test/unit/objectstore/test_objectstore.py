@@ -933,10 +933,11 @@ def test_config_parse_direct_download_expires_in_default():
             _assert_key_has_value(object_store.to_dict(), "direct_download_expires_in", 3600)
 
 
+@pytest.mark.parametrize("expires_in", ["0", "1h"])
 @patch_object_stores_to_skip_initialize
-def test_config_parse_direct_download_expires_in_rejects_non_positive():
+def test_config_parse_direct_download_expires_in_rejects_invalid(expires_in):
     config_str = get_example("boto3_direct_download.yml").replace(
-        "enable_direct_download: true", "enable_direct_download: true\ndirect_download_expires_in: 0"
+        "enable_direct_download: true", f"enable_direct_download: true\ndirect_download_expires_in: {expires_in}"
     )
     with pytest.raises(ValueError, match="direct_download_expires_in"):
         with TestConfig(config_str):
