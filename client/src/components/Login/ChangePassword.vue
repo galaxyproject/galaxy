@@ -32,7 +32,7 @@ async function submit() {
         });
 
         // The server logs the user in; reload so the client picks up that session.
-        window.location.assign(withPrefix("/"));
+        window.location.replace(withPrefix("/"));
     } catch (error: any) {
         variant.value = "danger";
         message.value = errorMessageAsString(error, "Password change failed for an unknown reason.");
