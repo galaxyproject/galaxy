@@ -1290,6 +1290,25 @@ class TestAgentUnitMocked:
         assert len(replayed) < len(pasted_log) // 10
 
     @pytest.mark.asyncio
+    async def test_error_analysis_keeps_a_long_history_reply_whole(self):
+        """The subject usually comes from a History agent reply, which can run long and name the
+        failed job anywhere in it. The log trim is for pasted stderr, not for those replies."""
+        self.mock_config.ai_model = "gpt-4o"
+        agent = ErrorAnalysisAgent(self.deps)
+        seen: list[ModelMessage] = []
+        datasets = "".join(f"{i}: ok dataset {i}, state ok\n" for i in range(150))
+        history_reply = datasets + f"151: failed, tool {MIRDEEP2_TOOL_ID}, exit code 1\n" + datasets
+        history: list[ModelMessage] = [
+            ModelRequest(parts=[UserPromptPart(content="did anything in my history fail?")]),
+            ModelResponse(parts=[TextPart(content=history_reply)]),
+        ]
+
+        with agent.agent.override(model=FunctionModel(_structured_error_analysis(seen))):
+            await agent.process("why did it fail?", context={"conversation_history": history})
+
+        assert MIRDEEP2_TOOL_ID in _message_texts(seen)
+
+    @pytest.mark.asyncio
     async def test_subject_survives_routing_into_error_analysis(self):
         """End to end through the router: tool named by a History reply, then a clarification,
         then a follow-up without the tool's name that routes to error analysis. The tool has to
