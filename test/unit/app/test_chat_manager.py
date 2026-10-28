@@ -6,6 +6,10 @@ from unittest import mock
 import pytest
 
 from galaxy.managers.chat import ChatManager
+from galaxy.model import (
+    ChatExchange,
+    ChatExchangeMessage,
+)
 
 
 def _make_trans(user_id=1):
@@ -351,11 +355,6 @@ class TestGetExchangeMessagesAttribution:
 def test_exchange_messages_load_in_insertion_order():
     """Routing reads "the last turn" off ``exchange.messages``; without an ORDER BY the database
     may hand the rows back in any order (a feedback update on the first message can move it)."""
-    from galaxy.model import (
-        ChatExchange,
-        ChatExchangeMessage,
-    )
-
     order_by = ChatExchange.messages.property.order_by
     assert order_by, "ChatExchange.messages has no order_by"
     # Accept a bare column or asc(column); both order by id ascending.
