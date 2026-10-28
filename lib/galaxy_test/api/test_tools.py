@@ -14,10 +14,7 @@ from uuid import uuid4
 import pytest
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
-from requests import (
-    get,
-    put,
-)
+from requests import get
 
 from galaxy.tool_util.verify.interactor import ValidToolTestDict
 from galaxy.util import galaxy_root_path
@@ -922,17 +919,16 @@ class TestToolsApi(ApiTestCase, TestsTools):
         return tool_info
 
     @skip_without_tool("model_attributes")
+    @requires_new_user
     def test_model_attributes_sanitization(self):
-        with self.dataset_populator.test_history(require_new=False) as history_id:
-            cool_name_with_quote = 'cool name with a quo"te'
-            cool_name_without_quote = "cool name with a quo__dq__te"
-
+        cool_name_with_quote = 'cool name with a quo"te'
+        cool_name_without_quote = "cool name with a quo__dq__te"
+        with (
+            self._different_user_with_address(cool_name_with_quote),
+            self.dataset_populator.test_history() as history_id,
+        ):
             current_user = self._get("users/current").json()
-            user_info_url = self._api_url(f"users/{current_user['id']}/information/inputs", use_key=True)
-            put_response = put(user_info_url, data=json.dumps({"address_0|desc": cool_name_with_quote}))
-            put_response.raise_for_status()
-
-            response = get(user_info_url).json()
+            response = self._get(f"users/{current_user['id']}/information/inputs").json()
             assert len(response["addresses"]) == 1
             assert response["addresses"][0]["desc"] == cool_name_with_quote
 

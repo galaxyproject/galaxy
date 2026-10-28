@@ -326,6 +326,7 @@ def to_cwl(
     step: WorkflowStep | None = None,
     compute_environment: ComputeEnvironment | None = None,
     shell_quotable: bool = False,
+    element_identifiers: dict[DatasetInstance, str] | None = None,
 ):
     element_identifier = None
     if isinstance(value, NoReplacement):
@@ -377,9 +378,12 @@ def to_cwl(
             if isinstance(value.datatype, Directory):
                 properties["class"] = "Directory"
                 properties["listing"] = []
-            set_basename_and_derived_properties(
-                properties, value.dataset.created_from_basename or element_identifier or value.name
-            )
+            set_basename_and_derived_properties(properties, value.dataset.created_from_basename or value.name)
+            if element_identifier:
+                properties["element_identifier"] = element_identifier
+            elif element_identifiers is not None:
+                # Passed by the UDT evaluator only; falls back to the dataset name like Cheetah.
+                properties["element_identifier"] = element_identifiers.get(value) or value.name
             return properties
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":
@@ -390,6 +394,7 @@ def to_cwl(
                     step=step,
                     compute_environment=compute_environment,
                     shell_quotable=shell_quotable,
+                    element_identifiers=element_identifiers,
                 )
                 for dce in value.dataset_elements
             ]
@@ -398,11 +403,12 @@ def to_cwl(
             rval = {}
             for element in value.elements:
                 rval[element.element_identifier] = to_cwl(
-                    element.element_object,
+                    element,
                     hda_references=hda_references,
                     step=step,
                     compute_environment=compute_environment,
                     shell_quotable=shell_quotable,
+                    element_identifiers=element_identifiers,
                 )
             return rval
     elif isinstance(value, list):
@@ -413,6 +419,7 @@ def to_cwl(
                 step=step,
                 compute_environment=compute_environment,
                 shell_quotable=shell_quotable,
+                element_identifiers=element_identifiers,
             )
             for v in value
         ]
@@ -427,6 +434,7 @@ def to_cwl(
                 step=step,
                 compute_environment=compute_environment,
                 shell_quotable=shell_quotable,
+                element_identifiers=element_identifiers,
             )
             for k, v in value.items()
         }

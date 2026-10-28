@@ -42,6 +42,7 @@ from galaxy_test.base.populators import (
     LibraryPopulator,
     RunJobsSummary,
     skip_without_tool,
+    TOOL_WITH_ELEMENT_IDENTIFIER,
     TOOL_WITH_SHELL_COMMAND,
     wait_on,
     workflow_str,
@@ -9035,6 +9036,89 @@ steps:
                 history_id=history_id,
             )
 
+    @skip_without_tool("identifier_single")
+    def test_workflow_rerun_mapped_identifier_step_with_use_cached_job(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input_list:
+    type: collection
+    collection_type: list
+steps:
+  cat:
+    tool_id: cat1
+    in:
+      input1: input_list
+  identifier:
+    tool_id: identifier_single
+    in:
+      input1: cat/out_file1
+""")
+        with (
+            self.dataset_populator.test_history() as history_id_one,
+            self.dataset_populator.test_history() as history_id_two,
+        ):
+            hdca = self.dataset_collection_populator.create_list_in_history(
+                history_id_one, contents=[("sample_a", "a\n")], direct_upload=False, wait=True
+            ).json()
+            first_invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, history_id=history_id_one, inputs={"0": {"src": "hdca", "id": hdca["id"]}}
+            ).json()["id"]
+            copy = self.dataset_collection_populator.copy_collection(history_id_two, hdca["id"]).json()
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id,
+                history_id=history_id_two,
+                inputs={"0": {"src": "hdca", "id": copy["id"]}},
+                request={"use_cached_job": True},
+            ).json()["id"]
+            first_job_id = self._tool_job_id(first_invocation_id, "identifier_single")
+            job = self.dataset_populator.get_job_details(
+                self._tool_job_id(invocation_id, "identifier_single"), full=True
+            ).json()
+            assert job["copied_from_job_id"] == first_job_id
+
+    @skip_without_tool("cat1")
+    def test_workflow_step_reusing_plain_job_runs_post_job_actions(self, history_id):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  cat:
+    tool_id: cat1
+    in:
+      input1: input1
+    out:
+      out_file1:
+        hide: true
+        set_columns: {nameCol: 4}
+""")
+        hda = self.dataset_populator.new_dataset(
+            history_id, content="chr1\t10\t20\tx\n", file_type="interval", wait=True
+        )
+        plain = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_job(plain["jobs"][0]["id"], assert_ok=True)
+        self.dataset_populator.rename_dataset(hda["id"])
+        invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+            workflow_id,
+            history_id=history_id,
+            inputs={"0": {"src": "hda", "id": hda["id"]}},
+            request={"use_cached_job": True},
+        ).json()["id"]
+        job = self.dataset_populator.get_job_details(self._tool_job_id(invocation_id, "cat1"), full=True).json()
+        assert job["copied_from_job_id"] == plain["jobs"][0]["id"]
+        output = self.dataset_populator.get_history_dataset_details(
+            history_id, dataset_id=job["outputs"]["out_file1"]["id"]
+        )
+        assert not output["visible"]
+        assert output.get("metadata_nameCol") == 4
+
+    def _tool_job_id(self, invocation_id, tool_id):
+        jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
+        tool_jobs = [j for j in jobs if j["tool_id"] == tool_id]
+        assert len(tool_jobs) == 1
+        return tool_jobs[0]["id"]
+
     @skip_without_tool("cat1")
     def test_workflow_rerun_with_use_cached_job(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
@@ -11822,7 +11906,14 @@ outer_input:
                 t["representation"]["name"] == TOOL_WITH_SHELL_COMMAND["name"] for t in owned
             ), f"Expected an owned UDT after workflow import: {owned}"
 
-    def _build_user_defined_tool_run_workflow_dict(self, content_id: str | None, tool_uuid: str) -> dict[str, Any]:
+    def _build_user_defined_tool_run_workflow_dict(
+        self,
+        content_id: str | None,
+        tool_uuid: str,
+        tool_representation: dict[str, Any] = TOOL_WITH_SHELL_COMMAND,
+        collection_type: str | None = None,
+    ) -> dict[str, Any]:
+        input_state = {"name": "input", **({"collection_type": collection_type} if collection_type else {})}
         return {
             "a_galaxy_workflow": "true",
             "name": "wf running a UDT",
@@ -11831,9 +11922,9 @@ outer_input:
             "steps": {
                 "0": {
                     "id": 0,
-                    "type": "data_input",
+                    "type": "data_collection_input" if collection_type else "data_input",
                     "label": "input",
-                    "tool_state": json.dumps({"name": "input"}),
+                    "tool_state": json.dumps(input_state),
                     "inputs": [{"name": "input", "description": ""}],
                     "input_connections": {},
                     "workflow_outputs": [],
@@ -11845,7 +11936,7 @@ outer_input:
                     "content_id": content_id,
                     "tool_uuid": tool_uuid,
                     # Export shape: the representation lets a mismatched stored content_id import.
-                    "tool_representation": TOOL_WITH_SHELL_COMMAND,
+                    "tool_representation": tool_representation,
                     "tool_state": "{}",
                     "input_connections": {"input": {"id": 0, "output_name": "output"}},
                     "workflow_outputs": [{"output_name": "output", "label": "udt_output"}],
@@ -11922,6 +12013,28 @@ outer_input:
                 crate = self.workflow_populator.get_ro_crate(invocation_id)
                 step_names = [e["name"] for e in crate.get_entities() if e.type == "HowToStep"]
                 assert "basecommand" in step_names
+
+    def test_user_defined_tool_step_mapped_over_writes_element_identifier(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_ELEMENT_IDENTIFIER)
+            )
+            workflow = self._build_user_defined_tool_run_workflow_dict(
+                "basecommand", unprivileged_tool["uuid"], TOOL_WITH_ELEMENT_IDENTIFIER, collection_type="list"
+            )
+            workflow_id = self.workflow_populator.create_workflow(workflow)
+            with self.dataset_populator.test_history() as history_id:
+                hdca = self.dataset_collection_populator.create_list_of_named_datasets(
+                    history_id, [("sample_a", "a"), ("sample_b", "b")]
+                )
+                invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                    workflow_id, history_id=history_id, inputs={"0": {"src": "hdca", "id": hdca["id"]}}
+                )
+                self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+                invocation = self.workflow_populator.get_invocation(invocation_id)
+                output_hdca_id = invocation["output_collections"]["udt_output"]["id"]
+                contents = self.dataset_populator.get_collection_element_contents(history_id, output_hdca_id)
+        assert contents == {"sample_a": "sample_a\n", "sample_b": "sample_b\n"}
 
     def test_user_defined_tool_workflow_export_round_trip(self):
         with self.dataset_populator.user_tool_execute_permissions():
