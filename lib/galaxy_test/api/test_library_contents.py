@@ -161,8 +161,7 @@ class TestLibraryContentsApi(ApiTestCase):
         file_id = self._create_library_content(type="from_hda")["id"]
         ldda_id = self.library_populator.show_ld(library_id, file_id)["ldda_id"]
 
-        response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}")
-        self._assert_status_code_is(response, 200)
+        self.library_populator.delete_library_item(library_id, file_id)
         # deleting is reversible, so the current version stays live
         assert self.library_populator.show_ldda(ldda_id)["deleted"] is False
 
@@ -177,18 +176,14 @@ class TestLibraryContentsApi(ApiTestCase):
         library_id = self.library["id"]
         file_id = self._create_library_content(type="from_hda")["id"]
         ldda_id = self.library_populator.show_ld(library_id, file_id)["ldda_id"]
-        payload = {"purge": True}
-        response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}", data=payload, json=True)
-        self._assert_status_code_is(response, 200)
+        self.library_populator.delete_library_item(library_id, file_id, purge=True)
         assert self.library_populator.show_ldda(ldda_id)["deleted"] is True
 
     def test_delete_library_item_from_hdca_purged(self):
         library_id = self.library["id"]
         file_id = self._create_library_content(type="from_hdca")[0]["id"]
         ldda_id = self.library_populator.show_ld(library_id, file_id)["ldda_id"]
-        payload = {"purge": True}
-        response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}", data=payload, json=True)
-        self._assert_status_code_is(response, 200)
+        self.library_populator.delete_library_item(library_id, file_id, purge=True)
         assert self.library_populator.show_ldda(ldda_id)["deleted"] is True
 
     def test_purge_library_item_purges_unshared_dataset(self):
@@ -198,8 +193,7 @@ class TestLibraryContentsApi(ApiTestCase):
         ldda_id = self.library_populator.wait_on_library_dataset(library_id, file_id)["ldda_id"]
         display_url = f"datasets/{ldda_id}/display?hda_ldda=ldda&raw=true"
         self._assert_status_code_is(self._get(display_url), 200)
-        response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}", data={"purge": True}, json=True)
-        self._assert_status_code_is(response, 200)
+        self.library_populator.delete_library_item(library_id, file_id, purge=True)
         response = self._get(display_url)
         self._assert_status_code_is(response, 400)
         assert "purged" in response.json()["err_msg"]
@@ -207,8 +201,7 @@ class TestLibraryContentsApi(ApiTestCase):
     def test_purge_library_item_keeps_shared_dataset(self):
         library_id = self.library["id"]
         file_id = self._create_library_content(type="from_hda")["id"]
-        response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}", data={"purge": True}, json=True)
-        self._assert_status_code_is(response, 200)
+        self.library_populator.delete_library_item(library_id, file_id, purge=True)
         assert self.dataset_populator.get_history_dataset_content(self.history) == "TestData123\n"
 
     def test_delete_invalid_library_item(self):

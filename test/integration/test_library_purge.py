@@ -25,8 +25,7 @@ class TestLibraryPurgeIntegration(IntegrationTestCase):
         file_id = response.json()["id"]
         expired_ldda_id = self._add_version(file_id)
 
-        response = self._delete(f"/api/libraries/{library['id']}/contents/{file_id}", data={"purge": True}, json=True)
-        self._assert_status_code_is(response, 200)
+        self.library_populator.delete_library_item(library["id"], file_id, purge=True)
 
         session = self._session()
         library_dataset = session.get(model.LibraryDataset, self._decode_id(file_id))
