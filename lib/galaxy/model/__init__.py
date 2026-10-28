@@ -8510,7 +8510,8 @@ class HistoryDatasetCollectionAssociation(
     def to_dict(self, view="collection"):
         original_dict_value = super().to_dict(view=view)
         if view == "dbkeysandextensions":
-            dbkeys, extensions, *_ = self.dataset_dbkeys_and_extensions_summary
+            summary = self.dataset_dbkeys_and_extensions_summary
+            dbkeys, extensions = summary.dbkeys, summary.extensions
             dict_value = dict(
                 dbkey=dbkeys.pop() if len(dbkeys) == 1 else "?",
                 extension=extensions.pop() if len(extensions) == 1 else "auto",

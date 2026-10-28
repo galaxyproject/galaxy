@@ -161,8 +161,8 @@ def test_dataset_dbkeys_and_extensions_summary(
     make_dataset_collection_element(collection=c1, element=d2)
 
     hdca = make_hdca(collection=c1)
-    assert hdca.dataset_dbkeys_and_extensions_summary[0] == {"hg19"}
-    assert hdca.dataset_dbkeys_and_extensions_summary[1] == {"bam", "txt"}
+    assert hdca.dataset_dbkeys_and_extensions_summary.dbkeys == {"hg19"}
+    assert hdca.dataset_dbkeys_and_extensions_summary.extensions == {"bam", "txt"}
 
 
 def test_populated_optimized_ok(session, make_dataset_collection, make_dataset_collection_element, make_hda):
