@@ -93,7 +93,7 @@ def _to_extraction_result(
 
 
 def _build_report_config(
-    trans: ProvidesHistoryContext, page: Page, title: str | None, index: ExtractionLabelIndex
+    trans: ProvidesHistoryContext, page: Page, title: str, index: ExtractionLabelIndex
 ) -> tuple[dict[str, Any], list[str]]:
     """Turn a notebook page into the extracted workflow's ``reports_config``.
 
