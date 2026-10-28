@@ -7,7 +7,10 @@ import os
 from datetime import timedelta
 
 try:
-    from azure.core.exceptions import HttpResponseError
+    from azure.core.exceptions import (
+        HttpResponseError,
+        ResourceNotFoundError,
+    )
     from azure.storage.blob import (
         BlobSasPermissions,
         BlobServiceClient,
@@ -16,6 +19,7 @@ try:
 except ImportError:
     BlobServiceClient = None  # type: ignore[assignment,unused-ignore,misc]
 
+from galaxy.exceptions import ObjectNotFound
 from galaxy.util import now
 from ._caching_base import (
     CachingConcreteObjectStore,
@@ -263,6 +267,18 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
         # Nothing to release: the downloader pulls each chunk with its own ranged request rather
         # than holding one response open, and exposes no close of its own.
         return RemoteDataStream(self._blob_client(rel_path).download_blob().chunks(), lambda: None)
+
+    def _read_remote_head(self, rel_path: str, size: int) -> bytes | None:
+        try:
+            head: bytes = self._blob_client(rel_path).download_blob(offset=0, length=size).readall()
+        except ResourceNotFoundError:
+            raise ObjectNotFound(f"objectstore.get_data_head, object does not exist: {rel_path}")
+        except HttpResponseError as e:
+            # No byte range can be satisfied in an empty blob.
+            if e.status_code == 416:
+                return b""
+            raise
+        return head
 
     def _download_directory_into_cache(self, rel_path, cache_path):
         blobs = self._blobs_from(rel_path)

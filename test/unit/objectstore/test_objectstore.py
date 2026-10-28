@@ -1378,8 +1378,23 @@ def test_get_data_head_boto3_fails_for_a_missing_object():
 
 
 @patch_object_stores_to_skip_initialize
-def test_get_data_head_stops_streaming_once_it_has_enough_bytes():
+def test_get_data_head_azure_reads_a_byte_range_instead_of_a_stale_cached_copy():
     with TestConfig(get_example("azure_simple.yml")) as (directory, object_store):
+        dataset = MockDataset(1)
+        cache_path = _write_cached(object_store, dataset, b"")
+        blob_client = MagicMock()
+        blob_client.download_blob.return_value.readall.return_value = b"the stored"
+        with patch.object(object_store, "_blob_client", return_value=blob_client) as blob_client_for:
+            assert object_store.get_data_head(dataset, 10) == b"the stored"
+
+        blob_client_for.assert_called_once_with(object_store._construct_path(dataset))
+        blob_client.download_blob.assert_called_once_with(offset=0, length=10)
+        assert os.path.getsize(cache_path) == 0
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_stops_streaming_once_it_has_enough_bytes():
+    with TestConfig(get_example("cloud_aws_simple.yml")) as (directory, object_store):
         dataset = MockDataset(1)
         _write_cached(object_store, dataset, b"")
         closed = []
@@ -2400,6 +2415,8 @@ def verify_caching_object_store_functionality(tmp_path, object_store, check_get_
     assert object_store.get_data_head(hello_world_dataset, 5) == b"Hello"
     assert object_store.get_data_head(hello_world_dataset, 100) == b"Hello World!"
     assert object_store.get_data_head(empty_dataset, 5) == b""
+    with pytest.raises(ObjectNotFound):
+        object_store.get_data_head(absent_dataset, 5)
     _write_cached(object_store, hello_world_dataset, b"")
     assert object_store.get_data_head(hello_world_dataset, 5) == b"Hello"
 
