@@ -538,14 +538,20 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         When the last ``clarification_turns`` turns were clarifying questions, the window widens
         to the whole run plus the turn before it: the subject may be named there or in the
-        request that started the run, and each answer narrows it. The run counts at most
-        ``MAX_CLARIFICATION_TURNS`` so a long one can't turn back into full-history routing.
+        request that started the run, and each answer narrows it. Only the last
+        ``MAX_CLARIFICATION_TURNS`` of a longer run are kept (alongside the turn before it) so it
+        can't turn back into full-history routing.
         """
         if not full_history or self.ROUTING_HISTORY_TURNS <= 0:
             return None
         turn_starts = self._turn_start_indices(full_history)
         if not turn_starts:
             return None
+        if clarification_turns > self.MAX_CLARIFICATION_TURNS and len(turn_starts) > clarification_turns:
+            # Past the cap, keep the turn the run followed and only the most recent clarifications,
+            # so the subject stays in view without the window growing with the run.
+            subject_turn = full_history[turn_starts[-clarification_turns - 1] : turn_starts[-clarification_turns]]
+            return subject_turn + full_history[turn_starts[-self.MAX_CLARIFICATION_TURNS] :]
         window_turns = self.ROUTING_HISTORY_TURNS
         if clarification_turns > 0:
             window_turns = max(window_turns, min(clarification_turns, self.MAX_CLARIFICATION_TURNS) + 1)
