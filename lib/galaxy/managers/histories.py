@@ -321,16 +321,10 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         else:
             result = None
             HDA = model.HistoryDatasetAssociation
-            # Preload what quota_amount() reads, rather than loading it one HDA at a time
             stmt = (
                 select(HDA)
                 .where(HDA.history_id == item.id, HDA.purged.is_not(true()))
-                .options(
-                    selectinload(HDA.dataset).options(
-                        selectinload(model.Dataset.history_associations).selectinload(HDA.history),
-                        selectinload(model.Dataset.library_associations),
-                    )
-                )
+                .options(selectinload(HDA.dataset))
             )
             hdas = self.session().scalars(stmt).all()
             # A disk usage recalculation skips purged histories, so the datasets must be marked purged, and the
