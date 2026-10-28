@@ -213,7 +213,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         ld.deleted = True
         if payload.purge:
             ldda = ld.library_dataset_dataset_association
-            # A purged library dataset can never be undeleted, so all its versions are retired with it.
+            # Purging is meant to be irreversible, so all versions are retired with the library dataset.
             retired_lddas = [ldda, *ld.expired_datasets]
             for retired_ldda in retired_lddas:
                 retired_ldda.mark_deleted()
