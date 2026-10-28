@@ -202,6 +202,24 @@ describe("CollectionDescription", () => {
         expect(await describeType("list:list:paired", 1)).toBe("a nested list with 1 list of pairs");
     });
 
+    async function setElementCounts(states: Record<string, number>, deleted: number, purged: number) {
+        await wrapper.setProps({
+            hdca: { ...defaultTestHDCA, elements_states: states, elements_deleted: deleted, elements_purged: purged },
+        });
+    }
+
+    it("counts purged elements separately from deleted ones", async () => {
+        await setElementCounts({ ok: 4 }, 3, 1);
+        expect(wrapper.find(".deleted-elements").text()).toContain("2");
+        expect(wrapper.find(".purged-elements").text()).toContain("1");
+    });
+
+    it("shows only the purged count when all elements are purged", async () => {
+        await setElementCounts({ ok: 2 }, 2, 2);
+        expect(wrapper.find(".deleted-elements").exists()).toBe(false);
+        expect(wrapper.find(".purged-elements").text()).toContain("2");
+    });
+
     it("names the collection type on hover", async () => {
         await describeType("list:record", 3);
         expect(wrapper.find(".description").attributes("title")).toBe("List of Records (list:record)");

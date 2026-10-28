@@ -20,7 +20,7 @@ import DATASET_STATES from "@/utils/datasetStates";
 import localize from "@/utils/localization";
 import { clearDrag } from "@/utils/setDrag";
 
-import { getContentItemState, type State, STATES } from "./model/states";
+import { getContentItemState, isContentItemPurged, type State, STATES } from "./model/states";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
 import ContentExpirationIndicator from "./ContentExpirationIndicator.vue";
@@ -162,6 +162,14 @@ const tagsDisabled = computed(() => {
 
 const isCollection = computed(() => {
     return "collection_type" in props.item || props.item.element_type === "dataset_collection";
+});
+
+const isPurged = computed(() => isContentItemPurged(props.item));
+
+const purgedTitle = computed(() => {
+    return isCollection.value
+        ? "All datasets in this collection have been permanently deleted"
+        : "This dataset has been permanently deleted";
 });
 
 const itemUrls = computed<ItemUrls>(() => {
@@ -371,8 +379,8 @@ function unexpandedClick(event: Event) {
                     <span class="id hid">{{ id }}: </span>
                     <span class="content-title name font-weight-bold">{{ name }}</span>
                 </span>
-                <span v-if="item.purged" class="ml-auto align-self-start btn-group p-1">
-                    <BBadge variant="secondary" title="This dataset has been permanently deleted">
+                <span v-if="isPurged" class="content-purged ml-auto align-self-start btn-group p-1">
+                    <BBadge variant="secondary" :title="purgedTitle">
                         <FontAwesomeIcon :icon="faBurn" /> Purged
                     </BBadge>
                 </span>
@@ -392,7 +400,7 @@ function unexpandedClick(event: Event) {
                         <span class="indicator">{{ item.sub_items?.length }}</span>
                     </GButton>
                     <ContentOptions
-                        v-if="!isPlaceholder && !item.purged"
+                        v-if="!isPlaceholder && !(isPurged && item.deleted)"
                         :writable="writable"
                         :is-dataset="isDataset"
                         :is-deleted="item.deleted"
