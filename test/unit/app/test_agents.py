@@ -1216,6 +1216,25 @@ class TestAgentUnitMocked:
         # Three clarifications plus the turn before them, two messages a turn.
         assert routing_history == history[-8:]
 
+    def test_router_keeps_the_subject_past_the_clarification_cap(self):
+        """A fourth "which tool?" in a row mustn't push the turn that named the tool out of the
+        window -- that's the loop this window exists to break."""
+        router = QueryRouterAgent(self.deps)
+        history = list(SUBJECT_THEN_CLARIFICATION_HISTORY)
+        for i in range(3):
+            history.append(ModelRequest(parts=[UserPromptPart(content=f"answer {i}")]))
+            history.append(ModelResponse(parts=[TextPart(content=f"Which tool is it, {i}?")]))
+
+        routing_history = router._routing_history(history, clarification_turns=4)
+        assert routing_history is not None
+        window = _message_texts(routing_history)
+
+        assert MIRDEEP2_TOOL_ID in window
+        assert "Which tool is it, 2?" in window
+        # Still bounded: the oldest clarification and the unrelated first turn stay out.
+        assert "Which upstream tool" not in window
+        assert "wrapper flaw" not in window
+
     def test_router_routing_window_wider_than_the_history_keeps_all_of_it(self):
         """A window reaching back past the first turn routes on the whole (short) conversation."""
         router = QueryRouterAgent(self.deps)
