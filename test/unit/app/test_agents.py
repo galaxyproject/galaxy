@@ -1325,6 +1325,39 @@ class TestAgentUnitMocked:
         assert MIRDEEP2_TOOL_ID in _message_texts(analyzed_with)
 
     @pytest.mark.asyncio
+    async def test_error_analysis_sees_past_the_routing_window(self):
+        """The router routes on a narrow window, but the specialist it hands to gets the whole
+        conversation -- so a subject the router can't see still reaches error analysis."""
+        self.mock_config.ai_model = "gpt-4o"
+        router = QueryRouterAgent(self.deps)
+        error_agent = ErrorAnalysisAgent(self.deps)
+        self.deps.get_agent = MagicMock(return_value=error_agent)
+        routed_on: list[ModelMessage] = []
+        analyzed_with: list[ModelMessage] = []
+
+        def router_fn(messages, info):
+            routed_on.extend(messages)
+            return ModelResponse(
+                parts=[
+                    ToolCallPart(
+                        tool_name="final_result_hand_off_to_error_analysis", args={"task": "Diagnose the error."}
+                    )
+                ]
+            )
+
+        with (
+            router.agent.override(model=FunctionModel(router_fn)),
+            error_agent.agent.override(model=FunctionModel(_structured_error_analysis(analyzed_with))),
+        ):
+            await router.process(
+                "why did it fail?",
+                context={"conversation_history": SUBJECT_THEN_CLARIFICATION_HISTORY, "clarification_turns": 0},
+            )
+
+        assert MIRDEEP2_TOOL_ID not in _message_texts(routed_on)
+        assert MIRDEEP2_TOOL_ID in _message_texts(analyzed_with)
+
+    @pytest.mark.asyncio
     async def test_custom_tool_rejects_prompt_injection_query(self):
         self.mock_config.ai_model = "gpt-4o"
         agent = CustomToolAgent(self.deps)
