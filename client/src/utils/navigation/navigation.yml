@@ -294,6 +294,9 @@ history_panel:
       delete_button: '${_} .delete-btn'
       undelete_button: '${_} .undelete-btn'
       unhide_button: '${_} .unhide-btn'
+      purged_badge: '${_} .content-purged'
+      deleted_elements_badge: '${_} .deleted-elements'
+      purged_elements_badge: '${_} .purged-elements'
       rerun_button: '${_} .rerun-btn'
       collection_job_details_button: '${_} .collection-job-details-btn'
 
