@@ -1218,6 +1218,35 @@ class TestAgentUnitMocked:
         assert MIRDEEP2_TOOL_ID in _message_texts(seen)
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize("ai_model", ["gpt-4o", "deepseek-r1"])
+    async def test_error_analysis_keeps_its_prompt_when_given_the_conversation(self, ai_model):
+        """pydantic-ai only adds ``system_prompt=`` to a run with no message_history, so once error
+        analysis gets the conversation its own prompt has to reach the model some other way."""
+        self.mock_config.ai_model = ai_model
+        agent = ErrorAnalysisAgent(self.deps)
+        expected_prompt = (
+            agent.get_system_prompt() if agent._supports_structured_output() else agent._get_simple_system_prompt()
+        )
+        sent: list[str] = []
+
+        def model_fn(messages, info):
+            sent.extend(
+                part.content for message in messages for part in message.parts if isinstance(part, SystemPromptPart)
+            )
+            sent.append(info.instructions or "")
+            if info.output_tools:
+                return _structured_error_analysis([])(messages, info)
+            return ModelResponse(parts=[TextPart(content="CAUSE: missing index\nCONFIDENCE: medium")])
+
+        with agent.agent.override(model=FunctionModel(model_fn)):
+            await agent.process(
+                "why did it fail?",
+                context={"conversation_history": SUBJECT_THEN_CLARIFICATION_HISTORY},
+            )
+
+        assert any(expected_prompt.strip() in text for text in sent)
+
+    @pytest.mark.asyncio
     async def test_error_analysis_trims_a_pasted_log_in_the_conversation(self):
         """A raw stderr dump posted as the first query is trimmed when it's analyzed, but the
         stored chat keeps all of it. Replayed as history it has to be trimmed again, keeping the
