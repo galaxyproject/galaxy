@@ -1682,6 +1682,18 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
                 if item["history_content_type"] == "dataset":
                     self.dataset_populator.wait_for_purge(history_id=history_id, content_id=item["id"])
 
+            history_contents = self._get_history_contents(
+                history_id, "?v=dev&keys=id,history_content_type,element_count,elements_purged"
+            )
+            for collection_id in collection_ids:
+                listed = self._get_collection_with_id_from_history_contents(history_contents, collection_id)
+                assert listed["elements_purged"] == listed["element_count"]
+                hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=collection_id)
+                assert hdca["elements_deleted"] == hdca["element_count"]
+                assert hdca["elements_purged"] == hdca["element_count"]
+                # purged datasets keep their state, so the client can compare against the state counts
+                assert sum(hdca["elements_states"].values()) == hdca["element_count"]
+
     def test_deleting_collection_should_delete_contents(self):
         with self.dataset_populator.test_history() as history_id:
             num_expected_datasets = 2
@@ -1716,6 +1728,10 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             assert len(history_contents) == num_expected_history_contents
             for item in history_contents:
                 assert item["deleted"] is True
+
+            hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=original_collection_id)
+            assert hdca["elements_deleted"] == num_expected_datasets
+            assert hdca["elements_purged"] == 0
 
     @requires_new_user
     def test_only_owner_can_apply_bulk_operations(self):

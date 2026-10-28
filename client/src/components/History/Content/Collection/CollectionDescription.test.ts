@@ -23,6 +23,7 @@ const defaultTestHDCA: HDCASummary = {
     visible: true,
     elements_datatypes: [],
     elements_deleted: 0,
+    elements_purged: 0,
     elements_states: {},
     history_id: "fake_history_id",
     model_class: "HistoryDatasetCollectionAssociation",

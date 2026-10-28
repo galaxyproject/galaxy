@@ -11611,6 +11611,11 @@ export interface components {
              * @description The number of elements in the collection that are marked as deleted.
              */
             elements_deleted: number;
+            /**
+             * Datasets purged
+             * @description The number of elements in the collection that are purged. Purged elements are also counted as deleted.
+             */
+            elements_purged: number;
             /** @description A dictionary containing counts for each dataset state in the collection. */
             elements_states: components["schemas"]["ElementsStatesDict"];
             /**
@@ -15595,6 +15600,11 @@ export interface components {
              * @description The number of elements in the collection that are marked as deleted.
              */
             elements_deleted?: number | null;
+            /**
+             * Datasets purged
+             * @description The number of elements in the collection that are purged. Purged elements are also counted as deleted.
+             */
+            elements_purged?: number | null;
             /** @description A dictionary containing counts for each dataset state in the collection. */
             elements_states?: components["schemas"]["ElementsStatesDict"] | null;
             /**
@@ -15763,6 +15773,11 @@ export interface components {
              * @description The number of elements in the collection that are marked as deleted.
              */
             elements_deleted: number;
+            /**
+             * Datasets purged
+             * @description The number of elements in the collection that are purged. Purged elements are also counted as deleted.
+             */
+            elements_purged: number;
             /** @description A dictionary containing counts for each dataset state in the collection. */
             elements_states: components["schemas"]["ElementsStatesDict"];
             /**
@@ -15921,6 +15936,11 @@ export interface components {
              * @description The number of elements in the collection that are marked as deleted.
              */
             elements_deleted: number;
+            /**
+             * Datasets purged
+             * @description The number of elements in the collection that are purged. Purged elements are also counted as deleted.
+             */
+            elements_purged: number;
             /** @description A dictionary containing counts for each dataset state in the collection. */
             elements_states: components["schemas"]["ElementsStatesDict"];
             /**
