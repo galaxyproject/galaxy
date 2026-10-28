@@ -7750,7 +7750,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return self._elements_deleted
 
     @property
-    def elements_purged(self):
+    def elements_purged(self) -> int:
         if not hasattr(self, "_elements_purged"):
             if object_session(self):
                 self._elements_purged = self.dataset_states_and_extensions_summary.purged
