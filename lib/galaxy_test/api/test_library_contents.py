@@ -174,16 +174,20 @@ class TestLibraryContentsApi(ApiTestCase):
     def test_delete_library_item_from_hda_purged(self):
         library_id = self.library["id"]
         file_id = self._create_library_content(type="from_hda")["id"]
-        payload = {"purged": True}
+        ldda_id = self.library_populator.show_ld(library_id, file_id)["ldda_id"]
+        payload = {"purge": True}
         response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}", data=payload, json=True)
         self._assert_status_code_is(response, 200)
+        assert self.library_populator.show_ldda(ldda_id)["deleted"] is True
 
     def test_delete_library_item_from_hdca_purged(self):
         library_id = self.library["id"]
         file_id = self._create_library_content(type="from_hdca")[0]["id"]
-        payload = {"purged": True}
+        ldda_id = self.library_populator.show_ld(library_id, file_id)["ldda_id"]
+        payload = {"purge": True}
         response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}", data=payload, json=True)
         self._assert_status_code_is(response, 200)
+        assert self.library_populator.show_ldda(ldda_id)["deleted"] is True
 
     def test_purge_library_item_retires_current_version(self):
         library_id = self.library["id"]
