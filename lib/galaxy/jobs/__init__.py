@@ -1241,23 +1241,24 @@ class MinimalJobWrapper(HasResourceParameters):
         Increase the disk usage of every user with an HDA of the outputs: the owner of the job's history, who is
         the user who logged in for a job run before logging in, and the owners of copies made while the job ran.
         """
-        usage_by_user: dict[model.User, dict[Optional[str], int]] = defaultdict(lambda: defaultdict(int))
+        # The quota source label and size of each dataset to charge
+        charges: dict[model.Dataset, tuple[Optional[str], int]] = {}
         for dataset in dict.fromkeys(datasets):
             if dataset.purged or not dataset.total_size:
                 continue
             quota_source_info = dataset.quota_source_info
-            if not quota_source_info.use:
-                continue
-            users = {
-                hda.history.user
-                for hda in dataset.history_associations
-                if not hda.purged and hda.history and hda.history.user
-            }
-            for user in users:
-                usage_by_user[user][quota_source_info.label] += int(dataset.total_size)
+            if quota_source_info.use:
+                charges[dataset] = (quota_source_info.label, int(dataset.total_size))
+        holders = model.dataset_holders(self.sa_session, charges)
+        usage_by_user_id: dict[int, dict[Optional[str], int]] = defaultdict(lambda: defaultdict(int))
+        for dataset, (label, size) in charges.items():
+            for user_id in holders[dataset]:
+                usage_by_user_id[user_id][label] += size
         # Lock the users' rows in the order of their ids, so jobs charging the same users can't deadlock
-        for user in sorted(usage_by_user, key=lambda user: user.id):
-            for label, usage in usage_by_user[user].items():
+        for user_id in sorted(usage_by_user_id):
+            user = self.sa_session.get(model.User, user_id)
+            assert user
+            for label, usage in usage_by_user_id[user_id].items():
                 user.adjust_total_disk_usage(usage, label)
             self.sa_session.flush([user])
 

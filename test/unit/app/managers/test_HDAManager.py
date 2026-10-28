@@ -235,6 +235,20 @@ class TestHDAManager(HDATestCase):
         assert other_user.get_disk_usage() == 0
         assert owner.get_disk_usage() == 10
 
+    def test_copy_of_library_dataset_charges_nothing(self):
+        owner, item1 = self._create_charged_hda(size=10)
+        ldda = model.LibraryDatasetDatasetAssociation(dataset=item1.dataset, name="in_library")
+        self.trans.sa_session.add(ldda)
+        self.trans.sa_session.commit()
+        other_user = self.user_manager.create(**user3_data)
+        other_history = self.history_manager.create(name="other_history", user=other_user)
+
+        self.log("should not charge a copy of a dataset in a library, and a recalculation should agree")
+        self.hda_manager.copy(item1, history=other_history)
+        assert other_user.get_disk_usage() == 0
+        other_user.calculate_and_set_disk_usage(model.Dataset.object_store)
+        assert other_user.get_disk_usage() == 0
+
     def test_history_copy_to_another_user_charges_collection_elements(self):
         owner, item1 = self._create_charged_hda(size=10)
         collection = model.DatasetCollection(collection_type="list")

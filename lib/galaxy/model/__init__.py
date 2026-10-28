@@ -124,6 +124,7 @@ from sqlalchemy.orm import (
     registry,
     relationship,
     remote,
+    scoped_session,
     validates,
 )
 from sqlalchemy.orm.attributes import flag_modified
@@ -195,6 +196,7 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.tool_util.output_checker import AnyJobMessage
 from galaxy.util import (
+    chunk_iterable,
     directory_hash_id,
     enum_values,
     hex_to_lowercase_alphanum,
@@ -3459,6 +3461,66 @@ class HistoryAudit(Base):
             session.execute(q)
 
 
+def dataset_holders(
+    session: Union[Session, scoped_session],
+    datasets: Iterable["Dataset"],
+    exclude: Iterable["HistoryDatasetAssociation"] = (),
+    user: Optional["User"] = None,
+) -> dict["Dataset", set[int]]:
+    """
+    Return the ids of the users with an HDA of each dataset that isn't purged or in `exclude`, only `user` if given.
+
+    Reads the HDAs in one query per 1000 datasets rather than loading the history of every HDA of every dataset,
+    which takes a query per HDA for a dataset copied into many users' histories. As loading them would, it sees
+    the HDAs and changes in the session that aren't flushed yet: the session doesn't autoflush.
+    """
+    HDA = HistoryDatasetAssociation
+    holders: dict[Dataset, set[int]] = {dataset: set() for dataset in datasets}
+    excluded = set(exclude)
+
+    def add_holder(hda: HistoryDatasetAssociation) -> None:
+        if hda in excluded or hda.purged or hda.dataset not in holders or not hda.history:
+            return
+        holder = hda.history.user
+        if holder and holder.id is not None and (user is None or holder is user):
+            holders[hda.dataset].add(holder.id)
+
+    datasets_by_id = {dataset.id: dataset for dataset in holders if dataset.id is not None}
+    if user is None or user.id is not None:
+        for dataset_ids in chunk_iterable(datasets_by_id):
+            stmt = (
+                select(HDA.id, HDA.dataset_id, History.user_id)
+                .join(History, HDA.history_id == History.id)
+                .where(HDA.dataset_id.in_(dataset_ids), HDA.purged.is_not(true()), History.user_id.is_not(None))
+            )
+            if user is not None:
+                stmt = stmt.where(History.user_id == user.id)
+            for hda_id, dataset_id, holder_id in session.execute(stmt):
+                loaded_hda = session.identity_map.get(session.identity_key(HDA, hda_id))
+                if loaded_hda is not None:
+                    # Its state in the session may differ from the database
+                    add_holder(loaded_hda)
+                else:
+                    holders[datasets_by_id[dataset_id]].add(holder_id)
+    for obj in session.new:
+        if isinstance(obj, HDA):
+            add_holder(obj)
+    return holders
+
+
+def datasets_in_libraries(session: Union[Session, scoped_session], datasets: Iterable["Dataset"]) -> set["Dataset"]:
+    """Return the datasets with a library dataset, reading them in one query per 1000 datasets."""
+    LDDA = LibraryDatasetDatasetAssociation
+    datasets = set(datasets)
+    in_libraries = {obj.dataset for obj in session.new if isinstance(obj, LDDA) and obj.dataset in datasets}
+    datasets_by_id = {dataset.id: dataset for dataset in datasets if dataset.id is not None}
+    for dataset_ids in chunk_iterable(datasets_by_id):
+        stmt = select(LDDA.dataset_id).where(LDDA.dataset_id.in_(dataset_ids)).distinct()
+        found = set(session.scalars(stmt))
+        in_libraries.update(datasets_by_id[dataset_id] for dataset_id in dataset_ids if dataset_id in found)
+    return in_libraries
+
+
 class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable, UsesCreateAndUpdateTime):
     __tablename__ = "history"
     __table_args__ = (Index("ix_history_slug", "slug", mysql_length=200),)
@@ -3649,16 +3711,17 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         added = [
             hda for hda in hdas if isinstance(hda, HistoryDatasetAssociation) and hda.history is self and not hda.purged
         ]
-        added_set = set(added)
-        datasets = {hda.dataset for hda in added}
+        datasets = {
+            hda.dataset for hda in added if not hda.dataset.purged and hda.dataset.state not in Dataset.uncharged_states
+        }
+        if not datasets:
+            return
+        session = required_object_session(self)
+        holders = dataset_holders(session, datasets, exclude=added, user=user)
+        in_libraries = datasets_in_libraries(session, datasets)
         usage_by_quota_source: dict[Optional[str], int] = defaultdict(int)
         for dataset in datasets:
-            if dataset.purged or dataset.library_associations or dataset.state in Dataset.uncharged_states:
-                continue
-            if any(
-                hda not in added_set and not hda.purged and hda.history and hda.user == user
-                for hda in dataset.history_associations
-            ):
+            if holders[dataset] or dataset in in_libraries:
                 continue
             quota_source_info = dataset.quota_source_info
             if quota_source_info.use:
