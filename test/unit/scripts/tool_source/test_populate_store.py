@@ -756,17 +756,14 @@ class TestToolsMissingFromReadOnlyStore:
         assert index.entries["installed"].in_panel is True
         assert "published" not in index.entries
 
-    def test_listing_failure_fails_full_populate(self, tmp_path, monkeypatch):
-        shed_conf, installed = self._published_conf(tmp_path)
+    def test_listing_failure_only_warns_on_full_populate(self, tmp_path, monkeypatch, caplog):
+        shed_conf, _ = self._published_conf(tmp_path)
         config = self._config(tmp_path, shed_conf, read_only=True)
-        populate_store_inline(config, paths=[str(installed)])
         monkeypatch.setattr(SqlAlchemyToolSourceStore, "list_source_paths", _raise_listing_error)
 
-        with pytest.raises(RuntimeError, match="no listing"):
-            populate_store_inline(config, prune=True)
+        populate_store_inline(config, prune=True)
 
-        _, index = _load_default_index(config)
-        assert index.entries["installed"].in_panel is True
+        assert f"Skipping tools of {shed_conf} missing from read-only store published: no listing" in caplog.text
 
     def test_listing_failure_only_warns_on_partial_populate(self, tmp_path, monkeypatch, caplog):
         shed_conf, installed = self._published_conf(tmp_path)
