@@ -743,7 +743,8 @@ def _populate_store_inline_unlocked(
                     published_paths_by_store[store_name] = store.list_source_paths()
                 except Exception as e:
                     log.warning(
-                        "Skipping tools missing from read-only store %s for every conf routed to it: %s",
+                        "Skipping tools of %s missing from read-only store %s: %s",
+                        ", ".join(c for c, name in conf_to_store.items() if name == store_name),
                         store_name,
                         e,
                     )
