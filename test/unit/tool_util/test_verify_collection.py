@@ -37,6 +37,8 @@ def test_verify_collection_size_pass(attrib, n):
         ({"count": "2"}, 1, "expected to have 2 elements, but it had 1"),
         ({"min": "2"}, 1, "expected to have at least 2 elements, but it had 1"),
         ({"max": "1"}, 2, "expected to have at most 1 elements, but it had 2"),
+        ({"count": "0"}, 1, "expected to have 0 elements, but it had 1"),
+        ({"max": "0"}, 1, "expected to have at most 0 elements, but it had 1"),
     ],
 )
 def test_verify_collection_size_fail(attrib, n, message):
@@ -47,3 +49,8 @@ def test_verify_collection_size_fail(attrib, n, message):
 def test_verify_collection_element_count_fail():
     with pytest.raises(AssertionError, match="expected to have 2 elements, but it had 1"):
         _verify({}, 1, element_count=2)
+
+
+def test_verify_collection_element_count_zero_fail():
+    with pytest.raises(AssertionError, match="expected to have 0 elements, but it had 1"):
+        _verify({}, 1, element_count=0)
