@@ -95,30 +95,43 @@ def test_browse_down_to_the_original_files():
     assert files[1].hashes is None
 
 
+def _download(file_sources, name="reads.fastq"):
+    return realize_to_temp_file(file_sources, f"gxfiles://dspace/bitstreams/{FASTQ}/{name}")
+
+
 @responses.activate
-def test_download_checks_every_redirect_and_keeps_the_token_on_dspace():
-    _fake_repository()
+def test_download_follows_redirects_and_sends_the_token_only_to_dspace():
     responses.get(f"{API}/core/bitstreams/{FASTQ}/content", status=302, headers={"Location": CDN})
     responses.get(CDN, body=b"abc")
-    file_sources = _source(token=" secret\n")
-    assert realize_to_temp_file(file_sources, f"gxfiles://dspace/bitstreams/{FASTQ}/reads.fastq") == "abc"
-    auth = {str(call.request.url).split("?")[0]: call.request.headers.get("Authorization") for call in responses.calls}
-    assert auth[f"{API}/core/bitstreams/{FASTQ}/content"] == "Bearer secret"
-    assert auth[CDN] is None
+    assert _download(_source(token=" secret\n")) == "abc"
+    auth = {str(call.request.url): call.request.headers.get("Authorization") for call in responses.calls}
+    assert auth == {f"{API}/core/bitstreams/{FASTQ}/content": "Bearer secret", CDN: None}
+    # the name only names the dataset, so not even ".." hides the uuid
+    assert _download(_source(), "..") == "abc"
 
-    responses.replace(responses.GET, f"{API}/core/bitstreams/{FASTQ}/content", status=400)
-    with pytest.raises(AuthenticationRequired):
-        realize_to_temp_file(file_sources, f"gxfiles://dspace/bitstreams/{FASTQ}/reads.fastq")
-    responses.replace(responses.GET, f"{API}/core/bitstreams/{FASTQ}/content", status=302, headers={"Location": CDN})
-    # an expired token still lists, but only what is public
+
+@responses.activate
+def test_a_rejected_token_on_download_asks_for_a_new_one():
+    responses.get(f"{API}/core/bitstreams/{FASTQ}/content", status=400)
+    with pytest.raises(AuthenticationRequired, match="may have expired"):
+        _download(_source(token="secret"))
+
+
+@responses.activate
+def test_an_expired_token_on_listing_asks_for_a_new_one():
+    # DSpace lists only what is public for an expired token instead of refusing it
     responses.get(f"{API}/authn/status", json={"authenticated": False})
-    with pytest.raises(AuthenticationRequired):
-        file_sources.get_file_source_path("gxfiles://dspace").file_source.list("/")
+    with pytest.raises(AuthenticationRequired, match="may have expired"):
+        _source(token="secret").get_file_source_path("gxfiles://dspace").file_source.list("/")
 
-    responses.replace(responses.GET, CDN, status=302, headers={"Location": "http://169.254.169.254/latest"})
+
+@responses.activate
+def test_a_redirect_to_a_private_address_is_refused_before_it_is_requested():
+    responses.get(f"{API}/core/bitstreams/{FASTQ}/content", status=302, headers={"Location": CDN})
+    responses.get(CDN, status=302, headers={"Location": "http://169.254.169.254/latest"})
     responses.get("http://169.254.169.254/latest", body=b"secret")
     with pytest.raises(ConfigDoesNotAllowException):
-        realize_to_temp_file(file_sources, f"gxfiles://dspace/bitstreams/{FASTQ}/reads.fastq")
+        _download(_source())
     assert not any("169.254" in str(call.request.url) for call in responses.calls)
 
 

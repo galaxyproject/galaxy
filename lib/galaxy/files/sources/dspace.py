@@ -149,8 +149,8 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
         native_path: str,
         context: FilesSourceRuntimeContext[DSpaceFileSourceConfiguration],
     ) -> None:
-        # the file name at the end only names the dataset; the bitstream uuid finds the file
-        parts = self._split(source_path, maxsplit=2)
+        # the file name at the end only names the dataset, so it is not normalized (a name of ".." stays a name)
+        parts = (source_path or "").strip("/").split("/", 2)
         if len(parts) != 3 or parts[0] != "bitstreams":
             raise ObjectNotFound(f"The specified DSpace path is not a file [{source_path}].")
         bitstream_id = self._uuid(parts[1], source_path)
