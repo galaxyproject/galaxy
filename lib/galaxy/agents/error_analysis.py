@@ -51,6 +51,15 @@ class ErrorAnalysisResult(BaseModel):
     requires_admin: bool = False
 
 
+# Roughly 10k tokens of replayed conversation, leaving room for the prompt, job details and
+# output on the smallest (32k) context window we support.
+HISTORY_CHAR_BUDGET = 40_000
+
+
+def _message_chars(message: ModelMessage) -> int:
+    return sum(len(content) for part in message.parts if isinstance(content := getattr(part, "content", None), str))
+
+
 def _trim_part(part: Any) -> Any:
     content = getattr(part, "content", None)
     if isinstance(content, str) and len(content) > JOB_LOG_EXCERPT_CHARS:
@@ -237,7 +246,20 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         history = self._extract_message_history(context)
         if not history:
             return history
-        return [_trim_message(message) for message in history]
+        trimmed = [_trim_message(message) for message in history]
+        # Keep the newest messages that fit, so the conversation as a whole stays bounded too.
+        start = len(trimmed)
+        total = 0
+        while start > 0:
+            total += _message_chars(trimmed[start - 1])
+            if total > HISTORY_CHAR_BUDGET and start < len(trimmed):
+                break
+            start -= 1
+        kept = trimmed[start:]
+        # A replayed conversation has to open on a request, not a dangling reply.
+        while kept and not isinstance(kept[0], ModelRequest):
+            kept = kept[1:]
+        return kept or None
 
     def _format_job_context(self, job_details: dict[str, Any]) -> str:
         parts = []
