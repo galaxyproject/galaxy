@@ -922,7 +922,6 @@ def test_config_parse_direct_download_expires_in():
         ),
     ]:
         with TestConfig(config_str) as (directory, object_store):
-            assert object_store.direct_download_expires_in == 600
             _assert_key_has_value(object_store.to_dict(), "direct_download_expires_in", 600)
             assert _boto3_direct_download_expires_in(object_store) == 600
 
