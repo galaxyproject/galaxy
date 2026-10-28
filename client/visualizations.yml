@@ -162,3 +162,6 @@ vizarr:
 vtk:
     package: "@galaxyproject/vtk"
     version: 0.0.2
+warc:
+    package: "@galaxyproject/warc"
+    version: 0.0.1
