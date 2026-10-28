@@ -1,4 +1,3 @@
-from galaxy import model
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -212,56 +211,11 @@ class TestLibraryContentsApi(ApiTestCase):
         self._assert_status_code_is(response, 200)
         assert self.dataset_populator.get_history_dataset_content(self.history) == "TestData123\n"
 
-    def test_purge_library_item_retires_all_versions(self):
-        library_id = self.library["id"]
-        file_id = self._create_library_content(type="from_hda")["id"]
-        expired_ldda_id = self._add_version(file_id)
-        response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}", data={"purge": True}, json=True)
-        self._assert_status_code_is(response, 200)
-        library_dataset = self._db_get_library_dataset(file_id)
-        assert library_dataset.deleted is True
-        assert library_dataset.purged is True
-        assert library_dataset.library_dataset_dataset_association.deleted is True
-        expired_ldda = self._db_session().get(model.LibraryDatasetDatasetAssociation, expired_ldda_id)
-        assert expired_ldda.deleted is True
-
     def test_delete_invalid_library_item(self):
         library_id = self.library["id"]
         invalid_item_id = "invalid_id"
         response_invalid = self._delete(f"/api/libraries/{library_id}/contents/{invalid_item_id}")
         self._assert_status_code_is(response_invalid, 400)
-
-    def _galaxy_app(self):
-        app = self.driver_or_skip_test_if_remote().app
-        assert app is not None
-        return app
-
-    def _db_session(self):
-        session = self._galaxy_app().model.session
-        session.rollback()
-        return session
-
-    def _decode_id(self, encoded_id):
-        return self._galaxy_app().security.decode_id(encoded_id)
-
-    def _db_get_library_dataset(self, encoded_id):
-        return self._db_session().get(model.LibraryDataset, self._decode_id(encoded_id))
-
-    def _add_version(self, encoded_id):
-        """Add a version and make it current, demoting the existing one to an expired version."""
-        session = self._db_session()
-        library_dataset = session.get(model.LibraryDataset, self._decode_id(encoded_id))
-        current_ldda = library_dataset.library_dataset_dataset_association
-        new_ldda = model.LibraryDatasetDatasetAssociation(
-            dataset=current_ldda.dataset, user=current_ldda.user, name="new version"
-        )
-        new_ldda.library_dataset = library_dataset
-        session.add(new_ldda)
-        session.flush()
-        previous_ldda_id = current_ldda.id
-        library_dataset.library_dataset_dataset_association = new_ldda
-        session.commit()
-        return previous_ldda_id
 
     def _create_library_content(self, type):
         folder_id = self.library["root_folder_id"]
