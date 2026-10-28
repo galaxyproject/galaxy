@@ -21074,16 +21074,16 @@ export interface components {
              */
             id: string;
             /**
-             * Kind
-             * @description Whether the output ID identifies an HDA or an HDCA.
-             * @enum {string}
-             */
-            kind: "hda" | "hdca";
-            /**
              * Label
              * @description Workflow output label to assign to the exposed output.
              */
             label: string;
+            /**
+             * Source
+             * @description Whether the output ID identifies an HDA or an HDCA.
+             * @enum {string}
+             */
+            src: "hda" | "hdca";
         };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
@@ -24330,16 +24330,16 @@ export interface components {
              */
             id: string;
             /**
-             * Kind
-             * @description Whether the ID identifies a plain tool job or an ImplicitCollectionJobs (mapped step).
-             * @enum {string}
-             */
-            kind: "job" | "implicit_collection_jobs";
-            /**
              * Label
              * @description Workflow step label to assign to the extracted tool step.
              */
             label: string;
+            /**
+             * Source
+             * @description Whether the ID identifies a plain tool job or an ImplicitCollectionJobs (mapped step).
+             * @enum {string}
+             */
+            src: "job" | "implicit_collection_jobs";
         };
         /** StepReferenceByLabel */
         StepReferenceByLabel: {

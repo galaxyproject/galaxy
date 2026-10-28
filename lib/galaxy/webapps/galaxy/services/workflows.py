@@ -498,16 +498,16 @@ class WorkflowsService(ServiceBase):
         seen_step_keys: set[tuple[str, int]] = set()
         step_label_strings: list[str] = []
         for step_label in payload.step_labels:
-            step_key = (step_label.kind, step_label.id)
+            step_key = (step_label.src, step_label.id)
             if step_key in seen_step_keys:
                 raise exceptions.RequestParameterInvalidException(
-                    f"step_labels contains duplicate {step_label.kind} id {step_label.id}"
+                    f"step_labels contains duplicate {step_label.src} id {step_label.id}"
                 )
             seen_step_keys.add(step_key)
-            selected = selected_job_ids if step_label.kind == "job" else selected_icj_ids
+            selected = selected_job_ids if step_label.src == "job" else selected_icj_ids
             if step_label.id not in selected:
                 raise exceptions.RequestParameterInvalidException(
-                    f"step_labels includes {step_label.kind} id {step_label.id} "
+                    f"step_labels includes {step_label.src} id {step_label.id} "
                     "that is not a selected extraction step"
                 )
             step_label_strings.append(step_label.label)
@@ -526,18 +526,18 @@ class WorkflowsService(ServiceBase):
         for output_label in payload.output_labels:
             sanitized_label = _sanitize_output_label(output_label.label)
             output_label.label = sanitized_label
-            output_key = normalize_output_label_key(trans, output_label.kind, output_label.id)
+            output_key = normalize_output_label_key(trans, output_label.src, output_label.id)
             output_label.id = output_key[1]
             if output_key in seen_output_ids:
                 raise exceptions.RequestParameterInvalidException(
-                    f"output_labels contains duplicate {output_label.kind} id {output_label.id}"
+                    f"output_labels contains duplicate {output_label.src} id {output_label.id}"
                 )
             seen_output_ids.add(output_key)
 
             output_target = output_targets.get(output_key)
             if output_target is None:
                 raise exceptions.RequestParameterInvalidException(
-                    f"output_labels includes {output_label.kind} id {output_label.id} "
+                    f"output_labels includes {output_label.src} id {output_label.id} "
                     "that is not produced by a selected extraction step"
                 )
             if output_target.step_key in seen_resolved_outputs:
