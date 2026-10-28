@@ -1141,6 +1141,28 @@ class TestAgentUnitMocked:
         # The older, unrelated first turn stays out of the routing decision.
         assert "wrapper flaw" not in routed_on
 
+    @pytest.mark.asyncio
+    async def test_router_keeps_its_prompt_when_routing_on_recent_turns(self):
+        """Any follow-up routes with some history, and pydantic-ai drops ``system_prompt=`` from
+        runs that have message_history -- the routing rules have to reach the model anyway."""
+        router = QueryRouterAgent(self.deps)
+        sent: list[str] = []
+
+        def model_fn(messages, info):
+            sent.extend(
+                part.content for message in messages for part in message.parts if isinstance(part, SystemPromptPart)
+            )
+            sent.append(info.instructions or "")
+            return ModelResponse(parts=[TextPart(content="Routed.")])
+
+        with router.agent.override(model=FunctionModel(model_fn)):
+            await router.process(
+                "why did it fail?",
+                context={"conversation_history": SUBJECT_THEN_CLARIFICATION_HISTORY, "clarification_turns": 1},
+            )
+
+        assert any("## What You Remember" in text for text in sent)
+
     def test_router_keeps_a_run_of_clarifications_and_the_turn_before_it(self):
         """Several "which tool?" questions in a row: the routing window is the whole run plus the
         turn it followed, but nothing older."""
