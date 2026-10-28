@@ -73,7 +73,7 @@ NO_SESSION_ERROR_MESSAGE = (
     "Attempted to 'create' object store entity in configuration with no database session present."
 )
 DEFAULT_PRIVATE = False
-DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN = 3600  # seconds a direct download URL stays valid
+DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN = 3600  # seconds
 DEFAULT_QUOTA_SOURCE = None  # Just track quota right on user object in Galaxy.
 DEFAULT_QUOTA_ENABLED = True  # enable quota tracking in object stores by default
 DEFAULT_DEVICE_ID = None
@@ -939,6 +939,8 @@ class ConcreteObjectStore(BaseObjectStore):
         self.direct_download_expires_in = int(
             config_dict.get("direct_download_expires_in", DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN)
         )
+        if self.direct_download_expires_in <= 0:
+            raise ValueError("direct_download_expires_in must be a positive number of seconds")
         self.badges = read_badges(config_dict)
 
     def get_concrete_store_backends(self):
