@@ -764,7 +764,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         serialization_params.default_view = "detailed"
         converted = self._get_or_create_converted(trans, hda, ext)
         return self.hda_serializer.serialize_to_view(
-            converted, user=trans.user, trans=trans, **serialization_params.model_dump()
+            converted, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
         )
 
     def converted(
