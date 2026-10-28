@@ -84,7 +84,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("libraries_dataset_import")
         self.libraries_dataset_import_from_history_click_ok()
-        self.assert_num_displayed_items_is(1)
+        self.wait_for_num_displayed_items(1)
 
     @selenium_test
     @requires_admin
@@ -147,7 +147,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_ok_button)
         # Let the progress bar disappear...
         self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
-        self.assert_num_displayed_items_is(1)
+        self.wait_for_num_displayed_items(1)
 
         self.click_label("1.txt")
         self.wait_for_visible(self.navigation.libraries.dataset.selectors.table)
@@ -171,7 +171,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         self.assert_num_displayed_items_is(0)
         filenames = ["1.axt", "1.bed", "1.bam"]
         self.populate_library_folder_from_import_dir(self.name, filenames)
-        self.assert_num_displayed_items_is(len(filenames))
+        self.wait_for_num_displayed_items(len(filenames))
 
     @selenium_test
     @requires_admin
