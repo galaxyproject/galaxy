@@ -1213,15 +1213,15 @@ class TestAgentUnitMocked:
             history.append(ModelResponse(parts=[TextPart(content=f"question {i}?")]))
 
         routing_history = router._routing_history(history, clarification_turns=10)
-        assert routing_history == history[-2 * (router.MAX_CLARIFICATION_TURNS + 1) :]
+        # Three clarifications plus the turn before them, two messages a turn.
+        assert routing_history == history[-8:]
 
-    def test_router_routing_window_when_every_turn_was_a_clarification(self):
-        """A conversation that's been clarifications from the start routes on all of it."""
+    def test_router_routing_window_wider_than_the_history_keeps_all_of_it(self):
+        """A window reaching back past the first turn routes on the whole (short) conversation."""
         router = QueryRouterAgent(self.deps)
         history = SUBJECT_THEN_CLARIFICATION_HISTORY
 
         assert router._routing_history(history, clarification_turns=3) == history
-        assert router._routing_history(history, clarification_turns=0) == history[-2:]
 
     @pytest.mark.asyncio
     async def test_error_analysis_sees_the_conversation_on_a_vague_handoff(self):
