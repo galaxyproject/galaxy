@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 const addToast = vi.fn()
 vi.mock("@galaxyproject/galaxy-ui", () => ({ useToast: () => ({ addToast }) }))
 
-const { copyAndNotify, downloadTextFile, getCookie, notify, notifyOnCatch, safeReturnPath } = await import("./util")
+const { copyAndNotify, downloadTextFile, getCookie, notify, notifyOnCatch, safeReturnPath, withRedirect } =
+    await import("./util")
 
 describe("notify", () => {
     beforeEach(() => {
@@ -130,5 +131,14 @@ describe("safeReturnPath", () => {
         ]) {
             expect(safeReturnPath(value)).toBeNull()
         }
+    })
+})
+
+describe("withRedirect", () => {
+    it("adds an encoded return path only when there is one", () => {
+        expect(withRedirect("/login", "/repos/devteam/bismark/shortlog?rev=1")).toBe(
+            "/login?redirect=%2Frepos%2Fdevteam%2Fbismark%2Fshortlog%3Frev%3D1",
+        )
+        expect(withRedirect("/register", null)).toBe("/register")
     })
 })

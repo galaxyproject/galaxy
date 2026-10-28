@@ -14,6 +14,7 @@ import { computed } from "vue"
 import ActionMenu from "@/components/ActionMenu.vue"
 import { goToRepository, goToMetadataInspector } from "@/router"
 import { useAuthStore } from "@/stores"
+import { withRedirect } from "@/util"
 
 interface Repository {
     name: string
@@ -52,7 +53,7 @@ const hgwebLinks = computed(() =>
                   key,
                   icon,
                   label: `Log in to ${prompt}`,
-                  target: { to: `/login?redirect=${encodeURIComponent(path)}` },
+                  target: { to: withRedirect("/login", path) },
               },
     ),
 )

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
-import { mount, flushPromises } from "@vue/test-utils"
+import { mount, flushPromises, RouterLinkStub } from "@vue/test-utils"
 import RegisterPage from "./RegisterPage.vue"
 
 const mockPost = vi.fn()
@@ -43,5 +43,18 @@ describe("RegisterPage", () => {
             }),
         )
         expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({ path: "/registration_success" }))
+    })
+})
+
+describe("RegisterPage login link", () => {
+    it("keeps the return path when switching to login", () => {
+        const wrapper = mount(RegisterPage, {
+            props: { returnTo: "/repos/devteam/bismark/shortlog" },
+            global: { stubs: { RouterLink: RouterLinkStub } },
+        })
+
+        expect(wrapper.getComponent(RouterLinkStub).props("to")).toBe(
+            "/login?redirect=%2Frepos%2Fdevteam%2Fbismark%2Fshortlog",
+        )
     })
 })

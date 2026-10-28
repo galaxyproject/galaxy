@@ -30,6 +30,7 @@ const routes: Array<RouteRecordRaw> = [
     {
         path: "/register",
         component: RegisterPage,
+        props: (route) => ({ returnTo: queryParamToString(route.query.redirect) }),
     },
     {
         path: "/login",

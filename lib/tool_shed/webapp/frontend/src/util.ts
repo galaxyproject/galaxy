@@ -114,6 +114,11 @@ export function safeReturnPath(value: string | null | undefined): string | null 
     return url.origin === window.location.origin ? url.pathname + url.search + url.hash : null
 }
 
+// Login and register links that carry the page to return to after logging in.
+export function withRedirect(path: "/login" | "/register", returnTo: string | null | undefined): string {
+    return returnTo ? `${path}?redirect=${encodeURIComponent(returnTo)}` : path
+}
+
 export function queryParamToString(param: LocationQueryValue | LocationQueryValue[]): string | null {
     return Array.isArray(param) ? param[0] : param
 }
