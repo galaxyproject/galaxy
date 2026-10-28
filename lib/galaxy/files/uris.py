@@ -7,6 +7,7 @@ import tempfile
 import threading
 import uuid
 from collections.abc import (
+    Callable,
     Iterable,
     Iterator,
 )
@@ -15,6 +16,7 @@ from typing import Optional
 from urllib.error import HTTPError
 from urllib.parse import (
     quote,
+    urljoin,
     urlparse,
 )
 
@@ -39,6 +41,8 @@ from galaxy.files.models import (
     RemoteFile,
 )
 from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests as galaxy_requests,
     stream_to_path,
     unicodify,
     unlink,
@@ -365,3 +369,35 @@ def refuse_a_private_address(url: str, ip_allowlist: list[IpAllowedListEntryT], 
         ) from e
     except RequestParameterInvalidException as e:
         raise MessageException(f"Could not find {host}, the address of {label}.") from e
+
+
+@contextmanager
+def get_checking_every_redirect(
+    url: str,
+    check_url: Callable[[str], None],
+    headers_for: Callable[[str], dict[str, str]],
+    params: dict[str, str] | None = None,
+    max_redirects: int = 5,
+) -> Iterator[requests.Response]:
+    """Stream a GET of ``url``, following redirects here so ``check_url`` vets each hop before it is requested.
+
+    ``headers_for`` gets each hop's URL, so credentials can be kept to the origin they belong to.
+    """
+    for _ in range(max_redirects + 1):
+        check_url(url)
+        response = galaxy_requests.get(
+            url,
+            params=params,
+            headers=headers_for(url),
+            stream=True,
+            timeout=DEFAULT_SOCKET_TIMEOUT,
+            allow_redirects=False,
+        )
+        if not response.is_redirect:
+            break
+        response.close()
+        url, params = urljoin(response.url, response.headers["Location"]), None
+    else:
+        raise requests.exceptions.TooManyRedirects(f"More than {max_redirects} redirects, the last to {url}.")
+    with response:
+        yield response
