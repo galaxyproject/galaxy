@@ -8,7 +8,10 @@ import abc
 import json
 import logging
 import os
-from collections.abc import Callable
+from collections.abc import (
+    Callable,
+    Set,
+)
 from typing import (
     Any,
     BinaryIO,
@@ -82,6 +85,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
         to_posix_lines: bool = True,
         job_dir: str = ".",
         resolve_data: Callable[[str], str | None] | None = None,
+        parameter_input_keys: Set[str] | None = None,
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         def upload_func_fetch(upload_target: UploadTarget) -> dict[str, Any]:
             def _attach_file(upload_payload: dict[str, Any], uri: str, index: int = 0) -> dict[str, str | bool]:
@@ -285,6 +289,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
             create_collection_func,
             tool_or_workflow,
             resolve_data=resolve_data,
+            parameter_input_keys=parameter_input_keys,
         )
 
     # extension point for planemo to override logging
