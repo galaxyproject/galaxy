@@ -55,6 +55,7 @@ from abc import (
 from collections.abc import (
     Callable,
     Generator,
+    Set,
 )
 from functools import wraps
 from io import StringIO
@@ -3140,34 +3141,33 @@ steps: []
         if use_stage_inputs:
             # Copy because galactic_job_json() mutates the dict in-place
             job_copy = dict(test_data_dict)
-            raw_params = {}
-            for k, v in list(job_copy.items()):
+            parameter_input_keys: set[str] = set()
+            for k, v in job_copy.items():
                 if isinstance(v, dict) and v.get("type") == "raw":
                     if test_data_format == "cwl_style":
                         raise ValueError(
                             f"Legacy 'type: raw' form in job input '{k}' is not allowed with "
                             "test_data_format='cwl_style'. Use a bare scalar value."
                         )
-                    raw_params[k] = v["value"]
-                    del job_copy[k]
+                    job_copy[k] = v["value"]
+                    parameter_input_keys.add(k)
                 elif test_data_format == "cwl_style" and isinstance(v, dict) and v.get("type") in ("File", "Directory"):
                     raise ValueError(
                         f"Legacy 'type: {v['type']}' form in job input '{k}' is not allowed with "
                         "test_data_format='cwl_style'. Use 'class: File' + path/location/contents."
                     )
                 elif test_data_format == "cwl_style" and _is_scalar_or_scalar_list(v):
-                    raw_params[k] = v
-                    del job_copy[k]
+                    parameter_input_keys.add(k)
             staged_job, datasets = stage_inputs(
                 self.dataset_populator.galaxy_interactor,
                 history_id,
                 job_copy,
                 use_path_paste=False,
                 job_dir=job_dir,
+                parameter_input_keys=parameter_input_keys,
             )
             if datasets:
                 self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            staged_job.update(raw_params)
             label_map = staged_job
             inputs = staged_job
             has_uploads = bool(datasets)
@@ -4632,6 +4632,7 @@ def stage_inputs(
     to_posix_lines: bool = True,
     tool_or_workflow: Literal["tool", "workflow"] = "workflow",
     job_dir: str | None = None,
+    parameter_input_keys: Set[str] | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Alternative to load_data_dict that uses production-style workflow inputs."""
     test_data_resolver = TestDataResolver()
@@ -4655,6 +4656,7 @@ def stage_inputs(
         use_path_paste=use_path_paste,
         to_posix_lines=to_posix_lines,
         resolve_data=resolve_data,
+        parameter_input_keys=parameter_input_keys,
         **kwds,
     )
 
