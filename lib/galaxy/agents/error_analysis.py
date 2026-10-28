@@ -59,10 +59,11 @@ def _trim_part(part: Any) -> Any:
 
 
 def _trim_message(message: ModelMessage) -> ModelMessage:
-    # Two identical branches so mypy can narrow the union for ``replace``.
+    # Only what the user sent: that's where pasted logs are. Assistant replies are bounded by
+    # max_tokens, and a long History reply is often where the failed job is named.
     if isinstance(message, ModelRequest):
         return replace(message, parts=[_trim_part(part) for part in message.parts])
-    return replace(message, parts=[_trim_part(part) for part in message.parts])
+    return message
 
 
 class ErrorAnalysisAgent(BaseGalaxyAgent):
@@ -228,7 +229,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             )
 
     def _bounded_message_history(self, context: dict[str, Any] | None) -> list[ModelMessage] | None:
-        """The conversation, with each message trimmed like a job log.
+        """The conversation, with what the user sent trimmed like a job log.
 
         The wizard posts a job's raw stderr as the query and the chat stores it untrimmed, so
         without this one big paste would ride along, whole, on every later turn.
