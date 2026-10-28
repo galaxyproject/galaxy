@@ -846,9 +846,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
         try:
-            self.history_manager.get_converted_dataset(trans, original, target_ext)
-            converted = original.get_converted_files_by_type(target_ext)
-            return converted
+            if self.history_manager.get_converted_dataset(trans, original, target_ext) is None:
+                raise galaxy_exceptions.AcceptedRetryLater("Conversion dependencies are pending.")
+            return original.get_converted_files_by_type(target_ext)
 
         except model.NoConverterException:
             exc_data = dict(

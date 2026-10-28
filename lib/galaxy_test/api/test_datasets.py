@@ -593,6 +593,19 @@ class TestDatasetsApi(ApiTestCase):
             self._assert_status_code_is(response, 400)
             assert_error_message_contains(response, "A history is required")
 
+    def test_converted_ext_pending_dependency_returns_202(self, history_id):
+        content = "chr1\t10\t20\tgeneA\nchr1\t30\t40\tgeneB\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=content, file_type="bed", wait=True)
+        newer_history_id = self.dataset_populator.new_history()
+        # tabix depends on bgzip, which the first request only queues.
+        response = self.dataset_populator.get_converted_dataset_raw(hda["id"], "tabix")
+        self._assert_status_code_is(response, 202)
+        assert "Retry-After" in response.headers
+        assert_error_message_contains(response, "pending")
+        extensions = {c["extension"] for c in self.dataset_populator.get_history_contents(history_id)}
+        assert extensions == {"bed", "bgzip"}
+        assert self.dataset_populator.get_history_contents(newer_history_id) == []
+
     def test_search_features_converts_in_dataset_history(self, history_id):
         content = "chr1\t10\t20\tgeneA\nchr1\t30\t40\tgeneB\n"
         hda = self.dataset_populator.new_dataset(history_id, content=content, file_type="bed", wait=True)
