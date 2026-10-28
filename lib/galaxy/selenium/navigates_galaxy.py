@@ -31,6 +31,10 @@ from typing import (
     TYPE_CHECKING,
     TypeVar,
 )
+from urllib.parse import (
+    quote,
+    urlencode,
+)
 
 import yaml
 from selenium.webdriver.common.by import By
@@ -69,6 +73,7 @@ from .clipboard import (
 from .has_driver import (
     exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
+    exception_indicates_playwright_timeout,
     exception_indicates_stale_element,
     SeleniumTimeoutException,
 )
@@ -77,6 +82,11 @@ from .smart_components import (
     SmartComponent,
     SmartTarget,
 )
+from .tool_form import (
+    tool_form_parameters_from_build,
+    ToolFormParameter,
+)
+from .tool_form_filler import ToolFormFiller
 from .web_element_protocol import WebElementProtocol
 
 P = ParamSpec("P")
@@ -154,15 +164,6 @@ class NullTourCallback(TourCallbackProtocol):
         pass
 
 
-def _exception_indicates_playwright_timeout(e):
-    try:
-        from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError
-
-        return isinstance(e, PlaywrightTimeoutError)
-    except ImportError:
-        return False
-
-
 def exception_seems_to_indicate_transition(e: Exception) -> bool:
     """True if exception seems to indicate the page state is transitioning.
 
@@ -182,7 +183,7 @@ def exception_seems_to_indicate_transition(e: Exception) -> bool:
         exception_indicates_stale_element(e)
         or exception_indicates_not_clickable(e)
         or exception_indicates_click_intercepted(e)
-        or _exception_indicates_playwright_timeout(e)
+        or exception_indicates_playwright_timeout(e)
     )
 
 
@@ -205,7 +206,7 @@ def retry_call_during_transitions(
                 raise
 
             # A Playwright timeout already spent a whole action timeout retrying; allow one more.
-            if _exception_indicates_playwright_timeout(e):
+            if exception_indicates_playwright_timeout(e):
                 playwright_timeouts += 1
                 if playwright_timeouts > 1:
                     raise
@@ -2393,11 +2394,43 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             input_element.send_keys(value)
 
     def tool_form_select_collection(self, expanded_parameter_id, name):
-        tool_form = self.components.tool_form
-        tool_form.parameter_data_input_collection(parameter=expanded_parameter_id).wait_for_and_click()
-        tool_form.parameter_data_input_collection_pressed(parameter=expanded_parameter_id).wait_for_visible()
+        ToolFormFiller(self).enter_collection_mode(expanded_parameter_id)
         # multiple=True sends escape so the select's dropdown closes rather than lingering open
         self.tool_form_select_data(expanded_parameter_id, name, multiple=True)
+
+    def tool_form_parameters(
+        self, tool_id: str | None = None, tool_version: str | None = None, job_id: str | None = None
+    ) -> list[ToolFormParameter]:
+        """Describe a tool's form fields (path, label, type, value, options) for the current history.
+
+        With ``job_id``, describe the rerun form instead: the fields hold that job's settings.
+        """
+        if job_id:
+            suffix = f"?{urlencode({'tool_version': tool_version})}" if tool_version else ""
+            build = self.api_get(f"jobs/{job_id}/build_for_rerun{suffix}")
+        else:
+            if not tool_id:
+                raise ValueError("pass tool_id or job_id")
+            query = {"history_id": self.current_history_id()}
+            if tool_version:
+                query["tool_version"] = tool_version
+            build = self.api_get(f"tools/{quote(tool_id, safe='')}/build?{urlencode(query)}")
+        return tool_form_parameters_from_build(build["inputs"])
+
+    def tool_form_fill(self, values: dict[str, Any] | None = None, data: dict[str, int | str] | None = None) -> None:
+        """Fill the open tool form by parameter path, such as ``cond|param`` or ``repeat_0|param``.
+
+        ``values`` sets non-data parameters, detecting each one's widget. ``data`` selects a dataset or
+        collection per parameter, by integer hid, digit-only string hid, or option label such as
+        ``"3: reads.fq"``. Adds the repeat instances the paths need, expands sections, and retries
+        parameters a conditional reveals late.
+        ``values`` paths the form never shows, such as inactive conditional cases, are skipped.
+        """
+        ToolFormFiller(self).fill(values, data)
+
+    def tool_form_set_parameter(self, expanded_parameter_id: str, value: Any) -> None:
+        """Set a non-data parameter of the open tool form by path, detecting its widget type."""
+        ToolFormFiller(self).set_parameter(expanded_parameter_id, value)
 
     def tool_form_generate_tour(self):
         self.components.tool_form.options.wait_for_and_click()
@@ -3371,6 +3404,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             container_elem = container_elem.find_element(
                 By.XPATH, "ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' multiselect ')][1]"
             )
+        option_selector = "[role='option'] .multiselect__option span"
         trigger_elem = container_elem.find_element(By.CSS_SELECTOR, ".multiselect__select")
         self.scroll_into_view(trigger_elem)
         trigger_elem.click()
@@ -3383,13 +3417,23 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 self.send_backspace(text_input)
                 self.send_backspace(text_input)
             text_input.send_keys(value)
+            # Let the option list filter on the typed value; the old options stay present meanwhile.
             self.sleep_for(WAIT_TYPES.UX_RENDER)
-            self.send_enter(text_input)
+            # Enter takes the first match, which may only contain the value (txt -> metacyto_clr.txt).
+            exact = [
+                option
+                for option in container_elem.find_elements(By.CSS_SELECTOR, option_selector)
+                if option.text == value and option.is_displayed()
+            ]
+            if exact:
+                exact[0].click()
+            else:
+                self.send_enter(text_input)
             if multiple:
                 self.send_escape(text_input)
         else:
             self.sleep_for(WAIT_TYPES.UX_RENDER)
-            elems = container_elem.find_elements(By.CSS_SELECTOR, "[role='option'] .multiselect__option span")
+            elems = container_elem.find_elements(By.CSS_SELECTOR, option_selector)
             discovered_options = []
             found = False
             for elem in elems:
