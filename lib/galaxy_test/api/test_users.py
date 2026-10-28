@@ -757,6 +757,37 @@ class TestUsersApi(ApiTestCase):
         groups_response = self._put(f"users/{unknown_user_id}/groups", {"group_ids": []}, admin=True, json=True)
         self._assert_status_code_is(groups_response, 404)
 
+    @requires_new_user
+    def test_logout_ends_other_sessions_only_with_logout_all(self):
+        email = f"{DatasetPopulator(self.galaxy_interactor).get_random_name()}@bx.psu.edu"
+        self._setup_user(email, password="testpass1")
+        sessions = [requests.Session() for _ in range(4)]
+        try:
+            for session in sessions:
+                self._login_browser_session(session, email, "testpass1")
+            plain, explicit_false, logout_all, survivor = sessions
+
+            self._logout_browser_session(plain)
+            self._assert_browser_session_email(plain, None)
+            self._assert_browser_session_email(survivor, email)
+
+            self._logout_browser_session(explicit_false, logout_all="false")
+            self._assert_browser_session_email(explicit_false, None)
+            self._assert_browser_session_email(survivor, email)
+
+            self._assert_browser_session_email(logout_all, email)
+            self._logout_browser_session(logout_all, logout_all="true")
+            self._assert_browser_session_email(logout_all, None)
+            self._assert_browser_session_email(survivor, None)
+        finally:
+            for session in sessions:
+                session.close()
+
+    def _assert_browser_session_email(self, session: requests.Session, email: str | None) -> None:
+        current_user_response = session.get(urljoin(self.url, "api/users/current"))
+        self._assert_status_code_is(current_user_response, 200)
+        assert current_user_response.json().get("email") == email
+
     @requires_admin
     @requires_new_user
     def test_reset_password(self):

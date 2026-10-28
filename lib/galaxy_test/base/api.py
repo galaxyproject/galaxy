@@ -183,15 +183,25 @@ class UsesApiTestCaseMixin:
 
     def _login_browser_session(self, session: requests.Session, email: str, password: str) -> None:
         """Log ``session`` in through the login form, for routes that need a browser session rather than an API key."""
+        login_response = session.post(
+            urljoin(self.url, "user/login"),
+            data={"login": email, "password": password, "session_csrf_token": self._browser_csrf_token(session)},
+        )
+        assert_status_code_is(login_response, 200)
+
+    def _logout_browser_session(self, session: requests.Session, **params: str) -> None:
+        """Sign ``session`` out through ``user/logout``, as the client's Sign Out does."""
+        params["session_csrf_token"] = self._browser_csrf_token(session)
+        logout_response = session.get(urljoin(self.url, "user/logout"), params=params)
+        assert_status_code_is(logout_response, 200)
+        assert logout_response.json() == {"message": "Success."}
+
+    def _browser_csrf_token(self, session: requests.Session) -> str:
         login_page = session.get(urljoin(self.url, "login/start"))
         assert_status_code_is(login_page, 200)
         csrf_token_match = re.search(r'session_csrf_token = "(.*)"', login_page.text)
         assert csrf_token_match
-        login_response = session.post(
-            urljoin(self.url, "user/login"),
-            data={"login": email, "password": password, "session_csrf_token": csrf_token_match.group(1)},
-        )
-        assert_status_code_is(login_response, 200)
+        return csrf_token_match.group(1)
 
     @contextmanager
     def _different_user_history(self, email: str | None = None) -> Iterator[str]:
