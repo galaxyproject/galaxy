@@ -82,19 +82,21 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
     SCAN_QUERY_FOR_ROLE_MARKERS = False
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
+        # ``instructions`` rather than ``system_prompt``: pydantic-ai drops ``system_prompt`` from
+        # any run given message_history, and this agent replays the conversation.
         if self._supports_structured_output():
             agent = Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
                 output_type=ErrorAnalysisResult,
-                system_prompt=self.get_system_prompt(),
+                instructions=self.get_system_prompt(),
                 retries=self._get_retries(),
             )
         else:
             agent = Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
-                system_prompt=self._get_simple_system_prompt(),
+                instructions=self._get_simple_system_prompt(),
                 retries=self._get_retries(),
             )
 
