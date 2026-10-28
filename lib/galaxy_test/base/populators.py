@@ -474,6 +474,21 @@ class BasePopulator(metaclass=ABCMeta):
         temp_file.flush()
         return temp_file.name
 
+    def get_sharing_status(self, api_name: str, resource_id: str) -> dict[str, Any]:
+        """Sharing status of a shareable resource (e.g. ``pages``, ``histories``, ``workflows``)."""
+        response = self._get(f"{api_name}/{resource_id}/sharing")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
+    def wait_for_published(self, api_name: str, resource_id: str) -> dict[str, Any]:
+        """Wait for a shareable resource to be published and return its sharing status."""
+
+        def published() -> dict[str, Any] | None:
+            sharing_status = self.get_sharing_status(api_name, resource_id)
+            return sharing_status if sharing_status["published"] else None
+
+        return wait_on(published, f"{api_name} {resource_id} to be published")
+
 
 class BaseDatasetPopulator(BasePopulator):
     """Abstract description of API operations optimized for testing
