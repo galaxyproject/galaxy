@@ -11,6 +11,7 @@
 #    should be the string "true" to enable additional debugging
 # - GALAXY_TEST_USEGALAXYMAIN_USER_KEY
 #   GALAXY_TEST_USEGALAXYTEST_USER_KEY
+#   GALAXY_TEST_USEGALAXYEU_USER_KEY
 #    API key to select for given target.
 
 set -e
