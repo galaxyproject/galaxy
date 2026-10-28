@@ -307,19 +307,19 @@ class TestUsersApi(ApiTestCase):
             assert updated_theme == "test_theme"
 
     def test_custom_build_from_unconvertible_dataset(self):
-        user_id = self._get("users/current").json()["id"]
         dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        user_id = dataset_populator.user_id()
         with dataset_populator.test_history() as history_id:
             hda = dataset_populator.new_dataset(history_id, content="chr1\t0\t100\n", file_type="bed", wait=True)
-            response = self._put(
-                f"users/{user_id}/custom_builds/unconvertible_build",
-                data={"name": "Unconvertible build", "len|type": "fasta", "len|value": hda["id"]},
-                json=True,
+            response = dataset_populator.create_custom_build_raw(
+                user_id,
+                "unconvertible_build",
+                {"name": "Unconvertible build", "len|type": "fasta", "len|value": hda["id"]},
             )
             self._assert_status_code_is(response, 400)
             self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
             assert_error_message_contains(response, "Conversion from 'bed' to 'len' not possible")
-            builds = self._get(f"users/{user_id}/custom_builds").json()
+            builds = dataset_populator.get_custom_builds(user_id)
             assert "unconvertible_build" not in [build["id"] for build in builds]
 
     @requires_admin
@@ -401,12 +401,12 @@ class TestUsersApi(ApiTestCase):
             hda = dataset_populator.new_dataset(history_id, content=">chr1\nACGT\n", file_type="fasta", wait=True)
             dataset_populator.make_private(history_id, hda["id"])
             with self._different_user(email=TEST_USER_EMAIL):
-                user_id = self._get("users/current").json()["id"]
-                response = self._put(
-                    f"users/{user_id}/custom_builds/inaccessible_build",
-                    data={"name": "Inaccessible build", "len|type": "fasta", "len|value": hda["id"]},
-                    json=True,
+                user_id = dataset_populator.user_id()
+                response = dataset_populator.create_custom_build_raw(
+                    user_id,
+                    "inaccessible_build",
+                    {"name": "Inaccessible build", "len|type": "fasta", "len|value": hda["id"]},
                 )
                 self._assert_status_code_is(response, 403)
-                builds = self._get(f"users/{user_id}/custom_builds").json()
+                builds = dataset_populator.get_custom_builds(user_id)
                 assert "inaccessible_build" not in [build["id"] for build in builds]

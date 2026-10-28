@@ -1531,6 +1531,14 @@ class BaseDatasetPopulator(BasePopulator):
         assert "id" in role, role
         return role["id"]
 
+    def create_custom_build_raw(self, user_id: str, key: str, payload: dict[str, Any]) -> Response:
+        return self._put(f"users/{user_id}/custom_builds/{key}", payload, json=True)
+
+    def get_custom_builds(self, user_id: str) -> list[dict[str, Any]]:
+        response = self._get(f"users/{user_id}/custom_builds")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
     def get_dataset_permissions(self, dataset_id: str) -> dict[str, list[str]]:
         response = self._get(f"datasets/{dataset_id}")
         api_asserts.assert_status_code_is_ok(response)
