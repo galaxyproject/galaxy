@@ -8,7 +8,6 @@ history.
 import gettext
 import logging
 import os
-from collections import Counter
 from typing import (
     Any,
     Optional,
@@ -220,7 +219,9 @@ class HDAManager(
             copy.visible = False
         if history:
             history.stage_addition(copy)
-            history.charge_added_datasets([copy])
+            # A copy of the user's own dataset is free, skip looking it up
+            if hda.purged or hda.user is not history.user:
+                history.charge_added_datasets([copy])
 
         # The copy shares the dataset, whose size isn't final until its job finishes
         if copy.dataset.state not in model.Dataset.uncharged_states:
@@ -269,24 +270,15 @@ class HDAManager(
         Outputs of jobs that haven't finished are skipped, they aren't charged until their job finishes and
         purge() handles them.
         """
-        freed_bytes_by_quota_source: Counter[Optional[str]] = Counter()
-        marked = False
-        for hda in hdas:
-            if hda.purged or hda.dataset.state in model.Dataset.uncharged_states:
-                continue
-            marked = True
-            # quota_amount() counts a dataset once per user, so it must see the HDAs marked so far
-            quota_amount = hda.quota_amount(user)
-            quota_source_info = hda.dataset.quota_source_info
-            if quota_source_info.use:
-                freed_bytes_by_quota_source[quota_source_info.label] += quota_amount
-            hda.deleted = True
-            hda.purged = True
-        if not marked:
+        hdas = [hda for hda in hdas if not hda.purged and hda.dataset.state not in model.Dataset.uncharged_states]
+        if not hdas:
             return
         if user:
-            for label, freed_bytes in freed_bytes_by_quota_source.items():
-                user.adjust_total_disk_usage(-freed_bytes, label, preserve_update_time=preserve_owner_update_time)
+            freed_sizes = user.sole_dataset_sizes(hdas)
+            user.adjust_disk_usage_for_datasets(freed_sizes, -1, preserve_update_time=preserve_owner_update_time)
+        for hda in hdas:
+            hda.deleted = True
+            hda.purged = True
         self.session().commit()
 
     # .... states
@@ -469,19 +461,13 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         total_free_bytes = 0
         errors: list[StorageItemCleanupError] = []
         dataset_ids_to_remove: set[int] = set()
-        freed_bytes_by_quota_source: Counter[Optional[str]] = Counter()
+        hdas_to_purge: list[HistoryDatasetAssociation] = []
 
-        # Load the items with what quota_amount() reads in one go, rather than one item at a time
+        # Load the items in one go, rather than one item at a time
         stmt = (
             select(HistoryDatasetAssociation)
             .where(HistoryDatasetAssociation.id.in_(item_ids))
-            .options(
-                selectinload(HistoryDatasetAssociation.history),
-                selectinload(HistoryDatasetAssociation.dataset).options(
-                    selectinload(model.Dataset.history_associations).selectinload(HistoryDatasetAssociation.history),
-                    selectinload(model.Dataset.library_associations),
-                ),
-            )
+            .options(selectinload(HistoryDatasetAssociation.history), selectinload(HistoryDatasetAssociation.dataset))
         )
         hdas_by_id = {hda.id: hda for hda in self.hda_manager.session().scalars(stmt)}
 
@@ -489,23 +475,19 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             try:
                 if hda_id not in hdas_by_id:
                     raise exceptions.ObjectNotFound("HistoryDatasetAssociation not found")
-                hda = self.hda_manager.error_unless_owner(hdas_by_id[hda_id], user)
-                hda.deleted = True
-                quota_amount = int(hda.quota_amount(user))
-                quota_source_info = hda.dataset.quota_source_info
-                if quota_source_info.use:
-                    freed_bytes_by_quota_source[quota_source_info.label] += quota_amount
-                hda.purged = True
-                dataset_ids_to_remove.add(hda.dataset.id)
-                success_item_count += 1
-                total_free_bytes += quota_amount
+                hdas_to_purge.append(self.hda_manager.error_unless_owner(hdas_by_id[hda_id], user))
             except Exception as e:
                 errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
 
-        if success_item_count:
-            # One adjustment per quota source instead of one per item
-            for label, freed_bytes in freed_bytes_by_quota_source.items():
-                user.adjust_total_disk_usage(-freed_bytes, label)
+        if hdas_to_purge:
+            freed_sizes = user.sole_dataset_sizes(hdas_to_purge)
+            user.adjust_disk_usage_for_datasets(freed_sizes, -1)
+            total_free_bytes = sum(freed_sizes.values())
+            for hda in hdas_to_purge:
+                hda.deleted = True
+                hda.purged = True
+                dataset_ids_to_remove.add(hda.dataset.id)
+            success_item_count = len(hdas_to_purge)
             session = self.hda_manager.session()
             session.commit()
 

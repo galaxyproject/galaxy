@@ -1241,25 +1241,17 @@ class MinimalJobWrapper(HasResourceParameters):
         Increase the disk usage of every user with an HDA of the outputs: the owner of the job's history, who is
         the user who logged in for a job run before logging in, and the owners of copies made while the job ran.
         """
-        # The quota source label and size of each dataset to charge
-        charges: dict[model.Dataset, tuple[Optional[str], int]] = {}
-        for dataset in dict.fromkeys(datasets):
-            if dataset.purged or not dataset.total_size:
-                continue
-            quota_source_info = dataset.quota_source_info
-            if quota_source_info.use:
-                charges[dataset] = (quota_source_info.label, int(dataset.total_size))
-        holders = model.dataset_holders(self.sa_session, charges)
-        usage_by_user_id: dict[int, dict[Optional[str], int]] = defaultdict(lambda: defaultdict(int))
-        for dataset, (label, size) in charges.items():
-            for user_id in holders[dataset]:
-                usage_by_user_id[user_id][label] += size
+        sizes = {dataset: int(dataset.total_size or 0) for dataset in datasets if not dataset.purged}
+        holders = model.dataset_holders(self.sa_session, [dataset for dataset, size in sizes.items() if size])
+        sizes_by_user_id: dict[int, dict[model.Dataset, int]] = defaultdict(dict)
+        for dataset, user_ids in holders.items():
+            for user_id in user_ids:
+                sizes_by_user_id[user_id][dataset] = sizes[dataset]
         # Lock the users' rows in the order of their ids, so jobs charging the same users can't deadlock
-        for user_id in sorted(usage_by_user_id):
+        for user_id in sorted(sizes_by_user_id):
             user = self.sa_session.get(model.User, user_id)
             assert user
-            for label, usage in usage_by_user_id[user_id].items():
-                user.adjust_total_disk_usage(usage, label)
+            user.adjust_disk_usage_for_datasets(sizes_by_user_id[user_id])
             self.sa_session.flush([user])
 
     def get_id_tag(self):
@@ -1357,12 +1349,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 job.copy_from_job(job_to_copy, copy_outputs=True)
                 if job.history:
                     # The outputs are the cached job's datasets, possibly another user's from a published history
-                    output_hdas = [assoc.dataset for assoc in job.output_datasets]
-                    for collection_assoc in job.output_dataset_collection_instances:
-                        output_hdas.extend(collection_assoc.dataset_collection_instance.dataset_instances)
-                    for implicit_collection_assoc in job.output_dataset_collections:
-                        output_hdas.extend(implicit_collection_assoc.dataset_collection.dataset_instances)
-                    job.history.charge_added_datasets(output_hdas)
+                    job.history.charge_added_datasets(job.output_hdas())
                 # The copied job never reaches finish(), so run its post job actions here.
                 for pjaa in job.post_job_actions:
                     if pjaa.post_job_action.action_type not in ActionBox.immediate_actions:

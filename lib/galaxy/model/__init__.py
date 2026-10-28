@@ -16,7 +16,10 @@ import os
 import pwd
 import random
 import string
-from collections import defaultdict
+from collections import (
+    Counter,
+    defaultdict,
+)
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import (
@@ -1121,6 +1124,43 @@ WHERE user_id = :user_id and quota_source_label = :label
 
     total_disk_usage = property(get_disk_usage, set_disk_usage)
 
+    def sole_dataset_sizes(self, hdas: Iterable["HistoryDatasetAssociation"]) -> dict["Dataset", int]:
+        """
+        Return the size of each dataset of the HDAs that counts towards this user's disk usage only through them:
+        the user has no other HDA of it that isn't purged, and it isn't in a library. That is what adding the HDAs
+        to the user's histories charges, and what purging them frees.
+
+        Purged HDAs and outputs of jobs that haven't finished count nothing, the latter are charged when their job
+        finishes.
+        """
+        hdas = [hda for hda in hdas if not hda.purged]
+        datasets = {
+            hda.dataset for hda in hdas if not hda.dataset.purged and hda.dataset.state not in Dataset.uncharged_states
+        }
+        if not datasets:
+            return {}
+        session = required_object_session(self)
+        holders = dataset_holders(session, datasets, exclude=hdas, user=self)
+        sole_datasets = {dataset for dataset in datasets if not holders[dataset]}
+        sole_datasets -= datasets_in_libraries(session, sole_datasets)
+        # Unlike get_total_size(), set_total_size() doesn't commit, the callers may still be building the HDAs
+        return {
+            dataset: int(dataset.total_size if dataset.total_size is not None else dataset.set_total_size())
+            for dataset in sole_datasets
+        }
+
+    def adjust_disk_usage_for_datasets(
+        self, sizes: dict["Dataset", int], sign: Literal[1, -1] = 1, preserve_update_time: bool = False
+    ) -> None:
+        """Increase (or with `sign` -1 decrease) the disk usage by the sizes, adjusting each quota source once."""
+        usage_by_quota_source: Counter[Optional[str]] = Counter()
+        for dataset, size in sizes.items():
+            quota_source_info = dataset.quota_source_info
+            if quota_source_info.use:
+                usage_by_quota_source[quota_source_info.label] += size
+        for label, usage in usage_by_quota_source.items():
+            self.adjust_total_disk_usage(sign * usage, label, preserve_update_time=preserve_update_time)
+
     def adjust_total_disk_usage(self, amount, quota_source_label, preserve_update_time: bool = False):
         assert amount is not None
         if amount != 0:
@@ -1767,6 +1807,15 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     @property
     def finished(self):
         return self.state in self.finished_states
+
+    def output_hdas(self) -> list["DatasetInstance"]:
+        """Return the job's output datasets, including the elements of its output collections."""
+        output_hdas: list[DatasetInstance] = [assoc.dataset for assoc in self.output_datasets]
+        for collection_assoc in self.output_dataset_collection_instances:
+            output_hdas.extend(collection_assoc.dataset_collection_instance.dataset_instances)
+        for implicit_collection_assoc in self.output_dataset_collections:
+            output_hdas.extend(implicit_collection_assoc.dataset_collection.dataset_instances)
+        return output_hdas
 
     def copy_from_job(self, job: "Job", copy_outputs: bool = False):
         self.copied_from_job_id = job.id
@@ -3516,8 +3565,7 @@ def datasets_in_libraries(session: Union[Session, scoped_session], datasets: Ite
     datasets_by_id = {dataset.id: dataset for dataset in datasets if dataset.id is not None}
     for dataset_ids in chunk_iterable(datasets_by_id):
         stmt = select(LDDA.dataset_id).where(LDDA.dataset_id.in_(dataset_ids)).distinct()
-        found = set(session.scalars(stmt))
-        in_libraries.update(datasets_by_id[dataset_id] for dataset_id in dataset_ids if dataset_id in found)
+        in_libraries.update(datasets_by_id[dataset_id] for dataset_id in session.scalars(stmt) if dataset_id)
     return in_libraries
 
 
@@ -3706,30 +3754,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         Outputs of jobs that haven't finished are skipped, they are charged when the job finishes.
         """
         user = self.user
-        if not user:
-            return
-        added = [
-            hda for hda in hdas if isinstance(hda, HistoryDatasetAssociation) and hda.history is self and not hda.purged
-        ]
-        datasets = {
-            hda.dataset for hda in added if not hda.dataset.purged and hda.dataset.state not in Dataset.uncharged_states
-        }
-        if not datasets:
-            return
-        session = required_object_session(self)
-        holders = dataset_holders(session, datasets, exclude=added, user=user)
-        in_libraries = datasets_in_libraries(session, datasets)
-        usage_by_quota_source: dict[Optional[str], int] = defaultdict(int)
-        for dataset in datasets:
-            if holders[dataset] or dataset in in_libraries:
-                continue
-            quota_source_info = dataset.quota_source_info
-            if quota_source_info.use:
-                # Unlike get_total_size(), this doesn't commit, the callers may still be building the copies
-                total_size = dataset.total_size if dataset.total_size is not None else dataset.set_total_size()
-                usage_by_quota_source[quota_source_info.label] += int(total_size)
-        for label, usage in usage_by_quota_source.items():
-            user.adjust_total_disk_usage(usage, label)
+        if user:
+            added = [hda for hda in hdas if isinstance(hda, HistoryDatasetAssociation) and hda.history is self]
+            user.adjust_disk_usage_for_datasets(user.sole_dataset_sizes(added))
 
     def _next_hid(self, n=1):
         """
@@ -3884,12 +3911,12 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             hdas = self.datasets
         else:
             hdas = self.active_datasets
-        new_hdas = set()
+        new_hdas = []
         for hda in hdas:
             # Copy HDA.
             new_hda = hda.copy(flush=False)
-            new_history.add_dataset(new_hda, set_hid=False, quota=applies_to_quota)
-            new_hdas.add(new_hda)
+            new_history.add_dataset(new_hda, set_hid=False, quota=False)
+            new_hdas.append(new_hda)
 
             if target_user:
                 new_hda.copy_item_annotation(db_session, self.user, hda, target_user, new_hda)
@@ -3910,15 +3937,14 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             )
             new_history.add_dataset_collection(new_hdca, set_hid=False)
             db_session.add(new_hdca)
-            if applies_to_quota:
-                # Elements that aren't copies of the datasets above, such as deleted ones, were copied with the
-                # collection
-                new_history.charge_added_datasets(
-                    [element_hda for element_hda in new_hdca.dataset_instances if element_hda not in new_hdas]
-                )
+            # Includes elements that aren't copies of the datasets above, such as deleted ones
+            new_hdas.extend(new_hdca.dataset_instances)
 
             if target_user:
                 new_hdca.copy_item_annotation(db_session, self.user, hdca, target_user, new_hdca)
+
+        if applies_to_quota:
+            new_history.charge_added_datasets(new_hdas)
 
         new_history.hid_counter = self.hid_counter
         db_session.commit()
