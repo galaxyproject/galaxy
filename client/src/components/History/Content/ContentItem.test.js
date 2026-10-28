@@ -106,7 +106,8 @@ describe("ContentItem", () => {
         await wrapper.setProps({ isDataset: false, item: { ...deletedCollection, elements_purged: 1 } });
         expect(wrapper.find(".content-purged").exists()).toBe(false);
 
-        await wrapper.setProps({ item: { ...deletedCollection, elements_states: {} } });
+        const emptyCounts = { element_count: 0, elements_states: {}, elements_deleted: 0, elements_purged: 0 };
+        await wrapper.setProps({ item: { ...deletedCollection, ...emptyCounts } });
         expect(wrapper.find(".content-purged").exists()).toBe(false);
 
         await wrapper.setProps({ item: deletedCollection });
