@@ -110,8 +110,10 @@ const fields = computed(() => {
 
 const fileMode = computed(() => props.mode == "file");
 
-/** A paginated folder is listed one page at a time, so its rows are not all of its contents */
-const isPaginated = computed(() => Boolean(itemsProvider.value));
+/** The rows are one page of a paginated folder, or its filter matches, rather than all of its contents */
+const isPaginated = computed(
+    () => Boolean(itemsProvider.value) && (totalItems.value > items.value.length || Boolean(query.value)),
+);
 
 /** RDM repositories (e.g. Dataverse, Invenio) only hold files inside their records, not at their root */
 const isAtRdmRepositoryRoot = computed(() => {

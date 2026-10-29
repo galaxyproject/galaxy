@@ -184,6 +184,18 @@ describe("FilesDialog, paginated file source", () => {
         expectRowsSelected(true);
     });
 
+    it("should select a paginated folder that fits on one page as a whole", async () => {
+        const folder = `${sourceRoot}/folder5`;
+        selectionDialog().vm.$emit("onOpen", findRow(folder));
+        await flushPromises();
+        await selectAll();
+        expectRowsSelected(true);
+
+        selectionDialog().vm.$emit("onUndo");
+        await flushPromises();
+        expect(findRow(folder)._rowVariant).toBe(SELECTION_STATES.SELECTED);
+    });
+
     it("should keep OK disabled until the files of every selected folder are listed", async () => {
         heldFolders = [`${sourceRoot}/folder15`];
         await selectAll();
