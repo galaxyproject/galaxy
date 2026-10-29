@@ -110,7 +110,7 @@ async function submitLogin() {
         }
 
         if (response.data.expired_user) {
-            window.location.href = withPrefix(`/root/login?expired_user=${response.data.expired_user}`);
+            window.location.href = withPrefix(`/login/start?expired_user=${response.data.expired_user}`);
         } else if (connectExternalProvider.value) {
             window.location.href = withPrefix("/user/external_ids?connect_external=true");
         } else if (response.data.redirect) {

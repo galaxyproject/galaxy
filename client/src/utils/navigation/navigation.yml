@@ -632,9 +632,21 @@ pages:
 login:
   selectors:
     form: 'form#login'
+    reset_password_link:
+      type: xpath
+      selector: "//form[@id='login']//a[contains(., 'Click here to reset your password.')]"
+    alert: '.login-form .alert'
     submit:
       type: xpath
       selector: "//button[@name='login']"
+
+change_password:
+  selectors:
+    form: 'form[data-description="change password"]'
+    current: '[data-description="current password"]'
+    password: '[data-description="new password"]'
+    confirm: '[data-description="confirm password"]'
+    save: 'form[data-description="change password"] button[type="submit"]'
 
 registration:
   selectors:
