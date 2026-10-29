@@ -4852,6 +4852,14 @@ class TargetHistory:
             self._dataset_collection_populator.create_list_of_list_in_history(self._history_id, wait=True).json()["id"],
         )
 
+    def with_example_list_of_list_of_pairs(self) -> "HasSrcDict":
+        list_of_pairs_id = self._dataset_collection_populator.example_list_of_pairs(self._history_id)
+        response = self._dataset_collection_populator.create_nested_collection(
+            self._history_id, "list:list:paired", collection=[list_of_pairs_id]
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        return HasSrcDict("hdca", response.json())
+
     @classmethod
     def _fetch_response(clz, response: Response) -> "HasSrcDict":
         api_asserts.assert_status_code_is_ok(response)
