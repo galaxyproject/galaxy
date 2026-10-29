@@ -100,6 +100,9 @@ class YamlToolSource(ToolSource):
     def allows_tool_provided_metadata(self) -> bool:
         return self.parse_class() in (None, "GalaxyTool")
 
+    def is_yaml_origin(self) -> bool:
+        return self.parse_class() in ("GalaxyTool", "GalaxyUserTool")
+
     def parse_tool_type(self):
         return self.root_dict.get("tool_type")
 
@@ -221,7 +224,8 @@ class YamlToolSource(ToolSource):
 
     def parse_input_pages(self) -> PagesSource:
         # All YAML tools have only one page (feature is deprecated)
-        page_source = YamlPageSource(self.root_dict.get("inputs", {}), trusted=self._trusted)
+        page_source_class = CanonicalYamlPageSource if self.is_yaml_origin() else YamlPageSource
+        page_source = page_source_class(self.root_dict.get("inputs", {}), trusted=self._trusted)
         return PagesSource([page_source], "cwl")
 
     def parse_strict_shell(self):
@@ -556,7 +560,10 @@ class YamlPageSource(PageSource):
         self.trusted = trusted
 
     def parse_input_sources(self):
-        return [YamlInputSource(input_dict, trusted=self.trusted) for input_dict in self.inputs_list]
+        return [self._input_source(input_dict) for input_dict in self.inputs_list]
+
+    def _input_source(self, input_dict) -> "YamlInputSource":
+        return YamlInputSource(input_dict, trusted=self.trusted)
 
 
 class YamlInputSource(InputSource):
@@ -574,6 +581,12 @@ class YamlInputSource(InputSource):
 
     def get_bool_or_none(self, key, default):
         return self.input_dict.get(key, default)
+
+    def _page_source(self, inputs_list) -> YamlPageSource:
+        return YamlPageSource(inputs_list, trusted=self.trusted)
+
+    def _input_source(self, input_dict) -> "YamlInputSource":
+        return YamlInputSource(input_dict, trusted=self.trusted)
 
     def parse_input_type(self):
         input_type = self.input_dict["type"]
@@ -596,12 +609,12 @@ class YamlInputSource(InputSource):
 
     def parse_nested_inputs_source(self):
         assert self.parse_input_type() == "repeat"
-        return YamlPageSource(self.input_dict["blocks"], trusted=self.trusted)
+        return self._page_source(self.input_dict["blocks"])
 
     def parse_test_input_source(self):
         test_dict = self.input_dict.get("test_parameter", None)
         assert test_dict is not None, "conditional must contain a `test_parameter` definition"
-        return YamlInputSource(test_dict, trusted=self.trusted)
+        return self._input_source(test_dict)
 
     def parse_when_input_sources(self):
         input_dict = self.input_dict
@@ -612,13 +625,13 @@ class YamlInputSource(InputSource):
                 # casting to string because default value for BooleanToolParameter.legal_values is "true" / "false"
                 # Unfortunate, but I guess that's ok for now?
                 discriminator = "true" if key is True else "false" if key is False else key
-                case_page_source = YamlPageSource(value, trusted=self.trusted)
+                case_page_source = self._page_source(value)
                 sources.append((discriminator, case_page_source))
         else:
             for value in input_dict.get("whens", []):
                 key = value.get("discriminator")
                 discriminator = "true" if key is True else "false" if key is False else key
-                case_page_source = YamlPageSource(value["parameters"], trusted=self.trusted)
+                case_page_source = self._page_source(value["parameters"])
                 sources.append((discriminator, case_page_source))
         return sources
 
@@ -639,6 +652,45 @@ class YamlInputSource(InputSource):
         input_dict = self.input_dict
         default_def = input_dict.get("default", None)
         return default_def
+
+
+class CanonicalYamlPageSource(YamlPageSource):
+    def _input_source(self, input_dict) -> "CanonicalYamlInputSource":
+        return CanonicalYamlInputSource(input_dict, trusted=self.trusted)
+
+
+class CanonicalYamlInputSource(YamlInputSource):
+    """A GalaxyTool/GalaxyUserTool parameter: omitted ``optional`` and Boolean ``value`` mean False,
+    and repeats and sections nest ``parameters``.
+
+    Internally built dicts (e.g. workflow module forms) stay plain :class:`YamlInputSource`.
+    """
+
+    def parse_optional(self, default=None):
+        return self.get_bool("optional", False)
+
+    def parse_text_optional(self) -> tuple[bool, bool]:
+        return self.parse_optional(), False
+
+    def parse_boolean_default(self, default: bool | None, *, allow_none: bool = True) -> bool | None:
+        # Only an explicit ``value: null`` yields None.
+        return self.input_dict.get("value", False)
+
+    def parse_input_type(self):
+        if self.input_dict["type"] == "section":
+            return "section"
+        return super().parse_input_type()
+
+    def parse_nested_inputs_source(self):
+        input_type = self.parse_input_type()
+        assert input_type in ("repeat", "section")
+        return self._page_source(self.input_dict["parameters"])
+
+    def _page_source(self, inputs_list) -> CanonicalYamlPageSource:
+        return CanonicalYamlPageSource(inputs_list, trusted=self.trusted)
+
+    def _input_source(self, input_dict) -> "CanonicalYamlInputSource":
+        return CanonicalYamlInputSource(input_dict, trusted=self.trusted)
 
 
 def _ensure_has(dict, defaults):

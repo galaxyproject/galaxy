@@ -873,6 +873,14 @@ reset_password:
     submit: '#reset-password'
     alert: '#reset-password-alert'
 
+change_password:
+  selectors:
+    form: 'form[data-description="change password"]'
+    current: '[data-description="current password"]'
+    password: '[data-description="new password"]'
+    confirm: '[data-description="confirm password"]'
+    save: 'form[data-description="change password"] button[type="submit"]'
+
 registration:
   selectors:
     toggle: '#register-toggle'
