@@ -155,6 +155,25 @@ describe("GCheckboxGroup", () => {
             expect(wrapper.find("fieldset > legend").text()).toBe("Slotted label");
         });
 
+        it("puts legendClass on the legend, not on the group", () => {
+            const { wrapper } = mountWithModel([], { label: "Options", legendClass: "pb-0", options: OPTIONS });
+
+            expect(wrapper.find("fieldset > legend").classes()).toContain("pb-0");
+            expect(wrapper.classes()).not.toContain("pb-0");
+        });
+
+        it("adds only the enabled legendClass entries to the legend", () => {
+            const { wrapper } = mountWithModel([], {
+                label: "Options",
+                legendClass: { "mb-2": false, "pb-0": true },
+                options: OPTIONS,
+            });
+            const legend = wrapper.find("fieldset > legend");
+
+            expect(legend.classes()).toContain("pb-0");
+            expect(legend.classes()).not.toContain("mb-2");
+        });
+
         it("renders no legend without a label and passes aria attributes to the fieldset", () => {
             const { wrapper } = mountWithModel([], { "aria-labelledby": "outside-title", options: OPTIONS });
 

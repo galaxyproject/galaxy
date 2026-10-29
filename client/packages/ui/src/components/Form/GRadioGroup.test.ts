@@ -203,6 +203,25 @@ describe("GRadioGroup", () => {
             expect(wrapper.attributes("aria-labelledby")).toBe(legend.attributes("id"));
         });
 
+        it("puts legendClass on the legend, not on the group", () => {
+            const { wrapper } = mountWithModel(undefined, { label: "Format", legendClass: "pb-0", options: OPTIONS });
+
+            expect(wrapper.find("fieldset > legend").classes()).toContain("pb-0");
+            expect(wrapper.classes()).not.toContain("pb-0");
+        });
+
+        it("adds only the enabled legendClass entries to the legend", () => {
+            const { wrapper } = mountWithModel(undefined, {
+                label: "Format",
+                legendClass: { "mb-2": false, "pb-0": true },
+                options: OPTIONS,
+            });
+            const legend = wrapper.find("fieldset > legend");
+
+            expect(legend.classes()).toContain("pb-0");
+            expect(legend.classes()).not.toContain("mb-2");
+        });
+
         it("passes aria-labelledby and aria-describedby from the caller to the group", () => {
             const { wrapper } = mountWithModel(undefined, {
                 "aria-describedby": "outside-help",

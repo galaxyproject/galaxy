@@ -185,7 +185,7 @@ function onChange(event: Event) {
     }
 
     &:focus-visible {
-        outline: 2px solid var(--color-blue-500, #197cd2);
+        outline: 2px solid var(--color-blue-600, #25537b);
         outline-offset: 2px;
     }
 }

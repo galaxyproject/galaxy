@@ -34,6 +34,11 @@ interface Props {
      */
     label?: string;
     /**
+     * Extra classes for the legend, e.g. to tighten its spacing
+     * @default undefined
+     */
+    legendClass?: string | string[] | Record<string, boolean>;
+    /**
      * The v-model value: values of the checked boxes, in the order they were checked
      * @default []
      */
@@ -68,6 +73,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     disabled: false,
     label: undefined,
+    legendClass: undefined,
     modelValue: () => [] as T[],
     name: undefined,
     options: () => [],
@@ -106,7 +112,7 @@ provide(checkboxGroupKey, {
 
 <template>
     <fieldset class="g-checkbox-group" :disabled="disabled">
-        <legend v-if="label || $slots.label" class="g-checkbox-group-legend">
+        <legend v-if="label || $slots.label" class="g-checkbox-group-legend" :class="legendClass">
             <slot name="label">{{ label }}</slot>
         </legend>
 
@@ -134,20 +140,20 @@ provide(checkboxGroupKey, {
 
 .g-checkbox-group-legend {
     width: auto;
-    margin-bottom: var(--spacing-1, 0.25rem);
-    padding: 0;
+    margin-bottom: 0;
+    // Form labels' padding plus the 1px field border, not a spacing step, so a labelled group lines up with labelled fields
+    padding: 0 0 calc(0.375rem + 1px);
     font-size: inherit;
 }
 
 .g-checkbox-group-options {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-1, 0.25rem) var(--spacing-4, 1rem);
+    gap: 0 var(--spacing-4, 1rem);
 
     &.g-stacked {
         flex-direction: column;
         align-items: flex-start;
-        row-gap: 0;
     }
 }
 </style>
