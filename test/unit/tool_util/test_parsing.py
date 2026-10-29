@@ -213,7 +213,7 @@ inputs:
   - name: moo
     label: cow
     type: repeat
-    blocks:
+    parameters:
       - name: nestinput
         type: data
       - name: nestsample

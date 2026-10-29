@@ -16,6 +16,7 @@ _:  # global stuff
     tooltip_balloon_with_text:
       type: xpath
       selector: '//*[contains(concat(" ", normalize-space(@class), " "), " g-tooltip-d ")][contains(string(.), "${text}")]'
+    tooltip_by_id: '#${id}'
     left_panel: '#left'
     left_panel_drag: '.flex-panel.left .drag-handle'
     left_panel_collapse: '.collapse-button.left'
@@ -439,6 +440,20 @@ storage_dashboard:
   selectors:
     free_space_link: '[data-description="free-space card"] button'
     explore_usage_link: '[data-description="explore-storage card"] button'
+
+  # Free up disk space; review_link/no_items take a cleanup id (e.g. deleted_datasets), the rest are the shared dialogs
+  cleanup:
+    selectors:
+      review_link: '[data-description="${operation} cleanup"] [data-test-id="review-link"]'
+      no_items: '[data-description="${operation} cleanup"] [data-test-id="no-items-indicator"]'
+      review_item: '[data-test-id="review-table"] tbody tr[aria-rowindex]'
+      select_all: '[data-test-id="review-table"] [data-test-id="select-all-checkbox"]'
+      # GButton disables via the g-disabled class, not the disabled attribute
+      delete_button_enabled: '[data-test-id="delete-button"]:not(.g-disabled)'
+      agreement: '[data-test-id="agreement-checkbox"]'
+      confirm_enabled: '#confirmation-modal .g-modal-confirm-buttons button:last-child:not(.g-disabled)'
+      success: '#cleanup-result-modal [data-test-id="success-info"]'
+      success_close: '#cleanup-result-modal .g-modal-close-button'
 
 edit_dataset_attributes:
   selectors:
@@ -868,6 +883,14 @@ reset_password:
     submit: '#reset-password'
     alert: '#reset-password-alert'
 
+change_password:
+  selectors:
+    form: 'form[data-description="change password"]'
+    current: '[data-description="current password"]'
+    password: '[data-description="new password"]'
+    confirm: '[data-description="confirm password"]'
+    save: 'form[data-description="change password"] button[type="submit"]'
+
 registration:
   selectors:
     toggle: '#register-toggle'
@@ -1143,8 +1166,9 @@ workflow_run:
 workflow_editor:
   node:
     selectors:
-      _: "[node-label='${label}']"
-      by_id: "#wf-node-step-${id}"
+      _:
+      - "[node-label='${label}']"
+      - "#wf-node-step-${id}"
       title: '${_} .node-title'
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'
@@ -1314,8 +1338,8 @@ workflow_editor:
       selector: >
         //div[@data-label='Output cleanup']
     tool_version_button: ".tool-versions"
-    connector_for: "#connection-${sink_id}-${source_id}"
-    connector_invalid_for: "#connection-${sink_id}-${source_id} .connection.invalid"
+    connector_for: "[id='connection-${sink_id}-${source_id}']"
+    connector_invalid_for: "[id='connection-${sink_id}-${source_id}'] .connection.invalid"
     save_button: '#workflow-save-button'
     state_upgrade_modal: '[data-description="workflow state upgrade modal"]'
     state_upgrade_modal_close: '[data-description="workflow state upgrade modal"] .g-modal-close-button'

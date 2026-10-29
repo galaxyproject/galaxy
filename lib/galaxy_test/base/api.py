@@ -11,6 +11,7 @@ from urllib.parse import (
     urlencode,
     urljoin,
 )
+from uuid import uuid4
 
 import pytest
 import requests
@@ -32,6 +33,7 @@ from .api_util import (
     OTHER_USER,
     TEST_USER,
 )
+from .decorators import using_requirement
 from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 
 if TYPE_CHECKING:
@@ -146,6 +148,7 @@ class UsesApiTestCaseMixin:
             return ApiTestInteractor(self, api_key=api_key)
 
     def _setup_user(self, email, password=None):
+        using_requirement("admin")
         return self.galaxy_interactor.ensure_user_with_email(email, password=password)
 
     def _setup_user_get_key(self, email, password=None):
@@ -222,6 +225,15 @@ class UsesApiTestCaseMixin:
             )
             assert_status_code_is(login_response, 200)
             yield session
+
+    @contextmanager
+    def _different_user_with_address(self, desc: str):
+        """Act as a new user with one address, as tools reading ``$__user__.addresses`` need."""
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            user_id = self._get("users/current").json()["id"]
+            response = self._put(f"users/{user_id}/information/inputs", data={"address_0|desc": desc}, json=True)
+            assert_status_code_is_ok(response)
+            yield
 
     def _get(self, *args, **kwds):
         return self.galaxy_interactor.get(*args, **kwds)
