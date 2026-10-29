@@ -218,7 +218,7 @@
     "fake-indexeddb": "^6.0.0",
     "fs-extra": "^11.2.0",
     "globals": "^17.13.0",
-    "happy-dom": "^20.14.5",
+    "happy-dom": "^21.0.4",
     "msw": "~2.10.5",
     "openapi-msw": "^0.7.0",
     "openapi-typescript": "^7.3.0",
