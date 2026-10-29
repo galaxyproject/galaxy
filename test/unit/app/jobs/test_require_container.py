@@ -1,9 +1,16 @@
 from types import SimpleNamespace
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 
 import pytest
 
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.jobs.runners import BaseJobRunner
+
+if TYPE_CHECKING:
+    from galaxy.app import GalaxyManagerApplication
 
 
 def _job_wrapper(tool_type="default", require_container="False"):
@@ -29,13 +36,18 @@ def _job_wrapper(tool_type="default", require_container="False"):
         job_destination=SimpleNamespace(params=destination_params, tool_env_names=[]),
         get_destination_configuration=lambda key, default=None: destination_params.get(key, default),
     )
-    job_wrapper.requires_containerization = MinimalJobWrapper.requires_containerization.fget(job_wrapper)
+    requires_containerization = cast(property, MinimalJobWrapper.requires_containerization).fget
+    assert requires_containerization
+    job_wrapper.requires_containerization = requires_containerization(job_wrapper)
     return job_wrapper
 
 
 def _runner_without_containers():
     runner = BaseJobRunner.__new__(BaseJobRunner)
-    runner.app = SimpleNamespace(container_finder=SimpleNamespace(find_container=lambda *args: None), object_store=None)
+    runner.app = cast(
+        "GalaxyManagerApplication",
+        SimpleNamespace(container_finder=SimpleNamespace(find_container=lambda *args: None), object_store=None),
+    )
     return runner
 
 
