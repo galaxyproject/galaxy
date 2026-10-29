@@ -375,8 +375,7 @@ class TestFailedJobDiskUsageIntegration(IntegrationTestCase):
         # The partial outputs of the failed job are counted, and a recalculation agrees
         expected_usage = initial_usage + 4
         assert self.dataset_populator.total_disk_usage() == expected_usage
-        recalculate_response = self.dataset_populator._put("users/current/recalculate_disk_usage")
-        assert self.dataset_populator.wait_on_task(recalculate_response)
+        self.dataset_populator.recalculate_disk_usage()
         assert self.dataset_populator.total_disk_usage() == expected_usage
 
         # Purging them brings the usage back to where it started
@@ -422,8 +421,7 @@ class TestCopiedRunningOutputDiskUsageIntegration(IntegrationTestCase):
         assert details["file_size"] == 2
         expected_usage = initial_usage + 4
         assert self.dataset_populator.total_disk_usage() == expected_usage
-        recalculate_response = self.dataset_populator._put("users/current/recalculate_disk_usage")
-        assert self.dataset_populator.wait_on_task(recalculate_response)
+        self.dataset_populator.recalculate_disk_usage()
         assert self.dataset_populator.total_disk_usage() == expected_usage
 
         # Purging the outputs and the copy brings the usage back to where it started
