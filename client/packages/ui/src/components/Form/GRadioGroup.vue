@@ -34,6 +34,11 @@ interface Props {
      */
     buttonVariant?: RadioButtonVariant;
     /**
+     * Help text under the options, linked to the group with aria-describedby
+     * @default undefined
+     */
+    description?: string;
+    /**
      * Disables every radio in the group
      * @default false
      */
@@ -78,6 +83,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     buttons: false,
     buttonVariant: "grey",
+    description: undefined,
     disabled: false,
     label: undefined,
     legendClass: undefined,
@@ -95,6 +101,8 @@ const emit = defineEmits<{
 const uid = useUid("g-radio-group-");
 
 const groupName = computed(() => props.name ?? uid.value);
+
+const descriptionId = computed(() => `${uid.value}-description`);
 
 const legendId = computed(() => `${uid.value}-legend`);
 
@@ -122,6 +130,7 @@ provide(radioGroupKey, {
     <!-- A fieldset with a role is not reliably named by its legend, so point at the legend explicitly -->
     <fieldset
         class="g-radio-group"
+        :aria-describedby="description ? descriptionId : undefined"
         role="radiogroup"
         :aria-labelledby="label || $slots.label ? legendId : undefined"
         :disabled="disabled">
@@ -136,6 +145,8 @@ provide(radioGroupKey, {
 
             <slot />
         </div>
+
+        <small v-if="description" :id="descriptionId" class="g-radio-group-description">{{ description }}</small>
     </fieldset>
 </template>
 
@@ -153,6 +164,12 @@ provide(radioGroupKey, {
     // Form labels' padding plus the 1px field border, not a spacing step, so a labelled group lines up with labelled fields
     padding: 0 0 calc(0.375rem + 1px);
     font-size: inherit;
+}
+
+.g-radio-group-description {
+    display: block;
+    margin-top: var(--spacing-1, 0.25rem);
+    color: var(--color-grey-600);
 }
 
 .g-radio-group-options {

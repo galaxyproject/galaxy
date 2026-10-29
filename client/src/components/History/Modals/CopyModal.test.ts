@@ -1,6 +1,6 @@
 import { getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
 import { emittedArg, getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -21,9 +21,14 @@ const ownedHistory = { ...fakeHistory, user_id: "owner_id" };
 const fakeOwner = getFakeRegisteredUser({ id: "owner_id" });
 const otherUser = getFakeRegisteredUser({ id: "other_user" });
 
-function createWrapper(history: HistorySummary = fakeHistory, userData = fakeOwner, showModal = true) {
+function createWrapper(
+    history: HistorySummary = fakeHistory,
+    userData = fakeOwner,
+    showModal = true,
+    mountFn: typeof mount = shallowMount,
+) {
     const pinia = createPinia();
-    const wrapper = shallowMount(CopyModal, {
+    const wrapper = mountFn(CopyModal, {
         props: { history, showModal },
         global: withPlugins(localVue, pinia),
     });
@@ -81,6 +86,23 @@ describe("CopyModal", () => {
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
         expect(historyStore.copyHistory).toHaveBeenCalledWith(fakeHistory, "New Name", false);
+    });
+
+    it("calls copyHistory with copyAll=true when all datasets are chosen", async () => {
+        const { wrapper, historyStore } = createWrapper(fakeHistory, fakeOwner, true, mount);
+        const group = wrapper.find("[role=radiogroup]");
+        expect(group.find("legend").text()).toBe("Choose which datasets from the original history to include.");
+        const radios = group.findAll<HTMLInputElement>("input[type=radio]");
+        expect(radios.map((radio) => radio.element.closest("label")?.textContent?.trim())).toEqual([
+            "Copy only the active, non-deleted datasets.",
+            "Copy all datasets including deleted ones.",
+        ]);
+        expect(radios[0]?.element.checked).toBe(true);
+        wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "New Name");
+        await radios[1]?.setValue(true);
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(historyStore.copyHistory).toHaveBeenCalledWith(fakeHistory, "New Name", true);
     });
 
     it("emits update:show-modal false after copy completes", async () => {

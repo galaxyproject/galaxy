@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { BFormRadio } from "bootstrap-vue";
+import { computed } from "vue";
+
+import { useUid } from "@/composables/utils/uid";
 
 import type { WorkflowLabel } from "./Editor/types";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GRadio from "@/components/BaseComponents/GRadio.vue";
+import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 
 interface LabelSelectorProps {
     hasLabels: boolean;
@@ -20,6 +24,10 @@ const emit = defineEmits<{
     (e: "input", value: WorkflowLabel | undefined): void;
 }>();
 
+const headingId = useUid("label-selector-heading-");
+
+const selectedIndex = computed(() => (props.value ? props.labels.indexOf(props.value) : undefined));
+
 function update(index: number) {
     const label: WorkflowLabel | undefined = props.labels[index] || undefined;
     emit("input", label);
@@ -28,18 +36,18 @@ function update(index: number) {
 
 <template>
     <div>
-        <h2 class="mb-3 h-text">Select {{ labelTitle }} Label:</h2>
-        <div v-if="hasLabels">
-            <BFormRadio
-                v-for="(label, index) in labels"
-                :key="index"
-                class="my-2"
-                name="labels"
-                :value="index"
-                @change="update">
+        <h2 :id="headingId" class="mb-3 h-text">Select {{ labelTitle }} Label:</h2>
+        <GRadioGroup
+            v-if="hasLabels"
+            stacked
+            class="label-selector-options"
+            :aria-labelledby="headingId"
+            :model-value="selectedIndex"
+            @update:model-value="update">
+            <GRadio v-for="(label, index) in labels" :key="index" :value="index">
                 {{ label.label }}
-            </BFormRadio>
-        </div>
+            </GRadio>
+        </GRadioGroup>
         <GAlert v-else show variant="info"> No labels found. Please specify labels in the Workflow Editor. </GAlert>
         <p class="mt-3 text-muted">
             You may add new labels by selecting a step in the workflow editor and then editing the corresponding label
@@ -47,3 +55,9 @@ function update(index: number) {
         </p>
     </div>
 </template>
+
+<style scoped lang="scss">
+.label-selector-options :deep(.g-radio-group-options) {
+    row-gap: var(--spacing-2, 0.5rem);
+}
+</style>

@@ -81,7 +81,7 @@ class TestAdminApp(SeleniumTestCase):
         ok_button = self.find_element_by_selector("#repo-install-settings .g-modal-confirm-buttons button:last-child")
         ok_button.click()
         self.sleep_for(self.wait_types.REPO_INSTALL)
-        installed_only = self.find_element_by_xpath("//span[contains(. ,'Installed Only')]/../../input")
+        installed_only = admin_component.toolshed.installed_only.wait_for_visible()
         self.move_to_and_click(installed_only)
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # This serves as a check for the presence of the upgrade notification.
