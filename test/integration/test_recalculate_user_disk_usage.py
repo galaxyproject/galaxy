@@ -293,6 +293,38 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
                 )
             assert self.dataset_populator.total_disk_usage() == 0
 
+    def test_late_cached_map_over_from_another_user_is_counted_once(self):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0" * 9, "0" * 19], wait=True
+        ).json()["output_collections"][0]["id"]
+        map_over = {"input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}}
+        run_response = self.dataset_populator.run_tool("cat", map_over, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        job_ids = {job["id"] for job in run_response["jobs"]}
+        self.dataset_populator.make_public(history_id)
+
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            other_history_id = self.dataset_populator.new_history()
+            hdca_copy = self.dataset_collection_populator.copy_collection(other_history_id, hdca_id).json()
+            # Renamed inputs miss the cache when the request runs, the job handler then finds the jobs
+            for element in hdca_copy["elements"]:
+                self.dataset_populator.rename_dataset(element["object"]["id"])
+            cached_map_over = {"input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_copy["id"]}]}}
+            cached_run_response = self.dataset_populator.run_tool(
+                "cat", cached_map_over, other_history_id, use_cached_job=True
+            )
+            self.dataset_populator.wait_for_history(other_history_id, assert_ok=True)
+            for job in cached_run_response["jobs"]:
+                details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+                assert details["copied_from_job_id"] in job_ids
+
+            # The copied inputs and the cached outputs are counted once, and a recalculation agrees
+            expected_usage = 2 * (10 + 20)
+            assert self.dataset_populator.total_disk_usage() == expected_usage
+            self.recalculate_disk_usage()
+            assert self.dataset_populator.total_disk_usage() == expected_usage
+
     def test_cached_job_from_another_user_is_counted(self):
         history_id = self.dataset_populator.new_history()
         run_response = self.dataset_populator.run_tool("create_2", {"sleep_time": 0}, history_id)

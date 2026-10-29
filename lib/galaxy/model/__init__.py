@@ -1967,10 +1967,14 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         )
 
     def output_hdas(self) -> list["DatasetInstance"]:
-        """Return the job's output datasets, including the elements of its output collections."""
+        """
+        Return the job's output datasets, including the elements of its output collections. Skips a map-over's
+        implicit collections, linked to each of its jobs: their elements are the other jobs' outputs.
+        """
         output_hdas: list[DatasetInstance] = [assoc.dataset for assoc in self.output_datasets]
         for collection_assoc in self.output_dataset_collection_instances:
-            output_hdas.extend(collection_assoc.dataset_collection_instance.dataset_instances)
+            if not collection_assoc.dataset_collection_instance.implicit_output_name:
+                output_hdas.extend(collection_assoc.dataset_collection_instance.dataset_instances)
         for implicit_collection_assoc in self.output_dataset_collections:
             output_hdas.extend(implicit_collection_assoc.dataset_collection.dataset_instances)
         return output_hdas
