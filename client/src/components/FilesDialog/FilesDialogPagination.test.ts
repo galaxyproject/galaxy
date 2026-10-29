@@ -195,6 +195,16 @@ describe("FilesDialog, paginated file source", () => {
         expect(confirmedUrls()).toContain(`${sourceRoot}/folder15/file1`);
     });
 
+    it("should show the next page once the folders selected on this page are listed", async () => {
+        heldFolders = [`${sourceRoot}/folder5`, `${sourceRoot}/folder15`];
+        await selectAll();
+        await goToPage(2);
+
+        await releaseListing(`${sourceRoot}/folder5`);
+        await releaseListing(`${sourceRoot}/folder15`);
+        await vi.waitFor(() => expect(rows().map(({ id }) => id)).toContain(`${sourceRoot}/file26`));
+    });
+
     it("should ignore the listing of a folder unselected while it loads", async () => {
         const folder = `${sourceRoot}/folder5`;
         heldFolders = [folder];

@@ -2,7 +2,7 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
-import Vue, { computed, onMounted, ref, watch } from "vue";
+import Vue, { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import {
     browseRemoteFiles,
@@ -530,6 +530,17 @@ function onGoBack(record?: SelectionItem) {
         selectionDialog.value?.resetPagination(popped.parentPage);
     }
 }
+
+// the table drops page and filter changes while busy, so list the current page again once listings finish
+watch(
+    () => pendingListings.value === 0,
+    async (allListed) => {
+        if (allListed && itemsProvider.value) {
+            await nextTick();
+            selectionDialog.value?.refresh();
+        }
+    },
+);
 
 watch(query, () => {
     selectionDialog.value?.resetPagination(1);
