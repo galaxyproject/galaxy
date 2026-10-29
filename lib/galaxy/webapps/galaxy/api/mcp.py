@@ -244,7 +244,7 @@ def get_mcp_app(gx_app: StructuredApp):
 
         user = user_manager.by_credentials(api_key, access_token)
         if not user:
-            # Only an access token that no OIDC provider accepts gets here; a bad API key already raised.
+            # Only an access token no OIDC provider can process gets here; bad keys and rejected tokens raised.
             raise AuthenticationFailed(
                 f"Invalid access token. A Bearer token must be an OIDC access token; send a Galaxy API key "
                 f"in an {API_KEY_HEADER_NAME} header instead."

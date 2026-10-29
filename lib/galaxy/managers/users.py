@@ -447,8 +447,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def by_credentials(self, api_key: str | None, access_token: str | None) -> model.User | None:
         """Find the user for a Galaxy API key or, failing that, an OIDC access token.
 
-        The API key is tried first, and a bad one raises. An access token returns None when no OIDC
-        provider is configured or none of them accepts the token.
+        The API key is tried first, and a bad one raises. An access token raises if an OIDC provider
+        rejects it, and returns None if no provider is configured or none can process it.
         """
         if api_key:
             return self.by_api_key(api_key=api_key)
