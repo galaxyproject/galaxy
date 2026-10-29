@@ -40,6 +40,7 @@ TEST_TOOL_IDS = [
     "composite_output",
     "composite_output_tests",
     "metadata",
+    "metadata_defaults",
     "metadata_bam",
     "discover_metadata_files",
     "output_format",
