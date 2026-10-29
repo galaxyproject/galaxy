@@ -101,6 +101,8 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         path = payload.get("path")
         if not path:
             raise exceptions.RequestParameterInvalidException("'path' parameter not provided or empty.")
+        if not isinstance(path, str) or not os.path.isabs(path):
+            raise exceptions.RequestParameterInvalidException("'path' parameter must be an absolute path.")
         self.__check_job_can_write_to_path(trans, job, path)
 
         # Is this writing an unneeded file? Should this just copy in Python?

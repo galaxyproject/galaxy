@@ -18,6 +18,7 @@ API has gone too far.
 import io
 import os
 import tempfile
+import uuid
 
 import requests
 from sqlalchemy import select
@@ -169,6 +170,21 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         files = {"file": file}
         response = self._post_job_files(job_id, data, files, use_key=True)
         _assert_insufficient_permissions(response)
+
+    def test_write_relative_path_rejected(self):
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        relative_path = os.path.join(f"job_files_relative_{uuid.uuid4().hex}", "work")
+        data = {"path": relative_path, "job_key": job_key}
+        files = {"file": io.StringIO("some initial text data")}
+        response = self._post_job_files(job_id, data, files)
+        api_asserts.assert_status_code_is(response, 400)
+        api_asserts.assert_error_message_contains(response, "absolute path")
+        assert not os.path.exists(relative_path)
+
+        response = self._post_job_files(job_id, {**data, "path": "123"}, files)
+        api_asserts.assert_status_code_is(response, 400)
+        api_asserts.assert_error_message_contains(response, "absolute path")
 
     def test_write_with_nginx_upload_module(self):
         job, output_hda, _ = self.create_static_job_with_state("running")
