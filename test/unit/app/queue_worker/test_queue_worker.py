@@ -72,7 +72,12 @@ def setup_queue_worker_test(app):
     app.application_stack = application_stack_instance(app=app)
     app.database_heartbeat = DatabaseHeartbeat(application_stack=app.application_stack, heartbeat_interval=10)
     app.database_heartbeat.start()
-    time.sleep(0.2)
+    # Producers route control tasks to the queues of processes in the heartbeat table,
+    # so a task sent before this process's first heartbeat never reaches it.
+    wait_for(
+        lambda: server_name in {p.server_name for p in app.database_heartbeat.get_active_processes()},
+        f"heartbeat of {server_name}",
+    )
     app.queue_worker = GalaxyQueueWorker(app=app, task_mapping=control_message_to_task)
     app.queue_worker.bind_and_start()
     time.sleep(0.5)
@@ -141,11 +146,15 @@ def test_send_control_task_noop_self(queue_worker_factory):
     assert len(app.tasks_executed) == 0
 
 
-def wait_for_var(obj, var, value, tries=10, sleep=0.25):
-    while getattr(obj, var) != value and tries >= 0:
-        tries -= 1
+def wait_for(condition, description, timeout=20, sleep=0.25):
+    deadline = time.monotonic() + timeout
+    while not condition():
+        assert time.monotonic() < deadline, f"Timed out waiting for {description}"
         time.sleep(sleep)
-    assert getattr(obj, var) == value
+
+
+def wait_for_var(obj, var, value):
+    wait_for(lambda: getattr(obj, var) == value, f"{var} to become {value!r}")
 
 
 # ---------------------------------------------------------------------------

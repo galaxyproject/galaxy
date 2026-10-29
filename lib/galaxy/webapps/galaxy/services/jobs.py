@@ -265,7 +265,7 @@ class JobsService(ServiceBase):
         if not strict:
             relaxed_request_state = RelaxedRequestToolState(inputs or {})
             relaxed_request_state.validate(parameter_bundle, f"{tool.id} (relaxed request model)")
-            request_state = strictify(relaxed_request_state, parameter_bundle)
+            request_state = strictify(relaxed_request_state, parameter_bundle, yaml_origin=tool.yaml_origin)
         else:
             request_state = RequestToolState(inputs or {})
         request_state.validate(parameter_bundle, f"{tool.id} (request model)")

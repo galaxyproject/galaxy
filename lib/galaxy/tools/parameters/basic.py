@@ -59,7 +59,6 @@ from galaxy.tool_util.parser.util import (
     boolean_true_and_false_values,
     multiple_select_value_split,
     ParameterParseException,
-    text_input_is_optional,
 )
 from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
 from galaxy.tool_util_models.untrusted import is_loading_untrusted_tools
@@ -471,7 +470,7 @@ class TextToolParameter(SimpleTextToolParameter):
 
         # why does Integer and Float subclass this :_(
         if self.type == "text":
-            self.optional, self.optionality_inferred = text_input_is_optional(input_source)
+            self.optional, self.optionality_inferred = input_source.parse_text_optional()
         else:
             self.optionality_inferred = False
         self.value = input_source.get("value")

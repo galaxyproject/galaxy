@@ -1,11 +1,15 @@
 import os
 import unittest
 
+import pytest
+
 from galaxy_test.base.decorators import (
     has_requirement,
     requires_admin,
+    requires_celery,
     requires_new_history,
     requires_new_library,
+    requires_new_published_objects,
     requires_new_user,
 )
 
@@ -89,3 +93,40 @@ def user_func():
 def test_requires_new_user_implies_requires_admin():
     assert has_requirement(user_func, "admin")
     assert has_requirement(user_func, "new_user")
+
+
+@pytest.mark.parametrize(
+    "decorator,requirement",
+    [
+        (requires_admin, "admin"),
+        (requires_new_history, "new_history"),
+        (requires_new_library, "new_library"),
+        (requires_new_user, "new_user"),
+        (requires_celery, "celery"),
+        (requires_new_published_objects, "new_published_objects"),
+    ],
+)
+@pytest.mark.parametrize("skip_value", [None, "0", "1"])
+def test_requirement_preserves_callable_and_skips(monkeypatch, decorator, requirement, skip_value):
+    calls = []
+
+    def method(value):
+        calls.append(value)
+        return value
+
+    decorated = decorator(method)
+    assert callable(decorated)
+    assert decorated.__name__ == method.__name__
+    monkeypatch.delenv("GALAXY_TEST_SKIP_IF_REQUIRES_ADMIN", raising=False)
+    variable = f"GALAXY_TEST_SKIP_IF_REQUIRES_{requirement.upper()}"
+    if skip_value is None:
+        monkeypatch.delenv(variable, raising=False)
+    else:
+        monkeypatch.setenv(variable, skip_value)
+    if skip_value == "1":
+        with pytest.raises(unittest.SkipTest):
+            decorated("result")
+        assert calls == []
+    else:
+        assert decorated("result") == "result"
+        assert calls == ["result"]

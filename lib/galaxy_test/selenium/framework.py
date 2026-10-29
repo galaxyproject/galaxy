@@ -21,7 +21,10 @@ import pytest
 import requests
 import yaml
 from requests.models import Response
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    StaleElementReferenceException,
+)
 from selenium.webdriver.common.by import By
 
 from galaxy.selenium import driver_factory
@@ -56,6 +59,7 @@ from galaxy.util import (
 )
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy.util.unittest_utils.test_http_server import TestHttpServer
+from galaxy.util.wait import TimeoutAssertionError
 from galaxy_test.base import populators
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
@@ -71,6 +75,7 @@ from galaxy_test.base.env import (
     get_ip_address,
 )
 from galaxy_test.base.populators import (
+    Cat1Run,
     load_data_dict,
     stage_inputs,
 )
@@ -388,6 +393,25 @@ class TestSnapshot:
 
 class GalaxyTestSeleniumContext(GalaxySeleniumContext):
     """Extend GalaxySeleniumContext with Selenium-aware galaxy_test.base.populators."""
+
+    def register(
+        self,
+        email: str | None = None,
+        password: str | None = None,
+        username: str | None = None,
+        confirm: str | None = None,
+        assert_valid: bool | None = True,
+        via_masthead: bool = False,
+    ) -> None:
+        using_requirement("new_user")
+        super().register(
+            email=email,
+            password=password,
+            username=username,
+            confirm=confirm,
+            assert_valid=assert_valid,
+            via_masthead=via_masthead,
+        )
 
     @property
     def dataset_populator(self) -> "SeleniumSessionDatasetPopulator":
@@ -733,6 +757,30 @@ class UsesLibraryAssertions(NavigatesGalaxyMixin):
 
     def num_displayed_items(self) -> int:
         return len(self.libraries_table_elements())
+
+    def wait_for_num_displayed_items(self, n):
+        # Imports send one request per item and refresh the folder list only after the last one returns.
+        num_displayed: int | None = None
+
+        def has_n_items(driver=None):
+            nonlocal num_displayed
+            try:
+                num_displayed = self.num_displayed_items()
+            except StaleElementReferenceException:
+                # The folder refresh re-rendered the table between finding it and counting its rows.
+                return None
+            return True if num_displayed == n else None
+
+        try:
+            self._wait_on(
+                has_n_items,
+                f"{n} items to be displayed in the library folder",
+                wait_type=self.wait_types.DATABASE_OPERATION,
+            )
+        except TimeoutAssertionError as e:
+            raise AssertionError(
+                f"Expected number of displayed items is {n} but actual was {num_displayed} after waiting"
+            ) from e
 
 
 class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
@@ -1442,14 +1490,9 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
         assert cat1_jobs, "Expected cat1 job to be present"
         return cat1_jobs[0]["id"]
 
-    def run_cat1(self, history_id: str) -> tuple[str, str]:
-        """Run a single cat1 over two fresh uploads. Returns (job_id, output_id)."""
-        hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
-        hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
-        inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
-        run = self.dataset_populator.run_tool("cat1", inputs, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return run["jobs"][0]["id"], run["outputs"][0]["id"]
+    def run_cat1(self, history_id: str) -> Cat1Run:
+        """Run a single cat1 over two fresh uploads."""
+        return self.dataset_populator.run_cat1(history_id, ("foo\nbar", "baz"))
 
     def setup_two_independent_cat1_runs(self, history_id: str) -> tuple[str, str, str]:
         """Two independent cat1 runs in one history. Returns (job_a, output_a, job_b).
@@ -1458,9 +1501,9 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
         should select run A's subgraph and leave run B unchecked — the
         differentiator vs. the form's default whole-history check.
         """
-        job_a, output_a = self.run_cat1(history_id)
-        job_b, _ = self.run_cat1(history_id)
-        return job_a, output_a, job_b
+        run_a = self.run_cat1(history_id)
+        run_b = self.run_cat1(history_id)
+        return run_a.job_id, run_a.output_id, run_b.job_id
 
     def run_random_lines_mapped(self, history_id: str) -> str:
         """Map random_lines1 over a fresh pair. Returns the implicit output

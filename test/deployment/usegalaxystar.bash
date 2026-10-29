@@ -6,11 +6,12 @@
 # The variables this script consumes include:
 # - GALAXY_TEST_DEPLOYMENT_TARGET
 #    target Galaxy deployment to test against - this should be
-#    usegalaxymain or usegalaxytest currently.
+#    usegalaxymain, usegalaxytest or usegalaxyeu currently.
 # - GALAXY_TEST_DEPLOYMENT_DEBUG
 #    should be the string "true" to enable additional debugging
 # - GALAXY_TEST_USEGALAXYMAIN_USER_KEY
 #   GALAXY_TEST_USEGALAXYTEST_USER_KEY
+#   GALAXY_TEST_USEGALAXYEU_USER_KEY
 #    API key to select for given target.
 
 set -e
@@ -18,14 +19,14 @@ set -e
 echo "Deployment target is $GALAXY_TEST_DEPLOYMENT_TARGET"
 
 # Setup dependencies and activate resulting Python environment.
-./scripts/common_startup.sh --skip-client-build --skip-node
+./scripts/common_startup.sh --skip-client-build --dev-wheels
 . .venv/bin/activate
 
-if [ $GALAXY_TEST_DEPLOYMENT_DEBUG = "true" ];
+if [ "$GALAXY_TEST_DEPLOYMENT_DEBUG" = "true" ];
 then
-    PYTEST_DEBUG_ARGS="-s -v"
+    PYTEST_DEBUG_ARGS=(-s -v)
 else
-    PYTEST_DEBUG_ARGS=""
+    PYTEST_DEBUG_ARGS=()
 fi
 
 if [ "$GALAXY_TEST_DEPLOYMENT_TARGET" = "usegalaxymain" ];
@@ -96,15 +97,22 @@ else
     exit 1
 fi
 
-echo "Running tests: ${tests[@]}"
+echo "Running tests: ${tests[*]}"
 # pytest markers to select against. In order to not cause an explosion of
 # semi-permanent artifacts that are difficult to manage tests which require
 # new libraries or users are disabled. Tests which require admin keys are
-# also disabled for security/simplicity reasons.
-PYTEST_MARKER_EXPRESSION="not requires_admin and not requires_new_library and not requires_new_user and not requires_celery"
+# also disabled for security/simplicity reasons. Publishing objects is disabled
+# to avoid exposing deployment test artifacts. Runtime checks catch helpers used
+# by tests without requirement markers.
+export GALAXY_TEST_SKIP_IF_REQUIRES_ADMIN=1
+export GALAXY_TEST_SKIP_IF_REQUIRES_NEW_USER=1
+export GALAXY_TEST_SKIP_IF_REQUIRES_NEW_LIBRARY=1
+export GALAXY_TEST_SKIP_IF_REQUIRES_NEW_PUBLISHED_OBJECTS=1
+export GALAXY_TEST_SKIP_IF_REQUIRES_CELERY=1
+PYTEST_MARKER_EXPRESSION="not requires_admin and not requires_new_library and not requires_new_user and not requires_celery and not requires_new_published_objects"
 PYTEST_HTML_REPORT="deployment_tests.html"
 pytest \
-    $PYTEST_DEBUG_ARGS \
+    "${PYTEST_DEBUG_ARGS[@]}" \
     --html "$PYTEST_HTML_REPORT" \
     -m "${PYTEST_MARKER_EXPRESSION}" \
     "${tests[@]}"

@@ -90,7 +90,7 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         """
         history_id = self.current_history_id()
         output_hdca_id = self.run_random_lines_mapped(history_id)
-        cat1_job_id, _ = self.run_cat1(history_id)
+        cat1_job_id = self.run_cat1(history_id).job_id
         page = self.dataset_populator.new_notebook_referencing(history_id, collection_ids=[output_hdca_id])
 
         self.navigate_to_history_page_editor(history_id, page["id"])
