@@ -1898,7 +1898,11 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                     if isinstance(self_output, HistoryDatasetAssociation) and isinstance(
                         out_data, HistoryDatasetAssociation
                     ):
+                        # A map-over element job hides its outputs, a plain job shows them. The late job
+                        # cache search pairs either kind with either kind, so keep this job's visibility.
+                        visible = self_output.visible
                         self_output.copy_from(out_data, include_metadata=True)
+                        self_output.visible = visible
                 else:
                     assert output_name.startswith("__") and isinstance(out_data, HistoryDatasetAssociation)
                     if output_name.startswith("__new_primary_file_"):
@@ -1920,29 +1924,23 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                     self.add_output_dataset(output_name, copied_output)
             for output_name, out_collection in outputs_to_copy.out_collections.items():
                 self_out_collection = self_io.out_collections[output_name]
-                if isinstance(self_out_collection, DatasetCollection) and isinstance(out_collection, DatasetCollection):
-                    # In the context of the job cache this should be unreachable.
-                    # If we have DatasetCollection here, the output was created as part of a map-over job.
-                    # If it is a map-over job, then we were working with element_identifiers instead of names.
-                    # So when we relax the name requirement in the job cache we won't find any additional jobs to consider,
-                    # and we will never get here.
-                    self_out_collection.copy_from(out_collection, history=self.history)
-                    requires_addition_to_history = True
-                elif isinstance(self_out_collection, HistoryDatasetCollectionAssociation) and isinstance(
-                    out_collection, HistoryDatasetCollectionAssociation
+                # A map-over element job records its part of the implicit output collection as a
+                # DatasetCollection, any other job the HDCA it created. The late job cache search
+                # pairs either kind with either kind.
+                if isinstance(self_out_collection, HistoryDatasetCollectionAssociation):
+                    self_out_collection = self_out_collection.collection
+                if isinstance(out_collection, HistoryDatasetCollectionAssociation):
+                    out_collection = out_collection.collection
+                if not isinstance(self_out_collection, DatasetCollection) or not isinstance(
+                    out_collection, DatasetCollection
                 ):
-                    self_out_collection.collection.copy_from(
-                        out_collection.collection,
-                        history=self.history,
-                    )
-                    requires_addition_to_history = True
-                else:
                     raise NotImplementedError(
                         f"Don't know how to copy {type(out_collection)} to {type(self_out_collection)}"
                     )
+                self_out_collection.copy_from(out_collection, history=self.history)
+                requires_addition_to_history = True
             if requires_addition_to_history:
-                assert job.history
-                job.history.add_pending_items()
+                self.history.add_pending_items()
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
         inp_data: dict[str, DatasetInstance | None] = {da.name: da.dataset for da in self.input_datasets}
@@ -2472,9 +2470,16 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
+        self.touch_dependent_update_times()
+
+    def touch_dependent_update_times(self):
+        """Bump update_time on the collections and workflow invocation steps this job contributes to."""
         sa_session = required_object_session(self)
         update_time = now()
         self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
+        # The job wrapper sets the final output dataset states directly, so this is the last chance to let the
+        # collections containing them, such as the implicit output collections of a mapped tool, know about it.
+        self.touch_output_collections_update_time()
         params = {"job_id": self.id, "update_time": update_time}
         # Update workflow_invocation_step for direct job_id
         statement = text("""
@@ -2493,6 +2498,32 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             );
         """)
         sa_session.execute(statement_icj, params)
+
+    def touch_output_collections_update_time(self, supports_skip_locked=None):
+        """
+        Update the update time of the collections containing the output datasets of this job, including
+        collections that aren't directly job-associated and the collections containing those.
+        """
+        sa_session = required_object_session(self)
+        dialect_name = sa_session.bind.dialect.name
+        job_dataset_ids = select(Dataset.id).where(Dataset.job_id == self.id)
+        # A failed statement aborts the whole transaction on PostgreSQL, so isolate the update in a savepoint
+        savepoint = sa_session.begin_nested() if dialect_name == "postgresql" else None
+        try:
+            if dialect_name in ("postgresql", "sqlite"):
+                if dialect_name == "postgresql" and supports_skip_locked is None:
+                    supports_skip_locked = _check_supports_skip_locked(sa_session.get_bind())
+                Dataset._touch_collection_update_time_cte(sa_session, job_dataset_ids, supports_skip_locked)
+            else:
+                for dataset in sa_session.scalars(select(Dataset).where(Dataset.id.in_(job_dataset_ids))):
+                    dataset._touch_collection_update_time_fallback(sa_session)
+            if savepoint:
+                savepoint.commit()
+        except Exception:
+            if savepoint:
+                savepoint.rollback()
+            # Don't let collection update failures prevent job completion
+            log.exception(f"Failed to update collection times for the outputs of job {self.id}")
 
     def get_destination_configuration(self, dest_params, config, key, default=None):
         """Get a destination parameter that can be defaulted back
@@ -2554,15 +2585,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             update_time=update_time,
             sa_session=sa_session,
         )
-        # Update general collection associations for all datasets in this job
-        # This handles collections that contain datasets from this job but aren't directly job-associated
-        job_datasets = sa_session.query(Dataset).filter(Dataset.job_id == self.id).all()
-        for dataset in job_datasets:
-            try:
-                dataset.touch_collection_update_time(supports_skip_locked=supports_skip_locked)
-            except Exception:
-                # Don't let collection update failures prevent job comion
-                log.error(f"Failed to update collection times for dataset {dataset.id} from job {self.id}")
+        self.touch_output_collections_update_time(supports_skip_locked=supports_skip_locked)
 
         params = {"job_id": self.id, "state": self.state, "info": self.info, "update_time": update_time}
         for statement in statements:
@@ -5163,7 +5186,7 @@ class Dataset(Base, StorableObject, Serializable):
 
         Args:
             supports_skip_locked: Boolean to indicate if database supports
-                FOR UPDATE SKIP LOCKED. Defaults to False.
+                FOR UPDATE SKIP LOCKED. Checked against the database if None.
         """
         session = object_session(self)
         if not session:
@@ -5173,13 +5196,17 @@ class Dataset(Base, StorableObject, Serializable):
         if dialect_name in ("postgresql", "sqlite"):
             if dialect_name == "postgresql" and supports_skip_locked is None:
                 supports_skip_locked = _check_supports_skip_locked(session.get_bind())
-            self._touch_collection_update_time_cte(session, supports_skip_locked)
+            self._touch_collection_update_time_cte(session, [self.id], supports_skip_locked)
         else:
             # Fallback for other databases
             self._touch_collection_update_time_fallback(session)
 
-    def _touch_collection_update_time_cte(self, session, supports_skip_locked):
-        """CTE implementation using SQLAlchemy core constructs"""
+    @staticmethod
+    def _touch_collection_update_time_cte(session, dataset_ids, supports_skip_locked):
+        """
+        CTE implementation using SQLAlchemy core constructs, for the collections containing any of
+        ``dataset_ids``, a list of IDs or a select statement returning them.
+        """
 
         # Base case columns
         base_columns = [
@@ -5196,7 +5223,7 @@ class Dataset(Base, StorableObject, Serializable):
                     HistoryDatasetAssociation.__table__, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id
                 )
             )
-            .where(HistoryDatasetAssociation.dataset_id == self.id)
+            .where(HistoryDatasetAssociation.dataset_id.in_(dataset_ids))
             .union(
                 select(*base_columns)
                 .select_from(
@@ -5205,7 +5232,7 @@ class Dataset(Base, StorableObject, Serializable):
                         DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id,
                     )
                 )
-                .where(LibraryDatasetDatasetAssociation.dataset_id == self.id)
+                .where(LibraryDatasetDatasetAssociation.dataset_id.in_(dataset_ids))
             )
         ).subquery()
 
@@ -5243,14 +5270,16 @@ class Dataset(Base, StorableObject, Serializable):
         )
 
         if supports_skip_locked:
-            # Use FOR UPDATE SKIP LOCKED for better concurrency when supported
-            # First select the HDCAs we want to update with FOR UPDATE SKIP LOCKED
+            # First select the HDCAs we want to update with FOR NO KEY UPDATE SKIP LOCKED.
+            # Only update_time changes, and this lock mode is compatible with the FOR KEY SHARE
+            # lock that foreign key checks take, so concurrent inserts of rows referencing these
+            # HDCAs (job inputs, workflow step outputs) proceed while this transaction is open.
             hdca_ids_to_update = (
                 session.execute(
                     select(HistoryDatasetCollectionAssociation.id)
                     .where(HistoryDatasetCollectionAssociation.collection_id.in_(collection_ids_subquery))
                     .order_by(HistoryDatasetCollectionAssociation.id)
-                    .with_for_update(skip_locked=True)
+                    .with_for_update(skip_locked=True, key_share=True)
                 )
                 .scalars()
                 .all()
@@ -5632,14 +5661,11 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     def set_skipped(self, object_store_populator: "ObjectStorePopulator", replace_dataset: bool) -> None:
         assert self.dataset
-        object_store_populator.set_object_store_id(self)
         if replace_dataset:
-            replacement = Dataset(state=Dataset.states.NEW)
-            replacement.object_store_id = self.dataset.object_store_id
-            self.dataset = replacement
+            # Replace the dataset before touching the object store, the current one may be shared with an input.
+            self.dataset = Dataset(state=Dataset.states.NEW)
             self.dataset_id = None
-            assert self.dataset.object_store is not None
-            self.dataset.object_store.create(self.dataset)
+        object_store_populator.set_object_store_id(self)
         self.extension = "expression.json"
         self.state = self.states.OK
         self.blurb = "skipped"
@@ -5744,22 +5770,26 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return `False` if there exists an associated job with a non-terminal state.
         """
 
-        def exists_clause(assoc_model):
+        def exists_clause(dataset_id_column):
             return (
-                select(assoc_model.job_id)
+                select(dataset_id_column)
                 .join(Job)
-                .where(assoc_model.dataset_id == self.id)
+                .where(dataset_id_column == self.id)
                 .where(Job.state.not_in(Job.terminal_states))
                 .exists()
             )
 
+        input_dataset_id, output_dataset_id = self._job_association_dataset_id_columns()
         stmt = select(
             or_(
-                exists_clause(JobToInputDatasetAssociation),
-                exists_clause(JobToOutputDatasetAssociation),
+                exists_clause(input_dataset_id),
+                exists_clause(output_dataset_id),
             )
         )
         return not required_object_session(self).scalar(stmt)
+
+    def _job_association_dataset_id_columns(self):
+        return JobToInputDatasetAssociation.dataset_id, JobToOutputDatasetAssociation.dataset_id
 
     def change_datatype(self, new_ext):
         self.clear_associated_files()
@@ -6306,7 +6336,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
         for copied_hda in self.copied_to_history_dataset_associations:
             copied_hda.copy_from(self, include_tags=include_tags, include_metadata=include_metadata)
 
-        if old_dataset:
+        # A cached job's structured collection output reaches the same HDA as both a job output
+        # and a collection element, so the second copy finds the dataset already in place.
+        if old_dataset and old_dataset is not self.dataset:
             old_dataset.full_delete(user=self.user)
 
     def copy(
@@ -7034,6 +7066,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
     def purged(self):
         # For uniformity with HistoryDatasetAssociation
         return self.dataset and self.dataset.purged
+
+    def _job_association_dataset_id_columns(self):
+        return JobToInputLibraryDatasetAssociation.ldda_id, JobToOutputLibraryDatasetAssociation.ldda_id
 
     def to_history_dataset_association(
         self, target_history, parent_id=None, add_to_history=False, visible=None, commit=True

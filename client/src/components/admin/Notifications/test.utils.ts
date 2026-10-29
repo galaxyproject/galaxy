@@ -43,6 +43,7 @@ export function generateNewBroadcast({ actionLink = false, published = false }):
             {
                 link: "https://test.link",
                 action_name: generateRandomString(),
+                target: "_self",
             },
         ];
     }

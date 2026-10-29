@@ -1,0 +1,30 @@
+class: GalaxyUserTool
+id: gx_user_boolean_defaults
+name: gx_user_boolean_defaults
+version: 1.0.0
+container: busybox
+shell_command: 'printf ''%s\n'' ''$({required_true: inputs.required_true, required_false:
+  inputs.required_false, required_omitted: inputs.required_omitted, optional_true:
+  inputs.optional_true, optional_false: inputs.optional_false})'' > output.json'
+inputs:
+- name: required_true
+  type: boolean
+  value: true
+- name: required_false
+  type: boolean
+  value: false
+- name: required_omitted
+  type: boolean
+- name: optional_true
+  type: boolean
+  optional: true
+  value: true
+- name: optional_false
+  type: boolean
+  optional: true
+  value: false
+outputs:
+- name: output
+  type: data
+  format: json
+  from_work_dir: output.json

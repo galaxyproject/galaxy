@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BFormRadioGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -14,6 +13,7 @@ import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
+import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -134,13 +134,14 @@ async function copy() {
                     <GFormInput v-model="name" :state="newNameValid" required />
                 </GFormLabel>
 
-                <GFormLabel title="Choose which datasets from the original history to include.">
-                    <BFormRadioGroup
-                        v-model="copyAll"
-                        :options="datasetCopyOptions"
-                        name="copy-datasets-options"
-                        stacked />
-                </GFormLabel>
+                <!-- legend flush on the radios, like the GFormLabel title above it -->
+                <GRadioGroup
+                    v-model="copyAll"
+                    stacked
+                    legend-class="pb-0"
+                    label="Choose which datasets from the original history to include."
+                    name="copy-datasets-options"
+                    :options="datasetCopyOptions" />
             </GForm>
         </transition>
     </GModal>

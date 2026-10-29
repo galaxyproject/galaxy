@@ -957,6 +957,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     async function updateHistory(id: string, update: UpdateHistoryPayload) {
         const savedHistory = (await updateHistoryFields(id, update)) as HistorySummaryExtended;
         setHistory(savedHistory);
+        return savedHistory;
     }
 
     async function updateContentStats(historyId: string) {

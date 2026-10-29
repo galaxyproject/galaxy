@@ -14,11 +14,13 @@ import { variantToColor } from "@/components/BaseComponents/variantToColor";
 import { useMarkdown } from "@/composables/markdown";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 import { ensureDefined } from "@/utils/assertions";
+import { withPrefix } from "@/utils/redirect";
 import { match } from "@/utils/utils";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 
+type ActionLink = components["schemas"]["ActionLink"];
 type BroadcastNotificationCreateRequest = components["schemas"]["BroadcastNotificationCreateRequest"];
 
 type Options =
@@ -107,7 +109,10 @@ watch(
     },
 );
 
-function actionLinkBind(link: string) {
+function actionLinkBind({ link, target }: ActionLink) {
+    if (target === "_blank") {
+        return { href: withPrefix(link), target, rel: "noopener noreferrer" };
+    }
     if (link.startsWith("/")) {
         return {
             to: link,
@@ -167,9 +172,10 @@ function dismiss() {
                         :key="`${displayedBroadcast.id}-${index}`"
                         v-bind="{
                             ...variantToColor(displayedBroadcast.variant === 'urgent' ? 'danger' : 'primary'),
-                            ...actionLinkBind(actionLink.link),
+                            ...actionLinkBind(actionLink),
                         }">
                         {{ actionLink.action_name }}
+                        <span v-if="actionLink.target === '_blank'" class="sr-only"> (opens in a new tab)</span>
                     </GButton>
                 </div>
 

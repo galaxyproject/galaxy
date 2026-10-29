@@ -79,10 +79,7 @@ from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
-from galaxy.tool_util.abstract_tool import (
-    AbstractTool,
-    parse_tool_version_for_comparison,
-)
+from galaxy.tool_util.abstract_tool import AbstractTool
 from galaxy.tool_util.deps import (
     build_dependency_manager,
     CachedDependencyManager,
@@ -143,6 +140,7 @@ from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tool_util.version import (
+    parse_tool_version,
     parse_version,
 )
 from galaxy.tool_util.version_updates import WORKFLOW_SAFE_TOOL_VERSION_UPDATES
@@ -382,7 +380,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "Convert characters1": parse_version("1.0.1"),
     "substitutions1": parse_version("1.0.1"),
     "winSplitter": parse_version("1.0.1"),
-    "Interval2Maf1": parse_version("1.0.1+galaxy0"),
+    "Interval2Maf1": parse_tool_version("1.0.1+galaxy0"),
 }
 
 
@@ -422,7 +420,7 @@ def tool_requires_galaxy_python_environment(
     fixed_version = GALAXY_LIB_TOOLS_VERSIONED.get(old_id)
     if fixed_version is None:
         return False
-    parsed_version = parse_tool_version_for_comparison(version or "")
+    parsed_version = parse_tool_version(version or "")
     return parsed_version < fixed_version
 
 
@@ -1294,8 +1292,6 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.dependencies: list = []
         # populate toolshed repository info, if available
         self.populate_tool_shed_info(tool_shed_repository)
-        # add tool resource parameters
-        self.populate_resource_parameters(tool_source)
         self.tool_errors: str | None = None
         # Parse XML element containing configuration
         self.tool_source = tool_source
@@ -1336,6 +1332,11 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def _view(self):
         return self.app.dependency_resolvers_view
+
+    @property
+    def yaml_origin(self) -> bool:
+        """Whether this is a GalaxyTool/GalaxyUserTool YAML tool, following the canonical parameter contract."""
+        return self.tool_source.is_yaml_origin()
 
     @property
     def sa_session(self):
@@ -1540,7 +1541,11 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                     break
         self.home_target = home_target
         self.tmp_target = tmp_target
+        self.runtime_environment_variables = tool_source.parse_runtime_environment_variables(strict=False)
+        if self.tool_type == "user_defined" and self.runtime_environment_variables:
+            raise ValueError("User-defined tools cannot declare runtime_environment_variable")
         self.docker_env_pass_through = tool_source.parse_docker_env_pass_through()
+        self.docker_env_pass_through.extend(variable.name for variable in self.runtime_environment_variables)
         if self.environment_variables:
             if not self.docker_env_pass_through:
                 self.docker_env_pass_through = []
@@ -1604,6 +1609,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 tool_classes.append("user_defined")
 
             self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids, tool_classes)
+            # Adds the job resource conditional to the tool's XML inputs, so it must run before parse_inputs.
+            self.populate_resource_parameters(tool_source)
 
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = tool_source.parse_hidden()
@@ -1882,9 +1889,12 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 page_source = input_source.parse_nested_inputs_source()
                 group_r.inputs = self.parse_input_elem(page_source, enctypes, context)
                 group_r.default = int(input_source.get("default", 0))
-                group_r.min = int(input_source.get("min", 0))
+                # Canonical YAML models serialize an unset min/max as null.
+                min_raw = input_source.get("min")
+                group_r.min = int(min_raw) if min_raw is not None else 0
+                max_raw = input_source.get("max")
                 # Use float instead of int so that math.inf can be used for no max
-                group_r.max = float(input_source.get("max", math.inf))
+                group_r.max = float(max_raw) if max_raw is not None else math.inf
                 assert group_r.min <= group_r.max, ValueError(
                     f"Tool with id '{self.id}': min repeat count must be less-than-or-equal to the max."
                 )
@@ -2019,12 +2029,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def populate_resource_parameters(self, tool_source):
         root = getattr(tool_source, "root", None)
-        if (
-            root is not None
-            and hasattr(self.app, "job_config")
-            and hasattr(self.app.job_config, "get_tool_resource_xml")
-        ):
-            resource_xml = self.app.job_config.get_tool_resource_xml(root.get("id", "").lower(), self.tool_type)
+        if root is not None and hasattr(self.app.job_config, "get_tool_resource_xml"):
+            resource_xml = self.app.job_config.get_tool_resource_xml(self.all_ids, self.tool_type)
             if resource_xml is not None:
                 inputs = root.find("inputs")
                 if inputs is None:
@@ -2053,7 +2059,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         YAML tools, admin and user-defined alike, fill in only parameter references, the
         same ``$(inputs.<name>)`` syntax their commands use. Other tools fill labels as Cheetah.
         """
-        return self.tool_source.parse_class() in ("GalaxyTool", "GalaxyUserTool")
+        return self.yaml_origin
 
     def render_output_label(
         self,
@@ -2166,8 +2172,12 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             raise RequestParameterInvalidException(f"Tool {self.id} has no parameters defined")
         parameter_bundle = ToolParameterBundleModel(parameters=self.parameters)
         for expanded_incoming, job_tool_state in zip(expanded_incomings, job_tool_states):
-            expanded_incoming = fill_static_defaults(expanded_incoming, parameter_bundle, self.profile)
-            job_tool_state = fill_static_defaults(job_tool_state, parameter_bundle, self.profile)
+            expanded_incoming = fill_static_defaults(
+                expanded_incoming, parameter_bundle, self.profile, yaml_origin=self.yaml_origin
+            )
+            job_tool_state = fill_static_defaults(
+                job_tool_state, parameter_bundle, self.profile, yaml_origin=self.yaml_origin
+            )
             params, errors = self._populate_async(request_context, expanded_incoming)
             # params have had dynamic defaults requiring like dataset contents expanded out
             # so we can use that backfill job_tool_state

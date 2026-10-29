@@ -1,16 +1,39 @@
 import os
+import shlex
 import shutil
+import subprocess
+import sys
 from os import getcwd
 from tempfile import mkdtemp
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
+
+import pytest
 
 from galaxy.jobs.command_factory import (
     build_command,
     SETUP_GALAXY_FOR_METADATA,
 )
 from galaxy.model import Dataset
-from galaxy.tool_util.deps.container_classes import TRAP_KILL_CONTAINER
+from galaxy.tool_util.deps.container_classes import (
+    DockerContainer,
+    SingularityContainer,
+    TRAP_KILL_CONTAINER,
+)
+from galaxy.tool_util.deps.dependencies import (
+    AppInfo,
+    JobInfo,
+    ToolInfo,
+)
+from galaxy.tool_util_models.runtime_environment import RuntimeEnvironmentVariable
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
+
+if TYPE_CHECKING:
+    from galaxy.jobs import MinimalJobWrapper
+    from galaxy.jobs.runners import BaseJobRunner
 
 MOCK_COMMAND_LINE = "/opt/galaxy/tools/bowtie /mnt/galaxyData/files/000/input000.dat"
 TEST_METADATA_LINE = "set_metadata_and_stuff.sh"
@@ -239,6 +262,7 @@ tee -a '../outputs/tool_stderr' < "$__err" >&2 & """
 
 class MockJobWrapper:
     def __init__(self, job_dir):
+        self.tool = None
         self.strict_shell = False
         self.command_line = MOCK_COMMAND_LINE
         self.dependency_shell_commands = []
@@ -282,3 +306,108 @@ class MockJobWrapper:
     @property
     def is_cwl_job(self):
         return False
+
+
+@pytest.mark.parametrize("externalize", [False, True])
+def test_required_variable_check_follows_dependency_activation(tmp_path, externalize):
+    (tmp_path / "working").mkdir()
+    (tmp_path / "outputs").mkdir()
+    activation = tmp_path / "env.sh"
+    activation.write_text("export ACTIVATED=available; export EMPTY=''\n")
+    wrapper = MockJobWrapper(str(tmp_path))
+    wrapper.command_line = 'printf "%s" "$ACTIVATED"'
+    wrapper.commands_in_new_shell = externalize
+    wrapper.dependency_shell_commands = [f". {activation}"]
+    wrapper.tool = Bunch(
+        runtime_environment_variables=[
+            RuntimeEnvironmentVariable(name=name, required=True) for name in ["ACTIVATED", "EMPTY", "MISSING"]
+        ]
+    )
+    command = build_command(
+        cast("BaseJobRunner", Bunch()), cast("MinimalJobWrapper", wrapper), include_work_dir_outputs=False
+    )
+    subprocess.run(["sh", "-c", command], cwd=tmp_path, env={}, check=True)
+    assert (tmp_path / "outputs" / "tool_stdout").read_text() == "available"
+    assert (tmp_path / "outputs" / "runtime_environment_warnings").read_text() == "MISSING\n"
+
+
+def test_pulsar_required_variable_warning_reaches_metadata(tmp_path):
+    # Wrapped containers mount Pulsar job directories read-only except outputs and working,
+    # so the check writes outputs and the host-side script copies it to the staged metadata.
+    for directory in ["working", "outputs", "metadata"]:
+        (tmp_path / directory).mkdir()
+    wrapper = MockJobWrapper(str(tmp_path))
+    wrapper.command_line = "echo tool ran"
+    wrapper.tool = Bunch(runtime_environment_variables=[RuntimeEnvironmentVariable(name="MISSING", required=True)])
+    command = build_command(
+        cast("BaseJobRunner", Bunch()),
+        cast("MinimalJobWrapper", wrapper),
+        include_work_dir_outputs=False,
+        remote_command_params={"pulsar_version": "0.16.0"},
+    )
+    subprocess.run(["sh", "-c", command], cwd=tmp_path / "working", env={}, check=True)
+    assert (tmp_path / "metadata" / "tool_stdout").read_text() == "tool ran\n"
+    assert (tmp_path / "outputs" / "runtime_environment_warnings").read_text() == "MISSING\n"
+    assert (tmp_path / "metadata" / "runtime_environment_warnings").read_text() == "MISSING\n"
+
+
+@pytest.mark.parametrize("runtime", ["docker", "singularity"])
+def test_required_variable_check_sees_runtime_specific_values(tmp_path, runtime):
+    (tmp_path / "working").mkdir()
+    (tmp_path / "outputs").mkdir()
+    wrapper = MockJobWrapper(str(tmp_path))
+    wrapper.command_line = 'printf "%s" "$RUNTIME_ONLY"'
+    wrapper.tool = Bunch(
+        runtime_environment_variables=[
+            RuntimeEnvironmentVariable(name=name, required=True) for name in ["RUNTIME_ONLY", "MISSING"]
+        ]
+    )
+    runtime_script = tmp_path / runtime
+    runtime_code = tmp_path / "runtime.py"
+    runtime_code.write_text("""
+import os, sys
+args = sys.argv[1:]
+if 'image' not in args:
+    sys.exit(0)
+env = {}
+if 'run' in args:
+    for i, arg in enumerate(args):
+        if arg == '-e':
+            name, sep, value = args[i + 1].partition('=')
+            if sep:
+                env[name] = value
+            elif name in os.environ:
+                env[name] = os.environ[name]
+else:
+    env = {k[len('SINGULARITYENV_'):]: v for k, v in os.environ.items() if k.startswith('SINGULARITYENV_')}
+command = args[args.index('image') + 1:]
+os.execvpe(command[0], command, env)
+""")
+    runtime_script.write_text(f'#!/bin/sh\nexec {shlex.quote(sys.executable)} {shlex.quote(str(runtime_code))} "$@"\n')
+    runtime_script.chmod(0o755)
+    container_class = DockerContainer if runtime == "docker" else SingularityContainer
+    container = container_class(
+        container_id="image",
+        app_info=AppInfo(container_image_cache_path=str(tmp_path)),
+        tool_info=ToolInfo(env_pass_through=["RUNTIME_ONLY", "MISSING"]),
+        destination_info={
+            f"{runtime}_cmd": str(runtime_script),
+            f"{runtime}_env_RUNTIME_ONLY": "runtime",
+            f"{runtime}_volumes": "",
+            f"{runtime}_sudo": False,
+        },
+        job_info=JobInfo(str(tmp_path), None, str(tmp_path), None, None, "galaxy", set()),
+        container_description=None,
+    )
+    runner = Bunch(
+        app=Bunch(job_metrics=Bunch(default_job_instrumenter=Bunch(get_configured_plugin=lambda name: None)))
+    )
+    command = build_command(
+        cast("BaseJobRunner", runner),
+        cast("MinimalJobWrapper", wrapper),
+        container=container,
+        include_work_dir_outputs=False,
+    )
+    subprocess.run(["sh", "-c", command], cwd=tmp_path, env={}, check=True)
+    assert (tmp_path / "outputs" / "tool_stdout").read_text() == "runtime"
+    assert (tmp_path / "outputs" / "runtime_environment_warnings").read_text() == "MISSING\n"

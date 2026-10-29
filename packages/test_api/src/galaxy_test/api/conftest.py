@@ -69,17 +69,19 @@ def api_test_config_object(real_driver) -> ApiConfigObject:  # noqa: F811
     )
 
 
-@pytest.fixture(scope="session")
+# Function scoped like ApiTestCase.setUp: creating an interactor mints a new user
+# API key, which expires keys held by interactors created earlier in the session.
+@pytest.fixture
 def galaxy_interactor(api_test_config_object: ApiConfigObject) -> ApiTestInteractor:
     return ApiTestInteractor(api_test_config_object)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def dataset_populator(galaxy_interactor: ApiTestInteractor) -> DatasetPopulator:
     return DatasetPopulator(galaxy_interactor)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def dataset_collection_populator(galaxy_interactor: ApiTestInteractor) -> DatasetCollectionPopulator:
     return DatasetCollectionPopulator(galaxy_interactor)
 

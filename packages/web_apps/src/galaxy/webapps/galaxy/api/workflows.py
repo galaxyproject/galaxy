@@ -569,7 +569,8 @@ class WorkflowsAPIController(
             "inputs": module.get_all_inputs(connectable_only=True),
             "outputs": module.get_all_outputs(),
             "config_form": module.get_config_form(),
-            "errors": errors or None,
+            # Report step-level errors (e.g. inverted input bounds) as soon as they are entered, not only on reload.
+            "errors": errors or module.get_errors() or None,
         }
         if module_type == "tool":
             step_dict["tool_version"] = module.get_version()
@@ -1117,6 +1118,20 @@ class FastAPIWorkflows:
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
         return self.service.shareable_service.share_with_users(trans, workflow_id, payload)
+
+    @router.put(
+        "/api/workflows/{workflow_id}/unshare_with_me",
+        summary="Remove this item from the items shared with the current user.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def unshare_with_me(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> Response:
+        """Removes the current user's own share of this item. Other users' shares are left unchanged."""
+        self.service.shareable_service.unshare_with_me(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.put(
         "/api/workflows/{workflow_id}/slug",

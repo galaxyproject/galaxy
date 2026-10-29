@@ -143,6 +143,8 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
 
+    runs_job_script_in_container = True
+
     runner_name = "KubernetesRunner"
     always_handle_metadata_externally = True
 

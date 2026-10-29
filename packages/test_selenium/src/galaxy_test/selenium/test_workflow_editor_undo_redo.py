@@ -19,9 +19,9 @@ class TestWorkflowEditorUndoRedo(SeleniumTestCase, RunsWorkflows, UsesWorkflowAs
         self.workflow_editor_add_input(item_name="data_collection_input")
         self.workflow_editor_add_input(item_name="parameter_input")
 
-        editor.node.by_id(id=0).wait_for_present()
-        editor.node.by_id(id=1).wait_for_present()
-        editor.node.by_id(id=2).wait_for_present()
+        editor.node._(id=0).wait_for_present()
+        editor.node._(id=1).wait_for_present()
+        editor.node._(id=2).wait_for_present()
 
         editor.tool_bar.changes.wait_for_and_click()
         changes = editor.changes
@@ -32,25 +32,25 @@ class TestWorkflowEditorUndoRedo(SeleniumTestCase, RunsWorkflows, UsesWorkflowAs
 
         # Undo all of it by clicking the first node.
         changes.action_insert_data_input.wait_for_and_click()
-        editor.node.by_id(id=0).assert_absent_or_hidden_after_transitions()
-        editor.node.by_id(id=1).assert_absent_or_hidden_after_transitions()
-        editor.node.by_id(id=2).assert_absent_or_hidden_after_transitions()
+        editor.node._(id=0).assert_absent_or_hidden_after_transitions()
+        editor.node._(id=1).assert_absent_or_hidden_after_transitions()
+        editor.node._(id=2).assert_absent_or_hidden_after_transitions()
 
         # now that same action has become a redo, so we should have a node back afterward.
         changes.action_insert_data_input.wait_for_and_click()
-        editor.node.by_id(id=0).wait_for_present()
-        editor.node.by_id(id=1).assert_absent_or_hidden_after_transitions()
-        editor.node.by_id(id=2).assert_absent_or_hidden_after_transitions()
+        editor.node._(id=0).wait_for_present()
+        editor.node._(id=1).assert_absent_or_hidden_after_transitions()
+        editor.node._(id=2).assert_absent_or_hidden_after_transitions()
 
         changes.action_insert_data_collection_input.wait_for_and_click()
-        editor.node.by_id(id=0).wait_for_present()
-        editor.node.by_id(id=1).wait_for_present()
-        editor.node.by_id(id=2).assert_absent_or_hidden_after_transitions()
+        editor.node._(id=0).wait_for_present()
+        editor.node._(id=1).wait_for_present()
+        editor.node._(id=2).assert_absent_or_hidden_after_transitions()
 
         changes.action_insert_parameter.wait_for_and_click()
-        editor.node.by_id(id=0).wait_for_present()
-        editor.node.by_id(id=1).wait_for_present()
-        editor.node.by_id(id=2).wait_for_present()
+        editor.node._(id=0).wait_for_present()
+        editor.node._(id=1).wait_for_present()
+        editor.node._(id=2).wait_for_present()
 
     @selenium_test
     def test_editor_change_stack_set_attributes(self):
@@ -72,7 +72,7 @@ class TestWorkflowEditorUndoRedo(SeleniumTestCase, RunsWorkflows, UsesWorkflowAs
 
         # for annotation we want to reset the change stack to dismiss
         # the original setting of the annotation
-        name = self.workflow_index_open_with_name(name)
+        self.workflow_index_open_with_name(name)
 
         annotation_modified = "change_stack_test_set_attributes modified!!!"
 

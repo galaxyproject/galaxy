@@ -34,6 +34,11 @@ interface Props {
      */
     buttonVariant?: RadioButtonVariant;
     /**
+     * Help text under the options, linked to the group with aria-describedby
+     * @default undefined
+     */
+    description?: string;
+    /**
      * Disables every radio in the group
      * @default false
      */
@@ -43,6 +48,11 @@ interface Props {
      * @default undefined
      */
     label?: string;
+    /**
+     * Extra classes for the legend, e.g. to tighten its spacing
+     * @default undefined
+     */
+    legendClass?: string | string[] | Record<string, boolean>;
     /**
      * The v-model value: the value of the selected radio
      * @default undefined
@@ -73,8 +83,10 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     buttons: false,
     buttonVariant: "grey",
+    description: undefined,
     disabled: false,
     label: undefined,
+    legendClass: undefined,
     modelValue: undefined,
     name: undefined,
     options: () => [],
@@ -89,6 +101,8 @@ const emit = defineEmits<{
 const uid = useUid("g-radio-group-");
 
 const groupName = computed(() => props.name ?? uid.value);
+
+const descriptionId = computed(() => `${uid.value}-description`);
 
 const legendId = computed(() => `${uid.value}-legend`);
 
@@ -116,10 +130,11 @@ provide(radioGroupKey, {
     <!-- A fieldset with a role is not reliably named by its legend, so point at the legend explicitly -->
     <fieldset
         class="g-radio-group"
+        :aria-describedby="description ? descriptionId : undefined"
         role="radiogroup"
         :aria-labelledby="label || $slots.label ? legendId : undefined"
         :disabled="disabled">
-        <legend v-if="label || $slots.label" :id="legendId" class="g-radio-group-legend">
+        <legend v-if="label || $slots.label" :id="legendId" class="g-radio-group-legend" :class="legendClass">
             <slot name="label">{{ label }}</slot>
         </legend>
 
@@ -130,6 +145,8 @@ provide(radioGroupKey, {
 
             <slot />
         </div>
+
+        <small v-if="description" :id="descriptionId" class="g-radio-group-description">{{ description }}</small>
     </fieldset>
 </template>
 
@@ -143,20 +160,26 @@ provide(radioGroupKey, {
 
 .g-radio-group-legend {
     width: auto;
-    margin-bottom: var(--spacing-1, 0.25rem);
-    padding: 0;
+    margin-bottom: 0;
+    // Form labels' padding plus the 1px field border, not a spacing step, so a labelled group lines up with labelled fields
+    padding: 0 0 calc(0.375rem + 1px);
     font-size: inherit;
+}
+
+.g-radio-group-description {
+    display: block;
+    margin-top: var(--spacing-1, 0.25rem);
+    color: var(--color-grey-600);
 }
 
 .g-radio-group-options {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-1, 0.25rem) var(--spacing-4, 1rem);
+    gap: 0 var(--spacing-4, 1rem);
 
     &.g-stacked {
         flex-direction: column;
         align-items: flex-start;
-        row-gap: 0;
     }
 
     // Joined like GButtonGroup: square inner corners, no doubled borders

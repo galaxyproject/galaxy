@@ -16,7 +16,7 @@
                     </BButton>
                 </BInputGroupAppend>
             </BInputGroup>
-            <BFormRadioGroup v-model="tabValue" class="mb-3" :options="tabOptions" />
+            <GRadioGroup v-model="tabValue" class="mb-3" :aria-label="titleTabs" :options="tabOptions" />
             <div v-if="tabValue">
                 <SearchList :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
             </div>
@@ -27,20 +27,21 @@
     </div>
 </template>
 <script>
-import { BButton, BFormInput, BFormRadioGroup, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BButton, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 
 import _l from "@/utils/localization";
 
 import InstalledList from "./InstalledList/Index.vue";
 import SearchList from "./SearchList/Index.vue";
+import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 
 export default {
     components: {
         BButton,
         BFormInput,
-        BFormRadioGroup,
         BInputGroup,
         BInputGroupAppend,
+        GRadioGroup,
         SearchList,
         InstalledList,
     },
@@ -61,6 +62,7 @@ export default {
                 { text: "Installed Only", value: false },
             ],
             titleClearSearch: _l("clear search (esc)"),
+            titleTabs: _l("Repositories to list"),
         };
     },
     computed: {

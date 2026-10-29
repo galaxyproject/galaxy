@@ -21,7 +21,7 @@ describe("WorkflowInvocationStepHeader", () => {
         await nextTick();
         await nextTick();
 
-        const trigger = document.getElementById("step-icon-3")!;
+        const trigger = wrapper.find("[id^='step-icon-']").element as HTMLElement;
         const popover = document.body.querySelector(".popover")!;
 
         expect(trigger.tagName).toBe("SPAN");

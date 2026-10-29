@@ -175,6 +175,10 @@ TOOL_WITH_SHELL_COMMAND = {
         }
     ],
 }
+TOOL_WITH_ELEMENT_IDENTIFIER: dict[str, Any] = {
+    **TOOL_WITH_SHELL_COMMAND,
+    "shell_command": "echo '$(inputs.input.element_identifier)' > output.fastq",
+}
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
 
@@ -763,7 +767,7 @@ class BaseDatasetPopulator(BasePopulator):
     ) -> str:
         try:
             return wait_on_state(
-                lambda: self._get(f"histories/{history_id}"), desc="history state", assert_ok=assert_ok, timeout=timeout
+                lambda: self.get_history_raw(history_id), desc="history state", assert_ok=assert_ok, timeout=timeout
             )
         except AssertionError:
             self._summarize_history(history_id)
@@ -1007,16 +1011,41 @@ class BaseDatasetPopulator(BasePopulator):
         )
         return self._create_tool_raw(payload)
 
+    def _unprivileged_tool_request(
+        self,
+        route: str,
+        representation: UserToolSource | dict[str, Any],
+        active: bool = True,
+        hidden: bool = False,
+        uuid: str | None = None,
+    ) -> Response:
+        if isinstance(representation, UserToolSource):
+            data = DynamicUnprivilegedToolCreatePayload(
+                active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
+            ).model_dump(by_alias=True, exclude_unset=True)
+        else:
+            data = {"src": "representation", "representation": representation, "active": active, "hidden": hidden}
+            if uuid is not None:
+                data["uuid"] = uuid
+        return self._post(route, data=data, json=True)
+
     def create_unprivileged_tool(
-        self, representation: UserToolSource, active=True, hidden=False, uuid=None, assert_ok=True
+        self,
+        representation: UserToolSource | dict[str, Any],
+        active=True,
+        hidden=False,
+        uuid=None,
+        assert_ok=True,
     ):
-        data = DynamicUnprivilegedToolCreatePayload(
-            active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
-        ).model_dump(by_alias=True, exclude_unset=True)
-        response = self._post("unprivileged_tools", data=data, json=True)
+        response = self.create_unprivileged_tool_raw(representation, active, hidden, uuid)
         if assert_ok:
             assert response.status_code == 200, response.text
         return response.json()
+
+    def create_unprivileged_tool_raw(
+        self, representation: UserToolSource | dict[str, Any], active=True, hidden=False, uuid=None
+    ) -> Response:
+        return self._unprivileged_tool_request("unprivileged_tools", representation, active, hidden, uuid)
 
     def deactivate_unprivileged_tool(self, uuid: str, assert_ok=True):
         response = self._delete(f"unprivileged_tools/{uuid}", json=True)
@@ -1026,36 +1055,50 @@ class BaseDatasetPopulator(BasePopulator):
 
     def build_unprivileged_tool(
         self,
-        representation: UserToolSource,
+        representation: UserToolSource | dict[str, Any],
         history_id: str,
         active=True,
         hidden=False,
         uuid=None,
         assert_ok=True,
     ):
-        data = DynamicUnprivilegedToolCreatePayload(
-            active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
-        ).model_dump(by_alias=True, exclude_unset=True)
-        response = self._post(f"unprivileged_tools/build?history_id={history_id}", data=data, json=True)
+        response = self.build_unprivileged_tool_raw(representation, history_id, active, hidden, uuid)
         if assert_ok:
             assert response.status_code == 200, response.text
         return response.json()
 
+    def build_unprivileged_tool_raw(
+        self,
+        representation: UserToolSource | dict[str, Any],
+        history_id: str,
+        active=True,
+        hidden=False,
+        uuid=None,
+    ) -> Response:
+        return self._unprivileged_tool_request(
+            f"unprivileged_tools/build?history_id={history_id}", representation, active, hidden, uuid
+        )
+
     def build_runtime_model_for_tool(
         self,
-        representation: UserToolSource,
+        representation: UserToolSource | dict[str, Any],
         active=True,
         hidden=False,
         uuid=None,
         assert_ok=True,
     ):
-        data = DynamicUnprivilegedToolCreatePayload(
-            active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
-        ).model_dump(by_alias=True, exclude_unset=True)
-        response = self._post("unprivileged_tools/runtime_model", data=data, json=True)
+        response = self.build_runtime_model_for_tool_raw(representation, active, hidden, uuid)
         if assert_ok:
             assert response.status_code == 200, response.text
         return response.json()
+
+    def build_runtime_model_for_tool_raw(
+        self, representation: UserToolSource | dict[str, Any], active=True, hidden=False, uuid=None
+    ) -> Response:
+        return self._unprivileged_tool_request("unprivileged_tools/runtime_model", representation, active, hidden, uuid)
+
+    def describe_user_tool(self, source: StrPath | dict[str, Any], history_id: str) -> "DescribeUserTool":
+        return DescribeUserTool(self, source, history_id)
 
     def get_unprivileged_tools(self, active=True, assert_ok=True):
         response = self._get("unprivileged_tools", data={"active": active})
@@ -1140,6 +1183,7 @@ class BaseDatasetPopulator(BasePopulator):
             yield history_id
         except Exception:
             cleanup_callback and cleanup_callback(history_id)
+            raise
 
     def new_history(self, name="API Test History", **kwds) -> str:
         create_history_response = self._post("histories", data=dict(name=name))
@@ -1149,6 +1193,13 @@ class BaseDatasetPopulator(BasePopulator):
 
     def copy_history(self, history_id, name="API Test Copied History", **kwds) -> Response:
         return self._post("histories", data={"name": name, "history_id": history_id, **kwds})
+
+    def copy_hda(self, history_id: str, hda_id: str, **kwds) -> dict[str, Any]:
+        """Copy an existing HDA into history_id, reusing its underlying Dataset."""
+        payload = {"source": "hda", "content": hda_id, **kwds}
+        copy_response = self._post(f"histories/{history_id}/contents/datasets", payload, json=True)
+        api_asserts.assert_status_code_is_ok(copy_response)
+        return copy_response.json()
 
     def fetch_payload(
         self,
@@ -1260,18 +1311,22 @@ class BaseDatasetPopulator(BasePopulator):
 
     def tool_request_raw(
         self,
-        tool_id: str,
+        tool_id: str | None,
         inputs: dict[str, Any],
         history_id: str,
         strict: bool = True,
         preferred_object_store_id: str | None = None,
+        tool_uuid: str | None = None,
     ) -> Response:
-        payload = {
-            "tool_id": tool_id,
+        payload: dict[str, Any] = {
             "history_id": history_id,
             "inputs": inputs,
             "strict": strict,
         }
+        if tool_id is not None:
+            payload["tool_id"] = tool_id
+        if tool_uuid is not None:
+            payload["tool_uuid"] = tool_uuid
         if preferred_object_store_id is not None:
             payload["preferred_object_store_id"] = preferred_object_store_id
         response = self._post("jobs", data=payload, json=True)
@@ -1282,12 +1337,24 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is(tool_response, 200)
         return tool_response.json()
 
+    def run_cat1(self, history_id: str, contents: tuple[str, str] = ("1 2 3\n", "4 5 6\n"), **kwds) -> "Cat1Run":
+        """Upload two datasets and concatenate them with cat1."""
+        d1 = self.new_dataset(history_id, content=contents[0])
+        d2 = self.new_dataset(history_id, content=contents[1])
+        self.wait_for_history(history_id, assert_ok=True)
+        inputs = {"input1": {"src": "hda", "id": d1["id"]}, "queries_0|input2": {"src": "hda", "id": d2["id"]}}
+        run = self.run_tool("cat1", inputs, history_id, **kwds)
+        self.wait_for_history(history_id, assert_ok=True)
+        return Cat1Run((d1, d2), run["jobs"][0]["id"], run["outputs"][0]["id"])
+
     def tools_post(self, payload: dict, url="tools") -> Response:
         tool_response = self._post(url, data=payload)
         return tool_response
 
-    def describe_tool_execution(self, tool_id: str) -> "DescribeToolExecution":
-        return DescribeToolExecution(self, tool_id)
+    def describe_tool_execution(
+        self, tool_id: str | None = None, *, tool_uuid: str | None = None
+    ) -> "DescribeToolExecution":
+        return DescribeToolExecution(self, tool_id, tool_uuid=tool_uuid)
 
     def materialize_dataset_instance(self, history_id: str, id: str, source: str = "hda"):
         payload: dict[str, Any]
@@ -1395,6 +1462,16 @@ class BaseDatasetPopulator(BasePopulator):
         icj_id = details.get("implicit_collection_jobs_id")
         assert icj_id, f"HDCA {hdca_id} has no implicit_collection_jobs_id"
         return icj_id
+
+    def get_collection_element_contents(self, history_id: str, hdca_id: str) -> dict[str, str]:
+        """Map each element identifier of a flat dataset collection to its dataset's content."""
+        elements = self.get_history_collection_details(history_id, content_id=hdca_id)["elements"]
+        return {
+            element["element_identifier"]: self.get_history_dataset_content(
+                history_id, dataset_id=element["object"]["id"]
+            )
+            for element in elements
+        }
 
     def run_collection_creates_list(self, history_id: str, hdca_id: str) -> Response:
         inputs = {
@@ -1640,6 +1717,7 @@ class BaseDatasetPopulator(BasePopulator):
         return users[0]["id"]
 
     def user_private_role_id(self) -> str:
+        using_requirement("admin")
         userid = self.user_id()
         response = self._get(f"users/{userid}/roles", admin=True)
         assert response.status_code == 200
@@ -1649,6 +1727,19 @@ class BaseDatasetPopulator(BasePopulator):
         role = private_roles[0]
         assert "id" in role, role
         return role["id"]
+
+    def get_dataset_permissions(self, dataset_id: str) -> dict[str, list[str]]:
+        response = self._get(f"datasets/{dataset_id}")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()["permissions"]
+
+    def assert_history_datasets_permissions(self, history_id: str, expected_count: int, access_private: bool) -> None:
+        role_id = self.user_private_role_id()
+        datasets = self.get_history_contents_of_type(history_id, "datasets")
+        assert len(datasets) == expected_count, [d["name"] for d in datasets]
+        expected = {"manage": [role_id], "access": [role_id] if access_private else []}
+        permissions = {d["name"]: self.get_dataset_permissions(d["id"]) for d in datasets}
+        assert permissions == dict.fromkeys(permissions, expected)
 
     def get_usage(self) -> list[dict[str, Any]]:
         usage_response = self.galaxy_interactor.get("users/current/usage")
@@ -1906,6 +1997,14 @@ class BaseDatasetPopulator(BasePopulator):
         update_url = f"histories/{history_id}"
         put_response = self._put(update_url, payload, json=True)
         return put_response
+
+    def get_history_raw(self, history_id: str) -> Response:
+        return self._get(f"histories/{history_id}")
+
+    def get_history(self, history_id: str) -> dict[str, Any]:
+        get_response = self.get_history_raw(history_id)
+        api_asserts.assert_status_code_is_ok(get_response)
+        return get_response.json()
 
     def update_dataset(self, dataset_id: str, update_payload: dict[str, Any]):
         update_url = f"datasets/{dataset_id}"
@@ -2332,6 +2431,7 @@ class BaseDatasetPopulator(BasePopulator):
         return response.json()
 
     def make_page_public(self, page_id: str) -> dict[str, Any]:
+        using_requirement("new_published_objects")
         sharing_response = self._put(f"pages/{page_id}/publish")
         assert sharing_response.status_code == 200
         return sharing_response.json()
@@ -2410,7 +2510,7 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
         name: str | None = None,
     ) -> Generator[str, None, None]:
         with self.galaxy_interactor.test_history(
-            require_new=require_new, cleanup_callback=cleanup_callback
+            require_new=require_new, cleanup_callback=cleanup_callback, name=name
         ) as history_id:
             yield history_id
 
@@ -2931,7 +3031,7 @@ steps: []
         api_asserts.assert_status_code_is(response, 200)
         return response
 
-    def download_workflow(
+    def download_workflow_raw(
         self,
         workflow_id: str,
         style: str | None = None,
@@ -2939,7 +3039,7 @@ steps: []
         instance: bool | None = None,
         version: int | None = None,
         preserve_external_subworkflow_links: bool | None = None,
-    ) -> dict:
+    ) -> Response:
         params: dict[str, Any] = {}
         if style is not None:
             params["style"] = style
@@ -2951,7 +3051,25 @@ steps: []
             params["version"] = version
         if preserve_external_subworkflow_links is not None:
             params["preserve_external_subworkflow_links"] = preserve_external_subworkflow_links
-        response = self._get(f"workflows/{workflow_id}/download", data=params)
+        return self._get(f"workflows/{workflow_id}/download", data=params)
+
+    def download_workflow(
+        self,
+        workflow_id: str,
+        style: str | None = None,
+        history_id: str | None = None,
+        instance: bool | None = None,
+        version: int | None = None,
+        preserve_external_subworkflow_links: bool | None = None,
+    ) -> dict:
+        response = self.download_workflow_raw(
+            workflow_id,
+            style=style,
+            history_id=history_id,
+            instance=instance,
+            version=version,
+            preserve_external_subworkflow_links=preserve_external_subworkflow_links,
+        )
         api_asserts.assert_status_code_is(response, 200)
         if style != "format2":
             return response.json()
@@ -3415,6 +3533,12 @@ steps: []
         api_asserts.assert_status_code_is_ok(response)
 
 
+class Cat1Run(NamedTuple):
+    inputs: tuple[dict[str, Any], dict[str, Any]]
+    job_id: str
+    output_id: str
+
+
 class RunJobsSummary(NamedTuple):
     history_id: str
     workflow_id: str
@@ -3737,6 +3861,25 @@ class LibraryPopulator:
         )
         api_asserts.assert_status_code_is(response, 200)
 
+    def remove_library_dataset_restrictions(self, library_dataset_id: str) -> None:
+        using_requirement("admin")
+        response = self.galaxy_interactor.post(
+            f"libraries/datasets/{library_dataset_id}/permissions",
+            {"action": "remove_restrictions"},
+            admin=True,
+            json=True,
+        )
+        api_asserts.assert_status_code_is_ok(response)
+
+    def fetch_to_folder(self, folder_id: str, items: list[dict[str, Any]], history_id: str | None = None) -> Response:
+        """Fetch ``items`` into the library folder with encoded (``F``-prefixed) id ``folder_id``."""
+        destination = {"type": "library_folder", "library_folder_id": folder_id[1:]}
+        payload = {
+            "history_id": history_id or self.dataset_populator.new_history(),
+            "targets": [{"destination": destination, "items": items}],
+        }
+        return self.dataset_populator.fetch(payload)
+
     def user_email(self):
         # deprecated - use DatasetPopulator
         return self.dataset_populator.user_email()
@@ -4043,6 +4186,20 @@ class BaseDatasetCollectionPopulator:
     def create_list_in_history(self, history_id: str, wait: bool = False, **kwds):
         payload = self.create_list_payload(history_id, instance_type="history", **kwds)
         return self.__create(payload, wait=wait)
+
+    def create_list_of_named_datasets(
+        self, history_id: str, contents: list[tuple[str, str]], ext: str = "txt"
+    ) -> dict[str, Any]:
+        """Create a list from datasets named ``<element identifier>.<ext>``, so names and identifiers differ."""
+        element_identifiers = []
+        for identifier, content in contents:
+            hda = self.dataset_populator.new_dataset(
+                history_id, content=content, name=f"{identifier}.{ext}", file_type=ext, wait=True
+            )
+            element_identifiers.append({"name": identifier, "src": "hda", "id": hda["id"]})
+        response = self.create_list_in_history(history_id, direct_upload=False, element_identifiers=element_identifiers)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
 
     def copy_collection(self, history_id: str, hdca_id: str, copy_elements: bool = True, wait: bool = False):
         """Copy an existing dataset collection to a history."""
@@ -4727,16 +4884,67 @@ class DescribeFailure:
 
 
 class RequiredTool:
-    def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str, default_history_id: str | None):
+
+    def __init__(
+        self,
+        dataset_populator: BaseDatasetPopulator,
+        tool_id: str | None = None,
+        default_history_id: str | None = None,
+        *,
+        tool_uuid: str | None = None,
+    ):
+        assert (tool_id is None) != (tool_uuid is None), "a required tool needs exactly one of tool_id or tool_uuid"
         self._dataset_populator = dataset_populator
         self._tool_id = tool_id
+        self._tool_uuid = tool_uuid
         self._default_history_id = default_history_id
 
+    def build(self) -> dict[str, Any]:
+        assert self._tool_id and self._default_history_id, "building a tool form requires a tool ID and history"
+        return self._dataset_populator.build_tool_state(self._tool_id, self._default_history_id)
+
     def execute(self, use_cached_job: bool = False) -> "DescribeToolExecution":
-        execution = DescribeToolExecution(self._dataset_populator, self._tool_id, use_cached_job=use_cached_job)
+        execution = DescribeToolExecution(
+            self._dataset_populator, self._tool_id, use_cached_job=use_cached_job, tool_uuid=self._tool_uuid
+        )
         if self._default_history_id:
             execution.in_history(self._default_history_id)
         return execution
+
+
+class DescribeUserTool:
+    """Build and execute a user tool through the API without normalizing its source."""
+
+    def __init__(self, dataset_populator: BaseDatasetPopulator, source: StrPath | dict[str, Any], history_id: str):
+        if isinstance(source, dict):
+            representation = source
+        else:
+            with open(source) as source_file:
+                representation = (
+                    json.load(source_file) if os.fspath(source).endswith(".json") else yaml.safe_load(source_file)
+                )
+        if not isinstance(representation, dict):
+            raise TypeError("User tool source must be a mapping")
+        self._dataset_populator = dataset_populator
+        self._representation = representation
+        self._history_id = history_id
+        self._required_tool: RequiredTool | None = None
+
+    def build(self) -> dict[str, Any]:
+        return self._dataset_populator.build_unprivileged_tool(self._representation, self._history_id)
+
+    def create(self) -> RequiredTool:
+        if self._required_tool is None:
+            created = self._dataset_populator.create_unprivileged_tool(self._representation)
+            tool_uuid = created["uuid"]
+            assert tool_uuid, "Dynamic tool UUID not found in response"
+            self._required_tool = RequiredTool(
+                self._dataset_populator, default_history_id=self._history_id, tool_uuid=tool_uuid
+            )
+        return self._required_tool
+
+    def execute(self, use_cached_job: bool = False) -> "DescribeToolExecution":
+        return self.create().execute(use_cached_job=use_cached_job)
 
 
 class DescribeToolInputs:
@@ -4783,9 +4991,17 @@ class DescribeToolExecution:
     _inputs: dict[str, Any]
     _tool_request_id: str | None = None  # if input_format == "request" request ID
 
-    def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str, use_cached_job: bool = False) -> None:
+    def __init__(
+        self,
+        dataset_populator: BaseDatasetPopulator,
+        tool_id: str | None = None,
+        use_cached_job: bool = False,
+        *,
+        tool_uuid: str | None = None,
+    ) -> None:
         self._dataset_populator = dataset_populator
         self._tool_id = tool_id
+        self._tool_uuid = tool_uuid
         self.use_cached_job = use_cached_job
         self._inputs = {}
 
@@ -4816,15 +5032,18 @@ class DescribeToolExecution:
         return self
 
     def _execute(self):
-        kwds: dict[str, Any] = {
-            "use_cached_job": self.use_cached_job,
-        }
+        kwds: dict[str, Any] = {}
+        if self.use_cached_job:
+            # Form-encoded "False" is truthy to the tools API, so omit the flag unless requested.
+            kwds["use_cached_job"] = True
         if self._input_format is not None:
             kwds["input_format"] = self._input_format
+        if self._tool_uuid is not None:
+            kwds["tool_uuid"] = self._tool_uuid
         history_id = self._ensure_history_id
         if self._input_format == "request":
             execute_response = self._dataset_populator.tool_request_raw(
-                self._tool_id, self._inputs, history_id, strict=False
+                self._tool_id, self._inputs, history_id, strict=False, tool_uuid=self._tool_uuid
             )
             if execute_response.status_code == 200:
                 response_json = execute_response.json()

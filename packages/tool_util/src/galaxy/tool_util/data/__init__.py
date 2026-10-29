@@ -18,6 +18,7 @@ from collections.abc import (
     Callable,
     Iterator,
     Mapping,
+    Sequence,
 )
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -32,6 +33,7 @@ from typing import (
 )
 
 from typing_extensions import (
+    NotRequired,
     Protocol,
     TypedDict,
 )
@@ -180,6 +182,7 @@ class FileNameInfoT(TypedDict):
     config_element: Element | None
     tool_shed_repository: dict[str, Any] | None
     errors: ErrorListT
+    transient: NotRequired[bool]
 
 
 LoadInfoT = tuple[tuple[Element, StrPath | None], dict[str, Any]]
@@ -258,6 +261,11 @@ class ToolDataTable(Dictifiable):
         else:
             self._loaded_content_version += 1
         return self._loaded_content_version
+
+    def _replace_with(self, other: "ToolDataTable") -> None:
+        """Adopt another table's type and state in place so held references see the rebuild."""
+        self.__class__ = type(other)
+        self.__dict__ = other.__dict__
 
     def get_empty_field_by_name(self, name: str | None) -> str:
         return self.empty_field_values.get(name, self.empty_field_value)
@@ -515,6 +523,7 @@ class TabularToolDataTable(ToolDataTable):
                     config_element=config_element,
                     tool_shed_repository=repo_info,
                     errors=errors,
+                    transient=tmp_file is not None,
                 )
             else:
                 log.debug(
@@ -542,37 +551,9 @@ class TabularToolDataTable(ToolDataTable):
             )
             self.allow_duplicate_entries = False
             self._deduplicate_data()
-        # The value column identifies an entry, so a second row for the same value
-        # (e.g. a reference genome provided by both a local loc file and a mounted
-        # reference data repository) would only make lookups ambiguous. Keep the
-        # entry that was loaded first and ignore the incoming one.
-        value_index = self.columns["value"]
-        known_entries = {fields[value_index]: fields for fields in self.data}
-        entries = []
-        for fields in other_table.data:
-            value = fields[value_index]
-            known_fields = known_entries.get(value)
-            if known_fields is None:
-                known_entries[value] = fields
-                entries.append(fields)
-            elif known_fields != fields:
-                log.error(
-                    "Ignoring entry %s for data table '%s' loaded from %s: an entry with value '%s' is already registered (%s).",
-                    fields,
-                    self.name,
-                    list(other_table.filenames.keys()),
-                    value,
-                    known_fields,
-                )
-            else:
-                log.warning(
-                    "Ignoring duplicate entry %s for data table '%s' loaded from %s.",
-                    fields,
-                    self.name,
-                    list(other_table.filenames.keys()),
-                )
-        # add data entries and return current data table version
-        return self.add_entries(entries, allow_duplicates=allow_duplicates, persist=persist, **kwd)
+        # Rows sharing a value can differ by version or other tool-specific filters.
+        # Let add_entries apply the duplicate policy to complete rows so those filters can run later.
+        return self.add_entries(other_table.data, allow_duplicates=allow_duplicates, persist=persist, **kwd)
 
     def handle_found_index_file(self, filename):
         self.missing_index_file = None
@@ -583,11 +564,10 @@ class TabularToolDataTable(ToolDataTable):
         return self.data.copy()
 
     def get_field(self, value):
-        rval = None
         for i in self.get_named_fields_list():
             if i["value"] == value:
-                rval = TabularToolDataField(i)
-        return rval
+                return TabularToolDataField(i)
+        return None
 
     # This method is used in tools, so need to keep its API stable
     def get_named_fields_list(self) -> list[dict[str | int, str]]:
@@ -1096,6 +1076,44 @@ class OutputDataset(HasExtraFiles, Protocol):
     def get_file_name(self, sync_cache=True, auth=None) -> str: ...
 
 
+@dataclass(frozen=True)
+class ToolDataTableConfigSource:
+    """A read source, retaining its configured path for XML-relative references."""
+
+    filename: StrPath
+    from_shed_config: bool = False
+    optional: bool = False
+
+
+def tool_data_table_config_sources(
+    config_paths: StrPath | Sequence[StrPath] | None,
+    managed: StrPath,
+    from_shed_config: bool = False,
+    managed_optional: bool = False,
+) -> list[ToolDataTableConfigSource]:
+    """Order sources as configured; the managed file keeps its first listed position, else loads last."""
+    managed_identity = os.path.normcase(os.path.realpath(managed))
+    sources = []
+    managed_seen = False
+    for filename in util.listify(config_paths):
+        if not filename:
+            continue
+        is_managed = os.path.normcase(os.path.realpath(filename)) == managed_identity
+        if is_managed and managed_seen:
+            continue
+        managed_seen = managed_seen or is_managed
+        sources.append(
+            ToolDataTableConfigSource(
+                filename,
+                from_shed_config=from_shed_config and is_managed,
+                optional=managed_optional and is_managed,
+            )
+        )
+    if not managed_seen:
+        sources.append(ToolDataTableConfigSource(managed, from_shed_config, managed_optional))
+    return sources
+
+
 class ToolDataTableManager(Dictifiable):
     """Manages a collection of tool data tables"""
 
@@ -1109,7 +1127,16 @@ class ToolDataTableManager(Dictifiable):
         tool_data_table_config_path_set=None,
         other_config_dict: StoresConfigFilePaths | None = None,
         filesystem: ToolDataFilesystem | None = None,
+        config_sources: list[ToolDataTableConfigSource] | None = None,
+        on_registration: Callable[[list[str]], None] | None = None,
     ) -> None:
+        if config_sources is not None and config_filename:
+            raise ValueError("Pass either config_sources or config_filename, not both")
+        self.config_sources = config_sources
+        self._loaded_config_definitions: dict[str, list[tuple[StrPath, str]]] = {}
+        # Tables whose definition was removed, reused if it returns so held references stay live.
+        self._removed_tables: dict[str, ToolDataTable] = {}
+        self.on_registration = on_registration
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
@@ -1117,6 +1144,8 @@ class ToolDataTableManager(Dictifiable):
         self.data_tables = {}
         self.tool_data_path_files = ToolDataPathFiles(self.tool_data_path, filesystem=filesystem)
         self.other_config_dict = other_config_dict or {}
+        if config_sources is not None:
+            self.reload_tables()
         for single_config_filename in util.listify(config_filename):
             if not single_config_filename:
                 continue
@@ -1171,7 +1200,11 @@ class ToolDataTableManager(Dictifiable):
             out.write(json.dumps(self.to_dict()))
 
     def load_from_config_file(
-        self, config_filename: StrPath, tool_data_path: StrPath | None, from_shed_config: bool = False
+        self,
+        config_filename: StrPath,
+        tool_data_path: StrPath | None,
+        from_shed_config: bool = False,
+        table_names: list[str] | None = None,
     ) -> list[Element]:
         """
         This method is called under 3 conditions:
@@ -1182,13 +1215,26 @@ class ToolDataTableManager(Dictifiable):
         3. When a tool shed repository that includes a tool_data_table_conf.xml.sample file is being installed into a local
            Galaxy instance.  In this case, we have 2 entry types to handle, files whose root tag is <tables>, for example:
         """
-        table_elems = []
         tree = util.parse_xml(config_filename)
-        root = tree.getroot()
+        return self._load_from_elements(
+            tree.getroot().findall("table"), config_filename, tool_data_path, from_shed_config, table_names
+        )
+
+    def _load_from_elements(
+        self,
+        elements: list[Element],
+        config_filename: StrPath,
+        tool_data_path: StrPath | None,
+        from_shed_config: bool,
+        table_names: list[str] | None,
+    ) -> list[Element]:
+        table_elems = []
         # Share a single directory listing across every table in this config so
         # the per-table exists() checks don't each re-walk the tool-data tree.
         with self.tool_data_path_files.cached():
-            for table_elem in root.findall("table"):
+            for table_elem in elements:
+                if table_names is not None and table_elem.get("name") not in table_names:
+                    continue
                 table = self.from_elem(
                     table_elem,
                     tool_data_path,
@@ -1207,7 +1253,7 @@ class ToolDataTableManager(Dictifiable):
                         table.name,
                         config_filename,
                     )
-                    # only merge content, do not persist to disk, ignore entries whose value is already present
+                    # Merge without persisting to disk, skipping only identical rows.
                     self.data_tables[table.name].merge_tool_data_table(table, allow_duplicates=False)
         return table_elems
 
@@ -1259,6 +1305,8 @@ class ToolDataTableManager(Dictifiable):
             </table>
 
         """
+        if persist and self.config_sources is not None:
+            return self._register_from_config_file(config_filename, tool_data_path, shed_tool_data_table_config)
         error_message = ""
         try:
             table_elems = self.load_from_config_file(
@@ -1274,6 +1322,97 @@ class ToolDataTableManager(Dictifiable):
             # Persist Galaxy's version of the changed tool_data_table_conf.xml file.
             self.to_xml_file(shed_tool_data_table_config, table_elems)
         return table_elems, error_message
+
+    def _new_staging_manager(self) -> "ToolDataTableManager":
+        staging = type(self)(self.tool_data_path, other_config_dict=self.other_config_dict)
+        staging.tool_data_path_files = self.tool_data_path_files
+        return staging
+
+    def _register_from_config_file(
+        self, config_filename: StrPath, tool_data_path: StrPath | None, destination: StrPath
+    ) -> tuple[list[Element], str]:
+        # Validate the entire registration before modifying either live tables or disk.
+        staging = self._new_staging_manager()
+        try:
+            table_elems = staging.load_from_config_file(config_filename, tool_data_path, from_shed_config=True)
+            for name, table in staging.data_tables.items():
+                if name in self.data_tables and isinstance(table, TabularToolDataTable):
+                    self.assert_data_table_consistency(name, table.columns)
+        except Exception as exc:
+            message = f"Error attempting to parse file {os.path.basename(config_filename)}: {util.unicodify(exc)}"
+            log.debug(message, exc_info=True)
+            return [], message
+        self.to_xml_file(destination, table_elems)
+        names = list(staging.data_tables)
+        if names:
+            try:
+                self.reload_tables(names)
+            except Exception as exc:
+                message = f"Registered {os.path.basename(config_filename)} but reloading data tables failed: {util.unicodify(exc)}"
+                log.exception(message)
+                return table_elems, message
+            finally:
+                # The registration is on disk even if this process cannot reload it.
+                if self.on_registration:
+                    self.on_registration(names)
+        return table_elems, ""
+
+    def _reload_from_config_sources(self, table_names: list[str] | None, path: str | None) -> list[str]:
+        assert self.config_sources is not None
+        definitions: dict[str, list[tuple[StrPath, str]]] = {}
+        source_elements = []
+        for source in self.config_sources:
+            try:
+                elements = util.parse_xml(source.filename).getroot().findall("table")
+            except OSError as exc:
+                if not source.optional or exc.errno != errno.ENOENT:
+                    raise
+                continue
+            source_elements.append((source, elements))
+            for element in elements:
+                name = element.get("name")
+                assert name
+                definitions.setdefault(name, []).append((source.filename, util.xml_to_string(element)))
+        if table_names is None and path:
+            # Changed definitions must be discovered even when the triggering path
+            # belongs to a table the process has not loaded yet.
+            changed = [
+                name
+                for name in dict.fromkeys([*definitions, *self._loaded_config_definitions])
+                if definitions.get(name) != self._loaded_config_definitions.get(name)
+            ]
+            table_names = list(dict.fromkeys([*self.get_table_names_by_path(path), *changed]))
+        if table_names is None:
+            table_names = list(dict.fromkeys([*self.data_tables, *definitions]))
+        staging = self._new_staging_manager()
+        # Build affected tables before publishing, leaving live tables intact on error.
+        with self.tool_data_path_files.cached():
+            for source, elements in source_elements:
+                staging._load_from_elements(
+                    elements, source.filename, self.tool_data_path, source.from_shed_config, table_names
+                )
+        for name in table_names:
+            existing = self.data_tables.get(name) or self._removed_tables.get(name)
+            rebuilt = staging.data_tables.get(name)
+            if existing is not None:
+                version = existing._loaded_content_version + 1
+                if rebuilt is None:
+                    existing.data = []
+                    existing._update_version(version)
+                    self.data_tables.pop(name, None)
+                    self._removed_tables[name] = existing
+                else:
+                    rebuilt._update_version(version)
+                    existing._replace_with(rebuilt)
+                    self.data_tables[name] = existing
+                    self._removed_tables.pop(name, None)
+            elif rebuilt is not None:
+                self.data_tables[name] = rebuilt
+            if name in definitions:
+                self._loaded_config_definitions[name] = definitions[name]
+            else:
+                self._loaded_config_definitions.pop(name, None)
+        return table_names
 
     def to_xml_file(
         self,
@@ -1292,7 +1431,7 @@ class ToolDataTableManager(Dictifiable):
             new_elems = []
         if not remove_elems:
             remove_elems = []
-        full_path = os.path.abspath(shed_tool_data_table_config)
+        full_path = os.path.realpath(shed_tool_data_table_config)
         # FIXME: we should lock changing this file by other threads / head nodes
         try:
             try:
@@ -1324,6 +1463,9 @@ class ToolDataTableManager(Dictifiable):
         """
         Reload tool data tables. If neither table_names nor path is given, reloads all tool data tables.
         """
+        if self.config_sources is not None:
+            names = util.listify(table_names) if table_names else None
+            return self._reload_from_config_sources(names, path)
         tables = self.get_tables()
         if not table_names:
             if path:

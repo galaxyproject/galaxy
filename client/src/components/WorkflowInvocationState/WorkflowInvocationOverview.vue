@@ -16,8 +16,9 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 interface Props {
     invocation: WorkflowInvocationElementView;
     stepsJobsSummary?: StepJobSummary[];
-    invocationAndJobTerminal: boolean;
     isFullPage?: boolean;
+    /** Fit the graph and step details to the page height instead of scrolling */
+    fitToPage?: boolean;
     isSubworkflow?: boolean;
     invocationMessages?: InvocationMessage[];
 }
@@ -52,7 +53,7 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
 </script>
 
 <template>
-    <div class="mb-3 workflow-invocation-state-component">
+    <div :class="props.fitToPage ? 'fit-to-page' : 'mb-3'">
         <SubworkflowAlert v-if="isSubworkflow" :invocation-id="props.invocation.id" :state="props.invocation.state" />
         <div v-if="props.invocationMessages?.length" class="d-flex align-items-center">
             <WorkflowInvocationError
@@ -72,7 +73,7 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
         <GAlert v-else-if="error" variant="danger" show>
             {{ error }}
         </GAlert>
-        <div v-else-if="workflow && !isSubworkflow">
+        <div v-else-if="workflow && !isSubworkflow" class="invocation-graph-container">
             <InvocationGraph
                 ref="invocationGraph"
                 class="mt-1"
@@ -80,10 +81,21 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
                 :invocation="invocation"
                 :steps-jobs-summary="props.stepsJobsSummary"
                 :workflow="workflow"
-                :is-terminal="invocationAndJobTerminal"
-                :is-full-page="isFullPage"
+                :fit-to-page="props.fitToPage"
                 :show-minimap="isFullPage" />
         </div>
         <GAlert v-else-if="!workflow" variant="info" show> No workflow found for this invocation. </GAlert>
     </div>
 </template>
+
+<style scoped lang="scss">
+@import "@/style/scss/mixins";
+
+.fit-to-page {
+    @include fill-column;
+
+    .invocation-graph-container {
+        @include fill-column;
+    }
+}
+</style>

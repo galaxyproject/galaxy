@@ -4,10 +4,33 @@ History
 .. to_doc
 
 ---------
-26.2.dev0
+27.0.dev0
 ---------
 
 
+
+-------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+============
+Enhancements
+============
+
+* add title for job metric cgroups v1 memory.oom_control.oom_kill by `@cat-bro <https://github.com/cat-bro>`_ in `#23383 <https://github.com/galaxyproject/galaxy/pull/23383>`_
+
+-------------------
+26.0.2 (2026-10-25)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.1.3 (2026-10-25)
+-------------------
+
+No recorded changes since last release
 
 -------------------
 26.1.1 (2026-08-04)

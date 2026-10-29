@@ -18,6 +18,7 @@ from galaxy.managers.context import (
 )
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_parse import is_quotable_argument_value
+from galaxy.managers.pages import PageManager
 from galaxy.managers.workflow_extraction_naming import normalize_label
 from galaxy.managers.workflow_extraction_report import reconcile_and_build_report
 from galaxy.managers.workflows import (
@@ -32,6 +33,7 @@ from galaxy.model import (
     LandingRequestToWorkflowInvocationAssociation,
     Page,
     StoredWorkflow,
+    Workflow,
     WorkflowInvocation,
     WorkflowLandingRequest,
 )
@@ -60,6 +62,7 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 from galaxy.workflow import curated
+from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
 from galaxy.workflow.extract import (
     collect_output_label_targets,
     extract_workflow,
@@ -161,6 +164,15 @@ def _validate_extraction_labels(
         seen.add(label)
 
 
+def _describe_tool_references(tools: list[dict[str, Any]], require_exact_tool_versions: bool) -> str:
+    # Versions only distinguish references in exact mode; list each description once.
+    if require_exact_tool_versions:
+        descriptions = [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in tools]
+    else:
+        descriptions = [tool["tool_id"] for tool in tools]
+    return ", ".join(dict.fromkeys(descriptions))
+
+
 class WorkflowsService(ServiceBase):
     def __init__(
         self,
@@ -170,16 +182,20 @@ class WorkflowsService(ServiceBase):
         tool_shed_registry: Registry,
         notification_service: NotificationService,
         job_manager: JobManager,
+        page_manager: PageManager,
         workflow_scheduling_manager: WorkflowSchedulingManager,
         config: GalaxyAppConfiguration,
+        completion_hook_registry: WorkflowCompletionHookRegistry,
     ):
         self._workflows_manager = workflows_manager
+        self._completion_hook_registry = completion_hook_registry
         self._workflow_scheduling_manager = workflow_scheduling_manager
         self._workflow_contents_manager = workflow_contents_manager
         self._serializer = serializer
         self.shareable_service = ShareableService(workflows_manager, serializer, notification_service)
         self._tool_shed_registry = tool_shed_registry
         self._job_manager = job_manager
+        self._page_manager = page_manager
         self._config = config
 
     def index(
@@ -350,33 +366,12 @@ class WorkflowsService(ServiceBase):
             raise exceptions.RequestParameterInvalidException(
                 f"Unknown workflow scheduler '{workflow_scheduler_id}' specified."
             )
+        self._check_workflow_tools(trans, workflow, bool(payload.require_exact_tool_versions))
+        self._check_on_complete(payload.on_complete)
         run_configs = build_workflow_run_configs(trans, workflow, payload.model_dump(exclude_unset=True))
         is_batch = payload.batch
         if not is_batch and len(run_configs) != 1:
             raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
-
-        require_exact_tool_versions = payload.require_exact_tool_versions
-        tools = self._workflow_contents_manager.get_all_tools(workflow)
-        missing_tools = [
-            tool
-            for tool in tools
-            if not trans.app.toolbox.has_tool(
-                tool["tool_id"],
-                tool_version=tool["tool_version"],
-                tool_uuid=tool["tool_uuid"],
-                exact=bool(require_exact_tool_versions),
-                user=trans.user,
-            )
-        ]
-        if missing_tools:
-            missing_tools_message = "Workflow was not invoked; the following required tools are not installed: "
-            if require_exact_tool_versions:
-                missing_tools_message += ", ".join(
-                    [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in missing_tools]
-                )
-            else:
-                missing_tools_message += ", ".join([tool["tool_id"] for tool in missing_tools])
-            raise exceptions.MessageException(missing_tools_message)
 
         invocations = []
         for run_config in run_configs:
@@ -435,7 +430,7 @@ class WorkflowsService(ServiceBase):
         self._validate_extract_by_ids_payload(trans, payload)
         build_report = None
         if payload.from_page_id is not None:
-            page = self._load_report_page(trans, payload.from_page_id)
+            page, _ = self._page_manager.get_accessible_notebook(trans, payload.from_page_id)
             build_report = partial(_build_report_config, trans, page, payload.report_title or payload.workflow_name)
         stored_workflow, report_warnings = extract_workflow_by_ids(
             trans,
@@ -453,21 +448,6 @@ class WorkflowsService(ServiceBase):
             build_report=build_report,
         )
         return _to_extraction_result(stored_workflow, report_warnings)
-
-    def _load_report_page(self, trans: ProvidesHistoryContext, page_id: int):
-        """Load and gate a notebook page used to build the workflow report.
-
-        Mirrors the page workflow-extraction-summary endpoint: only history-backed
-        pages are extractable, and page accessibility must not leak the underlying
-        history - require access to the history too.
-        """
-        page = self.get_object(trans, page_id, "Page", check_ownership=False, check_accessible=True)
-        if page.history_id is None:
-            raise exceptions.RequestParameterInvalidException(
-                "Workflow report extraction is only available for history-backed pages (notebooks)."
-            )
-        trans.app.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
-        return page
 
     def _validate_extract_by_ids_payload(
         self,
@@ -653,6 +633,57 @@ class WorkflowsService(ServiceBase):
             if url in shed_url:
                 return shed_url
         return None
+
+    def _check_workflow_tools(
+        self, trans: ProvidesHistoryContext, workflow: Workflow, require_exact_tool_versions: bool
+    ) -> None:
+        tools = self._workflow_contents_manager.get_all_tools(workflow)
+        missing_tools = []
+        incompatible_tools = []
+        toolbox = trans.app.toolbox
+        for tool_reference in tools:
+            # Availability comes from has_tool: for exact requests the cached
+            # toolbox's get_tool can resolve a different version of the tool.
+            if not toolbox.has_tool(
+                tool_reference["tool_id"],
+                tool_version=tool_reference["tool_version"],
+                tool_uuid=tool_reference["tool_uuid"],
+                exact=require_exact_tool_versions,
+                user=trans.user,
+            ):
+                missing_tools.append(tool_reference)
+                continue
+            tool = toolbox.get_tool(
+                tool_reference["tool_id"],
+                tool_version=tool_reference["tool_version"],
+                tool_uuid=tool_reference["tool_uuid"],
+                exact=require_exact_tool_versions,
+                user=trans.user,
+            )
+            if tool and not tool.is_workflow_compatible:
+                incompatible_tools.append(tool_reference)
+        if missing_tools:
+            raise exceptions.MessageException(
+                "Workflow was not invoked; the following required tools are not installed: "
+                + _describe_tool_references(missing_tools, require_exact_tool_versions)
+            )
+        if incompatible_tools:
+            raise exceptions.MessageException(
+                "Workflow was not invoked; the following tools are not workflow-compatible: "
+                + _describe_tool_references(incompatible_tools, require_exact_tool_versions)
+            )
+
+    def _check_on_complete(self, on_complete: list[dict[str, Any]] | None) -> None:
+        available_actions = self._completion_hook_registry.get_available_hooks()
+        for action in on_complete or []:
+            for action_name in action:
+                if action_name not in available_actions:
+                    raise exceptions.RequestParameterInvalidException(
+                        f"Unknown on_complete action '{action_name}', available actions are: {', '.join(available_actions)}"
+                    )
+                hook = self._completion_hook_registry.get_hook(action_name)
+                assert hook is not None  # The action name was checked against the registry above.
+                hook.validate_config(action[action_name])
 
     def _create_landing_request_association(
         self, trans: ProvidesUserContext, landing_uuid: UUID4 | None, invocations: list[WorkflowInvocation]

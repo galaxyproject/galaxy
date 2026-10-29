@@ -3,6 +3,7 @@ from typing import (
     Any,
 )
 
+from galaxy.model.unittest_utils.store_fixtures import one_hda_model_store_dict
 from galaxy.util.wait import wait_on
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.decorators import (
@@ -21,6 +22,7 @@ from galaxy_test.base.populators import (
 TEST_SOURCE_URI = "http://google.com/dataset.txt"
 TEST_HASH_FUNCTION = "MD5"
 TEST_HASH_VALUE = "moocowpretendthisisahas"
+VTK_POLY_DATA = '<?xml version="1.0"?>\n<VTKFile type="PolyData" version="0.1">\n</VTKFile>\n'
 
 
 # TODO: Test anonymous access.
@@ -32,6 +34,27 @@ class TestHistoryContentsApi(ApiTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
+
+    def test_archive_uses_download_extension(self, history_id):
+        self.dataset_populator.new_dataset(
+            history_id, content=VTK_POLY_DATA, file_type="vtkxml", name="mesh", wait=True
+        )
+        response = self._get(f"histories/{history_id}/contents/archive/contents.zip", {"dry_run": True})
+        self._assert_status_code_is(response, 200)
+        archive_paths = [archive_path for _, archive_path in response.json()]
+        assert len(archive_paths) == 1
+        assert archive_paths[0].endswith("mesh.vtp")
+
+    def test_contents_from_store_unregistered_extension_imported_as_data(self, history_id):
+        store_dict = one_hda_model_store_dict()
+        store_dict["datasets"][0]["extension"] = "not_a_registered_datatype"
+        as_list = self.dataset_populator.create_contents_from_store(history_id, store_dict=store_dict)
+        assert len(as_list) == 1
+        assert as_list[0]["extension"] == "data"
+        response = self._get(f"histories/{history_id}/contents/archive/contents.zip", {"dry_run": True})
+        self._assert_status_code_is(response, 200)
+        archive_paths = [archive_path for _, archive_path in response.json()]
+        assert archive_paths == ["contents/1.my_cool_name.data"]
 
     def test_index_hda_summary(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id)
@@ -382,10 +405,7 @@ class TestHistoryContentsApi(ApiTestCase):
         combined_user_role_id = self.dataset_populator.create_role([user_id, different_user_id])["id"]
 
         ld = self.library_populator.new_library_dataset("test_inheritance_dataset")
-        remove_restrictions_response = self._post(
-            f"libraries/datasets/{ld['id']}/permissions", {"action": "remove_restrictions"}, admin=True, json=True
-        )
-        self._assert_status_code_is_ok(remove_restrictions_response)
+        self.library_populator.remove_library_dataset_restrictions(ld["id"])
         self.library_populator.set_access_permission(ld["parent_library_id"], combined_user_role_id)
 
         with self._different_user():
@@ -477,6 +497,34 @@ class TestHistoryContentsApi(ApiTestCase):
         # we don't distinguish between this is a valid ID you don't have access to
         # and this is an invalid ID.
         assert update_response.status_code == 400, update_response.content
+
+    @requires_new_user
+    def test_set_edit_stores_comment_lines_as_int(self):
+        email = "comment-lines-edit@test.galaxyproject.org"
+        with self._different_user(email):
+            history_id = self.dataset_populator.new_history()
+            hda = self.dataset_populator.new_dataset(
+                history_id, content="#a\n#b\nx\t1\ny\t5\n", file_type="tabular", wait=True
+            )
+        with self._browser_session(email) as session:
+            edit_response = session.put(
+                urllib.parse.urljoin(self.url, "dataset/set_edit"),
+                json={
+                    "dataset_id": hda["id"],
+                    "operation": "attributes",
+                    "name": "commented",
+                    "info": "",
+                    "dbkey": "?",
+                    "comment_lines": "3",
+                },
+            )
+            self._assert_status_code_is(edit_response, 200)
+        with self._different_user(email):
+            details = self.dataset_populator.get_history_dataset_details(history_id, content_id=hda["id"])
+            columns_response = self._get(f"datasets/{hda['id']}", data={"data_type": "raw_data", "columns": "[0]"})
+        assert details["metadata_comment_lines"] == 3
+        self._assert_status_code_is(columns_response, 200)
+        assert columns_response.json()["data"] == [["y"]]
 
     def test_rename_dataset(self, history_id):
         dataset = self.dataset_populator.new_dataset(history_id, wait=True)
@@ -737,6 +785,28 @@ class TestHistoryContentsApi(ApiTestCase):
         self._assert_has_keys(jobs_summary, "populated_state", "states")
         states = jobs_summary["states"]
         assert states.get("ok") == 2, states
+
+    @skip_without_tool("cat1")
+    def test_implicit_hdca_updated_when_jobs_finish(self, history_id):
+        hdca_id = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["123", "456", "789"], wait=True
+        ).json()["outputs"][0]["id"]
+        inputs = {
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
+        }
+        run = self.dataset_populator.run_tool("cat1", inputs=inputs, history_id=history_id)
+        implicit_hdca_id = run["implicit_collections"][0]["id"]
+        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
+        last_output_update_time = max(
+            self.dataset_populator.get_history_dataset_details(history_id, content_id=output["id"])["update_time"]
+            for output in run["outputs"]
+        )
+        # Incremental history updates only deliver the final state of the implicit collection if its update
+        # time is at least that of its last element change.
+        contents = self._get(
+            f"histories/{history_id}/contents?v=dev&q=update_time-ge&qv={last_output_update_time}"
+        ).json()
+        assert implicit_hdca_id in [item["id"] for item in contents], contents
 
     def test_dataset_collection_hide_originals(self, history_id):
         payload = self.dataset_collection_populator.create_pair_payload(

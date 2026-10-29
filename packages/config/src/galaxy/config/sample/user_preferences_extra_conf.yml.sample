@@ -48,7 +48,8 @@ preferences:
               required: False
               options:
                   - [Navigator default, auto]
-                  - [中文, zh]
+                  - [简体中文, zh]
+                  - [繁體中文（台灣）, zh-TW]
                   - [English, en]
                   - [Español, es]
                   - [Français, fr]

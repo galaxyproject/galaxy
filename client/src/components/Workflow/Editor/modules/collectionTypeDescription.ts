@@ -181,36 +181,26 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         }
         const normalizedThis = normalizeCollectionType(this.collectionType);
         const normalizedOther = normalizeCollectionType(other.collectionType);
-        if (this.rank <= other.rank) {
-            if (normalizedOther == "paired_or_unpaired") {
-                // this can be thought of as a subcollection of anything except a pair
-                // since it would match a pair exactly
-                return !normalizedThis.endsWith("paired");
-            }
-            if (normalizedOther.endsWith(":paired_or_unpaired")) {
-                return !normalizedThis.endsWith(":paired");
-            }
-            // Cannot map over self...
+        // Cannot map over self...
+        if (normalizedThis == normalizedOther) {
             return false;
         }
-        const requiredSuffix = normalizedOther;
-        const directMatch = this._endsWith(normalizedThis, `:${requiredSuffix}`);
-        if (directMatch) {
+        if (this._endsWith(normalizedThis, `:${normalizedOther}`)) {
             return true;
         }
-        // this really needs to be extended to include anything suffixed with :paired_or_unpaired
-        if (requiredSuffix == "paired_or_unpaired") {
-            // anything can be mapped over this since it can always act a dataset
-            return true;
-        } else if (requiredSuffix.endsWith(":paired_or_unpaired")) {
-            const higherRanksRequired = requiredSuffix.substring(0, requiredSuffix.lastIndexOf(":"));
-            let higherRanks: string;
-            if (normalizedThis.endsWith(":paired")) {
-                higherRanks = normalizedThis.substring(0, normalizedThis.lastIndexOf(":"));
-            } else {
-                higherRanks = normalizedThis;
-            }
-            return this._endsWith(higherRanks, higherRanksRequired);
+        if (normalizedOther == "paired_or_unpaired") {
+            // this can be thought of as a subcollection of anything except a pair
+            // since it would match a pair exactly
+            return normalizedThis != "paired";
+        }
+        if (normalizedOther.endsWith(":paired_or_unpaired")) {
+            // e.g. list:list maps over list:paired_or_unpaired - strip :paired from this
+            // (consumed by paired_or_unpaired) and require extra higher ranks that align
+            const higherRanksRequired = normalizedOther.substring(0, normalizedOther.lastIndexOf(":"));
+            const higherRanks = normalizedThis.endsWith(":paired")
+                ? normalizedThis.substring(0, normalizedThis.lastIndexOf(":"))
+                : normalizedThis;
+            return this._endsWith(higherRanks, `:${higherRanksRequired}`);
         }
         return false;
     }

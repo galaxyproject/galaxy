@@ -13,6 +13,7 @@ from Cheetah.Template import Template
 from packaging.version import Version
 
 from galaxy.tool_util.lint import Linter
+from galaxy.tool_util_models.parameter_validators import PARAMETER_VALIDATOR_TYPE_COMPATIBILITY
 from galaxy.util import string_as_bool
 from ._util import (
     is_datasource,
@@ -65,63 +66,6 @@ ATTRIB_VALIDATOR_COMPATIBILITY = {
     "value_json": ["dataset_metadata_equal"],
 }
 
-PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
-    "integer": ["in_range", "expression"],
-    "float": ["in_range", "expression"],
-    "data": [
-        "metadata",
-        "no_options",
-        "unspecified_build",
-        "dataset_ok_validator",
-        "dataset_metadata_equal",
-        "dataset_metadata_in_range",
-        "dataset_metadata_in_file",
-        "dataset_metadata_in_data_table",
-        "dataset_metadata_not_in_data_table",
-        "expression",
-    ],
-    "data_collection": [
-        "metadata",
-        "no_options",
-        "unspecified_build",
-        "dataset_ok_validator",
-        "dataset_metadata_equal",
-        "dataset_metadata_in_range",
-        "dataset_metadata_in_file",
-        "dataset_metadata_in_data_table",
-        "dataset_metadata_not_in_data_table",
-        "expression",
-    ],
-    "text": ["regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"],
-    "select": [
-        "in_range",
-        "no_options",
-        "regex",
-        "length",
-        "empty_field",
-        "value_in_data_table",
-        "value_not_in_data_table",
-        "expression",
-    ],
-    "drill_down": [
-        "no_options",
-        "regex",
-        "length",
-        "empty_field",
-        "value_in_data_table",
-        "value_not_in_data_table",
-        "expression",
-    ],
-    "data_column": [
-        "no_options",
-        "regex",
-        "length",
-        "empty_field",
-        "value_in_data_table",
-        "value_not_in_data_table",
-        "expression",
-    ],
-}
 
 PARAM_TYPE_CHILD_COMBINATIONS = [
     ("./options", ["data", "select", "drill_down"]),

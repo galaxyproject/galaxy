@@ -33,6 +33,29 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         self._wait_for_hid_visible(3)
 
     @selenium_test
+    def test_build_list_in_viewed_history(self):
+        target_history_id = self.dataset_populator.new_history(name=self._get_random_name())
+        self.dataset_populator.new_dataset(target_history_id, content="1\n", wait=True)
+        self.history_panel_create_new()
+        other_history_id = self.current_history_id()
+        self.get(f"histories/view?id={target_history_id}")
+        center_panel = self.components._.center_panel
+        self.wait_for_and_click(center_panel.descendant(self.components.history_panel.multi_operations.show_button))
+        self.history_panel_muli_operation_select_hid(1, history_id=target_history_id)
+        self.history_panel_build_list_auto(scope=center_panel.selector)
+        self.collection_builder_set_name("viewed history list")
+        self.screenshot("collection_builder_wizard_list_viewed_history")
+        self.collection_builder_create()
+        created_alert = self.components.collection_builders.list_wizard.created_alert
+        assert "history it was built from" in created_alert.wait_for_text()
+        self.screenshot("collection_builder_wizard_list_created")
+        self._wait_on(
+            lambda: "viewed history list" in self.history_collection_names(target_history_id),
+            "the list in the viewed history",
+        )
+        assert self.history_collection_names(other_history_id) == []
+
+    @selenium_test
     @managed_history
     def test_build_paired_list_auto_matched(self):
         uploader = self.upload_context("paste-content")
@@ -41,10 +64,18 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         uploader.start()
         self._wait_for_and_select([1, 2])
         self.history_panel_build_list_of_pairs()
+        list_wizard = self.components.collection_builders.list_wizard
+        self.ag_grid_edit_cell(list_wizard, "identifier", 2, "renamed", clear=True)
         self.collection_builder_set_name("my awesome paired list")
         self.screenshot("collection_builder_paired_list")
         self.collection_builder_create()
         self._wait_for_hid_visible(5)
+        collection = self.dataset_populator.get_history_collection_details(self.current_history_id(), hid=5)
+        (element,) = collection["elements"]
+        assert element["element_identifier"] == "renamed", element["element_identifier"]
+        pair = element["object"]["elements"]
+        assert [e["element_identifier"] for e in pair] == ["forward", "reverse"]
+        assert [e["object"]["name"] for e in pair] == ["basename_1.fasta", "basename_2.fasta"], pair
         # switch to hidden filters to see the hidden datasets appear
         self._show_hidden_content()
         self._wait_for_hid_visible(1)

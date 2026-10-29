@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
 from typing import (
     Any,
     cast,
@@ -23,6 +25,7 @@ class _StoredStub:
     tool_id: str = "bowtie2"
     source_path: str | None = "/tools/bowtie2.xml"
     metadata: dict | None = None
+    stored_at: datetime | None = None
 
 
 class _ToolSourceStub:

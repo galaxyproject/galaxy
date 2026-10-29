@@ -4,10 +4,46 @@ History
 .. to_doc
 
 ---------
-26.2.dev0
+27.0.dev0
 ---------
 
 
+
+-------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix bulk storage move for user-defined storage by `@davelopez <https://github.com/davelopez>`_ in `#23288 <https://github.com/galaxyproject/galaxy/pull/23288>`_
+* Harden tool-provided dynamic output collection by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23404 <https://github.com/galaxyproject/galaxy/pull/23404>`_
+* Fix truncated and empty S3 cache downloads by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23509 <https://github.com/galaxyproject/galaxy/pull/23509>`_
+* Cache concrete user object stores between method calls by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23722 <https://github.com/galaxyproject/galaxy/pull/23722>`_
+
+-------------------
+26.0.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix typo in irods object store cache size by `@davelopez <https://github.com/davelopez>`_ in `#23124 <https://github.com/galaxyproject/galaxy/pull/23124>`_
+
+-------------------
+25.1.3 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix refresh time in object store caches by `@bgruening <https://github.com/bgruening>`_ in `#22279 <https://github.com/galaxyproject/galaxy/pull/22279>`_
 
 -------------------
 26.1.1 (2026-08-04)

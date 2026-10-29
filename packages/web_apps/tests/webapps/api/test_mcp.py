@@ -16,6 +16,7 @@ from galaxy.tool_util.deps.mulled.recommend import (
 )
 from galaxy.webapps.galaxy.api.mcp import (
     _biocontainer_recommendation_payload,
+    _resolve_credentials,
     _StaticRequest,
     _StaticResponse,
 )
@@ -120,3 +121,29 @@ def test_static_response_implements_abstract_interface():
     assert isinstance(response, GalaxyAbstractResponse)
     assert response.headers == {}
     response.set_cookie("k", "v")
+
+
+def test_resolve_credentials_prefers_api_key_header():
+    headers = {"x-api-key": "header-key", "authorization": "Bearer token"}
+    assert _resolve_credentials("arg-key", headers) == ("header-key", None)
+    assert _resolve_credentials(None, {"x-api-key": "header-key"}) == ("header-key", None)
+
+
+def test_resolve_credentials_bearer_token_beats_argument():
+    assert _resolve_credentials("arg-key", {"authorization": "Bearer token"}) == (None, "token")
+    assert _resolve_credentials(None, {"authorization": "bearer token"}) == (None, "token")
+
+
+def test_resolve_credentials_ignores_other_authorization_schemes():
+    assert _resolve_credentials("arg-key", {"authorization": "Basic dXNlcjpwYXNz"}) == ("arg-key", None)
+    assert _resolve_credentials("arg-key", {"authorization": "Bearer "}) == ("arg-key", None)
+
+
+def test_resolve_credentials_falls_back_to_argument():
+    assert _resolve_credentials("arg-key", {}) == ("arg-key", None)
+    assert _resolve_credentials("arg-key", {"x-api-key": ""}) == ("arg-key", None)
+
+
+def test_resolve_credentials_missing():
+    assert _resolve_credentials(None, {}) == (None, None)
+    assert _resolve_credentials("", {"x-api-key": ""}) == (None, None)

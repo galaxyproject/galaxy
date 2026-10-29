@@ -9,6 +9,10 @@ from pykwalify.core import Core
 from galaxy.config import GALAXY_SCHEMAS_PATH
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs import JobConfiguration
+from galaxy.jobs.runners import (
+    BaseJobRunner,
+    local,
+)
 from galaxy.util import galaxy_directory
 from galaxy.util.path import StrPath
 from galaxy.util.resources import (
@@ -28,6 +32,13 @@ ADVANCED_JOB_CONF_YAML = GALAXY_SAMPLES_DIRECTORY / "job_conf.sample.yml"
 SAMPLE_JOB_RESOURCE_PARAMS = GALAXY_SAMPLES_DIRECTORY / "job_resource_params_conf.xml.sample"
 CONDITIONAL_RUNNER_JOB_CONF = os.path.join(os.path.dirname(__file__), "conditional_runners_job_conf.xml")
 HANDLER_TEMPLATE_JOB_CONF = os.path.join(os.path.dirname(__file__), "handler_template_job_conf.xml")
+
+
+class NativeRunner(BaseJobRunner):
+    runs_job_script_in_container = True
+
+    def __init__(self, *args, **kwargs):
+        pass
 
 
 class TestApplicationStack(ApplicationStack):
@@ -370,6 +381,54 @@ class TestAdvancedJobConfYamlParser(TestAdvancedJobConfXmlParser):
     extension = "yml"
 
 
+TOOL_RESOURCE_JOB_CONF_YAML = """
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+execution:
+  default: local
+  environments:
+    local:
+      runner: local
+tools:
+- id: toolshed.example.org/repos/nate/filter_tool_repo/filter_tool
+  resources: memoryonly
+resources:
+  groups:
+    memoryonly: [memory]
+"""
+
+TOOL_RESOURCE_PARAMS_XML = """<parameters>
+    <param label="Memory" name="memory" type="integer" min="1" max="8" value="1" />
+</parameters>
+"""
+
+
+class TestToolResourceXml(BaseJobConfXmlParserTestCase):
+    extension = "yml"
+
+    def setUp(self):
+        super().setUp()
+        self.config.job_resource_params_file = os.path.join(self.temp_directory, "job_resource_params_conf.xml")
+        with open(self.config.job_resource_params_file, "w") as f:
+            f.write(TOOL_RESOURCE_PARAMS_XML)
+        self._write_config(TOOL_RESOURCE_JOB_CONF_YAML)
+
+    def test_versionless_tool_shed_guid(self):
+        tool_ids = [
+            "toolshed.example.org/repos/nate/filter_tool_repo/filter_tool/1.0.0",
+            "toolshed.example.org/repos/nate/filter_tool_repo/filter_tool",
+            "filter_tool",
+        ]
+        resource_xml = self.job_config.get_tool_resource_xml(tool_ids, "default")
+        assert resource_xml is not None
+        assert resource_xml.find("when/param[@name='memory']") is not None
+
+    def test_unmatched_tool_id(self):
+        assert self.job_config.get_tool_resource_xml(["other_tool"], "default") is None
+        assert self.job_config.get_tool_resource_xml("other_tool", "default") is None
+
+
 def test_yaml_advanced_validation():
     schema = GALAXY_SCHEMAS_PATH / "job_config_schema.yml"
     integration_tests_dir = os.path.join(galaxy_directory(), "test", "integration")
@@ -388,3 +447,117 @@ def test_yaml_advanced_validation():
                 schema_files=[os.fspath(schema_path)],
             )
             c.validate()
+
+
+class TestScopedJobEnvironment(BaseJobConfXmlParserTestCase):
+    def test_xml_order(self):
+        self._write_config(
+            """<job_conf><plugins><plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" /></plugins><destinations default="local"><destination id="local" runner="local"><tool_env id="X">tool</tool_env><job_env id="X">job</job_env><env id="X">legacy</env><tool_env id="EMPTY"></tool_env></destination></destinations></job_conf>"""
+        )
+        destination = self.job_config.get_destination("local")
+        assert [entry["value"] for entry in destination.env][:3] == ["tool", "job", "legacy"]
+        assert [entry["type"] for entry in destination.env] == ["tool", "job", "job", "tool"]
+        assert destination.tool_env_names == ["X", "EMPTY"]
+        assert not {"env", "job_env", "tool_env"}.intersection(destination.params)
+
+    def test_xml_container_native_job_env_warning(self):
+        self._check_xml_container_native_warning("job_env", True)
+
+    def test_xml_container_native_legacy_env_has_no_warning(self):
+        self._check_xml_container_native_warning("env", False)
+
+    def _check_xml_container_native_warning(self, tag, warns):
+        self._write_config(
+            f'<job_conf><plugins><plugin id="native" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" /></plugins><destinations default="native"><destination id="native" runner="native"><{tag} id="X">value</{tag}></destination></destinations></job_conf>'
+        )
+        with mock.patch("galaxy.jobs.log.warning") as warning:
+            destination = self.job_config.get_destination("native")
+            with mock.patch.object(local, "LocalJobRunner", NativeRunner):
+                self.job_config.get_job_runner_plugins("main")
+        assert destination.env[0]["type"] == "job"
+        assert warning.called is warns
+        if warns:
+            assert "also reach the tool container" in warning.call_args[0][0]
+
+    def test_yaml_order_and_container_native_warning(self):
+        self.config.job_config_file = os.path.join(self.temp_directory, "job_conf.yml")
+        self._write_config("""runners:
+  native:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+execution:
+  default: native
+  environments:
+    native:
+      runner: native
+      tool_env:
+        - name: X
+          value: tool
+      job_env:
+        - name: X
+          value: job
+      env:
+        - name: X
+          value: legacy
+""")
+        with mock.patch("galaxy.jobs.log.warning") as warning:
+            destination = self.job_config.get_destination("native")
+            with mock.patch.object(local, "LocalJobRunner", NativeRunner):
+                self.job_config.get_job_runner_plugins("main")
+        assert [entry["value"] for entry in destination.env] == ["tool", "job", "legacy"]
+        assert [entry["type"] for entry in destination.env] == ["tool", "job", "job"]
+        assert "also reach the tool container" in warning.call_args[0][0]
+        assert not {"env", "job_env", "tool_env"}.intersection(destination.params)
+
+    def test_yaml_legacy_env_cannot_select_tool_scope(self):
+        self.config.job_config_file = os.path.join(self.temp_directory, "job_conf.yml")
+        self._write_config("""runners:
+  local:
+    load: local
+execution:
+  default: local
+  environments:
+    local:
+      runner: local
+      env:
+        - name: X
+          value: legacy
+          type: tool
+""")
+        destination = self.job_config.get_destination("local")
+        assert destination.tool_env_names == []
+        assert destination.env[0]["type"] == "job"
+
+    def test_disabled_destination_has_no_container_native_warning(self):
+        self._write_config(
+            '<job_conf><plugins><plugin id="local" type="runner" load="local" /></plugins>'
+            '<destinations default="local"><destination id="local" runner="local" />'
+            '<destination id="disabled" runner="native"><param id="enabled">false</param>'
+            '<job_env id="X">value</job_env></destination></destinations></job_conf>'
+        )
+        with mock.patch("galaxy.jobs.log.warning") as warning:
+            with mock.patch.object(local, "LocalJobRunner", NativeRunner):
+                self.job_config.get_job_runner_plugins("main")
+        assert "disabled" not in self.job_config.destinations
+        warning.assert_not_called()
+
+    def test_host_runner_job_env_has_no_warning(self):
+        self._write_config(
+            '<job_conf><plugins><plugin id="local" type="runner" load="local" /></plugins>'
+            '<destinations default="local"><destination id="local" runner="local">'
+            '<job_env id="X">value</job_env></destination></destinations></job_conf>'
+        )
+        with mock.patch("galaxy.jobs.log.warning") as warning:
+            with mock.patch.object(local.LocalJobRunner, "__init__", return_value=None):
+                self.job_config.get_job_runner_plugins("main")
+        warning.assert_not_called()
+
+    def test_tag_alias_warns_only_once(self):
+        self._write_config(
+            '<job_conf><plugins><plugin id="native" type="runner" load="local" /></plugins>'
+            '<destinations default="native"><destination id="native" runner="native" tags="alias">'
+            '<job_env id="X">value</job_env></destination></destinations></job_conf>'
+        )
+        with mock.patch("galaxy.jobs.log.warning") as warning:
+            with mock.patch.object(local, "LocalJobRunner", NativeRunner):
+                self.job_config.get_job_runner_plugins("main")
+        warning.assert_called_once()

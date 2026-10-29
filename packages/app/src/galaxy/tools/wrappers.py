@@ -446,6 +446,8 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         identifier = self._element_identifier
         if identifier is None:
             identifier = self.name
+        elif self.tool_evaluator:
+            self.tool_evaluator.consumes_identifiers = True
         return identifier
 
     @property
@@ -893,3 +895,11 @@ class ElementIdentifierMapper:
             element_identifier = input_values.get(identifier_key, None)
 
         return element_identifier
+
+    def identifiers_by_dataset(self, input_values: dict[str, str]) -> dict[DatasetInstance, str]:
+        """Map each input dataset to the element identifier recorded for it."""
+        return {
+            dataset: identifier
+            for dataset, identifier_key in self.identifier_key_dict.items()
+            if dataset is not None and (identifier := input_values.get(identifier_key))
+        }

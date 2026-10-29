@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
+from .resubmission_rules.rules import UNMAPPABLE_RESUBMISSION_MESSAGE
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_RESUBMISSION_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_job_conf.yml")
@@ -27,6 +28,7 @@ JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE = os.path.join(
     SCRIPT_DIRECTORY, "resubmission_job_resource_parameters_conf.xml"
 )
 JOB_RESUBMISSION_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_pulsar_job_conf.xml")
+JOB_RESUBMISSION_UNMAPPABLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_unmappable_job_conf.yml")
 
 
 class _BaseResubmissionIntegrationTestCase(integration_util.IntegrationTestCase):
@@ -356,3 +358,32 @@ class TestJobResubmissionPulsarIntegration(_BaseResubmissionIntegrationTestCase)
 
     def test_resubmit_on_invalid_pulsar_url(self):
         self._assert_job_passes()
+
+
+class TestJobResubmissionUnmappableIntegration(_BaseResubmissionIntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["job_config_file"] = JOB_RESUBMISSION_UNMAPPABLE_JOB_CONFIG_FILE
+
+    def test_unmappable_resubmission_fails_without_stopping_dispatch(self):
+        with self.dataset_populator.test_history() as history_id:
+            run = self.dataset_populator.run_tool("exit_code_oom", {"input": 5}, history_id)
+            # Wait on the output: job waits stop at the non-terminal "resubmitted" state.
+            output_id = run["outputs"][0]["id"]
+            self.dataset_populator.wait_for_dataset(history_id, output_id)
+            output = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=output_id, assert_ok=False
+            )
+            assert output["state"] == "error"
+            assert output["misc_info"] == UNMAPPABLE_RESUBMISSION_MESSAGE
+            job = self.dataset_populator.get_job_details(run["jobs"][0]["id"]).json()
+            assert job["state"] == "error"
+            run = self.dataset_populator.run_tool("create_2", {}, history_id)
+            self.dataset_populator.wait_for_job(run["jobs"][0]["id"], assert_ok=True)

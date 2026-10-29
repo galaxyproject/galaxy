@@ -36,6 +36,7 @@ import { isArchivedHistory, isMyHistory } from "@/api/histories";
 import { useHistoryCardActions } from "@/components/History/useHistoryCardActions";
 import { useHistoryCardBadges } from "@/components/History/useHistoryCardBadges";
 import { useHistoryCardIndicators } from "@/components/History/useHistoryCardIndicators";
+import { useSerialTagSaves } from "@/composables/serialTagSaves";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -177,6 +178,7 @@ const { historyCardExtraActions, historyCardSecondaryActions, historyCardPrimary
     computed(() => props.history),
     props.archivedView,
     () => emit("refreshList", true),
+    props.sharedView,
 );
 
 /**
@@ -198,14 +200,21 @@ const { historyCardTitleBadges } = useHistoryCardBadges(
     (k, v) => emit("updateFilter", k, v),
 );
 
+const history = computed(() => props.history);
+
+const { saveTags } = useSerialTagSaves({
+    // updated in place: a list reload re-sorts the list and moves the card away from the open tag editor
+    setTags: (tags) => (history.value.tags = tags),
+    onFailed: () => emit("refreshList", true, true),
+});
+
 /**
  * Handles updating tags for a history
  * @param {string} historyId - The ID of the history to update
  * @param {string[]} tags - The new array of tags to set
  */
-async function onTagsUpdate(historyId: string, tags: string[]) {
-    await historyStore.updateHistory(historyId, { tags: tags });
-    emit("refreshList", true, true);
+function onTagsUpdate(historyId: string, tags: string[]) {
+    saveTags(tags, async () => (await historyStore.updateHistory(historyId, { tags })).tags);
 }
 
 function onClick(event: Event) {
@@ -246,7 +255,7 @@ function onKeyDown(event: KeyboardEvent) {
         :clickable="props.clickable"
         :highlighted="props.highlighted"
         @rename="emit('rename', history.id, history.name)"
-        @select="isMyHistory(history) && emit('select', history)"
+        @select="(isMyHistory(history) || props.sharedView) && emit('select', history)"
         @tagsUpdate="(tags: string[]) => onTagsUpdate(history.id, tags)"
         @tagClick="(tag: string) => emit('tagClick', tag)"
         @click="onClick"

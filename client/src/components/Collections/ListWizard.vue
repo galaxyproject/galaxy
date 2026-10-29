@@ -37,7 +37,6 @@ const props = defineProps<Props>();
 const isBusy = ref<boolean>(false);
 const whichBuilder = ref<WhichListBuilder>("list");
 const store = useCollectionBuilderItemSelection();
-const { currentHistoryId, createPayload } = useCollectionCreation();
 const { countPaired, currentForwardFilter, currentReverseFilter, AutoPairing, autoPair, onFilters } = useAutoPairing();
 
 const creationError = ref<string | null>(null);
@@ -46,6 +45,8 @@ const collectionCreated = ref(false);
 type InferrableBuilder = "list" | "list:paired";
 const collectionCreator = ref<CollectionCreatorComponent>();
 const { selectedItems, historyId } = storeToRefs(store);
+// build in the history the items were selected from
+const { currentHistoryId, createPayload } = useCollectionCreation(() => historyId.value || "");
 
 const { breadcrumbItems } = useHistoryBreadCrumbsToForProps(
     {
@@ -218,7 +219,9 @@ function onRuleState(newRuleState: boolean) {
             </GAlert>
         </div>
         <div v-if="collectionCreated">
-            <GAlert variant="success" show> Collection created and it has been added to your history. </GAlert>
+            <GAlert variant="success" show data-description="list wizard created alert">
+                Collection created and added to the history it was built from.
+            </GAlert>
         </div>
         <div v-else-if="!selectedItems">
             <GAlert variant="info" show>
@@ -237,7 +240,7 @@ function onRuleState(newRuleState: boolean) {
             <div v-else-if="wizard.isCurrent('list-builder')" class="collection-creator-bounded-help">
                 <ListCollectionCreator
                     ref="collectionCreator"
-                    :history-id="currentHistoryId"
+                    :history-id="historyId"
                     :initial-elements="selectedItems || []"
                     :default-hide-source-items="true"
                     :from-selection="true"
@@ -260,7 +263,7 @@ function onRuleState(newRuleState: boolean) {
             <div v-else-if="wizard.isCurrent('list-paired-builder')">
                 <PairedOrUnpairedListCollectionCreator
                     ref="collectionCreator"
-                    :history-id="currentHistoryId"
+                    :history-id="historyId"
                     :initial-elements="selectedItems || []"
                     :collection-type="collectionTypeForPairedOrUnpairedBuilder"
                     :forward-filter="currentForwardFilter"

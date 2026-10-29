@@ -35,6 +35,7 @@ from galaxy import (
 )
 from galaxy.datatypes.data import Directory
 from galaxy.exceptions import (
+    RequestParameterInvalidException,
     ToolInputsNotReadyException,
     ToolMissingException,
 )
@@ -170,8 +171,14 @@ from galaxy.workflow.map_over import (
     MapOverPlanner,
 )
 from galaxy.workflow.workflow_parameter_input_definitions import (
+    check_validators,
     get_default_parameter,
     INPUT_PARAMETER_TYPES,
+    numeric_bounds_inverted,
+    NumericBounds,
+    split_numeric_bounds,
+    validators_from_form,
+    validators_to_form,
 )
 
 if TYPE_CHECKING:
@@ -319,6 +326,7 @@ def to_cwl(
     step: WorkflowStep | None = None,
     compute_environment: ComputeEnvironment | None = None,
     shell_quotable: bool = False,
+    element_identifiers: dict[DatasetInstance, str] | None = None,
 ):
     element_identifier = None
     if isinstance(value, NoReplacement):
@@ -370,9 +378,12 @@ def to_cwl(
             if isinstance(value.datatype, Directory):
                 properties["class"] = "Directory"
                 properties["listing"] = []
-            set_basename_and_derived_properties(
-                properties, value.dataset.created_from_basename or element_identifier or value.name
-            )
+            set_basename_and_derived_properties(properties, value.dataset.created_from_basename or value.name)
+            if element_identifier:
+                properties["element_identifier"] = element_identifier
+            elif element_identifiers is not None:
+                # Passed by the UDT evaluator only; falls back to the dataset name like Cheetah.
+                properties["element_identifier"] = element_identifiers.get(value) or value.name
             return properties
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":
@@ -383,6 +394,7 @@ def to_cwl(
                     step=step,
                     compute_environment=compute_environment,
                     shell_quotable=shell_quotable,
+                    element_identifiers=element_identifiers,
                 )
                 for dce in value.dataset_elements
             ]
@@ -391,11 +403,12 @@ def to_cwl(
             rval = {}
             for element in value.elements:
                 rval[element.element_identifier] = to_cwl(
-                    element.element_object,
+                    element,
                     hda_references=hda_references,
                     step=step,
                     compute_environment=compute_environment,
                     shell_quotable=shell_quotable,
+                    element_identifiers=element_identifiers,
                 )
             return rval
     elif isinstance(value, list):
@@ -406,6 +419,7 @@ def to_cwl(
                 step=step,
                 compute_environment=compute_environment,
                 shell_quotable=shell_quotable,
+                element_identifiers=element_identifiers,
             )
             for v in value
         ]
@@ -420,6 +434,7 @@ def to_cwl(
                 step=step,
                 compute_environment=compute_environment,
                 shell_quotable=shell_quotable,
+                element_identifiers=element_identifiers,
             )
             for k, v in value.items()
         }
@@ -1421,9 +1436,14 @@ class InputParameterModule(WorkflowModule):
         parameter_type_cond.test_param = input_parameter_type
         cases = []
 
+        bounds, _ = split_numeric_bounds(parameter_def)
+        if bounds and numeric_bounds_inverted(bounds):
+            bounds = None
         for param_type in POSSIBLE_PARAMETER_TYPES:
             default_parameter = get_default_parameter(
-                param_type, multiple=param_type == parameter_type and bool(parameter_def.get("multiple"))
+                param_type,
+                multiple=param_type == parameter_type and bool(parameter_def.get("multiple")),
+                bounds=bounds if param_type == parameter_type else None,
             )
 
             optional_value = optional_param()
@@ -1494,6 +1514,14 @@ class InputParameterModule(WorkflowModule):
                             "name": "regex_doc",
                             "label": "Specify a message",
                             "help": "This message will be shown if the regular does not match the input",
+                        },
+                    ),
+                    "regex_negate": BooleanToolParameter(
+                        None,
+                        {
+                            "name": "regex_negate",
+                            "label": "Reject values matching this expression",
+                            "help": "If set, input values matching the regular expression are invalid",
                         },
                     ),
                 }
@@ -1644,6 +1672,9 @@ class InputParameterModule(WorkflowModule):
                 )
             if param_type == "directory_uri":
                 when_this_type.inputs["validators"] = regex_validator_definition()
+            when_this_type.inputs["extra_validators"] = HiddenToolParameter(
+                None, {"name": "extra_validators", "value": ""}
+            )
 
             cases.append(when_this_type)
 
@@ -1720,6 +1751,16 @@ class InputParameterModule(WorkflowModule):
         except Exception:
             log.debug("Failed to generate options for text parameter, falling back to free text.", exc_info=True)
 
+    def get_errors(self, **kwargs):
+        bounds, _ = split_numeric_bounds(self._parse_state_into_dict())
+        return self._inverted_bounds_error(bounds) if bounds else None
+
+    def _inverted_bounds_error(self, bounds: NumericBounds) -> str | None:
+        if not numeric_bounds_inverted(bounds):
+            return None
+        input_name = f"Workflow input '{self.label}'" if self.label else "A workflow input"
+        return f"{input_name} has a minimum ({bounds['min']}) greater than its maximum ({bounds['max']})."
+
     def get_runtime_inputs(self, step, connections: Iterable[WorkflowStepConnection] | None = None):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
@@ -1730,7 +1771,7 @@ class InputParameterModule(WorkflowModule):
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.
-        parameter_kwds: dict[str, str | list[dict[str, Any]]] = {}
+        parameter_kwds: dict[str, Any] = {}
         if "multiple" in parameter_def:
             parameter_kwds["multiple"] = parameter_def["multiple"]
 
@@ -1769,8 +1810,14 @@ class InputParameterModule(WorkflowModule):
             parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values)
             restricted_inputs = True
 
-        if parameter_def.get("validators"):
-            parameter_kwds["validators"] = parameter_def["validators"]
+        # Pass bounds as min/max so the run form gets them; the parameter adds an equivalent implicit range validator.
+        bounds, validators = split_numeric_bounds(parameter_def)
+        if bounds:
+            if inverted_bounds_error := self._inverted_bounds_error(bounds):
+                raise RequestParameterInvalidException(inverted_bounds_error)
+            parameter_kwds.update(bounds)
+        if validators:
+            parameter_kwds["validators"] = validators
 
         client_parameter_type = parameter_type
         if restricted_inputs:
@@ -1878,6 +1925,7 @@ class InputParameterModule(WorkflowModule):
 
     def step_state_to_tool_state(self, state):
         state = safe_loads(state)
+        parameter_type = state["parameter_type"]
         default_set, default_value = False, None
         if "default" in state:
             default_set = True
@@ -1897,29 +1945,16 @@ class InputParameterModule(WorkflowModule):
 
         state = {
             "parameter_definition": {
-                "parameter_type": state["parameter_type"],
+                "parameter_type": parameter_type,
                 "optional": {"optional": str(state.get("optional", False))},
             }
         }
         if multiple is not None:
             state["parameter_definition"]["multiple"] = multiple
         if source_validators is not None:
-            form_validators = []
             # the form definition can change from Galaxy to Galaxy fairly freely, but the source validators are persisted
             # and need to be consistent - here we convert the persisted/YAML tool definition version to the "tool form" version.
-            for source_validator in source_validators:
-                source_type = source_validator["type"]
-                if source_type == "regex":
-                    form_validators.append(
-                        {
-                            "regex_doc": source_validator.get("message"),
-                            "regex_match": source_validator.get("expression"),
-                        }
-                    )
-                elif source_type == "in_range":
-                    state["parameter_definition"]["min"] = source_validator.get("min")
-                    state["parameter_definition"]["max"] = source_validator.get("max")
-            state["parameter_definition"]["validators"] = form_validators
+            state["parameter_definition"].update(validators_to_form(parameter_type, source_validators))
         state["parameter_definition"]["restrictions"] = {}
         state["parameter_definition"]["restrictions"]["how"] = restrictions_how
 
@@ -1963,32 +1998,7 @@ class InputParameterModule(WorkflowModule):
                 optional = False
             if "multiple" in parameters_def:
                 rval["multiple"] = parameters_def["multiple"]
-            source_validators = []
-            if "min" in parameters_def or "max" in parameters_def:
-                min = parameters_def.get("min")
-                max = parameters_def.get("max")
-                source_validators.append(
-                    {
-                        "min": min,
-                        "max": max,
-                        "negate": False,
-                        "type": "in_range",
-                    }
-                )
-
-            if "validators" in parameters_def:
-                form_validators = parameters_def["validators"]
-                # convert the current tool form structure to the persisted YAML-definition style
-                for form_validator in form_validators:
-                    source_validators.append(
-                        {
-                            "message": form_validator["regex_doc"],
-                            "expression": form_validator["regex_match"],
-                            "negate": False,
-                            "type": "regex",
-                        }
-                    )
-            rval["validators"] = source_validators
+            rval["validators"] = validators_from_form(parameters_def)
             restrictions_cond_values = parameters_def.get("restrictions")
             if restrictions_cond_values:
 
@@ -2025,7 +2035,15 @@ class InputParameterModule(WorkflowModule):
 
     def save_to_step(self, step, detached=False):
         step.type = self.type
-        step.tool_inputs = self._parse_state_into_dict()
+        tool_inputs = self._parse_state_into_dict()
+        try:
+            check_validators(tool_inputs["parameter_type"], tool_inputs.get("validators", []))
+        except ValueError as e:
+            label = f"'{self.label}'" if self.label else "(unlabeled)"
+            raise exceptions.RequestParameterInvalidException(
+                f"Invalid validator on workflow parameter input {label}: {e}"
+            )
+        step.tool_inputs = tool_inputs
 
 
 class PauseModule(WorkflowModule):
@@ -2590,6 +2608,12 @@ def _capture_workflow_tool_request_state(
     # source, or a unique-constraint race we cannot recover) must not abort
     # workflow scheduling. Savepoint scopes the flush so a failure rolls back
     # to clean transaction state instead of poisoning the outer session.
+    # begin_nested() flushes everything already pending in the session before
+    # it emits SAVEPOINT, and a failure there rolls back the whole transaction.
+    # Flush that unrelated scheduler state here, outside the best-effort block,
+    # so its errors reach the scheduler instead of being reported as a
+    # ToolRequest failure on a session that can no longer be used.
+    trans.sa_session.flush()
     try:
         with trans.sa_session.no_autoflush, trans.sa_session.begin_nested():
             tool_source = get_or_create_tool_source(trans.sa_session, tool)
@@ -3136,7 +3160,7 @@ class ToolModule(WorkflowModule):
             raise ToolMissingException(f"Tool {tool_id} missing. Cannot execute workflow step.", tool_id=tool_id)
         tool = trans.app.toolbox.materialize_tool(tool, reason="execution")
         if not tool.is_workflow_compatible:
-            # TODO: why do we even create an invocation, seems like something we could check on submit?
+            # Invocation requests are checked on submit; this catches tools changed after scheduling.
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
             raise exceptions.MessageException(message)
         self.state, step_errors = self.compute_runtime_state(

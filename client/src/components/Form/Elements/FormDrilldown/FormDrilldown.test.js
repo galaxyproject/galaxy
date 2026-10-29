@@ -54,4 +54,60 @@ describe("FormDrilldown", () => {
         await toggle(wrapper, "aba", true);
         expect(emittedArg(wrapper, "input")).toBe("aba");
     });
+
+    it("checks the options in the current value", () => {
+        const wrapper = mountDrilldown(true, ["aa", "ba"]);
+        expect(wrapper.find("#drilldown-option-aa").element.checked).toBe(true);
+        expect(wrapper.find("#drilldown-option-ba").element.checked).toBe(true);
+        expect(wrapper.find("#drilldown-option-ab").element.checked).toBe(false);
+    });
+
+    it("selects every value from select all", async () => {
+        const wrapper = mountDrilldown(true, []);
+        await wrapper.find(".select-all-checkbox input").setValue(true);
+        expect([...emittedArg(wrapper, "input")].sort()).toEqual(["a", "aa", "ab", "aba", "b", "ba"]);
+    });
+
+    it("clears the value from select all", async () => {
+        const wrapper = mountDrilldown(true, ["a", "aa", "ab", "aba", "b", "ba"]);
+        const selectAll = wrapper.find(".select-all-checkbox input");
+        expect(selectAll.element.checked).toBe(true);
+        await selectAll.setValue(false);
+        expect(emittedArg(wrapper, "input")).toBeNull();
+    });
+
+    it("marks select all as partly checked when some values are selected", () => {
+        const wrapper = mountDrilldown(true, ["aa"]);
+        expect(wrapper.find(".select-all-checkbox input").element.indeterminate).toBe(true);
+    });
+
+    it("gives single-select radios one shared name for keyboard navigation", () => {
+        const wrapper = mountDrilldown(false, "ab");
+        const radios = wrapper.findAll("input[type=radio]");
+        expect(radios.length).toBe(6);
+        const names = new Set(radios.map((radio) => radio.attributes("name")));
+        expect(names.size).toBe(1);
+        expect([...names][0]).toBeTruthy();
+        expect(wrapper.find("#drilldown-option-ab").element.checked).toBe(true);
+        expect(wrapper.find(".select-all-checkbox").exists()).toBe(false);
+    });
+
+    it("keeps the radios of two drilldowns with the same id in separate groups", async () => {
+        const mountSingle = (value) =>
+            mount(FormDrilldown, {
+                props: { id: "dd", value, options: OPTIONS, multiple: false },
+                global: localVue,
+                attachTo: document.body,
+            });
+        const first = mountSingle("a");
+        const second = mountSingle("b");
+        const firstName = first.find("input[type=radio]").attributes("name");
+        const secondName = second.find("input[type=radio]").attributes("name");
+        expect(firstName).toBeTruthy();
+        expect(firstName).not.toBe(secondName);
+        await first.find("#drilldown-option-aa").setValue(true);
+        expect(second.find("#drilldown-option-b").element.checked).toBe(true);
+        first.unmount();
+        second.unmount();
+    });
 });

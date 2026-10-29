@@ -3338,6 +3338,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/unshare_with_me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Remove this item from the items shared with the current user.
+         * @description Removes the current user's own share of this item. Other users' shares are left unchanged.
+         */
+        put: operations["unshare_with_me_api_histories__history_id__unshare_with_me_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/write_store": {
         parameters: {
             query?: never;
@@ -4778,6 +4798,26 @@ export interface paths {
          * @description Removes this item from the published list and return the current sharing status.
          */
         put: operations["unpublish_api_pages__id__unpublish_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pages/{id}/unshare_with_me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Remove this item from the items shared with the current user.
+         * @description Removes the current user's own share of this item. Other users' shares are left unchanged.
+         */
+        put: operations["unshare_with_me_api_pages__id__unshare_with_me_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -6805,6 +6845,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visualizations/{id}/unshare_with_me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Remove this item from the items shared with the current user.
+         * @description Removes the current user's own share of this item. Other users' shares are left unchanged.
+         */
+        put: operations["unshare_with_me_api_visualizations__id__unshare_with_me_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/whoami": {
         parameters: {
             query?: never;
@@ -7348,6 +7408,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workflows/{workflow_id}/unshare_with_me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Remove this item from the items shared with the current user.
+         * @description Removes the current user's own share of this item. Other users' shares are left unchanged.
+         */
+        put: operations["unshare_with_me_api_workflows__workflow_id__unshare_with_me_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workflows/{workflow_id}/usage": {
         parameters: {
             query?: never;
@@ -7835,6 +7915,13 @@ export interface components {
              * @description The link to be opened when the button is clicked.
              */
             link: string;
+            /**
+             * Target
+             * @description Open the link in the current tab or a new tab.
+             * @default _self
+             * @enum {string}
+             */
+            target: "_self" | "_blank";
         };
         /**
          * ActionSuggestion
@@ -19987,7 +20074,7 @@ export interface components {
             /** Can Modify Folder */
             can_modify_folder: boolean;
             /** Folder Description */
-            folder_description: string;
+            folder_description: string | null;
             /** Folder Name */
             folder_name: string;
             /** Full Path */
@@ -23145,6 +23232,34 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /** RuntimeEnvironmentVariable */
+        RuntimeEnvironmentVariable: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+        };
+        /** RuntimeEnvironmentWarningJobMessage */
+        RuntimeEnvironmentWarningJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /**
+             * Type
+             * @constant
+             */
+            type: "runtime_environment_warning";
+            /** Variable Names */
+            variable_names: string[];
+        };
         /** SampleSheetColumnDefinition */
         SampleSheetColumnDefinition: {
             /** Default Value */
@@ -24118,6 +24233,7 @@ export interface components {
                       | components["schemas"]["OutputDiscoveryJobMessage"]
                       | components["schemas"]["StdioReadErrorJobMessage"]
                       | components["schemas"]["UnknownDatatypeJobMessage"]
+                      | components["schemas"]["RuntimeEnvironmentWarningJobMessage"]
                   )[]
                 | null;
             /**
@@ -28740,7 +28856,7 @@ export interface components {
                 | null;
             /**
              * Invocation state
-             * @description State of workflow invocation.
+             * @description State of workflow invocation. `completed` means every job reached a terminal state (ok, error, deleted, skipped, paused or stopped), not that every job succeeded; see `job_state_summary` in `/api/invocations/{invocation_id}/completion`.
              */
             state: components["schemas"]["InvocationState"];
             /**
@@ -28867,7 +28983,7 @@ export interface components {
             };
             /**
              * Invocation state
-             * @description State of workflow invocation.
+             * @description State of workflow invocation. `completed` means every job reached a terminal state (ok, error, deleted, skipped, paused or stopped), not that every job succeeded; see `job_state_summary` in `/api/invocations/{invocation_id}/completion`.
              */
             state: components["schemas"]["InvocationState"];
             /**
@@ -30286,6 +30402,11 @@ export interface components {
                       | components["schemas"]["ContainerRequirement"]
                   )[]
                 | null;
+            /**
+             * runtime_environment_variables
+             * @default []
+             */
+            runtime_environment_variables: components["schemas"]["RuntimeEnvironmentVariable"][];
             /**
              * shell_command
              * @description A string that contains the command to be executed. Reference inputs inside `$()` as `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files; `${ ... }` evaluates a JavaScript function body that must return a value. Substituted values are not shell-quoted, so quote them yourself. Because `$(` and `${` are consumed by the expression evaluator, shell command substitution and braced parameter expansion do not reach the shell: escape them as `\$(` and `\${`, and prefer unbraced variables such as `$GALAXY_SLOTS`.
@@ -44238,6 +44359,48 @@ export interface operations {
             };
         };
     };
+    unshare_with_me_api_histories__history_id__unshare_with_me_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     write_store_api_histories__history_id__write_store_post: {
         parameters: {
             query?: never;
@@ -48879,6 +49042,48 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    unshare_with_me_api_pages__id__unshare_with_me_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the Page. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
@@ -55095,6 +55300,48 @@ export interface operations {
             };
         };
     };
+    unshare_with_me_api_visualizations__id__unshare_with_me_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Visualization. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     whoami_api_whoami_get: {
         parameters: {
             query?: never;
@@ -56833,6 +57080,48 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    unshare_with_me_api_workflows__workflow_id__unshare_with_me_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
+                workflow_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {

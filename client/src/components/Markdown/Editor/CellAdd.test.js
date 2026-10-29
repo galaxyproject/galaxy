@@ -53,6 +53,20 @@ describe("CellAdd.vue", () => {
         expect(wrapper.findComponent(Popper).exists()).toBe(true);
     });
 
+    it("announces the popup as expanded or collapsed, not pressed", async () => {
+        const wrapper = mountTarget();
+        await wrapper.vm.$nextTick();
+        const button = wrapper.get("button");
+        expect(button.attributes("aria-expanded")).toBe("false");
+        expect(button.attributes("aria-pressed")).toBeUndefined();
+
+        await button.trigger("click");
+        await wrapper.vm.$nextTick();
+
+        expect(button.attributes("aria-expanded")).toBe("true");
+        expect(button.attributes("aria-pressed")).toBeUndefined();
+    });
+
     it("filters templates based on search input", async () => {
         const wrapper = mountTarget();
         await wrapper.vm.$nextTick();
@@ -85,5 +99,18 @@ describe("CellAdd.vue", () => {
             toggle: true,
             id: expect.any(Number),
         });
+    });
+
+    it("returns focus to the add button when Escape closes the menu from the search box", async () => {
+        const wrapper = mountTarget();
+        const button = wrapper.findComponent(GButton);
+        await button.trigger("click");
+        const search = wrapper.findComponent(DelayedInput).get("input");
+        search.element.focus();
+        expect(document.activeElement).toBe(search.element);
+        await search.trigger("keydown", { key: "Escape" });
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
+        expect(document.activeElement).toBe(button.element);
+        wrapper.unmount();
     });
 });
