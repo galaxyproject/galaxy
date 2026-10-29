@@ -359,6 +359,22 @@ class TestHistoryManager(BaseTestCase):
         self.history_manager.update(history1, {"name": "new name"})
         assert self.history_manager.most_recent(user2) == history1
 
+    def test_history_for_conversion_requires_ownership(self):
+        user2 = self.user_manager.create(**user2_data)
+        user2_history = self.history_manager.create(name="user2", user=user2)
+        hda = self.add_hda_to_history(user2_history)
+        admin_history = self.history_manager.create(name="admin", user=self.admin_user)
+        history_for_conversion = self.history_manager._history_for_conversion
+
+        assert history_for_conversion(user2, hda, None) == user2_history
+        # An admin's current history may belong to another user.
+        assert history_for_conversion(self.admin_user, hda, user2_history) == admin_history
+
+        anon_history = self.history_manager.create(name="anon", user=None)
+        anon_hda = self.add_hda_to_history(self.history_manager.create(name="other anon", user=None))
+        assert history_for_conversion(None, anon_hda, anon_history) == anon_history
+        assert history_for_conversion(None, anon_hda, None) is None
+
     def test_rating(self):
         user2 = self.user_manager.create(**user2_data)
         manager = self.history_manager

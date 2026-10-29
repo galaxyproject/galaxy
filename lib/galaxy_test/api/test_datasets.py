@@ -611,7 +611,9 @@ class TestDatasetsApi(ApiTestCase):
         hda = self.dataset_populator.new_dataset(history_id, content=content, file_type="bed", wait=True)
         newer_history_id = self.dataset_populator.new_history()
         # First request queues the fli conversion.
-        self.dataset_populator.search_dataset_features_raw(hda["id"], "genea")
+        response = self.dataset_populator.search_dataset_features_raw(hda["id"], "genea")
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "not available")
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
         response = self.dataset_populator.search_dataset_features_raw(hda["id"], "genea")
         self._assert_status_code_is(response, 200)
