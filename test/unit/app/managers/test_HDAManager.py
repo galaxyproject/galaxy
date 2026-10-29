@@ -214,28 +214,6 @@ class TestHDAManager(HDATestCase):
             self.hda_manager._purge(self.hda_manager.by_id(task_call.kwargs["hda_id"]))
         assert owner.get_disk_usage() == 0
 
-    def test_copy_to_another_user_charges_them(self):
-        self.trans.app.config.allow_user_dataset_purge = True
-        owner, item1 = self._create_charged_hda(size=10)
-        other_user = self.user_manager.create(**user3_data)
-        other_history = self.history_manager.create(name="other_history", user=other_user)
-
-        self.log("should charge the user receiving the copy, and a recalculation should agree")
-        copy = self.hda_manager.copy(item1, history=other_history)
-        assert other_user.get_disk_usage() == 10
-        other_user.calculate_and_set_disk_usage(model.Dataset.object_store)
-        assert other_user.get_disk_usage() == 10
-
-        self.log("should charge a second copy of the same dataset only once")
-        second_copy = self.hda_manager.copy(item1, history=other_history)
-        assert other_user.get_disk_usage() == 10
-
-        self.log("should bring the usage back to 0 when the copies are purged")
-        self.hda_manager.purge(copy)
-        self.hda_manager.purge(second_copy)
-        assert other_user.get_disk_usage() == 0
-        assert owner.get_disk_usage() == 10
-
     def test_copy_of_library_dataset_charges_nothing(self):
         owner, item1 = self._create_charged_hda(size=10)
         ldda = model.LibraryDatasetDatasetAssociation(dataset=item1.dataset, name="in_library")

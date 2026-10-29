@@ -214,18 +214,19 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
 
         with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
             other_history_id = self.dataset_populator.new_history()
-            # Copy a dataset, and a collection with its datasets
+            # Copy a dataset twice, and a collection with its datasets
             copy = self.dataset_populator.copy_hda(other_history_id, hda_id)
+            second_copy = self.dataset_populator.copy_hda(other_history_id, hda_id)
             hdca_copy = self.dataset_collection_populator.copy_collection(other_history_id, hdca_id).json()
 
-            # The copies are counted, and a recalculation agrees
+            # The copies are counted, each dataset once, and a recalculation agrees
             expected_usage = 10 + 20 + 30
             assert self.dataset_populator.total_disk_usage() == expected_usage
             self.recalculate_disk_usage()
             assert self.dataset_populator.total_disk_usage() == expected_usage
 
             # Purging them brings the usage back to 0
-            copy_ids = [copy["id"]] + [element["object"]["id"] for element in hdca_copy["elements"]]
+            copy_ids = [copy["id"], second_copy["id"]] + [element["object"]["id"] for element in hdca_copy["elements"]]
             for copy_id in copy_ids:
                 self.dataset_populator.delete_dataset(other_history_id, copy_id, purge=True, wait_for_purge=True)
             assert self.dataset_populator.total_disk_usage() == 0
