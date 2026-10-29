@@ -240,7 +240,7 @@ describe("opening a saved visualization before the viewer is known", () => {
         await flushPromises();
         expect(wrapper.findComponent(FRAME).exists()).toBe(false);
         expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(false);
-        expect(wrapper.text()).toContain("Failed to load the current user.");
+        expect(wrapper.text()).toContain("Network down");
     });
 
     it("shows the frame without an error when the viewer loaded but the shared load failed later", async () => {

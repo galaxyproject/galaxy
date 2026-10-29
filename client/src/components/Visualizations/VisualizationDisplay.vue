@@ -6,6 +6,7 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import { useUserStore } from "@/stores/userStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -66,16 +67,17 @@ onBeforeRouteUpdate(confirmDiscard);
 onMounted(async () => {
     window.addEventListener("beforeunload", onUnload);
     if (props.visualizationId) {
-        const [{ data, error }] = await Promise.all([
+        const [{ data, error }, userError] = await Promise.all([
             GalaxyApi().GET("/api/visualizations/{id}", {
                 params: { path: { id: props.visualizationId } },
             }),
-            userStore.loadUser(false).catch(() => undefined),
+            userStore.loadUser(false).catch((e) => e),
         ]);
         if (error) {
             errorMessage.value = error.err_msg;
         } else if (currentUser.value === null) {
-            errorMessage.value = "Failed to load the current user.";
+            // A load that resolves can still leave no user, so keep a fallback message.
+            errorMessage.value = userError ? errorMessageAsString(userError) : "Failed to load the current user.";
         } else if (data?.latest_revision?.config) {
             visualizationConfig.value = data.latest_revision.config;
             visualizationTitle.value = data.title;
