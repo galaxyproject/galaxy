@@ -615,6 +615,11 @@ histories:
     bulk_delete_button: 'button[id="history-list-footer-bulk-delete-button"]'
     bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
     bulk_open_multiview_button: 'button[id="history-list-footer-bulk-open-multiview-button"]'
+  history_card:
+    selectors:
+      _: '.history-card-list #g-card-history-${history_id}'
+      tags_toggle: '${_} .stateless-tags .toggle-button'
+      tag: '${_} .stateless-tags .tag[data-option="${tag}"]'
   multiview:
     selectors:
       activity: '#activity-multiview'

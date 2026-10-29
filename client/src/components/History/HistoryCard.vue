@@ -36,6 +36,7 @@ import { isArchivedHistory, isMyHistory } from "@/api/histories";
 import { useHistoryCardActions } from "@/components/History/useHistoryCardActions";
 import { useHistoryCardBadges } from "@/components/History/useHistoryCardBadges";
 import { useHistoryCardIndicators } from "@/components/History/useHistoryCardIndicators";
+import { useSerialTagSaves } from "@/composables/serialTagSaves";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -199,14 +200,21 @@ const { historyCardTitleBadges } = useHistoryCardBadges(
     (k, v) => emit("updateFilter", k, v),
 );
 
+const history = computed(() => props.history);
+
+const { saveTags } = useSerialTagSaves({
+    // updated in place: a list reload re-sorts the list and moves the card away from the open tag editor
+    setTags: (tags) => (history.value.tags = tags),
+    onFailed: () => emit("refreshList", true, true),
+});
+
 /**
  * Handles updating tags for a history
  * @param {string} historyId - The ID of the history to update
  * @param {string[]} tags - The new array of tags to set
  */
-async function onTagsUpdate(historyId: string, tags: string[]) {
-    await historyStore.updateHistory(historyId, { tags: tags });
-    emit("refreshList", true, true);
+function onTagsUpdate(historyId: string, tags: string[]) {
+    saveTags(tags, async () => (await historyStore.updateHistory(historyId, { tags })).tags);
 }
 
 function onClick(event: Event) {

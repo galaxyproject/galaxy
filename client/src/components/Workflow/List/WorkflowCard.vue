@@ -7,6 +7,7 @@ import { useWorkflowCardActions } from "@/components/Workflow/List/useWorkflowCa
 import { useWorkflowCardBadges } from "@/components/Workflow/List/useWorkflowCardBadges";
 import { useWorkflowCardIndicators } from "@/components/Workflow/List/useWorkflowCardIndicators";
 import { updateWorkflow } from "@/components/Workflow/workflows.services";
+import { useSerialTagSaves } from "@/composables/serialTagSaves";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
@@ -72,10 +73,15 @@ const description = computed(() => {
     }
 });
 
-async function onTagsUpdate(tags: string[]) {
-    workflow.value.tags = tags;
-    await updateWorkflow(workflow.value.id, { tags });
-    emit("refreshList", true, true);
+const { saveTags } = useSerialTagSaves({
+    // updated in place: a list reload re-sorts the list and moves the card away from the open tag editor
+    setTags: (tags) => (workflow.value.tags = tags),
+    onFailed: () => emit("refreshList", true, true),
+});
+
+function onTagsUpdate(tags: string[]) {
+    const workflowId = workflow.value.id;
+    saveTags(tags, async () => (await updateWorkflow(workflowId, { tags })).tags);
 }
 
 async function onTagClick(tag: string) {
