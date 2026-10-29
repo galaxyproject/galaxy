@@ -109,12 +109,10 @@ const ELLIPSIS_THRESHOLD = 3;
 const rootRef = ref<HTMLElement | null>(null);
 const internalPage = ref(1);
 
-const safePerPage = computed(() => Math.max(Math.floor(props.perPage) || 20, 1));
-// 0 shows one page button, a negative limit the default of 5
-const safeLimit = computed(() => {
-    const limit = Math.floor(props.limit) || 1;
-    return limit < 1 ? 5 : limit;
-});
+const atLeastOne = (value: number) => Math.max(Math.floor(value) || 1, 1);
+
+const safePerPage = computed(() => atLeastOne(props.perPage));
+const safeLimit = computed(() => atLeastOne(props.limit));
 const numberOfPages = computed(() => Math.max(Math.ceil(Math.max(props.totalRows || 0, 0) / safePerPage.value), 1));
 
 const currentPage = computed(() => {

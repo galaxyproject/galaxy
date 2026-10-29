@@ -113,6 +113,11 @@ describe("GPagination", () => {
         expect(visibleItems(mountPagination({ limit: 1, modelValue: 5 }))).toEqual(["«", "‹", "5", "›", "»"]);
     });
 
+    it("clamps a limit below 1 to a single page button", () => {
+        expect(visibleItems(mountPagination({ limit: 0, modelValue: 5 }))).toEqual(["«", "‹", "5", "›", "»"]);
+        expect(visibleItems(mountPagination({ limit: -1, modelValue: 5 }))).toEqual(["«", "‹", "5", "›", "»"]);
+    });
+
     it("keeps a compact pager to the current page between the pinned ends", () => {
         const props = { limit: 3, firstNumber: true, lastNumber: true, hideGotoEndButtons: true };
 
