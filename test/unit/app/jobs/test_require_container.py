@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from galaxy.app import GalaxyManagerApplication
 
 
-def _job_wrapper(tool_type="default", require_container="False"):
+def _job_wrapper(tool_type="default", require_container="False", require_container_for_user_defined_tools=True):
     tool = SimpleNamespace(
         tool_type=tool_type,
         containers=[],
@@ -27,6 +27,9 @@ def _job_wrapper(tool_type="default", require_container="False"):
     )
     destination_params = {"require_container": require_container}
     job_wrapper = SimpleNamespace(
+        app=SimpleNamespace(
+            config=SimpleNamespace(require_container_for_user_defined_tools=require_container_for_user_defined_tools)
+        ),
         tool=tool,
         guest_ports=None,
         working_directory="/jobs/000/1",
@@ -51,10 +54,20 @@ def _runner_without_containers():
     return runner
 
 
-def test_user_defined_tools_always_require_container():
+def test_user_defined_tools_require_container_by_default():
     assert _job_wrapper(tool_type="user_defined").requires_containerization
     assert not _job_wrapper().requires_containerization
     assert _job_wrapper(require_container="True").requires_containerization
+
+
+def test_user_defined_tools_container_requirement_configurable():
+    assert not _job_wrapper(
+        tool_type="user_defined", require_container_for_user_defined_tools=False
+    ).requires_containerization
+    # The destination can still require it.
+    assert _job_wrapper(
+        tool_type="user_defined", require_container="True", require_container_for_user_defined_tools=False
+    ).requires_containerization
 
 
 @pytest.mark.parametrize(

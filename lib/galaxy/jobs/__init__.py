@@ -1229,8 +1229,12 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def requires_containerization(self):
-        # User-defined tools run arbitrary commands, never run them on the host.
-        if self.tool and self.tool.tool_type == "user_defined":
+        # User-defined tools run arbitrary commands, don't run them on the host.
+        if (
+            self.tool
+            and self.tool.tool_type == "user_defined"
+            and self.app.config.require_container_for_user_defined_tools
+        ):
             return True
         return util.asbool(self.get_destination_configuration("require_container", "False"))
 

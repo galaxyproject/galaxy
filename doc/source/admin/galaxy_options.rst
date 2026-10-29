@@ -6675,3 +6675,17 @@
     for user defined tools.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``require_container_for_user_defined_tools``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Fail jobs of user defined tools that would not run in a container,
+    regardless of the destination's ``require_container`` setting.
+    User defined tools run arbitrary commands, only disable this if
+    the job destinations isolate them in some other way (or for
+    testing).
+:Default: ``true``
+:Type: bool
