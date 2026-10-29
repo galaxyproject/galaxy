@@ -18,6 +18,7 @@ import { patchRouterPush } from "./router-push";
 
 import CenterFrame from "./modules/CenterFrame.vue";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
+import AnotherGalaxyPicker from "@/components/AnotherGalaxy/AnotherGalaxyPicker.vue";
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes.vue";
 import CitationsList from "@/components/Citation/CitationsList.vue";
 import ClientError from "@/components/ClientError.vue";
@@ -183,6 +184,13 @@ export function getRouter(Galaxy) {
                     initialX: route.query.initialX ? parseInt(route.query.initialX) : undefined,
                     initialY: route.query.initialY ? parseInt(route.query.initialY) : undefined,
                 }),
+            },
+            /** Opened in a popup by another Galaxy to choose items to import there */
+            {
+                path: "/pick/another-galaxy",
+                component: AnotherGalaxyPicker,
+                beforeEnter: requireAuth,
+                props: (route) => ({ returnTo: route.query.return, nonce: route.query.nonce }),
             },
             {
                 name: "error",
