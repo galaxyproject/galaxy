@@ -55,6 +55,7 @@ async function mountSelectionOperationsWrapper(config, propsData = {}) {
             $router: { push: jest.fn() },
         },
         stubs: {
+            BDropdownItem: { template: "<button @click=\"$emit('click')\"><slot /></button>" },
             CollectionCreatorIndex: { name: "CollectionCreatorIndex", template: "<div />" },
         },
     });
@@ -341,15 +342,16 @@ describe("History Selection Operations", () => {
             wrapper = await mountSelectionOperationsWrapper(TASKS_CONFIG, { contentSelection: selection });
         });
 
-        it("should hand the selection to the list wizard", async () => {
-            wrapper.vm.listWizard(false);
+        it("should hand the selection to the list wizard and leave selection mode", async () => {
+            await wrapper.find('[data-description="auto build list"]').trigger("click");
             expect(useCollectionBuilderItemSelection().selectedItems).toEqual(Array.from(selection.values()));
             expect(wrapper.vm.$router.push).toHaveBeenCalledWith("/collection/new_list?advanced=false");
+            expect(wrapper.emitted("update:show-selection")).toEqual([[false]]);
         });
 
         it("should leave selection mode when the creator modal creates a collection", async () => {
-            wrapper.vm.buildDatasetListAll();
-            await wrapper.vm.$nextTick();
+            await wrapper.setProps({ isQuerySelection: true, selectionSize: 5 });
+            await wrapper.find('[data-description="build list all"]').trigger("click");
             wrapper.findComponent({ name: "CollectionCreatorIndex" }).vm.$emit("created-collection", { id: "c1" });
             expect(wrapper.emitted("update:show-selection")).toEqual([[false]]);
         });
