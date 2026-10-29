@@ -1,7 +1,7 @@
 <template>
     <div aria-labelledby="jobs-title">
         <h1 id="jobs-title" class="h-lg">Jobs</h1>
-        <b-alert v-if="message" :variant="status" show>
+        <b-alert v-if="message" :variant="status" show data-description="jobs status alert">
             {{ message }}
         </b-alert>
         <Heading h2 size="md" separator>Job Lock</Heading>
@@ -108,7 +108,9 @@
                         <b-form-input id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
                         </b-form-input>
                         <b-input-group-append>
-                            <b-btn type="submit" :disabled="stopping">Submit</b-btn>
+                            <b-btn type="submit" :disabled="stopping" data-description="stop selected jobs"
+                                >Submit</b-btn
+                            >
                         </b-input-group-append>
                     </b-input-group>
                 </b-form-group>

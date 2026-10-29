@@ -1314,6 +1314,11 @@ admin:
       filter_link_by_handler: '.job-filter-link-handler[data-handler="${handler}"]'
       filter_link_by_runner: '.job-filter-link-runner[data-runner="${runner}"]'
       filter_query: '#job-search .search-query'
+      select_all: '.jobs-table thead .custom-control-label'
+      row_select: '.jobs-table tbody .custom-control-label'
+      stop_message: '#stop-message'
+      stop_submit: '[data-description="stop selected jobs"]'
+      status_alert: '[data-description="jobs status alert"]'
 
   toolshed:
     selectors:
