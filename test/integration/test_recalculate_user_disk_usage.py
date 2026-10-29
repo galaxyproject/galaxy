@@ -262,6 +262,37 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
                 self.dataset_populator.delete_dataset(other_history_id, copy_id, purge=True, wait_for_purge=True)
             assert self.dataset_populator.total_disk_usage() == 0
 
+    def test_collection_operation_on_another_users_collection_is_counted(self):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0" * 19, "0" * 29], wait=True
+        ).json()["output_collections"][0]["id"]
+        self.dataset_populator.make_public(history_id)
+
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            other_history_id = self.dataset_populator.new_history()
+            # The tool copies the other user's datasets into this user's history
+            run_response = self.dataset_populator.run_tool(
+                "__FILTER_FAILED_DATASETS__", {"input": {"src": "hdca", "id": hdca_id}}, other_history_id
+            )
+            self.dataset_populator.wait_for_history(other_history_id, assert_ok=True)
+            filtered = self.dataset_populator.get_history_collection_details(
+                other_history_id, content_id=run_response["output_collections"][0]["id"]
+            )
+
+            # The copies are counted, and a recalculation agrees
+            expected_usage = 20 + 30
+            assert self.dataset_populator.total_disk_usage() == expected_usage
+            self.recalculate_disk_usage()
+            assert self.dataset_populator.total_disk_usage() == expected_usage
+
+            # Purging them brings the usage back to 0
+            for element in filtered["elements"]:
+                self.dataset_populator.delete_dataset(
+                    other_history_id, element["object"]["id"], purge=True, wait_for_purge=True
+                )
+            assert self.dataset_populator.total_disk_usage() == 0
+
     def test_cached_job_from_another_user_is_counted(self):
         history_id = self.dataset_populator.new_history()
         run_response = self.dataset_populator.run_tool("create_2", {"sleep_time": 0}, history_id)
