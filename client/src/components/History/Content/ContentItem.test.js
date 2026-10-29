@@ -121,6 +121,12 @@ describe("ContentItem", () => {
         expect(wrapper.findComponent(ContentOptions).exists()).toBe(true);
     });
 
+    it("hides the options of a purged collection element dataset", async () => {
+        await wrapper.setProps({ isHistoryItem: false, item: { id: "item_id", purged: true } });
+        expect(wrapper.find(".content-purged").exists()).toBe(true);
+        expect(wrapper.findComponent(ContentOptions).exists()).toBe(false);
+    });
+
     it("check basics", async () => {
         expect(wrapper.attributes("data-hid")).toBe("1");
         expect(wrapper.find(".content-title").text()).toBe("name");

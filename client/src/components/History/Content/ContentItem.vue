@@ -166,6 +166,10 @@ const isCollection = computed(() => {
 
 const isPurged = computed(() => isContentItemPurged(props.item));
 
+// Collection elements carry `purged` but not `deleted`, so a purged dataset hides its options on its own;
+// a collection whose datasets are all purged keeps them until the collection itself is deleted.
+const hideOptions = computed(() => isPurged.value && (!isCollection.value || props.item.deleted));
+
 const purgedTitle = computed(() => {
     return isCollection.value
         ? "All datasets in this collection have been permanently deleted"
@@ -400,7 +404,7 @@ function unexpandedClick(event: Event) {
                         <span class="indicator">{{ item.sub_items?.length }}</span>
                     </GButton>
                     <ContentOptions
-                        v-if="!isPlaceholder && !(isPurged && item.deleted)"
+                        v-if="!isPlaceholder && !hideOptions"
                         :writable="writable"
                         :is-dataset="isDataset"
                         :is-deleted="item.deleted"
