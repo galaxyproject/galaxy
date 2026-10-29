@@ -159,14 +159,14 @@ describe("JobsList", () => {
         await wrapper.find("#send-notification").setChecked(true);
         await wrapper.find("#stop-message").setValue("maintenance");
         vi.spyOn(
-            wrapper.vm as unknown as { sendNotificationToUsers: () => Promise<string> },
+            wrapper.vm as unknown as { sendNotificationToUsers: () => Promise<{ ok: boolean; message: string }> },
             "sendNotificationToUsers",
         ).mockRejectedValueOnce(new Error("Network Error"));
         const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
         await stopForm?.trigger("submit");
         await flushPromises();
 
-        expect(wrapper.find(".alert-success").text()).toBe(
+        expect(wrapper.find(".alert-warning").text()).toBe(
             "Stopped 2 of 2 jobs. Notifications could not be sent: Network Error",
         );
         expect((wrapper.vm as unknown as { stopping: boolean }).stopping).toBe(false);

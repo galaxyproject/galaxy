@@ -382,9 +382,12 @@ export default {
             }
 
             if (errors.length) {
-                return `Notification sent to ${numSuccess} out of ${totalUsers} users. ${errors.length} errors occurred.`;
+                return {
+                    ok: false,
+                    message: `Notification sent to ${numSuccess} out of ${totalUsers} users. ${errors.length} errors occurred.`,
+                };
             }
-            return `Notification sent to ${numSuccess} out of ${totalUsers} users.`;
+            return { ok: true, message: `Notification sent to ${numSuccess} out of ${totalUsers} users.` };
         },
         getJobViewLink(jobId) {
             return `${getAppRoot()}jobs/${jobId}/view`;
@@ -402,11 +405,15 @@ export default {
             if (failed.length) {
                 message += ` ${failed.length} could not be stopped and remain selected: ${failed[0].error.message}`;
             }
+            let notificationFailed = false;
             if (this.sendNotification && stopped.length) {
                 try {
-                    message += ` ${await this.sendNotificationToUsers(stopped)}`;
+                    const notification = await this.sendNotificationToUsers(stopped);
+                    message += ` ${notification.message}`;
+                    notificationFailed = !notification.ok;
                 } catch (error) {
                     message += ` Notifications could not be sent: ${errorMessageAsString(error)}`;
+                    notificationFailed = true;
                 }
             }
             // Keep failed jobs selected (and the stop message) so the admin can resubmit.
@@ -417,7 +424,7 @@ export default {
             this.stopping = false;
             if (await this.update()) {
                 this.message = message;
-                this.status = failed.length ? "danger" : "success";
+                this.status = failed.length ? "danger" : notificationFailed ? "warning" : "success";
             } else {
                 // Keep the refresh error visible next to the stop summary.
                 this.message = `${message} Refreshing the job list failed: ${this.message}`;
