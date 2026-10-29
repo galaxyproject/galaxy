@@ -644,6 +644,7 @@ histories:
       share_with_input: '.share_with_view input'
       make_accessible: '.make-accessible label'
       make_publishable: '.make-publishable label'
+      published_items_link: '.make-publishable a'
       tab_make_private: '[aria-controls="history-make-private-tab"]'
       make_private: '[data-description="history make private"]'
       permissions_change_required: '[data-description="sharing permissions change required"]'
