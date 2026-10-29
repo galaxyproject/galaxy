@@ -703,7 +703,7 @@ Fixes
   `Pull Request 10174`_
 * Fix ToolValidator get_list_of_copied_sample_files
   `Pull Request 10183`_
-* Bump http-proxy from 1.17.0 to 1.18.1 in /packages/web_framework/src/galaxy/web/proxy/js
+* Bump http-proxy from 1.17.0 to 1.18.1 in /lib/galaxy/web/proxy/js
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 10190`_
 * Unicodify binary strings in Tool Shed alert emails
@@ -736,7 +736,7 @@ Fixes
   `Pull Request 10256`_
 * Persist tool_cache_data_dir tag if specified
   `Pull Request 10281`_
-* Bump tensorflow from 2.3.0 to 2.3.1 in /packages/app/src/galaxy/dependencies
+* Bump tensorflow from 2.3.0 to 2.3.1 in /lib/galaxy/dependencies
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 10300`_
 * Fix container resolution when requirement version is not specified

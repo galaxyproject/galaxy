@@ -288,7 +288,7 @@ Enhancements
 * Use the database temp directory to store the Mako template cache when
   running framework tests.
   `Pull Request 956`_
-* Rename ``packages/app/src/galaxy/main.py`` to scripts/galaxy-main
+* Rename ``lib/galaxy/main.py`` to scripts/galaxy-main
   `Pull Request 994`_
 * Fix deferred dom removal.
   `Pull Request 997`_

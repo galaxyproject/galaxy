@@ -35,33 +35,6 @@ fixtures and frontend assets use symbolic links. Shared pytest and sharding
 support lives in `packages/test_driver`; composed application tests and their
 fixtures live under `test/`.
 
-### Development profiles
-
-Every profile resolves from the single root workspace lock. Tooling-only
-requirement exports live in the repository-level `requirements/` directory;
-the runtime exports (`pinned-requirements.txt`, `conditional-requirements.txt`,
-`conditional-constraints.txt`) ship with the `galaxy-app` wheel and stay in
-`packages/app/src/galaxy/dependencies/`.
-
-| Profile | Setup | Notes |
-| --- | --- | --- |
-| App startup | `uv sync --locked --package galaxy-web-apps --all-extras` | Installs the editable server closure; startup uses an inexact sync to preserve additional dependencies. |
-| Backend tests | `uv sync --locked --all-packages --all-extras --group dev` | The `dev` group includes the `test` group. |
-| Tool Shed | `uv sync --locked --package galaxy-tool-shed --all-extras --group dev` | Installs the Tool Shed server closure; start with `run_tool_shed.sh`. |
-| Browser tests | covered by the `test` group | `playwright` + `pytest-playwright`, `selenium` + `axe-selenium-python`. |
-| Docs | covered by the `dev` group | Sphinx stack; docs CI installs `sphinxcontrib-simpleversioning` on top. |
-| Typecheck | `uv sync --locked --all-packages --all-extras --group typecheck` | Or install `requirements/pinned-typecheck-requirements.txt` into an existing environment. |
-| Lint | isolated environment, not a group | The pinned flake8/ruff tool set conflicts with the application resolve; build from `requirements/lint-requirements.txt`, frozen as `requirements/pinned-lint-requirements.txt` by `update_lint_requirements.sh`. |
-
-Member extras used by `packages/test.sh` and installable via
-`uv sync --locked --package <dist> --all-extras`:
-
-| Package | Extras |
-| --- | --- |
-| `galaxy-util` | `image-util`, `template`, `jstree`, `config-template` |
-| `galaxy-tool-util` | `cwl`, `mulled`, `edam` (plus `extended-assertions`, `test`) |
-| `galaxy-objectstore` | `irods`, `azure-blob`, `s3` (plus `all`, `test`) |
-
 Here is an example workflow that syncs the shared development environment
 once from the repository root and then runs tests for a specific package:
 
@@ -70,15 +43,8 @@ once from the repository root and then runs tests for a specific package:
     $ uv sync --locked --all-packages --all-extras --group dev
     $ uv run --locked --inexact --package galaxy-util --group dev pytest packages/util/tests
 
-`uv lock --check` verifies the lock is up to date without modifying it.
-Runtime exports live under `packages/app/src/galaxy/dependencies/`; tooling
-exports live under `requirements/`. Regenerate them from the existing lock without
-upgrading dependencies with `sh packages/app/src/galaxy/dependencies/update.sh --export-only`.
-Run the same script with `--check` to verify the lock and exports without
-changing them. CI runs this check on dependency changes. `make
-update-dependencies` deliberately upgrades dependencies and regenerates the
-exports; lint and conditional requirements retain their separate inputs.
-
+See the [development FAQ](../doc/source/dev/faq.rst) for environment setup
+commands and dependency maintenance.
 
 The per-package ``Makefile`` (symlinked as e.g. ``packages/auth/Makefile``)
 targets the same root workspace, so package commands can also be run from

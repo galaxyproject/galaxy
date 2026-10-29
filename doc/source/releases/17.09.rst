@@ -302,7 +302,7 @@ Enhancements
   `Pull Request 4396`_
 * Better Error Summaries for API Tests
   `Pull Request 4397`_
-* Fix import order and Python3 compatibility for packages/web_framework/src/galaxy/web/base/
+* Fix import order and Python3 compatibility for lib/galaxy/web/base/
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4403`_
 * Generalize allow_library_path_paste to allow_path_paste.

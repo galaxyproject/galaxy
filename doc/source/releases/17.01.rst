@@ -130,7 +130,7 @@ Fixes
 * Various fixes to escape variables in the client to prevent certain XSS attacks
   (thanks in large part to `@yhoogstrate <https://github.com/yhoogstrate>`__).
   `Pull Request 3403`_, `Pull Request 3416`_, `Pull Request 3448`_
-* Fix import order and Python3 compatibility for packages/app/src/galaxy/tools/
+* Fix import order and Python3 compatibility for lib/galaxy/tools/
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3431`_
 * Fix SLURM job re-submission.

@@ -644,7 +644,7 @@ Fixes
 * Remove NetworkException catch clauses in iRODS object store
   (thanks to `@kxk302 <https://github.com/kxk302>`__).
   `Pull Request 12363`_
-* Bump tensorflow from 2.5.0 to 2.5.1 in /packages/app/src/galaxy/dependencies
+* Bump tensorflow from 2.5.0 to 2.5.1 in /lib/galaxy/dependencies
   `Pull Request 12378`_
 * Added missing triggers package to galaxy data
   (thanks to `@nuwang <https://github.com/nuwang>`__).
@@ -661,7 +661,7 @@ Fixes
   `Pull Request 12413`_
 * Fix flaky failing workflow editor selenium test.
   `Pull Request 12423`_
-* Bump sqlparse from 0.4.1 to 0.4.2 in /packages/app/src/galaxy/dependencies
+* Bump sqlparse from 0.4.1 to 0.4.2 in /lib/galaxy/dependencies
   `Pull Request 12436`_
 * Fix keycloak user creation username handling.
   `Pull Request 12444`_

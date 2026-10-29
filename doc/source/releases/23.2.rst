@@ -858,7 +858,7 @@ Fixes
 * Fix link to mercurial tip in Tool Shed 2.0
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 16895`_
-* Fix type annotation of ``packages/tool_shed/src/tool_shed/test/functional/``
+* Fix type annotation of ``lib/tool_shed/test/functional/``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 16901`_
 * Fix navigation error in Tool Shed tests

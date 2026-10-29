@@ -212,7 +212,7 @@ Enhancements
   `Pull Request 5448`_
 * Drop short-lived ``make client-production`` warning from build scripts.
   `Pull Request 5508`_
-* Use ``with`` statement in ``packages/data/src/galaxy/datatypes/``
+* Use ``with`` statement in ``lib/galaxy/datatypes/``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5623`_
 * Update tool conf samples for recent changes.

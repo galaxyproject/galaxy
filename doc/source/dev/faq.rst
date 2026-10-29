@@ -44,6 +44,43 @@ command from Galaxy's root directory to regenerate the sample YAML files
 
 Then add the regenerated files to your commit.
 
+... set up a Python development environment?
+-------------------------------------------
+
+Use the uv version pinned in the root ``.tool-versions``. Run these commands
+from the repository root:
+
+* Backend development and tests:
+
+  .. code-block:: bash
+
+      uv sync --locked --all-packages --all-extras --group dev
+
+* Galaxy server:
+
+  .. code-block:: bash
+
+      uv sync --locked --package galaxy-web-apps --all-extras
+      ./run.sh
+
+* Tool Shed:
+
+  .. code-block:: bash
+
+      uv sync --locked --package galaxy-tool-shed --all-extras --group dev
+      ./run_tool_shed.sh
+
+* Type checking:
+
+  .. code-block:: bash
+
+      uv sync --locked --all-packages --all-extras --group typecheck
+      make mypy
+
+The ``dev`` group includes test, browser-testing, and documentation dependencies.
+Lint uses an isolated tool environment; run ``make lint`` from a package
+directory. For package tests and isolation checks, see ``packages/README.md``.
+
 ... add or update a Galaxy Python dependency?
 ----------------------------------------------
 
@@ -76,3 +113,14 @@ anything. If a merge conflicts on ``uv.lock``, resolve the conflicts in the
 ``pyproject.toml`` manifests and dependency groups first, regenerate the lock
 with the pinned uv version, and review the resulting dependency diff.
 Regenerating a lock after a merge should not upgrade unrelated dependencies.
+
+To regenerate requirements exports from the existing lock without upgrading
+dependencies, run:
+
+.. code-block:: bash
+
+    sh packages/app/src/galaxy/dependencies/update.sh --export-only
+
+Runtime exports ship with ``galaxy-app`` under
+``packages/app/src/galaxy/dependencies/``; tooling exports live under
+``requirements/``.
