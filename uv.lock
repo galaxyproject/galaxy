@@ -2628,10 +2628,8 @@ wheels = [
 [[package]]
 name = "docopt"
 version = "0.6.2"
-source = { registry = "https://wheels.galaxyproject.org/simple" }
-wheels = [
-    { url = "https://wheels.galaxyproject.org/simple/docopt/docopt-0.6.2-py2.py3-none-any.whl" },
-]
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a2/55/8f8cab2afd404cf578136ef2cc5dfb50baa1761b68c9da1fb1e4eed343c9/docopt-0.6.2.tar.gz", hash = "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491", size = 25901, upload-time = "2014-06-16T11:18:57.406Z" }
 
 [[package]]
 name = "docstring-parser"
@@ -3446,8 +3444,7 @@ dependencies = [
     { name = "h5py" },
     { name = "ijson" },
     { name = "isa-rwval" },
-    { name = "isal", version = "1.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
-    { name = "isal", version = "1.8.0", source = { registry = "https://wheels.galaxyproject.org/simple" }, marker = "python_full_version >= '3.15'" },
+    { name = "isal" },
     { name = "markupsafe" },
     { name = "mrcfile" },
     { name = "msal" },
@@ -3518,7 +3515,7 @@ requires-dist = [
     { name = "python-magic" },
     { name = "roc-validator", marker = "extra == 'test'" },
     { name = "rocrate", specifier = "<0.15.0" },
-    { name = "social-auth-core", specifier = ">=4.5.0,<6" },
+    { name = "social-auth-core", specifier = ">=4.5.0,<7" },
     { name = "sqlalchemy", specifier = ">=2.0.37,!=2.0.41,<2.1" },
     { name = "tifffile" },
     { name = "typing-extensions" },
@@ -4457,8 +4454,7 @@ dependencies = [
     { name = "ijson" },
     { name = "importlib-resources", marker = "python_full_version < '3.12'" },
     { name = "isa-rwval" },
-    { name = "isal", version = "1.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
-    { name = "isal", version = "1.8.0", source = { registry = "https://wheels.galaxyproject.org/simple" }, marker = "python_full_version >= '3.15'" },
+    { name = "isal" },
     { name = "jinja2" },
     { name = "kombu" },
     { name = "lagom" },
@@ -4749,7 +4745,7 @@ requires-dist = [
     { name = "s3fs", specifier = ">=2023.1.0" },
     { name = "schema-salad", specifier = ">=8.7.20240905150001" },
     { name = "slowapi" },
-    { name = "social-auth-core", specifier = ">=4.5.0,<6" },
+    { name = "social-auth-core", specifier = ">=4.5.0,<7" },
     { name = "sortedcontainers" },
     { name = "sqlalchemy", specifier = ">=2.0.37,!=2.0.41,<2.1" },
     { name = "sqlparse" },
@@ -5845,13 +5841,6 @@ wheels = [
 name = "isal"
 version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version == '3.14.*'",
-    "python_full_version == '3.13.*'",
-    "python_full_version == '3.12.*'",
-    "python_full_version == '3.11.*'",
-    "python_full_version < '3.11'",
-]
 sdist = { url = "https://files.pythonhosted.org/packages/9c/35/40ff3eabd401036f792cf55ba9cd19dcd5e3cb79aa5798332885ab0ff1b9/isal-1.8.0.tar.gz", hash = "sha256:124233e9a31a62030a07aafd48c26689561926f4e10417ed3ea46c211218f2b4", size = 4133365, upload-time = "2025-09-10T08:47:12.653Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/18/74c89da55020b80cec9206546bdb8c7c6f6421f48449ee1c6fd92825346c/isal-1.8.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:17cd9014a42d486e5d85d51d0d2b7b7b10d035b69851bfcdf0c30fa764c427d0", size = 237399, upload-time = "2025-09-10T08:47:29.391Z" },
@@ -5896,22 +5885,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f4/c6/a19dd99ae36a28c984aaeb77e06dedaac0d0d413c40792e37461fe0a228a/isal-1.8.0-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:e4f46ec4289e8dc74777a0199528f612f2b8aecd9f60a932990a4f66062bc509", size = 236583, upload-time = "2025-09-10T09:13:18.179Z" },
     { url = "https://files.pythonhosted.org/packages/4d/b2/47ee5ec9b9b67a792225895fb4683a1e3c721e8fe0a4d79d2822e43e4c59/isal-1.8.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:914442a3da17812fc5ab136da6aad2c5cee59d17bb9382b59f7a55efeea28988", size = 267585, upload-time = "2025-09-10T08:47:08.928Z" },
     { url = "https://files.pythonhosted.org/packages/e0/8a/768d91b6078f283c521b79e0a59d7e07a54a0bfab690ab90bcf4c641cc93/isal-1.8.0-cp314-cp314t-win_amd64.whl", hash = "sha256:e76946e7455b1614a6a00bf9ec6444baa3a5217e6806836e0e9a271f0d18f84d", size = 209399, upload-time = "2025-09-10T08:49:19.2Z" },
-]
-
-[[package]]
-name = "isal"
-version = "1.8.0"
-source = { registry = "https://wheels.galaxyproject.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.15'",
-]
-wheels = [
-    { url = "https://wheels.galaxyproject.org/simple/isal/isal-1.8.0-cp315-cp315-macosx_11_0_arm64.whl", hash = "sha256:6799a4979cf3a2e73a514e4138c1cf54bcbe67e67a66cb67a6a0fe2661f948ea" },
-    { url = "https://wheels.galaxyproject.org/simple/isal/isal-1.8.0-cp315-cp315-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:c9518dd48b11365d761ebe0a53fbe7555681c12bf86dbad4333404dd20338dd5" },
-    { url = "https://wheels.galaxyproject.org/simple/isal/isal-1.8.0-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:42ad378cfe8634fdaa5ca1c206760c6d6dd15898c5ede1201d4af8bc1a249b22" },
-    { url = "https://wheels.galaxyproject.org/simple/isal/isal-1.8.0-cp315-cp315t-macosx_11_0_arm64.whl", hash = "sha256:d4db1d05fd7d94deb8d2c2696f5b1bf5ded9d8263766db793a4f493042fe057a" },
-    { url = "https://wheels.galaxyproject.org/simple/isal/isal-1.8.0-cp315-cp315t-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:6ae26324bb447b7ea595181e0a70dc1aa45e901784d6dc6736e31dc307efd07b" },
-    { url = "https://wheels.galaxyproject.org/simple/isal/isal-1.8.0-cp315-cp315t-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5ae3e8baec001d174ab78edeb40f3fc4039cfacf0873e3829fb45e1efb16cb20" },
 ]
 
 [[package]]
@@ -8663,8 +8636,11 @@ wheels = [
 [[package]]
 name = "parsley"
 version = "1.3"
-source = { registry = "https://wheels.galaxyproject.org/simple" }
-sdist = { url = "https://wheels.galaxyproject.org/simple/parsley/Parsley-1.3.tar.gz" }
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/06/52/cac2f9e78c26cff8bb518bdb4f2b5a0c7058dec7a62087ed48fe87478ef0/Parsley-1.3.tar.gz", hash = "sha256:9444278d47161d5f2be76a767809a3cbe6db4db822f46a4fd7481d4057208d41", size = 99616, upload-time = "2015-09-09T02:53:04.899Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2b/d6/4fed8d65e28a970e1c5cb33ce9c7e22e3de745e1b2ae37af051ef16aea3b/Parsley-1.3-py2.py3-none-any.whl", hash = "sha256:c3bc417b8c7e3a96c87c0f2f751bfd784ed5156ffccebe2f84330df5685f8dc3", size = 88932, upload-time = "2015-09-09T02:53:09.977Z" },
+]
 
 [[package]]
 name = "paste"
@@ -11915,7 +11891,7 @@ wheels = [
 
 [[package]]
 name = "social-auth-core"
-version = "5.2.0"
+version = "6.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
@@ -11926,9 +11902,9 @@ dependencies = [
     { name = "requests" },
     { name = "requests-oauthlib" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/31/0b/8d5137b3a020719702e1d159a68c6c4dd863e1ae57fd4875a4a68b2855fe/social_auth_core-5.2.0.tar.gz", hash = "sha256:72d3c52fe87d07c0db8421fee5f5ec33b3dacce449975b8a572cd0691e3de315", size = 292820, upload-time = "2026-09-30T15:55:58.723Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/fc/c0545b9a6a8bed1fec5eb1195999b278f5345c7f1b09ef835b0886092ea0/social_auth_core-6.2.0.tar.gz", hash = "sha256:93daa49e5cb11e7ac06838690679fc6e2901d9add2ba8316651ee19aca26a340", size = 474536, upload-time = "2026-10-20T13:15:02.045Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/31/245e19405808689b60810ec8ebd0a4d6be51d73e69c810e686fb7aede33a/social_auth_core-5.2.0-py3-none-any.whl", hash = "sha256:e7b9990450291488deffce8d92d14d4396021b8d3c4a0ac5c32ec03bfaccc496", size = 492771, upload-time = "2026-09-30T15:55:57.372Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/0c/413127509bc8fbe5dace05ebc09c692096f152ecde65210152b680d8ffd7/social_auth_core-6.2.0-py3-none-any.whl", hash = "sha256:385771345372b9e87b448fe23b1ca4909fcbb0b752d1206600ab3c18342cd321", size = 308148, upload-time = "2026-10-20T13:15:00.267Z" },
 ]
 
 [[package]]
@@ -13613,10 +13589,10 @@ wheels = [
 [[package]]
 name = "whoosh"
 version = "2.7.4"
-source = { registry = "https://wheels.galaxyproject.org/simple" }
-sdist = { url = "https://wheels.galaxyproject.org/simple/whoosh/Whoosh-2.7.4.tar.gz" }
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/25/2b/6beed2107b148edc1321da0d489afc4617b9ed317ef7b72d4993cad9b684/Whoosh-2.7.4.tar.gz", hash = "sha256:7ca5633dbfa9e0e0fa400d3151a8a0c4bec53bd2ecedc0a67705b17565c31a83", size = 968741, upload-time = "2016-04-04T01:19:32.327Z" }
 wheels = [
-    { url = "https://wheels.galaxyproject.org/simple/whoosh/Whoosh-2.7.4-py2.py3-none-any.whl" },
+    { url = "https://files.pythonhosted.org/packages/ba/19/24d0f1f454a2c1eb689ca28d2f178db81e5024f42d82729a4ff6771155cf/Whoosh-2.7.4-py2.py3-none-any.whl", hash = "sha256:aa39c3c3426e3fd107dcb4bde64ca1e276a65a889d9085a6e4b54ba82420a852", size = 468790, upload-time = "2016-04-04T01:19:40.379Z" },
 ]
 
 [[package]]
