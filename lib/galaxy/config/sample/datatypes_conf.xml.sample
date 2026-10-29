@@ -429,7 +429,7 @@
     <datatype extension="wiff2.tar" type="galaxy.datatypes.binary:Wiff2Tar" display_in_upload="true"/>
     <datatype extension="mascotxml" type="galaxy.datatypes.proteomics:MascotXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="mztab" type="galaxy.datatypes.proteomics:MzTab" display_in_upload="true"  description="mzTab has been designed to act as a lightweight, tab-delimited file format for mass spec-derived omics data. This is the version 1.x originally designed for proteomics." description_url="https://github.com/HUPO-PSI/mzTab/"/>
-    <datatype extension="mztab2" type="galaxy.datatypes.proteomics:MzTab2" display_in_upload="true" description="mzTab-M is a lightweight, tab-delimited file format for reporting mass spectrometry-based metabolomics results. This is the version 2.x-M of mzTab format which is a refined version of version 1.x to take into account metabolomics aspects." description_url="https://github.com/HUPO-PSI/mzTab/" />
+    <datatype extension="mztab2" type="galaxy.datatypes.proteomics:MzTab2" display_in_upload="true" description="mzTab-M is a lightweight, tab-delimited file format for reporting mass spectrometry-based metabolomics results. This is the version 2.0.0-M of mzTab format which is a refined version of version 1.x to take into account metabolomics aspects. Version 2.1.0-M introduces major changes to the format and this datatype is deprecated in favor of mztabm." description_url="https://github.com/HUPO-PSI/mzTab/" />
     <datatype extension="mzml" type="galaxy.datatypes.proteomics:MzML" mimetype="application/xml" display_in_upload="true">
         <infer_from suffix="mzml" />
     </datatype>
@@ -505,6 +505,9 @@
     </datatype>
     <datatype extension="colab.tar" auto_compressed_types="gz" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <!-- End Proteomics Datatypes -->
+    <!-- Metabolomics Datatypes -->
+    <datatype extension="mztabm" type="galaxy.datatypes.metabolomics:MzTabM" display_in_upload="true" description="mzTab-M is a lightweight, tab-delimited file format for reporting mass spectrometry-based metabolomics results. It is a variant of mzTab, designed specifically for metabolomics data." description_url="https://github.com/HUPO-PSI/mzTab-M" />
+    <!-- End Metabolomics Datatypes -->
     <!-- FlowCytometry -->
     <datatype extension="fcs" type="galaxy.datatypes.flow:FCS" mimetype="application/octet-stream" display_in_upload="true" description="A FCS binary sequence file with a '.fcs' file extension." />
     <datatype extension="flowtext" type="galaxy.datatypes.tabular:Tabular" subclass="true" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow text file with a '.flowtext' file extension." />
@@ -1394,6 +1397,7 @@
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
     <sniffer type="galaxy.datatypes.xml:Dzi"/>
     <sniffer type="galaxy.datatypes.xml:Sbml"/>
+    <sniffer type="galaxy.datatypes.metabolomics:MzTabM"/>
     <sniffer type="galaxy.datatypes.proteomics:Dta2d"/>
     <sniffer type="galaxy.datatypes.proteomics:Edta"/>
     <sniffer type="galaxy.datatypes.proteomics:ConsensusXML"/>
