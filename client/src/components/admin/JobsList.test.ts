@@ -78,7 +78,7 @@ describe("JobsList", () => {
         expect(wrapper.find(".alert-success").text()).toContain("Stopped 2 of 2 jobs.");
     });
 
-    it("disables Submit while a stop is in flight", async () => {
+    it("disables Submit and selection while a stop is in flight", async () => {
         let finish: (result: Awaited<ReturnType<typeof stopJobs>>) => void = () => {};
         vi.mocked(stopJobs).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
         const wrapper = await mountJobsList();
@@ -91,11 +91,17 @@ describe("JobsList", () => {
         await flushPromises();
 
         expect(stopForm?.find("button[type='submit']").attributes("disabled")).toBeDefined();
+        expect([headerBox(wrapper), ...rowBoxes(wrapper)].map((box) => box.attributes("disabled"))).toEqual([
+            "disabled",
+            "disabled",
+            "disabled",
+        ]);
 
         finish({ stopped: ["job1"], failed: [{ jobId: "job2", error: new Error("Too Many Requests") }] });
         await flushPromises();
 
         expect(stopForm?.find("button[type='submit']").attributes("disabled")).toBeUndefined();
+        expect(rowBoxes(wrapper).map((box) => box.attributes("disabled"))).toEqual([undefined, undefined]);
     });
 
     it("checks the header once every row is ticked", async () => {

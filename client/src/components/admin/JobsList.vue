@@ -136,6 +136,7 @@
                 <b-form-checkbox
                     v-model="allSelected"
                     :indeterminate="indeterminate"
+                    :disabled="stopping"
                     @change="toggleAll"></b-form-checkbox>
             </template>
             <template v-slot:cell(selected)="data">
@@ -143,6 +144,7 @@
                     :key="data.index"
                     v-model="selectedStopJobIds"
                     :checked="allSelected"
+                    :disabled="stopping"
                     :value="data.item['id']"></b-form-checkbox>
             </template>
         </JobsTable>
