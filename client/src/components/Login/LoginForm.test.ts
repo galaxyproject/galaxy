@@ -144,6 +144,11 @@ describe("LoginForm", () => {
         push.mockRestore();
     });
 
+    it("keeps the password reset link from submitting the form", async () => {
+        const wrapper = await mountLoginForm();
+        expect(wrapper.find("#reset-password-link").attributes("type")).toBe("button");
+    });
+
     it("routes expired-password responses to the current-password form", async () => {
         loginResponse = { expired_user: "expired-user-id" };
         const push = vi.spyOn(router, "push").mockImplementation(async () => {});

@@ -277,7 +277,7 @@ and download the image to the cache if ``install=True`` (see also
 is done by a call to ``docker pull`` and ``singularity pull``, respectively.
 Note that, by default the URI is returned in any case, i.e. even if the image
 just has been downloaded or if the image is already in the cache. Only if the
-resolvers are initialized with ``auto_install=True`` the ``resolve`` function
+resolvers are initialized with ``auto_install=False`` the ``resolve`` function
 returns a container description pointing to the cached image. Note that this
 makes a difference only for singularity (since for docker the URI is identical
 to the name of the cached image).

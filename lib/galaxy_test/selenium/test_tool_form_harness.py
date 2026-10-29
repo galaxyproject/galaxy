@@ -52,6 +52,7 @@ DEFAULT_TOOL_TESTS = [
     ("multi_select", 0),
     ("multi_select", 1),
     ("drill_down", 2),
+    ("gx_drill_down_exact", 1),
     ("collection_paired_test", 0),
     ("collection_nested_test", 0),
     ("collection_nested_test", 1),

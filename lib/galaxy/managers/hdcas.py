@@ -288,6 +288,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "element_count",
                 "elements_datatypes",
                 "elements_deleted",
+                "elements_purged",
                 "elements_states",
                 "job_source_id",
                 "job_source_type",
@@ -336,8 +337,9 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
             "contents_url": self.generate_contents_url,
             "job_state_summary": self.serialize_job_state_summary,
             "elements_datatypes": self.serialize_elements_datatypes,
-            "elements_states": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary[2],
-            "elements_deleted": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary[3],
+            "elements_states": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary.states,
+            "elements_deleted": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary.deleted,
+            "elements_purged": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary.purged,
             "collection_id": self.serialize_id,
             "store_times_summary": self.serialize_store_times_summary,
         }
@@ -356,11 +358,11 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
         return item.job_state_summary_dict
 
     def serialize_elements_datatypes(self, item, key, **context):
-        extensions_set = item.dataset_dbkeys_and_extensions_summary[1]
+        extensions_set = item.dataset_dbkeys_and_extensions_summary.extensions
         return list(extensions_set)
 
     def serialize_store_times_summary(self, item, key, **context):
-        store_times_summary = item.dataset_dbkeys_and_extensions_summary[4]
+        store_times_summary = item.dataset_dbkeys_and_extensions_summary.store_times_summary
         return [
             OldestCreateTimeByObjectStoreId(object_store_id=t[0], oldest_create_time=t[1]) for t in store_times_summary
         ]

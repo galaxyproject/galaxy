@@ -55,7 +55,7 @@ jobs:
           path: 'galaxy root'
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
@@ -82,11 +82,11 @@ jobs:
           path: 'galaxy root'
           persist-credentials: false
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version: '3.14'
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           version-file: galaxy root/.tool-versions
       - name: Install release tooling

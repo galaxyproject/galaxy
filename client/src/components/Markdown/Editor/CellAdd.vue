@@ -8,7 +8,8 @@
             tooltip
             tooltip-placement="right"
             :title="title"
-            :pressed="popperRef?.visible">
+            :pressed="popperRef?.visible ?? false"
+            :aria-expanded="String(popperRef?.visible ?? false)">
             <FontAwesomeIcon :icon="faPlus" fixed-width />
             <slot></slot>
         </GButton>

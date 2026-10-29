@@ -91,7 +91,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: '3.14'
       # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
@@ -233,6 +233,16 @@ jobs:
           for pod in $(kubectl get pods -n galaxy-deps --field-selector=status.phase!=Running,status.phase!=Succeeded -o name 2>/dev/null); do
             echo "--- Describing $pod ---"
             kubectl describe -n galaxy-deps $pod
+          done
+
+          echo "=== Logs of pods with unready containers in galaxy namespace ==="
+          for pod in $(kubectl get pods -n galaxy -o json | jq -r '.items[] | select(any(.status.containerStatuses[]?; .ready == false)) | .metadata.name'); do
+            echo "--- Describing $pod ---"
+            kubectl describe -n galaxy pod/$pod
+            echo "--- Logs of $pod ---"
+            kubectl logs -n galaxy pod/$pod --all-containers --tail=300 || true
+            echo "--- Logs of $pod (previous containers) ---"
+            kubectl logs -n galaxy pod/$pod --all-containers --previous --tail=300 || true
           done
       - name: Check the version
         run: |  # zizmor: ignore[template-injection]

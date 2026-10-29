@@ -273,6 +273,9 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                 rval.append(subfolder)
                 rval.extend(self._traverse(trans, subfolder, current_user_roles))
         for ld in folder.datasets:
+            # the legacy library upload commits the LD before linking its LDDA
+            if ld.library_dataset_dataset_association is None:
+                continue
             if not admin:
                 can_access = trans.app.security_agent.can_access_dataset(
                     current_user_roles, ld.library_dataset_dataset_association.dataset

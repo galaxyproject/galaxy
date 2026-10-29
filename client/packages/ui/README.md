@@ -30,9 +30,9 @@ load, is generated from it: run `pnpm --filter @galaxyproject/galaxy-ui build:to
 
 ## Public class names
 
-Consumers restyle a few components by class name, so these classes are public API; renaming one
-breaks a consumer's styling with nothing else failing. `src/publicClasses.test.ts` renders each
-component and checks them, so a rename fails there first and the consumer can change in step.
+Consumers restyle or select a few components by class name, so these classes are public API; renaming
+one breaks a consumer's styling or E2E selectors with nothing else failing. `src/publicClasses.test.ts`
+renders each component and checks them, so a rename fails there first and the consumer can change in step.
 
 | Component                       | Classes                                                                                        |
 | ------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -40,6 +40,7 @@ component and checks them, so a rename fails there first and the consumer can ch
 | GTable                          | `g-table-container`, `g-table`, `table`, `table-bordered`, `g-table-compact`, `g-table-sorted` |
 | GFormLabel / GFormInput         | `g-form-label`, `label-text`, `g-form-input`                                                   |
 | GButton / GLink / GDropdownItem | `g-button`, `g-transparent`, `g-link`, `dropdown-item`                                         |
+| GCollapse                       | `g-collapse-shown` (Galaxy's E2E `navigation.yml`)                                             |
 
 The longer-term way out is component-level CSS variables (a table header background, an active-tab
 indicator) that a consumer sets instead of re-declaring rules; add them as components need them.

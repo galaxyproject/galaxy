@@ -33,14 +33,17 @@
         </Heading>
         <GCollapse v-model="advancedShow" class="mt-2">
             <BCard>
-                <BFormGroup
+                <GRadioGroup
                     v-if="toolConfigs.length > 1"
-                    label="Tool Configuration:"
-                    description="Choose a tool configuration.">
-                    <BFormRadio v-for="filename in toolConfigs" :key="filename" v-model="toolConfig" :value="filename">
+                    v-model="toolConfig"
+                    stacked
+                    class="mb-3"
+                    description="Choose a tool configuration."
+                    label="Tool Configuration:">
+                    <GRadio v-for="filename in toolConfigs" :key="filename" :value="filename">
                         {{ filename }}
-                    </BFormRadio>
-                </BFormGroup>
+                    </GRadio>
+                </GRadioGroup>
                 <BFormGroup label="Dependencies:" description="Choose how to handle dependencies.">
                     <BFormCheckbox v-model="installResolverDependencies">
                         Install resolvable dependencies
@@ -55,13 +58,15 @@
     </GModal>
 </template>
 <script>
-import { BCard, BFormCheckbox, BFormGroup, BFormRadio } from "bootstrap-vue";
+import { BCard, BFormCheckbox, BFormGroup } from "bootstrap-vue";
 
 import { GalaxyApi } from "@/api";
 import { useConfig } from "@/composables/config";
 
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
+import GRadio from "@/components/BaseComponents/GRadio.vue";
+import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormSelectOrText from "@/components/Form/Elements/FormSelectOrText.vue";
 
@@ -70,10 +75,11 @@ export default {
         BCard,
         BFormCheckbox,
         BFormGroup,
-        BFormRadio,
         FormSelectOrText,
         GCollapse,
         GModal,
+        GRadio,
+        GRadioGroup,
         Heading,
     },
     props: {

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faBurn, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { HDCASummary } from "@/api";
 import { findKnownCollectionType } from "@/components/Collections/common/knownCollectionTypes";
+import { pluralize } from "@/utils/strings";
 
 import { DatasetStateSummary } from "./DatasetStateSummary";
 import { JobStateSummary } from "./JobStateSummary";
@@ -15,9 +16,13 @@ import DatasetProgress from "./DatasetProgress.vue";
 
 interface Props {
     hdca: HDCASummary;
+    /** Leave out the purged count when every element is purged, for hosts that show their own "Purged" badge. */
+    hideAllPurgedCount?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    hideAllPurgedCount: false,
+});
 
 const knownCollectionType = computed(() => findKnownCollectionType(props.hdca.collection_type));
 
@@ -32,6 +37,12 @@ const jobStateSummary = computed(() => {
 
 const datasetStateSummary = computed(() => {
     return new DatasetStateSummary(props.hdca);
+});
+
+const deletedCount = computed(() => datasetStateSummary.value.deletedNotPurgedCount);
+const purgedCount = computed(() => {
+    const summary = datasetStateSummary.value;
+    return props.hideAllPurgedCount && summary.allElementsPurged ? 0 : summary.elements_purged;
 });
 
 const collectionLabel = computed(() => {
@@ -70,12 +81,8 @@ const pluralizedItem = computed(() => {
         const { element, elementPlural } = knownCollectionType.value.summary;
         return hasSingleElement.value ? element : elementPlural;
     }
-    return pluralize("dataset collection");
+    return pluralize(props.hdca.element_count ?? 0, "dataset collection");
 });
-
-function pluralize(word: string) {
-    return hasSingleElement.value ? word : `${word}s`;
-}
 </script>
 
 <template>
@@ -93,15 +100,22 @@ function pluralize(word: string) {
                 </span>
             </div>
 
-            <BBadge
-                v-if="datasetStateSummary.elements_deleted > 0"
-                variant="warning"
-                class="ml-2"
-                :title="`${datasetStateSummary.elements_deleted} deleted ${
-                    datasetStateSummary.elements_deleted === 1 ? 'dataset' : 'datasets'
-                } in collection`">
-                <FontAwesomeIcon :icon="faTrash" /> {{ datasetStateSummary.elements_deleted }} deleted
-            </BBadge>
+            <div class="d-flex">
+                <BBadge
+                    v-if="deletedCount > 0"
+                    variant="warning"
+                    class="deleted-elements ml-2"
+                    :title="`${deletedCount} deleted ${pluralize(deletedCount, 'dataset')} in collection`">
+                    <FontAwesomeIcon :icon="faTrash" /> {{ deletedCount }} deleted
+                </BBadge>
+                <BBadge
+                    v-if="purgedCount > 0"
+                    variant="secondary"
+                    class="purged-elements ml-2"
+                    :title="`${purgedCount} permanently deleted ${pluralize(purgedCount, 'dataset')} in collection`">
+                    <FontAwesomeIcon :icon="faBurn" /> {{ purgedCount }} purged
+                </BBadge>
+            </div>
         </div>
 
         <CollectionProgress v-if="jobStateSummary.size != 0" :summary="jobStateSummary" />

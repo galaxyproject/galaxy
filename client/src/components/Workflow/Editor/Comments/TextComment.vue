@@ -221,7 +221,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 color="blue"
                 outline
                 :title="props.comment.data.bold ? 'Reset bold' : 'Make bold'"
-                :pressed="props.comment.data.bold"
+                :pressed="props.comment.data.bold ?? false"
                 @click="toggleBold">
                 B
             </GButton>
@@ -230,7 +230,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 color="blue"
                 outline
                 :title="props.comment.data.italic ? 'Reset italic' : 'Make italic'"
-                :pressed="props.comment.data.italic"
+                :pressed="props.comment.data.italic ?? false"
                 @click="toggleItalic">
                 I
             </GButton>

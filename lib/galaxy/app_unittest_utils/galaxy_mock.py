@@ -410,6 +410,9 @@ class MockTrans:
 
     user = property(get_user, set_user)
 
+    def get_current_user_roles(self):
+        return self.user.all_roles() if self.user else []
+
     def get_history(self, **kwargs):
         return self.history
 

@@ -847,6 +847,20 @@ class FastAPIHistories:
         return self.service.shareable_service.share_with_users(trans, history_id, payload)
 
     @router.put(
+        "/api/histories/{history_id}/unshare_with_me",
+        summary="Remove this item from the items shared with the current user.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def unshare_with_me(
+        self,
+        history_id: HistoryIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> Response:
+        """Removes the current user's own share of this item. Other users' shares are left unchanged."""
+        self.service.shareable_service.unshare_with_me(trans, history_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.put(
         "/api/histories/{history_id}/slug",
         summary="Set a new slug for this shared item.",
         status_code=status.HTTP_204_NO_CONTENT,

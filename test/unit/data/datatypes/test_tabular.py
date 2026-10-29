@@ -13,6 +13,7 @@ from galaxy.datatypes.tabular import (
     Tabular,
     TSV,
 )
+from galaxy.exceptions import RequestParameterInvalidException
 from .util import MockDataset
 
 
@@ -181,3 +182,26 @@ def test_tabular_display_peek_does_not_render_table_header():
     assert "<th>" not in html
     assert "<td>question_id</td>" in html
     assert "<td>curator_name</td>" in html
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [("3", 3), (3, 3), ("0", 0), (" 7 ", 7), (None, None), ("", None), (3.0, 3)],
+)
+def test_tabular_comment_lines_unwrap_stores_int(value, expected):
+    spec = Tabular.metadata_spec["comment_lines"]
+    unwrapped = spec.unwrap(value)
+    assert unwrapped == expected
+    assert type(unwrapped) is type(expected)
+    assert spec.unwrap(unwrapped) == expected
+
+
+@pytest.mark.parametrize("value", ["abc", "2.5", True, False, 3.7])
+def test_tabular_comment_lines_unwrap_rejects_non_integer(value):
+    with pytest.raises(RequestParameterInvalidException):
+        Tabular.metadata_spec["comment_lines"].unwrap(value)
+
+
+@pytest.mark.parametrize("stored, expected", [("3", 3), (3, 3), (None, None), ("abc", "abc")])
+def test_tabular_comment_lines_wrap_converts_stored_strings(stored, expected):
+    assert Tabular.metadata_spec["comment_lines"].wrap(stored, None) == expected

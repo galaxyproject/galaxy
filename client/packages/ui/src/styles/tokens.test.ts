@@ -111,9 +111,10 @@ describe("galaxy-ui design tokens", () => {
     });
 
     it("keeps every deprecated grey shade pointing at its gray shade", () => {
-        for (const shade of COLOR_SHADES) {
+        for (const shade of [...COLOR_SHADES, 250]) {
             expect(tokens.get(`--color-grey-${shade}`)).toBe(`var(--color-gray-${shade})`);
         }
+        expect(tokens.get("--color-gray-250")).toBe("#c1c8d0");
     });
 
     it("keeps every legacy non-color token resolvable", () => {

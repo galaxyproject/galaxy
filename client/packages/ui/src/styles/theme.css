@@ -33,6 +33,7 @@
     --color-gray-500: #63656d;
     --color-gray-400: #8f9199;
     --color-gray-300: #aab0b4;
+    --color-gray-250: #c1c8d0;
     --color-gray-200: #dee2e6;
     --color-gray-100: #f8f9fa;
 
@@ -84,6 +85,7 @@
     --color-grey-500: var(--color-gray-500);
     --color-grey-400: var(--color-gray-400);
     --color-grey-300: var(--color-gray-300);
+    --color-grey-250: var(--color-gray-250);
     --color-grey-200: var(--color-gray-200);
     --color-grey-100: var(--color-gray-100);
 

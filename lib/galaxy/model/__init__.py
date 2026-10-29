@@ -1898,7 +1898,11 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                     if isinstance(self_output, HistoryDatasetAssociation) and isinstance(
                         out_data, HistoryDatasetAssociation
                     ):
+                        # A map-over element job hides its outputs, a plain job shows them. The late job
+                        # cache search pairs either kind with either kind, so keep this job's visibility.
+                        visible = self_output.visible
                         self_output.copy_from(out_data, include_metadata=True)
+                        self_output.visible = visible
                 else:
                     assert output_name.startswith("__") and isinstance(out_data, HistoryDatasetAssociation)
                     if output_name.startswith("__new_primary_file_"):
@@ -1920,29 +1924,23 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                     self.add_output_dataset(output_name, copied_output)
             for output_name, out_collection in outputs_to_copy.out_collections.items():
                 self_out_collection = self_io.out_collections[output_name]
-                if isinstance(self_out_collection, DatasetCollection) and isinstance(out_collection, DatasetCollection):
-                    # In the context of the job cache this should be unreachable.
-                    # If we have DatasetCollection here, the output was created as part of a map-over job.
-                    # If it is a map-over job, then we were working with element_identifiers instead of names.
-                    # So when we relax the name requirement in the job cache we won't find any additional jobs to consider,
-                    # and we will never get here.
-                    self_out_collection.copy_from(out_collection, history=self.history)
-                    requires_addition_to_history = True
-                elif isinstance(self_out_collection, HistoryDatasetCollectionAssociation) and isinstance(
-                    out_collection, HistoryDatasetCollectionAssociation
+                # A map-over element job records its part of the implicit output collection as a
+                # DatasetCollection, any other job the HDCA it created. The late job cache search
+                # pairs either kind with either kind.
+                if isinstance(self_out_collection, HistoryDatasetCollectionAssociation):
+                    self_out_collection = self_out_collection.collection
+                if isinstance(out_collection, HistoryDatasetCollectionAssociation):
+                    out_collection = out_collection.collection
+                if not isinstance(self_out_collection, DatasetCollection) or not isinstance(
+                    out_collection, DatasetCollection
                 ):
-                    self_out_collection.collection.copy_from(
-                        out_collection.collection,
-                        history=self.history,
-                    )
-                    requires_addition_to_history = True
-                else:
                     raise NotImplementedError(
                         f"Don't know how to copy {type(out_collection)} to {type(self_out_collection)}"
                     )
+                self_out_collection.copy_from(out_collection, history=self.history)
+                requires_addition_to_history = True
             if requires_addition_to_history:
-                assert job.history
-                job.history.add_pending_items()
+                self.history.add_pending_items()
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
         inp_data: dict[str, DatasetInstance | None] = {da.name: da.dataset for da in self.input_datasets}
@@ -2472,9 +2470,16 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
+        self.touch_dependent_update_times()
+
+    def touch_dependent_update_times(self):
+        """Bump update_time on the collections and workflow invocation steps this job contributes to."""
         sa_session = required_object_session(self)
         update_time = now()
         self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
+        # The job wrapper sets the final output dataset states directly, so this is the last chance to let the
+        # collections containing them, such as the implicit output collections of a mapped tool, know about it.
+        self.touch_output_collections_update_time()
         params = {"job_id": self.id, "update_time": update_time}
         # Update workflow_invocation_step for direct job_id
         statement = text("""
@@ -2493,6 +2498,32 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             );
         """)
         sa_session.execute(statement_icj, params)
+
+    def touch_output_collections_update_time(self, supports_skip_locked=None):
+        """
+        Update the update time of the collections containing the output datasets of this job, including
+        collections that aren't directly job-associated and the collections containing those.
+        """
+        sa_session = required_object_session(self)
+        dialect_name = sa_session.bind.dialect.name
+        job_dataset_ids = select(Dataset.id).where(Dataset.job_id == self.id)
+        # A failed statement aborts the whole transaction on PostgreSQL, so isolate the update in a savepoint
+        savepoint = sa_session.begin_nested() if dialect_name == "postgresql" else None
+        try:
+            if dialect_name in ("postgresql", "sqlite"):
+                if dialect_name == "postgresql" and supports_skip_locked is None:
+                    supports_skip_locked = _check_supports_skip_locked(sa_session.get_bind())
+                Dataset._touch_collection_update_time_cte(sa_session, job_dataset_ids, supports_skip_locked)
+            else:
+                for dataset in sa_session.scalars(select(Dataset).where(Dataset.id.in_(job_dataset_ids))):
+                    dataset._touch_collection_update_time_fallback(sa_session)
+            if savepoint:
+                savepoint.commit()
+        except Exception:
+            if savepoint:
+                savepoint.rollback()
+            # Don't let collection update failures prevent job completion
+            log.exception(f"Failed to update collection times for the outputs of job {self.id}")
 
     def get_destination_configuration(self, dest_params, config, key, default=None):
         """Get a destination parameter that can be defaulted back
@@ -2554,15 +2585,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             update_time=update_time,
             sa_session=sa_session,
         )
-        # Update general collection associations for all datasets in this job
-        # This handles collections that contain datasets from this job but aren't directly job-associated
-        job_datasets = sa_session.query(Dataset).filter(Dataset.job_id == self.id).all()
-        for dataset in job_datasets:
-            try:
-                dataset.touch_collection_update_time(supports_skip_locked=supports_skip_locked)
-            except Exception:
-                # Don't let collection update failures prevent job comion
-                log.error(f"Failed to update collection times for dataset {dataset.id} from job {self.id}")
+        self.touch_output_collections_update_time(supports_skip_locked=supports_skip_locked)
 
         params = {"job_id": self.id, "state": self.state, "info": self.info, "update_time": update_time}
         for statement in statements:
@@ -5163,7 +5186,7 @@ class Dataset(Base, StorableObject, Serializable):
 
         Args:
             supports_skip_locked: Boolean to indicate if database supports
-                FOR UPDATE SKIP LOCKED. Defaults to False.
+                FOR UPDATE SKIP LOCKED. Checked against the database if None.
         """
         session = object_session(self)
         if not session:
@@ -5173,13 +5196,17 @@ class Dataset(Base, StorableObject, Serializable):
         if dialect_name in ("postgresql", "sqlite"):
             if dialect_name == "postgresql" and supports_skip_locked is None:
                 supports_skip_locked = _check_supports_skip_locked(session.get_bind())
-            self._touch_collection_update_time_cte(session, supports_skip_locked)
+            self._touch_collection_update_time_cte(session, [self.id], supports_skip_locked)
         else:
             # Fallback for other databases
             self._touch_collection_update_time_fallback(session)
 
-    def _touch_collection_update_time_cte(self, session, supports_skip_locked):
-        """CTE implementation using SQLAlchemy core constructs"""
+    @staticmethod
+    def _touch_collection_update_time_cte(session, dataset_ids, supports_skip_locked):
+        """
+        CTE implementation using SQLAlchemy core constructs, for the collections containing any of
+        ``dataset_ids``, a list of IDs or a select statement returning them.
+        """
 
         # Base case columns
         base_columns = [
@@ -5196,7 +5223,7 @@ class Dataset(Base, StorableObject, Serializable):
                     HistoryDatasetAssociation.__table__, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id
                 )
             )
-            .where(HistoryDatasetAssociation.dataset_id == self.id)
+            .where(HistoryDatasetAssociation.dataset_id.in_(dataset_ids))
             .union(
                 select(*base_columns)
                 .select_from(
@@ -5205,7 +5232,7 @@ class Dataset(Base, StorableObject, Serializable):
                         DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id,
                     )
                 )
-                .where(LibraryDatasetDatasetAssociation.dataset_id == self.id)
+                .where(LibraryDatasetDatasetAssociation.dataset_id.in_(dataset_ids))
             )
         ).subquery()
 
@@ -5243,14 +5270,16 @@ class Dataset(Base, StorableObject, Serializable):
         )
 
         if supports_skip_locked:
-            # Use FOR UPDATE SKIP LOCKED for better concurrency when supported
-            # First select the HDCAs we want to update with FOR UPDATE SKIP LOCKED
+            # First select the HDCAs we want to update with FOR NO KEY UPDATE SKIP LOCKED.
+            # Only update_time changes, and this lock mode is compatible with the FOR KEY SHARE
+            # lock that foreign key checks take, so concurrent inserts of rows referencing these
+            # HDCAs (job inputs, workflow step outputs) proceed while this transaction is open.
             hdca_ids_to_update = (
                 session.execute(
                     select(HistoryDatasetCollectionAssociation.id)
                     .where(HistoryDatasetCollectionAssociation.collection_id.in_(collection_ids_subquery))
                     .order_by(HistoryDatasetCollectionAssociation.id)
-                    .with_for_update(skip_locked=True)
+                    .with_for_update(skip_locked=True, key_share=True)
                 )
                 .scalars()
                 .all()
@@ -6307,7 +6336,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
         for copied_hda in self.copied_to_history_dataset_associations:
             copied_hda.copy_from(self, include_tags=include_tags, include_metadata=include_metadata)
 
-        if old_dataset:
+        # A cached job's structured collection output reaches the same HDA as both a job output
+        # and a collection element, so the second copy finds the dataset already in place.
+        if old_dataset and old_dataset is not self.dataset:
             old_dataset.full_delete(user=self.user)
 
     def copy(
@@ -7432,6 +7463,49 @@ class CollectionStateSummary(NamedTuple):
     extensions: list[str]
     states: dict[str, int]
     deleted: int
+    purged: int
+
+
+class HDCAStateSummary(NamedTuple):
+    dbkeys: set[str | None]
+    extensions: set[str]
+    states: dict[str, int]
+    deleted: int
+    purged: int
+    store_times_summary: set[tuple[str, datetime]]
+
+
+def _summarize_collection_rows(rows, with_store_times: bool = False) -> HDCAStateSummary:
+    """Aggregate rows of ``DatasetCollection._build_nested_collection_attributes_stmt``."""
+    extensions: set[str] = set()
+    dbkeys: set[str | None] = set()
+    states: dict[str, int] = defaultdict(int)
+    deleted = 0
+    purged = 0
+    store_times: dict[str, datetime] = {}
+    for row in rows:
+        if row is not None:
+            dbkey_field = row._metadata.get("dbkey")
+            if isinstance(dbkey_field, list):
+                for dbkey in dbkey_field:
+                    dbkeys.add(dbkey)
+            else:
+                dbkeys.add(dbkey_field)
+            if row.extension:
+                extensions.add(row.extension)
+            if row.deleted:
+                deleted += 1
+            if row.purged:
+                purged += 1
+            if row.state:
+                states[row.state] += 1
+            if with_store_times:
+                store_id = row.object_store_id
+                create_time = row.create_time
+                if store_id is not None and create_time is not None:
+                    store_times[store_id] = min(create_time, store_times.get(store_id, create_time))
+    # Convert to set of (object_store_id, oldest_create_time) pairs
+    return HDCAStateSummary(dbkeys, extensions, states, deleted, purged, set(store_times.items()))
 
 
 class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
@@ -7461,8 +7535,16 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         "elements_datatypes",
         "elements_states",
         "elements_deleted",
+        "elements_purged",
     ]
-    dict_element_visible_keys = ["id", "collection_type", "elements_datatypes", "elements_states", "elements_deleted"]
+    dict_element_visible_keys = [
+        "id",
+        "collection_type",
+        "elements_datatypes",
+        "elements_states",
+        "elements_deleted",
+        "elements_purged",
+    ]
 
     populated_states = DatasetCollectionPopulatedState
 
@@ -7701,6 +7783,15 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return self._elements_deleted
 
     @property
+    def elements_purged(self) -> int:
+        if not hasattr(self, "_elements_purged"):
+            if object_session(self):
+                self._elements_purged = self.dataset_states_and_extensions_summary.purged
+            else:
+                self._elements_purged = sum(1 for dataset_instance in self.dataset_instances if dataset_instance.purged)
+        return self._elements_purged
+
+    @property
     def elements_datatypes(self):
         if not hasattr(self, "_elements_datatypes"):
             if object_session(self):
@@ -7728,38 +7819,19 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     def dataset_states_and_extensions_summary(self):
         """
         Calculate dataset states and extensions for this collection.
-        Returns (dbkeys, extensions, states, deleted) similar to HDCA method.
+        Returns (dbkeys, extensions, states, deleted, purged) similar to HDCA method.
         """
         if not hasattr(self, "_dataset_states_and_extensions_summary"):
             stmt = self._build_nested_collection_attributes_stmt(
-                hda_attributes=("_metadata", "extension", "deleted"), dataset_attributes=("state",)
+                hda_attributes=("_metadata", "extension", "deleted", "purged"), dataset_attributes=("state",)
             )
-            tuples = required_object_session(self).execute(stmt)
-
-            extensions = set()
-            dbkeys = set()
-            states = defaultdict(int)
-            deleted = 0
-            for row in tuples:
-                if row is not None:
-                    dbkey_field = row._metadata.get("dbkey")
-                    if isinstance(dbkey_field, list):
-                        for dbkey in dbkey_field:
-                            dbkeys.add(dbkey)
-                    else:
-                        dbkeys.add(dbkey_field)
-                    if row.extension:
-                        extensions.add(row.extension)
-                    if row.deleted:
-                        deleted += 1
-                    if row.state:
-                        states[row.state] += 1
+            summary = _summarize_collection_rows(required_object_session(self).execute(stmt))
             # Filter out None values before sorting
-            filtered_dbkeys = (dbkey for dbkey in dbkeys if dbkey is not None)
-            filtered_extensions = (ext for ext in extensions if ext is not None)
+            filtered_dbkeys = (dbkey for dbkey in summary.dbkeys if dbkey is not None)
+            filtered_extensions = (ext for ext in summary.extensions if ext is not None)
 
             self._dataset_states_and_extensions_summary = CollectionStateSummary(
-                sorted(filtered_dbkeys), sorted(filtered_extensions), states, deleted
+                sorted(filtered_dbkeys), sorted(filtered_extensions), summary.states, summary.deleted, summary.purged
             )
         return self._dataset_states_and_extensions_summary
 
@@ -8128,6 +8200,7 @@ class DatasetCollectionInstance(HasName, UsesCreateAndUpdateTime):
             element_count=self.collection.element_count,
             elements_datatypes=list(self.collection.elements_datatypes),
             elements_deleted=self.collection.elements_deleted,
+            elements_purged=self.collection.elements_purged,
             elements_states=self.collection.elements_states,
             type="collection",  # contents type (distinguished from file or folder (in case of library))
         )
@@ -8335,40 +8408,15 @@ class HistoryDatasetCollectionAssociation(
             return self.job_state_summary._asdict()
 
     @property
-    def dataset_dbkeys_and_extensions_summary(self):
+    def dataset_dbkeys_and_extensions_summary(self) -> HDCAStateSummary:
         if not hasattr(self, "_dataset_dbkeys_and_extensions_summary"):
             stmt = self.collection._build_nested_collection_attributes_stmt(
-                hda_attributes=("_metadata", "extension", "deleted"),
+                hda_attributes=("_metadata", "extension", "deleted", "purged"),
                 dataset_attributes=("state", "object_store_id", "create_time"),
             )
-            tuples = required_object_session(self).execute(stmt)
-
-            extensions = set()
-            dbkeys = set()
-            states = defaultdict(int)
-            deleted = 0
-            store_times = {}
-            for row in tuples:
-                if row is not None:
-                    dbkey_field = row._metadata.get("dbkey")
-                    if isinstance(dbkey_field, list):
-                        for dbkey in dbkey_field:
-                            dbkeys.add(dbkey)
-                    else:
-                        dbkeys.add(dbkey_field)
-                    if row.extension:
-                        extensions.add(row.extension)
-                    if row.deleted:
-                        deleted += 1
-                    if row.state:
-                        states[row.state] += 1
-                    store_id = row.object_store_id
-                    create_time = row.create_time
-                    if store_id is not None and create_time is not None:
-                        store_times[store_id] = min(create_time, store_times.get(store_id, create_time))
-            # Convert to set of (object_store_id, oldest_create_time) pairs
-            store_times_summary = set(store_times.items())
-            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions, states, deleted, store_times_summary)
+            self._dataset_dbkeys_and_extensions_summary = _summarize_collection_rows(
+                required_object_session(self).execute(stmt), with_store_times=True
+            )
         return self._dataset_dbkeys_and_extensions_summary
 
     @property
@@ -8443,7 +8491,8 @@ class HistoryDatasetCollectionAssociation(
     def to_dict(self, view="collection"):
         original_dict_value = super().to_dict(view=view)
         if view == "dbkeysandextensions":
-            dbkeys, extensions, *_ = self.dataset_dbkeys_and_extensions_summary
+            summary = self.dataset_dbkeys_and_extensions_summary
+            dbkeys, extensions = summary.dbkeys, summary.extensions
             dict_value = dict(
                 dbkey=dbkeys.pop() if len(dbkeys) == 1 else "?",
                 extension=extensions.pop() if len(extensions) == 1 else "auto",

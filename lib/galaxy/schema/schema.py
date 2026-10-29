@@ -1226,6 +1226,11 @@ class DCObject(Model, WithModelClass):
         title="Datasets deleted",
         description="The number of elements in the collection that are marked as deleted.",
     )
+    elements_purged: int = Field(
+        ...,
+        title="Datasets purged",
+        description="The number of elements in the collection that are purged. Purged elements are also counted as deleted.",
+    )
     elements_datatypes: set[str] = Field(
         ..., description="A set containing all the different element datatypes in the collection."
     )
@@ -1402,6 +1407,11 @@ class HDCASummary(HDCACommon, WithModelClass):
         ...,
         title="Datasets deleted",
         description="The number of elements in the collection that are marked as deleted.",
+    )
+    elements_purged: int = Field(
+        ...,
+        title="Datasets purged",
+        description="The number of elements in the collection that are purged. Purged elements are also counted as deleted.",
     )
     job_source_id: EncodedDatabaseIdField | None = Field(
         None,
@@ -3800,7 +3810,7 @@ AnyLibraryFolderItem = Annotated[FileLibraryFolderItem | FolderLibraryFolderItem
 class LibraryFolderMetadata(Model):
     parent_library_id: EncodedDatabaseIdField
     folder_name: str
-    folder_description: str
+    folder_description: str | None
     total_rows: int
     can_modify_folder: bool
     can_add_library_item: bool

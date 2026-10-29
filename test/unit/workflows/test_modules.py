@@ -7,11 +7,14 @@ from typing import (
 from unittest import mock
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from galaxy import model
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.schema.invocation import FailureReason
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.tools.parameters.meta import to_decoded_json
 from galaxy.tools.parameters.workflow_utils import (
@@ -25,6 +28,7 @@ from galaxy.util import (
     now,
 )
 from galaxy.workflow import modules
+from galaxy.workflow.workflow_parameter_input_definitions import split_numeric_bounds
 from .workflow_support import (
     MockTrans,
     yaml_to_model,
@@ -132,6 +136,177 @@ def test_data_collection_input_connections():
     assert output["name"] == "output"
     assert output["extensions"] == ["input"]
     assert output["collection_type"] == "list:paired"
+
+
+def test_parameter_input_without_bounds_is_unbounded():
+    parameter, trans = __numeric_runtime_parameter("integer", None, None)
+    parameter.validate(-1000, trans)
+    field = parameter.to_dict(trans)
+    assert (field["min"], field["max"]) == (None, None)
+
+
+NUMERIC_RANGE_CASES = [
+    ("integer", 1, 5, 7, "Value ('7') must fulfill (1 <= value <= 5)"),
+    ("integer", 0, None, -1, "Value ('-1') must fulfill (0 <= value <= +infinity)"),
+    ("integer", None, -2, -1, "Value ('-1') must fulfill (-infinity <= value <= -2)"),
+    ("float", 0.5, 2.5, 3.0, "Value ('3.0') must fulfill (0.5 <= value <= 2.5)"),
+]
+
+
+@pytest.mark.parametrize("parameter_type,min,max,invalid_value,message", NUMERIC_RANGE_CASES)
+def test_parameter_input_range_is_validated_once(parameter_type, min, max, invalid_value, message):
+    parameter, trans = __numeric_runtime_parameter(parameter_type, min, max)
+    assert len(parameter.validators) == 1
+    with pytest.raises(ValueError) as exc_info:
+        parameter.validate(invalid_value, trans)
+    assert str(exc_info.value) == f"Parameter 'input': {message}"
+
+
+@pytest.mark.parametrize(
+    "parameter_type,min,max,expected",
+    [(parameter_type, min, max, (min, max)) for parameter_type, min, max, *_ in NUMERIC_RANGE_CASES]
+    + [("float", 1, 2, (1.0, 2.0))],
+)
+def test_parameter_input_range_reaches_run_form(parameter_type, min, max, expected):
+    parameter, trans = __numeric_runtime_parameter(parameter_type, min, max)
+    field = parameter.to_dict(trans)
+    assert (field["min"], field["max"]) == expected
+
+
+@pytest.mark.parametrize(
+    "min,max,default,field_bounds",
+    [(1, 5, 3, (1, 5)), (1, 5, 7, (1, 5)), (5, 1, 3, (None, None))],
+)
+def test_parameter_input_editor_state_with_bounds(min, max, default, field_bounds):
+    # Building the editor form keeps saved state as-is, even for an out-of-range default or inverted bounds.
+    module = __numeric_editor_module("integer", min, max, default=default)
+    field = __editor_default_parameter(module, "integer").to_dict(module.trans)
+    assert (field["min"], field["max"]) == field_bounds
+    assert module.get_export_state()["default"] == default
+    assert module.get_export_state()["validators"] == [{"min": min, "max": max, "negate": False, "type": "in_range"}]
+
+
+@pytest.mark.parametrize("parameter_type,min,max", [("integer", 1, 5), ("integer", 0, None), ("float", None, 2.5)])
+def test_parameter_input_editor_default_has_bounds(parameter_type, min, max):
+    module = __numeric_editor_module(parameter_type, min, max)
+    field = __editor_default_parameter(module, parameter_type).to_dict(module.trans)
+    assert (field["min"], field["max"]) == (min, max)
+    other_type = "float" if parameter_type == "integer" else "integer"
+    other_field = __editor_default_parameter(module, other_type).to_dict(module.trans)
+    assert (other_field["min"], other_field["max"]) == (None, None)
+
+
+def test_parameter_input_editor_default_follows_edited_bounds():
+    # Mirrors the editor's build_module: form values arrive without the previous tool state.
+    trans = MockTrans()
+    trans.workflow_building_mode = workflow_building_modes.ENABLED
+    module = modules.module_factory.from_dict(trans, {"type": "parameter_input"}, from_tool_form=True)
+    incoming = {
+        "parameter_definition|parameter_type": "integer",
+        "parameter_definition|optional|optional": "false",
+        "parameter_definition|optional|specify_default|specify_default": "true",
+        "parameter_definition|optional|specify_default|default": "3",
+        "parameter_definition|min": "2",
+        "parameter_definition|max": "4",
+        "parameter_definition|restrictions|how": "none",
+    }
+    state: dict[str, Any] = {}
+    errors: dict[str, Any] = {}
+    populate_state(trans, module.get_inputs(), incoming, state, errors=errors, check=True)
+    module.recover_state(state, from_tool_form=True)
+    assert not errors
+    assert module.get_export_state()["default"] == 3
+    field = __editor_default_parameter(module, "integer").to_dict(trans)
+    assert (field["min"], field["max"]) == (2, 4)
+
+
+def test_parameter_input_inverted_bounds():
+    module = __numeric_editor_module("integer", 5, 1)
+    field = __editor_default_parameter(module, "integer").to_dict(module.trans)
+    assert (field["min"], field["max"]) == (None, None)
+    with pytest.raises(RequestParameterInvalidException, match="Workflow input 'Count' has a minimum"):
+        module.get_runtime_inputs(__step())
+    assert module.get_errors() == "Workflow input 'Count' has a minimum (5) greater than its maximum (1)."
+
+
+def test_parameter_input_cleared_bounds_are_unbounded():
+    # Both editor fields cleared still saves an in_range validator, with no ends set.
+    module = __numeric_editor_module("integer", None, None)
+    field = __editor_default_parameter(module, "integer").to_dict(module.trans)
+    assert (field["min"], field["max"]) == (None, None)
+    assert module.get_errors() is None
+
+
+@pytest.mark.parametrize(
+    "parameter_type,min,max,expected_bounds",
+    [
+        ("integer", None, None, None),
+        ("integer", 0, None, {"min": 0, "max": None}),
+        ("float", None, 2.5, {"min": None, "max": 2.5}),
+        ("text", 1, 5, None),
+    ],
+)
+def test_split_numeric_bounds(parameter_type, min, max, expected_bounds):
+    range_validator = {"type": "in_range", "min": min, "max": max, "negate": False}
+    regex_validator = {"type": "regex", "expression": ".*", "negate": False}
+    bounds, validators = split_numeric_bounds(
+        {"parameter_type": parameter_type, "validators": [range_validator, regex_validator]}
+    )
+    assert bounds == expected_bounds
+    expected_validators = [range_validator, regex_validator] if parameter_type == "text" else [regex_validator]
+    assert validators == expected_validators
+
+
+@pytest.mark.parametrize(
+    "parameter_type,range_validator",
+    [
+        ("integer", {"type": "in_range", "min": 1, "max": 5, "negate": True}),
+        ("integer", {"type": "in_range", "min": 1, "max": 5, "exclude_min": True}),
+        ("integer", {"type": "in_range", "min": 1, "max": 5, "message": "1-5 only"}),
+        ("integer", {"type": "in_range", "min": 1.5, "max": 5}),
+    ],
+)
+def test_split_numeric_bounds_keeps_ranges_bounds_cannot_express(parameter_type, range_validator):
+    bounds, validators = split_numeric_bounds({"parameter_type": parameter_type, "validators": [range_validator]})
+    assert bounds is None
+    assert validators == [range_validator]
+
+
+def test_split_numeric_bounds_separates_inverted_bounds():
+    bounds, validators = split_numeric_bounds(
+        {"parameter_type": "integer", "validators": [{"type": "in_range", "min": 5, "max": 1, "negate": False}]}
+    )
+    assert bounds == {"min": 5, "max": 1}
+    assert validators == []
+
+
+def test_parameter_input_ordered_bounds_have_no_errors():
+    assert __numeric_editor_module("integer", 1, 5).get_errors() is None
+    assert __numeric_editor_module("float", 2.5, 2.5).get_errors() is None
+
+
+@pytest.mark.parametrize("form_value,negate", [("true", True), ("false", False)])
+def test_text_input_regex_validator_negate_from_tool_form(form_value, negate):
+    trans = MockTrans()
+    trans.workflow_building_mode = workflow_building_modes.ENABLED
+    module = modules.module_factory.from_dict(trans, {"type": "parameter_input"}, from_tool_form=True)
+    incoming = {
+        "parameter_definition|parameter_type": "text",
+        "parameter_definition|optional|optional": "false",
+        "parameter_definition|validators_0|regex_match": "cow",
+        "parameter_definition|validators_0|regex_doc": "no cows",
+        "parameter_definition|validators_0|regex_negate": form_value,
+    }
+    module_state = {}
+    errors = {}
+    populate_state(trans, module.get_inputs(), incoming, module_state, errors=errors, check=True)
+    assert not errors
+    module.recover_state(module_state, from_tool_form=True)
+    step = model.WorkflowStep()
+    module.save_to_step(step)
+    assert step.tool_inputs["validators"] == [
+        {"type": "regex", "expression": "cow", "negate": negate, "message": "no cows"}
+    ]
 
 
 def test_cannot_create_tool_modules_for_missing_tools():
@@ -377,7 +552,7 @@ def test_to_cwl_purged_dataset():
 
 
 def test_to_cwl_nested_collection():
-    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda = model.HistoryDatasetAssociation(name="reads.fq", create_dataset=True, flush=False)
     hda.dataset.state = model.Dataset.states.OK
     dc_inner = model.DatasetCollection(collection_type="list")
     model.DatasetCollectionElement(collection=dc_inner, element_identifier="inner", element=hda)
@@ -386,11 +561,12 @@ def test_to_cwl_nested_collection():
     hdca = model.HistoryDatasetCollectionAssociation(name="the collection", collection=dc_outer)
     result = modules.to_cwl(hdca, [], model.WorkflowStep())
     assert result["outer"][0]["class"] == "File"
-    assert result["outer"][0]["basename"] == "inner"
+    assert result["outer"][0]["basename"] == "reads.fq"
+    assert result["outer"][0]["element_identifier"] == "inner"
 
 
 def test_to_cwl_dataset_collection_element():
-    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda = model.HistoryDatasetAssociation(name="reads.fq", create_dataset=True, flush=False)
     hda.dataset.state = model.Dataset.states.OK
     dc_inner = model.DatasetCollection(collection_type="list")
     model.DatasetCollectionElement(collection=dc_inner, element_identifier="inner", element=hda)
@@ -398,7 +574,22 @@ def test_to_cwl_dataset_collection_element():
     dce_outer = model.DatasetCollectionElement(collection=dc_outer, element_identifier="outer", element=dc_inner)
     result = modules.to_cwl(dce_outer, [], model.WorkflowStep())
     assert result[0]["class"] == "File"
-    assert result[0]["basename"] == "inner"
+    assert result[0]["basename"] == "reads.fq"
+    assert result[0]["element_identifier"] == "inner"
+
+
+def test_to_cwl_record_collection():
+    dc = model.DatasetCollection(collection_type="paired")
+    for identifier, name in (("forward", "r1.fq"), ("reverse", "r2.fq")):
+        hda = model.HistoryDatasetAssociation(name=name, create_dataset=True, flush=False)
+        hda.dataset.state = model.Dataset.states.OK
+        model.DatasetCollectionElement(collection=dc, element_identifier=identifier, element=hda)
+    hdca = model.HistoryDatasetCollectionAssociation(name="the pair", collection=dc)
+    result = modules.to_cwl(hdca, [], model.WorkflowStep())
+    assert {k: (v["basename"], v["element_identifier"]) for k, v in result.items()} == {
+        "forward": ("r1.fq", "forward"),
+        "reverse": ("r2.fq", "reverse"),
+    }
 
 
 def _expression_json_hda(path, content: str | None, seconds_since_updated: int = 0):
@@ -725,6 +916,46 @@ def __from_step(**kwds):
     return module
 
 
+def __numeric_tool_inputs(parameter_type, min, max, **tool_inputs):
+    return {
+        "parameter_type": parameter_type,
+        "optional": False,
+        "validators": [{"type": "in_range", "min": min, "max": max, "negate": False}],
+        **tool_inputs,
+    }
+
+
+def __numeric_runtime_parameter(parameter_type, min, max):
+    trans = MockTrans()
+    trans.workflow_building_mode = workflow_building_modes.DISABLED
+    module = __from_step(
+        trans=trans,
+        type="parameter_input",
+        label="Count",
+        tool_inputs=__numeric_tool_inputs(parameter_type, min, max),
+    )
+    return module.get_runtime_inputs(module.test_step)["input"], trans
+
+
+def __numeric_editor_module(parameter_type, min, max, **tool_inputs):
+    step = __step(
+        type="parameter_input",
+        label="Count",
+        tool_inputs=__numeric_tool_inputs(parameter_type, min, max, **tool_inputs),
+    )
+    return modules.module_factory.from_workflow_step(MockTrans(), step)
+
+
+def __editor_default_parameter(module, parameter_type):
+    type_case = __case(module.get_inputs()["parameter_definition"], parameter_type)
+    specify_default = __case(type_case.inputs["optional"], "true").inputs["default"]
+    return __case(specify_default, "true").inputs["default"]
+
+
+def __case(conditional, value):
+    return next(case for case in conditional.cases if case.value == value)
+
+
 def __step(**kwds):
     step = model.WorkflowStep()
     for key, value in kwds.items():
@@ -880,6 +1111,29 @@ def test_capture_unexpected_error_returns_none_loudly():
         assert _capture(resolve) == (None, None, None)
 
     log.warning.assert_called_once()
+
+
+class _PersistableFakeTool(_CaptureFakeTool):
+    version = "1.0"
+    dynamic_tool = None
+    tool_source = bunch.Bunch(to_string=lambda: "<tool/>")
+
+
+def test_capture_propagates_failure_flushing_unrelated_pending_objects():
+    trans = MockTrans()
+    history = model.History(name="target")
+    existing = model.History(name="existing")
+    trans.sa_session.add_all([history, existing])
+    trans.sa_session.commit()
+    existing_id = existing.id
+    trans.sa_session.expunge(existing)
+    trans.sa_session.add(model.History(id=existing_id, name="duplicate"))
+
+    def resolve(iteration_elements):
+        return bunch.Bunch(inputs={}), None, None
+
+    with pytest.raises(IntegrityError):
+        modules._capture_workflow_tool_request_state(trans, _PersistableFakeTool(), None, None, history, resolve, [])
 
 
 def test_to_decoded_json_lowers_connected_value_in_repeat():

@@ -248,6 +248,11 @@ class _UploadStaging:
 
         return item
 
+    def sort_by(self, field: str) -> "_UploadStaging":
+        """Click a staged-items table header to sort by that column."""
+        self.components.upload_activity.table_sortable_header(field=field).wait_for_and_click()
+        return self
+
     def _row_number(self, index: int) -> int:
         return index + 1
 
@@ -278,7 +283,8 @@ class _UploadStaging:
 
     def start(self) -> None:
         self._pre_start()
-        self._button_group.start_button.wait_for_and_click()
+        # Start is a GButton that is only aria-disabled, so a plain click wait passes while it does nothing
+        self._button_group.start_button_enabled.wait_for_and_click()
 
     def cancel(self) -> None:
         self._button_group.cancel_button.wait_for_and_click()
@@ -356,13 +362,35 @@ class UploadContext(_UploadStaging):
         return items
 
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
-        if self._current_method_id != "data-library":
-            raise AssertionError("stage_data_library_dataset is only available for the data-library method")
+        return self.stage_data_library_datasets(library_label, [dataset_label])[0]
 
-        self.components.upload_activity.data_library_library_label(label=library_label).wait_for_and_click()
-        self.components.upload_activity.data_library_item_label(label=dataset_label).wait_for_and_click()
-        self.components.upload_activity.data_library_add_selected.wait_for_and_click()
-        return self._create_item(DataLibraryUploadItem)
+    def stage_data_library_datasets(
+        self,
+        library_label: str,
+        dataset_labels: list[str],
+        folder_label: str | None = None,
+        select_all: bool = False,
+    ) -> list[DataLibraryUploadItem]:
+        """Stage datasets from a library root or ``folder_label``; ``select_all`` expects exactly ``dataset_labels``."""
+        if self._current_method_id != "data-library":
+            raise AssertionError("stage_data_library_datasets is only available for the data-library method")
+
+        upload_activity = self.components.upload_activity
+        upload_activity.data_library_library_label(label=library_label).wait_for_and_click()
+        if folder_label is not None:
+            upload_activity.data_library_item_label(label=folder_label).wait_for_and_click()
+        datasets = [upload_activity.data_library_item_label(label=label) for label in dataset_labels]
+        if select_all:
+            # wait for the folder to load so select-all doesn't hit the previous view
+            for dataset in datasets:
+                dataset.wait_for_visible()
+            upload_activity.data_library_select_all.wait_for_and_click()
+        else:
+            for dataset in datasets:
+                dataset.wait_for_and_click()
+        # GButton is only aria-disabled until the selection registers, so a plain click wait can no-op
+        upload_activity.data_library_add_selected_enabled.wait_for_and_click()
+        return [self._create_item(DataLibraryUploadItem) for _ in dataset_labels]
 
     def select_composite(self, composite_type: str) -> "UploadContext":
         if self._current_method_id != "composite-file":
@@ -477,8 +505,8 @@ class UploadContext(_UploadStaging):
 
     def select_target_history(self, history_id: str) -> "UploadContext":
         self.components.upload_activity.target_history_change_link.wait_for_and_click()
-        self.components.upload_activity.history_selector_modal_item(history_id=history_id).wait_for_and_click()
-        self.components.upload_activity.history_selector_modal.wait_for_absent_or_hidden()
+        self.components.history_selector_modal.item(history_id=history_id).wait_for_and_click()
+        self.components.history_selector_modal._.wait_for_absent_or_hidden()
         return self
 
     def to_list(self, name: str) -> "UploadContext":
@@ -676,6 +704,10 @@ class BaseUploadContext:
         self._context.to_paired_list(name)
         return self
 
+    def sort_by(self: TUploadContext, field: str) -> TUploadContext:
+        self._context.sort_by(field)
+        return self
+
     def _start_and_wait_for_uploaded_hids(self) -> list[int]:
         staged_item_count = self._context._item_count
         if staged_item_count < 1:
@@ -768,6 +800,16 @@ class CompositeFileContext(BaseUploadContext):
 class DataLibraryContext(BaseUploadContext):
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
         return self._context.stage_data_library_dataset(library_label, dataset_label)
+
+    def stage_data_library_datasets(
+        self,
+        library_label: str,
+        dataset_labels: list[str],
+        folder_label: str | None = None,
+        select_all: bool = False,
+    ) -> "DataLibraryContext":
+        self._context.stage_data_library_datasets(library_label, dataset_labels, folder_label, select_all)
+        return self
 
 
 class ExploreZipContext(BaseUploadContext):

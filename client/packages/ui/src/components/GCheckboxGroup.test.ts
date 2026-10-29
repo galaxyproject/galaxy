@@ -155,6 +155,42 @@ describe("GCheckboxGroup", () => {
             expect(wrapper.find("fieldset > legend").text()).toBe("Slotted label");
         });
 
+        it("renders the description under the options and links it with aria-describedby", () => {
+            const { wrapper } = mountWithModel([], { label: "Options", description: "Pick one.", options: OPTIONS });
+
+            const description = wrapper.find("fieldset > small");
+            expect(description.text()).toBe("Pick one.");
+            expect(wrapper.attributes("aria-describedby")).toBe(description.attributes("id"));
+            // the last child of the fieldset, so it reads after the options
+            expect(wrapper.element.lastElementChild).toBe(description.element);
+        });
+
+        it("renders no description and no aria-describedby by default", () => {
+            const { wrapper } = mountWithModel([], { options: OPTIONS });
+
+            expect(wrapper.find("fieldset > small").exists()).toBe(false);
+            expect(wrapper.attributes("aria-describedby")).toBeUndefined();
+        });
+
+        it("puts legendClass on the legend, not on the group", () => {
+            const { wrapper } = mountWithModel([], { label: "Options", legendClass: "pb-0", options: OPTIONS });
+
+            expect(wrapper.find("fieldset > legend").classes()).toContain("pb-0");
+            expect(wrapper.classes()).not.toContain("pb-0");
+        });
+
+        it("adds only the enabled legendClass entries to the legend", () => {
+            const { wrapper } = mountWithModel([], {
+                label: "Options",
+                legendClass: { "mb-2": false, "pb-0": true },
+                options: OPTIONS,
+            });
+            const legend = wrapper.find("fieldset > legend");
+
+            expect(legend.classes()).toContain("pb-0");
+            expect(legend.classes()).not.toContain("mb-2");
+        });
+
         it("renders no legend without a label and passes aria attributes to the fieldset", () => {
             const { wrapper } = mountWithModel([], { "aria-labelledby": "outside-title", options: OPTIONS });
 

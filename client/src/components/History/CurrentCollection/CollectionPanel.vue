@@ -60,18 +60,15 @@ const dsc = computed(() => {
     }
     return currentCollection as HDCASummary;
 });
-watch(
-    () => [dsc.value, offset.value],
-    () => {
-        collectionElementsStore.fetchMissingElements(dsc.value, offset.value);
-    },
-    { immediate: true },
-);
+// Elements cached by a previous visit may be outdated, so refresh them when entering a collection.
+watch(dsc, refreshCollectionElements, { immediate: true });
+watch(offset, () => {
+    collectionElementsStore.fetchMissingElements(dsc.value, offset.value);
+});
 
 const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value) ?? []);
 const loading = computed(() => collectionElementsStore.isLoadingCollectionElements(dsc.value));
 const error = computed(() => collectionElementsStore.getLoadingCollectionElementsError(dsc.value));
-const jobState = computed(() => ("job_state_summary" in dsc.value ? dsc.value.job_state_summary : undefined));
 const populatedStateMsg = computed(() =>
     "populated_state_message" in dsc.value ? dsc.value.populated_state_message : undefined,
 );
@@ -127,14 +124,19 @@ watch(
     },
 );
 
-watch(
-    jobState,
-    () => {
-        collectionElementsStore.invalidateCollectionElements(dsc.value);
-        collectionElementsStore.fetchMissingElements(dsc.value, offset.value);
-    },
-    { deep: true },
-);
+function refreshCollectionElements() {
+    collectionElementsStore.invalidateCollectionElements(dsc.value);
+    collectionElementsStore.fetchMissingElements(dsc.value, offset.value);
+}
+
+// Changes whenever a job or dataset inside the root collection changes state, including those of nested collections,
+// which carry no state of their own on the client. Compared as a string because the history watcher replaces these
+// objects on every update, even when their contents are the same.
+const rootCollectionStates = computed(() => {
+    const root = rootCollection.value;
+    return JSON.stringify([root.populated_state, root.element_count, root.elements_states, root.job_state_summary]);
+});
+watch(rootCollectionStates, refreshCollectionElements);
 </script>
 
 <template>
