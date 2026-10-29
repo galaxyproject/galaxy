@@ -194,4 +194,33 @@ describe("FilesDialog, paginated file source", () => {
         expect(isOkDisabled()).toBe(false);
         expect(confirmedUrls()).toContain(`${sourceRoot}/folder15/file1`);
     });
+
+    it("should ignore the listing of a folder unselected while it loads", async () => {
+        const folder = `${sourceRoot}/folder5`;
+        heldFolders = [folder];
+        await clickOn(findRow(`${sourceRoot}/file0`));
+        await clickOn(findRow(folder));
+        expect(isOkDisabled()).toBe(true);
+
+        await clickOn(findRow(folder));
+        expect(isOkDisabled()).toBe(false);
+
+        await releaseListing(folder);
+        expect(findRow(folder)._rowVariant).toBe(SELECTION_STATES.UNSELECTED);
+        expect(confirmedUrls()).toEqual([`${sourceRoot}/file0`]);
+    });
+
+    it("should keep a folder selected when an older listing of it returns late", async () => {
+        const folder = `${sourceRoot}/folder5`;
+        heldFolders = [folder];
+        await clickOn(findRow(folder));
+        await clickOn(findRow(folder));
+        await clickOn(findRow(folder));
+
+        await releaseListing(folder, 1);
+        await releaseListing(folder, 0);
+        expect(isOkDisabled()).toBe(false);
+        expect(findRow(folder)._rowVariant).toBe(SELECTION_STATES.SELECTED);
+        expect(confirmedUrls()).toEqual([`${folder}/file1`, `${folder}/file2`]);
+    });
 });

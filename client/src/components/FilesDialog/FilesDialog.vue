@@ -87,6 +87,8 @@ const showDetails = ref(true);
 const isBusy = ref(false);
 /** Recursive folder listings still loading; the files they return are not selected yet */
 const pendingListings = ref(0);
+/** Latest recursive listing of each folder still loading; earlier or abandoned listings are ignored */
+const folderListings = new Map<string, symbol>();
 const showFTPHelper = ref(false);
 /** Root URIs of RDM sources, only fetched in directory mode to prevent selecting a repository root */
 const rdmUriRoots = ref<string[]>([]);
@@ -200,13 +202,20 @@ function selectDirectoryRecursive(record: SelectionItem) {
     // if directory is `selected` or `mixed` unselect everything
     if (isDirectorySelected(record.id) || selectionModel.value.pathExists(record.url)) {
         unselectPath(record.url, false, record.id);
+        endFolderListing(record.id);
     } else {
         selectedDirectories.value.push(record);
         // look for subdirectories
         const recursive = true;
+        const listing = Symbol(record.id);
+        endFolderListing(record.id);
+        folderListings.set(record.id, listing);
         pendingListings.value++;
         browseRemoteFiles(record.url, recursive)
             .then((incoming) => {
+                if (folderListings.get(record.id) !== listing || !isDirectorySelected(record.id)) {
+                    return;
+                }
                 incoming.entries.forEach((item) => {
                     // construct record
                     const subRecord = entryToRecord(item);
@@ -220,8 +229,17 @@ function selectDirectoryRecursive(record: SelectionItem) {
                 });
             })
             .finally(() => {
-                pendingListings.value--;
+                if (folderListings.get(record.id) === listing) {
+                    endFolderListing(record.id);
+                }
             });
+    }
+}
+
+/** Stops waiting for the folder's listing, so its files are not selected when it returns */
+function endFolderListing(folderId: string) {
+    if (folderListings.delete(folderId)) {
+        pendingListings.value--;
     }
 }
 
