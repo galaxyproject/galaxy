@@ -3,6 +3,8 @@ import axios from "axios";
 import { BAlert, BButton, BCard, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
 import { ref } from "vue";
 
+import { SKIP_PENDING_REQUESTS_HEADER } from "@/api/pendingRequests";
+import { discardActiveConnectionsBeforeAuthNavigation } from "@/composables/useAuthNavigation";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -22,14 +24,23 @@ const message = ref(props.messageText);
 const variant = ref(props.messageVariant);
 
 async function submit() {
+    // Changing the password logs the user in, so stop polling and abort
+    // in-flight requests first; a late anonymous-cookie response could
+    // otherwise overwrite the authenticated cookie we're about to receive.
+    discardActiveConnectionsBeforeAuthNavigation();
+
     try {
-        await axios.post(withPrefix("/user/change_password"), {
-            token: props.token,
-            id: props.expiredUser,
-            current: current.value,
-            password: password.value,
-            confirm: confirm.value,
-        });
+        await axios.post(
+            withPrefix("/user/change_password"),
+            {
+                token: props.token,
+                id: props.expiredUser,
+                current: current.value,
+                password: password.value,
+                confirm: confirm.value,
+            },
+            { headers: { [SKIP_PENDING_REQUESTS_HEADER]: "1" } },
+        );
 
         // The server logs the user in; reload so the client picks up that session.
         window.location.replace(withPrefix("/"));
