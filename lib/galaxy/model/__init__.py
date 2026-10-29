@@ -8494,8 +8494,8 @@ class HistoryDatasetCollectionAssociation(
             summary = self.dataset_dbkeys_and_extensions_summary
             dbkeys, extensions = summary.dbkeys, summary.extensions
             dict_value = dict(
-                dbkey=dbkeys.pop() if len(dbkeys) == 1 else "?",
-                extension=extensions.pop() if len(extensions) == 1 else "auto",
+                dbkey=next(iter(dbkeys)) if len(dbkeys) == 1 else "?",
+                extension=next(iter(extensions)) if len(extensions) == 1 else "auto",
             )
         else:
             dict_value = dict(
