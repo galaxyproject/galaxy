@@ -150,4 +150,60 @@ describe("GTable sorting", () => {
 
         expect(wrapper.emitted("sort-changed")).toBeUndefined();
     });
+
+    it("keeps row selection on the same item after local sort", () => {
+        const wrapper = mount(GTable as object, {
+            props: {
+                items: [
+                    { id: "c", name: "c.txt" },
+                    { id: "a", name: "a.txt" },
+                    { id: "b", name: "b.txt" },
+                ],
+                fields: [{ key: "name", label: "Name", sortable: true }],
+                primaryKey: "id",
+                selectable: true,
+                selectedItems: [0],
+                sortBy: "name",
+            },
+            attachTo: document.body,
+        });
+
+        const checkboxes = wrapper.findAll("tbody input").map((row) => checkbox(row.element));
+
+        expect(checkboxes[0]!.checked).toBe(false);
+        expect(checkboxes[1]!.checked).toBe(false);
+        expect(checkboxes[2]!.checked).toBe(true);
+    });
+
+    it("keeps expanded row details with the same item after local sort", async () => {
+        const wrapper = mount(GTable as object, {
+            props: {
+                items: [
+                    { id: "1", name: "Pasted Dataset 1", body: "first body" },
+                    { id: "2", name: "Pasted Dataset 2", body: "second body" },
+                ],
+                fields: [{ key: "name", label: "Name", sortable: true }],
+                primaryKey: "id",
+                sortBy: "name",
+                sortDesc: true,
+                clickableRows: true,
+            },
+            slots: {
+                "row-details": `<div class="details-body">{{ item.body }}</div>`,
+            },
+            attachTo: document.body,
+        });
+
+        await wrapper.findAll("tbody tr")[0]!.trigger("click");
+        const rowClick = wrapper.emitted("row-click")?.[0]?.[0] as { toggleDetails: () => void };
+        rowClick.toggleDetails();
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(".details-body").text()).toBe("second body");
+
+        await wrapper.findAll("thead th")[0]!.trigger("click");
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.findAll(".details-body")).toHaveLength(1);
+        expect(wrapper.find(".details-body").text()).toBe("second body");
+    });
 });

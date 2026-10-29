@@ -359,7 +359,7 @@ const emit = defineEmits<{
 
 const sortBy = ref<string>(props.sortBy || "update_time");
 const sortDesc = ref<boolean>(props.sortDesc ?? false);
-const expandedRows = ref<Set<number>>(new Set());
+const expandedRows = ref<Set<string | number>>(new Set());
 
 const stackedClass = computed(() => {
     if (!props.stacked) {
@@ -481,11 +481,49 @@ const localItems = computed(() => {
 const selectAllDisabled = computed(() => {
     return props.selectable && localItems.value.length === 0;
 });
+
+function getItemSourceIndex(item: T): number {
+    const items = props.items ?? [];
+    if (props.primaryKey) {
+        const primaryKeyValue = item[props.primaryKey];
+        const sourceIndex = items.findIndex((candidate) => candidate[props.primaryKey] === primaryKeyValue);
+        if (sourceIndex >= 0) {
+            return sourceIndex;
+        }
+    }
+    return items.indexOf(item);
+}
+
+function getItemStateKey(item: T): string | number {
+    if (props.primaryKey && item[props.primaryKey] != null) {
+        return item[props.primaryKey];
+    }
+    return getItemSourceIndex(item);
+}
+
+function isRowSelected(item: T): boolean {
+    const index = getItemSourceIndex(item);
+    return index >= 0 && props.selectedItems.includes(index);
+}
+
+function isRowIndeterminate(item: T): boolean {
+    const index = getItemSourceIndex(item);
+    return index >= 0 && props.indeterminateItems.includes(index);
+}
+
 const indeterminateSelected = computed(() => {
-    return props.selectable && props.selectedItems.length > 0 && props.selectedItems.length < localItems.value.length;
+    if (!props.selectable || props.selectedItems.length === 0) {
+        return false;
+    }
+    const selectedVisibleCount = localItems.value.filter((item) => isRowSelected(item)).length;
+    return selectedVisibleCount > 0 && selectedVisibleCount < localItems.value.length;
 });
 const allSelected = computed(() => {
-    return props.selectable && localItems.value.length > 0 && props.selectedItems.length === localItems.value.length;
+    return (
+        props.selectable &&
+        localItems.value.length > 0 &&
+        localItems.value.every((item) => isRowSelected(item))
+    );
 });
 
 /**
@@ -567,7 +605,7 @@ function onRowClick(item: T, index: number, event: MouseEvent | KeyboardEvent) {
 
     // Emit row-click event if rows are clickable
     if (props.clickableRows) {
-        emit("row-click", { item, index, event, toggleDetails: () => toggleRowDetails(index) });
+        emit("row-click", { item, index, event, toggleDetails: () => toggleRowDetails(item) });
     }
 }
 
@@ -578,26 +616,29 @@ function onSelectAll(selected: boolean) {
 /**
  * Handle row selection toggle
  */
-function onRowSelect(item: T, index: number) {
-    const isSelected = props.selectedItems.includes(index);
-    emit("row-select", { item, index, selected: !isSelected });
+function onRowSelect(item: T, paginatedIndex: number) {
+    const index = getItemSourceIndex(item);
+    const effectiveIndex = index >= 0 ? index : getGlobalIndex(paginatedIndex);
+    const isSelected = effectiveIndex >= 0 && props.selectedItems.includes(effectiveIndex);
+    emit("row-select", { item, index: effectiveIndex, selected: !isSelected });
 }
 
 /**
  * Check if row details are expanded
  */
-function isRowExpanded(index: number) {
-    return expandedRows.value.has(index);
+function isRowExpanded(item: T) {
+    return expandedRows.value.has(getItemStateKey(item));
 }
 
 /**
  * Toggle row details expansion
  */
-function toggleRowDetails(index: number) {
-    if (expandedRows.value.has(index)) {
-        expandedRows.value.delete(index);
+function toggleRowDetails(item: T) {
+    const key = getItemStateKey(item);
+    if (expandedRows.value.has(key)) {
+        expandedRows.value.delete(key);
     } else {
-        expandedRows.value.add(index);
+        expandedRows.value.add(key);
     }
     // Trigger reactivity
     expandedRows.value = new Set(expandedRows.value);
@@ -648,17 +689,6 @@ function getRowClass(item: T) {
  */
 function getItemCellClass(item: T, fieldKey: string) {
     return (item as TableItemClassMeta).cellClass?.[fieldKey];
-}
-
-/**
- * Check if row is selected
- */
-function isRowSelected(index: number) {
-    return props.selectedItems.includes(index);
-}
-
-function isRowIndeterminate(index: number) {
-    return props.indeterminateItems.includes(index);
 }
 
 /**
@@ -811,7 +841,7 @@ defineExpose({
 
                         <template
                             v-for="(item, paginatedIndex) in paginatedLocalItems"
-                            :key="`tr` + getGlobalIndex(paginatedIndex)">
+                            :key="`tr-${getItemStateKey(item)}`">
                             <tr
                                 :id="getRowId(props.id, getGlobalIndex(paginatedIndex))"
                                 :aria-rowindex="getGlobalIndex(paginatedIndex) + 1"
@@ -819,7 +849,7 @@ defineExpose({
                                 :class="[
                                     {
                                         'g-table-row-clickable': clickableRows || (selectable && !noSelectOnClick),
-                                        'g-table-row-selected': isRowSelected(getGlobalIndex(paginatedIndex)),
+                                        'g-table-row-selected': isRowSelected(item),
                                     },
                                     getRowClass(item),
                                 ]"
@@ -832,11 +862,11 @@ defineExpose({
                                         <GCheckbox
                                             :id="`${getRowId(props.id, getGlobalIndex(paginatedIndex))}-select`"
                                             v-g-tooltip.hover
-                                            :model-value="isRowSelected(getGlobalIndex(paginatedIndex))"
-                                            :indeterminate="isRowIndeterminate(getGlobalIndex(paginatedIndex))"
+                                            :model-value="isRowSelected(item)"
+                                            :indeterminate="isRowIndeterminate(item)"
                                             :title="props.selectCheckboxTitle"
                                             :aria-label="props.selectCheckboxTitle"
-                                            @update:model-value="onRowSelect(item, getGlobalIndex(paginatedIndex))" />
+                                            @update:model-value="onRowSelect(item, paginatedIndex)" />
                                     </span>
                                 </td>
 
@@ -872,7 +902,7 @@ defineExpose({
                                         :value="item[field.key]"
                                         :item="item"
                                         :index="getGlobalIndex(paginatedIndex)"
-                                        :toggle-details="() => toggleRowDetails(getGlobalIndex(paginatedIndex))">
+                                        :toggle-details="() => toggleRowDetails(item)">
                                         <span>{{ getCellValue(item, field) }}</span>
                                     </slot>
                                 </td>
@@ -919,15 +949,15 @@ defineExpose({
 
                             <!-- Row details expansion -->
                             <tr
-                                v-if="isRowExpanded(getGlobalIndex(paginatedIndex))"
-                                :key="`details-${getGlobalIndex(paginatedIndex)}`"
+                                v-if="isRowExpanded(item)"
+                                :key="`details-${getItemStateKey(item)}`"
                                 class="g-table-details-row">
                                 <td :colspan="props.fields.length + (selectable ? 1 : 0) + (props.actions ? 1 : 0)">
                                     <slot
                                         name="row-details"
                                         :item="item"
                                         :index="getGlobalIndex(paginatedIndex)"
-                                        :toggle-details="() => toggleRowDetails(getGlobalIndex(paginatedIndex))" />
+                                        :toggle-details="() => toggleRowDetails(item)" />
                                 </td>
                             </tr>
                         </template>
