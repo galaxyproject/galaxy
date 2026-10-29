@@ -2002,8 +2002,10 @@ steps:
 
         # select text comment tool use all options and set font size to 2
         editor.tool_bar.tool(tool="text_comment").wait_for_and_click()
-        editor.tool_bar.toggle_bold.wait_for_and_click()
-        editor.tool_bar.toggle_italic.wait_for_and_click()
+        for toggle in (editor.tool_bar.toggle_bold, editor.tool_bar.toggle_italic):
+            assert toggle.wait_for_visible().get_attribute("aria-pressed") == "false"
+            toggle.wait_for_and_click()
+            assert toggle.wait_for_visible().get_attribute("aria-pressed") == "true"
         editor.tool_bar.color(color="pink").wait_for_and_click()
         editor.tool_bar.font_size.wait_for_and_click()
         self.send_keys_to_page(Keys.LEFT * 5 + Keys.RIGHT)
