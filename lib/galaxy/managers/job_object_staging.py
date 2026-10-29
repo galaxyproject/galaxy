@@ -105,6 +105,9 @@ class JobObjectStagingManager:
         obj, dataset, path_kwargs = self._input_object(job, kind, object_id)
         if dataset.purged:
             raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
+        # Stores report a missing object's size as 0, and presign or stream it as if it were empty.
+        if not self._object_store.exists(obj, **path_kwargs):
+            raise exceptions.ObjectNotFound(f"Requested {kind} is not in the object store.")
 
         size = self._object_store.size(obj, **path_kwargs)
         if head:

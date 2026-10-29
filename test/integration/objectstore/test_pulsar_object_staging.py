@@ -208,6 +208,22 @@ class TestPulsarObjectStagingRedirect(TestPulsarObjectStagingStream):
             # A retry or resume asks Galaxy again, which presigns a new URL.
             assert requests.get(url).text == INPUT_CONTENT
 
+    def test_input_missing_from_the_object_store_is_not_found(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self._hda(self.dataset_populator.new_dataset(history_id, content=INPUT_CONTENT, wait=True))
+        assert hda.dataset is not None
+        job = self._running_job_with_input(hda)
+        self._app.object_store.delete(hda.dataset)
+        expires = int(time.time()) + 3600
+
+        for redirect in (False, True):
+            url = input_url(
+                self._app.security, self.url.rstrip("/"), job.id, "dataset", hda.dataset.id, expires, redirect=redirect
+            )
+            # Neither an empty stream nor a presigned URL for a missing key.
+            assert requests.get(url, allow_redirects=False).status_code == 404
+            assert requests.head(url).status_code == 404
+
     def _running_job_with_input(self, hda):
         """A job whose handler is unknown, so its state stays as set here."""
         sa_session = self._app.model.session
