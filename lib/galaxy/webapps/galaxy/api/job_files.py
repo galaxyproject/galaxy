@@ -107,31 +107,14 @@ class JobFilesAPIController(BaseGalaxyAPIController):
 
         # Is this writing an unneeded file? Should this just copy in Python?
         if "__file_path" in payload:
-            file_path = payload.get("__file_path")
-            upload_store = trans.app.config.nginx_upload_job_files_store
-            assert upload_store, (
-                "Request appears to have been processed by"
-                " nginx_upload_module but Galaxy is not"
-                " configured to recognize it"
-            )
-            assert file_path.startswith(
-                upload_store
-            ), f"Filename provided by nginx ({file_path}) is not in correct directory ({upload_store})"
-            input_file = open(file_path)
+            input_file = open(self.__nginx_upload_path(trans, payload["__file_path"]))
         elif "session_id" in payload:
-            # code stolen from basic.py
-            session_id = payload["session_id"]
-            upload_store = (
-                trans.app.config.tus_upload_store_job_files
-                or trans.app.config.tus_upload_store
-                or trans.app.config.new_file_path
-            )
-            if re.match(r"^[\w-]+$", session_id) is None:
-                raise ValueError("Invalid session id format.")
-            local_filename = os.path.abspath(os.path.join(upload_store, session_id))
-            input_file = open(local_filename)
+            input_file = open(self.__tus_upload_path(trans, payload["session_id"]))
         else:
-            input_file = payload.get("file", payload.get("__file", None)).file
+            upload = payload.get("file", payload.get("__file"))
+            if not hasattr(upload, "file"):
+                raise exceptions.RequestParameterMissingException("No file uploaded.")
+            input_file = upload.file
         target_dir = os.path.dirname(path)
         util.safe_makedirs(target_dir)
         try:
@@ -207,6 +190,36 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             error_message = "Attempting to read or modify the files of a job that has already completed."
             raise exceptions.ItemAccessibilityException(error_message)
         return job
+
+    def __nginx_upload_path(self, trans, file_path) -> str:
+        upload_store = trans.app.config.nginx_upload_job_files_store
+        if not upload_store:
+            raise exceptions.ConfigDoesNotAllowException(
+                "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
+            )
+        # Form values are JSON-decoded, so this may not be a str.
+        file_path = os.path.abspath(file_path) if isinstance(file_path, str) else None
+        if not file_path or not util.in_directory(file_path, upload_store):
+            raise exceptions.RequestParameterInvalidException(
+                "Filename provided by nginx is not in the configured upload directory."
+            )
+        if not os.path.isfile(file_path):
+            raise exceptions.RequestParameterInvalidException("File provided by nginx does not exist.")
+        return file_path
+
+    def __tus_upload_path(self, trans, session_id) -> str:
+        # code stolen from basic.py
+        upload_store = (
+            trans.app.config.tus_upload_store_job_files
+            or trans.app.config.tus_upload_store
+            or trans.app.config.new_file_path
+        )
+        if not isinstance(session_id, str) or re.match(r"^[\w-]+$", session_id) is None:
+            raise exceptions.RequestParameterInvalidException("Invalid session id format.")
+        upload_path = os.path.abspath(os.path.join(upload_store, session_id))
+        if not os.path.isfile(upload_path):
+            raise exceptions.RequestParameterInvalidException("No upload found for session id.")
+        return upload_path
 
     def __check_job_can_write_to_path(self, trans, job, path):
         """Verify an idealized job runner should actually be able to write to
