@@ -361,6 +361,16 @@ describe("GPagination", () => {
         expect(page.value).toBe(1);
     });
 
+    it("keeps the current page when the page size and row count change together", async () => {
+        const { page, total, perPage } = mountWithModel(3);
+
+        perPage.value = 25;
+        total.value = 200;
+        await flushPromises();
+
+        expect(page.value).toBe(3);
+    });
+
     it("moves focus to the current page when the clicked button becomes disabled", async () => {
         const wrapper = mountPagination({ modelValue: 9 }, document.body);
         const next = wrapper.get('button[aria-label="Go to next page"]');

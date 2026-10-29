@@ -111,10 +111,15 @@ const safePerPage = computed(() => atLeastOne(props.perPage));
 const safeLimit = computed(() => atLeastOne(props.limit));
 const numberOfPages = computed(() => Math.max(Math.ceil(Math.max(props.totalRows || 0, 0) / safePerPage.value), 1));
 
-const currentPage = computed(() => {
-    const page = Math.floor(props.modelValue ?? internalPage.value) || 1;
-    return Math.min(Math.max(page, 1), numberOfPages.value);
+// The bound page if there is one, else the pager's own; setting it emits update:modelValue
+const requestedPage = computed({
+    get: () => Math.floor(props.modelValue ?? internalPage.value) || 1,
+    set: (page: number) => {
+        internalPage.value = page;
+        emit("update:modelValue", page);
+    },
 });
+const currentPage = computed(() => Math.min(Math.max(requestedPage.value, 1), numberOfPages.value));
 
 const items = computed(() =>
     pageWindow({
@@ -145,8 +150,7 @@ function goTo(page: number, event: MouseEvent) {
         return;
     }
     clickedButton = event.currentTarget as HTMLButtonElement;
-    internalPage.value = page;
-    emit("update:modelValue", page);
+    requestedPage.value = page;
     emit("change", page);
 }
 
@@ -170,12 +174,12 @@ watch(
 watch(
     () => [safePerPage.value, numberOfPages.value, props.totalRows] as const,
     ([perPage, pages, rows], [oldPerPage, oldPages, oldRows]) => {
+        // As in BootstrapVue, a page size that changes along with the row count (new results at a new
+        // size) keeps the page unless the pages shrink past it.
         const pageSizeChanged = perPage !== oldPerPage && rows === oldRows;
-        const requested = Math.floor(props.modelValue ?? internalPage.value) || 1;
-        const pagesShrankPastCurrent = pages !== oldPages && requested > pages;
-        if ((pageSizeChanged || pagesShrankPastCurrent) && requested !== 1) {
-            internalPage.value = 1;
-            emit("update:modelValue", 1);
+        const pagesShrankPastCurrent = pages !== oldPages && requestedPage.value > pages;
+        if ((pageSizeChanged || pagesShrankPastCurrent) && requestedPage.value !== 1) {
+            requestedPage.value = 1;
         }
     },
 );
