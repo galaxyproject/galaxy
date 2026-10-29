@@ -15,6 +15,7 @@ from collections.abc import (
     MutableMapping,
     Sequence,
 )
+from contextlib import nullcontext
 from pathlib import Path
 from typing import (
     Any,
@@ -157,6 +158,10 @@ from galaxy.tool_util_models.tool_source import (
     InputConfigFile,
     JavascriptRequirement,
     TemplateConfigFile,
+)
+from galaxy.tool_util_models.untrusted import (
+    is_loading_untrusted_tools,
+    loading_untrusted_tools,
 )
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
@@ -1133,6 +1138,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self._is_workflow_compatible = None
         self.__tests: Optional[str] = None
         self.__tests_parsed: bool = False
+        # tests are parsed later, in the same trust context as the tool itself
+        self._loaded_untrusted = is_loading_untrusted_tools()
         self.parameters: Optional[list[ToolParameterT]] = None
         self.template_macro_params: dict = {}
         self._macro_paths: list = []
@@ -1682,7 +1689,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         # seconds-long) validation cost on first access rather than at
         # construction.
         if not self.__tests_parsed and self.app.is_webapp:
-            self.parse_tests()
+            with loading_untrusted_tools() if self._loaded_untrusted else nullcontext():
+                self.parse_tests()
         if self.__tests:
             return [ToolTestDescription(d) for d in json.loads(self.__tests)]
         return None
