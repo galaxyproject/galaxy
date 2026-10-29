@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -7,6 +6,7 @@ import { useTargetHistoryUploadState } from "@/composables/history/useTargetHist
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
@@ -68,18 +68,20 @@ onUnmounted(stopWaitingForTask);
 
 <template>
     <div class="galaxy-link-import">
-        <BFormGroup
-            label="Link from another Galaxy"
-            label-for="galaxy-link-input"
-            description="Made with Export to another Galaxy on the other server.">
-            <BFormInput
+        <div class="mb-3">
+            <label for="galaxy-link-input">Link from another Galaxy</label>
+            <GFormInput
                 id="galaxy-link-input"
                 v-model="link"
-                type="url"
+                aria-describedby="galaxy-link-help"
                 data-description="galaxy link input"
                 placeholder="https://usegalaxy.org/api/short_term_storage/..."
+                type="url"
                 :disabled="isImporting" />
-        </BFormGroup>
+            <small id="galaxy-link-help" class="form-text text-muted">
+                Made with Export to another Galaxy on the other server.
+            </small>
+        </div>
         <GButton
             color="blue"
             data-description="galaxy link import"

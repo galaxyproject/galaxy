@@ -54,8 +54,9 @@ describe("GalaxyLinkImport", () => {
         const bodies = importEndsIn("SUCCESS");
         const wrapper = await importLink("  https://usegalaxy.org/api/short_term_storage/abc\n");
         await vi.waitFor(() => expect(wrapper.text()).toContain("Done!"));
-        const input = wrapper.find('[data-description="galaxy link input"]').element as HTMLInputElement;
-        expect(input.value).toBe("");
+        const input = wrapper.find('[data-description="galaxy link input"]');
+        expect(input.classes()).toContain("g-form-input");
+        expect((input.element as HTMLInputElement).value).toBe("");
         expect(wrapper.find('[data-description="galaxy link import"]').attributes("aria-disabled")).toBe("true");
         expect(bodies[0]).toEqual({
             store_content_uri: "https://usegalaxy.org/api/short_term_storage/abc",
