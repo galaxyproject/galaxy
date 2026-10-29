@@ -133,6 +133,35 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             output_content = self.dataset_populator.get_history_dataset_content(history_id)
             assert output_content == "abc\n"
 
+    def test_queued_job_fails_when_execute_role_is_revoked(self):
+        with self.dataset_populator.test_history() as history_id:
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc", wait=True)
+            slow_run = self.dataset_populator.run_tool(
+                "cat_data_and_sleep",
+                {"input1": {"src": "hda", "id": dataset["id"]}, "sleep_time": 10},
+                history_id,
+            )
+            with self.dataset_populator.user_tool_execute_permissions():
+                dynamic_tool = self.dataset_populator.create_unprivileged_tool(
+                    UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+                )
+                # Waits on the slow job's output, so it is still queued when the role is revoked.
+                queued_run = self._run(
+                    history_id=history_id,
+                    tool_uuid=dynamic_tool["uuid"],
+                    inputs={"input": {"src": "hda", "id": slow_run["outputs"][0]["id"]}},
+                    assert_ok=True,
+                )
+            self.dataset_populator.wait_for_job(slow_run["jobs"][0]["id"], assert_ok=True)
+            queued_job_id = queued_run["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(queued_job_id)
+            job_details = self.dataset_populator.get_job_details(queued_job_id, full=True).json()
+            assert job_details["state"] == "error", job_details
+            output_details = self.dataset_populator.get_history_dataset_details(
+                history_id=history_id, dataset_id=queued_run["outputs"][0]["id"], assert_ok=False
+            )
+            assert output_details["misc_info"] == "User is not allowed to run unprivileged tools", output_details
+
     def test_run_mapped_over_writes_element_identifier(self):
         contents = self._run_mapped_over_list(TOOL_WITH_ELEMENT_IDENTIFIER, [("sample_a", "a"), ("sample_b", "b")])
         assert contents == {"sample_a": "sample_a\n", "sample_b": "sample_b\n"}

@@ -41,6 +41,7 @@ from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
@@ -562,8 +563,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             try:
                 job_prepare_ret = job_wrapper.prepare(**prepare_kwds)
             except Exception as e:
-                if isinstance(e, ParameterValueError):
-                    log.info("parameter validation error preparing job %d: %s", job_wrapper.job_id, unicodify(e))
+                if isinstance(e, (ParameterValueError, InsufficientPermissionsException)):
+                    log.info("job %d rejected while preparing: %s", job_wrapper.job_id, unicodify(e))
                 else:
                     log.exception("failure preparing job %d", job_wrapper.job_id)
                 job_state = self._job_state(job_wrapper.get_job(), job_wrapper)

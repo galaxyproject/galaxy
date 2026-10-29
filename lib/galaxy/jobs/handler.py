@@ -29,7 +29,10 @@ from sqlalchemy.sql.expression import (
 )
 
 from galaxy import model
-from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import (
+    ObjectNotFound,
+    ToolMissingException,
+)
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.jobs import (
     JobQueueI,
@@ -322,9 +325,15 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         tool_uuid = None
         if job.dynamic_tool and (uuid := job.dynamic_tool.uuid):
             tool_uuid = uuid
-        if not self.app.toolbox.has_tool(
-            tool_id=job.tool_id, tool_version=job.tool_version, tool_uuid=tool_uuid, exact=True, user=job.user
-        ):
+        try:
+            tool_available = self.app.toolbox.has_tool(
+                tool_id=job.tool_id, tool_version=job.tool_version, tool_uuid=tool_uuid, exact=True, user=job.user
+            )
+        except (ObjectNotFound, ToolMissingException):
+            # A tool looked up by uuid raises instead of returning False, e.g. a user-defined
+            # tool whose owner lost the execution role or whose definition no longer loads.
+            tool_available = False
+        if not tool_available:
             log.warning(f"({job.id}) Tool '{job.tool_id}' removed from tool config, unable to recover job")
             self.job_wrapper(job).fail(
                 "This tool was disabled before the job completed.  Please contact your Galaxy administrator."
