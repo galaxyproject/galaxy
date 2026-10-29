@@ -17,7 +17,7 @@ cat <<EOF
 '${0##*/} -framework-workflows'      for running through workflow tests to test correctness of workflow evaluation
 '${0##*/} -framework-workflows -id workflow_name' test single workflow framework test
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
-'${0##*/} -unit'                    for running all unit tests (doctests and tests in test/unit)
+'${0##*/} -unit'                    for running all unit tests (doctests, package tests, and repository-level tests)
 '${0##*/} -unit (test_selector)'    for running unit tests on specified test path (using pytest selector syntax)
 '${0##*/} -selenium'                for running all selenium web tests (in packages/test_selenium/src/galaxy_test/selenium)
 '${0##*/} -selenium (test_selector)' for running specified selenium web tests (using pytest selector syntax)
@@ -35,15 +35,16 @@ The main test types are as follows:
    API and test general backend aspects of Galaxy using the API.
 - Integration: These tests are located in test/integration and test special
    configurations of Galaxy. All API tests assume a particular Galaxy configuration
-   defined by test/base/driver_util.py and integration tests can be used to
-   launch and test Galaxy in other configurations.
+   defined by packages/test_driver/src/galaxy_test/driver/driver_util.py.
+   Integration tests can launch and test Galaxy in other configurations.
 - Framework: These tests are all Galaxy tool tests and can be found in
    test/functional/tools. These are for the most part meant to test and
    demonstrate features of the tool evaluation environment and of Galaxy tool XML
    files.
 - Unit: These are Python unit tests either defined as doctests or inside of
-   test/unit. These should generally not require a Galaxy instance and should
-   quickly test just a component or a few components of Galaxy's backend code.
+   packages/<package>/tests, with repository-level checks in test/unit. These
+   should generally not require a Galaxy instance and should quickly test just
+   a component or a few components of Galaxy's backend code.
 - Selenium: These are full stack tests meant to test the Galaxy UI with real
    browsers and are located in packages/test_selenium/src/galaxy_test/selenium.
 - ToolShed: These are tests that test ToolShed related functionality. These are

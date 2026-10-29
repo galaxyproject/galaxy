@@ -532,10 +532,10 @@ Bug fixes
 * Restore visual hierarchy for ReStructuredText headers in tool form's help section by `@hujambo-dunia <https://github.com/hujambo-dunia>`_ in `#21780 <https://github.com/galaxyproject/galaxy/pull/21780>`_
 * Fix transient failure in test_delete_dataset_from_storage_view by `@jmchilton <https://github.com/jmchilton>`_ in `#21793 <https://github.com/galaxyproject/galaxy/pull/21793>`_
 * Stop uv from using the system Python to create the venv by `@uwwint <https://github.com/uwwint>`_ in `#21807 <https://github.com/galaxyproject/galaxy/pull/21807>`_
-* Bump cryptography from 46.0.4 to 46.0.5 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#21815 <https://github.com/galaxyproject/galaxy/pull/21815>`_
-* Bump jsondiffpatch from 0.6.2 to 0.7.2 in /packages/tool_shed/src/tool_shed/webapp/frontend by `@dependabot <https://github.com/dependabot>`_ in `#21817 <https://github.com/galaxyproject/galaxy/pull/21817>`_
+* Bump cryptography from 46.0.4 to 46.0.5 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#21815 <https://github.com/galaxyproject/galaxy/pull/21815>`_
+* Bump jsondiffpatch from 0.6.2 to 0.7.2 in /lib/tool_shed/webapp/frontend by `@dependabot <https://github.com/dependabot>`_ in `#21817 <https://github.com/galaxyproject/galaxy/pull/21817>`_
 * Pin setuptools<82 for galaxy-files package by `@jmchilton <https://github.com/jmchilton>`_ in `#21824 <https://github.com/galaxyproject/galaxy/pull/21824>`_
-* Bump pillow from 12.1.0 to 12.1.1 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#21825 <https://github.com/galaxyproject/galaxy/pull/21825>`_
+* Bump pillow from 12.1.0 to 12.1.1 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#21825 <https://github.com/galaxyproject/galaxy/pull/21825>`_
 * Bump markdown-it from 13.0.2 to 14.1.1 in /client by `@dependabot <https://github.com/dependabot>`_ in `#21852 <https://github.com/galaxyproject/galaxy/pull/21852>`_
 * Bump glob from 10.3.10 to 12.0.0 in /client by `@dependabot <https://github.com/dependabot>`_ in `#21864 <https://github.com/galaxyproject/galaxy/pull/21864>`_
 * Fix Selenium select_by_value: wait for element before find by `@jmchilton <https://github.com/jmchilton>`_ in `#21874 <https://github.com/galaxyproject/galaxy/pull/21874>`_
@@ -552,7 +552,7 @@ Bug fixes
 * Fix ToolExpressionOutput.to_model() for boolean type by `@jmchilton <https://github.com/jmchilton>`_ in `#22007 <https://github.com/galaxyproject/galaxy/pull/22007>`_
 * Remove unused enable_beta_workflow_modules config option by `@jmchilton <https://github.com/jmchilton>`_ in `#22050 <https://github.com/galaxyproject/galaxy/pull/22050>`_
 * Fix merge, tool shed metadata revision page uses new invalid_tools structure by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22072 <https://github.com/galaxyproject/galaxy/pull/22072>`_
-* Bump black from 26.3.0 to 26.3.1 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22090 <https://github.com/galaxyproject/galaxy/pull/22090>`_
+* Bump black from 26.3.0 to 26.3.1 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22090 <https://github.com/galaxyproject/galaxy/pull/22090>`_
 * Disable undo/redo buttons in workflow editor when unavailable by `@dannon <https://github.com/dannon>`_ in `#22092 <https://github.com/galaxyproject/galaxy/pull/22092>`_
 * Fix transient CI failures by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22102 <https://github.com/galaxyproject/galaxy/pull/22102>`_
 * Skip X-Frame-Options header for published embed views by `@dannon <https://github.com/dannon>`_ in `#22107 <https://github.com/galaxyproject/galaxy/pull/22107>`_
@@ -564,28 +564,28 @@ Bug fixes
 * Prevent card images from overflowing container by `@dannon <https://github.com/dannon>`_ in `#22148 <https://github.com/galaxyproject/galaxy/pull/22148>`_
 * Convert math.inf to None in JSON-serialized tool dicts by `@dannon <https://github.com/dannon>`_ in `#22152 <https://github.com/galaxyproject/galaxy/pull/22152>`_
 * Use correct binary unit prefixes (KiB/MiB/GiB) by `@dannon <https://github.com/dannon>`_ in `#22153 <https://github.com/galaxyproject/galaxy/pull/22153>`_
-* Bump pyasn1 from 0.6.2 to 0.6.3 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22160 <https://github.com/galaxyproject/galaxy/pull/22160>`_
+* Bump pyasn1 from 0.6.2 to 0.6.3 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22160 <https://github.com/galaxyproject/galaxy/pull/22160>`_
 * Install playwright browsers for unit tests by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22161 <https://github.com/galaxyproject/galaxy/pull/22161>`_
 * Fix more paired_or_unpaired collection issues by `@jmchilton <https://github.com/jmchilton>`_ in `#22170 <https://github.com/galaxyproject/galaxy/pull/22170>`_
 * Prevent tag placeholder text wrapping in narrow columns by `@dannon <https://github.com/dannon>`_ in `#22176 <https://github.com/galaxyproject/galaxy/pull/22176>`_
-* Bump pydicom from 3.0.1 to 3.0.2 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22199 <https://github.com/galaxyproject/galaxy/pull/22199>`_
+* Bump pydicom from 3.0.1 to 3.0.2 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22199 <https://github.com/galaxyproject/galaxy/pull/22199>`_
 * Fix mapOver terminology typo and minor polish by `@martenson <https://github.com/martenson>`_ in `#22226 <https://github.com/galaxyproject/galaxy/pull/22226>`_
 * Set proxy_ssl_server_name for GTN proxy on CloudFlare due to SNI by `@martenson <https://github.com/martenson>`_ in `#22249 <https://github.com/galaxyproject/galaxy/pull/22249>`_
 * Remove dual load of cutWrapper.xml by `@natefoo <https://github.com/natefoo>`_ in `#22266 <https://github.com/galaxyproject/galaxy/pull/22266>`_
-* Bump requests from 2.32.5 to 2.33.0 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22270 <https://github.com/galaxyproject/galaxy/pull/22270>`_
-* Bump cryptography from 46.0.5 to 46.0.6 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22289 <https://github.com/galaxyproject/galaxy/pull/22289>`_
+* Bump requests from 2.32.5 to 2.33.0 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22270 <https://github.com/galaxyproject/galaxy/pull/22270>`_
+* Bump cryptography from 46.0.5 to 46.0.6 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22289 <https://github.com/galaxyproject/galaxy/pull/22289>`_
 * Fix flaky Selenium tests \`\`test_refresh_preserves_state\`\` and \`\`test_tool_discovery_landing\`\` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22301 <https://github.com/galaxyproject/galaxy/pull/22301>`_
-* Bump pygments from 2.19.2 to 2.20.0 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22308 <https://github.com/galaxyproject/galaxy/pull/22308>`_
-* Bump fastmcp from 3.1.0 to 3.2.0 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22334 <https://github.com/galaxyproject/galaxy/pull/22334>`_
+* Bump pygments from 2.19.2 to 2.20.0 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22308 <https://github.com/galaxyproject/galaxy/pull/22308>`_
+* Bump fastmcp from 3.1.0 to 3.2.0 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22334 <https://github.com/galaxyproject/galaxy/pull/22334>`_
 * Fix S3 multipart upload to start all threads before waiting by `@martenson <https://github.com/martenson>`_ in `#22356 <https://github.com/galaxyproject/galaxy/pull/22356>`_
-* Bump aiohttp from 3.13.3 to 3.13.4 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22363 <https://github.com/galaxyproject/galaxy/pull/22363>`_
+* Bump aiohttp from 3.13.3 to 3.13.4 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22363 <https://github.com/galaxyproject/galaxy/pull/22363>`_
 * Fix RST syntax and other small bugs in help Markdown term YAML by `@jmchilton <https://github.com/jmchilton>`_ in `#22374 <https://github.com/galaxyproject/galaxy/pull/22374>`_
-* Bump cryptography from 46.0.6 to 46.0.7 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22424 <https://github.com/galaxyproject/galaxy/pull/22424>`_
+* Bump cryptography from 46.0.6 to 46.0.7 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22424 <https://github.com/galaxyproject/galaxy/pull/22424>`_
 * Fix mypy and packaging issues; pin rocrate<0.15.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22469 <https://github.com/galaxyproject/galaxy/pull/22469>`_
-* Bump mako from 1.3.10 to 1.3.11 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22509 <https://github.com/galaxyproject/galaxy/pull/22509>`_
-* Bump authlib from 1.6.9 to 1.6.11 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22510 <https://github.com/galaxyproject/galaxy/pull/22510>`_
+* Bump mako from 1.3.10 to 1.3.11 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22509 <https://github.com/galaxyproject/galaxy/pull/22509>`_
+* Bump authlib from 1.6.9 to 1.6.11 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22510 <https://github.com/galaxyproject/galaxy/pull/22510>`_
 * Fix Hashicorp Vault 2.0 non-canonical path rejection by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22530 <https://github.com/galaxyproject/galaxy/pull/22530>`_
-* Bump lxml from 6.0.4 to 6.1.0 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22540 <https://github.com/galaxyproject/galaxy/pull/22540>`_
+* Bump lxml from 6.0.4 to 6.1.0 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22540 <https://github.com/galaxyproject/galaxy/pull/22540>`_
 * Fix tool id handling for shed-installed tools by `@guerler <https://github.com/guerler>`_ in `#22553 <https://github.com/galaxyproject/galaxy/pull/22553>`_
 * Skip missing history item ids in job exports by `@guerler <https://github.com/guerler>`_ in `#22563 <https://github.com/galaxyproject/galaxy/pull/22563>`_
 * Revert \`\`galaxy.yml.sample\`\` changes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22569 <https://github.com/galaxyproject/galaxy/pull/22569>`_
@@ -600,10 +600,10 @@ Bug fixes
 * Minor styling fixes for invocation view header and history list cards by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#22639 <https://github.com/galaxyproject/galaxy/pull/22639>`_
 * Update test workflows to respect gxformat2 0.26.0 syntax by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22642 <https://github.com/galaxyproject/galaxy/pull/22642>`_
 * Update test workflows to respect gxformat2 0.26.0 syntax (part 2) by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22645 <https://github.com/galaxyproject/galaxy/pull/22645>`_
-* Bump mistune from 3.2.0 to 3.2.1 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22651 <https://github.com/galaxyproject/galaxy/pull/22651>`_
+* Bump mistune from 3.2.0 to 3.2.1 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22651 <https://github.com/galaxyproject/galaxy/pull/22651>`_
 * Bump axios from 1.15.0 to 1.15.2 in /client by `@dependabot <https://github.com/dependabot>`_ in `#22652 <https://github.com/galaxyproject/galaxy/pull/22652>`_
-* Bump mako from 1.3.11 to 1.3.12 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22653 <https://github.com/galaxyproject/galaxy/pull/22653>`_
-* Bump python-multipart from 0.0.26 to 0.0.27 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22654 <https://github.com/galaxyproject/galaxy/pull/22654>`_
+* Bump mako from 1.3.11 to 1.3.12 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22653 <https://github.com/galaxyproject/galaxy/pull/22653>`_
+* Bump python-multipart from 0.0.26 to 0.0.27 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22654 <https://github.com/galaxyproject/galaxy/pull/22654>`_
 * Fix SQL compatibility in kombu message pruning by `@davelopez <https://github.com/davelopez>`_ in `#22655 <https://github.com/galaxyproject/galaxy/pull/22655>`_
 * Defer dynamic destination evaluation across resubmits by `@nuwang <https://github.com/nuwang>`_ in `#22670 <https://github.com/galaxyproject/galaxy/pull/22670>`_
 * Don't install data table entries for non-DM tool installs by `@natefoo <https://github.com/natefoo>`_ in `#22679 <https://github.com/galaxyproject/galaxy/pull/22679>`_
@@ -613,7 +613,7 @@ Bug fixes
 * Drop dead history_id kwarg from QueueJobs construction by `@jmchilton <https://github.com/jmchilton>`_ in `#22726 <https://github.com/galaxyproject/galaxy/pull/22726>`_
 * Fix galaxy_task DI injection on Python 3.14 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22727 <https://github.com/galaxyproject/galaxy/pull/22727>`_
 * Fix shed install column mismatch from synthesized name alias by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22733 <https://github.com/galaxyproject/galaxy/pull/22733>`_
-* Bump pydantic-ai from 1.97.0 to 1.99.0 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22736 <https://github.com/galaxyproject/galaxy/pull/22736>`_
+* Bump pydantic-ai from 1.97.0 to 1.99.0 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#22736 <https://github.com/galaxyproject/galaxy/pull/22736>`_
 * Merge 26.0 into dev (CI-clean rebase of #22749) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22753 <https://github.com/galaxyproject/galaxy/pull/22753>`_
 * Framework test for UDTs in Format 2 Workflows by `@jmchilton <https://github.com/jmchilton>`_ in `#22756 <https://github.com/galaxyproject/galaxy/pull/22756>`_
 * [26.1 (spiritually)] Fix UDT collection outputs being silently dropped in YAML tool parser by `@jmchilton <https://github.com/jmchilton>`_ in `#22761 <https://github.com/galaxyproject/galaxy/pull/22761>`_
@@ -992,7 +992,7 @@ Enhancements
 Other changes
 =============
 
-* Bump pydantic-ai from 1.44.0 to 1.56.0 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#21782 <https://github.com/galaxyproject/galaxy/pull/21782>`_
+* Bump pydantic-ai from 1.44.0 to 1.56.0 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#21782 <https://github.com/galaxyproject/galaxy/pull/21782>`_
 * Bump slackapi/slack-github-action from 2.0.0 to 2.1.1 by `@dependabot <https://github.com/dependabot>`_ in `#21803 <https://github.com/galaxyproject/galaxy/pull/21803>`_
 * Add a shared operations layer for internal and external AI agents by `@dannon <https://github.com/dannon>`_ in `#21942 <https://github.com/galaxyproject/galaxy/pull/21942>`_
 * Propagate \`start()\` to backends in \`DistributedObjectStore\` by `@pauldg <https://github.com/pauldg>`_ in `#22220 <https://github.com/galaxyproject/galaxy/pull/22220>`_
@@ -1094,7 +1094,7 @@ Bug fixes
 * Fix workflow report time handling by `@dannon <https://github.com/dannon>`_ in `#19292 <https://github.com/galaxyproject/galaxy/pull/19292>`_
 * Attempt to fix transient API test failure for jobs search. by `@jmchilton <https://github.com/jmchilton>`_ in `#20898 <https://github.com/galaxyproject/galaxy/pull/20898>`_
 * Infer type from extension for mzml by `@bgruening <https://github.com/bgruening>`_ in `#21033 <https://github.com/galaxyproject/galaxy/pull/21033>`_
-* Bump python-ldap from 3.4.0 to 3.4.5 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21042 <https://github.com/galaxyproject/galaxy/pull/21042>`_
+* Bump python-ldap from 3.4.0 to 3.4.5 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21042 <https://github.com/galaxyproject/galaxy/pull/21042>`_
 * Update config samples from schema by `@davelopez <https://github.com/davelopez>`_ in `#21053 <https://github.com/galaxyproject/galaxy/pull/21053>`_
 * Cross product tools: Fix typos in help section by `@RZ9082 <https://github.com/RZ9082>`_ in `#21061 <https://github.com/galaxyproject/galaxy/pull/21061>`_
 * Drop down revision for drop_job_params migration by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21122 <https://github.com/galaxyproject/galaxy/pull/21122>`_
@@ -1111,24 +1111,24 @@ Bug fixes
 * Attempt to fix transiently failing tests that click this tab. by `@jmchilton <https://github.com/jmchilton>`_ in `#21376 <https://github.com/galaxyproject/galaxy/pull/21376>`_
 * Attempt to fix transient failure in list_list_copy by `@jmchilton <https://github.com/jmchilton>`_ in `#21381 <https://github.com/galaxyproject/galaxy/pull/21381>`_
 * Use icon classes instead of strings for history content item states by `@guerler <https://github.com/guerler>`_ in `#21393 <https://github.com/galaxyproject/galaxy/pull/21393>`_
-* Bump urllib3 from 2.5.0 to 2.6.0 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21399 <https://github.com/galaxyproject/galaxy/pull/21399>`_
+* Bump urllib3 from 2.5.0 to 2.6.0 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21399 <https://github.com/galaxyproject/galaxy/pull/21399>`_
 * Assorted tool shed fixes. by `@jmchilton <https://github.com/jmchilton>`_ in `#21424 <https://github.com/galaxyproject/galaxy/pull/21424>`_
 * Use Playwright from the Galaxy virtualenv by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21425 <https://github.com/galaxyproject/galaxy/pull/21425>`_
 * Fix tool shed repository last updated time by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21427 <https://github.com/galaxyproject/galaxy/pull/21427>`_
 * Add license define for vite by `@dannon <https://github.com/dannon>`_ in `#21431 <https://github.com/galaxyproject/galaxy/pull/21431>`_
 * Create alembic merge by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21447 <https://github.com/galaxyproject/galaxy/pull/21447>`_
 * Don't set OAUTHLIB_INSECURE_TRANSPORT setting in user_data by `@nuwang <https://github.com/nuwang>`_ in `#21451 <https://github.com/galaxyproject/galaxy/pull/21451>`_
-* Bump filelock from 3.20.0 to 3.20.1 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21476 <https://github.com/galaxyproject/galaxy/pull/21476>`_
+* Bump filelock from 3.20.0 to 3.20.1 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21476 <https://github.com/galaxyproject/galaxy/pull/21476>`_
 * Fixes select field clipping and filtering by `@guerler <https://github.com/guerler>`_ in `#21479 <https://github.com/galaxyproject/galaxy/pull/21479>`_
 * Add tool_shed_url config for explicit hostname setting by `@jmchilton <https://github.com/jmchilton>`_ in `#21499 <https://github.com/galaxyproject/galaxy/pull/21499>`_
 * Provide more accurate step hints for failing subworkflow steps by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21514 <https://github.com/galaxyproject/galaxy/pull/21514>`_
 * Restrict collection of dynamic working dir output to specified directory in pulsar by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21515 <https://github.com/galaxyproject/galaxy/pull/21515>`_
 * Accept 404 as valid intermediate state when waiting for dataset purge by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21521 <https://github.com/galaxyproject/galaxy/pull/21521>`_
 * Fix input tags not being copied when using copy_inputs_to_history by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21529 <https://github.com/galaxyproject/galaxy/pull/21529>`_
-* Bump aiohttp from 3.13.2 to 3.13.3 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21538 <https://github.com/galaxyproject/galaxy/pull/21538>`_
+* Bump aiohttp from 3.13.2 to 3.13.3 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21538 <https://github.com/galaxyproject/galaxy/pull/21538>`_
 * Preserve assistant messages with tool calls by `@guerler <https://github.com/guerler>`_ in `#21545 <https://github.com/galaxyproject/galaxy/pull/21545>`_
-* Bump urllib3 from 2.6.2 to 2.6.3 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21546 <https://github.com/galaxyproject/galaxy/pull/21546>`_
-* Bump werkzeug from 3.1.4 to 3.1.5 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21549 <https://github.com/galaxyproject/galaxy/pull/21549>`_
+* Bump urllib3 from 2.6.2 to 2.6.3 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21546 <https://github.com/galaxyproject/galaxy/pull/21546>`_
+* Bump werkzeug from 3.1.4 to 3.1.5 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21549 <https://github.com/galaxyproject/galaxy/pull/21549>`_
 * Fix width and height assignment for image metadata using Pillow by `@kostrykin <https://github.com/kostrykin>`_ in `#21554 <https://github.com/galaxyproject/galaxy/pull/21554>`_
 * Better error message for unencoded/unresolvable filesource uri by `@dannon <https://github.com/dannon>`_ in `#21562 <https://github.com/galaxyproject/galaxy/pull/21562>`_
 * Fix loading spinner positioning in admin grid by `@dannon <https://github.com/dannon>`_ in `#21564 <https://github.com/galaxyproject/galaxy/pull/21564>`_
@@ -1136,13 +1136,13 @@ Bug fixes
 * Overhaul ChatGXY Routing approach by `@dannon <https://github.com/dannon>`_ in `#21580 <https://github.com/galaxyproject/galaxy/pull/21580>`_
 * Fix Vite 5 upgrade compatibility issues for tool shed frontend by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21581 <https://github.com/galaxyproject/galaxy/pull/21581>`_
 * Remove dummy header from JupyterLite requests by `@guerler <https://github.com/guerler>`_ in `#21585 <https://github.com/galaxyproject/galaxy/pull/21585>`_
-* Bump pyasn1 from 0.6.1 to 0.6.2 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21605 <https://github.com/galaxyproject/galaxy/pull/21605>`_
+* Bump pyasn1 from 0.6.1 to 0.6.2 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21605 <https://github.com/galaxyproject/galaxy/pull/21605>`_
 * Fix Auto Layout crash with conditional (when) step inputs by `@jmchilton <https://github.com/jmchilton>`_ in `#21616 <https://github.com/galaxyproject/galaxy/pull/21616>`_
 * Fix toolshed tests on Python 3.14 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21617 <https://github.com/galaxyproject/galaxy/pull/21617>`_
 * Fix package test using ``--index-strategy unsafe-best-match`` to match pip behavior  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21619 <https://github.com/galaxyproject/galaxy/pull/21619>`_
 * Fix ace import in cell-based markdown editor by `@guerler <https://github.com/guerler>`_ in `#21622 <https://github.com/galaxyproject/galaxy/pull/21622>`_
 * Triage command followup fixes/tweaks by `@dannon <https://github.com/dannon>`_ in `#21629 <https://github.com/galaxyproject/galaxy/pull/21629>`_
-* Bump python-multipart from 0.0.21 to 0.0.22 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21663 <https://github.com/galaxyproject/galaxy/pull/21663>`_
+* Bump python-multipart from 0.0.21 to 0.0.22 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#21663 <https://github.com/galaxyproject/galaxy/pull/21663>`_
 * Fix incorrect router tag in plugins API by `@dannon <https://github.com/dannon>`_ in `#21669 <https://github.com/galaxyproject/galaxy/pull/21669>`_
 * Add missing types to visualization model by `@guerler <https://github.com/guerler>`_ in `#21672 <https://github.com/galaxyproject/galaxy/pull/21672>`_
 * Fix storing origin for workflow landing requests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21696 <https://github.com/galaxyproject/galaxy/pull/21696>`_
@@ -1627,7 +1627,7 @@ Bug fixes
 * Add built visualizations path to .gitignore by `@guerler <https://github.com/guerler>`_ in `#20355 <https://github.com/galaxyproject/galaxy/pull/20355>`_
 * Remove 8 year old note that points at a non-existent subdomain by `@scottcain <https://github.com/scottcain>`_ in `#20361 <https://github.com/galaxyproject/galaxy/pull/20361>`_
 * Restore Nora by `@guerler <https://github.com/guerler>`_ in `#20387 <https://github.com/galaxyproject/galaxy/pull/20387>`_
-* Bump requests from 2.32.3 to 2.32.4 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#20422 <https://github.com/galaxyproject/galaxy/pull/20422>`_
+* Bump requests from 2.32.3 to 2.32.4 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#20422 <https://github.com/galaxyproject/galaxy/pull/20422>`_
 * Fix client build, set create_time by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20445 <https://github.com/galaxyproject/galaxy/pull/20445>`_
 * Update mulled_containers.rst by `@ccoulombe <https://github.com/ccoulombe>`_ in `#20446 <https://github.com/galaxyproject/galaxy/pull/20446>`_
 * Fix transient selenium error when adding collection input. by `@jmchilton <https://github.com/jmchilton>`_ in `#20460 <https://github.com/galaxyproject/galaxy/pull/20460>`_
@@ -1639,7 +1639,7 @@ Bug fixes
 * Fix UI Bug - don't allow checking deferred for local files. by `@jmchilton <https://github.com/jmchilton>`_ in `#20609 <https://github.com/galaxyproject/galaxy/pull/20609>`_
 * Require user for visualizations create endpoint by `@guerler <https://github.com/guerler>`_ in `#20615 <https://github.com/galaxyproject/galaxy/pull/20615>`_
 * Use store to cache step jobs summary by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20638 <https://github.com/galaxyproject/galaxy/pull/20638>`_
-* Fix typo in packages/config/src/galaxy/config/sample/job_conf.sample.yml: enviroment --> environment by `@blankenberg <https://github.com/blankenberg>`_ in `#20652 <https://github.com/galaxyproject/galaxy/pull/20652>`_
+* Fix typo in lib/galaxy/config/sample/job_conf.sample.yml: enviroment --> environment by `@blankenberg <https://github.com/blankenberg>`_ in `#20652 <https://github.com/galaxyproject/galaxy/pull/20652>`_
 * Remove select and deselect labels from visualization select field by `@guerler <https://github.com/guerler>`_ in `#20665 <https://github.com/galaxyproject/galaxy/pull/20665>`_
 * Fix assertion on python version by `@ccoulombe <https://github.com/ccoulombe>`_ in `#20696 <https://github.com/galaxyproject/galaxy/pull/20696>`_
 * Remove decoded ids from job/dataset error report email by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20714 <https://github.com/galaxyproject/galaxy/pull/20714>`_
@@ -1924,7 +1924,7 @@ Other changes
 * Version 25.1.dev by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20268 <https://github.com/galaxyproject/galaxy/pull/20268>`_
 * Merge `release_25.0` into `dev` by `@davelopez <https://github.com/davelopez>`_ in `#20484 <https://github.com/galaxyproject/galaxy/pull/20484>`_
 * Merge release_25.0 into dev by `@davelopez <https://github.com/davelopez>`_ in `#20490 <https://github.com/galaxyproject/galaxy/pull/20490>`_
-* Bump pillow from 11.2.1 to 11.3.0 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#20591 <https://github.com/galaxyproject/galaxy/pull/20591>`_
+* Bump pillow from 11.2.1 to 11.3.0 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#20591 <https://github.com/galaxyproject/galaxy/pull/20591>`_
 * Bump linkifyjs from 4.1.1 to 4.3.2 in /client by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#20707 <https://github.com/galaxyproject/galaxy/pull/20707>`_
 * Sample Sheet Bug Fixes around Preserving Collection Metadata by `@jmchilton <https://github.com/jmchilton>`_ in `#20749 <https://github.com/galaxyproject/galaxy/pull/20749>`_
 * Add tool_id and tool_version column to tool_landing_request table by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20795 <https://github.com/galaxyproject/galaxy/pull/20795>`_
@@ -2173,14 +2173,14 @@ Bug fixes
 * Fix Pesky warning with PersistentTaskProgressMonitorAlert.test.ts  by `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`_ in `#19180 <https://github.com/galaxyproject/galaxy/pull/19180>`_
 * Cleanup Jest Test Output (part 3) by `@jmchilton <https://github.com/jmchilton>`_ in `#19185 <https://github.com/galaxyproject/galaxy/pull/19185>`_
 * Cleanup Jest Test Output (part 4) by `@jmchilton <https://github.com/jmchilton>`_ in `#19186 <https://github.com/galaxyproject/galaxy/pull/19186>`_
-* Bump tornado from 6.4.1 to 6.4.2 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#19189 <https://github.com/galaxyproject/galaxy/pull/19189>`_
+* Bump tornado from 6.4.1 to 6.4.2 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#19189 <https://github.com/galaxyproject/galaxy/pull/19189>`_
 * Don't calculate dataset hash for datasets in non-OK state by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19191 <https://github.com/galaxyproject/galaxy/pull/19191>`_
 * Cleanup test output console for tool panel tests. by `@jmchilton <https://github.com/jmchilton>`_ in `#19210 <https://github.com/galaxyproject/galaxy/pull/19210>`_
 * Update Vizarr package version to 0.1.6 by `@davelopez <https://github.com/davelopez>`_ in `#19228 <https://github.com/galaxyproject/galaxy/pull/19228>`_
-* Bump python-multipart from 0.0.17 to 0.0.18 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#19233 <https://github.com/galaxyproject/galaxy/pull/19233>`_
+* Bump python-multipart from 0.0.17 to 0.0.18 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#19233 <https://github.com/galaxyproject/galaxy/pull/19233>`_
 * Use ``resource_path()`` to access datatypes_conf.xml.sample as a package resource by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19331 <https://github.com/galaxyproject/galaxy/pull/19331>`_
 * Require importlib-resources also for Python 3.9-3.11 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19358 <https://github.com/galaxyproject/galaxy/pull/19358>`_
-* Bump jinja2 from 3.1.4 to 3.1.5 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#19369 <https://github.com/galaxyproject/galaxy/pull/19369>`_
+* Bump jinja2 from 3.1.4 to 3.1.5 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#19369 <https://github.com/galaxyproject/galaxy/pull/19369>`_
 * Node 22 unreachable fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19378 <https://github.com/galaxyproject/galaxy/pull/19378>`_
 * Better handling of public pages and workflows authored by deleted users by `@jdavcs <https://github.com/jdavcs>`_ in `#19394 <https://github.com/galaxyproject/galaxy/pull/19394>`_
 * Alternative `format_source` fix by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19395 <https://github.com/galaxyproject/galaxy/pull/19395>`_
@@ -2612,7 +2612,7 @@ Other changes
 * Log controller exceptions by `@natefoo <https://github.com/natefoo>`_ in `#19974 <https://github.com/galaxyproject/galaxy/pull/19974>`_
 * Fix copying job output from discovered outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19999 <https://github.com/galaxyproject/galaxy/pull/19999>`_
 * Add env var to skip CircularDependencyPlugin in development mode by `@dannon <https://github.com/dannon>`_ in `#20038 <https://github.com/galaxyproject/galaxy/pull/20038>`_
-* Bump h11 from 0.14.0 to 0.16.0 in /packages/app/src/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#20088 <https://github.com/galaxyproject/galaxy/pull/20088>`_
+* Bump h11 from 0.14.0 to 0.16.0 in /lib/galaxy/dependencies by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#20088 <https://github.com/galaxyproject/galaxy/pull/20088>`_
 * Fix formatting in webapp and client/install.py by `@dannon <https://github.com/dannon>`_ in `#20185 <https://github.com/galaxyproject/galaxy/pull/20185>`_
 * Bump default milestone to 25.1 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20189 <https://github.com/galaxyproject/galaxy/pull/20189>`_
 * Bump axios from 1.7.4 to 1.8.2 in /client by `@dependabot[bot] <https://github.com/dependabot[bot]>`_ in `#20205 <https://github.com/galaxyproject/galaxy/pull/20205>`_

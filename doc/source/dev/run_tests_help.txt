@@ -88,7 +88,7 @@ these end-to-end tests to use a specific user by copying and updating the sample
     vi galaxy_selenium_context.yml  # edit user and password, target galaxy server, etc..
 
 Config keys map to environment variables:
-    local_galaxy_url    -> GALAXY_TEST_SELENIUM_URL
+    local_galaxy_url    -> GALAXY_TEST_EXTERNAL
     login_email         -> GALAXY_TEST_SELENIUM_USER_EMAIL
     login_password      -> GALAXY_TEST_SELENIUM_USER_PASSWORD
     admin_api_key       -> GALAXY_TEST_SELENIUM_ADMIN_API_KEY
@@ -306,6 +306,7 @@ and create to make them more appropriate to run on established Galaxy instances.
 The following variables can be used to disable certain classes of properly tests.
 
 GALAXY_TEST_SKIP_IF_REQUIRES_ADMIN
+GALAXY_TEST_SKIP_IF_REQUIRES_CELERY
 GALAXY_TEST_SKIP_IF_REQUIRES_NEW_HISTORY
 GALAXY_TEST_SKIP_IF_REQUIRES_NEW_LIBRARY
 GALAXY_TEST_SKIP_IF_REQUIRES_NEW_USER

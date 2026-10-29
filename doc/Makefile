@@ -174,5 +174,4 @@ doctest: $(GENERATED_RST)
 
 # Update Sphinx RST files for packages/ to reflect code structure changes
 updaterst:
-	-rm -rf source/lib/
-	$(SPHINXAPIDOC) -M --force -o source/lib/ ../packages/ ../packages/*/build/ ../packages/*/src/*.egg-info/
+	python update_api_docs.py --apidoc $(SPHINXAPIDOC)
