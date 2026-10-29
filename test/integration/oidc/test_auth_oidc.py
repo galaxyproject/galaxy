@@ -540,14 +540,22 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
 
     def test_mcp_auth_by_access_token(self):
         self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)
-        access_token = self._get_keycloak_access_token()
-
-        async def get_user():
-            async with Client(f"{self.url}api/mcp", auth=access_token) as client:
-                return await client.call_tool("get_user", {})
-
-        result = asyncio.run(get_user())
+        result = self._mcp_get_user(self._get_keycloak_access_token())
         assert json.loads(result.content[0].text)["email"] == "gxyuser@galaxy.org"
+
+    def test_mcp_bearer_galaxy_api_key_hints_x_api_key(self):
+        result = self._mcp_get_user("0123456789abcdef0123456789abcdef")
+        assert result.is_error
+        error = result.content[0].text
+        assert "Invalid access token" in error
+        assert "x-api-key header" in error
+
+    def _mcp_get_user(self, bearer_token: str):
+        async def get_user():
+            async with Client(f"{self.url}api/mcp", auth=bearer_token) as client:
+                return await client.call_tool("get_user", {}, raise_on_error=False)
+
+        return asyncio.run(get_user())
 
     def test_auth_by_access_token_never_logged_in(self):
         # If the user has not previously logged in via OIDC at least once, OIDC API calls are not allowed

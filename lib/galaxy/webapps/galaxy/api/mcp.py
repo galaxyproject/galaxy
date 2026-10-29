@@ -61,6 +61,10 @@ ApiKey = Annotated[
     ),
 ]
 
+BEARER_TOKEN_HINT = (
+    f"A Bearer token must be an OIDC access token; send a Galaxy API key in an {API_KEY_HEADER_NAME} header instead."
+)
+
 
 def _resolve_credentials(api_key: str | None, headers: Mapping[str, str]) -> tuple[str | None, str | None]:
     """Pick an ``(api_key, access_token)`` pair: the ``x-api-key`` header, then a Bearer token, then ``api_key``.
@@ -242,13 +246,15 @@ def get_mcp_app(gx_app: StructuredApp):
                 "You can create an API key in Galaxy under User -> Preferences -> Manage API Key."
             )
 
-        user = user_manager.by_credentials(api_key, access_token)
+        try:
+            user = user_manager.by_credentials(api_key, access_token)
+        except AuthenticationFailed as e:
+            if not access_token:
+                raise
+            raise AuthenticationFailed(f"{e.err_msg} {BEARER_TOKEN_HINT}") from e
         if not user:
-            # Only an access token no OIDC provider can process gets here; bad keys and rejected tokens raised.
-            raise AuthenticationFailed(
-                f"Invalid access token. A Bearer token must be an OIDC access token; send a Galaxy API key "
-                f"in an {API_KEY_HEADER_NAME} header instead."
-            )
+            # Only an access token no OIDC provider can process gets here.
+            raise AuthenticationFailed(f"Invalid access token. {BEARER_TOKEN_HINT}")
 
         url_builder = get_mcp_url_builder(base_url)
         trans = SessionRequestContext(
