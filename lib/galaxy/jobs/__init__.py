@@ -83,6 +83,7 @@ from galaxy.jobs.mapper import (
     JobMappingException,
     JobRunnerMapper,
 )
+from galaxy.jobs.oidc_user import validate_destination as validate_oidc_username_destination
 from galaxy.jobs.runners import (
     BaseJobRunner,
     JobState,
@@ -548,6 +549,7 @@ class JobConfiguration(ConfiguresHandlers):
             )
             if not self.__is_enabled(job_destination.params):
                 continue
+            validate_oidc_username_destination(environment_id, job_destination.params)
 
             if not job_destination.resubmit:
                 job_destination.resubmit = self.default_resubmits
