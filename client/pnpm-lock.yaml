@@ -18,7 +18,7 @@ patchedDependencies:
     hash: 3c17256baf827d47ff3f8021577b9396f4c7745d92c74ab1fb952cc416d397ae
     path: patches/@vue__compat@3.5.43.patch
   bootstrap-vue@2.23.1:
-    hash: 6520cf36ee58d1243c35ef0c96b26c7047ecde505686574659dc9d9e653407b2
+    hash: 1cfc87046f75782a098fbd3561dcb5942e73d5738f7b0b77f7bac324e8fe32d2
     path: patches/bootstrap-vue@2.23.1.patch
   vue-multiselect@3.5.0:
     hash: 5a705b04177227e6cd45209b2333d41993de5178f0841ed61b490a7939a06394
@@ -114,7 +114,7 @@ importers:
         version: 4.6.2(jquery@2.2.4)(popper.js@1.16.1)
       bootstrap-vue:
         specifier: ^2.23.0
-        version: 2.23.1(patch_hash=6520cf36ee58d1243c35ef0c96b26c7047ecde505686574659dc9d9e653407b2)(jquery@2.2.4)(vue@3.5.43(typescript@5.8.3))
+        version: 2.23.1(patch_hash=1cfc87046f75782a098fbd3561dcb5942e73d5738f7b0b77f7bac324e8fe32d2)(jquery@2.2.4)(vue@3.5.43(typescript@5.8.3))
       csv-parse:
         specifier: ^7.0.2
         version: 7.0.3
@@ -7219,7 +7219,7 @@ snapshots:
 
   boolbase@1.0.0: {}
 
-  bootstrap-vue@2.23.1(patch_hash=6520cf36ee58d1243c35ef0c96b26c7047ecde505686574659dc9d9e653407b2)(jquery@2.2.4)(vue@3.5.43(typescript@5.8.3)):
+  bootstrap-vue@2.23.1(patch_hash=1cfc87046f75782a098fbd3561dcb5942e73d5738f7b0b77f7bac324e8fe32d2)(jquery@2.2.4)(vue@3.5.43(typescript@5.8.3)):
     dependencies:
       '@nuxt/opencollective': 0.3.3
       bootstrap: 4.6.2(jquery@2.2.4)(popper.js@1.16.1)
