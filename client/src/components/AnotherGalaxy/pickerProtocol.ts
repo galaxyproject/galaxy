@@ -19,6 +19,9 @@ export interface PickerHello {
     type: "galaxy-picker/hello";
     protocol: typeof PICKER_PROTOCOL;
     version: string;
+    /** Root URL of the source Galaxy, which its links start with; the address the user typed may be a deeper page. */
+    root: string;
+    nonce: string;
 }
 
 /** Sent by the picker after the user confirmed what to send. */
@@ -75,7 +78,9 @@ export function isPickerHello(data: unknown): data is PickerHello {
         isRecord(data) &&
         data.type === "galaxy-picker/hello" &&
         data.protocol === PICKER_PROTOCOL &&
-        typeof data.version === "string"
+        typeof data.version === "string" &&
+        isNonEmptyString(data.root) &&
+        isNonEmptyString(data.nonce)
     );
 }
 
@@ -177,6 +182,14 @@ export function parseSourceUrl(raw: unknown): SourceGalaxy | null {
 export function isLinkFromSource(link: unknown, root: string): boolean {
     const prefix = `${root}api/short_term_storage/`;
     return typeof link === "string" && link.startsWith(prefix) && UUID.test(link.slice(prefix.length));
+}
+
+/**
+ * Whether `value` can be a nonce the picker echoes back: a short string of URL-safe characters. It is opaque to the
+ * picker, so a target may use another generator than `makeNonce`.
+ */
+export function isPickerNonce(value: unknown): value is string {
+    return typeof value === "string" && /^[A-Za-z0-9_-]{16,128}$/.test(value);
 }
 
 /** A random 128 bit value, as hex, that ties a picker's result to the request that opened it. */

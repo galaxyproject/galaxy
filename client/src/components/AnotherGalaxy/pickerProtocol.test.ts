@@ -4,6 +4,7 @@ import {
     isLinkFromSource,
     isPickerCancel,
     isPickerHello,
+    isPickerNonce,
     isPickerResult,
     makeNonce,
     parseReturnOrigin,
@@ -12,26 +13,33 @@ import {
 
 const UUID = "0f8fad5b-d9cb-469f-a165-70867728950e";
 const ITEM = { type: "dataset", name: "reads.bed", link: `https://usegalaxy.eu/api/short_term_storage/${UUID}` };
+const HELLO = { type: "galaxy-picker/hello", protocol: 1, version: "27.0", root: "https://usegalaxy.eu/", nonce: "n1" };
 
 describe("isPickerHello", () => {
-    it.each([
-        [{ type: "galaxy-picker/hello", protocol: 1, version: "27.0" }],
-        [{ type: "galaxy-picker/hello", protocol: 1, version: "" }],
-    ])("accepts %j", (message) => {
-        expect(isPickerHello(message)).toBe(true);
-    });
+    it.each([[HELLO], [{ ...HELLO, version: "" }], [{ ...HELLO, root: "https://example.org/galaxy/" }]])(
+        "accepts %j",
+        (message) => {
+            expect(isPickerHello(message)).toBe(true);
+        },
+    );
 
     it.each([
         [null],
         [undefined],
         ["galaxy-picker/hello"],
-        [[{ type: "galaxy-picker/hello", protocol: 1, version: "27.0" }]],
-        [{ type: "galaxy-picker/result", protocol: 1, version: "27.0" }],
-        [{ type: "galaxy-picker/hello", protocol: 2, version: "27.0" }],
-        [{ type: "galaxy-picker/hello", protocol: "1", version: "27.0" }],
-        [{ type: "galaxy-picker/hello", version: "27.0" }],
-        [{ type: "galaxy-picker/hello", protocol: 1 }],
-        [{ type: "galaxy-picker/hello", protocol: 1, version: 27 }],
+        [[HELLO]],
+        [{ ...HELLO, type: "galaxy-picker/result" }],
+        [{ ...HELLO, protocol: 2 }],
+        [{ ...HELLO, protocol: "1" }],
+        [{ ...HELLO, protocol: undefined }],
+        [{ ...HELLO, version: undefined }],
+        [{ ...HELLO, version: 27 }],
+        [{ ...HELLO, root: undefined }],
+        [{ ...HELLO, root: "" }],
+        [{ ...HELLO, root: ["https://usegalaxy.eu/"] }],
+        [{ ...HELLO, nonce: undefined }],
+        [{ ...HELLO, nonce: "" }],
+        [{ ...HELLO, nonce: 1 }],
     ])("rejects %j", (message) => {
         expect(isPickerHello(message)).toBe(false);
     });
@@ -87,6 +95,30 @@ describe("isPickerResult", () => {
         [{ type: "galaxy-picker/result", protocol: 1, nonce: "n1", items: [ITEM], failed: "1" }],
     ])("rejects %j", (message) => {
         expect(isPickerResult(message)).toBe(false);
+    });
+});
+
+describe("isPickerNonce", () => {
+    it.each([["0123456789abcdef0123456789abcdef"], ["A".repeat(16)], ["a_b-c".repeat(25)]])("accepts %s", (nonce) => {
+        expect(isPickerNonce(nonce)).toBe(true);
+    });
+
+    it.each([
+        [undefined],
+        [null],
+        [1234],
+        [""],
+        ["a".repeat(15)],
+        ["a".repeat(129)],
+        ["<script>alert(1)"],
+        ["0123456789abcdef 0123456789abcdef"],
+        [["0123456789abcdef"]],
+    ])("rejects %j", (nonce) => {
+        expect(isPickerNonce(nonce)).toBe(false);
+    });
+
+    it("accepts what makeNonce makes", () => {
+        expect(isPickerNonce(makeNonce())).toBe(true);
     });
 });
 
