@@ -6,6 +6,7 @@ cache is emptied after upload: if job preparation pulled the input back, or
 staging read it from a path on Galaxy's disk, the checks below would fail.
 """
 
+import base64
 import os
 import string
 import time
@@ -137,6 +138,20 @@ class TestPulsarObjectStagingStream(BaseObjectStoreIntegrationTestCase):
         output = self.dataset_populator.get_history_dataset_content(history_id, dataset=run["outputs"][0])
         assert output.strip() == "chrM"
         assert not os.path.exists(self._cache_path(hda))
+
+    def test_deferred_input_is_materialized_for_the_job_and_staged(self):
+        # The deferred dataset has no bytes in the object store; Galaxy materializes it into the
+        # job directory, and Pulsar fetches that copy by path.
+        history_id = self.dataset_populator.new_history()
+        uri = f"base64://{base64.b64encode(INPUT_CONTENT.encode()).decode()}"
+        hda = self.dataset_populator.create_deferred_hda(history_id, uri, ext="txt")
+
+        run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_job(run["jobs"][0]["id"], assert_ok=True)
+
+        output = self.dataset_populator.get_history_dataset_content(history_id, dataset=run["outputs"][0])
+        assert output == INPUT_CONTENT
+        assert self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)["state"] == "deferred"
 
     def _hda(self, hda_dict) -> model.HistoryDatasetAssociation:
         hda = self._app.model.session.get(model.HistoryDatasetAssociation, self._app.security.decode_id(hda_dict["id"]))
