@@ -2,12 +2,13 @@
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounce } from "@vueuse/core";
-import { BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
 import { copy } from "@/utils/clipboard";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
@@ -130,7 +131,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
             <label for="embed-code" class="w-100">
                 Embed code
                 <BInputGroup id="embed-code">
-                    <BFormInput class="embed-code-input" :value="embed" readonly />
+                    <GFormInput class="embed-code-input" :model-value="embed" readonly />
                     <BInputGroupAppend>
                         <GButton
                             v-g-tooltip.hover
