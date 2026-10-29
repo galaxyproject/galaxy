@@ -3,6 +3,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { stopJobs } from "@/api/jobs";
 import { jobsProvider } from "@/components/providers/JobProvider";
 
@@ -21,6 +22,7 @@ vi.mock("@/api/jobs", async (importOriginal) => ({
 }));
 
 const localVue = getLocalVue();
+const { server, http } = useServerMock();
 
 async function mountJobsList() {
     const wrapper = mount(JobsList as object, {
@@ -151,24 +153,45 @@ describe("JobsList", () => {
         );
     });
 
-    it("finishes stopping when sending notifications fails", async () => {
+    it("warns when some notifications could not be sent", async () => {
+        server.use(
+            http.post("/api/notifications", async ({ request, response }) => {
+                const body = (await request.json()) as { recipients: { user_ids: string[] } };
+                if (body.recipients.user_ids[0] === "user1") {
+                    return response.untyped(HttpResponse.json({ err_msg: "Server Error" }, { status: 500 }));
+                }
+                return response.untyped(HttpResponse.json({}));
+            }),
+        );
         const wrapper = await mountJobsList();
         await headerBox(wrapper).setChecked(true);
         await flushPromises();
 
         await wrapper.find("#send-notification").setChecked(true);
         await wrapper.find("#stop-message").setValue("maintenance");
-        vi.spyOn(
-            wrapper.vm as unknown as { sendNotificationToUsers: () => Promise<{ ok: boolean; message: string }> },
-            "sendNotificationToUsers",
-        ).mockRejectedValueOnce(new Error("Network Error"));
         const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
         await stopForm?.trigger("submit");
         await flushPromises();
 
         expect(wrapper.find(".alert-warning").text()).toBe(
-            "Stopped 2 of 2 jobs. Notifications could not be sent: Network Error",
+            "Stopped 2 of 2 jobs. Notification sent to 1 out of 2 users. 1 errors occurred.",
         );
-        expect((wrapper.vm as unknown as { stopping: boolean }).stopping).toBe(false);
+    });
+
+    it("warns when notifications cannot be sent at all", async () => {
+        server.use(http.post("/api/notifications", ({ response }) => response.untyped(HttpResponse.error())));
+        const wrapper = await mountJobsList();
+        await headerBox(wrapper).setChecked(true);
+        await flushPromises();
+
+        await wrapper.find("#send-notification").setChecked(true);
+        await wrapper.find("#stop-message").setValue("maintenance");
+        const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
+        await stopForm?.trigger("submit");
+        await flushPromises();
+
+        expect(wrapper.find(".alert-warning").text()).toMatch(
+            /^Stopped 2 of 2 jobs\. Notifications could not be sent: /,
+        );
     });
 });
