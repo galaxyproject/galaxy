@@ -140,7 +140,9 @@ def test_purged_input_is_reported_as_purged(app, manager):
         manager.staged_input(**_signed(app, job, "dataset", _dataset(hda).id))
 
 
-@pytest.mark.parametrize("redirect,head", [(False, False), (True, False), (False, True)], ids=["get", "redirect", "head"])
+@pytest.mark.parametrize(
+    "redirect,head", [(False, False), (True, False), (False, True)], ids=["get", "redirect", "head"]
+)
 def test_input_missing_from_the_object_store_is_not_found(app, manager, redirect, head):
     # Not an empty input: stores report a missing object's size as 0.
     hda = HistoryDatasetAssociation(sa_session=app.model.session, create_dataset=True)
