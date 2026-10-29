@@ -398,13 +398,14 @@ export default {
         async onStopJobs() {
             const jobIds = [...this.selectedStopJobIds];
             const total = jobIds.length;
+            const jobsNoun = total === 1 ? "job" : "jobs";
             this.stopping = true;
             this.status = "info";
-            this.message = `Stopping ${total} jobs...`;
+            this.message = `Stopping ${total} ${jobsNoun}...`;
             const { stopped, failed } = await stopJobs(jobIds, this.stopMessage, (done) => {
                 this.message = `Stopping jobs (${done}/${total})...`;
             });
-            let message = `Stopped ${stopped.length} of ${total} jobs.`;
+            let message = `Stopped ${stopped.length} of ${total} ${jobsNoun}.`;
             if (failed.length) {
                 message += ` ${failed.length} could not be stopped and remain selected: ${failed[0].error.message}`;
             }

@@ -138,6 +138,7 @@ describe("JobsList", () => {
 
         expect(stopJobs).toHaveBeenCalledTimes(1);
         expect(vi.mocked(stopJobs).mock.calls[0]?.slice(0, 2)).toEqual([["job1"], "maintenance"]);
+        expect(wrapper.find(".alert-success").text()).toBe("Stopped 1 of 1 job.");
     });
 
     it("reports jobs that could not be stopped and keeps them selected", async () => {
