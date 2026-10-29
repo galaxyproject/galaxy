@@ -29,6 +29,20 @@ describe("deleteJob", () => {
 
         expect(body).toEqual({ message: "maintenance" });
     });
+
+    it("sends no body without a stop message", async () => {
+        let body: string | undefined;
+        server.use(
+            http.delete("/api/jobs/{job_id}", async ({ request, response }) => {
+                body = await request.text();
+                return response(200).json(true);
+            }),
+        );
+
+        await deleteJob("job1");
+
+        expect(body).toBe("");
+    });
 });
 
 describe("stopJobs", () => {

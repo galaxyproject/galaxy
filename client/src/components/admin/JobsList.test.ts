@@ -78,6 +78,26 @@ describe("JobsList", () => {
         expect(wrapper.find(".alert-success").text()).toContain("Stopped 2 of 2 jobs.");
     });
 
+    it("disables Submit while a stop is in flight", async () => {
+        let finish: (result: Awaited<ReturnType<typeof stopJobs>>) => void = () => {};
+        vi.mocked(stopJobs).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+        const wrapper = await mountJobsList();
+        await headerBox(wrapper).setChecked(true);
+        await flushPromises();
+
+        await wrapper.find("#stop-message").setValue("maintenance");
+        const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
+        await stopForm?.trigger("submit");
+        await flushPromises();
+
+        expect(stopForm?.find("button[type='submit']").attributes("disabled")).toBeDefined();
+
+        finish({ stopped: ["job1"], failed: [{ jobId: "job2", error: new Error("Too Many Requests") }] });
+        await flushPromises();
+
+        expect(stopForm?.find("button[type='submit']").attributes("disabled")).toBeUndefined();
+    });
+
     it("checks the header once every row is ticked", async () => {
         const wrapper = await mountJobsList();
         for (const box of rowBoxes(wrapper)) {
