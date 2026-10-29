@@ -163,6 +163,7 @@ import {
 import { DatatypesProvider, DbKeyProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
+import { storeToRefs } from "pinia";
 
 import { useConfig } from "@/composables/config";
 import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
@@ -188,7 +189,8 @@ export default {
     },
     setup() {
         const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
+        const { collectionsCreated } = storeToRefs(useCollectionBuilderItemSelection());
+        return { config, isConfigLoaded, collectionsCreated };
     },
     data: function () {
         return {
@@ -297,13 +299,15 @@ export default {
                 this.$emit("update:show-selection", true);
             }
         },
+        collectionsCreated() {
+            this.createdCollection();
+        },
     },
     methods: {
         listWizard(advanced) {
             const { setSelectedItems } = useCollectionBuilderItemSelection();
             const selection = Array.from(this.contentSelection.values());
             setSelectedItems(selection);
-            this.$emit("update:show-selection", false);
 
             if (this.$route.path === "/collection/new_list") {
                 // vue-router 4 supports a native force push with clean URLs, but we're using a __vkey__

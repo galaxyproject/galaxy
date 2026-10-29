@@ -22,6 +22,17 @@ class TestCollectionBuilders(SeleniumTestCase):
 
     @selenium_test
     @managed_history
+    def test_build_list_open_keeps_selection(self):
+        self.perform_upload(self.get_filename("1.fasta"))
+        self._wait_for_and_select([1])
+        self.history_panel_build_list_auto()
+        self.components.collection_builders.name.wait_for_visible()
+        multi_operations = self.navigation.history_panel.multi_operations.selectors
+        self.wait_for_visible(multi_operations.selected_content_menu)
+        self.wait_for_visible(multi_operations.item_selector)
+
+    @selenium_test
+    @managed_history
     def test_build_list_and_show_items(self):
         self.perform_upload(self.get_filename("1.fasta"))
         self._wait_for_and_select([1])

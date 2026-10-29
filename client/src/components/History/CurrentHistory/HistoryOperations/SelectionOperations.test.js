@@ -342,10 +342,17 @@ describe("History Selection Operations", () => {
             wrapper = await mountSelectionOperationsWrapper(TASKS_CONFIG, { contentSelection: selection });
         });
 
-        it("should hand the selection to the list wizard and leave selection mode", async () => {
+        it("should hand the selection to the list wizard and keep selection mode", async () => {
             await wrapper.find('[data-description="auto build list"]').trigger("click");
             expect(useCollectionBuilderItemSelection().selectedItems).toEqual(Array.from(selection.values()));
             expect(wrapper.vm.$router.push).toHaveBeenCalledWith("/collection/new_list?advanced=false");
+            expect(wrapper.emitted("update:show-selection")).toBeUndefined();
+        });
+
+        it("should leave selection mode when the list wizard creates a collection", async () => {
+            await wrapper.find('[data-description="auto build list"]').trigger("click");
+            useCollectionBuilderItemSelection().markCollectionCreated();
+            await flushPromises();
             expect(wrapper.emitted("update:show-selection")).toEqual([[false]]);
         });
 
