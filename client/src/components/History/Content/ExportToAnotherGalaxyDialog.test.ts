@@ -87,6 +87,8 @@ describe("ExportToAnotherGalaxyDialog", () => {
         expect((linkInput(wrapper).element as HTMLInputElement).value).toMatch(
             /^https?:\/\/.*\/api\/short_term_storage\/req1$/,
         );
+        expect(linkInput(wrapper).classes()).toContain("g-form-input");
+        expect(linkInput(wrapper).attributes("readonly")).toBeDefined();
         expect(exportUrls[0]).toContain("/contents/datasets/d1/prepare_store_download");
         await vi.waitFor(() => expect(recentExportRecord("d1")).toMatchObject({ isFinal: true, taskStatus: "READY" }));
     });

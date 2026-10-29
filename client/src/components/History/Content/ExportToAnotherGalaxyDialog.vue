@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onUnmounted, watch } from "vue";
 
@@ -11,6 +10,7 @@ import { useExportToAnotherGalaxyStore } from "@/stores/exportToAnotherGalaxySto
 import { copy as sendToClipboard } from "@/utils/clipboard";
 import { formatDurationSeconds } from "@/utils/duration";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
@@ -51,19 +51,18 @@ onUnmounted(stopAll);
     <GModal v-model:show="showDialog" title="Export to another Galaxy" size="small">
         <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
         <div v-else-if="link">
-            <BInputGroup>
-                <BFormInput
-                    :value="link"
+            <div class="d-flex gap-1">
+                <GFormInput
                     readonly
                     aria-label="Link for another Galaxy"
-                    data-description="galaxy export link" />
-                <BInputGroupAppend>
-                    <GButton color="blue" @click="sendToClipboard(link, 'Link copied to your clipboard')">
-                        <FontAwesomeIcon :icon="faCopy" />
-                        Copy
-                    </GButton>
-                </BInputGroupAppend>
-            </BInputGroup>
+                    data-description="galaxy export link"
+                    :model-value="link" />
+
+                <GButton color="blue" @click="sendToClipboard(link, 'Link copied to your clipboard')">
+                    <FontAwesomeIcon :icon="faCopy" />
+                    Copy
+                </GButton>
+            </div>
             <p class="mt-2">
                 Anyone with this link can download this {{ noun }} without logging in, until the link expires (usually
                 after {{ linkLifetime }}). It can't be withdrawn before then.
