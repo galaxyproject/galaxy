@@ -46,6 +46,7 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbNavigation from "@/components/Common/BreadcrumbNavigation.vue";
 import GTable from "@/components/Common/GTable.vue";
+import FtpUploadHelp from "@/components/FilesDialog/FtpUploadHelp.vue";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 
 interface Props {
@@ -648,6 +649,8 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     @input="updateSearchQuery" />
             </div>
 
+            <FtpUploadHelp :uri="currentFileSourceUri" />
+
             <!-- Error message -->
             <GAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = undefined">
                 <div class="d-flex justify-content-between align-items-center">
@@ -960,6 +963,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 
     .remote-files-browser-label {
         text-align: start;
+        @include upload-browser-label;
     }
 }
 

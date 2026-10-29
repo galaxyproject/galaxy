@@ -19,7 +19,6 @@ import {
     type SelectionItem,
     type SelectionState,
 } from "@/components/SelectionDialog/selectionTypes";
-import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 import { useToast } from "@/composables/toast";
 import { useUrlTracker } from "@/composables/urlTracker";
@@ -30,6 +29,7 @@ import { USER_FILE_PREFIX } from "@/utils/url";
 import { Model } from "./model";
 
 import GButton from "../BaseComponents/GButton.vue";
+import FtpUploadHelp from "./FtpUploadHelp.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
@@ -66,8 +66,6 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     routePush: () => {},
 });
 
-const { config, isConfigLoaded } = useConfig();
-
 const selectionModel = ref<Model>(new Model({ multiple: props.multiple }));
 
 const query = ref<string>();
@@ -84,7 +82,6 @@ const hasValue = ref(false);
 const showTime = ref(true);
 const showDetails = ref(true);
 const isBusy = ref(false);
-const showFTPHelper = ref(false);
 /** Root URIs of RDM sources, only fetched in directory mode to prevent selecting a repository root */
 const rdmUriRoots = ref<string[]>([]);
 const urlTracker = useUrlTracker<SelectionItem & { parentPage?: number }>({ root: undefined });
@@ -296,7 +293,6 @@ async function loadRdmUriRoots() {
 
 /** Performs server request to retrieve data records **/
 function load() {
-    showFTPHelper.value = urlTracker.current.value?.url === "gxftp://";
     filter.value = undefined;
     selectionDialog.value?.resetFilter();
     optionsShow.value = false;
@@ -543,16 +539,7 @@ onMounted(() => {
         @onSelectAll="onSelectAll"
         @onUndo="onGoBack">
         <template v-slot:helper>
-            <GAlert v-if="showFTPHelper && isConfigLoaded" id="helper" variant="info" show>
-                This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
-                <strong>{{ config.ftp_upload_site }}</strong> using your Galaxy credentials. For help visit the
-                <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
-                <span v-if="config.enable_oidc"
-                    ><br />If you are signed-in to Galaxy using a third-party identity and you
-                    <strong>do not have a Galaxy password</strong> please use the reset password option in the login
-                    form with your email to create a password for your account.</span
-                >
-            </GAlert>
+            <FtpUploadHelp id="helper" :uri="urlTracker.current.value?.url" />
             <GAlert v-if="isAtRdmRepositoryRoot" id="rdm-root-helper" variant="info" show>
                 This repository has no files at its top level. Open one of the folders below to select it.
             </GAlert>

@@ -1902,6 +1902,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.libraries.folder.add_folder.wait_for_and_click()
         self.components.libraries.folder.input_folder_name.wait_for_and_send_keys(name)
         self.components.libraries.folder.save_folder_btn.wait_for_and_click()
+        # the save button goes away once the POST resolves; navigating sooner can drop the folder
+        self.components.libraries.folder.save_folder_btn.wait_for_absent_or_hidden(
+            wait_type=WAIT_TYPES.DATABASE_OPERATION
+        )
 
     def libraries_click_dataset_import(self):
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.add_items_button)
@@ -2887,11 +2891,23 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         _click_action_in_menu()
 
-    def history_panel_delete_selected(self, purge: bool = False):
-        """Delete the selected history items from the Selection menu, permanently with ``purge``, and confirm."""
-        self.use_bootstrap_dropdown(option="purge option" if purge else "delete option", menu="selected content menu")
+    def history_panel_confirm_selected_operation(self, option: str) -> None:
+        """Pick ``option`` (e.g. "hide option") from the Selection menu and confirm it."""
+        self.use_bootstrap_dropdown(option=option, menu="selected content menu")
         self.components.confirm_dialog.ok_button.wait_for_and_click()
         self.components.confirm_dialog.ok_button.wait_for_absent_or_hidden()
+
+    def history_panel_delete_selected(self, purge: bool = False):
+        """Delete the selected history items from the Selection menu, permanently with ``purge``, and confirm."""
+        self.history_panel_confirm_selected_operation("purge option" if purge else "delete option")
+
+    def history_panel_undelete_selected(self) -> None:
+        """Undelete the selected history items from the Selection menu and confirm."""
+        self.history_panel_confirm_selected_operation("undelete option")
+
+    def history_panel_hide_selected(self, unhide: bool = False) -> None:
+        """Hide (or ``unhide``) the selected history items from the Selection menu and confirm."""
+        self.history_panel_confirm_selected_operation("unhide option" if unhide else "hide option")
 
     def history_panel_item_delete(self, hid):
         """Delete history item ``hid`` with its trash button."""
@@ -2912,6 +2928,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def history_panel_include_hidden(self):
         """Toggle the history panel's Include hidden filter (the hidden-items counter)."""
         self.components.history_panel.include_hidden_button.wait_for_and_click()
+
+    def history_panel_filter(self, text: str) -> None:
+        """Replace the history panel's filter text with ``text``, e.g. ``deleted:true``."""
+        self.components.history_panel.search.wait_for_and_clear_and_send_keys(text)
 
     def open_history_multi_view(self):
         self.components.history_panel.histories_operation_menu.wait_for_and_click()

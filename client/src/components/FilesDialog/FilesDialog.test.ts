@@ -274,6 +274,7 @@ describe("FilesDialog, file mode", () => {
         await utils.openDirectoryById(ftpId);
         // check that ftp helper is visible
         expect(wrapper.find("#helper").exists()).toBe(true);
+        expect(wrapper.find("#helper").text()).toContain("log in to the FTP server at Test ftp upload site");
     });
 
     it("should show loading error and can return back when there is an error", async () => {
