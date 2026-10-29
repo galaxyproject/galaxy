@@ -3,9 +3,10 @@ on:
   pull_request:
     paths:
       - .github/workflows/bioblend.yaml
-      - lib/galaxy/schema/**
-      - lib/galaxy/webapps/galaxy/api/**
-      - lib/galaxy/webapps/galaxy/services/**
+      - scripts/test_bioblend.py
+      - packages/schema/src/galaxy/schema/**
+      - packages/web_apps/src/galaxy/webapps/galaxy/api/**
+      - packages/web_apps/src/galaxy/webapps/galaxy/services/**
   workflow_dispatch:
 
 env:
@@ -62,6 +63,9 @@ jobs:
           BIOBLEND_PYTHON_VERSION: ${{ steps.get_bioblend_python_version.outputs.bioblend_python_version }}
       - name: Set up Python for Galaxy
         run: uv python install ${{ matrix.galaxy_python_version }}
+      - name: Install Galaxy workspace
+        run: uv sync --locked --package galaxy-web-apps --all-extras --python ${{ matrix.galaxy_python_version }}
+        working-directory: galaxy
       - name: Run tests
         env:
           PGPASSWORD: postgres
@@ -71,8 +75,4 @@ jobs:
           # Create a PostgreSQL database for Galaxy. The default SQLite3 database makes test fail randomly because of "database locked" error.
           createdb -U postgres galaxy
           export DATABASE_CONNECTION=postgresql+psycopg://postgres:@localhost/galaxy
-          ./bioblend/run_bioblend_tests.sh -g galaxy -v python${{ matrix.galaxy_python_version }} -e ${{ matrix.tox_env }}
-      - name: The job has failed
-        if: ${{ failure() }}
-        run: |
-          cat galaxy/*.log
+          galaxy/.venv/bin/python galaxy/scripts/test_bioblend.py bioblend ${{ matrix.tox_env }}

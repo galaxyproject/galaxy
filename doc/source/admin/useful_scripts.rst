@@ -27,7 +27,7 @@ To safely delete unused histories and their associated records, please use the `
 
 .. code-block:: console
 
-    $ python  $GALAXY_ROOT/lib/galaxy/model/scripts/prune_history_table.py
+    $ python  $GALAXY_ROOT/packages/data/src/galaxy/model/scripts/prune_history_table.py
     usage: prune_history_table.py [-h] [--batch BATCH] [--created CREATED]
     
     Remove unused histories from database. A history is considered unused if it doesn't have a user and its hid counter has not been incremented.
@@ -46,7 +46,7 @@ To safely delete such records, please use the galaxy-delete-sessions script. By 
 
 .. code-block:: console
 
-    $ python  $GALAXY_ROOT/lib/galaxy/model/scripts/delete_galaxy_sessions.py
+    $ python  $GALAXY_ROOT/packages/data/src/galaxy/model/scripts/delete_galaxy_sessions.py
     usage: delete_galaxy_sessions.py [-h] [--updated UPDATED]
     
     Remove old galaxy_session records from database.
@@ -66,7 +66,7 @@ To view disk usage by table you can use gxadmin, a command line utility for Gala
 
 .. code-block:: console
 
-    $ python  $GALAXY_ROOT/lib/galaxy/model/scripts/delete_job_metrics.py
+    $ python  $GALAXY_ROOT/packages/data/src/galaxy/model/scripts/delete_job_metrics.py
     usage: delete_job_metrics.py [-h] --updated UPDATED
     
     Remove old job metrics records from database.
@@ -98,7 +98,7 @@ By default the script only reports what it would change. Run it with ``--commit`
 
 .. code-block:: console
 
-    $ python  $GALAXY_ROOT/lib/galaxy/model/scripts/make_data_private.py
+    $ python  $GALAXY_ROOT/packages/data/src/galaxy/model/scripts/make_data_private.py
     usage: make_data_private.py [-h] [--commit] [--batch BATCH] [-c CONFIG_FILE]
 
     Make existing users' data private by default.

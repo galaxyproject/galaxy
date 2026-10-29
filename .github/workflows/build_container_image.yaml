@@ -112,7 +112,7 @@ jobs:
       - name: Get the current Galaxy version
         id: version
         run: |
-          version=$(PYTHONPATH=lib python3 -c "from galaxy.version import VERSION; print(VERSION)")
+          version=$(python3 -c 'import runpy; print(runpy.run_path("packages/util/src/galaxy/version/__init__.py")["VERSION"])')
           echo "version=$version" >> $GITHUB_OUTPUT
       - name: Build args
         id: buildargs

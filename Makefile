@@ -4,7 +4,7 @@ VENV?=.venv
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
 RELEASE_CURR:=27.0
 RELEASE_UPSTREAM:=upstream
-CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
+CONFIG_MANAGE=$(IN_VENV) python -m galaxy.config.config_manage
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc
 DOC_SOURCE_DIR=$(DOCS_DIR)/source
@@ -20,23 +20,22 @@ NODE_ENV = env NODE_OPTIONS=$(NODE_OPTIONS) GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR=$(
 CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.1/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.2/conformance_tests.yaml \
-	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_0.py \
-	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_1.py \
-	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_2.py
+	packages/test_api/src/galaxy_test/api/cwl/test_cwl_conformance_v1_0.py \
+	packages/test_api/src/galaxy_test/api/cwl/test_cwl_conformance_v1_1.py \
+	packages/test_api/src/galaxy_test/api/cwl/test_cwl_conformance_v1_2.py
 NO_PNPM_MSG="Could not find pnpm, which is required to build the Galaxy client.\nIt should be shipped with Galaxy's virtualenv, but to install pnpm manually please visit \033[0;34mhttps://pnpm.io/installation\033[0m for instructions.\n"
 SPACE := $() $()
-NEVER_PYUPGRADE_PATHS := .venv/ .tox/ lib/galaxy/schema/bco/ \
-	lib/galaxy/schema/drs/ lib/tool_shed_client/schema/trs \
+NEVER_PYUPGRADE_PATHS := .venv/ .tox/ packages/schema/src/galaxy/schema/bco/ \
+	packages/schema/src/galaxy/schema/drs/ packages/tool_shed_schema/src/tool_shed_client/schema/trs \
 	scripts/check_python.py tools/ test/functional/tools/cwl_tools/
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
 
 docs: ## Generate HTML documentation.
-# Run following commands to setup the Python portion of the requirements:
-#   $ ./scripts/common_startup.sh
-#   $ . .venv/bin/activate
-#   $ pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt
+# Install the workspace docs profile first:
+#   $ uv sync --locked --all-packages --all-extras --group dev
+# See packages/README.md for the development profiles.
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
@@ -54,7 +53,7 @@ format:  ## Format Python code base
 	$(IN_VENV) black .
 
 remove-unused-imports:  ## Remove unused imports in Python code base
-	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose lib/ test/
+	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose packages/*/src packages/*/tests test/
 
 pyupgrade:  ## Convert older code patterns to Python 3.10+ idiomatic ones
 	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS))' | xargs pyupgrade --py310-plus
@@ -128,10 +127,10 @@ release-bootstrap-history: ## bootstrap history for a new release
 	$(IN_VENV) galaxy-release-util create-changelog $(RELEASE_CURR)
 
 update-lint-requirements:
-	./lib/galaxy/dependencies/update_lint_requirements.sh
+	./packages/app/src/galaxy/dependencies/update_lint_requirements.sh
 
 update-dependencies: update-lint-requirements ## update pinned, dev and typecheck dependencies
-	$(IN_VENV) ./lib/galaxy/dependencies/update.sh
+	$(IN_VENV) ./packages/app/src/galaxy/dependencies/update.sh
 
 $(CWL_TARGETS):
 	./scripts/update_cwl_conformance_tests.sh
@@ -161,8 +160,8 @@ endif
 	$(IN_VENV) cd client && pnpm install $(PNPM_INSTALL_OPTS)
 
 format-xsd:
-	xmllint --format --output galaxy-tmp.xsd lib/galaxy/tool_util/xsd/galaxy.xsd
-	mv galaxy-tmp.xsd lib/galaxy/tool_util/xsd/galaxy.xsd
+	xmllint --format --output galaxy-tmp.xsd packages/tool_util/src/galaxy/tool_util/xsd/galaxy.xsd
+	mv galaxy-tmp.xsd packages/tool_util/src/galaxy/tool_util/xsd/galaxy.xsd
 
 build-api-schema:
 	$(IN_VENV) python scripts/dump_openapi_schema.py _schema.yaml
@@ -174,7 +173,7 @@ remove-api-schema:
 
 update-client-api-schema: client-node-deps build-api-schema ## Update client API schema
 	$(IN_VENV) cd client && pnpm openapi-typescript ../_schema.yaml -o packages/api-client/src/schema/schema.ts && pnpm prettier --write packages/api-client/src/schema/schema.ts
-	$(IN_VENV) cd client && pnpm openapi-typescript ../_shed_schema.yaml -o ../lib/tool_shed/webapp/frontend/src/schema/schema.ts && pnpm prettier --write ../lib/tool_shed/webapp/frontend/src/schema/schema.ts
+	$(IN_VENV) cd client && pnpm openapi-typescript ../_shed_schema.yaml -o ../packages/tool_shed/src/tool_shed/webapp/frontend/src/schema/schema.ts && pnpm prettier --write ../packages/tool_shed/src/tool_shed/webapp/frontend/src/schema/schema.ts
 	$(MAKE) remove-api-schema
 
 lint-api-schema: build-api-schema
@@ -188,7 +187,7 @@ update-navigation-schema: client-node-deps
 	$(IN_VENV) cd client && node navigation_to_schema.mjs
 
 install-client: ## Install prebuilt client wheel from PyPI matching the current Galaxy version
-	$(IN_VENV) pip install "galaxy-web-client==$$(PYTHONPATH=lib python -c 'from galaxy.version import VERSION; print(VERSION)')"
+	$(IN_VENV) uv pip install "galaxy-web-client==$$(python -c 'from galaxy.version import VERSION; print(VERSION)')"
 
 install-packages: VENV=packages/.venv
 install-packages: ## Build and install Galaxy packages from this checkout into VENV
@@ -233,13 +232,13 @@ client-test-watch: client ## Watch and run all client unit tests on changes
 	$(IN_VENV) cd client && pnpm run test:watch
 
 serve-selenium-notebooks: ## Serve testing notebooks for Jupyter
-	cd lib && export PYTHONPATH=`pwd`; jupyter notebook --notebook-dir=galaxy_test/selenium/jupyter
+	uv run --locked --inexact --package galaxy-test-selenium --with notebook python -m notebook --notebook-dir=packages/test_selenium/src/galaxy_test/selenium/jupyter
 
 files-sources-lint: ## Validate file sources configuration
-	$(IN_VENV) cd lib && PYTHONPATH=`pwd` python galaxy/files/validate/script.py
+	$(IN_VENV) python -m galaxy.files.validate.script
 
 files-sources-lint-verbose: ## Validate file sources configuration (verbose)
-	$(IN_VENV) cd lib && PYTHONPATH=`pwd` python galaxy/files/validate/script.py --verbose
+	$(IN_VENV) python -m galaxy.files.validate.script --verbose
 
 # Release Targets
 release-create-rc: ## Create a release-candidate branch or new release-candidate version
@@ -251,7 +250,7 @@ release-create: ## Create a release branch
 release-create-point: release-create ## Create a point release
 
 mypy:
-	cd lib && mypy . ../test
+	uv run --locked --inexact --all-packages --all-extras --group typecheck python .ci/mypy_workspace.py
 
 .PHONY: help
 

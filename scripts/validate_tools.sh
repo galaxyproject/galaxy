@@ -9,7 +9,7 @@ if [ -d "$GALAXY_VIRTUAL_ENV" ]; then
     . "$GALAXY_VIRTUAL_ENV/bin/activate"
 fi
 
-xsd_path="lib/galaxy/tool_util/xsd/galaxy.xsd"
+xsd_path="packages/tool_util/src/galaxy/tool_util/xsd/galaxy.xsd"
 
 err_tmp=$(mktemp)
 count=0
@@ -18,8 +18,6 @@ for p in "$@"; do
     count=$((count+1))
     path="$p"
     echo "$path"
-    PYTHONPATH=lib:$PYTHONPATH
-    export PYTHONPATH
     python -c "import galaxy.tool_util.loader; import lxml.etree; lxml.etree.dump(galaxy.tool_util.loader.load_tool('$path').getroot())" | xmllint --nowarning --noout --schema "$xsd_path" - 2> "$err_tmp"
     if [ $? -eq 0 ]; then
         echo "ok $count";

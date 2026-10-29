@@ -4,8 +4,8 @@
 # Consumed at runtime by directives.ts (editor side panel) and used to generate the
 # human-readable reference directives.md via scripts/markdown_directives_doc.py.
 # The parameter, embeddable and requirement metadata here is checked against the
-# authoritative validator in lib/galaxy/managers/markdown_parse.py (and
-# Utilities/requirements.yml) by test/unit/app/test_markdown_directives_doc.py, so
+# authoritative validator in packages/app/src/galaxy/managers/markdown_parse.py (and
+# Utilities/requirements.yml) by packages/app/tests/app/test_markdown_directives_doc.py, so
 # keep them in sync.
 #
 # Keys starting with "_" are shared schema fragments, not directives.

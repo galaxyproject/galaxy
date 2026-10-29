@@ -27,7 +27,7 @@ If no configuration is specified, the default is to load only the ``core`` plugi
 Available Job Metrics Plugins
 -----------------------------
 
-The list of metrics plugins implemented in the code can be found at ``lib/galaxy/job_metrics/instrumenters``. A list of
+The list of metrics plugins implemented in the code can be found at ``packages/job_metrics/src/galaxy/job_metrics/instrumenters``. A list of
 available plugins and example configurations follows.
 
 
@@ -163,7 +163,7 @@ can be used to only generate metrics capture commands in the job script for the 
 ``2``).
 
 By default, only a small set of cgroup parameters will be recorded, the list of which can be found in
-``lib/galaxy/job_metrics/instrumenters/cgroup.py`` in the Galaxy code. The optional ``verbose`` option (default:
+``packages/job_metrics/src/galaxy/job_metrics/instrumenters/cgroup.py`` in the Galaxy code. The optional ``verbose`` option (default:
 ``false``) can be set to capture all parameters in the ``cpu``, ``cpuacct``, and ``memory`` controllers (cgroups version
 1) or ``cpu`` and ``memory`` controllers (cgroups version 2).
 

@@ -27,14 +27,14 @@ can be found in ``client/README.md`` of the Galaxy codebase.
 
 | Test Type | Location | Run Command | When to Use |
 |-----------|----------|-------------|-------------|
-| Unit (Python) | ``test/unit/`` | ``./run_tests.sh -unit`` | Isolated component tests |
+| Unit (Python) | ``packages/<package>/tests/`` | ``./run_tests.sh -unit`` | Isolated component tests |
 | Unit (Client) | ``client/src/`` | ``make client-test`` | ES6/Vue component tests |
-| API | ``lib/galaxy_test/api/`` | ``./run_tests.sh -api`` | Backend tests via API |
+| API | ``packages/test_api/src/galaxy_test/api/`` | ``./run_tests.sh -api`` | Backend tests via API |
 | Integration | ``test/integration/`` | ``./run_tests.sh -integration`` | Custom Galaxy config |
 | Framework | ``test/functional/tools/`` | ``./run_tests.sh -framework`` | Tool XML testing |
-| Workflow Framework | ``lib/galaxy_test/workflow/`` | ``./run_tests.sh -framework-workflows`` | Workflow evaluation |
-| Selenium | ``lib/galaxy_test/selenium/`` | ``./run_tests.sh -selenium`` | UI tests (WebDriver) |
-| Playwright | ``lib/galaxy_test/selenium/`` | ``./run_tests.sh -playwright`` | UI tests (Playwright) |
+| Workflow Framework | ``test/workflow/`` | ``./run_tests.sh -framework-workflows`` | Workflow evaluation |
+| Selenium | ``packages/test_selenium/src/galaxy_test/selenium/`` | ``./run_tests.sh -selenium`` | UI tests (WebDriver) |
+| Playwright | ``packages/test_selenium/src/galaxy_test/selenium/`` | ``./run_tests.sh -playwright`` | UI tests (Playwright) |
 | Selenium Integration | ``test/integration_selenium/`` | ``./run_tests.sh -selenium`` | UI + custom config |
 
 ### Decision Tree
@@ -42,7 +42,7 @@ can be found in ``client/README.md`` of the Galaxy codebase.
 ```
 Does test need running Galaxy server?
 ├─ NO → Unit test
-│       ├─ Python? → test/unit/ (pytest)
+│       ├─ Python? → packages/<package>/tests/ (pytest)
 │       └─ Client? → client/src/ (Vitest)
 └─ YES → Functional test
          Does test need web browser?
@@ -82,7 +82,7 @@ find the right documentation for a given test one wishes to write.
 
       - **Backend/Python**
 
-        These tests should be placed in ``test/unit`` or doctests and
+        These tests should be placed in ``packages/<package>/tests`` or doctests and
         executed via pytest. Check out [Backend/Python Unit Tests](#python_unit) below for more
         information.
 
@@ -125,7 +125,7 @@ find the right documentation for a given test one wishes to write.
 
               Workflow framework tests verify workflow evaluation by running
               workflows and checking outputs. These are located in
-              ``lib/galaxy_test/workflow/``. Checkout
+              ``test/workflow/``. Checkout
               [Workflow Framework Tests](#workflow_framework) below for more
               information.
 
@@ -133,7 +133,7 @@ find the right documentation for a given test one wishes to write.
 
               In this case Galaxy API tests are likely the most
               appropriate way to implement the desired test. These tests
-              are located in ``lib/galaxy_test/api``. Checkout
+              are located in ``packages/test_api/src/galaxy_test/api``. Checkout
               [API Tests](#api) below for more information.
 
           - **Yes**
@@ -160,7 +160,7 @@ find the right documentation for a given test one wishes to write.
 
           - **No**
 
-            These tests should be placed into ``lib/galaxy_test/selenium``
+            These tests should be placed into ``packages/test_selenium/src/galaxy_test/selenium``
             and implemented using the [Selenium Tests](#selenium)
             framework described below. These same tests can also be run
             with [Playwright](#playwright) for faster execution.
@@ -176,8 +176,9 @@ find the right documentation for a given test one wishes to write.
 {#python_unit}
 ## Backend/Python Unit Tests
 
-These are Python unit tests either defined inside of ``test/unit`` or
-via doctests within a Python component. These should generally not require
+Package unit tests live in ``packages/<package>/tests``; repository-level
+checks live in ``test/unit``. Tests can also be defined
+as doctests within a Python component. These should generally not require
 a Galaxy instance and should quickly test just a component or a few
 components of Galaxy's backend code.
 
@@ -190,10 +191,10 @@ serve as high-quality documentation for the component under test.
 
 ### Slow 'Unit' Tests (External Dependency Management)
 
-Tests in ``test/unit/tool_util/`` that interact with external services
+Tests in ``packages/tool_util/tests/tool_util/`` that interact with external services
 (Conda, container registries, BioContainers) should be marked with
 ``@external_dependency_management``. This pytest marker is defined in
-``test/unit/tool_util/util.py``:
+``packages/tool_util/tests/tool_util/util.py``:
 
 ```python
 from .util import external_dependency_management
@@ -208,7 +209,7 @@ These tests are excluded from normal unit test runs. To run them:
 ```bash
 tox -e mulled
 # or directly:
-pytest -m external_dependency_management test/unit/tool_util/
+pytest -m external_dependency_management packages/tool_util/tests/tool_util/
 ```
 
 Tests that also depend on a specific remote service (quay.io,
@@ -297,7 +298,7 @@ open), and closes it after the next such run passes.
 
 Similar to Tool Framework Tests, Workflow Framework Tests test Galaxy's
 workflow evaluation engine by running workflows and verifying outputs.
-These tests are located in ``lib/galaxy_test/workflow``.
+These tests are located in ``test/workflow``.
 
 Each workflow test consists of two files:
 
@@ -365,7 +366,7 @@ GitHub actions workflow definition for these tests is located in
 {#api}
 ## API Tests
 
-These tests are located in ``lib/galaxy_test/api`` and test various aspects
+These tests are located in ``packages/test_api/src/galaxy_test/api`` and test various aspects
 of the Galaxy API, as well as general backend aspects of Galaxy using the API.
 
 ### Test Class Structure
@@ -389,7 +390,7 @@ class TestMyFeatureApi(ApiTestCase):
         # ... test code
 ```
 
-The ``ApiTestCase`` class (in ``lib/galaxy_test/api/_framework.py``) inherits from:
+The ``ApiTestCase`` class (in ``packages/test_api/src/galaxy_test/api/_framework.py``) inherits from:
 
 - ``FunctionalTestCase``: Handles server configuration and URL setup
 - ``UsesApiTestCaseMixin``: Provides HTTP methods and API interaction utilities
@@ -774,11 +775,11 @@ assert task_ok, "Import task failed"
 
 | Pattern | Example File | What It Demonstrates |
 |---------|--------------|----------------------|
-| **Basic API structure** | ``lib/galaxy_test/api/test_roles.py`` | Simple GET/POST, admin vs. user |
-| **Dataset operations** | ``lib/galaxy_test/api/test_datasets.py`` | Upload, search, update, delete |
-| **Tool execution** | ``lib/galaxy_test/api/test_tool_execute.py`` | Modern fluent API patterns |
-| **History import/export** | ``lib/galaxy_test/api/test_histories.py`` | Async tasks, short-term storage, reimport patterns |
-| **User management** | ``lib/galaxy_test/api/test_users.py`` | Different user context, permissions |
+| **Basic API structure** | ``packages/test_api/src/galaxy_test/api/test_roles.py`` | Simple GET/POST, admin vs. user |
+| **Dataset operations** | ``packages/test_api/src/galaxy_test/api/test_datasets.py`` | Upload, search, update, delete |
+| **Tool execution** | ``packages/test_api/src/galaxy_test/api/test_tool_execute.py`` | Modern fluent API patterns |
+| **History import/export** | ``packages/test_api/src/galaxy_test/api/test_histories.py`` | Async tasks, short-term storage, reimport patterns |
+| **User management** | ``packages/test_api/src/galaxy_test/api/test_users.py`` | Different user context, permissions |
 
 ### Continuous Integration
 
@@ -837,7 +838,7 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
 
 Integration test cases extend the ``IntegrationTestCase`` class defined in
 the ``galaxy_test.driver.integration_util`` module (located in
-``lib/galaxy_test/driver/integration_util.py``).
+``packages/test_driver/src/galaxy_test/driver/integration_util.py``).
 
 The ``require_admin_user`` option above tell the test framework that the
 default user configured for API interactions must be an admin user.
@@ -1249,7 +1250,7 @@ GitHub actions workflow definition for these tests is located in
 ## Selenium Tests
 
 These are full stack tests meant to test the Galaxy UI with real
-browsers and are located in ``lib/galaxy_test/selenium``.
+browsers and are located in ``packages/test_selenium/src/galaxy_test/selenium``.
 
 For detailed documentation on the browser automation framework architecture
 (including protocol design, adding new browser operations, and building CLI tools),
@@ -1374,7 +1375,7 @@ Access UI elements through ``self.components``, a hierarchical tree that mirrors
 Galaxy's UI structure. Components are defined in
 ``client/src/utils/navigation/navigation.yml`` and wrapped at runtime with
 driver-aware methods via the ``SmartComponent`` and ``SmartTarget`` classes
-(in ``lib/galaxy/selenium/smart_components.py``).
+(in ``packages/selenium/src/galaxy/selenium/smart_components.py``).
 
 ```python
 # Access nested components via attribute chain
@@ -1564,12 +1565,12 @@ class TestPublishedPages(SharedStateSeleniumTestCase):
 
 | Pattern | Example File | What It Demonstrates |
 |---------|--------------|----------------------|
-| **Basic structure** | ``lib/galaxy_test/selenium/test_login.py`` | Simple tests, accessibility |
-| **History operations** | ``lib/galaxy_test/selenium/test_uploads.py`` | Uploads, history panel |
-| **Workflow execution** | ``lib/galaxy_test/selenium/test_workflow_run.py`` | RunsWorkflows mixin |
-| **Component patterns** | ``lib/galaxy_test/selenium/test_workflow_editor.py`` | Smart components |
-| **Shared state** | ``lib/galaxy_test/selenium/test_published_pages.py`` | SharedStateSeleniumTestCase |
-| **Admin tests** | ``lib/galaxy_test/selenium/test_admin_app.py`` | run_as_admin, admin UI |
+| **Basic structure** | ``packages/test_selenium/src/galaxy_test/selenium/test_login.py`` | Simple tests, accessibility |
+| **History operations** | ``packages/test_selenium/src/galaxy_test/selenium/test_uploads.py`` | Uploads, history panel |
+| **Workflow execution** | ``packages/test_selenium/src/galaxy_test/selenium/test_workflow_run.py`` | RunsWorkflows mixin |
+| **Component patterns** | ``packages/test_selenium/src/galaxy_test/selenium/test_workflow_editor.py`` | Smart components |
+| **Shared state** | ``packages/test_selenium/src/galaxy_test/selenium/test_published_pages.py`` | SharedStateSeleniumTestCase |
+| **Admin tests** | ``packages/test_selenium/src/galaxy_test/selenium/test_admin_app.py`` | run_as_admin, admin UI |
 
 ### Configuration File
 
@@ -1581,7 +1582,7 @@ credentials.
 Copy and edit the sample config:
 
 ```bash
-cp lib/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml.sample ./galaxy_selenium_context.yml
+cp packages/test_selenium/src/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml.sample ./galaxy_selenium_context.yml
 ```
 
 Example config file:
@@ -1631,7 +1632,7 @@ on ``dev``.
 ## Playwright Tests
 
 Playwright tests use the same test files as Selenium tests
-(located in ``lib/galaxy_test/selenium``) but execute them using
+(located in ``packages/test_selenium/src/galaxy_test/selenium``) but execute them using
 [Playwright](https://playwright.dev/) instead of Selenium WebDriver.
 Playwright offers faster execution and more reliable browser automation.
 
@@ -1646,7 +1647,7 @@ Run all Playwright tests:
 Run specific Playwright tests:
 
 ```bash
-./run_tests.sh -playwright lib/galaxy_test/selenium/test_workflow_editor.py
+./run_tests.sh -playwright packages/test_selenium/src/galaxy_test/selenium/test_workflow_editor.py
 ```
 
 Run against a running Galaxy server (fastest for development):
@@ -1656,7 +1657,7 @@ Run against a running Galaxy server (fastest for development):
 make client-dev-server &  # watch for client changes
 export GALAXY_TEST_EXTERNAL=http://localhost:8081/
 . .venv/bin/activate
-GALAXY_TEST_DRIVER_BACKEND=playwright pytest lib/galaxy_test/selenium/test_login.py
+GALAXY_TEST_DRIVER_BACKEND=playwright pytest packages/test_selenium/src/galaxy_test/selenium/test_login.py
 ```
 
 Playwright requires browser installation:

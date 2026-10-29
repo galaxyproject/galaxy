@@ -51,15 +51,13 @@ pip_install() {
 }
 
 build_release_packages() {
-    if command -v galaxy-release-util >/dev/null && galaxy-release-util --help >/dev/null 2>&1; then
-        galaxy-release-util build --galaxy-root ..
-    elif command -v uvx >/dev/null; then
+    if command -v uvx >/dev/null; then
         local release_util_requirement
-        release_util_requirement=$(grep '^galaxy-release-util==' ../lib/galaxy/dependencies/dev-requirements.txt)
-        uvx --from "$release_util_requirement" galaxy-release-util build --galaxy-root ..
+        release_util_requirement=$(grep '^galaxy-release-util==' ../requirements/dev-requirements.txt)
+        uvx --from "$release_util_requirement" python build_scripts/build_packages.py ..
     else
-        echo "ERROR: galaxy-release-util is required to build the Galaxy metapackage." >&2
-        exit 1
+        # The selected Python must have galaxy-release-util installed.
+        python3 build_scripts/build_packages.py ..
     fi
 }
 
@@ -117,7 +115,7 @@ else
         else
             if [ ! -d "$VENV" ]; then
                 ensure_venv
-                pip_install -r dev-requirements.txt
+                pip_install -r ../../requirements/dev-requirements.txt
             fi
             make dist
             if $INSTALL && ! $META; then

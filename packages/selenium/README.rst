@@ -165,7 +165,7 @@ generic browser automation protocols. This separation allows:
 Testing
 -------
 
-The framework includes comprehensive unit tests in ``test/unit/selenium/test_has_driver.py``:
+The framework includes comprehensive unit tests in ``packages/selenium/tests/seleniumtests/test_has_driver.py``:
 
 - **Parametrized tests**: Every test runs against Selenium, Playwright, and proxied backends
 - **150+ test cases** covering all protocol methods
@@ -287,12 +287,12 @@ Development
 ::
 
     packages/selenium/
-    ├── galaxy/selenium/          # Symlink to lib/galaxy/selenium/
-    ├── tests/seleniumtests/      # Symlink to test/unit/selenium/
+    ├── src/galaxy/selenium/      # Package sources
+    ├── tests/seleniumtests/      # Package tests
     ├── README.rst                # This file
     └── pyproject.toml
 
-    lib/galaxy/selenium/          # Actual source code
+    packages/selenium/src/galaxy/selenium/          # Actual source code
     ├── has_driver_protocol.py    # Protocol interface
     ├── has_driver.py             # Selenium implementation
     ├── has_playwright_driver.py  # Playwright implementation
@@ -304,7 +304,7 @@ Development
     └── scripts/
         └── dump_tour.py          # Example CLI tool
 
-    test/unit/selenium/           # Actual tests
+    packages/selenium/tests/seleniumtests/           # Actual tests
     ├── conftest.py               # Pytest fixtures
     ├── test_has_driver.py        # Main test suite
     └── fixtures/                 # HTML test pages
@@ -409,7 +409,7 @@ operations first. These operations make Galaxy components more ergonomic to use 
         child = self._target.get_child(name)
         return self._wrap(child)  # Returns SmartTarget
 
-4. **Add tests** (``test/unit/selenium/test_smart_components.py``):
+4. **Add tests** (``packages/selenium/tests/seleniumtests/test_smart_components.py``):
 
    Test with both backends using the ``has_driver_instance`` fixture::
 

@@ -4,7 +4,6 @@ on:
     paths:
       - '**'
       - '!client/**'
-      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/docs.yaml'
@@ -12,7 +11,6 @@ on:
     paths:
       - '**'
       - '!client/**'
-      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/docs.yaml'
@@ -53,9 +51,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install Python dependencies
         run: |
-          uv venv .venv
-          . .venv/bin/activate
-          uv pip install -r requirements.txt -r packages/app/src/galaxy/dependencies/dev-requirements.txt sphinxcontrib-simpleversioning
+          uv sync --locked --all-packages --all-extras --group dev
+          uv pip install sphinxcontrib-simpleversioning
       - name: Add Google Analytics to doc/source/conf.py
         run: |
           sed -i -e "/html_theme_options = {/a\

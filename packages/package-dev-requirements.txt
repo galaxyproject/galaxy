@@ -1,3 +1,0 @@
-# For release
-build
-twine==6.2.0

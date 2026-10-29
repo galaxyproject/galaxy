@@ -5,11 +5,11 @@ This script is intended to be invoked by the scripts/run_alembic.sh script.
 """
 
 import logging
+import os
 import os.path
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
-
+from galaxy.model import migrations
 from galaxy.model.migrations.scripts import (
     add_db_urls_to_command_arguments,
     get_configuration,
@@ -19,7 +19,8 @@ from galaxy.model.migrations.scripts import (
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
-ALEMBIC_CONFIG = "lib/galaxy/model/migrations/alembic.ini"
+
+ALEMBIC_CONFIG = os.path.join(os.path.dirname(migrations.__file__), "alembic.ini")
 
 
 def run():

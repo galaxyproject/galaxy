@@ -347,7 +347,7 @@ class TestCachedToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
 
     def test_model_tools_path_template_substitution(self):
         # ``${model_tools_path}/build_list.xml`` resolves to
-        # ``lib/galaxy/tools/build_list.xml`` (id ``__BUILD_LIST__``).
+        # ``packages/app/src/galaxy/tools/build_list.xml`` (id ``__BUILD_LIST__``).
         # Exercises discover's ``model_tools_path`` template substitution.
         response = self._get("tools/__BUILD_LIST__")
         self._assert_status_code_is(response, 200)

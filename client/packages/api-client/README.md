@@ -174,7 +174,7 @@ To work on this package:
 
 ### Version Synchronization
 
-This package maintains version parity with Galaxy to indicate API compatibility. The version number in `package.json` is derived from Galaxy's `lib/galaxy/version/__init__.py` file but formatted to comply with npm's semver requirements.
+This package maintains version parity with Galaxy to indicate API compatibility. The version number in `package.json` is derived from Galaxy's `packages/util/src/galaxy/version/__init__.py` file but formatted to comply with npm's semver requirements.
 
 **Important:** npm does not allow republishing the same version, even for development versions. When making changes to the client API during development:
 

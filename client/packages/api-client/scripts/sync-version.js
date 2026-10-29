@@ -17,7 +17,7 @@ const galaxyRoot = process.env.GALAXY_ROOT || path.resolve(__dirname, "../../../
 const clientApiRoot = path.resolve(__dirname, "..");
 
 // File paths
-const galaxyVersionPath = path.join(galaxyRoot, "lib/galaxy/version/__init__.py");
+const galaxyVersionPath = path.join(galaxyRoot, "packages/util/src/galaxy/version/__init__.py");
 const packageJsonPath = path.join(clientApiRoot, "package.json");
 
 // Check if Galaxy version/__init__.py exists

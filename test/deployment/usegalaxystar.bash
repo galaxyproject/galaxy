@@ -59,29 +59,29 @@ export GALAXY_TEST_SELENIUM_USER_EMAIL
 export GALAXY_TEST_SELENIUM_USER_PASSWORD
 
 api_tests=(
-    lib/galaxy_test/api/test_datatypes.py
-    lib/galaxy_test/api/test_workflow_extraction.py
-    lib/galaxy_test/api/test_users.py
-    lib/galaxy_test/api/test_roles.py
-    lib/galaxy_test/api/test_authenticate.py
-    lib/galaxy_test/api/test_configuration.py
-    lib/galaxy_test/api/test_dataset_collections.py
-    lib/galaxy_test/api/test_display_applications.py
-    lib/galaxy_test/api/test_drs.py
-    lib/galaxy_test/api/test_folders.py
-    lib/galaxy_test/api/test_folder_contents.py
-    lib/galaxy_test/api/test_framework.py
-    lib/galaxy_test/api/test_histories.py
-    lib/galaxy_test/api/test_history_contents.py
+    packages/test_api/src/galaxy_test/api/test_datatypes.py
+    packages/test_api/src/galaxy_test/api/test_workflow_extraction.py
+    packages/test_api/src/galaxy_test/api/test_users.py
+    packages/test_api/src/galaxy_test/api/test_roles.py
+    packages/test_api/src/galaxy_test/api/test_authenticate.py
+    packages/test_api/src/galaxy_test/api/test_configuration.py
+    packages/test_api/src/galaxy_test/api/test_dataset_collections.py
+    packages/test_api/src/galaxy_test/api/test_display_applications.py
+    packages/test_api/src/galaxy_test/api/test_drs.py
+    packages/test_api/src/galaxy_test/api/test_folders.py
+    packages/test_api/src/galaxy_test/api/test_folder_contents.py
+    packages/test_api/src/galaxy_test/api/test_framework.py
+    packages/test_api/src/galaxy_test/api/test_histories.py
+    packages/test_api/src/galaxy_test/api/test_history_contents.py
 )
 selenium_tests=(
-    lib/galaxy_test/selenium/test_anon_history.py
-    lib/galaxy_test/selenium/test_collection_builders.py
-    lib/galaxy_test/selenium/test_dataset_metadata_download.py
-    lib/galaxy_test/selenium/test_collection_edit.py
-    lib/galaxy_test/selenium/test_history_copy_elements.py
-    lib/galaxy_test/selenium/test_history_dataset_state.py
-    lib/galaxy_test/selenium/test_history_multi_view.py
+    packages/test_selenium/src/galaxy_test/selenium/test_anon_history.py
+    packages/test_selenium/src/galaxy_test/selenium/test_collection_builders.py
+    packages/test_selenium/src/galaxy_test/selenium/test_dataset_metadata_download.py
+    packages/test_selenium/src/galaxy_test/selenium/test_collection_edit.py
+    packages/test_selenium/src/galaxy_test/selenium/test_history_copy_elements.py
+    packages/test_selenium/src/galaxy_test/selenium/test_history_dataset_state.py
+    packages/test_selenium/src/galaxy_test/selenium/test_history_multi_view.py
 )
 if [ "$GALAXY_TEST_DEPLOYMENT_TEST_TYPE" = "all" ];
 then

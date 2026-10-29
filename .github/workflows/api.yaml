@@ -5,7 +5,6 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
-      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/api.yaml'
@@ -14,7 +13,6 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
-      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/api.yaml'
@@ -80,7 +78,7 @@ jobs:
       - name: Install Python
         run: uv python install
       - name: Run tests
-        run: ./run_tests.sh --skip_flakey_fails -api lib/galaxy_test/api -- -n 4
+        run: ./run_tests.sh --skip_flakey_fails -api packages/test_api/src/galaxy_test/api -- -n 4
         env:
           # Coverage slows the tests down; collect it for pushes and scheduled runs only.
           GALAXY_TEST_COVERAGE: ${{ github.event_name != 'pull_request' && '1' || '' }}

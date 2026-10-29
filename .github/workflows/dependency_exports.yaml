@@ -6,7 +6,8 @@ on:
       - 'packages/**/pyproject.toml'
       - uv.lock
       - .tool-versions
-      - 'lib/galaxy/dependencies/**'
+      - 'packages/app/src/galaxy/dependencies/**'
+      - 'requirements/**'
       - .github/workflows/dependency_exports.yaml
   push:
     branches: [dev]
@@ -15,7 +16,8 @@ on:
       - 'packages/**/pyproject.toml'
       - uv.lock
       - .tool-versions
-      - 'lib/galaxy/dependencies/**'
+      - 'packages/app/src/galaxy/dependencies/**'
+      - 'requirements/**'
       - .github/workflows/dependency_exports.yaml
 env:
   UV_HTTP_RETRIES: '6'
@@ -33,4 +35,4 @@ jobs:
           version-file: .tool-versions
           python-version: '3.10'
       - name: Check lock and requirements exports
-        run: sh lib/galaxy/dependencies/update.sh --check
+        run: sh packages/app/src/galaxy/dependencies/update.sh --check

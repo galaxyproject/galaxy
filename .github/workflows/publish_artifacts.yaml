@@ -53,11 +53,10 @@ jobs:
           version-file: .tool-versions
           enable-cache: false
           python-version: '3.10'
-      - name: Install script dependencies
-        run: uv tool install galaxy-release-util
       - name: Build Python packages
         run: |
-          galaxy-release-util build
+          ./package-build-install.sh -b -m
+        working-directory: packages
       - name: Move all built packages to dist/
         run: |
           mkdir -p dist

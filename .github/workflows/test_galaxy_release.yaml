@@ -3,15 +3,15 @@ on:
   push:
     paths:
       - '.github/workflows/test_galaxy_release.yaml'
-      - lib/galaxy/dependencies/**
-      - lib/galaxy/version/__init__.py
+      - packages/app/src/galaxy/dependencies/**
+      - packages/util/src/galaxy/version/__init__.py
       - scripts/release.sh
       - test/release.sh
   pull_request:
     paths:
       - '.github/workflows/test_galaxy_release.yaml'
-      - lib/galaxy/dependencies/**
-      - lib/galaxy/version/__init__.py
+      - packages/app/src/galaxy/dependencies/**
+      - packages/util/src/galaxy/version/__init__.py
       - scripts/release.sh
       - test/release.sh
 concurrency:
@@ -32,5 +32,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version-file: .tool-versions
       - name: Run tests
         run: ./test/release.sh

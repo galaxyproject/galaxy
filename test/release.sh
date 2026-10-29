@@ -63,7 +63,9 @@ function get_stable_version() {
         local restore_branch
         restore_branch="$(git branch --show-current)"
         git checkout -q --no-track -b __stable_version_check "upstream/${STABLE_BRANCH}"
-        if [ -e lib/galaxy/version/__init__.py ] ; then
+        if [ -e packages/util/src/galaxy/version/__init__.py ] ; then
+          version_file=packages/util/src/galaxy/version/__init__.py
+        elif [ -e lib/galaxy/version/__init__.py ]; then
           version_file=lib/galaxy/version/__init__.py
         else
           version_file=lib/galaxy/version.py
@@ -158,7 +160,9 @@ function verify_version() {
     restore_branch="$(git branch --show-current)"
     [ -n "$(git tag -l "$ref")" ]  || _ref="upstream/${ref}"
     log_exec git checkout --no-track -b "__${ref}" "$_ref"
-    if [ -e lib/galaxy/version/__init__.py ] ; then
+    if [ -e packages/util/src/galaxy/version/__init__.py ] ; then
+      version_file=packages/util/src/galaxy/version/__init__.py
+    elif [ -e lib/galaxy/version/__init__.py ]; then
       version_file=lib/galaxy/version/__init__.py
     else
       version_file=lib/galaxy/version.py

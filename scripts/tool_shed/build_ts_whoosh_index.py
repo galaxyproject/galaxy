@@ -13,10 +13,7 @@ This script expects the Tool Shed's runtime virtualenv to be active.
 
 import argparse
 import logging
-import os
 import sys
-
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
 
 from galaxy.util.script import (
     app_properties_from_args,

@@ -27,8 +27,6 @@ import re
 import sys
 from datetime import datetime
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.attributes import flag_modified

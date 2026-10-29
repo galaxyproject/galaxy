@@ -51,6 +51,7 @@ from datetime import (
 )
 from time import strftime
 
+from cleanup_datasets import CleanupDatasetsApplication
 from mako.template import Template
 from sqlalchemy import (
     and_,
@@ -58,10 +59,6 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy.orm import aliased
-
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
-
-from cleanup_datasets import CleanupDatasetsApplication
 
 import galaxy.config
 import galaxy.util

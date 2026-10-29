@@ -3,7 +3,7 @@
 
 Fetches 2791object.json and every sibling schema it transitively ``$ref``s from
 https://w3id.org/ieee/ieee-2791-schema/ and writes them verbatim to
-lib/galaxy_test/base/schemas/ieee-2791/, removing vendored schemas that are no
+packages/test_base/src/galaxy_test/base/schemas/ieee-2791/, removing vendored schemas that are no
 longer referenced. After running, update the fetch date in the README next to
 the schemas.
 """
@@ -14,7 +14,9 @@ from pathlib import Path
 
 BASE_URL = "https://w3id.org/ieee/ieee-2791-schema/"
 TOP_LEVEL_SCHEMA = "2791object.json"
-DEST_DIR = Path(__file__).parent.parent / "lib" / "galaxy_test" / "base" / "schemas" / "ieee-2791"
+DEST_DIR = (
+    Path(__file__).parent.parent / "packages" / "test_base" / "src" / "galaxy_test" / "base" / "schemas" / "ieee-2791"
+)
 
 
 def collect_sibling_refs(schema) -> set[str]:

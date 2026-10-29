@@ -38,8 +38,8 @@ different needs.
 
 Galaxy tries to execute jobs using containers if they are sent
 to execution environments (previously called destinations) with either
-`docker_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L419>`_ or
-`singularity_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L556>`_
+`docker_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/packages/config/src/galaxy/config/sample/job_conf.sample.yml#L419>`_ or
+`singularity_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/packages/config/src/galaxy/config/sample/job_conf.sample.yml#L556>`_
 enabled. Note, the links to the sample configurations exemplify this for local execution environments,
 but this works for any environment as long as ``docker`` or ``singularity`` are
 available.
@@ -52,7 +52,7 @@ If all configured container resolvers failed, i.e. no container description
 could be obtained, the tool is by default executed using
 :doc:`standard dependency resolvers <dependency_resolvers>`, e.g. ``conda``.
 Alternatively, if the execution environment specifies
-`require_container <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L528>`_
+`require_container <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/packages/config/src/galaxy/config/sample/job_conf.sample.yml#L528>`_
 the job fails in this case.
 
 Besides determining a container description, some container resolvers
@@ -71,7 +71,7 @@ Container resolvers defined for the execution environment
 take precedence over globally defined container resolvers.
 A sample YAML file showing the default configuration which is active
 if neither a global or local configuration is given in
-`container_resolvers.yml.sample <https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/config/sample/container_resolvers.yml.sample>`_.
+`container_resolvers.yml.sample <https://github.com/galaxyproject/galaxy/tree/dev/packages/config/src/galaxy/config/sample/container_resolvers.yml.sample>`_.
 
 During the container resolution the configured container resolvers
 are sequentially applied, stopping at the first resolver that
@@ -205,7 +205,7 @@ in case 2 and case 3 (but see https://github.com/galaxyproject/tools-iuc/pull/52
    b.  different global and execution environment container resolver config(s)
 
    In case a) the default container config will be used which contains docker
-   and singularity container resolvers (see `container_resolvers.yml.sample <https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/config/sample/container_resolvers.yml.sample>`_).
+   and singularity container resolvers (see `container_resolvers.yml.sample <https://github.com/galaxyproject/galaxy/tree/dev/packages/config/src/galaxy/config/sample/container_resolvers.yml.sample>`_).
    If both container backends (i.e. the ``docker`` and ``singularity`` executables)
    are available then only the docker container resolvers will be used.
 
@@ -381,7 +381,7 @@ admins might want to control.
 
    For the execution of jobs Galaxy already implements the `support for using
    tarballs of container images
-   <https://github.com/galaxyproject/galaxy/blob/c517e805771cc16807dfe675075a13fe6343f01f/lib/galaxy/tool_util/deps/container_classes.py#L319>`_.
+   <https://github.com/galaxyproject/galaxy/blob/c517e805771cc16807dfe675075a13fe6343f01f/packages/tool_util/src/galaxy/tool_util/deps/container_classes.py#L319>`_.
    from ``container_image_cache_path`` (set in galaxy.yml) or the destination
    property ``docker_container_image_cache_path``. But at the moment none of the
    docker container resolvers creates these image tarballs.
@@ -405,6 +405,6 @@ Galaxy automatically passes the environment variables ``$TMP``, ``$TEMP``, and
 ``$TMPDIR`` to the container and bind-mounts these.
 
 The default bind for `/tmp` can be overwritten by setting the
-`docker_volumes <https://github.com/galaxyproject/galaxy/blob/85f16381694224598dff139bcfe307d9fd4f22bc/lib/galaxy/config/sample/job_conf.sample.yml#L455>`_ and
-`singularity_volumes <https://github.com/galaxyproject/galaxy/blob/85f16381694224598dff139bcfe307d9fd4f22bc/lib/galaxy/config/sample/job_conf.sample.yml#L567>`_, resp.,
+`docker_volumes <https://github.com/galaxyproject/galaxy/blob/85f16381694224598dff139bcfe307d9fd4f22bc/packages/config/src/galaxy/config/sample/job_conf.sample.yml#L455>`_ and
+`singularity_volumes <https://github.com/galaxyproject/galaxy/blob/85f16381694224598dff139bcfe307d9fd4f22bc/packages/config/src/galaxy/config/sample/job_conf.sample.yml#L567>`_, resp.,
 configuration properties in the :doc:`job configuration <jobs>`.

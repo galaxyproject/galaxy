@@ -30,11 +30,11 @@ Please see the ``Makefile`` itself for details and other options. There is also 
 
 Galaxy and the Tool Shed each have a schema that is used to validate their
 configuration files. These schemas are defined in
-``lib/galaxy/config/schemas/config_schema.yml`` (for ``galaxy.yml``) and
-``lib/galaxy/config/schemas/tool_shed_config_schema.yml`` (for ``tool_shed.yml``).
+``packages/config/src/galaxy/config/schemas/config_schema.yml`` (for ``galaxy.yml``) and
+``packages/config/src/galaxy/config/schemas/tool_shed_config_schema.yml`` (for ``tool_shed.yml``).
 If you need to add or modify a configuration option, edit the relevant schema
 file directly instead of the corresponding
-``lib/galaxy/config/sample/*.yml.sample`` file, then run the following
+``packages/config/src/galaxy/config/sample/*.yml.sample`` file, then run the following
 command from Galaxy's root directory to regenerate the sample YAML files
 (and, for Galaxy, the RST documentation and type stubs):
 
@@ -43,6 +43,43 @@ command from Galaxy's root directory to regenerate the sample YAML files
     make config-rebuild
 
 Then add the regenerated files to your commit.
+
+... set up a Python development environment?
+-------------------------------------------
+
+Use the uv version pinned in the root ``.tool-versions``. Run these commands
+from the repository root:
+
+* Backend development and tests:
+
+  .. code-block:: bash
+
+      uv sync --locked --all-packages --all-extras --group dev
+
+* Galaxy server:
+
+  .. code-block:: bash
+
+      uv sync --locked --package galaxy-web-apps --all-extras
+      ./run.sh
+
+* Tool Shed:
+
+  .. code-block:: bash
+
+      uv sync --locked --package galaxy-tool-shed --all-extras --group dev
+      ./run_tool_shed.sh
+
+* Type checking:
+
+  .. code-block:: bash
+
+      uv sync --locked --all-packages --all-extras --group typecheck
+      make mypy
+
+The ``dev`` group includes test, browser-testing, and documentation dependencies.
+Lint uses an isolated tool environment; run ``make lint`` from a package
+directory. For package tests and isolation checks, see ``packages/README.md``.
 
 ... add or update a Galaxy Python dependency?
 ----------------------------------------------
@@ -55,13 +92,35 @@ of these packages, also add it to the ``dependencies`` list of the relevant
 ``packages/<package>/pyproject.toml`` file(s).
 
 After editing the root ``pyproject.toml``, run the following command from
-Galaxy's root directory to update the pinned requirements files under
-``lib/galaxy/dependencies/`` (this also updates ``uv.lock``, which is not
-tracked in the repository):
+Galaxy's root directory to update the pinned requirements files (the runtime
+export ``pinned-requirements.txt`` stays under
+``packages/app/src/galaxy/dependencies/`` where it ships with the wheel; the
+tooling requirement files are regenerated under the repository-level
+``requirements/`` directory). This also regenerates the root ``uv.lock``,
+which is tracked in the repository and is never hand-edited; regenerate
+it with the uv version pinned in the root ``.tool-versions`` file:
 
 .. code-block:: bash
 
     make update-dependencies
 
-Then add the updated ``pyproject.toml`` and pinned requirements files to
-your commit.
+Then add the updated manifests, ``uv.lock``, and pinned requirements files to
+your commit. ``uv lock --check`` verifies that ``uv.lock`` is up to date
+without modifying it, and
+``UV_CHECK=1 bash packages/app/src/galaxy/dependencies/update.sh``
+additionally verifies the exported requirements files without upgrading
+anything. If a merge conflicts on ``uv.lock``, resolve the conflicts in the
+``pyproject.toml`` manifests and dependency groups first, regenerate the lock
+with the pinned uv version, and review the resulting dependency diff.
+Regenerating a lock after a merge should not upgrade unrelated dependencies.
+
+To regenerate requirements exports from the existing lock without upgrading
+dependencies, run:
+
+.. code-block:: bash
+
+    sh packages/app/src/galaxy/dependencies/update.sh --export-only
+
+Runtime exports ship with ``galaxy-app`` under
+``packages/app/src/galaxy/dependencies/``; tooling exports live under
+``requirements/``.

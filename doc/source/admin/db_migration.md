@@ -1,6 +1,6 @@
 # Galaxy Database Schema Migrations
 
-Galaxy's database schema migration system is built on top of [Alembic](https://alembic.sqlalchemy.org) - a lightweight database migration tool for usage with SQLAlchemy. 
+Galaxy's database schema migration system is built on top of [Alembic](https://alembic.sqlalchemy.org) - a lightweight database migration tool for usage with SQLAlchemy.
 (This documentation applies to release 22.05 and up. Prior to 22.05, Galaxy used SQLAlchemy Migrate.)
 
 ## Administering Galaxy: upgrading and downgrading the database
@@ -88,7 +88,7 @@ The oldest release you can downgrade to is 22.01.
 SQLAlchemy Migrate (the migrations tool used prior to release 22.05). Your database should have a
 table `migrate_version` that contains version 180.*
 
-For the `--sql` option, see [Alembic documentation on offline mode](https://alembic.sqlalchemy.org/en/latest/offline.html). 
+For the `--sql` option, see [Alembic documentation on offline mode](https://alembic.sqlalchemy.org/en/latest/offline.html).
 Note that in this mode, instead of specifying a revision identifier, you have to specify a range of revisions using the following format: `<from-rev>:<to-ref>`.
 
 ##### version
@@ -136,19 +136,19 @@ The following sections provide more details on the migration system and describe
 
 The purpose of the database schema migration system is to support automated, incremental, reversible changes to Galaxy's database schema. Central to this is the concept of a database version (more specifically, database *schema* version). A version is represented by a revision script (the terms *version* and *revision* may be used interchangeably). Executing a revision script will upgrade, or downgrade, the database schema by applying the changes specified in the script.
 
-Galaxy keeps track of the database schema version in two places: one is a directory we refer to as "the migration environment" (located at `lib/galaxy/model/migrations/alembic`), the other is the `alembic_version` table in the database. For Galaxy to run, these versions must be the same, which, essentially, means that the version of the database matches the version expected by the codebase.
+Galaxy keeps track of the database schema version in two places: one is a directory we refer to as "the migration environment" (located at `packages/data/src/galaxy/model/migrations/alembic`), the other is the `alembic_version` table in the database. For Galaxy to run, these versions must be the same, which, essentially, means that the version of the database matches the version expected by the codebase.
 
 On startup, the system checks if the version in the database matches the version in the codebase. If they do not match, and the `database_auto_migrate` configuration option is not set, Galaxy will fail with an error message explaining how to proceed. In most cases, you'll need to upgrade the database schema to the current version, which is represented by the latest revision script in the migration environment.
 
 #### A note on models and branch labels
 
-Galaxy's data model includes the [galaxy model](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py) and the [install model](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/tool_shed_install/__init__.py).
+Galaxy's data model includes the [galaxy model](https://github.com/galaxyproject/galaxy/blob/dev/packages/data/src/galaxy/model/__init__.py) and the [install model](https://github.com/galaxyproject/galaxy/blob/dev/packages/data/src/galaxy/model/tool_shed_install/__init__.py).
 These two models may be persisted in one combined database (which is the default) or two separate databases (which is enabled by setting the
-[`install_database_connection`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/webapps/galaxy/config_schema.yml#L157) configuration option). 
+[`install_database_connection`](https://github.com/galaxyproject/galaxy/blob/dev/packages/web_apps/src/galaxy/webapps/galaxy/config_schema.yml#L157) configuration option).
 
-These models are represented by migration [branches](https://alembic.sqlalchemy.org/en/latest/branches.html) (versioning lineages with a common base) labeled as *gxy* for the galaxy model and *tsi* for the install model. If both models are hosted in the same database, the branches will share the same Alembic version table; otherwise, each database has its own version table. 
+These models are represented by migration [branches](https://alembic.sqlalchemy.org/en/latest/branches.html) (versioning lineages with a common base) labeled as *gxy* for the galaxy model and *tsi* for the install model. If both models are hosted in the same database, the branches will share the same Alembic version table; otherwise, each database has its own version table.
 
-Each branch has its own version history, represented by revision scripts located in the branch version directory (`migrations/alembic/versions_gxy` for *gxy* and `migrations/alembic/versions_tsi` for *tsi*). 
+Each branch has its own version history, represented by revision scripts located in the branch version directory (`migrations/alembic/versions_gxy` for *gxy* and `migrations/alembic/versions_tsi` for *tsi*).
 
 For a more detailed description of the system's internals, see pull request [#13108](https://github.com/galaxyproject/galaxy/pull/13108).
 
@@ -164,7 +164,7 @@ Additionally, Galaxy provides two scripts for advanced usage: `db_dev.sh` and `r
 The **`db_dev.sh`** script is similar to `manage_db.sh`, but provides additional commands and options.
 
 The **`run_alembic.sh`** script is a thin wrapper around the Alembic CLI runner. It offers more
-flexibility and the full scope of Alembic's CLI commands and options; however, it requires more detailed command arguments, as well as basic familiarity with [Alembic branches](https://alembic.sqlalchemy.org/en/latest/branches.html). 
+flexibility and the full scope of Alembic's CLI commands and options; however, it requires more detailed command arguments, as well as basic familiarity with [Alembic branches](https://alembic.sqlalchemy.org/en/latest/branches.html).
 
 #### Revision identifiers
 
@@ -180,11 +180,11 @@ For example, you may use `./db_dev.sh upgrade 6a` instead of `./db_dev.sh upgrad
 
 You may also use Alembic's syntax for relative migration identifiers for the upgrade/downgrade commands:
 
-To move 2 versions from the current version, a decimal value `+N` can be supplied: 
+To move 2 versions from the current version, a decimal value `+N` can be supplied:
 
 `./db_dev.sh upgrade +2`
 
-Negative values are accepted for downgrades: 
+Negative values are accepted for downgrades:
 
 `./db_dev.sh downgrade -2`
 
@@ -195,7 +195,7 @@ revision 6a67bf27e6a6 plus two additional steps:
 
 You may also combine relative migration identifiers with partial revision identifiers:
 
-`./db_dev.sh upgrade 6a+2`. 
+`./db_dev.sh upgrade 6a+2`.
 
 (Ref: [Alembic documentation](https://alembic.sqlalchemy.org/en/latest/tutorial.html#relative-migration-identifiers))
 
@@ -300,7 +300,7 @@ The oldest release you can downgrade to is 22.01. Downgrading to 22.01 is the sa
 SQLAlchemy Migrate (the migrations tool used prior to release 22.05). Your database should have a
 table `migrate_version` that contains version 180.*
 
-For the `--sql` option, see [Alembic documentation on offline mode](https://alembic.sqlalchemy.org/en/latest/offline.html). 
+For the `--sql` option, see [Alembic documentation on offline mode](https://alembic.sqlalchemy.org/en/latest/offline.html).
 Note that in this mode, instead of specifying a revision identifier, you have to specify a range of revisions using the following format: `<from-rev>:<to-ref>`*.
 
 *You cannot use this script to downgrade past the initial Alembic revisions that created the *gxy* and *tsi* branches.
@@ -420,7 +420,7 @@ should be a succinct description of the change:
 $ ./db_dev.sh revision --message "add column foo to table bar"
 [output omitted]
 
-$ ls lib/galaxy/model/migrations/alembic/versions_gxy/
+$ ls packages/data/src/galaxy/model/migrations/alembic/versions_gxy/
 a2e418ad6a15_add_column_foo_to_table_bar.py
 ```
 
@@ -472,7 +472,7 @@ Upgrade to a specific revision:
 Upgrade to 1 revision above a specific revision:
 
 `./run_alembic.sh upgrade [revision identifier]+1`
- 
+
 ##### Downgrading
 
 Downgrade to base revision (*gxy* branch):
@@ -536,7 +536,7 @@ functions. Use Alembic documentation for examples:
 - [https://alembic.sqlalchemy.org/en/latest/tutorial.html#create-a-migration-script](https://alembic.sqlalchemy.org/en/latest/tutorial.html#create-a-migration-script)
 - [https://alembic.sqlalchemy.org/en/latest/ops.html](https://alembic.sqlalchemy.org/en/latest/ops.html)
 
-We encourage you to use Galaxy-specific utility functions (`galaxy/model/migrations/util.py`) when appropriate. Don't forget to provide tests for any modifications you make to the model (most likely, you will need to add them to the appropriate `test/unit/data/model/mapping/test_*model_mapping.py` module.
+We encourage you to use Galaxy-specific utility functions (`galaxy/model/migrations/util.py`) when appropriate. Don't forget to provide tests for any modifications you make to the model (most likely, you will need to add them to the appropriate `packages/data/tests/data/model/mapping/test_*model_mapping.py` module.
 
 After that, run the upgrade script: `./manage_db.sh upgrade`. And you're done!
 
@@ -551,7 +551,7 @@ all Galaxy processes during database migration.
 ### How to handle migrations.IncorrectVersionError
 
 If you see this error, you'll need to upgrade or downgrade your database *before* upgrading to
-Alembic. Whether you need to upgrade or downgrade depends on what version number is stored in 
+Alembic. Whether you need to upgrade or downgrade depends on what version number is stored in
 the `migrate_version` table in your database. Alembic expects version 180, so you will need to
 upgrade if your version is less than that or, in very rare circumstances, downgrade if your version
 is 181. Please see [this issue](https://github.com/galaxyproject/galaxy/issues/13528) for more details.

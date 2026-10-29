@@ -154,6 +154,33 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
     $ git push --force
     ```
 
+## Python development environment
+
+Galaxy's Python backend uses a [uv workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/)
+rooted at the repository root. All packages share the tracked root `uv.lock`.
+Regenerate it from the project manifests using the uv version pinned in
+`.tool-versions` at the repository root.
+
+Package sources live under `packages/*/src` and package test suites under
+`packages/*/tests`; composed application tests live under `test/`. Development commands:
+
+```
+$ uv lock --check                                          # verify the lock is up to date
+$ uv sync --locked --all-packages --all-extras --group dev  # server and development dependencies
+$ uv run --locked --inexact --package galaxy-util pytest packages/util/tests
+```
+
+`make test` run from a package directory (e.g. `packages/util/`) syncs the
+environment scoped to that package and runs its tests, and `bash
+packages/test.sh` is the authoritative check that each package works in
+isolation. `UV_CHECK=1 bash packages/app/src/galaxy/dependencies/update.sh`
+verifies the lock and the pinned requirements files without upgrading
+anything.
+
+See the [Galaxy Development FAQ](doc/source/dev/faq.rst) for dependency
+updates and the [packages README](packages/README.md) for development profiles
+and isolated package checks.
+
 ## Style guidelines
 
 ### Python

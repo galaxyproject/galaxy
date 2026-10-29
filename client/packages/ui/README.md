@@ -7,7 +7,7 @@ they need. It ships raw source, not a build: each consumer compiles the SFCs wit
 
 - **The Galaxy client** imports it as a `workspace:*` dependency, aliased to `src/index.ts` in
   `client/vite.config.mjs`. It runs on Vue 3 under `@vue/compat`, with Bootstrap 4 on the page.
-- **The Tool Shed frontend** (`lib/tool_shed/webapp/frontend`) installs it as
+- **The Tool Shed frontend** (`packages/tool_shed/src/tool_shed/webapp/frontend`) installs it as
   `file:../../../../client/packages/ui`. It runs on plain Vue 3, with no `@vue/compat` and no
   Bootstrap, and imports `@galaxyproject/galaxy-ui/tokens.css` for the design tokens.
 
@@ -41,8 +41,8 @@ indicator) that a consumer sets instead of re-declaring rules; add them as compo
 ## Changing dependencies
 
 The shed's `file:` install resolves this package's `dependencies` and `peerDependencies` into
-`lib/tool_shed/webapp/frontend/pnpm-lock.yaml`. After changing either, run `pnpm install` in
-`lib/tool_shed/webapp/frontend` and commit its lockfile too; otherwise the shed's
+`packages/tool_shed/src/tool_shed/webapp/frontend/pnpm-lock.yaml`. After changing either, run `pnpm install` in
+`packages/tool_shed/src/tool_shed/webapp/frontend` and commit its lockfile too; otherwise the shed's
 `--frozen-lockfile` install fails in CI.
 
 pnpm installs `file:` dependencies as hard links, so while developing the shed against local edits

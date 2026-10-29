@@ -759,9 +759,10 @@
 
 :Description:
     Monitor a subset of options in the core configuration file (See
-    RELOADABLE_CONFIG_OPTIONS in lib/galaxy/config/__init__.py).  If
-    changes are found, modified options are automatically reloaded.
-    Takes the same values as the 'watch_tools' option.
+    RELOADABLE_CONFIG_OPTIONS in
+    packages/config/src/galaxy/config/__init__.py).  If changes are
+    found, modified options are automatically reloaded. Takes the same
+    values as the 'watch_tools' option.
 :Default: ``false``
 :Type: str
 
@@ -3018,7 +3019,8 @@
     Have Galaxy manage dynamic proxy component for routing requests to
     other services based on Galaxy's session cookie.  It will attempt
     to do this by default though you do need to install node+npm and
-    do an npm install from `lib/galaxy/web/proxy/js`.  It is generally
+    do an npm install from
+    `packages/web_framework/src/galaxy/web/proxy/js`.  It is generally
     more robust to configure this externally, managing it in the same
     way Galaxy itself is managed.  If true, Galaxy will only launch
     the proxy if it is actually going to be used (e.g. for Jupyter).

@@ -5,35 +5,33 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
-      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/integration.yaml'
       # Test suites and test-only libraries used by other workflows. Code shared
-      # with integration tests belongs in lib/galaxy_test/base.
+      # with integration tests belongs in packages/test_base/src/galaxy_test/base.
       - '!test/unit/**'
+      - '!packages/*/tests/**'
       - '!test/integration_selenium/**'
-      - '!lib/galaxy_test/api/**'
-      - '!lib/galaxy_test/selenium/**'
-      - '!lib/galaxy_test/workflow/**'
-      - '!lib/galaxy/selenium/**'
+      - '!packages/test_api/src/galaxy_test/api/**'
+      - '!test/workflow/**'
+      - '!packages/selenium/src/galaxy/selenium/**'
   pull_request:
     paths:
       - '**'
       - '!client/**'
       - '!doc/**'
-      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/integration.yaml'
       # Test suites and test-only libraries used by other workflows. Code shared
-      # with integration tests belongs in lib/galaxy_test/base.
+      # with integration tests belongs in packages/test_base/src/galaxy_test/base.
       - '!test/unit/**'
+      - '!packages/*/tests/**'
       - '!test/integration_selenium/**'
-      - '!lib/galaxy_test/api/**'
-      - '!lib/galaxy_test/selenium/**'
-      - '!lib/galaxy_test/workflow/**'
-      - '!lib/galaxy/selenium/**'
+      - '!packages/test_api/src/galaxy_test/api/**'
+      - '!test/workflow/**'
+      - '!packages/selenium/src/galaxy/selenium/**'
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
@@ -133,7 +131,7 @@ jobs:
       - if: github.event_name == 'schedule'
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
-          # --cov=lib line-traces a live Galaxy for the whole job, so integration
+          # --cov=packages line-traces a live Galaxy for the whole job, so integration
           # coverage is collected on this weekly run only.
           echo "GALAXY_TEST_COVERAGE=1" >> $GITHUB_ENV
           # Skip outputs_to_working_directory: true in integration tests, doesn't work with pulsar
@@ -205,7 +203,7 @@ jobs:
           name: mulled-resolution-cache-seed
           path: '${{ runner.temp }}/mulled-resolution-seed'
       - name: Install Apptainer's singularity
-        uses: './galaxy root/.github/actions/install_apptainer'
+        uses: '$/.github/actions/install_apptainer'
       - name: Run tests
         env:
           GALAXY_TEST_INTEGRATION_LANE: ${{ matrix.lane }}

@@ -17,43 +17,34 @@ Development uses a single
 [uv workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/)
 rooted at the repository root. The root `pyproject.toml`
 (`name = "galaxy-workspace"`, `[tool.uv.workspace]` members `packages/*`) is
-the only workspace: the former nested `packages/pyproject.toml` workspace
-has been removed, so every `uv` command run from a package directory
-resolves to the root workspace and its environment.
+the workspace manifest. Project commands issued from package directories use
+this workspace and its environment. Workspace members use editable installs,
+which make their Python packages importable in that environment.
 
 The exact uv version to use is pinned in `.tool-versions` at the repository
-root (`uv 0.12.23`). Both mise and asdf can read this file. Use the pinned
-version when syncing or regenerating the lock.
+root. Both mise and asdf can read this file. Use the pinned version when
+syncing or regenerating the lock.
 
-The root `uv.lock` is tracked and is the only workspace lockfile. The
-`.gitignore` exception for it keeps Galaxy runtime lock files ignored.
-Resolve manifest conflicts first, then regenerate the lock with the pinned uv
-version and review the dependency diff. Do not hand-edit the lock or run an
-unrelated broad upgrade in a source-move change.
+All workspace members share the tracked root `uv.lock`. Resolve manifest
+conflicts first, then regenerate the lock from the project manifests with the
+pinned uv version. Review dependency changes before committing.
 
-Python sources live under `lib/`; package source directories link to their
-owned modules there.
-A root dev sync installs development tools and third-party dependencies;
-use a package-scoped command to install the relevant workspace members.
-Start Galaxy with `./run.sh`.
+Sources live in `packages/<name>/src` and unit tests in
+`packages/<name>/tests`. Keep Python code in its owning distribution; shared
+fixtures and frontend assets use symbolic links. Shared pytest and sharding
+support lives in `packages/test_driver`; composed application tests and their
+fixtures live under `test/`.
 
 Here is an example workflow that syncs the shared development environment
 once from the repository root and then runs tests for a specific package:
 
     $ git clone https://github.com/galaxyproject/galaxy.git
     $ cd galaxy
-    $ uv sync --locked --group dev
-    $ uv run --locked --package galaxy-util --group dev pytest packages/util/tests
+    $ uv sync --locked --all-packages --all-extras --group dev
+    $ uv run --locked --inexact --package galaxy-util --group dev pytest packages/util/tests
 
-`uv lock --check` verifies the lock is up to date without modifying it.
-The requirements exports used by startup and tooling live under
-`lib/galaxy/dependencies/`. Regenerate them from the existing lock without
-upgrading dependencies with `sh lib/galaxy/dependencies/update.sh --export-only`.
-Run the same script with `--check` to verify the lock and exports without
-changing them. CI runs this check on dependency changes. `make
-update-dependencies` deliberately upgrades dependencies and regenerates the
-exports; lint and conditional requirements retain their separate inputs.
-
+See the [development FAQ](../doc/source/dev/faq.rst) for environment setup
+commands and dependency maintenance.
 
 The per-package ``Makefile`` (symlinked as e.g. ``packages/auth/Makefile``)
 targets the same root workspace, so package commands can also be run from
@@ -76,27 +67,21 @@ The ``Makefile`` can also be used for typechecking.
 
     $ cd galaxy/packages/auth
     $ make mypy
-    $ make _mypy  # a shortcut to just run mypy on an existing updated environment
 
-This is equivalent to syncing the package environment and then adding
-Galaxy's type checking dependencies from ``lib/galaxy/dependencies/``:
+This checks sources from the package's `src` directory, then checks its tests,
+using the declared typecheck group and the root `mypy.ini`. Mypy resolves other
+workspace packages through their installed editable distributions; no source
+search-path list is needed. Run `make mypy` at the repository root to check all
+packages and repository-level tests.
 
-    $ uv sync --locked --package galaxy-auth --all-extras
-    $ uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
-    $ uv run --locked --package galaxy-auth mypy .
+The ``Makefile`` can also be used for linting:
 
-The ``Makefile`` can also be used for linting.
-
-    $ cd galaxy/packages/auth
     $ make lint
-    $ make _lint  # a shortcut to just run ruff on an existing updated environment
 
-This is equivalent to syncing the package environment and then adding
-Galaxy's linting dependencies to it.
+Lint runs in an isolated tool environment, preserving the workspace's
+application dependencies:
 
-    $ uv sync --locked --package galaxy-auth --all-extras
-    $ uv pip install -r ../../lib/galaxy/dependencies/pinned-lint-requirements.txt
-    $ uv run --locked --package galaxy-auth ruff check .
+    $ uvx --with-requirements ../../requirements/pinned-lint-requirements.txt ruff check .
 
 ## Isolated package checks
 

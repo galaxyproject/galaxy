@@ -17,12 +17,12 @@ from galaxy.celery import (
 )
 from galaxy.tool_util.deps.mulled.util import NAMESPACE_HAS_REPO_NAME_KEY
 from galaxy.util.unittest_utils.test_http_server import test_http_server  # noqa: F401
-from galaxy_test import shard
-from galaxy_test.conftest import pytest_plugins  # noqa: F401
-from galaxy_test.conftest import (
+from galaxy_test.driver import shard
+from galaxy_test.driver.pytest import pytest_plugins  # noqa: F401
+from galaxy_test.driver.pytest import (
     pytest_configure as _base_pytest_configure,
 )
-from galaxy_test.shard import pytest_report_collectionfinish  # noqa: F401
+from galaxy_test.driver.shard import pytest_report_collectionfinish  # noqa: F401
 
 HOST_SERVICES_SCOPE = "host-services"
 INTEGRATION_LANES = (HOST_SERVICES_SCOPE, "default")

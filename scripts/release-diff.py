@@ -136,7 +136,7 @@ def load_at_time(path, revision=None):
 def main(old_revision, new_revision=None):
     globs = (
         "config/*.yml.sample",
-        "lib/galaxy/config/schemas/*schema.yml",
+        "packages/config/src/galaxy/config/schemas/*schema.yml",
     )
     files_to_diff = [f for g in globs for f in glob.glob(g)]
     added = {}
