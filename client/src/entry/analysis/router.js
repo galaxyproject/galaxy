@@ -12,6 +12,7 @@ import LoginRoutes from "@/entry/analysis/routes/login-routes";
 import StorageRoutes from "@/entry/analysis/routes/storage-routes";
 import { getAppRoot } from "@/onload/loadConfig";
 import { requireAuth, requireAuthForUploadMethod } from "@/router/guards";
+import { pageProps, workflowProps } from "@/router/publishedProps";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -156,9 +157,8 @@ export function getRouter(Galaxy) {
                 path: "/published/page",
                 component: PageView,
                 props: (route) => ({
-                    pageId: route.query.id,
+                    ...pageProps(route.query.id, route.query),
                     embed: route.query.embed ? parseBool(route.query.embed) : undefined,
-                    showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
                     displayOnly: route.query.displayOnly === "true",
                 }),
             },
@@ -171,17 +171,8 @@ export function getRouter(Galaxy) {
                 path: "/published/workflow",
                 component: WorkflowPublished,
                 props: (route) => ({
-                    id: route.query.id,
-                    version: route.query.version,
-                    zoom: route.query.zoom ? parseFloat(route.query.zoom) : undefined,
+                    ...workflowProps(route.query.id, route.query),
                     embed: route.query.embed ? parseBool(route.query.embed) : undefined,
-                    showButtons: route.query.buttons ? parseBool(route.query.buttons) : undefined,
-                    showAbout: route.query.about ? parseBool(route.query.about) : undefined,
-                    showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
-                    showMinimap: route.query.minimap ? parseBool(route.query.minimap) : undefined,
-                    showZoomControls: route.query.zoom_controls ? parseBool(route.query.zoom_controls) : undefined,
-                    initialX: route.query.initialX ? parseInt(route.query.initialX) : undefined,
-                    initialY: route.query.initialY ? parseInt(route.query.initialY) : undefined,
                 }),
             },
             {
@@ -562,6 +553,7 @@ export function getRouter(Galaxy) {
                             id: route.query.id,
                             pluralName: "Notebooks",
                             modelClass: "Page",
+                            resource: "pages",
                         }),
                     },
                     {

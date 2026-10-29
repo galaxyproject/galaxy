@@ -1772,6 +1772,10 @@ galaxy:
   # `X-Frame-Options` header.
   #x_frame_options: SAMEORIGIN
 
+  # Comma-separated origins allowed to embed Galaxy Widgets.
+  # Unset allows any origin; widgets are meant to be read-only views.
+  #widgets_allowed_origins: null
+
   # nginx can also handle file uploads (user-to-Galaxy) via
   # nginx_upload_module. Configuration for this is complex and explained
   # in detail in the documentation linked above.  The upload store is a

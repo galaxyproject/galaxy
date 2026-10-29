@@ -2195,6 +2195,14 @@ mapping:
           to protect your users.  Uncomment and leave empty to not set the
           `X-Frame-Options` header.
 
+      widgets_allowed_origins:
+        type: str
+        required: false
+        desc: |
+          Comma-separated origins allowed to embed Galaxy Widgets.
+
+          Unset allows any origin; widgets are meant to be read-only views.
+
       nginx_upload_store:
         type: str
         required: false

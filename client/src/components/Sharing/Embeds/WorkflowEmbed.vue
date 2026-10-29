@@ -39,8 +39,8 @@ function onChangePosition(event: Event, xy: "x" | "y") {
 }
 
 const embedUrl = computed(() => {
-    let url = getFullAppUrl(`published/workflow?id=${props.id}&embed=true`);
-    url += `&buttons=${settings.buttons}`;
+    let url = getFullAppUrl(`widgets/workflows/${props.id}`);
+    url += `?buttons=${settings.buttons}`;
     url += `&about=${settings.about}`;
     url += `&heading=${settings.heading}`;
     url += `&minimap=${settings.minimap}`;

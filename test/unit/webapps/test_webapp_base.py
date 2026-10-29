@@ -8,6 +8,11 @@ from typing import (
     cast,
 )
 
+import pytest
+from a2wsgi import WSGIMiddleware
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
 import galaxy.config
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.structured_app import BasicSharedApp
@@ -15,6 +20,7 @@ from galaxy.webapps.base.webapp import (
     GalaxyWebTransaction,
     WebApplication,
 )
+from galaxy.webapps.galaxy.fast_app import XFrameOptionsMiddleware
 
 log = logging.getLogger(__name__)
 
@@ -111,3 +117,60 @@ class TestGalaxyWebTransactionHeaders:
         trans.request.headers["Origin"] = "http://öbb.at"
         trans.set_cors_headers()
         assert trans.response.headers["access-control-allow-origin"] == "http://öbb.at"
+
+
+def _frame_headers_client(url_prefix: str, **config) -> tuple[TestClient, str]:
+    """Serve transaction headers through the X-Frame-Options middleware, mounted as initialize_fast_app does."""
+    app = cast(BasicSharedApp, galaxy_mock.MockApp())
+    app.config = galaxy_mock.MockAppConfig(x_frame_options="SAMEORIGIN", **config)
+    webapp = cast(WebApplication, galaxy_mock.MockWebapp(app.security))
+
+    def wsgi_app(environ, start_response):
+        trans = StubGalaxyWebTransaction(environ, app, webapp, "session_cookie")
+        start_response("200 OK", list(trans.response.headers.items()))
+        return [b""]
+
+    root_path = "" if url_prefix == "/" else url_prefix
+    fastapi_app = FastAPI(root_path=root_path)
+    fastapi_app.add_middleware(XFrameOptionsMiddleware, x_frame_options="SAMEORIGIN")
+    fastapi_app.mount("/", WSGIMiddleware(wsgi_app))  # type: ignore[arg-type]
+    if not root_path:
+        return TestClient(fastapi_app), root_path
+    parent_app = FastAPI()
+    parent_app.mount(root_path, app=fastapi_app)
+    return TestClient(parent_app), root_path
+
+
+@pytest.mark.parametrize("url_prefix", ["/", "/galaxy"])
+def test_pages_deny_other_origins(url_prefix):
+    client, root_path = _frame_headers_client(url_prefix)
+    headers = client.get(f"{root_path}/histories/list").headers
+    assert set(headers.get_list("X-Frame-Options")) == {"SAMEORIGIN"}
+    assert "Content-Security-Policy" not in headers
+
+
+@pytest.mark.parametrize("path", ["/published/page?id=1&embed=true", "/published/workflow?id=1&embed=true"])
+def test_published_embeds_are_unrestricted(path):
+    client, _ = _frame_headers_client("/")
+    headers = client.get(path).headers
+    assert "X-Frame-Options" not in headers
+    assert "Content-Security-Policy" not in headers
+
+
+@pytest.mark.parametrize("path", ["/widgets/histories/1/graph", "/widgets/pages/1", "/widgets/workflows/1"])
+@pytest.mark.parametrize("url_prefix", ["/", "/galaxy"])
+def test_widgets_allow_any_origin_by_default(url_prefix, path):
+    client, root_path = _frame_headers_client(url_prefix)
+    headers = client.get(f"{root_path}{path}").headers
+    assert headers["Content-Security-Policy"] == "frame-ancestors *"
+    assert "X-Frame-Options" not in headers
+
+
+@pytest.mark.parametrize("url_prefix", ["/", "/galaxy"])
+def test_widgets_allow_configured_origins(url_prefix):
+    client, root_path = _frame_headers_client(
+        url_prefix, widgets_allowed_origins="https://a.example.org, https://b.example.org"
+    )
+    headers = client.get(f"{root_path}/widgets/histories/1/graph").headers
+    assert headers["Content-Security-Policy"] == "frame-ancestors 'self' https://a.example.org https://b.example.org"
+    assert "X-Frame-Options" not in headers

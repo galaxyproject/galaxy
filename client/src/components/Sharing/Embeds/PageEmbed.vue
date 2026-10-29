@@ -25,8 +25,8 @@ const settings = ref({
 });
 
 const embedUrl = computed(() => {
-    let url = getFullAppUrl(`published/page?id=${props.id}&embed=true`);
-    url += `&heading=${settings.value.showHeading}`;
+    let url = getFullAppUrl(`widgets/pages/${props.id}`);
+    url += `?heading=${settings.value.showHeading}`;
     return url;
 });
 
