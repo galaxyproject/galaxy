@@ -120,6 +120,14 @@ describe("HistoryImport.vue", () => {
         expect(wrapper.find("input[type=url]").exists()).toBe(false);
     });
 
+    it("enables import when an archive URL is typed into the URL GFormInput", async () => {
+        const input = wrapper.get("input[type=url]");
+        expect(input.classes()).toContain("g-form-input");
+        await input.setValue(TEST_SOURCE_URL);
+        expect(wrapper.vm.sourceURL).toBe(TEST_SOURCE_URL);
+        expect(wrapper.find(".import-button").attributes("aria-disabled")).toBeFalsy();
+    });
+
     it("warns about shared history imports", async () => {
         const input = wrapper.find("input[type=url]");
         await input.setValue("https://usegalaxy.org/u/some_user/h/exported_history");
