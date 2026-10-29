@@ -329,12 +329,13 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
             hdas = self.session().scalars(stmt).all()
             # A disk usage recalculation skips purged histories, so the datasets must be marked purged, and the
             # user's usage decreased, before the history is.
-            hda_ids = [hda.id for hda in hdas]
+            hda_ids = {hda.id for hda in hdas}
             self.hda_manager.mark_purged(
                 item.user, hdas, preserve_owner_update_time=kwargs.get("preserve_owner_update_time", False)
             )
-            # Reload the HDAs, expired by the commit, in one query rather than one at a time
-            hdas = self.session().scalars(select(HDA).where(HDA.id.in_(hda_ids)).options(selectinload(HDA.dataset))).all()
+            # Reload the HDAs, expired by the commit, in one query; by history, as an IN of every id overflows SQLite
+            stmt = select(HDA).where(HDA.history_id == item.id).options(selectinload(HDA.dataset))
+            hdas = [hda for hda in self.session().scalars(stmt) if hda.id in hda_ids]
             # Then remove their files, and purge the outputs of jobs that haven't finished
             for hda in hdas:
                 self.hda_manager.purge(hda, flush=True, **kwargs)
