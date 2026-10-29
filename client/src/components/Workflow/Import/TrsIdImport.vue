@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { BFormGroup, BFormInput } from "bootstrap-vue";
+import { watchDebounced } from "@vueuse/core";
+import { BFormGroup } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
 import { Services } from "@/components/Workflow/services";
@@ -7,6 +8,7 @@ import { Toast } from "@/composables/toast";
 
 import type { TrsSelection, TrsTool as TrsToolInterface } from "./types";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsServerSelection from "@/components/Workflow/Import/TrsServerSelection.vue";
@@ -30,6 +32,7 @@ const trsTool: Ref<TrsToolInterface | null> = ref(null);
 const loading = ref(false);
 const trsSelection: Ref<TrsSelection | null> = ref(null);
 const errorMessage: Ref<string | null> = ref(null);
+const toolIdInput = ref(props.queryTrsId);
 const toolId = ref(props.queryTrsId);
 const isAutoImport = ref(Boolean(props.queryTrsVersionId && props.queryTrsServer && props.queryTrsId));
 const selectedVersion = ref<string | undefined>(undefined);
@@ -50,6 +53,9 @@ const isValid = computed(() => {
 watch(isValid, (newValue) => {
     emit("input-valid", newValue);
 });
+
+// Typing waits 500ms before the lookup; a change (Enter or blur) looks the tool up at once
+watchDebounced(toolIdInput, (value) => (toolId.value = value), { debounce: 500 });
 
 watch(toolIdTrimmed, () => {
     onToolId();
@@ -154,7 +160,7 @@ defineExpose({ triggerImport });
                     :label="`Enter a ${trsSelection?.label} TRS ID:`"
                     label-for="trs-id-input"
                     label-class="font-weight-bold">
-                    <BFormInput id="trs-id-input" v-model="toolId" debounce="500" />
+                    <GFormInput id="trs-id-input" v-model="toolIdInput" @change="toolId = toolIdInput" />
                 </BFormGroup>
             </div>
             <div>
