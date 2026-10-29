@@ -338,7 +338,8 @@ export default {
         },
         async sendNotificationToUsers(jobIds) {
             const cancelReason = this.stopMessage || "No reason provided";
-            const jobsToCancel = this.unfinishedJobs.filter((job) => jobIds.includes(job.id));
+            const ids = new Set(jobIds);
+            const jobsToCancel = this.unfinishedJobs.filter((job) => ids.has(job.id));
             // Group jobs by user
             const userJobsMap = jobsToCancel.reduce((acc, job) => {
                 if (job.user_id) {
