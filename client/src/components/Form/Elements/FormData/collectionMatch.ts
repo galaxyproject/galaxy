@@ -3,6 +3,10 @@ import { CollectionTypeDescription } from "@/components/Workflow/Editor/modules/
 /** Map-over type the server assigns when a `paired_or_unpaired` input is fed a plain list */
 const SINGLE_DATASETS = "single_datasets";
 
+function isCompoundPairedOrUnpaired(collectionType: string): boolean {
+    return collectionType.endsWith(":paired_or_unpaired") && !collectionType.startsWith("sample_sheet");
+}
+
 /**
  * How a collection feeds an input accepting `inputTypes`, mirroring `DataCollectionToolParameter.to_dict`: directly
  * (`mapOverType: null`), mapped over the deepest input type it nests, or not at all (`null`). A map-over the server
@@ -17,8 +21,10 @@ export function matchCollectionType(
     if (inputs.some((input) => input.canMatch(item))) {
         return { mapOverType: null };
     }
-    // deepest first, so each job gets as much data as possible
-    const mapOver = [...inputs].sort((a, b) => b.rank - a.rank).find((input) => item.canMapOver(input));
+    // deepest first, so each job gets as much data as possible; a split never yields a sample_sheet
+    const mapOver = [...inputs]
+        .sort((a, b) => b.rank - a.rank)
+        .find((input) => !input.collectionType.startsWith("sample_sheet") && item.canMapOver(input));
     if (!mapOver) {
         return null;
     }
@@ -26,8 +32,12 @@ export function matchCollectionType(
     if (mapOverType === "paired_or_unpaired" && !collectionType.endsWith("paired_or_unpaired")) {
         mapOverType = collectionType.endsWith("paired") ? "paired" : SINGLE_DATASETS;
     }
-    // the server splits a collection only into subcollections whose type is literally the map-over type
-    if (mapOverType !== SINGLE_DATASETS && !collectionType.endsWith(`:${mapOverType}`)) {
+    // the server splits on a literal map-over type suffix, except for compound `X:paired_or_unpaired`
+    if (
+        mapOverType !== SINGLE_DATASETS &&
+        !isCompoundPairedOrUnpaired(mapOverType) &&
+        !collectionType.endsWith(`:${mapOverType}`)
+    ) {
         return null;
     }
     return { mapOverType };
