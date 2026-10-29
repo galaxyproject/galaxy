@@ -140,6 +140,17 @@ def test_purged_input_is_reported_as_purged(app, manager):
         manager.staged_input(**_signed(app, job, "dataset", _dataset(hda).id))
 
 
+@pytest.mark.parametrize("redirect,head", [(False, False), (True, False), (False, True)], ids=["get", "redirect", "head"])
+def test_input_missing_from_the_object_store_is_not_found(app, manager, redirect, head):
+    # Not an empty input: stores report a missing object's size as 0.
+    hda = HistoryDatasetAssociation(sa_session=app.model.session, create_dataset=True)
+    app.model.session.add(hda)
+    job = _running_job(app, hda)
+    with mock.patch.object(app.object_store, "get_direct_download_url", return_value="https://s3/signed"):
+        with pytest.raises(exceptions.ObjectNotFound):
+            manager.staged_input(**_signed(app, job, "dataset", _dataset(hda).id, redirect=redirect), head=head)
+
+
 def test_redirect_mode_answers_with_a_presigned_url(app, manager):
     hda = _stored_hda(app)
     job = _running_job(app, hda)
