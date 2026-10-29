@@ -19,8 +19,7 @@ The following instructions assume that you have cloned your Galaxy fork into ~/g
        "test/",
        "--ignore=test/shed_functional/",
        "--ignore=test/functional",
-       "--ignore=test/unit/shed_unit/test_shed_index.py",
-       "packages/test_api/"
+       "packages/"
      ],
      "python.pythonPath": ".venv/bin/python3",
      "pythonTestExplorer.testFramework": "pytest"

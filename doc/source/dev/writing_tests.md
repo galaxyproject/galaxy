@@ -27,7 +27,7 @@ can be found in ``client/README.md`` of the Galaxy codebase.
 
 | Test Type | Location | Run Command | When to Use |
 |-----------|----------|-------------|-------------|
-| Unit (Python) | ``test/unit/`` | ``./run_tests.sh -unit`` | Isolated component tests |
+| Unit (Python) | ``packages/<package>/tests/`` | ``./run_tests.sh -unit`` | Isolated component tests |
 | Unit (Client) | ``client/src/`` | ``make client-test`` | ES6/Vue component tests |
 | API | ``packages/test_api/src/galaxy_test/api/`` | ``./run_tests.sh -api`` | Backend tests via API |
 | Integration | ``test/integration/`` | ``./run_tests.sh -integration`` | Custom Galaxy config |
@@ -42,7 +42,7 @@ can be found in ``client/README.md`` of the Galaxy codebase.
 ```
 Does test need running Galaxy server?
 ├─ NO → Unit test
-│       ├─ Python? → test/unit/ (pytest)
+│       ├─ Python? → packages/<package>/tests/ (pytest)
 │       └─ Client? → client/src/ (Vitest)
 └─ YES → Functional test
          Does test need web browser?
@@ -82,7 +82,7 @@ find the right documentation for a given test one wishes to write.
 
       - **Backend/Python**
 
-        These tests should be placed in ``test/unit`` or doctests and
+        These tests should be placed in ``packages/<package>/tests`` or doctests and
         executed via pytest. Check out [Backend/Python Unit Tests](#python_unit) below for more
         information.
 
@@ -176,8 +176,9 @@ find the right documentation for a given test one wishes to write.
 {#python_unit}
 ## Backend/Python Unit Tests
 
-These are Python unit tests either defined inside of ``test/unit`` or
-via doctests within a Python component. These should generally not require
+Package unit tests live in ``packages/<package>/tests``; repository-level
+checks live in ``test/unit``. Tests can also be defined
+as doctests within a Python component. These should generally not require
 a Galaxy instance and should quickly test just a component or a few
 components of Galaxy's backend code.
 

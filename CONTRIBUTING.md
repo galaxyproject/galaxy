@@ -156,11 +156,9 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 
 ## Python development environment
 
-Galaxy's Python backend is a single [uv
-workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/) rooted at
-the repository root: the root `pyproject.toml` is the only workspace manifest
-and the tracked `uv.lock` is the only lockfile. Regenerate it from the
-manifests rather than hand-editing it. Use the uv version pinned in
+Galaxy's Python backend uses a [uv workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/)
+rooted at the repository root. All packages share the tracked root `uv.lock`.
+Regenerate it from the project manifests using the uv version pinned in
 `.tool-versions` at the repository root.
 
 Package sources live under `packages/*/src` and package test suites under
@@ -179,13 +177,9 @@ isolation. `UV_CHECK=1 bash packages/app/src/galaxy/dependencies/update.sh`
 verifies the lock and the pinned requirements files without upgrading
 anything.
 
-If a pull request that moves sources conflicts on `uv.lock`, resolve the
-conflicts in the `pyproject.toml` manifests and dependency groups first, then
-regenerate the lock with the uv version pinned in `.tool-versions` and review the
-resulting dependency diff. Never concatenate lock files or run broad upgrades
-(e.g. `uv lock --upgrade`) in source-move pull requests. See the [Galaxy
-Development FAQ](doc/source/dev/faq.rst) and the [packages
-README](packages/README.md) for details.
+See the [Galaxy Development FAQ](doc/source/dev/faq.rst) for dependency
+updates and the [packages README](packages/README.md) for development profiles
+and isolated package checks.
 
 ## Style guidelines
 

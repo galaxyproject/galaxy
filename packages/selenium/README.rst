@@ -287,8 +287,8 @@ Development
 ::
 
     packages/selenium/
-    ├── galaxy/selenium/          # Symlink to packages/selenium/src/galaxy/selenium/
-    ├── tests/seleniumtests/      # Symlink to packages/selenium/tests/seleniumtests/
+    ├── src/galaxy/selenium/      # Package sources
+    ├── tests/seleniumtests/      # Package tests
     ├── README.rst                # This file
     └── pyproject.toml
 

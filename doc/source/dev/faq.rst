@@ -67,13 +67,12 @@ it with the uv version pinned in the root ``.tool-versions`` file:
 
     make update-dependencies
 
-Then add the updated ``pyproject.toml`` and pinned requirements files to
+Then add the updated manifests, ``uv.lock``, and pinned requirements files to
 your commit. ``uv lock --check`` verifies that ``uv.lock`` is up to date
 without modifying it, and
 ``UV_CHECK=1 bash packages/app/src/galaxy/dependencies/update.sh``
 additionally verifies the exported requirements files without upgrading
 anything. If a merge conflicts on ``uv.lock``, resolve the conflicts in the
 ``pyproject.toml`` manifests and dependency groups first, regenerate the lock
-with the pinned uv version, and review the resulting dependency diff; never
-concatenate lock files or run broad upgrades (e.g. ``uv lock --upgrade``) in
-source-move changes.
+with the pinned uv version, and review the resulting dependency diff.
+Regenerating a lock after a merge should not upgrade unrelated dependencies.
