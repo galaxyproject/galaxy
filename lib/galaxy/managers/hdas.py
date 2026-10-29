@@ -231,7 +231,7 @@ class HDAManager(
         if history:
             history.stage_addition(copy)
             # A copy of the user's own dataset is free, skip looking it up
-            if hda.purged or hda.user is not history.user:
+            if hda.user is not history.user:
                 history.charge_added_datasets([copy])
 
         # The copy shares the dataset, whose size isn't final until its job finishes
