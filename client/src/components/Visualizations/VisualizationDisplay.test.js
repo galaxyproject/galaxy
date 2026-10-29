@@ -51,8 +51,9 @@ function savedBy(userId) {
 function mountDisplay(propsData = { visualization: "example", datasetId: "d1" }) {
     const pinia = createTestingPinia({ createSpy: vi.fn, initialState: { userStore: { currentUser: signedIn } } });
     setActivePinia(pinia);
+    const userStore = useUserStore();
+    userStore.loadUser.mockResolvedValue(undefined);
     if (loadingViewer) {
-        const userStore = useUserStore();
         // Stands in for the store's own load, which sets the user once the request returns.
         // The load is shared with the app's, whose history load can still fail after that.
         userStore.loadUser.mockImplementation(() =>
@@ -200,39 +201,6 @@ describe("saving a visualization the viewer did not make", () => {
 });
 
 describe("opening a saved visualization before the viewer is known", () => {
-    beforeEach(() => {
-        signedIn = null;
-    });
-
-    it("holds the frame back, so a save cannot make the owner a copy", async () => {
-        await openSaved(ME);
-        expect(wrapper.findComponent(FRAME).exists()).toBe(false);
-        expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(true);
-    });
-
-    it("names the saved visualization once the viewer turns out to own it", async () => {
-        await openSaved(ME);
-        useUserStore().currentUser = SIGNED_IN;
-        await flushPromises();
-        expect(wrapper.findComponent(FRAME).props("visualizationId")).toBe("v1");
-    });
-
-    it("names nothing once the viewer turns out to be someone else", async () => {
-        await openSaved("someone-else");
-        useUserStore().currentUser = SIGNED_IN;
-        await flushPromises();
-        expect(wrapper.findComponent(FRAME).exists()).toBe(true);
-        expect(wrapper.findComponent(FRAME).props("visualizationId")).toBeUndefined();
-    });
-
-    it("does not hold back a dataset preview, which has nothing to save in place", async () => {
-        mountDisplay();
-        await flushPromises();
-        expect(wrapper.findComponent(FRAME).exists()).toBe(true);
-    });
-});
-
-describe("opening a saved visualization where the app has not loaded the viewer", () => {
     let viewerLoaded;
     let viewerFailed;
 
@@ -244,18 +212,26 @@ describe("opening a saved visualization where the app has not loaded the viewer"
         });
     });
 
-    it("loads the viewer itself, without their histories", async () => {
+    it("loads the viewer without their histories and holds the frame back until then", async () => {
         await openSaved(ME);
         expect(useUserStore().loadUser).toHaveBeenCalledWith(false);
         expect(wrapper.findComponent(FRAME).exists()).toBe(false);
+        expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(true);
     });
 
-    it("shows the frame once the viewer has loaded", async () => {
+    it("names the saved visualization once the viewer turns out to own it", async () => {
         await openSaved(ME);
-        expect(wrapper.findComponent(FRAME).exists()).toBe(false);
         viewerLoaded();
         await flushPromises();
         expect(wrapper.findComponent(FRAME).props("visualizationId")).toBe("v1");
+    });
+
+    it("names nothing once the viewer turns out to be someone else", async () => {
+        await openSaved("someone-else");
+        viewerLoaded();
+        await flushPromises();
+        expect(wrapper.findComponent(FRAME).exists()).toBe(true);
+        expect(wrapper.findComponent(FRAME).props("visualizationId")).toBeUndefined();
     });
 
     it("shows an error instead of a frame that would save a copy when the viewer cannot be loaded", async () => {
@@ -264,7 +240,7 @@ describe("opening a saved visualization where the app has not loaded the viewer"
         await flushPromises();
         expect(wrapper.findComponent(FRAME).exists()).toBe(false);
         expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(false);
-        expect(wrapper.text()).toContain("Network down");
+        expect(wrapper.text()).toContain("Failed to load the current user.");
     });
 
     it("shows the frame without an error when the viewer loaded but the shared load failed later", async () => {
@@ -275,10 +251,11 @@ describe("opening a saved visualization where the app has not loaded the viewer"
         expect(wrapper.text()).not.toContain("Histories unavailable");
     });
 
-    it("leaves the viewer alone for a dataset preview", async () => {
+    it("leaves the viewer alone for a dataset preview, which has nothing to save in place", async () => {
         mountDisplay();
         await flushPromises();
         expect(useUserStore().loadUser).not.toHaveBeenCalled();
+        expect(wrapper.findComponent(FRAME).exists()).toBe(true);
     });
 });
 
