@@ -420,8 +420,6 @@ class BaseJobRunner:
         stream_stdout_stderr=False,
     ):
         container = self._find_container(job_wrapper)
-        if not container and job_wrapper.requires_containerization:
-            raise Exception("Failed to find a container when required, contact Galaxy admin.")
         metadata_container = self._get_metadata_container(job_wrapper)
         return build_command(
             self,
@@ -669,6 +667,10 @@ class BaseJobRunner:
         container = self.app.container_finder.find_container(tool_info, destination_info, job_info)
         if container:
             job_wrapper.set_container(container)
+        elif job_wrapper.requires_containerization:
+            # Checked here rather than in build_command_line so that runners building
+            # their own command lines (e.g. Pulsar) enforce it too.
+            raise Exception("Failed to find a container when required, contact Galaxy admin.")
         return container
 
     def _get_metadata_container(

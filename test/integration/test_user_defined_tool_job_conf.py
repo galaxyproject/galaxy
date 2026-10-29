@@ -15,7 +15,8 @@ from galaxy_test.driver import integration_util
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_job_conf.yml")
 EMBEDDED_PULSAR_TPV_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_tpv_job_conf.yml")
-TOOL_WITH_RESOURCE_SPECIFICATION = yaml.safe_load("""class: GalaxyUserTool
+TOOL_WITH_RESOURCE_SPECIFICATION = yaml.safe_load(
+    """class: GalaxyUserTool
 id: resource_requirement
 version: "0.1"
 name: resource_requirement
@@ -31,7 +32,26 @@ outputs:
     type: data
     format: txt
     from_work_dir: galaxy_cores.txt
-""")
+"""
+)
+TOOL_INSPECTING_JOB_DIRECTORY = yaml.safe_load(
+    """class: GalaxyUserTool
+id: inspect_job_directory
+version: "0.1"
+name: inspect_job_directory
+description: report which job directory files are visible
+container: busybox
+shell_command: |
+  (test -e ../launch_config && echo "launch_config visible" || echo "launch_config hidden") > job_directory.txt;
+  (test -e ../command.sh && echo "command.sh visible" || echo "command.sh hidden") >> job_directory.txt;
+  (test -e ../metadata && echo "metadata visible" || echo "metadata hidden") >> job_directory.txt
+outputs:
+  - name: output
+    type: data
+    format: txt
+    from_work_dir: job_directory.txt
+"""
+)
 
 
 class TestUserDefinedToolRecommendedJobSetup(integration_util.IntegrationTestCase, TestsTools):
@@ -78,6 +98,26 @@ class TestUserDefinedToolRecommendedJobSetup(integration_util.IntegrationTestCas
 
         assert destination_params["Runner"] == "pulsar_embed"
         assert destination_params["require_container"]
+
+    def test_user_defined_cannot_see_job_directory(self):
+        # The job directory holds the job script, metadata files evaluated outside the container and
+        # Pulsar's launch_config with the job's Galaxy callback credentials.
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_INSPECTING_JOB_DIRECTORY)
+            )
+            self._run(
+                history_id=history_id,
+                tool_uuid=dynamic_tool["uuid"],
+                inputs={},
+                wait_for_job=True,
+                assert_ok=True,
+            )
+            output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        assert output_content == "launch_config hidden\ncommand.sh hidden\nmetadata hidden\n"
 
 
 class TestUserDefinedToolRecommendedJobSetupTPV(TestUserDefinedToolRecommendedJobSetup):
