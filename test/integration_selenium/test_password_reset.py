@@ -68,7 +68,10 @@ class TestPasswordResetSeleniumIntegration(SeleniumIntegrationTestCase):
         login = self.components.login
         self.fill(login.form.wait_for_visible(), {"login": email, "password": self.default_password})
         login.submit.wait_for_and_click()
-        alert = self._wait_on(expected_conditions.alert_is_present(), "expired password alert")
+        # The wait helper calls its condition without the driver and polls while it returns None.
+        alert = self._wait_on(
+            lambda: expected_conditions.alert_is_present()(self.driver) or None, "expired password alert"
+        )
         assert "Your password has expired" in alert.text
         alert.accept()
         self.components.change_password.current.wait_for_visible()
