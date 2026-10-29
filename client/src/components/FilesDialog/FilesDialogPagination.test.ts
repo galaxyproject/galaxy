@@ -68,10 +68,14 @@ function folderListing(folderUri: string): RemoteFilesList {
 
 describe("FilesDialog, paginated file source", () => {
     let wrapper: Wrapper<any>;
-    let slowFolders: string[];
+    let heldFolders: string[];
+    let heldListings: Record<string, (() => void)[]>;
+    let callback: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
-        slowFolders = [];
+        heldFolders = [];
+        heldListings = {};
+        callback = vi.fn();
         server.use(
             http.get("/api/remote_files/plugins", ({ response }) => response(200).json(plugins)),
             http.get("/api/file_source_templates", ({ response }) => response(200).json([])),
@@ -84,8 +88,8 @@ describe("FilesDialog, paginated file source", () => {
                         headers: { total_matches: String(totalEntries) },
                     });
                 }
-                if (slowFolders.includes(target)) {
-                    await new Promise((resolve) => setTimeout(resolve, 50));
+                if (heldFolders.includes(target)) {
+                    await new Promise<void>((resolve) => (heldListings[target] ??= []).push(resolve));
                 }
                 const files = folderListing(target);
                 return response(200).json(files, { headers: { total_matches: String(files.length) } });
@@ -93,7 +97,7 @@ describe("FilesDialog, paginated file source", () => {
         );
         wrapper = mount(FilesDialog as object, {
             localVue: getLocalVue(),
-            propsData: { multiple: true, modalStatic: true },
+            propsData: { multiple: true, modalStatic: true, callback },
             pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
         });
         await flushPromises();
@@ -137,6 +141,21 @@ describe("FilesDialog, paginated file source", () => {
         rows().forEach((row) => expect(row._rowVariant).toBe(expected));
     }
 
+    /** Answers the folder's `index`-th held listing request, once it has been made */
+    async function releaseListing(folderUri: string, index = 0) {
+        await vi.waitFor(() => expect(heldListings[folderUri]?.[index]).toBeDefined());
+        heldListings[folderUri]![index]!();
+        await new Promise((resolve) => setTimeout(resolve));
+        await flushPromises();
+    }
+
+    /** Confirms the dialog and returns the URLs passed to the callback */
+    function confirmedUrls(): string[] {
+        selectionDialog().vm.$emit("onOk");
+        const results = callback.mock.calls.at(-1)![0] as SelectionItem[];
+        return results.map(({ url }) => url).sort();
+    }
+
     function isOkDisabled(): boolean {
         return Boolean(wrapper.find("[data-description='selection dialog ok']").attributes("disabled"));
     }
@@ -166,10 +185,13 @@ describe("FilesDialog, paginated file source", () => {
     });
 
     it("should keep OK disabled until the files of every selected folder are listed", async () => {
-        slowFolders = [`${sourceRoot}/folder15`];
+        heldFolders = [`${sourceRoot}/folder15`];
         await selectAll();
         expect(isOkDisabled()).toBe(true);
+        expect(findRow(`${sourceRoot}/folder5`)._rowVariant).toBe(SELECTION_STATES.SELECTED);
 
-        await vi.waitFor(() => expect(isOkDisabled()).toBe(false));
+        await releaseListing(`${sourceRoot}/folder15`);
+        expect(isOkDisabled()).toBe(false);
+        expect(confirmedUrls()).toContain(`${sourceRoot}/folder15/file1`);
     });
 });
