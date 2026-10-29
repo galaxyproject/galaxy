@@ -1,4 +1,3 @@
-import re
 import string
 import time
 from urllib.parse import urljoin
@@ -6,10 +5,7 @@ from uuid import uuid4
 
 import requests
 
-from galaxy_test.base.api_asserts import (
-    assert_status_code_is,
-    assert_status_code_is_ok,
-)
+from galaxy_test.base.api_asserts import assert_status_code_is_ok
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -128,10 +124,6 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
         password = "testpass"
         self._setup_user(email, password)
         with requests.Session() as session:
-            login_page = session.get(urljoin(self.url, "login/start"))
-            csrf_token_match = re.search(r'session_csrf_token": "(.*?)"', login_page.text)
-            assert csrf_token_match, "session_csrf_token not found on login page"
-
             # Run create_2 without logging in, it writes "1\n" and "2\n" to its outputs, then sleeps
             history_id = session.get(urljoin(self.url, "history/current_history_json")).json()["id"]
             run_response = session.post(
@@ -144,11 +136,7 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
             wait_on_state(lambda: session.get(job_url), desc="job state", ok_states=["running"])
 
             # Log in while the job runs, which gives the history to the user
-            login_response = session.post(
-                urljoin(self.url, "user/login"),
-                data={"login": email, "password": password, "session_csrf_token": csrf_token_match.group(1)},
-            )
-            assert_status_code_is(login_response, 200)
+            self._login_browser_session(session, email, password)
             assert session.get(job_url).json()["state"] == "running"
 
         with self._different_user(email):
@@ -169,10 +157,6 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
         password = "testpass"
         self._setup_user(email, password)
         with requests.Session() as session:
-            login_page = session.get(urljoin(self.url, "login/start"))
-            csrf_token_match = re.search(r'session_csrf_token": "(.*?)"', login_page.text)
-            assert csrf_token_match, "session_csrf_token not found on login page"
-
             # Without logging in, create "1\n" and "2\n" and copy the first within the history
             history_id = session.get(urljoin(self.url, "history/current_history_json")).json()["id"]
             run_response = session.post(
@@ -188,11 +172,7 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDi
             )
             assert_status_code_is_ok(copy_response)
 
-            login_response = session.post(
-                urljoin(self.url, "user/login"),
-                data={"login": email, "password": password, "session_csrf_token": csrf_token_match.group(1)},
-            )
-            assert_status_code_is(login_response, 200)
+            self._login_browser_session(session, email, password)
 
         with self._different_user(email):
             # Logging in counts each dataset once, and a recalculation agrees
