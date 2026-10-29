@@ -338,6 +338,15 @@
   # The public demo resets its content, so point this at your repository.
   api_url: https://demo.dspace.org/server/api
 
+# dCache (https://www.dcache.org) through its WebDAV door. Set token to a macaroon or OIDC
+# access token for files that are not public.
+- type: webdav
+  id: dcache
+  label: dCache
+  doc: Public data on the DESY HIFIS dCache.
+  base_url: https://hifis-storage-ht.desy.de:2880
+  root: /OpenPortal/public-data
+
 # IIIF (International Image Interoperability Framework) file source
 # For examples and to find public IIIF resources, visit: [https://iiif.io/guides/finding_resources/](https://iiif.io/guides/finding_resources/)
 - type: iiif
