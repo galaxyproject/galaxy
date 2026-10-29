@@ -350,8 +350,9 @@ class WebdavFileSourceTemplateConfiguration(WebdavConfigMixin, StrictModel):
     type: Literal["webdav"]
     base_url: str | TemplateExpansion
     root: str | TemplateExpansion
-    login: str | TemplateExpansion
-    password: str | TemplateExpansion
+    login: str | TemplateExpansion | None = None
+    password: str | TemplateExpansion | None = None
+    token: str | TemplateExpansion | None = None
     writable: bool | TemplateExpansion = False
     template_start: str | None = None
     template_end: str | None = None
@@ -361,8 +362,9 @@ class WebdavFileSourceConfiguration(WebdavConfigMixin, StrictModel):
     type: Literal["webdav"]
     base_url: str
     root: str
-    login: str
-    password: str
+    login: str | None = None
+    password: str | None = None
+    token: str | None = None
     writable: bool = False
 
 
