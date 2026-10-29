@@ -744,7 +744,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
 
         With ``object_store_staging``, each input kept in the object store carries a signed URL that
         Galaxy answers from the store by identity, so Galaxy need not pull the input into its own
-        cache and no Galaxy host needs to share its disk with the one answering Pulsar.
+        cache and the Galaxy host answering Pulsar need not share that cache. Other inputs, such as a
+        deferred input materialized into the job directory, are still staged by path.
         """
         issue_url = None
         staging = compute_environment.object_store_staging
