@@ -122,7 +122,11 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
                 return normalized_path.replace(normalized_remote_metadata_directory, target_directory, 1)
             return path
 
-        dataset.metadata.from_JSON_dict(metadata_output_path, path_rewriter=path_rewriter)
+        dataset.metadata.from_JSON_dict(
+            metadata_output_path,
+            path_rewriter=path_rewriter,
+            metadata_tmp_files_dir=os.path.join(working_directory, "metadata"),
+        )
 
     def _metadata_results_from_file(self, dataset, filename_results_code):
         try:
@@ -202,7 +206,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                 return os.path.join(metadata_dir, f"metadata_{what}_{key}")  # noqa: B023
 
             _initialize_metadata_inputs(
-                dataset, _metadata_path, tmp_dir, kwds, real_metadata_object=self.write_object_store_conf
+                dataset, _metadata_path, metadata_dir, kwds, real_metadata_object=self.write_object_store_conf
             )
 
             outputs[name] = {

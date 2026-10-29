@@ -130,6 +130,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     discovered_file_count: int
 
     allows_external_output_paths: bool = False
+    # Directory a JSON MetadataTempFile in dataset attributes may be read from; None rejects them.
+    metadata_tmp_files_dir: str | None = None
 
     def get_job(self) -> galaxy.model.Job | None:
         return getattr(self, "job", None)
@@ -344,8 +346,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         # TODO: this might run set_meta after copying the file to the object store, which could be inefficient if job working directory is closer to the node.
         self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
 
-    @staticmethod
-    def set_datasets_metadata(datasets, datasets_attributes=None, overwrite: bool = True):
+    def set_datasets_metadata(self, datasets, datasets_attributes=None, overwrite: bool = True):
         datasets_attributes = datasets_attributes or [{} for _ in datasets]
         for primary_data, dataset_attributes in zip(datasets, datasets_attributes):
             # add tool/metadata provided information
@@ -368,7 +369,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     if "dbkey" in dataset_attributes:
                         metadata_dict["dbkey"] = dataset_attributes["dbkey"]
                     # branch tested with tool_provided_metadata_3 / tool_provided_metadata_10
-                    primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
+                    primary_data.metadata.from_JSON_dict(
+                        json_dict=metadata_dict, metadata_tmp_files_dir=self.metadata_tmp_files_dir
+                    )
                 else:
                     primary_data.set_meta(overwrite=overwrite)
             except Exception:
