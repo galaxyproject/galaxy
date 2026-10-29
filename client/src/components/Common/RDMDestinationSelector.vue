@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BCard, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BCard, BFormGroup } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -9,6 +9,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { fileSourcePluginToItem } from "../FilesDialog/utilities";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GRadio from "@/components/BaseComponents/GRadio.vue";
@@ -156,7 +157,7 @@ defineExpose({
                     label-for="record-name"
                     :description="recordNameDescription"
                     class="mt-3">
-                    <BFormInput
+                    <GFormInput
                         id="record-name-input"
                         v-model="recordName"
                         :placeholder="recordNamePlaceholder"
