@@ -13,6 +13,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from boltons.iterutils import remap
 from packaging.version import Version
 
 from galaxy import model
@@ -124,6 +125,14 @@ class ToolTemplatingException(Exception):
         self.tool_id = tool_id
         self.tool_version = tool_version
         self.is_latest = is_latest
+
+
+_GROUP_STATE_KEYS = frozenset(("__index__", "__current_case__"))
+
+
+def _is_not_group_state_key(path, key, value) -> bool:
+    """``remap`` visitor dropping repeat ``__index__`` and conditional ``__current_case__`` keys."""
+    return key not in _GROUP_STATE_KEYS
 
 
 def global_tool_logs(func, config_file: StrPath | None, action_str: str, tool: "Tool"):
@@ -1166,13 +1175,12 @@ class UserToolEvaluator(ToolEvaluator):
             if self.tool.parameters is None:
                 raise RequestParameterInvalidException(f"Tool {self.tool.id} has no parameters defined")
             parameter_bundle = ToolParameterBundleModel(parameters=self.tool.parameters)
-            yaml_origin = self.tool.tool_source.parse_class() in ("GalaxyUserTool", "GalaxyTool")
             job_runtime_state = runtimeify(
                 validated_tool_state,
                 parameter_bundle,
                 adapt_datasets,
                 adapt_collections,
-                yaml_origin=yaml_origin,
+                yaml_origin=self.tool.yaml_origin,
             )
             cwl_style_inputs = job_runtime_state.input_state
         else:
@@ -1183,7 +1191,7 @@ class UserToolEvaluator(ToolEvaluator):
             )
             hda_references = []
             cwl_style_inputs = to_cwl(
-                incoming,
+                remap(incoming, visit=_is_not_group_state_key),
                 hda_references=hda_references,
                 compute_environment=compute_environment,
                 shell_quotable=shell_quotable,

@@ -652,11 +652,9 @@ def test_permissions(self):
 Modern pytest-style tests can use fixtures from ``conftest.py``:
 
 ```python
-# Session-scoped (expensive setup, reused)
 def test_example(self, galaxy_interactor, dataset_populator):
     ...
 
-# Request-scoped (fresh per test)
 def test_with_history(self, history_id, target_history):
     hda = target_history.with_dataset("content").src_dict
     ...
@@ -666,11 +664,14 @@ Key fixtures:
 
 | Fixture | Scope | Purpose |
 |---------|-------|---------|
-| ``galaxy_interactor`` | session | API interaction object |
-| ``dataset_populator`` | session | Dataset creation helper |
+| ``galaxy_interactor`` | function | API interaction object |
+| ``dataset_populator`` | function | Dataset creation helper |
 | ``history_id`` | function | Fresh history per test |
 | ``target_history`` | function | Fluent API for test data |
 | ``required_tool`` | function | Tool fixture from markers |
+
+Interactor fixtures are function scoped because creating one mints a new API key
+for the test user, which invalidates keys held by earlier interactors.
 
 ### Async and Job Waiting
 

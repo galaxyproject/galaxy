@@ -16,7 +16,6 @@ from galaxy.tool_util.parser.parameter_validators import static_validators
 from galaxy.tool_util.parser.util import (
     multiple_select_value_split,
     parse_profile_version,
-    text_input_is_optional,
 )
 from galaxy.tool_util_models.parameters import (
     BaseUrlParameterModel,
@@ -127,7 +126,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             )
         elif param_type == "boolean":
             nullable = input_source.parse_optional()
-            value = input_source.get_bool_or_none("checked", None if nullable else False)
+            value = input_source.parse_boolean_default(None if nullable else False)
             truevalue = input_source.get("truevalue", None)
             falsevalue = input_source.get("falsevalue", None)
             return BooleanParameterModel(
@@ -140,7 +139,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "text":
-            optional, optionality_inferred = text_input_is_optional(input_source)
+            optional, optionality_inferred = input_source.parse_text_optional()
             implicit_default = None if optional else ""
             default_value = input_source.get("value", implicit_default)
             text_validators: list[TextCompatiableValidators] = _text_validators(input_source)
