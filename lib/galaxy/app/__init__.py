@@ -41,6 +41,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.datatypes.registry import Registry
 from galaxy.di import Container
+from galaxy.exceptions import ConfigurationError
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
@@ -168,6 +169,7 @@ from galaxy.tool_shed.galaxy_install.update_repository_manager import (
     UpdateRepositoryManager,
 )
 from galaxy.tool_util.data import (
+    DataTableColumnMismatch,
     tool_data_table_config_sources,
     ToolDataTableManager as BaseToolDataTableManager,
 )
@@ -214,6 +216,22 @@ from galaxy.workflow.trs_proxy import TrsProxy
 
 log = logging.getLogger(__name__)
 app = None
+
+
+def data_table_conflict_message(e: DataTableColumnMismatch, shed_tool_data_table_config: str) -> str:
+    # Point at the shed definition even when admin-ordered sources load the shed config first.
+    remove_from = e.config_filename
+    if e.repository_info is None:
+        shed_identity = os.path.realpath(shed_tool_data_table_config)
+        remove_from = next(
+            (f for f in e.existing_config_filenames if os.path.realpath(f) == shed_identity),
+            remove_from,
+        )
+    return (
+        f"{e} To start Galaxy, remove the <table name=\"{e.table_name}\"> element from '{remove_from}' "
+        f"or remove the other definition of {e.table_name!r}; tools that rely on the removed definition will "
+        "not work until the conflict is resolved."
+    )
 
 
 class HaltableContainer(Container):
@@ -467,12 +485,15 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             from_shed_config=from_shed_config,
             managed_optional=not self.config.is_set("shed_tool_data_table_config"),
         )
-        self._tool_data_tables = ToolDataTableManager(
-            tool_data_path=self.config.tool_data_path,
-            config_sources=sources,
-            other_config_dict=self.config,
-            on_registration=self._tool_data_tables_registered,
-        )
+        try:
+            self._tool_data_tables = ToolDataTableManager(
+                tool_data_path=self.config.tool_data_path,
+                config_sources=sources,
+                other_config_dict=self.config,
+                on_registration=self._tool_data_tables_registered,
+            )
+        except DataTableColumnMismatch as e:
+            raise ConfigurationError(data_table_conflict_message(e, self.config.shed_tool_data_table_config)) from e
 
     def _tool_data_tables_registered(self, table_names: list[str]) -> None:
         if isinstance(self, StructuredApp):
