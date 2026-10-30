@@ -136,6 +136,40 @@ describe("GProgress", () => {
         expect(bars(wrapper)[0]!.attributes("aria-label")).toBe("Job states");
     });
 
+    it("follows a changing value", async () => {
+        const wrapper = mount(GProgress, { props: { value: 20 } });
+
+        await wrapper.setProps({ value: 60 });
+
+        const bar = wrapper.get('[role="progressbar"]');
+        expect(bar.attributes("aria-valuenow")).toBe("60");
+        expect(bar.attributes("style")).toContain("width: 60%");
+    });
+
+    it("updates stacked bars when the progress maximum or display options change", async () => {
+        const max = ref(10);
+        const showProgress = ref(false);
+        const wrapper = mount(
+            defineComponent({
+                components: { GProgress, GProgressBar },
+                setup: () => ({ max, showProgress }),
+                template: `
+                    <GProgress :max="max" :show-progress="showProgress">
+                        <GProgressBar :value="2" />
+                    </GProgress>`,
+            }),
+        );
+
+        max.value = 4;
+        showProgress.value = true;
+        await nextTick();
+
+        const bar = wrapper.get('[role="progressbar"]');
+        expect(bar.attributes("aria-valuemax")).toBe("4");
+        expect(bar.attributes("style")).toContain("width: 50%");
+        expect(bar.text()).toBe("50");
+    });
+
     it("lets a bar override the progress maximum", () => {
         const wrapper = mountStacked(`
             <GProgress :max="10">
