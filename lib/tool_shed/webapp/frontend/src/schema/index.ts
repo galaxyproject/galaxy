@@ -1,3 +1,3 @@
 export type { components, operations, paths as ToolShedApiPaths } from "./schema"
-export { ToolShedApi } from "./client"
+export { FILE_CONTENTS_PATH, ToolShedApi } from "./client"
 export type { RepositoryTool, RevisionMetadata } from "./types"

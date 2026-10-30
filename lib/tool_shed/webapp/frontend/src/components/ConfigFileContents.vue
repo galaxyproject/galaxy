@@ -42,7 +42,8 @@ const props = defineProps<ConfigFileContentsProps>()
                 <FontAwesomeIcon :icon="faDownload" />
             </GButton>
         </div>
-        <pre class="config-file-contents-body">{{ contents }}</pre>
+        <!-- Focusable so keyboard users can scroll long lines -->
+        <pre class="config-file-contents-body" tabindex="0">{{ contents }}</pre>
     </section>
 </template>
 

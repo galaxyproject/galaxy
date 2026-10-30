@@ -129,6 +129,7 @@ FRONT_END_ROUTES = [
     "/repositories_by_owner/{username}",
     "/repositories/{repository_id}",
     "/repositories/{repository_id}/metadata-inspector",
+    "/repositories/{repository_id}/contents",
     "/repositories_search",
     "/tools/{trs_tool_id}/versions/{version}",
     "/_component_showcase",
