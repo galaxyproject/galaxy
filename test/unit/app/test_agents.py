@@ -1416,6 +1416,74 @@ class TestAgentUnitMocked:
         assert MIRDEEP2_TOOL_ID in _message_texts(analyzed_with)
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "written_out",
+        [
+            '{"tool": "final_result_hand_off_to_error_analysis", "arguments": {"task": "Analyze the failed HISAT2 job."}}',
+            '{"task": "Analyze the failed HISAT2 job and provide troubleshooting guidance."}',
+            '```json\n{"name": "hand_off_to_error_analysis", "arguments": {"task": "Analyze it."}}\n```',
+        ],
+    )
+    async def test_router_retries_a_handoff_written_out_as_text(self, written_out):
+        """gpt-oss sometimes decides to hand off but writes the call out as text. That text must
+        not reach the user as the router's answer -- the model gets told to make the call."""
+        self.mock_config.ai_model = "gpt-4o"
+        router = QueryRouterAgent(self.deps)
+        error_agent = ErrorAnalysisAgent(self.deps)
+        self.deps.get_agent = MagicMock(return_value=error_agent)
+        calls: list[list[ModelMessage]] = []
+
+        def router_fn(messages, info):
+            calls.append(messages)
+            if len(calls) == 1:
+                return ModelResponse(parts=[TextPart(content=written_out)])
+            return ModelResponse(
+                parts=[
+                    ToolCallPart(
+                        tool_name="final_result_hand_off_to_error_analysis", args={"task": "Diagnose the error."}
+                    )
+                ]
+            )
+
+        with (
+            router.agent.override(model=FunctionModel(router_fn)),
+            error_agent.agent.override(model=FunctionModel(_structured_error_analysis([]))),
+        ):
+            response = await router.process(
+                "the one you just found",
+                context={"conversation_history": SUBJECT_THEN_CLARIFICATION_HISTORY, "clarification_turns": 1},
+            )
+
+        assert len(calls) == 2
+        assert response.agent_type == AgentType.ERROR_ANALYSIS
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "answer",
+        [
+            "A workflow is a chain of tools you can rerun on new data.",
+            '{"name": "sample1", "reads": 1200}',
+            'Use a JSON body like {"task": "x"} when you call the API.',
+        ],
+    )
+    async def test_router_keeps_direct_answers_that_are_not_handoffs(self, answer):
+        self.mock_config.ai_model = "gpt-4o"
+        router = QueryRouterAgent(self.deps)
+        calls = 0
+
+        def router_fn(messages, info):
+            nonlocal calls
+            calls += 1
+            return ModelResponse(parts=[TextPart(content=answer)])
+
+        with router.agent.override(model=FunctionModel(router_fn)):
+            response = await router.process("what is a workflow?")
+
+        assert calls == 1
+        assert response.agent_type == AgentType.ROUTER
+        assert response.content == answer
+
+    @pytest.mark.asyncio
     async def test_custom_tool_rejects_prompt_injection_query(self):
         self.mock_config.ai_model = "gpt-4o"
         agent = CustomToolAgent(self.deps)
