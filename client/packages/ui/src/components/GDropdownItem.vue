@@ -21,6 +21,8 @@ const props = withDefaults(
         variant?: string;
         /** Title/tooltip text */
         title?: string;
+        /** Makes the item a menu checkbox (role="menuitemcheckbox") with this checked state */
+        checked?: boolean;
     }>(),
     {
         to: undefined,
@@ -30,6 +32,7 @@ const props = withDefaults(
         disabled: false,
         variant: undefined,
         title: undefined,
+        checked: undefined,
     },
 );
 
@@ -38,6 +41,11 @@ const emit = defineEmits<{
 }>();
 
 const hideDropdown = inject(dropdownHideKey, () => {});
+
+const isCheckbox = computed(() => props.checked !== undefined);
+const role = computed(() => (isCheckbox.value ? "menuitemcheckbox" : "menuitem"));
+// A string, since compat mode drops attributes bound to boolean false
+const ariaChecked = computed(() => (isCheckbox.value ? (props.checked ? "true" : "false") : undefined));
 
 const classes = computed(() => ({
     "dropdown-item": true,
@@ -69,7 +77,8 @@ function onClick(event: MouseEvent) {
         :target="target"
         :title="title"
         :aria-current="active ? 'true' : undefined"
-        role="menuitem"
+        :role="role"
+        :aria-checked="ariaChecked"
         tabindex="-1"
         @click="onClick">
         <slot />
@@ -82,7 +91,8 @@ function onClick(event: MouseEvent) {
         :title="title"
         :aria-disabled="disabled || undefined"
         :aria-current="active ? 'true' : undefined"
-        role="menuitem"
+        :role="role"
+        :aria-checked="ariaChecked"
         tabindex="-1"
         @click="onClick">
         <slot />

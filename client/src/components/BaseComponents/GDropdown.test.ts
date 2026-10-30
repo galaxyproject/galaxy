@@ -417,7 +417,7 @@ describe("GDropdown.vue", () => {
             const onCheck = vi.fn();
             const onRadio = vi.fn();
             const wrapper = mountDropdown(
-                `<GDropdownItem role="menuitemcheckbox" aria-checked="true" @click="onCheck">Check</GDropdownItem>
+                `<GDropdownItem checked @click="onCheck">Check</GDropdownItem>
                 <GDropdownItem role="menuitemradio" aria-checked="false" @click="onRadio">Radio</GDropdownItem>`,
                 { onCheck, onRadio },
             );
