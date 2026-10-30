@@ -701,6 +701,13 @@ class TestToolsUpload(ApiTestCase):
         assert expected_hash is not None
         self._assert_content_matches_hash(content, expected_hash)
 
+    def test_upload_tar_with_stray_zip_end_record(self, history_id):
+        tar_path = TestDataResolver().get_filename("tar_with_stray_zip_end_record.tar")
+        with open(tar_path, "rb") as fh:
+            details = self._upload_and_get_details(fh, api="fetch", history_id=history_id, assert_ok=True)
+        assert details["file_ext"] == "tar"
+        assert details["file_size"] == os.path.getsize(tar_path)
+
     def _assert_content_matches_hash(self, content: bytes, expected_hash: str):
         with tempfile.NamedTemporaryFile("wb") as temp:
             temp.write(content)
