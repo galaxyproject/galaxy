@@ -70,6 +70,7 @@ from galaxy.tools._types import InputFormatT
 from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
+from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
@@ -530,6 +531,7 @@ class ToolsService(ServiceBase):
         tool_version=None,
         tool_uuid=None,
         user: User | None = None,
+        exact: bool = False,
     ) -> ToolLike:
         if tool_uuid:
             try:
@@ -544,6 +546,15 @@ class ToolsService(ServiceBase):
                 raise exceptions.ObjectNotFound(f"Could not find tool with id '{id or tool_uuid}'.")
         if not tool.allow_user_access(user):
             raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
+        # A Tool Shed tool's id is its full guid; it may also be requested by its short (old) id or
+        # its versionless guid.
+        if exact and not tool_uuid:
+            accepted_ids = (tool.id, tool.old_id, tool.id and remove_version_from_guid(tool.id))
+            if id not in accepted_ids or (tool_version and tool.version != tool_version):
+                requested = f"Tool '{id}'" + (f" version {tool_version}" if tool_version else "")
+                raise exceptions.ObjectNotFound(
+                    f"{requested} is not installed; the closest match is '{tool.id}' version {tool.version}."
+                )
         return tool
 
     def _get_materialized_tool(
@@ -555,8 +566,9 @@ class ToolsService(ServiceBase):
         user: User | None = None,
         *,
         materialization_reason: MaterializationReasonName,
+        exact: bool = False,
     ) -> Tool:
-        tool = self._get_tool(trans, id, tool_version, tool_uuid, user)
+        tool = self._get_tool(trans, id, tool_version, tool_uuid, user, exact=exact)
         return trans.app.toolbox.materialize_tool(tool, reason=materialization_reason)
 
     def _detect(self, trans: ProvidesUserContext, tool_id):
