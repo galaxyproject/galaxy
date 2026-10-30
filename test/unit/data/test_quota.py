@@ -2,6 +2,8 @@ import uuid
 from decimal import Decimal
 from typing import cast
 
+from sqlalchemy import update
+
 from galaxy import model
 from galaxy.model.unittest_utils.utils import random_email
 from galaxy.objectstore import (
@@ -38,6 +40,7 @@ class TestPurgeUsage(BaseModelTestCase):
             extension="txt", history=self.h, create_dataset=True, sa_session=self.model.session
         )
         d1.dataset.total_size = 10
+        d1.dataset.state = model.Dataset.states.OK
         self.persist(d1)
         return d1
 
@@ -47,6 +50,47 @@ class TestPurgeUsage(BaseModelTestCase):
         d1.purge_usage_from_quota(self.u, quota_source_info)
         self.persist(self.u)
         assert self.u.disk_usage == Decimal(15)
+
+    def test_calculate_usage_running_job_output(self):
+        # outputs of running jobs are only charged once the job finishes
+        d1 = self._setup_dataset()
+        d1.dataset.state = model.Dataset.states.RUNNING
+        quota_source_info = QuotaSourceInfo(None, True)
+        d1.purge_usage_from_quota(self.u, quota_source_info)
+        self.persist(self.u)
+        assert self.u.disk_usage == Decimal(25)
+
+    def test_read_usage_with_pending_adjustments(self):
+        # adjustments are written when the user is flushed, reading the usage before that applies them first
+        self.u.adjust_total_disk_usage(10, None)
+        self.u.adjust_total_disk_usage(5, None)
+        assert self.u.get_disk_usage() == Decimal(40)
+        self.u.adjust_total_disk_usage(-20, None)
+        assert self.u.dictify_usage_for(None).total_disk_usage == 20
+        self.u.adjust_total_disk_usage(-5, None)
+        assert self.u.dictify_usage()[0].total_disk_usage == 15
+        self.persist(self.u)
+        assert self.u.disk_usage == Decimal(15)
+
+    def test_adjust_usage_keeps_concurrent_adjustments(self):
+        # the usage loaded in this session is 25
+        assert self.u.disk_usage == Decimal(25)
+        # another transaction adds 10 meanwhile, leaving the loaded value stale
+        self.model.session.execute(
+            update(model.User).where(model.User.id == self.u.id).values(disk_usage=model.User.disk_usage + 10),
+            execution_options={"synchronize_session": False},
+        )
+        self.u.adjust_total_disk_usage(5, None)
+        self.persist(self.u)
+        assert self.u.disk_usage == Decimal(40)
+
+    def test_adjust_usage_of_unsaved_user(self):
+        # added to the session but not flushed, so not in the database yet
+        u = model.User(email=random_email(), password="password")
+        self.model.session.add(u)
+        u.adjust_total_disk_usage(10, None)
+        self.persist(u)
+        assert u.disk_usage == Decimal(10)
 
     def test_calculate_usage_untracked(self):
         # test quota tracking off on the objectstore
@@ -88,6 +132,7 @@ class TestCalculateUsage(BaseModelTestCase):
         )
         d1.dataset.total_size = total_size
         d1.dataset.object_store_id = object_store_id
+        d1.dataset.state = model.Dataset.states.OK
         self.persist(d1)
         return d1
 

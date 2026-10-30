@@ -36,10 +36,15 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
         history_id = self.dataset_populator.new_history(f"History for discarded datasets {uuid4()}")
         test_datasets = self._build_test_items(resource_name="Dataset")
         dataset_ids = self._create_datasets_in_history_with(history_id, test_datasets)
+        usage_before = self.dataset_populator.get_usage_for(None)["total_disk_usage"]
 
         self._assert_monitoring_and_cleanup_for_discarded_resource(
             "datasets", test_datasets, dataset_ids, delete_resource_uri=f"histories/{history_id}/contents"
         )
+
+        # The cleanup decreases the user's disk usage by the size of the purged datasets
+        expected_usage = usage_before - sum(item.size for item in test_datasets)
+        assert self.dataset_populator.get_usage_for(None)["total_disk_usage"] == expected_usage
 
     @requires_new_history
     @skip_without_tool("cat_data_and_sleep")

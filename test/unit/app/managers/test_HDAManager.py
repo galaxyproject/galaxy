@@ -34,6 +34,18 @@ class HDATestCase(BaseTestCase):
         dataset1 = self.dataset_manager.create()
         return self.hda_manager.create(history=history1, dataset=dataset1)
 
+    def _create_charged_hda(self, size: int):
+        """Create an HDA of a finished dataset of `size` bytes, counted in its owner's disk usage."""
+        owner = self.user_manager.create(**user2_data)
+        history1 = self.history_manager.create(name="history1", user=owner)
+        dataset1 = self.dataset_manager.create()
+        item1 = self.hda_manager.create(history=history1, dataset=dataset1)
+        dataset1.state = model.Dataset.states.OK
+        dataset1.total_size = size
+        owner.disk_usage = size
+        self.trans.sa_session.commit()
+        return owner, item1
+
 
 # =============================================================================
 class TestHDAManager(HDATestCase):
@@ -162,11 +174,7 @@ class TestHDAManager(HDATestCase):
 
     def test_purge_not_allowed(self):
         self.trans.app.config.allow_user_dataset_purge = False
-
-        owner = self.user_manager.create(**user2_data)
-        history1 = self.history_manager.create(name="history1", user=owner)
-        dataset1 = self.dataset_manager.create()
-        item1 = self.hda_manager.create(history=history1, dataset=dataset1)
+        owner, item1 = self._create_charged_hda(size=10)
 
         self.log("should raise an error when purging an hda if config does not allow")
         assert not item1.purged
@@ -174,6 +182,94 @@ class TestHDAManager(HDATestCase):
             self.hda_manager.purge(item1)
         assert not item1.deleted
         assert not item1.purged
+        assert owner.disk_usage == 10
+
+    def test_purge_adjusts_usage_with_purged_flag(self):
+        self.trans.app.config.allow_user_dataset_purge = True
+        owner, item1 = self._create_charged_hda(size=10)
+
+        self.log("should decrease the usage in the same commit that marks the hda purged")
+        with mock.patch.object(
+            self.hda_manager.dataset_manager, "purge", side_effect=OSError("Failed to remove the dataset files")
+        ):
+            with self.assertRaises(OSError):
+                self.hda_manager.purge(item1)
+        # discard what wasn't committed before the failure
+        self.trans.sa_session.rollback()
+        assert item1.purged
+        assert owner.disk_usage == 0
+
+    def test_history_purge_decreases_usage_before_marking_history_purged(self):
+        self.trans.app.config.allow_user_dataset_purge = True
+        self.trans.app.config.enable_celery_tasks = True
+        owner, item1 = self._create_charged_hda(size=10)
+
+        self.log("should keep the usage right when it is recalculated before the dataset purge tasks run")
+        with mock.patch("galaxy.celery.tasks.purge_hda.delay") as purge_hda:
+            self.history_manager.purge(item1.history)
+        owner.calculate_and_set_disk_usage(model.Dataset.object_store)
+        assert owner.disk_usage == 0
+        for task_call in purge_hda.call_args_list:
+            self.hda_manager._purge(self.hda_manager.by_id(task_call.kwargs["hda_id"]))
+        assert owner.get_disk_usage() == 0
+
+    def test_copy_to_another_user_charges_them(self):
+        self.trans.app.config.allow_user_dataset_purge = True
+        owner, item1 = self._create_charged_hda(size=10)
+        other_user = self.user_manager.create(**user3_data)
+        other_history = self.history_manager.create(name="other_history", user=other_user)
+
+        self.log("should charge the user receiving the copy, and a recalculation should agree")
+        copy = self.hda_manager.copy(item1, history=other_history)
+        assert other_user.get_disk_usage() == 10
+        other_user.calculate_and_set_disk_usage(model.Dataset.object_store)
+        assert other_user.get_disk_usage() == 10
+
+        self.log("should charge a second copy of the same dataset only once")
+        second_copy = self.hda_manager.copy(item1, history=other_history)
+        assert other_user.get_disk_usage() == 10
+
+        self.log("should bring the usage back to 0 when the copies are purged")
+        self.hda_manager.purge(copy)
+        self.hda_manager.purge(second_copy)
+        assert other_user.get_disk_usage() == 0
+        assert owner.get_disk_usage() == 10
+
+    def test_copy_of_library_dataset_charges_nothing(self):
+        owner, item1 = self._create_charged_hda(size=10)
+        ldda = model.LibraryDatasetDatasetAssociation(dataset=item1.dataset, name="in_library")
+        self.trans.sa_session.add(ldda)
+        self.trans.sa_session.commit()
+        other_user = self.user_manager.create(**user3_data)
+        other_history = self.history_manager.create(name="other_history", user=other_user)
+
+        self.log("should not charge a copy of a dataset in a library, and a recalculation should agree")
+        self.hda_manager.copy(item1, history=other_history)
+        assert other_user.get_disk_usage() == 0
+        other_user.calculate_and_set_disk_usage(model.Dataset.object_store)
+        assert other_user.get_disk_usage() == 0
+
+    def test_history_copy_to_another_user_charges_collection_elements(self):
+        owner, item1 = self._create_charged_hda(size=10)
+        collection = model.DatasetCollection(collection_type="list")
+        model.DatasetCollectionElement(collection=collection, element=item1, element_identifier="1", element_index=0)
+        hdca = model.HistoryDatasetCollectionAssociation(history=item1.history, collection=collection, hid=2)
+        item1.deleted = True
+        self.trans.sa_session.add(hdca)
+        self.trans.sa_session.commit()
+        other_user = self.user_manager.create(**user3_data)
+
+        self.log("should charge an element that the copy of the active datasets left out, and only once")
+        item1.history.copy(target_user=other_user)
+        assert other_user.get_disk_usage() == 10
+        other_user.calculate_and_set_disk_usage(model.Dataset.object_store)
+        assert other_user.get_disk_usage() == 10
+
+    def test_copy_to_the_same_user_charges_nothing(self):
+        owner, item1 = self._create_charged_hda(size=10)
+        history2 = self.history_manager.create(name="history2", user=owner)
+        self.hda_manager.copy(item1, history=history2)
+        assert owner.get_disk_usage() == 10
 
     def test_ownable(self):
         owner = self.user_manager.create(**user2_data)

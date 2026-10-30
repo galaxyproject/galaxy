@@ -446,9 +446,12 @@ def build_workflow_run_configs(
                 if not added_to_history and add_to_history and content.history != history:
                     if isinstance(content, HistoryDatasetCollectionAssociation):
                         content = content.copy(element_destination=history, flush=False)
+                        copied_hdas = content.dataset_instances
                     else:
                         content = content.copy(flush=False)
+                        copied_hdas = [content]
                     history.stage_addition(content)
+                    history.charge_added_datasets(copied_hdas)
                 input_dict["content"] = content
             except AssertionError:
                 raise exceptions.ItemAccessibilityException(

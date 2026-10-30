@@ -76,7 +76,8 @@ class JobImportHistoryArchiveWrapper:
             with model_store.target_history(default_history=job.history) as new_history:
                 jiha.history = new_history
                 self.sa_session.commit()
-                model_store.perform_import(new_history, job=job, new_history=True)
+                object_tracker = model_store.perform_import(new_history, job=job, new_history=True)
+                object_tracker.charge_imported_datasets(new_history)
                 # Cleanup.
                 if os.path.exists(archive_dir):
                     shutil.rmtree(archive_dir)

@@ -510,7 +510,9 @@ class DatasetCollectionManager:
             dataset_instance_attributes=dataset_instance_attributes,
             target_user=trans.get_user(),
         )
-        if not copy_elements:
+        if copy_elements:
+            parent.charge_added_datasets(new_hdca.dataset_instances)
+        else:
             parent.add_dataset_collection(new_hdca)
         trans.sa_session.commit()
         return new_hdca

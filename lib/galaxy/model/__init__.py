@@ -16,7 +16,10 @@ import os
 import pwd
 import random
 import string
-from collections import defaultdict
+from collections import (
+    Counter,
+    defaultdict,
+)
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import (
@@ -124,12 +127,16 @@ from sqlalchemy.orm import (
     registry,
     relationship,
     remote,
+    scoped_session,
     validates,
 )
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_keyed_dict
 from sqlalchemy.orm.session import Session
-from sqlalchemy.sql.expression import FromClause
+from sqlalchemy.sql.expression import (
+    ClauseElement,
+    FromClause,
+)
 from typing_extensions import (
     deprecated,
     Literal,
@@ -192,6 +199,7 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.tool_util.output_checker import AnyJobMessage
 from galaxy.util import (
+    chunk_iterable,
     directory_hash_id,
     enum_values,
     hex_to_lowercase_alphanum,
@@ -721,8 +729,21 @@ def calculate_user_disk_usage_statements(user_id: int, quota_source_map: "QuotaS
     default_usage = UNIQUE_DATASET_USER_USAGE.format(
         and_dataset_condition=default_usage_dataset_condition, user_objects_scheme=USER_OBJECTS_SCHEME
     )
-    default_usage = f"""
+    if for_sqlite:
+        default_usage = f"""
 UPDATE galaxy_user SET disk_usage = ({default_usage})
+WHERE id = :id
+"""
+    else:
+        # Apply the difference between the recalculated usage and the stored usage, both read from the
+        # statement's snapshot, instead of overwriting the stored usage. If a concurrent purge or job
+        # adjusts the usage while this runs, the UPDATE waits for it and then applies the difference on
+        # top of the adjusted value, so the adjustment isn't lost and no lock is held during the scan.
+        default_usage = f"""
+UPDATE galaxy_user SET disk_usage = COALESCE(disk_usage, 0) + (
+    ({default_usage})
+    - COALESCE((SELECT snapshot.disk_usage FROM galaxy_user AS snapshot WHERE snapshot.id = :id), 0)
+)
 WHERE id = :id
 """
     params: dict[str, Any] = {"id": user_id}
@@ -751,12 +772,19 @@ FROM new
             AND new.quota_source_label = old.quota_source_label
 """
         else:
+            # Apply the difference to the stored usage, see the default usage statement above
             statement = f"""
 INSERT INTO user_quota_source_usage(user_id, quota_source_label, disk_usage)
 VALUES(:id, :label, ({label_usage}))
 ON CONFLICT
 ON constraint uqsu_unique_label_per_user
-DO UPDATE SET disk_usage = excluded.disk_usage
+DO UPDATE SET disk_usage = COALESCE(user_quota_source_usage.disk_usage, 0) + (
+    excluded.disk_usage
+    - COALESCE((
+        SELECT snapshot.disk_usage FROM user_quota_source_usage AS snapshot
+        WHERE snapshot.user_id = :id AND snapshot.quota_source_label = :label
+    ), 0)
+)
 """
         statements.append(
             (statement, {"id": user_id, "label": quota_source_label, "include_object_store_ids": object_store_ids})
@@ -851,6 +879,8 @@ class User(Base, Dictifiable, RepresentById):
     deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     disk_usage: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0), index=True)
+    # Sum of the adjustments to disk_usage not flushed yet, see adjust_total_disk_usage
+    _pending_disk_usage_delta = 0
     # Column("person_metadata", JSONType),  # TODO: add persistent, configurable metadata rep for workflow creator
     active: Mapped[bool] = mapped_column(index=True, default=True)
     activation_token: Mapped[Optional[str]] = mapped_column(TrimmedString(64), index=True)
@@ -1049,12 +1079,20 @@ class User(Base, Dictifiable, RepresentById):
                     roles.append(role)
         return roles
 
+    @property
+    def _has_pending_disk_usage_adjustment(self) -> bool:
+        """Whether disk_usage holds an adjustment that is written when the user is flushed."""
+        return isinstance(self.__dict__.get("disk_usage"), ClauseElement)
+
     def get_disk_usage(self, nice_size=False, quota_source_label=None):
         """
         Return byte count of disk space used by user or a human-readable
         string if `nice_size` is `True`.
         """
         if quota_source_label is None:
+            if self._has_pending_disk_usage_adjustment:
+                # Write the pending adjustment so the value can be read
+                required_object_session(self).flush([self])
             rval = 0
             if self.disk_usage is not None:
                 rval = self.disk_usage
@@ -1086,23 +1124,72 @@ WHERE user_id = :user_id and quota_source_label = :label
 
     total_disk_usage = property(get_disk_usage, set_disk_usage)
 
+    def sole_dataset_sizes(self, hdas: Iterable["HistoryDatasetAssociation"]) -> dict["Dataset", int]:
+        """
+        Return the size of each dataset of the HDAs that counts towards this user's disk usage only through them:
+        the user has no other HDA of it that isn't purged, and it isn't in a library. That is what adding the HDAs
+        to the user's histories charges, and what purging them frees.
+
+        Purged HDAs and outputs of jobs that haven't finished count nothing, the latter are charged when their job
+        finishes.
+        """
+        hdas = [hda for hda in hdas if not hda.purged]
+        datasets = {
+            hda.dataset for hda in hdas if not hda.dataset.purged and hda.dataset.state not in Dataset.uncharged_states
+        }
+        if not datasets:
+            return {}
+        session = required_object_session(self)
+        holders = dataset_holders(session, datasets, exclude=hdas, user=self)
+        sole_datasets = {dataset for dataset in datasets if not holders[dataset]}
+        sole_datasets -= datasets_in_libraries(session, sole_datasets)
+        # Unlike get_total_size(), set_total_size() doesn't commit, the callers may still be building the HDAs
+        return {
+            dataset: int(dataset.total_size if dataset.total_size is not None else dataset.set_total_size())
+            for dataset in sole_datasets
+        }
+
+    def adjust_disk_usage_for_datasets(
+        self, sizes: dict["Dataset", int], sign: Literal[1, -1] = 1, preserve_update_time: bool = False
+    ) -> None:
+        """Increase (or with `sign` -1 decrease) the disk usage by the sizes, adjusting each quota source once."""
+        usage_by_quota_source: Counter[Optional[str]] = Counter()
+        for dataset, size in sizes.items():
+            quota_source_info = dataset.quota_source_info
+            if quota_source_info.use:
+                usage_by_quota_source[quota_source_info.label] += size
+        for label, usage in usage_by_quota_source.items():
+            self.adjust_total_disk_usage(sign * usage, label, preserve_update_time=preserve_update_time)
+
     def adjust_total_disk_usage(self, amount, quota_source_label, preserve_update_time: bool = False):
         assert amount is not None
         if amount != 0:
             if quota_source_label is None:
-                if preserve_update_time:
-                    # Use explicit SQL UPDATE to preserve update_time (avoids triggering onupdate=now)
+                if not inspect(self).has_identity:
+                    # Not in the database yet, the usage is written when the user is flushed
+                    self.disk_usage = (self.disk_usage or 0) + amount
+                elif preserve_update_time:
+                    # Update right away, setting update_time explicitly: a flush would trigger onupdate=now
                     session = required_object_session(self)
                     session.execute(
                         update(User)
                         .where(User.id == self.id)
-                        .values(
-                            disk_usage=User.disk_usage + amount,
-                            update_time=self.update_time,
-                        )
+                        .values(disk_usage=func.coalesce(User.disk_usage, 0) + amount, update_time=self.update_time)
+                        .execution_options(synchronize_session=False)
                     )
+                    if not self._has_pending_disk_usage_adjustment:
+                        # Reload the value on the next read (expiring would drop a pending adjustment)
+                        session.expire(self, ["disk_usage"])
                 else:
-                    self.disk_usage = (self.disk_usage or 0) + amount
+                    # Increment in the database rather than in Python, so concurrent adjustments (job finish,
+                    # purges in celery tasks) don't overwrite each other: the flush writes
+                    # `disk_usage = coalesce(disk_usage, 0) + delta`. Adjustments before the flush add up
+                    # to the same delta, so they cost a single UPDATE.
+                    if self._has_pending_disk_usage_adjustment:
+                        self._pending_disk_usage_delta += amount
+                    else:
+                        self._pending_disk_usage_delta = amount
+                    self.disk_usage = func.coalesce(User.disk_usage, 0) + self._pending_disk_usage_delta
             else:
                 # else would work on newer sqlite - 3.24.0
                 sa_session = required_object_session(self)
@@ -1116,6 +1203,11 @@ SELECT old.id, new.user_id, new.quota_source_label, COALESCE(old.disk_usage + :a
 FROM new LEFT JOIN user_quota_source_usage AS old ON new.user_id = old.user_id AND NEW.quota_source_label = old.quota_source_label;
 """
                 else:
+                    # Lock the user row before the label row, in the same order as a recalculation and as an
+                    # adjustment of the default source in the same transaction, so they can't deadlock
+                    sa_session.execute(
+                        text("SELECT id FROM galaxy_user WHERE id = :user_id FOR UPDATE"), {"user_id": self.id}
+                    )
                     sql = """
 INSERT INTO user_quota_source_usage(user_id, disk_usage, quota_source_label)
 VALUES(:user_id, :amount, :label)
@@ -1320,7 +1412,7 @@ ON CONFLICT
         rval: list[UserQuotaBasicUsage] = [
             UserQuotaBasicUsage(
                 quota_source_label=None,
-                total_disk_usage=float(self.disk_usage or 0),
+                total_disk_usage=float(self.get_disk_usage()),
             )
         ]
         used_labels.add(None)
@@ -1351,7 +1443,7 @@ ON CONFLICT
         if quota_source_label is None:
             rval = UserQuotaBasicUsage(
                 quota_source_label=None,
-                total_disk_usage=float(self.disk_usage or 0),
+                total_disk_usage=float(self.get_disk_usage()),
             )
         else:
             quota_source_usage = self.quota_source_usage_for(quota_source_label)
@@ -1715,6 +1807,15 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     @property
     def finished(self):
         return self.state in self.finished_states
+
+    def output_hdas(self) -> list["DatasetInstance"]:
+        """Return the job's output datasets, including the elements of its output collections."""
+        output_hdas: list[DatasetInstance] = [assoc.dataset for assoc in self.output_datasets]
+        for collection_assoc in self.output_dataset_collection_instances:
+            output_hdas.extend(collection_assoc.dataset_collection_instance.dataset_instances)
+        for implicit_collection_assoc in self.output_dataset_collections:
+            output_hdas.extend(implicit_collection_assoc.dataset_collection.dataset_instances)
+        return output_hdas
 
     def copy_from_job(self, job: "Job", copy_outputs: bool = False):
         self.copied_from_job_id = job.id
@@ -3409,6 +3510,65 @@ class HistoryAudit(Base):
             session.execute(q)
 
 
+def dataset_holders(
+    session: Union[Session, scoped_session],
+    datasets: Iterable["Dataset"],
+    exclude: Iterable["HistoryDatasetAssociation"] = (),
+    user: Optional["User"] = None,
+) -> dict["Dataset", set[int]]:
+    """
+    Return the ids of the users with an HDA of each dataset that isn't purged or in `exclude`, only `user` if given.
+
+    Reads the HDAs in one query per 1000 datasets rather than loading the history of every HDA of every dataset,
+    which takes a query per HDA for a dataset copied into many users' histories. As loading them would, it sees
+    the HDAs and changes in the session that aren't flushed yet: the session doesn't autoflush.
+    """
+    HDA = HistoryDatasetAssociation
+    holders: dict[Dataset, set[int]] = {dataset: set() for dataset in datasets}
+    excluded = set(exclude)
+
+    def add_holder(hda: HistoryDatasetAssociation) -> None:
+        if hda in excluded or hda.purged or hda.dataset not in holders or not hda.history:
+            return
+        holder = hda.history.user
+        if holder and holder.id is not None and (user is None or holder is user):
+            holders[hda.dataset].add(holder.id)
+
+    datasets_by_id = {dataset.id: dataset for dataset in holders if dataset.id is not None}
+    if user is None or user.id is not None:
+        for dataset_ids in chunk_iterable(datasets_by_id):
+            stmt = (
+                select(HDA.id, HDA.dataset_id, History.user_id)
+                .join(History, HDA.history_id == History.id)
+                .where(HDA.dataset_id.in_(dataset_ids), HDA.purged.is_not(true()), History.user_id.is_not(None))
+            )
+            if user is not None:
+                stmt = stmt.where(History.user_id == user.id)
+            for hda_id, dataset_id, holder_id in session.execute(stmt):
+                loaded_hda = session.identity_map.get(session.identity_key(HDA, hda_id))
+                if loaded_hda is not None:
+                    # Its state in the session may differ from the database
+                    add_holder(loaded_hda)
+                else:
+                    holders[datasets_by_id[dataset_id]].add(holder_id)
+    for obj in session.new:
+        if isinstance(obj, HDA):
+            add_holder(obj)
+    return holders
+
+
+def datasets_in_libraries(session: Union[Session, scoped_session], datasets: Iterable["Dataset"]) -> set["Dataset"]:
+    """Return the datasets with a library dataset, reading them in one query per 1000 datasets."""
+    LDDA = LibraryDatasetDatasetAssociation
+    datasets = set(datasets)
+    in_libraries = {obj.dataset for obj in session.new if isinstance(obj, LDDA) and obj.dataset in datasets}
+    datasets_by_id = {dataset.id: dataset for dataset in datasets if dataset.id is not None}
+    for dataset_ids in chunk_iterable(datasets_by_id):
+        stmt = select(LDDA.dataset_id).where(LDDA.dataset_id.in_(dataset_ids)).distinct()
+        in_libraries.update(datasets_by_id[dataset_id] for dataset_id in session.scalars(stmt) if dataset_id)
+    return in_libraries
+
+
 class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable, UsesCreateAndUpdateTime):
     __tablename__ = "history"
     __table_args__ = (Index("ix_history_slug", "slug", mysql_length=200),)
@@ -3586,6 +3746,18 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         )
         self._pending_additions = []
 
+    def charge_added_datasets(self, hdas: Iterable["DatasetInstance"]) -> None:
+        """
+        Increase the user's disk usage by the datasets of HDAs just added to this history, such as copies of
+        another user's datasets. A dataset counts once, and not at all if the user already had it.
+
+        Outputs of jobs that haven't finished are skipped, they are charged when the job finishes.
+        """
+        user = self.user
+        if user:
+            added = [hda for hda in hdas if isinstance(hda, HistoryDatasetAssociation) and hda.history is self]
+            user.adjust_disk_usage_for_datasets(user.sole_dataset_sizes(added))
+
     def _next_hid(self, n=1):
         """
         Generate next_hid from the database in a concurrency safe way:
@@ -3739,10 +3911,12 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             hdas = self.datasets
         else:
             hdas = self.active_datasets
+        new_hdas = []
         for hda in hdas:
             # Copy HDA.
             new_hda = hda.copy(flush=False)
-            new_history.add_dataset(new_hda, set_hid=False, quota=applies_to_quota)
+            new_history.add_dataset(new_hda, set_hid=False, quota=False)
+            new_hdas.append(new_hda)
 
             if target_user:
                 new_hda.copy_item_annotation(db_session, self.user, hda, target_user, new_hda)
@@ -3763,9 +3937,14 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             )
             new_history.add_dataset_collection(new_hdca, set_hid=False)
             db_session.add(new_hdca)
+            # Includes elements that aren't copies of the datasets above, such as deleted ones
+            new_hdas.extend(new_hdca.dataset_instances)
 
             if target_user:
                 new_hdca.copy_item_annotation(db_session, self.user, hdca, target_user, new_hdca)
+
+        if applies_to_quota:
+            new_history.charge_added_datasets(new_hdas)
 
         new_history.hid_counter = self.hid_counter
         db_session.commit()
@@ -4441,6 +4620,10 @@ class Dataset(Base, StorableObject, Serializable):
     states = DatasetState
 
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
+    # Outputs of jobs that haven't finished, which aren't charged to the user's disk usage yet; they are
+    # charged when the job finishes. Unlike non_ready_states, this excludes SETTING_METADATA, which also
+    # applies to existing (already charged) datasets whose metadata is being regenerated.
+    uncharged_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.PAUSED)
     ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
     valid_input_states = tuple(
         set(states.__members__.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA}
@@ -6007,11 +6190,14 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         # Anon users are handled just by their single history size.
         if not user:
             return rval
+        # Outputs of jobs that haven't finished are charged when the job finishes
+        if self.dataset.state in Dataset.uncharged_states:
+            return rval
         # Gets an HDA disk usage, if the user does not already
         #   have an association of the same dataset
         if not self.dataset.library_associations and not self.purged and not self.dataset.purged:
             for hda in self.dataset.history_associations:
-                if hda.id == self.id:
+                if hda is self:
                     continue
                 if not hda.purged and hda.history and hda.user and hda.user == user:
                     break

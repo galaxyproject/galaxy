@@ -1480,6 +1480,12 @@ class ObjectImportTracker:
 
         self.new_history: Optional[model.History] = None
 
+    def charge_imported_datasets(self, history: Optional[model.History]) -> None:
+        """Increase the disk usage of the user of the history the datasets were imported into."""
+        if history:
+            history.charge_added_datasets([*self.hdas_by_key.values(), *self.hdas_by_id.values()])
+            get_object_session(history).commit()
+
     def find_hda(
         self, input_key: ObjectKeyType, hda_id: Optional[int] = None
     ) -> Optional[model.HistoryDatasetAssociation]:
