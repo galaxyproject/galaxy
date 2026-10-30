@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { NavigationGuard } from "vue-router";
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
 
-import { GalaxyApi } from "@/api";
+import { type components, GalaxyApi } from "@/api";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
+
+type SavedVisualization = components["schemas"]["VisualizationShowResponse"];
 
 export interface Props {
     datasetId?: string;
@@ -34,6 +36,9 @@ const visualizationConfig = ref();
 const visualizationTitle = ref<string | undefined>();
 // Only an owner can save in place; for anyone else the plugin creates their own copy.
 const ownedVisualizationId = ref<string | undefined>();
+
+// Held while the viewer can't be loaded; the app's Retry can still load them.
+const awaitingViewer = ref<SavedVisualization>();
 
 // Remount the iframe when its visualization identity changes.
 const frameKey = computed(() => `${props.visualization}:${props.visualizationId ?? props.datasetId}`);
@@ -60,6 +65,20 @@ const confirmDiscard: NavigationGuard = () => {
     }
 };
 
+function showSaved(saved: SavedVisualization) {
+    visualizationConfig.value = saved.latest_revision.config;
+    visualizationTitle.value = saved.title;
+    ownedVisualizationId.value = userStore.matchesCurrentUserId(saved.user_id) ? props.visualizationId : undefined;
+}
+
+watch(currentUser, (user) => {
+    if (user && awaitingViewer.value) {
+        errorMessage.value = "";
+        showSaved(awaitingViewer.value);
+        awaitingViewer.value = undefined;
+    }
+});
+
 onBeforeRouteLeave(confirmDiscard);
 // Switching tab or dataset keeps the same route record, so it arrives as an update.
 onBeforeRouteUpdate(confirmDiscard);
@@ -75,16 +94,13 @@ onMounted(async () => {
         ]);
         if (error) {
             errorMessage.value = error.err_msg;
+        } else if (!data?.latest_revision?.config) {
+            errorMessage.value = "Failed to access visualization details.";
         } else if (currentUser.value === null) {
             errorMessage.value = errorMessageAsString(userError);
-        } else if (data?.latest_revision?.config) {
-            visualizationConfig.value = data.latest_revision.config;
-            visualizationTitle.value = data.title;
-            ownedVisualizationId.value = userStore.matchesCurrentUserId(data.user_id)
-                ? props.visualizationId
-                : undefined;
+            awaitingViewer.value = data;
         } else {
-            errorMessage.value = "Failed to access visualization details.";
+            showSaved(data);
         }
     } else {
         visualizationConfig.value = { dataset_id: props.datasetId };
