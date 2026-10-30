@@ -191,6 +191,14 @@ dataset_details:
     transform_action: '[data-transform-action="${action}"]'
     deferred_source_uri: '.deferred-dataset-source-uri'
 
+# History options > Export Tool References
+citations:
+  selectors:
+    _: '.citation-card'
+    apa_tab: '[data-description="citations apa tab"]'
+    bibtex_tab: '[data-description="citations bibtex tab"]'
+    reference: '${_} .formatted-reference'
+
 object_store_details:
   selectors:
     _: '[aria-labelledby="dataset-details-heading"]'
@@ -336,6 +344,15 @@ history_panel:
       show_button: '.show-history-content-selectors-btn'
       action_button: '.history-contents-list-action-menu-btn'
       action_menu: '.list-action-menu .dropdown-menu'
+
+    # Selection menu modals that apply one picked value to the selected items, keyed by the
+    # menu item's data-description (e.g. "change data type")
+    operation_modal:
+      selectors:
+        _: '[data-description="${operation} modal"]'
+        # Only rendered once the modal's options have loaded
+        item_selector: '${_} .single-item-selector'
+        ok: '${_} .g-modal-confirm-buttons button:last-child'
 
     labels:
       build_pair: "Build Dataset Pair"
