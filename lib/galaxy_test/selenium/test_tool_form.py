@@ -323,6 +323,45 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         self.screenshot("tool_form_map_over_paired_collection_hint")
 
     @selenium_test
+    def test_data_parameter_accepted_formats(self):
+        self.tool_open("column_param")
+        assert sorted(self.tool_form_accepted_formats("input1")) == ["csv", "tabular"]
+        self.screenshot("tool_form_data_accepted_formats")
+
+    @selenium_test
+    def test_form_element_values(self):
+        self.tool_open("simple_constructs")
+        defaults = {
+            "booltest": "false",
+            "inttest": "1",
+            "floattest": "1.0",
+            "check_select": "a_check",
+            "drop_select": "A Drop",
+        }
+        assert {name: self.form_element_value(name) for name in defaults} == defaults
+        self.form_element_set_value("booltest", "true")
+        self.form_element_set_value("inttest", "42")
+        self.form_element_set_value("floattest", "2.5")
+        self.form_element_set_value("check_select", ["b_check", "c_check"])
+        self.form_element_set_value("drop_select", "B Drop")
+        assert {name: self.form_element_value(name) for name in defaults} == {
+            "booltest": "true",
+            "inttest": "42",
+            "floattest": "2.5",
+            "check_select": "a_check, b_check, c_check",
+            "drop_select": "B Drop",
+        }
+
+        self.tool_open("gx_color")
+        assert self.form_element_value("parameter") == "#aabbcc"
+        self.form_element_set_value("parameter", "#112233")
+        assert self.form_element_value("parameter") == "#112233"
+
+        self.tool_open("drill_down")
+        self.form_element_set_value("dd", ["a", "b"])
+        assert self.form_element_value("dd") == "a, b"
+
+    @selenium_test
     @flakey
     def test_run_data(self):
         test_path = self.get_filename("1.fasta")

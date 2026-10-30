@@ -461,6 +461,7 @@ edit_dataset_attributes:
     name_input: '[aria-labelledby="dataset-attributes-heading"] input#name'
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
+    attribute_field: '[aria-labelledby="dataset-attributes-heading"] .ui-form-field[data-name]'
     datatypes_tab: '.dataset-edit-datatype-tab'
     permissions_tab: '.dataset-edit-permissions-tab'
     # permission: DATASET_MANAGE_PERMISSIONS or DATASET_ACCESS
@@ -913,6 +914,7 @@ tool_form:
     options: '.tool-dropdown'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[id="form-element-${parameter}"]'
+    parameter_field: 'div.ui-form-element[id="form-element-${parameter}"] .ui-form-field'
     parameter_error: 'div.ui-form-element[id="form-element-${parameter}"] .ui-form-error-text'
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
     parameter_checkbox_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="checkbox"]'
@@ -936,6 +938,8 @@ tool_form:
       selector: //div[@id="form-element-${parameter}"]//button[@data-description="add value"]
     parameter_data_select_dropdown: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect__content-wrapper'
     parameter_batch_info: 'div.ui-form-element[id="form-element-${parameter}"] .info'
+    parameter_data_formats_button: 'div.ui-form-element[id="form-element-${parameter}"] [data-description="accepted formats button"]'
+    parameter_data_format: 'div.ui-form-element[id="form-element-${parameter}"] [data-description="accepted format"]'
 
     repeat_insert: '[data-description="repeat insert"]'
     repeat_insert_named: '[data-description="repeat insert"][data-repeat-name="${name}"]'
