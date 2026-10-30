@@ -2990,8 +2990,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             panel_section_name=panel_section_name,
             form_style="regular" if regular_form else "special",
         )
-        if self.dynamic_tool:
-            kwargs["uuid"] = str(self.dynamic_tool.uuid)
+        if self.dynamic_tool_uuid is not None:
+            kwargs["uuid"] = str(self.dynamic_tool_uuid)
         if getattr(self, "tool_shed", None):
             kwargs["tool_shed_repository"] = ToolShedRepositoryInfo(
                 name=self.repository_name,
