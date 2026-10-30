@@ -107,6 +107,7 @@ export function useWorkflowCardBadges(
         {
             id: "owner-shared",
             label: workflow.value.owner,
+            ariaLabel: `Filter by owner ${workflow.value.owner}`,
             title: `'${workflow.value.owner}' shared this workflow with you. Click to view all workflows shared with you by '${workflow.value.owner}'`,
             icon: faUsers,
             type: "badge",
@@ -117,6 +118,7 @@ export function useWorkflowCardBadges(
         {
             id: "owner-published",
             label: workflow.value.owner,
+            ariaLabel: `Filter by owner ${workflow.value.owner}`,
             title: publishedTitle.value,
             icon: faUser,
             type: "badge",
