@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { defineComponent, ref } from "vue";
 
 import GCollapse from "./GCollapse.vue";
+import GPagination from "./GPagination.vue";
 import GTab from "./GTab.vue";
 import GTabs from "./GTabs.vue";
 
@@ -40,5 +41,21 @@ describe("galaxy-ui v-model", () => {
         await flushPromises();
 
         expect(wrapper.classes()).toContain("g-collapse-open");
+    });
+
+    it("binds the current page both ways on GPagination", async () => {
+        const Parent = defineComponent({
+            components: { GPagination },
+            setup: () => ({ page: ref(2) }),
+            template: `<GPagination v-model="page" :total-rows="50" :per-page="10" />`,
+        });
+        const wrapper = mount(Parent);
+        await flushPromises();
+
+        expect(wrapper.get('[aria-current="page"]').text()).toBe("2");
+
+        await wrapper.get('[aria-label="Go to page 4"]').trigger("click");
+
+        expect((wrapper.vm as unknown as { page: number }).page).toBe(4);
     });
 });
