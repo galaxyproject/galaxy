@@ -45,7 +45,10 @@ from galaxy.tools.parameters.basic import (
 )
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
-from galaxy.workflow.modules import WorkflowModuleInjector
+from galaxy.workflow.modules import (
+    disconnected_required_subworkflow_inputs,
+    WorkflowModuleInjector,
+)
 from galaxy.workflow.resources import get_resource_mapper_function
 
 if TYPE_CHECKING:
@@ -335,6 +338,26 @@ def _get_input_or_not_found(
     return item
 
 
+def _step_name(step: "WorkflowStep") -> str:
+    return str(step.label or step.order_index + 1)
+
+
+def _validate_subworkflow_input_connections(workflow: "Workflow", step_path: tuple[str, ...] = ()) -> None:
+    for step in workflow.steps:
+        if step.type != "subworkflow":
+            continue
+        subworkflow = step.subworkflow
+        assert subworkflow
+        subworkflow_step_path = (*step_path, _step_name(step))
+        disconnected_input_steps = disconnected_required_subworkflow_inputs(step, subworkflow)
+        if disconnected_input_steps:
+            input_names = ", ".join(f"'{_step_name(input_step)}'" for input_step in disconnected_input_steps)
+            raise exceptions.RequestParameterInvalidException(
+                f"{' > '.join(subworkflow_step_path)}: Subworkflow has disconnected required input {input_names}"
+            )
+        _validate_subworkflow_input_connections(subworkflow, subworkflow_step_path)
+
+
 def build_workflow_run_configs(
     trans: "ProvidesHistoryContext", workflow: "Workflow", payload: dict[str, Any]
 ) -> list[WorkflowRunConfig]:
@@ -347,6 +370,7 @@ def build_workflow_run_configs(
         raise exceptions.MessageException("Workflow cannot be run because it does not have any steps")
     if workflow.has_cycles:
         raise exceptions.MessageException("Workflow cannot be run because it contains cycles")
+    _validate_subworkflow_input_connections(workflow)
 
     if "step_parameters" in payload and "parameters" in payload:
         raise exceptions.RequestParameterInvalidException(

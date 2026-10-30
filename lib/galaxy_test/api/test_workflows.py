@@ -5749,10 +5749,30 @@ input_c:
             )
             assert output_filtered["element_count"] == 2, output_filtered
 
-    def test_subworkflow_missing_input_connection_error(self):
-        with self.dataset_populator.test_history() as history_id:
-            summary = self._run_workflow(
-                """
+    def _assert_disconnected_subworkflow_input_rejected(
+        self, workflow_id: str, history_id: str | None, inputs: dict[str, Any], step_path: str, input_name: str
+    ) -> None:
+        jobs_before = self._history_jobs(history_id) if history_id else []
+        history_name = f"disconnected subworkflow input history {uuid4()}"
+        target = {"history_id": history_id} if history_id else {"new_history_name": history_name}
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={**target, "inputs_by": "name", "inputs": inputs},
+            json=True,
+        )
+        self._assert_status_code_is(response, 400)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
+        assert_error_message_contains(
+            response, f"{step_path}: Subworkflow has disconnected required input '{input_name}'"
+        )
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        if history_id:
+            assert self._history_jobs(history_id) == jobs_before
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @pytest.mark.parametrize("new_history", [False, True])
+    def test_subworkflow_missing_input_connection_error(self, history_id, new_history):
+        workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs: []
 steps:
@@ -5763,19 +5783,97 @@ steps:
         my_input:
           type: data
       steps: []
-""",
-                history_id=history_id,
-                assert_ok=False,
-            )
-            workflow_details = self._invocation_details(summary.workflow_id, summary.invocation_id)
-            assert workflow_details["messages"] == [
-                {
-                    "details": "Subworkflow has disconnected required input.",
-                    "reason": "unexpected_failure",
-                    "workflow_step_id": 0,
-                    "workflow_step_index_path": [0],
-                }
-            ]
+""")
+        self._assert_disconnected_subworkflow_input_rejected(
+            workflow_id, None if new_history else history_id, {}, "subworkflow_step", "my_input"
+        )
+
+    def test_subworkflow_partially_connected_required_input_error(self, history_id):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  parent_input:
+    type: data
+steps:
+  subworkflow_step:
+    in:
+      connected_input: parent_input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        connected_input:
+          type: data
+        disconnected_input:
+          type: data
+      steps:
+        cat:
+          tool_id: cat1
+          in:
+            input1: connected_input
+""")
+        hda = self.dataset_populator.new_dataset(history_id, content="1\n2\n", wait=True)
+        self._assert_disconnected_subworkflow_input_rejected(
+            workflow_id,
+            history_id,
+            {"parent_input": {"src": "hda", "id": hda["id"]}},
+            "subworkflow_step",
+            "disconnected_input",
+        )
+
+    def test_nested_subworkflow_missing_input_connection_error(self, history_id):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  parent_input:
+    type: data
+steps:
+  outer_subworkflow:
+    in:
+      outer_input: parent_input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        outer_input:
+          type: data
+      steps:
+        cat:
+          tool_id: cat1
+          in:
+            input1: outer_input
+        inner_subworkflow:
+          run:
+            class: GalaxyWorkflow
+            inputs:
+              inner_input:
+                type: data
+            steps: []
+""")
+        hda = self.dataset_populator.new_dataset(history_id, content="1\n2\n", wait=True)
+        self._assert_disconnected_subworkflow_input_rejected(
+            workflow_id,
+            history_id,
+            {"parent_input": {"src": "hda", "id": hda["id"]}},
+            "outer_subworkflow > inner_subworkflow",
+            "inner_input",
+        )
+
+    @pytest.mark.parametrize("parameter_type,default", [("boolean", False), ("integer", 0), ("text", "")])
+    def test_run_subworkflow_with_falsy_default_unconnected(self, history_id, parameter_type, default):
+        workflow_id = self._upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+steps:
+  subworkflow_step:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        parameter:
+          type: {parameter_type}
+          optional: false
+          default: {json.dumps(default)}
+      steps: []
+""")
+        response = self._post(f"workflows/{workflow_id}/invocations", data={"history_id": history_id}, json=True)
+        self._assert_status_code_is(response, 200)
 
     def test_run_subworkflow_with_required_input_with_default_unconnected(self):
         """Test subworkflow with required parameter input that has default value but is unconnected.
