@@ -224,7 +224,7 @@ class TestCILogonSpecificFeatures:
         assert "org.cilogon.userinfo" in backend.DEFAULT_SCOPE
         assert "openid" in backend.DEFAULT_SCOPE
         assert "email" in backend.DEFAULT_SCOPE
-        assert "profile" in backend.DEFAULT_SCOPE
+        assert "profile" not in backend.DEFAULT_SCOPE
 
     def test_cilogon_url_authorize_removal(self):
         """Should remove /authorize from CILogon URL for discovery."""
