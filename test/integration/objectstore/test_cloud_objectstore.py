@@ -1,5 +1,8 @@
 from galaxy_test.driver import integration_util
-from ._base import BaseCloudObjectStoreIntegrationTestCase
+from ._base import (
+    BaseCloudObjectStoreIntegrationTestCase,
+    GetDataHeadTests,
+)
 
 TEST_TOOL_IDS = [
     "multi_output",
@@ -10,7 +13,7 @@ TEST_TOOL_IDS = [
 ]
 
 
-class TestCloudObjectStoreIntegration(BaseCloudObjectStoreIntegrationTestCase):
+class TestCloudObjectStoreIntegration(BaseCloudObjectStoreIntegrationTestCase, GetDataHeadTests):
     def test_big_dataset_roundtrip(self):
         # 12 MiB crosses the configured 5 MiB multipart threshold, so this
         # dataset uploads to SeaweedFS through cloudbridge's multipart path.

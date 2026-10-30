@@ -3,16 +3,27 @@ import random
 import string
 import subprocess
 import time
-from typing import Any
+from collections.abc import Callable
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 from unittest import SkipTest
 
 import boto3
+import pytest
 from botocore.client import Config
 from botocore.exceptions import (
     BotoCoreError,
     ClientError,
 )
 
+from galaxy.exceptions import ObjectNotFound
+from galaxy.model import (
+    Dataset,
+    HistoryDatasetAssociation,
+)
+from galaxy.objectstore import ObjectStore
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from galaxy_test.driver.integration_util import (
@@ -21,6 +32,9 @@ from galaxy_test.driver.integration_util import (
     docker_rm,
     docker_run,
 )
+
+if TYPE_CHECKING:
+    from galaxy.app import UniverseApplication
 
 OBJECT_STORE_HOST = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_HOST", "127.0.0.1")
 # Each pytest-xdist worker publishes its object store container on its own host port. The default
@@ -291,6 +305,48 @@ class BaseCloudObjectStoreIntegrationTestCase(BaseSeaweedFSObjectStoreIntegratio
 
     object_store_config = CLOUD_OBJECT_STORE_CONFIG
     object_store_config_filename = "object_store_conf.yml"
+
+
+class GetDataHeadTests:
+    """``get_data_head`` against SeaweedFS; mix into a SeaweedFS-backed test case."""
+
+    dataset_populator: DatasetPopulator
+    upload_dataset_and_wait_for_hash: Callable[..., dict[str, Any]]
+
+    if TYPE_CHECKING:
+
+        @property
+        def _app(self) -> "UniverseApplication": ...
+
+    def _get_data_head_store(self) -> ObjectStore:
+        """The store whose own handling of a missing object is tested."""
+        return self._app.object_store
+
+    def _upload_for_head(self, content: str) -> Dataset:
+        history_id = self.dataset_populator.new_history()
+        hda = self.upload_dataset_and_wait_for_hash(history_id, content=content)
+        hda_model = self._app.model.session.get(HistoryDatasetAssociation, self._app.security.decode_id(hda["id"]))
+        assert hda_model and hda_model.dataset
+        return hda_model.dataset
+
+    def test_get_data_head_reads_the_bucket_instead_of_a_stale_empty_cached_copy(self):
+        dataset = self._upload_for_head("head-me")
+        cache_path = self._app.object_store.get_filename(dataset, sync_cache=False)
+        # As left by creating the dataset on a host that did not write its data.
+        open(cache_path, "wb").close()
+
+        assert self._app.object_store.get_data_head(dataset, 4) == b"head"
+        assert self._app.object_store.get_data_head(dataset, 100) == b"head-me\n"
+        assert os.path.getsize(cache_path) == 0
+
+    def test_get_data_head_reads_nothing_from_an_empty_dataset(self):
+        dataset = self._upload_for_head("")
+
+        assert self._app.object_store.get_data_head(dataset, 10) == b""
+
+    def test_get_data_head_fails_for_a_missing_object(self):
+        with pytest.raises(ObjectNotFound):
+            self._get_data_head_store().get_data_head(Dataset(), 10)
 
 
 class BaseAzureObjectStoreIntegrationTestCase(
