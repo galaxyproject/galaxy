@@ -1388,6 +1388,25 @@ class InputDataCollectionModule(InputModule):
         return state_as_dict
 
 
+def _is_default_option(value, default_value) -> bool:
+    """Whether a select option starts selected for a parameter default (any entry of a list default)."""
+    if isinstance(default_value, list):
+        return value in default_value
+    return default_value is not None and value == default_value
+
+
+def _parameter_def_list_to_options(parameter_value, default_value=None) -> list[OptionDict]:
+    options: list[OptionDict] = []
+    for item in parameter_value:
+        if isinstance(item, dict):
+            value = item["value"]
+            label = item["label"] if "label" in item else value
+        else:
+            value = label = item
+        options.append({"label": label, "value": value, "selected": _is_default_option(value, default_value)})
+    return options
+
+
 class InputParameterModule(WorkflowModule):
     POSSIBLE_PARAMETER_TYPES = POSSIBLE_PARAMETER_TYPES
     type = "parameter_input"
@@ -1723,14 +1742,11 @@ class InputParameterModule(WorkflowModule):
                             )
 
             options: list[OptionDict] | None = None
-            if isinstance(default_value, list):
-                default_values = [str(value) for value in default_value]
-            else:
-                default_values = [default_value] if default_value else []
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
                 options = [
-                    {"label": o[0], "value": o[1], "selected": o[1] in default_values} for o in static_options[0]
+                    {"label": o[0], "value": o[1], "selected": _is_default_option(o[1], default_value)}
+                    for o in static_options[0]
                 ]
             elif static_options:
                 # Intersection based on values of multiple option connections.
@@ -1743,7 +1759,7 @@ class InputParameterModule(WorkflowModule):
                     {
                         "label": ", ".join(labels),
                         "value": value,
-                        "selected": value in default_values,
+                        "selected": _is_default_option(value, default_value),
                     }
                     for value, labels in collapsed_labels.items()
                 ]
@@ -1778,6 +1794,10 @@ class InputParameterModule(WorkflowModule):
             parameter_kwds["multiple"] = parameter_def["multiple"]
 
         is_text = parameter_type == "text"
+        if is_text and default_value is not None and parameter_def.get("multiple"):
+            default_values = default_value if isinstance(default_value, list) else [default_value]
+            if any(not isinstance(value, str) for value in default_values):
+                raise ParameterValueError("the attribute 'value' must be text", "input")
         restricted_inputs = False
 
         # Really is just an attempt - tool module may not be available (small problem), get_options may really depend on other
@@ -1790,26 +1810,9 @@ class InputParameterModule(WorkflowModule):
                 restricted_inputs = True
                 parameter_kwds["options"] = restricted_options
 
-        def _parameter_def_list_to_options(parameter_value):
-            options = []
-            for item in parameter_value:
-                option = {}
-                if isinstance(item, dict):
-                    value = item["value"]
-                    option["value"] = value
-                    if "label" in item:
-                        option["label"] = item["label"]
-                    else:
-                        option["label"] = value
-                else:
-                    option["value"] = item
-                    option["label"] = item
-                options.append(option)
-            return options
-
         if is_text and not restricted_inputs and parameter_def.get("restrictions"):
             restriction_values = parameter_def.get("restrictions")
-            parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values)
+            parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values, default_value)
             restricted_inputs = True
 
         # Pass bounds as min/max so the run form gets them; the parameter adds an equivalent implicit range validator.
@@ -1828,9 +1831,7 @@ class InputParameterModule(WorkflowModule):
         parameter_class = parameter_types[client_parameter_type]
 
         if default_value_set:
-            if client_parameter_type == "select":
-                parameter_kwds["selected"] = default_value
-            else:
+            if client_parameter_type != "select":
                 parameter_kwds["value"] = default_value
             if parameter_type == "boolean":
                 parameter_kwds["checked"] = default_value

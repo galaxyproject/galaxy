@@ -10681,7 +10681,7 @@ steps:
         assert [value for _, value, selected in options if selected] == ["ex2", "--ex3"]
 
     @skip_without_tool("multi_select_numeric")
-    def test_value_restriction_selects_multiple_numeric_text_list_default(self):
+    def test_value_restriction_rejects_multiple_numeric_text_list_default(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
@@ -10696,10 +10696,10 @@ steps:
       select_numeric: values
 """)
         with self.dataset_populator.test_history() as history_id:
-            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
-        (runtime_input,) = run_workflow["steps"][0]["inputs"]
-        assert runtime_input["value"] == ["1", "2"]
-        assert [value for _, value, selected in runtime_input["options"] if selected] == ["1", "2"]
+            response = self._get(f"workflows/{workflow_id}/download", data={"style": "run", "history_id": history_id})
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Workflow step 'values' cannot be run")
+        assert_error_message_contains(response, "the attribute 'value' must be text")
 
     def test_value_restriction_with_select_from_subworkflow_input(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
@@ -10819,6 +10819,67 @@ inputs:
     max: {maximum}
 steps: []
 """)
+
+    def test_value_restriction_static_default_selected(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  single_text:
+    type: text
+    restrictions: [a, b, c]
+    default: b
+  multiple_text:
+    type: [text]
+    restrictions: [a, b, c]
+    default: [b, c]
+  labeled_text:
+    type: text
+    restrictions:
+      - {value: a, label: A}
+      - {value: b, label: B}
+    default: b
+  empty_text:
+    type: text
+    restrictions:
+      - {value: a, label: A}
+      - {value: "", label: Empty}
+    default: ""
+steps: {}
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        single_input, multiple_input, labeled_input, empty_input = (step["inputs"][0] for step in run_workflow["steps"])
+        assert single_input["value"] == "b"
+        assert single_input["options"] == [["a", "a", False], ["b", "b", True], ["c", "c", False]]
+        assert multiple_input["value"] == ["b", "c"]
+        assert multiple_input["options"] == [["a", "a", False], ["b", "b", True], ["c", "c", True]]
+        assert labeled_input["value"] == "b"
+        assert labeled_input["options"] == [["A", "a", False], ["B", "b", True]]
+        assert empty_input["value"] == ""
+        assert empty_input["options"] == [["A", "a", False], ["Empty", "", True]]
+
+    @skip_without_tool("collection_creates_pair_format")
+    def test_value_restriction_connected_empty_default_selected(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+  out_format:
+    type: text
+    restrictOnConnections: true
+    default: ""
+steps:
+  split:
+    tool_id: collection_creates_pair_format
+    in:
+      input1: input1
+      out_format: out_format
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        runtime_input = run_workflow["steps"][1]["inputs"][0]
+        assert runtime_input["value"] == ""
+        assert runtime_input["options"] == [["do not change", "", True], ["interval", "interval", False]]
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):

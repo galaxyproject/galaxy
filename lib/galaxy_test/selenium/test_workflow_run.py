@@ -848,6 +848,66 @@ steps:
 
     @selenium_test
     @managed_history
+    def test_execution_with_text_default_value_and_static_restrictions(self):
+        self.workflow_run_open_workflow("""
+class: GalaxyWorkflow
+inputs:
+  text_param:
+    type: text
+    default: ex2
+    restrictions:
+      - {value: --ex1, label: Ex1}
+      - {value: ex2, label: Ex2}
+      - {value: --ex3, label: Ex3}
+steps:
+  multi_select:
+    tool_id: multi_select
+    in:
+      select_ex:
+        source: text_param
+""")
+        element = self.components.workflow_run.input_select_field(label="text_param").wait_for_present()
+        assert element.text == "Ex2"
+        self.screenshot("workflow_run_text_static_restrictions_default")
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
+        assert content == "ex2"
+
+    @selenium_test
+    @managed_history
+    def test_execution_with_empty_text_default_among_static_restrictions(self):
+        self.workflow_run_open_workflow("""
+class: GalaxyWorkflow
+inputs:
+  text_param:
+    type: text
+    default: ""
+    restrictions:
+      - {value: a, label: A}
+      - {value: "", label: Empty}
+steps:
+  echo:
+    tool_id: gx_text
+    in:
+      parameter:
+        source: text_param
+""")
+        select_field = self.components.workflow_run.input_select_field(label="text_param")
+        assert select_field.wait_for_present().text == "Empty"
+        # Choosing the empty option again must keep the form submittable.
+        self.select_set_value(select_field.wait_for_present(), "A")
+        self.select_set_value(select_field.wait_for_present(), "Empty")
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        invocation_id = self.workflow_populator.history_invocations(history_id)[0]["id"]
+        invocation = self.workflow_populator.get_invocation(invocation_id)
+        assert invocation["input_step_parameters"]["text_param"]["parameter_value"] == ""
+
+    @selenium_test
+    @managed_history
     def test_execution_with_rules(self):
         history_id = self.workflow_run_and_submit(
             WORKFLOW_WITH_RULES_1,
