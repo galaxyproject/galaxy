@@ -28,7 +28,7 @@ const { server, http } = useServerMock();
 function setupComposable(invStep?: object, summaries: object[] = [], loadOntoEditor = false, invocationFields = {}) {
     const invocation = ref({
         id: "inv1",
-        steps: invStep ? { 0: invStep } : {},
+        steps: invStep ? [{ order_index: 0, ...invStep }] : [],
         inputs: {},
         input_step_parameters: {},
         ...invocationFields,
@@ -45,8 +45,8 @@ const inputAndToolSteps = {
 };
 const scheduledInputAndTool = {
     steps: [
-        { id: "is0", workflow_step_id: 0 },
-        { id: "is1", job_id: "j1" },
+        { id: "is0", order_index: 0, workflow_step_id: 0 },
+        { id: "is1", order_index: 1, job_id: "j1" },
     ],
     inputs: { 0: { id: "d1", src: "hda" } },
 };
@@ -71,6 +71,26 @@ describe("useInvocationGraph — step state", () => {
         const { steps, load } = setupComposable();
         await load();
         expect(steps.value[0]?.state).toBe("queued");
+    });
+
+    it("looks up invocation steps by order_index when imported steps arrive out of order", async () => {
+        const invocation = ref({
+            id: "inv1",
+            steps: [
+                { order_index: 3, job_id: "unrelated" },
+                { order_index: 0, job_id: "target" },
+            ],
+            inputs: {},
+            input_step_parameters: {},
+        } as WorkflowInvocationElementView);
+        const { steps, loadInvocationGraph } = useInvocationGraph(
+            invocation,
+            ref([{ id: "target", model: "Job", states: { error: 1 }, populated_state: "ok" }] as StepJobSummary[]),
+            ref("wf1"),
+            ref(0),
+        );
+        await loadInvocationGraph(false);
+        expect(steps.value[0]?.state).toBe("error");
     });
 
     it("is waiting — invocation step present but no matching job summary", async () => {
@@ -215,7 +235,7 @@ describe.each([
 
         invocation.value = {
             ...invocation.value,
-            steps: [{ id: "is0", state: "failed" }],
+            steps: [{ id: "is0", order_index: 0, state: "failed" }],
         } as WorkflowInvocationElementView;
         await flushPromises();
         expect(steps.value[0]?.state).toBe("error");
@@ -228,7 +248,7 @@ describe.each([
 
         invocation.value = {
             ...invocation.value,
-            steps: [{ id: "is0", job_id: "j1" }],
+            steps: [{ id: "is0", order_index: 0, job_id: "j1" }],
         } as WorkflowInvocationElementView;
         stepsJobsSummary.value = [jobSummary({ running: 1 }, "scheduled")];
         await flushPromises();
@@ -325,7 +345,7 @@ describe.each([
     it("writes nothing to an input step without a value when the polled data is unchanged", async () => {
         workflowSteps.value = { 0: { id: 0, type: "data_input", position: { left: 0, top: 0 } } };
         const { steps, invocation, stepsJobsSummary, load } = setupComposable(
-            { id: "is0", workflow_step_id: 0 },
+            { id: "is0", order_index: 0, workflow_step_id: 0 },
             [],
             loadOntoEditor,
         );

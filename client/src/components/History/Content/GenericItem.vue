@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useIntersectionObserver } from "@vueuse/core";
-import { computed, ref } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import type { HistoryItemSummary } from "@/api";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
@@ -15,15 +15,30 @@ import GenericElement from "./GenericElement.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-const props = defineProps<{
-    itemId: string;
-    itemSrc: string;
-}>();
+const props = withDefaults(
+    defineProps<{
+        itemId: string;
+        itemSrc: string;
+        expanded?: boolean;
+        scrollOnExpand?: boolean;
+    }>(),
+    { expanded: undefined },
+);
+
+const emit = defineEmits<{ (e: "update:expanded", value: boolean): void }>();
 
 const historyStore = useHistoryStore();
 
 const viewCollection = ref(false);
 const expandDataset = ref(false);
+// An item the user just toggled is already in view; only scroll to targets expanded from elsewhere.
+let userToggled = false;
+function setExpanded(value: boolean) {
+    userToggled = true;
+    expandDataset.value = value;
+    emit("update:expanded", value);
+    void nextTick(() => (userToggled = false));
+}
 const view = ref(props.itemSrc === "hdca" ? "collection" : "element");
 
 const providerComponent = computed(() => {
@@ -42,10 +57,45 @@ const providerComponent = computed(() => {
 
 const containerEl = ref<HTMLElement | null>(null);
 const hasBeenVisible = ref(false);
+const contentEl = ref<HTMLElement | null>(null);
+const scrollPending = ref(false);
 const { stop: stopObserver } = useIntersectionObserver(containerEl, ([entry]) => {
     if (entry?.isIntersecting) {
         hasBeenVisible.value = true;
         stopObserver();
+    }
+});
+
+watch(
+    () => props.expanded,
+    (value) => {
+        scrollPending.value = Boolean(value && props.scrollOnExpand && !userToggled);
+        userToggled = false;
+        if (value === undefined) {
+            return;
+        }
+        expandDataset.value = props.itemSrc === "hda" && value;
+        viewCollection.value = props.itemSrc !== "hda" && value;
+        if (value) {
+            // URL targets must load even when they start below the viewport.
+            hasBeenVisible.value = true;
+            if (props.itemSrc === "hdca") {
+                view.value = "element";
+            }
+        }
+    },
+    { immediate: true },
+);
+
+// Wait for the provider to render content: at mount the empty output list may fit
+// entirely in the viewport, making an earlier scroll a no-op.
+watch([contentEl, scrollPending], async ([content, pending]) => {
+    if (content && pending) {
+        await nextTick();
+        if (scrollPending.value) {
+            containerEl.value?.scrollIntoView({ block: "start" });
+            scrollPending.value = false;
+        }
     }
 });
 
@@ -93,7 +143,10 @@ function onViewCollection(collection: any) {
     if (view.value === "collection" && collection.model_class === "HistoryDatasetCollectionAssociation") {
         view.value = "element";
     }
+    userToggled = true;
     viewCollection.value = !viewCollection.value;
+    emit("update:expanded", viewCollection.value);
+    void nextTick(() => (userToggled = false));
 }
 </script>
 
@@ -109,7 +162,7 @@ function onViewCollection(collection: any) {
             auto-refresh>
             <GAlert v-if="error" variant="danger" show>{{ errorMessageAsString(error) }}</GAlert>
             <LoadingSpan v-else-if="loading" message="Loading dataset" />
-            <div v-else>
+            <div v-else ref="contentEl">
                 <ContentItem
                     :id="item.hid ?? item.element_index + 1"
                     add-highlight-btn
@@ -118,7 +171,7 @@ function onViewCollection(collection: any) {
                     :name="item.name || item.element_identifier"
                     :expand-dataset="expandDataset"
                     :is-dataset="item.history_content_type == 'dataset' || item.element_type == 'hda'"
-                    @update:expand-dataset="expandDataset = $event"
+                    @update:expand-dataset="setExpanded"
                     @view-collection="onViewCollection"
                     @delete="onDelete"
                     @toggleHighlights="onHighlight(item)"

@@ -24,7 +24,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "view-step", stepId: number): void;
-    (e: "view-subworkflow-invocation", invocationId: string, stepId: number): void;
+    (e: "view-subworkflow-invocation", invocationId: string, stepId?: number): void;
 }>();
 
 // Create stable computed refs for the composable to avoid re-fetching on every render
@@ -105,7 +105,7 @@ function handleStepClick(stepInfo: any) {
     }
     // If this is a subworkflow step in the path, navigate to that subworkflow invocation
     else if (stepInfo.isSubworkflow && stepInfo.subworkflowInvocationId) {
-        emit("view-subworkflow-invocation", stepInfo.subworkflowInvocationId, 0);
+        emit("view-subworkflow-invocation", stepInfo.subworkflowInvocationId);
     }
     // Otherwise, navigate to the step in the current workflow
     else {

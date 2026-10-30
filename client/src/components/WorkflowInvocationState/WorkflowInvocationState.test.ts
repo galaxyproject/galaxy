@@ -4,20 +4,14 @@ import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
+import HistoryPageView from "../PageEditor/HistoryPageView.vue";
 import WorkflowInvocationState from "./WorkflowInvocationState.vue";
 
 const localVue = getLocalVue();
-
-vi.mock("vue-router", async (importOriginal) => {
-    const actual = (await importOriginal()) as Record<string, unknown>;
-    return {
-        ...actual,
-        useRoute: vi.fn(() => ({})),
-    };
-});
 
 const selectors = {
     invocationSummary: ".invocation-overview",
@@ -162,15 +156,21 @@ vi.mock("@/stores/workflowStore", async () => {
 async function mountWorkflowInvocationState(invocationId: string, isFullPage = false, renderNavigation = false) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
+    const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [{ path: "/:pathMatch(.*)*", component: { template: "<div />" } }],
+    });
+    await router.push(`/workflows/invocations/${invocationId}/reports`);
+    await router.isReady();
 
-    const wrapper = shallowMount(WorkflowInvocationState as object, {
+    const wrapper = shallowMount(WorkflowInvocationState, {
         props: {
             invocationId,
             isFullPage,
         },
-        pinia,
         global: {
             ...localVue,
+            plugins: [pinia, router],
             stubs: renderNavigation ? { BNav: false, BNavItem: false } : {},
         },
     });
@@ -313,3 +313,21 @@ function assertInvocationFetched(count = 1) {
 function assertJobsSummaryFetched(count = 1) {
     expect(mockFetchInvocationJobsSummaryForId).toHaveBeenCalledTimes(count);
 }
+
+it("switches notebook report ids through the route without remounting the invocation", async () => {
+    const wrapper = await mountWorkflowInvocationState(invocationData.id);
+    await wrapper.setProps({ tab: "reports" });
+    const vm = wrapper.vm;
+    const router = wrapper.vm.$router;
+    await router.push({ query: { id: "first-report" } });
+    await flushPromises();
+    expect(wrapper.findComponent(HistoryPageView).props("pageId")).toBe("first-report");
+    await router.push({ query: { id: "second-report" } });
+    await flushPromises();
+    expect(wrapper.findComponent(HistoryPageView).props("pageId")).toBe("second-report");
+    expect(wrapper.vm).toBe(vm);
+    await router.push({ query: {} });
+    await flushPromises();
+    expect(wrapper.findComponent(HistoryPageView).props("pageId")).toBeUndefined();
+    wrapper.unmount();
+});
