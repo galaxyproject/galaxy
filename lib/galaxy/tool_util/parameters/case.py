@@ -684,14 +684,12 @@ def _is_conditional_elided_match(input_name: str, path_segments: list[str]) -> b
 
 
 def validate_test_cases_for_tool_source(
-    tool_source: ToolSource, use_latest_profile: bool = False, name: str | None = None
+    tool_source: ToolSource, use_latest_profile: bool = False, name: str | None = None, profile: str | None = None
 ) -> list[TestCaseStateValidationResult]:
     name = name or f"PydanticModelFor[{tool_source.parse_id()}]"
-    if use_latest_profile:
+    if profile is None:
         # this might get old but it is fine, just needs to be updated when test case changes are made
-        profile = "26.1"
-    else:
-        profile = tool_source.parse_profile()
+        profile = "26.1" if use_latest_profile else tool_source.parse_profile()
     try:
         tool_parameter_bundle = input_models_for_tool_source(tool_source)
         test_cases: list[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]

@@ -7,7 +7,6 @@
 #   the messaging on 17.09 for that. We can't be absolutely sure these would or would not be
 #   problems but we can be more confident they might be.
 # - Ditto for $HOME and the 18.01 migration.
-# - We could try to walk parameters and give more specific advice on structured_like qualification.
 from json import loads
 from typing import (
     Any,
@@ -20,10 +19,21 @@ from typing_extensions import (
     TypedDict,
 )
 
+from galaxy.tool_util.linters._util import (
+    InputReferences,
+    writes_galaxy_json,
+)
 from galaxy.tool_util.parameters.case import validate_test_cases_for_tool_source
 from galaxy.tool_util.parser.factory import get_tool_source
-from galaxy.tool_util.parser.xml import XmlToolSource
-from galaxy.util import Element
+from galaxy.tool_util.parser.output_objects import tool_requests_provided_metadata
+from galaxy.tool_util.parser.xml import (
+    parse_citation_elem,
+    XmlToolSource,
+)
+from galaxy.util import (
+    Element,
+    string_as_bool,
+)
 from galaxy.util.resources import resource_string
 
 TOOL_TOO_NEW = "Target tool has a profile that is too new, consider upgrading this script for the latest advice."
@@ -152,9 +162,6 @@ class ProfileMigration18_01(ProfileMigration):
         if command_el is not None and command_el.get("use_shared_home", None) is None:
             advice_collection.add("18_01_consider_home_directory")
 
-        if _has_matching_xpath(tool_source, ".//outputs/collection[@structured_like]"):
-            advice_collection.add("18_01_consider_structured_like")
-
 
 class ProfileMigration18_09(ProfileMigration):
     from_version = "18.01"
@@ -214,7 +221,7 @@ class ProfileMigration21_09(ProfileMigration):
         for el in _find_all(tool_source, ".//data[@from_work_dir]"):
             from_work_dir = el.get("from_work_dir") or ""
             if from_work_dir != from_work_dir.strip():
-                advice_collection.add("")
+                advice_collection.add("21_09_fix_from_work_dir_whitespace")
 
         tool_type = tool_source.parse_tool_type()
         if tool_type == "data_source":
@@ -255,10 +262,82 @@ class ProfileMigration24_2(ProfileMigration):
     @classmethod
     def advise(cls, advice_collection: AdviceCollection, xml_file: str) -> None:
         tool_source = _xml_tool_source(xml_file)
-        results = validate_test_cases_for_tool_source(tool_source, use_latest_profile=True)
+        results = validate_test_cases_for_tool_source(tool_source, profile="24.2")
         for result in results:
             if result.validation_error:
                 advice_collection.add("24_2_fix_test_case_validation", str(result.validation_error))
+
+
+class ProfileMigration26_0(ProfileMigration):
+    from_version = "24.2"
+    to_version = "26.0"
+
+    @classmethod
+    def advise(cls, advice_collection: AdviceCollection, xml_file: str) -> None:
+        tool_xml = _xml_tool_source(xml_file).xml_tree
+        input_references = InputReferences(tool_xml)
+        for output in tool_xml.findall("./outputs/collection[@structured_like]"):
+            structured_like = str(output.attrib["structured_like"])
+            if input_references.qualified(input_references.normalize(structured_like)):
+                continue
+            qualified_names = sorted(
+                {
+                    r.qualified
+                    for r in input_references.legacy(structured_like)
+                    if r.is_dataset_input and not r.in_repeat
+                }
+            )
+            if qualified_names:
+                advice_collection.add(
+                    "26_0_fix_unqualified_structured_like",
+                    f"Output '{output.attrib.get('name', 'unknown')}' uses structured_like='{structured_like}', "
+                    f"use the qualified name {' or '.join(repr(n) for n in qualified_names)}.",
+                )
+
+
+class ProfileMigration26_1(ProfileMigration):
+    from_version = "26.0"
+    to_version = "26.1"
+
+    @classmethod
+    def advise(cls, advice_collection: AdviceCollection, xml_file: str) -> None:
+        tool_source = _xml_tool_source(xml_file)
+        for citation_el in _find_all(tool_source, "./citations/citation"):
+            try:
+                parse_citation_elem(citation_el)
+            except Exception as e:
+                advice_collection.add(
+                    "26_1_fix_invalid_citation", f"Citation '{(citation_el.text or '').strip()}': {e}"
+                )
+
+        before = validate_test_cases_for_tool_source(tool_source, profile="26.0")
+        after = validate_test_cases_for_tool_source(tool_source, profile="26.1")
+        for index, (old, new) in enumerate(zip(before, after)):
+            # only failures introduced by 26.1; others are reported by 24_2_fix_test_case_validation
+            if new.validation_error and not old.validation_error:
+                advice_collection.add("26_1_fix_empty_multiple_test_value", f"Test {index + 1}: {new.validation_error}")
+
+
+class ProfileMigration26_2(ProfileMigration):
+    from_version = "26.1"
+    to_version = "26.2"
+
+    @classmethod
+    def advise(cls, advice_collection: AdviceCollection, xml_file: str) -> None:
+        tool_source = _xml_tool_source(xml_file)
+        for param in _find_all(tool_source, ".//inputs//param[@type='boolean']"):
+            if string_as_bool(param.get("optional", "false")) and param.get("checked") is None:
+                advice_collection.add(
+                    "26_2_consider_optional_boolean_unset", f"Optional boolean parameter '{param.get('name')}'."
+                )
+
+        if tool_source.parse_tool_type() != "interactive" and writes_galaxy_json(tool_source.xml_tree):
+            outputs, _ = tool_source.parse_outputs(None)
+            if not tool_requests_provided_metadata(tool_source, list(outputs.values())):
+                advice_collection.add("26_2_consider_tool_provided_metadata")
+
+        if any("sep" not in el.attrib for el in _find_all(tool_source, ".//tests//has_n_columns")):
+            advice_collection.add("26_2_consider_tabular_assertion_separator")
 
 
 profile_migrations: list[type[ProfileMigration]] = [
@@ -272,9 +351,12 @@ profile_migrations: list[type[ProfileMigration]] = [
     ProfileMigration23_0,
     ProfileMigration24_0,
     ProfileMigration24_2,
+    ProfileMigration26_0,
+    ProfileMigration26_1,
+    ProfileMigration26_2,
 ]
 
-latest_supported_version = "24.2"
+latest_supported_version = "26.2"
 
 
 def advise_on_upgrade(xml_file: str, to_version: str | None = None) -> list[Advice]:
@@ -288,8 +370,8 @@ def advise_on_upgrade(xml_file: str, to_version: str | None = None) -> list[Advi
     advice_collection = AdviceCollection()
 
     for migration in profile_migrations:
-        if migration.to_version < initial_version:
-            # tool started past here... just skip this advice
+        if migration.to_version <= initial_version:
+            # tool already at or past this profile
             continue
         if migration.to_version > to_version:
             # we're not advising on upgrading past this point
@@ -311,4 +393,4 @@ def _has_matching_xpath(tool_source: XmlToolSource, xpath: str) -> bool:
 
 
 def _find_all(tool_source: XmlToolSource, xpath: str) -> list[Element]:
-    return cast(list[Element], tool_source.xml_tree.findall(".//data[@from_work_dir]") or [])
+    return cast(list[Element], tool_source.xml_tree.findall(xpath) or [])

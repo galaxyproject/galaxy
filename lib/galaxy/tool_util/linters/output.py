@@ -2,15 +2,17 @@
 
 import ast
 import re
-from typing import (
-    NamedTuple,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING
 
 from packaging.version import Version
 
 from galaxy.tool_util.lint import Linter
-from ._util import is_valid_cheetah_placeholder
+from ._util import (
+    InputReference,
+    InputReferences,
+    is_valid_cheetah_placeholder,
+    writes_galaxy_json,
+)
 from ..parser.output_collection_def import NAMED_PATTERNS
 
 if TYPE_CHECKING:
@@ -268,7 +270,7 @@ class OutputsStructuredLikeReference(Linter):
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
-        input_references = _InputReferences(tool_xml)
+        input_references = InputReferences(tool_xml)
         profile = Version(tool_source.parse_profile())
         for output in tool_xml.findall("./outputs/collection[@structured_like]"):
             _check_structured_like_reference(
@@ -282,7 +284,7 @@ class OutputsFormatSourceReference(Linter):
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
-        input_references = _InputReferences(tool_xml)
+        input_references = InputReferences(tool_xml)
         for output in (
             tool_xml.findall("./outputs/data[@format_source]")
             + tool_xml.findall("./outputs/collection[@format_source]")
@@ -297,93 +299,12 @@ class OutputsFormatSourceReference(Linter):
 ELEMENT_SELECTOR = re.compile(r"^([^\[\]]*)\[[^\[\]]*\]$")
 
 
-class _InputReference(NamedTuple):
-    qualified: str
-    legacy: str
-    param_type: str | None
-    in_repeat: bool
-
-    @property
-    def is_collection(self) -> bool:
-        return self.param_type == "data_collection"
-
-    @property
-    def name(self) -> str:
-        return self.qualified.rsplit("|", 1)[-1]
-
-
-class _InputReferences:
-    """Input parameter paths as runtime keys them, with repeat indices normalized to ``_0``.
-
-    ``qualified`` includes every conditional, section and repeat. ``legacy`` is the alias
-    ``visit_input_values`` also records, which omits only the innermost conditional or
-    section name.
-    """
-
-    def __init__(self, tool_xml: "ElementTree") -> None:
-        self.references: list[_InputReference] = []
-        self.repeat_names: set[str] = set()
-        inputs = tool_xml.find("./inputs")
-        if inputs is not None:
-            self._visit(inputs, [], [], False)
-
-    def _visit(self, element: "Element", qualified: list[str], legacy: list[str], in_repeat: bool) -> None:
-        for child in element:
-            name = child.attrib.get("name")
-            if child.tag == "param":
-                name = _param_name(child)
-                if name:
-                    self.references.append(
-                        _InputReference(
-                            "|".join(qualified + [name]),
-                            "|".join(legacy + [name]),
-                            child.attrib.get("type"),
-                            in_repeat,
-                        )
-                    )
-            elif child.tag in ("conditional", "section"):
-                if name:
-                    self._visit(child, qualified + [name], qualified, in_repeat)
-            elif child.tag == "repeat":
-                if name:
-                    self.repeat_names.add(name)
-                    path = qualified + [f"{name}_0"]
-                    self._visit(child, path, path, True)
-            elif child.tag == "when":
-                self._visit(child, qualified, legacy, in_repeat)
-
-    def normalize(self, reference: str) -> str:
-        segments = []
-        for segment in reference.split("|"):
-            base, _, index = segment.rpartition("_")
-            if index.isdigit() and base in self.repeat_names:
-                segment = f"{base}_0"
-            segments.append(segment)
-        return "|".join(segments)
-
-    def qualified(self, reference: str) -> list[_InputReference]:
-        return [r for r in self.references if r.qualified == reference]
-
-    def candidates(self, reference: str) -> list[str]:
-        name = reference.rsplit("|", 1)[-1]
-        return sorted({r.qualified for r in self.references if r.name == name})
-
-
-def _param_name(param: "Element") -> str | None:
-    name: str | None = param.attrib.get("name")
-    if not name:
-        argument: str | None = param.attrib.get("argument")
-        if argument:
-            name = argument.lstrip("-").replace("-", "_")
-    return name
-
-
 def _check_format_source_reference(
     lint_ctx: "LintContext",
     linter_name: str,
     node: "Element",
     ref_value: str,
-    input_references: _InputReferences,
+    input_references: InputReferences,
 ) -> None:
     path = ref_value
     if selector_match := ELEMENT_SELECTOR.match(ref_value):
@@ -392,7 +313,7 @@ def _check_format_source_reference(
     normalized = input_references.normalize(path)
     matches = input_references.qualified(normalized)
     if not matches:
-        matches = [r for r in input_references.references if r.legacy == normalized]
+        matches = input_references.legacy(normalized)
         if matches and node.tag == "collection" and node.find("discover_datasets") is not None:
             # Discovered elements resolve format_source against the job's input associations,
             # which are keyed by qualified name only.
@@ -423,7 +344,7 @@ def _check_structured_like_reference(
     linter_name: str,
     node: "Element",
     ref_value: str,
-    input_references: _InputReferences,
+    input_references: InputReferences,
     profile: Version,
 ) -> None:
     # A reference must resolve both when mapping over (execute.py sliced_input_collection_structure:
@@ -433,7 +354,7 @@ def _check_structured_like_reference(
     normalized = input_references.normalize(ref_value)
     matches = input_references.qualified(normalized)
     if not matches and "|" not in ref_value and profile < Version("26.0"):
-        matches = [r for r in input_references.references if r.legacy == ref_value]
+        matches = input_references.legacy(ref_value)
         _warn_unqualified(lint_ctx, linter_name, node, ref_value, "structured_like", matches, "")
     if not matches:
         _error_unmatched(lint_ctx, linter_name, node, ref_value, "structured_like", input_references, normalized, "")
@@ -444,7 +365,7 @@ def _check_structured_like_reference(
             linter=linter_name,
             node=node,
         )
-    elif not any(r.param_type in ("data", "data_collection") for r in matches):
+    elif not any(r.is_dataset_input for r in matches):
         lint_ctx.error(
             f"Output '{_output_name(node)}' references structured_like='{ref_value}' which is not a dataset or collection input.",
             linter=linter_name,
@@ -463,7 +384,7 @@ def _warn_unqualified(
     node: "Element",
     ref_value: str,
     attr_name: str,
-    matches: list[_InputReference],
+    matches: list[InputReference],
     selector: str,
 ) -> None:
     qualified_names = sorted({r.qualified for r in matches})
@@ -489,7 +410,7 @@ def _error_unmatched(
     node: "Element",
     ref_value: str,
     attr_name: str,
-    input_references: _InputReferences,
+    input_references: InputReferences,
     normalized: str,
     selector: str,
 ) -> None:
@@ -507,10 +428,4 @@ def _has_tool_provided_metadata(tool_xml: "ElementTree") -> bool:
     if (outputs := tool_xml.find("./outputs")) is not None:
         if "provided_metadata_file" in outputs.attrib or "provided_metadata_style" in outputs.attrib:
             return True
-    if (command := tool_xml.find("./command")) is not None:
-        if "galaxy.json" in command.text:
-            return True
-    config = tool_xml.find("./configfiles/configfile[@filename='galaxy.json']")
-    if config is not None:
-        return True
-    return False
+    return writes_galaxy_json(tool_xml)

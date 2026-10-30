@@ -32,8 +32,7 @@ from galaxy.tool_util.parser import (
     ToolOutputCollectionPart,
 )
 from galaxy.tool_util.parser.output_objects import (
-    ToolExpressionOutput,
-    ToolOutput,
+    tool_requests_provided_metadata,
     ToolOutputCollection,
 )
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
@@ -276,27 +275,9 @@ class AbstractTool:
     def _uses_tool_provided_metadata(self, tool_source: "ToolSource") -> bool:
         if not tool_source.allows_tool_provided_metadata():
             return False
-        if self.old_id in ("upload1", "__DATA_FETCH__") or tool_source.parse_provided_metadata_is_explicit():
-            return True
-
-        def output_uses_tool_provided_metadata(output: "ToolOutputBase") -> bool:
-            if isinstance(output, ToolOutputCollection):
-                if any(
-                    description.discover_via == "tool_provided_metadata"
-                    for description in output.structure.dataset_collector_descriptions or []
-                ):
-                    return True
-                return any(output_uses_tool_provided_metadata(child) for child in output.outputs.values())
-
-            assert isinstance(output, (ToolOutput, ToolExpressionOutput))
-            if output.format == "auto":
-                return True
-            return any(
-                description.discover_via == "tool_provided_metadata"
-                for description in output.dataset_collector_descriptions
-            )
-
-        if any(output_uses_tool_provided_metadata(output) for output in self.outputs.values()):
+        if self.old_id in ("upload1", "__DATA_FETCH__") or tool_requests_provided_metadata(
+            tool_source, list(self.outputs.values())
+        ):
             return True
 
         return not (self.tool_type == "interactive" or Version(str(self.profile)) >= Version("26.2"))
