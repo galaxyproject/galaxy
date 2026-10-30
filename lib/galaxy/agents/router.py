@@ -26,7 +26,9 @@ import anyio
 from pydantic import ValidationError
 from pydantic_ai import (
     Agent,
+    ModelRetry,
     RunContext,
+    TextOutput,
     UnexpectedModelBehavior,
 )
 
@@ -43,6 +45,35 @@ from .base import (
 
 log = logging.getLogger(__name__)
 
+_CODE_FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL)
+
+
+def _is_written_out_handoff(text: str) -> bool:
+    """A direct answer that is really a hand-off call the model wrote as JSON text."""
+    stripped = text.strip()
+    fenced = _CODE_FENCE.match(stripped)
+    if fenced:
+        stripped = fenced.group(1)
+    try:
+        parsed = json.loads(stripped)
+    except ValueError:
+        return False
+    if not isinstance(parsed, dict):
+        return False
+    if set(parsed) == {"task"}:
+        return True
+    called = parsed.get("tool") or parsed.get("name") or ""
+    return isinstance(called, str) and ("hand_off_to_" in called or called.startswith("final_result"))
+
+
+def _direct_answer(text: str) -> str:
+    if _is_written_out_handoff(text):
+        raise ModelRetry(
+            "You wrote a hand-off out as text. Call the hand_off_to_* function instead, "
+            "or answer the user in plain prose."
+        )
+    return text
+
 
 class QueryRouterAgent(BaseGalaxyAgent):
     """Router that answers queries directly or delegates to specialist agents."""
@@ -56,18 +87,23 @@ class QueryRouterAgent(BaseGalaxyAgent):
     # forwarding the whole deep conversation degrades routing -- it biases the model toward
     # answering directly (the #22791 finding) -- but forwarding the last turn does not. It's
     # the whole turn, request and reply: a bare user message with no assistant reply reads as
-    # a dangling/compound request and mis-routes. Specialists always receive the full
+    # a dangling/compound request and mis-routes. After a clarifying question the last turn is
+    # just that question, so _routing_history widens to the clarification run and the turn
+    # before it, which is where the subject was named. Specialists receive the (truncated)
     # conversation_history via the handoff context.
     ROUTING_HISTORY_TURNS = 1
+    MAX_CLARIFICATION_TURNS = 3
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
+        # ``instructions`` rather than ``system_prompt``: pydantic-ai drops ``system_prompt`` from
+        # any run given message_history, and every follow-up routes with some.
         model_name = self._get_agent_config("model", "")
 
         if "deepseek" in model_name.lower():
             return Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
-                system_prompt=self._get_simple_system_prompt(),
+                instructions=self._get_simple_system_prompt(),
                 retries=self._get_retries(),
             )
 
@@ -92,9 +128,11 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 orchestrator_handoff,
                 gtn_handoff,
                 clarification_output,
-                str,  # Default: answer directly
+                # Default: answer directly. gpt-oss sometimes writes a hand-off out as JSON
+                # text instead of calling it; that gets retried rather than shown to the user.
+                TextOutput(_direct_answer),
             ],
-            system_prompt=self.get_system_prompt(),
+            instructions=self.get_system_prompt(),
             retries=self._get_retries(),
         )
 
@@ -497,10 +535,14 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
             Use this ONLY when you are genuinely uncertain, e.g.:
             - The message names no analysis, tool, dataset, or goal ("Can you help with my data?")
-            - A failure is reported with no error text, exit code, or tool name ("It keeps failing")
+            - A failure is reported with no error text, exit code, or tool name ("It keeps failing"),
+              and no earlier turn you were given names the failed job or tool
             - The intent could plausibly mean several different things -- a tool, a tutorial,
               usage help, or debugging ("I need help with variant calling")
-            - A follow-up's referent cannot be resolved even from the recent turn provided
+            - A follow-up's referent cannot be resolved even from the recent turn provided, and
+              you'd be answering it yourself -- a specialist's task (diagnosing a failed job,
+              looking through the history) gets handed off, since specialists see more of the
+              conversation than you do
 
             Do NOT use this when the current message is clear enough to route or answer on its
             own -- a confident route or answer is always better than an unnecessary question.
@@ -523,17 +565,32 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         return [i for i, message in enumerate(full_history) if _is_turn_start(message)]
 
-    def _routing_history(self, full_history: list | None) -> list | None:
+    def _routing_history(self, full_history: list | None, clarification_turns: int = 0) -> list | None:
         """The most recent ``ROUTING_HISTORY_TURNS`` turn(s) of ``full_history``, or None when
-        capped to 0 or there's no history. See ``ROUTING_HISTORY_TURNS`` for the rationale."""
+        capped to 0 or there's no history. See ``ROUTING_HISTORY_TURNS`` for the rationale.
+
+        When the last ``clarification_turns`` turns were clarifying questions, the window widens
+        to the whole run plus the turn before it: the subject may be named there or in the
+        request that started the run, and each answer narrows it. Only the last
+        ``MAX_CLARIFICATION_TURNS`` of a longer run are kept (alongside the turn before it) so it
+        can't turn back into full-history routing.
+        """
         if not full_history or self.ROUTING_HISTORY_TURNS <= 0:
             return None
         turn_starts = self._turn_start_indices(full_history)
         if not turn_starts:
             return None
-        if len(turn_starts) > self.ROUTING_HISTORY_TURNS:
-            return full_history[turn_starts[-self.ROUTING_HISTORY_TURNS] :]
-        return full_history
+        if clarification_turns > self.MAX_CLARIFICATION_TURNS and len(turn_starts) > clarification_turns:
+            # Past the cap, keep the turn the run followed and only the most recent clarifications,
+            # so the subject stays in view without the window growing with the run.
+            subject_turn = full_history[turn_starts[-clarification_turns - 1] : turn_starts[-clarification_turns]]
+            return subject_turn + full_history[turn_starts[-self.MAX_CLARIFICATION_TURNS] :]
+        window_turns = self.ROUTING_HISTORY_TURNS
+        if clarification_turns > 0:
+            window_turns = max(window_turns, min(clarification_turns, self.MAX_CLARIFICATION_TURNS) + 1)
+        if len(turn_starts) <= window_turns:
+            return full_history
+        return full_history[turn_starts[-window_turns] :]
 
     async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
@@ -542,12 +599,12 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         try:
             full_history = self._extract_message_history(context)
-            # Route on the current message plus the most recent turn(s) (see ROUTING_HISTORY_TURNS).
-            # The responding_to_clarification context flag is intentionally not consulted: forwarding
-            # the last turn handles clarification answers and ordinary follow-ups the same way.
-            message_history = self._routing_history(full_history)
+            # Route on the current message plus the most recent turn(s) (see ROUTING_HISTORY_TURNS),
+            # widened over any run of clarifying questions.
+            clarification_turns = (context or {}).get("clarification_turns") or 0
+            message_history = self._routing_history(full_history, clarification_turns)
             if message_history:
-                log.info(f"Router: routing on the current message plus the last turn ({len(message_history)} msgs)")
+                log.info(f"Router: routing on the current message plus recent turns ({len(message_history)} msgs)")
             elif full_history:
                 log.info(f"Router: routing on the current message, withholding {len(full_history)} history messages")
             else:

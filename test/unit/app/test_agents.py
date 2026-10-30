@@ -46,6 +46,7 @@ from pydantic_ai.messages import (
     ModelResponse,
     SystemPromptPart,
     TextPart,
+    ToolCallPart,
     UserPromptPart,
 )
 from pydantic_ai.models.function import FunctionModel
@@ -126,6 +127,53 @@ def _stub_error_analysis_run(agent, captured_prompts: list[str]):
         return mock_result
 
     return mock.patch.object(agent, "_run_with_retry", side_effect=fake_run_with_retry)
+
+
+# The shape of a real support chat: a generic first answer, then the History agent names the
+# failing tool, then the router asks which tool -- after which every follow-up leaves it unnamed.
+MIRDEEP2_TOOL_ID = "toolshed.g2.bx.psu.edu/repos/rnateam/mirdeep2_quantifier/rbc_mirdeep2_quantifier/2.0.0"
+SUBJECT_THEN_CLARIFICATION_HISTORY: list[ModelMessage] = [
+    ModelRequest(parts=[UserPromptPart(content="galaxy builds these indexes at runtime, is this a wrapper flaw?")]),
+    ModelResponse(parts=[TextPart(content="Some wrappers never expose the index they build as an output.")]),
+    ModelRequest(parts=[UserPromptPart(content="can you see the full job details? which tool are we looking at?")]),
+    ModelResponse(
+        parts=[
+            TextPart(
+                content=f"Tool: MiRDeep2 Quantifier ({MIRDEEP2_TOOL_ID}). State: error (exit code 1). "
+                "stderr: Mature mapping file dataset_0270.dat.dummy_mapped.bwt not found"
+            )
+        ]
+    ),
+    ModelRequest(parts=[UserPromptPart(content="did the upstream tool not need or create this index?")]),
+    ModelResponse(parts=[TextPart(content="Which upstream tool generated this dataset?")]),
+]
+
+
+def _structured_error_analysis(seen: list[ModelMessage]):
+    """A FunctionModel callback that records what error analysis was sent and returns a canned diagnosis."""
+
+    def model_fn(messages, info):
+        seen.extend(messages)
+        return ModelResponse(
+            parts=[
+                ToolCallPart(
+                    tool_name=info.output_tools[0].name,
+                    args={
+                        "error_category": "tool_configuration",
+                        "error_severity": "high",
+                        "likely_cause": "The wrapper never stages the index.",
+                        "solution_steps": ["Report it as a tool bug."],
+                        "confidence": "medium",
+                    },
+                )
+            ]
+        )
+
+    return model_fn
+
+
+def _message_texts(messages: list[ModelMessage]) -> str:
+    return "\n".join(str(getattr(part, "content", "")) for message in messages for part in message.parts)
 
 
 class TestAgentUnitMocked:
@@ -973,8 +1021,8 @@ class TestAgentUnitMocked:
 
     @pytest.mark.asyncio
     async def test_router_does_not_leak_routing_flags_into_prompt(self):
-        """Routing-only bookkeeping (responding_to_clarification) is for the router's own
-        logic, not the model -- it must never surface in the prompt text."""
+        """Routing-only bookkeeping (clarification_turns) is for
+        the router's own logic, not the model -- it must never surface in the prompt text."""
         router = QueryRouterAgent(self.deps)
 
         with mock.patch.object(router, "_run_with_retry") as mock_run:
@@ -984,11 +1032,11 @@ class TestAgentUnitMocked:
 
             await router.process(
                 "the second one",
-                context={"responding_to_clarification": True},
+                context={"clarification_turns": 1},
             )
 
             prompt = mock_run.call_args[0][0]
-            assert "responding_to_clarification" not in prompt
+            assert "clarification_turns" not in prompt
 
     @pytest.mark.asyncio
     async def test_router_asks_for_clarification(self):
@@ -1022,10 +1070,9 @@ class TestAgentUnitMocked:
             assert kwargs["message_history"] is None
 
     @pytest.mark.asyncio
-    async def test_router_includes_last_turn_when_responding_to_clarification(self):
-        """When the previous turn asked a clarifying question, the router includes just that
-        turn (the original request + the question) in routing context so an elliptical answer
-        like "the second one" can be routed -- a narrow exception to history-withholding."""
+    async def test_router_routes_on_the_last_turn_only(self):
+        """The router routes on the last turn (the original request + the question it asked), so
+        an elliptical answer like "the second one" can be routed, but not on older turns."""
         router = QueryRouterAgent(self.deps)
         history: list[ModelMessage] = [
             ModelRequest(parts=[UserPromptPart(content="What histories do I have?")]),
@@ -1041,7 +1088,7 @@ class TestAgentUnitMocked:
 
             await router.process(
                 "the second one",
-                context={"conversation_history": history, "responding_to_clarification": True},
+                context={"conversation_history": history},
             )
 
             _, kwargs = mock_run.call_args
@@ -1069,6 +1116,372 @@ class TestAgentUnitMocked:
 
             assert response.agent_type == "clarification"
             assert response.metadata["options"] == ["Tool recommendation", "Tutorial"]
+
+    @pytest.mark.asyncio
+    async def test_router_keeps_the_subject_turn_behind_a_clarification(self):
+        """Once the router has asked a clarifying question, the last turn is just that question,
+        so a follow-up that doesn't name the tool loses it. The turn the clarification followed
+        (where the tool was named) has to stay in the routing window -- but not the whole chat."""
+        router = QueryRouterAgent(self.deps)
+        seen: list[ModelMessage] = []
+
+        def model_fn(messages, info):
+            seen.extend(messages)
+            return ModelResponse(parts=[TextPart(content="Routed.")])
+
+        with router.agent.override(model=FunctionModel(model_fn)):
+            await router.process(
+                "correcting the wrapper seems to be the only solution",
+                context={"conversation_history": SUBJECT_THEN_CLARIFICATION_HISTORY, "clarification_turns": 1},
+            )
+
+        routed_on = _message_texts(seen)
+        assert MIRDEEP2_TOOL_ID in routed_on
+        assert "Which upstream tool" in routed_on
+        # The older, unrelated first turn stays out of the routing decision.
+        assert "wrapper flaw" not in routed_on
+
+    @pytest.mark.asyncio
+    async def test_router_keeps_its_prompt_when_routing_on_recent_turns(self):
+        """Any follow-up routes with some history, and pydantic-ai drops ``system_prompt=`` from
+        runs that have message_history -- the routing rules have to reach the model anyway."""
+        router = QueryRouterAgent(self.deps)
+        sent: list[str] = []
+
+        def model_fn(messages, info):
+            sent.extend(
+                part.content for message in messages for part in message.parts if isinstance(part, SystemPromptPart)
+            )
+            sent.append(info.instructions or "")
+            return ModelResponse(parts=[TextPart(content="Routed.")])
+
+        with router.agent.override(model=FunctionModel(model_fn)):
+            await router.process(
+                "why did it fail?",
+                context={"conversation_history": SUBJECT_THEN_CLARIFICATION_HISTORY, "clarification_turns": 1},
+            )
+
+        assert any("## What You Remember" in text for text in sent)
+
+    def test_router_keeps_a_run_of_clarifications_and_the_turn_before_it(self):
+        """Several "which tool?" questions in a row: the routing window is the whole run plus the
+        turn it followed, but nothing older."""
+        router = QueryRouterAgent(self.deps)
+        history = SUBJECT_THEN_CLARIFICATION_HISTORY + [
+            ModelRequest(parts=[UserPromptPart(content="correcting the wrapper seems to be the only solution")]),
+            ModelResponse(parts=[TextPart(content="Could you share the name of the tool?")]),
+            ModelRequest(parts=[UserPromptPart(content="review our chat and try again")]),
+            ModelResponse(parts=[TextPart(content="Could you remind me which tool you're troubleshooting?")]),
+        ]
+
+        routing_history = router._routing_history(history, clarification_turns=3)
+        assert routing_history is not None
+        window = _message_texts(routing_history)
+
+        assert MIRDEEP2_TOOL_ID in window
+        assert "Which upstream tool" in window
+        assert "review our chat and try again" in window
+        assert "wrapper flaw" not in window
+
+    def test_router_keeps_the_answers_to_earlier_clarifications(self):
+        """The subject can be the request that started the run ("variant calling"), and each
+        answer narrows it ("somatic"); both have to survive the second question."""
+        router = QueryRouterAgent(self.deps)
+        history: list[ModelMessage] = [
+            ModelRequest(parts=[UserPromptPart(content="What histories do I have?")]),
+            ModelResponse(parts=[TextPart(content="You have 3.")]),
+            ModelRequest(parts=[UserPromptPart(content="I need help with variant calling")]),
+            ModelResponse(parts=[TextPart(content="Germline or somatic?")]),
+            ModelRequest(parts=[UserPromptPart(content="somatic")]),
+            ModelResponse(parts=[TextPart(content="A tool recommendation or a tutorial?")]),
+        ]
+
+        routing_history = router._routing_history(history, clarification_turns=2)
+        assert routing_history is not None
+        window = _message_texts(routing_history)
+
+        assert "variant calling" in window
+        assert "somatic" in window
+        assert "A tool recommendation or a tutorial?" in window
+
+    def test_router_routing_window_caps_a_long_run_of_clarifications(self):
+        """A long run of clarifications can't widen the window into the whole chat."""
+        router = QueryRouterAgent(self.deps)
+        history: list[ModelMessage] = []
+        for i in range(10):
+            history.append(ModelRequest(parts=[UserPromptPart(content=f"answer {i}")]))
+            history.append(ModelResponse(parts=[TextPart(content=f"question {i}?")]))
+
+        routing_history = router._routing_history(history, clarification_turns=10)
+        # Three clarifications plus the turn before them, two messages a turn.
+        assert routing_history == history[-8:]
+
+    def test_router_keeps_the_subject_past_the_clarification_cap(self):
+        """A fourth "which tool?" in a row mustn't push the turn that named the tool out of the
+        window -- that's the loop this window exists to break."""
+        router = QueryRouterAgent(self.deps)
+        history = list(SUBJECT_THEN_CLARIFICATION_HISTORY)
+        for i in range(3):
+            history.append(ModelRequest(parts=[UserPromptPart(content=f"answer {i}")]))
+            history.append(ModelResponse(parts=[TextPart(content=f"Which tool is it, {i}?")]))
+
+        routing_history = router._routing_history(history, clarification_turns=4)
+        assert routing_history is not None
+        window = _message_texts(routing_history)
+
+        assert MIRDEEP2_TOOL_ID in window
+        assert "Which tool is it, 2?" in window
+        # Still bounded: the oldest clarification and the unrelated first turn stay out.
+        assert "Which upstream tool" not in window
+        assert "wrapper flaw" not in window
+
+    def test_router_routing_window_wider_than_the_history_keeps_all_of_it(self):
+        """A window reaching back past the first turn routes on the whole (short) conversation."""
+        router = QueryRouterAgent(self.deps)
+        history = SUBJECT_THEN_CLARIFICATION_HISTORY
+
+        assert router._routing_history(history, clarification_turns=3) == history
+
+    @pytest.mark.asyncio
+    async def test_error_analysis_sees_the_conversation_on_a_vague_handoff(self):
+        """A vague follow-up ("the tool for the current error") hands error analysis a task that
+        names nothing. It has to see the conversation to know which tool and error it's about."""
+        self.mock_config.ai_model = "gpt-4o"
+        agent = ErrorAnalysisAgent(self.deps)
+        seen: list[ModelMessage] = []
+
+        with agent.agent.override(model=FunctionModel(_structured_error_analysis(seen))):
+            await agent.process(
+                "the tool for the current error we are investigating",
+                context={"conversation_history": SUBJECT_THEN_CLARIFICATION_HISTORY},
+            )
+
+        assert MIRDEEP2_TOOL_ID in _message_texts(seen)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("ai_model", ["gpt-4o", "deepseek-r1"])
+    async def test_error_analysis_keeps_its_prompt_when_given_the_conversation(self, ai_model):
+        """pydantic-ai only adds ``system_prompt=`` to a run with no message_history, so once error
+        analysis gets the conversation its own prompt has to reach the model some other way."""
+        self.mock_config.ai_model = ai_model
+        agent = ErrorAnalysisAgent(self.deps)
+        expected_prompt = (
+            agent.get_system_prompt() if agent._supports_structured_output() else agent._get_simple_system_prompt()
+        )
+        sent: list[str] = []
+
+        def model_fn(messages, info):
+            sent.extend(
+                part.content for message in messages for part in message.parts if isinstance(part, SystemPromptPart)
+            )
+            sent.append(info.instructions or "")
+            if info.output_tools:
+                return _structured_error_analysis([])(messages, info)
+            return ModelResponse(parts=[TextPart(content="CAUSE: missing index\nCONFIDENCE: medium")])
+
+        with agent.agent.override(model=FunctionModel(model_fn)):
+            await agent.process(
+                "why did it fail?",
+                context={"conversation_history": SUBJECT_THEN_CLARIFICATION_HISTORY},
+            )
+
+        assert any(expected_prompt.strip() in text for text in sent)
+
+    @pytest.mark.asyncio
+    async def test_error_analysis_trims_a_pasted_log_in_the_conversation(self):
+        """A raw stderr dump posted as the first query is trimmed when it's analyzed, but the
+        stored chat keeps all of it. Replayed as history it has to be trimmed again, keeping the
+        tail where the failure is, or every later turn re-sends the whole log."""
+        self.mock_config.ai_model = "gpt-4o"
+        agent = ErrorAnalysisAgent(self.deps)
+        seen: list[ModelMessage] = []
+        pasted_log = "progress line\n" * 20_000 + "FATAL: bowtie index not found"
+        history: list[ModelMessage] = [
+            ModelRequest(parts=[UserPromptPart(content=pasted_log)]),
+            ModelResponse(parts=[TextPart(content="The index is missing.")]),
+        ]
+
+        with agent.agent.override(model=FunctionModel(_structured_error_analysis(seen))):
+            await agent.process("what else could cause it?", context={"conversation_history": history})
+
+        replayed = _message_texts(seen)
+        assert "FATAL: bowtie index not found" in replayed
+        assert len(replayed) < len(pasted_log) // 10
+
+    @pytest.mark.asyncio
+    async def test_error_analysis_keeps_a_long_history_reply_whole(self):
+        """The subject usually comes from a History agent reply, which can run long and name the
+        failed job anywhere in it. The log trim is for pasted stderr, not for those replies."""
+        self.mock_config.ai_model = "gpt-4o"
+        agent = ErrorAnalysisAgent(self.deps)
+        seen: list[ModelMessage] = []
+        datasets = "".join(f"{i}: ok dataset {i}, state ok\n" for i in range(150))
+        history_reply = datasets + f"151: failed, tool {MIRDEEP2_TOOL_ID}, exit code 1\n" + datasets
+        history: list[ModelMessage] = [
+            ModelRequest(parts=[UserPromptPart(content="did anything in my history fail?")]),
+            ModelResponse(parts=[TextPart(content=history_reply)]),
+        ]
+
+        with agent.agent.override(model=FunctionModel(_structured_error_analysis(seen))):
+            await agent.process("why did it fail?", context={"conversation_history": history})
+
+        assert MIRDEEP2_TOOL_ID in _message_texts(seen)
+
+    @pytest.mark.asyncio
+    async def test_error_analysis_bounds_the_whole_replayed_conversation(self):
+        """Each pasted log is trimmed, but a chat full of them still adds up -- 40 trimmed logs
+        is ~160k characters, past a 32k-token model's context. The oldest turns go first."""
+        self.mock_config.ai_model = "gpt-4o"
+        agent = ErrorAnalysisAgent(self.deps)
+        seen: list[ModelMessage] = []
+        history: list[ModelMessage] = []
+        for i in range(20):
+            history.append(ModelRequest(parts=[UserPromptPart(content=f"log {i}\n" + "progress line\n" * 2_000)]))
+            history.append(ModelResponse(parts=[TextPart(content=f"reply {i}")]))
+
+        with agent.agent.override(model=FunctionModel(_structured_error_analysis(seen))):
+            await agent.process("why did it fail?", context={"conversation_history": history})
+
+        replayed = _message_texts(seen)
+        assert "reply 19" in replayed
+        assert "reply 0\n" not in replayed
+        assert len(replayed) < 50_000
+
+    @pytest.mark.asyncio
+    async def test_subject_survives_routing_into_error_analysis(self):
+        """End to end through the router: tool named by a History reply, then a clarification,
+        then a follow-up without the tool's name that routes to error analysis. The tool has to
+        reach both the routing decision and the error analysis run."""
+        self.mock_config.ai_model = "gpt-4o"
+        router = QueryRouterAgent(self.deps)
+        error_agent = ErrorAnalysisAgent(self.deps)
+        self.deps.get_agent = MagicMock(return_value=error_agent)
+        routed_on: list[ModelMessage] = []
+        analyzed_with: list[ModelMessage] = []
+
+        def router_fn(messages, info):
+            routed_on.extend(messages)
+            return ModelResponse(
+                parts=[
+                    ToolCallPart(
+                        tool_name="final_result_hand_off_to_error_analysis", args={"task": "Diagnose the error."}
+                    )
+                ]
+            )
+
+        with (
+            router.agent.override(model=FunctionModel(router_fn)),
+            error_agent.agent.override(model=FunctionModel(_structured_error_analysis(analyzed_with))),
+        ):
+            response = await router.process(
+                "the tool for the error we are investigating, we discussed this already",
+                context={"conversation_history": SUBJECT_THEN_CLARIFICATION_HISTORY, "clarification_turns": 1},
+            )
+
+        assert response.agent_type == AgentType.ERROR_ANALYSIS
+        assert MIRDEEP2_TOOL_ID in _message_texts(routed_on)
+        assert MIRDEEP2_TOOL_ID in _message_texts(analyzed_with)
+
+    @pytest.mark.asyncio
+    async def test_error_analysis_sees_past_the_routing_window(self):
+        """The router routes on a narrow window, but the specialist it hands to gets the whole
+        conversation -- so a subject the router can't see still reaches error analysis."""
+        self.mock_config.ai_model = "gpt-4o"
+        router = QueryRouterAgent(self.deps)
+        error_agent = ErrorAnalysisAgent(self.deps)
+        self.deps.get_agent = MagicMock(return_value=error_agent)
+        routed_on: list[ModelMessage] = []
+        analyzed_with: list[ModelMessage] = []
+
+        def router_fn(messages, info):
+            routed_on.extend(messages)
+            return ModelResponse(
+                parts=[
+                    ToolCallPart(
+                        tool_name="final_result_hand_off_to_error_analysis", args={"task": "Diagnose the error."}
+                    )
+                ]
+            )
+
+        with (
+            router.agent.override(model=FunctionModel(router_fn)),
+            error_agent.agent.override(model=FunctionModel(_structured_error_analysis(analyzed_with))),
+        ):
+            await router.process(
+                "why did it fail?",
+                context={"conversation_history": SUBJECT_THEN_CLARIFICATION_HISTORY, "clarification_turns": 0},
+            )
+
+        assert MIRDEEP2_TOOL_ID not in _message_texts(routed_on)
+        assert MIRDEEP2_TOOL_ID in _message_texts(analyzed_with)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "written_out",
+        [
+            '{"tool": "final_result_hand_off_to_error_analysis", "arguments": {"task": "Analyze the failed HISAT2 job."}}',
+            '{"task": "Analyze the failed HISAT2 job and provide troubleshooting guidance."}',
+            '```json\n{"name": "hand_off_to_error_analysis", "arguments": {"task": "Analyze it."}}\n```',
+        ],
+    )
+    async def test_router_retries_a_handoff_written_out_as_text(self, written_out):
+        """gpt-oss sometimes decides to hand off but writes the call out as text. That text must
+        not reach the user as the router's answer -- the model gets told to make the call."""
+        self.mock_config.ai_model = "gpt-4o"
+        router = QueryRouterAgent(self.deps)
+        error_agent = ErrorAnalysisAgent(self.deps)
+        self.deps.get_agent = MagicMock(return_value=error_agent)
+        calls: list[list[ModelMessage]] = []
+
+        def router_fn(messages, info):
+            calls.append(messages)
+            if len(calls) == 1:
+                return ModelResponse(parts=[TextPart(content=written_out)])
+            return ModelResponse(
+                parts=[
+                    ToolCallPart(
+                        tool_name="final_result_hand_off_to_error_analysis", args={"task": "Diagnose the error."}
+                    )
+                ]
+            )
+
+        with (
+            router.agent.override(model=FunctionModel(router_fn)),
+            error_agent.agent.override(model=FunctionModel(_structured_error_analysis([]))),
+        ):
+            response = await router.process(
+                "the one you just found",
+                context={"conversation_history": SUBJECT_THEN_CLARIFICATION_HISTORY, "clarification_turns": 1},
+            )
+
+        assert len(calls) == 2
+        assert response.agent_type == AgentType.ERROR_ANALYSIS
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "answer",
+        [
+            "A workflow is a chain of tools you can rerun on new data.",
+            '{"name": "sample1", "reads": 1200}',
+            'Use a JSON body like {"task": "x"} when you call the API.',
+        ],
+    )
+    async def test_router_keeps_direct_answers_that_are_not_handoffs(self, answer):
+        self.mock_config.ai_model = "gpt-4o"
+        router = QueryRouterAgent(self.deps)
+        calls = 0
+
+        def router_fn(messages, info):
+            nonlocal calls
+            calls += 1
+            return ModelResponse(parts=[TextPart(content=answer)])
+
+        with router.agent.override(model=FunctionModel(router_fn)):
+            response = await router.process("what is a workflow?")
+
+        assert calls == 1
+        assert response.agent_type == AgentType.ROUTER
+        assert response.content == answer
 
     @pytest.mark.asyncio
     async def test_custom_tool_rejects_prompt_injection_query(self):

@@ -4,6 +4,7 @@ Error analysis agent for tool error diagnosis.
 
 import logging
 import re
+from dataclasses import replace
 from functools import partial
 from pathlib import Path
 from typing import (
@@ -13,6 +14,10 @@ from typing import (
 import anyio
 from pydantic import BaseModel
 from pydantic_ai import Agent
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelRequest,
+)
 
 from galaxy.schema.agents import ConfidenceLevel
 from .base import (
@@ -46,6 +51,30 @@ class ErrorAnalysisResult(BaseModel):
     requires_admin: bool = False
 
 
+# Roughly 10k tokens of replayed conversation, leaving room for the prompt, job details and
+# output on the smallest (32k) context window we support.
+HISTORY_CHAR_BUDGET = 40_000
+
+
+def _message_chars(message: ModelMessage) -> int:
+    return sum(len(content) for part in message.parts if isinstance(content := getattr(part, "content", None), str))
+
+
+def _trim_part(part: Any) -> Any:
+    content = getattr(part, "content", None)
+    if isinstance(content, str) and len(content) > JOB_LOG_EXCERPT_CHARS:
+        return replace(part, content=truncate_middle(content, JOB_LOG_EXCERPT_CHARS))
+    return part
+
+
+def _trim_message(message: ModelMessage) -> ModelMessage:
+    # Only what the user sent: that's where pasted logs are. Assistant replies are bounded by
+    # max_tokens, and a long History reply is often where the failed job is named.
+    if isinstance(message, ModelRequest):
+        return replace(message, parts=[_trim_part(part) for part in message.parts])
+    return message
+
+
 class ErrorAnalysisAgent(BaseGalaxyAgent):
     """Agent for diagnosing tool failures and providing solutions."""
 
@@ -63,19 +92,21 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
     SCAN_QUERY_FOR_ROLE_MARKERS = False
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
+        # ``instructions`` rather than ``system_prompt``: pydantic-ai drops ``system_prompt`` from
+        # any run given message_history, and this agent replays the conversation.
         if self._supports_structured_output():
             agent = Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
                 output_type=ErrorAnalysisResult,
-                system_prompt=self.get_system_prompt(),
+                instructions=self.get_system_prompt(),
                 retries=self._get_retries(),
             )
         else:
             agent = Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
-                system_prompt=self._get_simple_system_prompt(),
+                instructions=self._get_simple_system_prompt(),
                 retries=self._get_retries(),
             )
 
@@ -158,7 +189,10 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             if "error" not in job_details:
                 enhanced_query += f"\n\nJob Details:\n{self._format_job_context(job_details)}"
 
-        result = await self._run_with_retry(enhanced_query)
+        # The router's handoff task is often a one-liner ("diagnose the error") written from a
+        # follow-up that never names the tool or job; the conversation is where those live.
+        message_history = self._bounded_message_history(context)
+        result = await self._run_with_retry(enhanced_query, message_history=message_history)
 
         if self._supports_structured_output():
             analysis_result = extract_structured_output(result, ErrorAnalysisResult, log)
@@ -202,6 +236,30 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 suggestions=parsed_result.get("suggestions", []),
                 agent_data={"error_category": parsed_result.get("error_category", "unknown")},
             )
+
+    def _bounded_message_history(self, context: dict[str, Any] | None) -> list[ModelMessage] | None:
+        """The conversation, with what the user sent trimmed like a job log.
+
+        The wizard posts a job's raw stderr as the query and the chat stores it untrimmed, so
+        without this one big paste would ride along, whole, on every later turn.
+        """
+        history = self._extract_message_history(context)
+        if not history:
+            return history
+        trimmed = [_trim_message(message) for message in history]
+        # Keep the newest messages that fit, so the conversation as a whole stays bounded too.
+        start = len(trimmed)
+        total = 0
+        while start > 0:
+            total += _message_chars(trimmed[start - 1])
+            if total > HISTORY_CHAR_BUDGET and start < len(trimmed):
+                break
+            start -= 1
+        kept = trimmed[start:]
+        # A replayed conversation has to open on a request, not a dangling reply.
+        while kept and not isinstance(kept[0], ModelRequest):
+            kept = kept[1:]
+        return kept or None
 
     def _format_job_context(self, job_details: dict[str, Any]) -> str:
         parts = []
@@ -268,6 +326,15 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         CAUSE: The tool was asked to select more lines (3) than exist in the input file (2)
         SOLUTION: Reduce the "number of lines" parameter to 2 or fewer, or use a larger input file
         CONFIDENCE: high
+
+        If the query is a short follow-up that doesn't name the tool or job, work out which one the
+        user means from the conversation so far; don't ask them to repeat it.
+
+        Only suggest steps the user can take in the Galaxy UI (parameters, inputs, re-running,
+        running another tool first). Never suggest editing the tool wrapper or XML, installing
+        tools, Data Managers, or server changes. If an administrator has to fix it, say so. If the
+        tool itself is broken, say it looks like a bug and to report it with the bug report option
+        on the failed dataset.
 
         CRITICAL: Never invent URLs or external references. Only state facts you are certain about.
 
