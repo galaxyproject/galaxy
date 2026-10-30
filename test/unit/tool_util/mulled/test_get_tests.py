@@ -3,6 +3,7 @@ from unittest import (
     mock,
     SkipTest,
 )
+from urllib.parse import urlparse
 
 from galaxy.tool_util.deps.mulled.get_tests import (
     deep_test_search,
@@ -95,15 +96,19 @@ def test_find_anaconda_download_url():
     assert download_url is None
     download_url = find_anaconda_download_url("2pg_cartesian", "1.0.1")
     assert download_url is not None
-    assert download_url.startswith(
-        "https://api.anaconda.org/download/bioconda/2pg_cartesian/1.0.1/linux-64/2pg_cartesian-1.0.1-"
-    )
+    # Anaconda's API may return either its download endpoint or the channel CDN.
+    parsed = urlparse(download_url)
+    assert parsed.scheme == "https"
+    assert parsed.netloc in ("api.anaconda.org", "conda.anaconda.org")
+    assert "/bioconda/" in parsed.path and "/linux-64/" in parsed.path
+    assert os.path.basename(parsed.path).startswith("2pg_cartesian-1.0.1-")
     download_url = find_anaconda_download_url("2pg_cartesian", "1.0.1", "0")
     assert download_url is not None
-    assert (
-        download_url
-        == "https://api.anaconda.org/download/bioconda/2pg_cartesian/1.0.1/linux-64/2pg_cartesian-1.0.1-0.tar.bz2"
-    )
+    parsed = urlparse(download_url)
+    assert parsed.scheme == "https"
+    assert parsed.netloc in ("api.anaconda.org", "conda.anaconda.org")
+    assert "/bioconda/" in parsed.path and "/linux-64/" in parsed.path
+    assert os.path.basename(parsed.path) == "2pg_cartesian-1.0.1-0.tar.bz2"
 
 
 @external_dependency_management

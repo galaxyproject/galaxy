@@ -388,6 +388,19 @@ class TestToolBox(BaseToolBoxTestCase):
         tool.dynamic_tool_active = False
         assert tool.allow_user_access(owner) is False
 
+    def test_panel_entry_with_expired_detached_dynamic_tool(self):
+        tool = self._setup_dynamic_tool_test()
+        dynamic_tool = self._persist_dynamic_tool(public=True)
+        tool.dynamic_tool = dynamic_tool
+        self._snapshot(tool, dynamic_tool)
+        expected_uuid = str(dynamic_tool.uuid)
+        session = self.app.model.context
+        session.expire(dynamic_tool)
+        session.expunge(dynamic_tool)
+
+        assert tool.to_panel_entry(mock_trans())["uuid"] == expected_uuid
+        assert tool.to_dict(mock_trans())["uuid"] == expected_uuid
+
     def test_allow_user_access_with_detached_dynamic_tool_does_not_raise(self):
         """Regression: booby-trap the ORM row so any read raises; allow_user_access
         must rely on the snapshot only."""
