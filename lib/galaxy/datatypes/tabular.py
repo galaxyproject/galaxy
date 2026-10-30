@@ -1408,38 +1408,38 @@ class BaseCSV(TabularData):
     delimiter = ","
     peek_size = 1024  # File chunk used for sniffing CSV dialect
     big_peek_size = 10240  # Large File chunk used for sniffing CSV dialect
-    sniff_headerless = False
 
     def sniff(self, filename: str) -> bool:
-        """Return True if if recognizes dialect and an optional header."""
-        consistent_width = True
+        """Return True if if recognizes dialect and header."""
         # check the dialect works
         with open(filename, newline="") as f:
             reader = csv.reader(f, self.dialect)
             # Check we can read header and get columns
-            try:
-                header_row = next(reader)
-            except StopIteration:
-                return False
+            header_row = next(reader)
             if len(header_row) < 2:
                 # No columns so not separated by this dialect.
                 return False
 
-            num_columns = len(header_row)
-            found_second_line = False
-            for data_row in reader:
-                if not found_second_line and len(data_row) < 2:
+            # Check that there is a second row as it is used by set_meta and
+            # that all rows can be read
+            if self.strict_width:
+                num_columns = len(header_row)
+                found_second_line = False
+                for data_row in reader:
+                    found_second_line = True
+                    # All columns must be the same length
+                    if num_columns != len(data_row):
+                        return False
+                if not found_second_line:
+                    return False
+            else:
+                data_row = next(reader)
+                if len(data_row) < 2:
                     # No columns so not separated by this dialect.
                     return False
-                found_second_line = True
-                # All columns must be the same length for strict datatypes and
-                # for headerless CSV sniffing.
-                if num_columns != len(data_row):
-                    if self.strict_width:
-                        return False
-                    consistent_width = False
-            if not found_second_line:
-                return False
+                # ignore the length in the rest
+                for _ in reader:
+                    pass
 
         # Optional: Check Python's csv comes up with a similar dialect
         with open(filename) as f:
@@ -1457,13 +1457,9 @@ class BaseCSV(TabularData):
         # Note: No way around Python's csv calling Sniffer.sniff again.
         # Note: Without checking the dialect returned by sniff
         #       this test may be checking the wrong dialect.
-        return self.has_header(big_peek) or (self.sniff_headerless and consistent_width)
-
-    def has_header(self, sample: str) -> bool:
-        try:
-            return csv.Sniffer().has_header(sample)
-        except csv.Error:
+        if not csv.Sniffer().has_header(big_peek):
             return False
+        return True
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         column_types = []
@@ -1472,18 +1468,11 @@ class BaseCSV(TabularData):
         data_lines = 0
         if dataset.has_data():
             with open(dataset.get_file_name(), newline="") as csvfile:
-                sample = csvfile.read(self.big_peek_size)
-                csvfile.seek(0)
-                has_header = self.has_header(sample)
                 # Parse file with the correct dialect
                 reader = csv.reader(csvfile, self.dialect)
                 try:
-                    first_row = next(reader)
-                    if has_header:
-                        header_row = first_row
-                        data_row = next(reader)
-                    else:
-                        data_row = first_row
+                    header_row = next(reader)
+                    data_row = next(reader)
                     # Count records, not physical lines inside quoted fields.
                     data_lines = 1
                     for _ in reader:
@@ -1516,7 +1505,6 @@ class CSV(BaseCSV):
     file_ext = "csv"
     dialect = csv.excel  # This is the default
     strict_width = False  # Previous csv type did not check column width
-    sniff_headerless = True
 
 
 @build_sniff_from_prefix

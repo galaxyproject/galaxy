@@ -191,53 +191,6 @@ def test_csv_quick_view_uses_column_names_only_as_headers():
         assert "<td>Systemic_therapy_history</td>" not in html
 
 
-def test_headerless_csv_sniffs_as_csv():
-    contents = (
-        "32.5,1,4.3,1.19,67.91512663,0,0,0,1,0\n"
-        "19.3,1,3.8,1.38,62.50239562,0,0,0,0,0\n"
-        "10.5,1,4.2,2.54,52.10677618,0,0,0,0,0\n"
-    )
-    with tempfile.NamedTemporaryFile(mode="w") as test_file:
-        test_file.write(contents)
-        test_file.flush()
-        assert CSV().sniff(test_file.name)
-
-
-def test_headerless_csv_set_meta_does_not_promote_first_row_to_header():
-    contents = (
-        "32.5,1,4.3,1.19,67.91512663,0,0,0,1,0\n"
-        "19.3,1,3.8,1.38,62.50239562,0,0,0,0,0\n"
-        "10.5,1,4.2,2.54,52.10677618,0,0,0,0,0\n"
-    )
-    with tempfile.NamedTemporaryFile(mode="w") as test_file:
-        test_file.write(contents)
-        test_file.flush()
-        dataset = MockDataset(id=1)
-        dataset.set_file_name(test_file.name)
-        datatype = CSV()
-        datatype.set_meta(_dataset_protocol(dataset))
-        assert dataset.metadata.data_lines == 3
-        assert dataset.metadata.comment_lines == 0
-        assert dataset.metadata.column_names == []
-        assert dataset.metadata.columns == 10
-
-
-def test_headerless_csv_quick_view_keeps_first_row_as_data():
-    contents = "32.5,1,4.3\n19.3,1,3.8\n10.5,1,4.2\n"
-    with tempfile.NamedTemporaryFile(mode="w") as test_file:
-        test_file.write(contents)
-        test_file.flush()
-        dataset = MockDataset(id=1)
-        dataset.set_file_name(test_file.name)
-        datatype = CSV()
-        datatype.set_meta(_dataset_protocol(dataset))
-        html = _display_peek(datatype, dataset, contents)
-        assert "<th>1</th>" in html
-        assert "<th>2</th>" in html
-        assert "<td>32.5</td>" in html
-        assert "<td>4.3</td>" in html
-
-
 def test_csv_chunked_view_skips_header_only_in_first_chunk():
     contents = "A,B\n1,2\n3,4\n5,6\n"
     with tempfile.NamedTemporaryFile(mode="w") as test_file:
