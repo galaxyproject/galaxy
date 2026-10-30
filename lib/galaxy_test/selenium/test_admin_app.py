@@ -158,7 +158,8 @@ class TestAdminApp(SeleniumTestCase):
     @requires_admin
     def test_admin_jobs_stop_selected(self):
         self.admin_login()
-        history_id = self.current_history_id()
+        # Own history, so a retry doesn't wait on the previous attempt's sleeping job.
+        history_id = self.dataset_populator.new_history()
         hda = self.dataset_populator.new_dataset(history_id, content="1", wait=True)
         run = self.dataset_populator.run_tool(
             "cat_data_and_sleep",
@@ -166,28 +167,31 @@ class TestAdminApp(SeleniumTestCase):
             history_id,
         )
         job_id = run["jobs"][0]["id"]
+        try:
+            self.admin_open()
+            self.components.admin.index.jobs.wait_for_and_click()
+            manage_jobs = self.components.admin.manage_jobs
+            manage_jobs.filter_query.wait_for_and_send_keys(f"user:'{self.get_user_email()}' tool:'cat_data_and_sleep'")
+            # Select all only once this job is the sole unfinished one listed.
+            self._wait_on(lambda *_: len(manage_jobs.row_select.all()) == 1, "only the test job to be listed")
+            manage_jobs.select_all.wait_for_and_click()
+            manage_jobs.stop_message.wait_for_and_send_keys("selenium maintenance")
+            manage_jobs.stop_submit.wait_for_and_click()
+            self._wait_on(
+                lambda *_: manage_jobs.status_alert.wait_for_text() == "Stopped 1 of 1 job.",
+                "stop summary",
+            )
+            self.screenshot("admin_jobs_stopped")
 
-        self.admin_open()
-        self.components.admin.index.jobs.wait_for_and_click()
-        manage_jobs = self.components.admin.manage_jobs
-        manage_jobs.filter_query.wait_for_and_send_keys(f"user:'{self.get_user_email()}' tool:'cat_data_and_sleep'")
-        # Select all only once this job is the sole unfinished one listed.
-        self._wait_on(lambda *_: len(manage_jobs.row_select.all()) == 1, "only the test job to be listed")
-        manage_jobs.select_all.wait_for_and_click()
-        manage_jobs.stop_message.wait_for_and_send_keys("selenium maintenance")
-        manage_jobs.stop_submit.wait_for_and_click()
-        self._wait_on(
-            lambda *_: manage_jobs.status_alert.wait_for_text() == "Stopped 1 of 1 job.",
-            "stop summary",
-        )
-        self.screenshot("admin_jobs_stopped")
-
-        jobs = self.dataset_populator._get(
-            "jobs", {"history_id": history_id, "view": "admin_job_list", "tool_id": "cat_data_and_sleep"}
-        ).json()
-        job = next(job for job in jobs if job["id"] == job_id)
-        assert job["state"] in ("deleting", "deleted"), job
-        assert job["info"] == "selenium maintenance", job
+            jobs = self.dataset_populator._get(
+                "jobs", {"history_id": history_id, "view": "admin_job_list", "tool_id": "cat_data_and_sleep"}
+            ).json()
+            job = next(job for job in jobs if job["id"] == job_id)
+            assert job["state"] in ("deleting", "deleted"), job
+            assert job["info"] == "selenium maintenance", job
+        finally:
+            # Don't leave a 10 minute job running if the UI failed to stop it.
+            self.dataset_populator.cancel_job(job_id)
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
