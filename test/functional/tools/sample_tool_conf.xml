@@ -66,6 +66,7 @@
   <tool file="filter_param_value_ref_attribute.xml" />
   <tool file="filter_param_value_nested_conditional.xml" />
   <tool file="filter_static_regexp.xml" />
+  <tool file="select_from_duplicate_value_table.xml" />
   <tool file="select_from_dataset.xml" />
   <tool file="select_from_dataset_in_conditional.xml" />
   <tool file="conditional_name_digit_suffix.xml" />
@@ -84,6 +85,7 @@
   <tool file="unicode_stream.xml" />
   <tool file="vcf_bgzip.xml" />
   <tool file="metadata.xml" />
+  <tool file="metadata_defaults.xml" />
   <tool file="metadata_bam.xml" />
   <tool file="discover_metadata_files.xml" />
   <tool file="metadata_bcf.xml" />

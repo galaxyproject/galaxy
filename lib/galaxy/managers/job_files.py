@@ -62,6 +62,8 @@ class JobFilesManager:
         job, path = self._authorize(encoded_job_id, path, job_key)
         if not path:
             raise exceptions.RequestParameterInvalidException("'path' parameter not provided or empty.")
+        if not os.path.isabs(path):
+            raise exceptions.RequestParameterInvalidException("'path' parameter must be an absolute path.")
         working_directory = JobWorkingDirectory(job, self._object_store).resolve()
         if util.in_directory(path, working_directory):
             return working_directory
