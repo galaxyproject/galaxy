@@ -2554,10 +2554,14 @@ class BaseWorkflowPopulator(BasePopulator):
         response.raise_for_status()
 
     def update_workflow(self, workflow_id: str, workflow_object: dict) -> Response:
-        data = dict(workflow=workflow_object)
-        raw_url = f"workflows/{workflow_id}"
-        put_response = self._put(raw_url, data, json=True)
-        return put_response
+        return self.update_workflow_fields(workflow_id, {"workflow": workflow_object})
+
+    def update_workflow_fields(self, workflow_id: str, fields: dict, admin: bool = False) -> Response:
+        """PUT ``fields`` as top-level payload keys, the shape the client sends."""
+        return self._put(f"workflows/{workflow_id}", fields, admin=admin, json=True)
+
+    def set_workflow_menu(self, workflow_ids: list[str]) -> Response:
+        return self._put("workflows/menu", {"workflow_ids": workflow_ids}, json=True)
 
     def refactor_workflow(
         self, workflow_id: str, actions: list, dry_run: Optional[bool] = None, style: Optional[str] = None

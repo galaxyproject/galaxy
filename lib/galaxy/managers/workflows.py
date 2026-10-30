@@ -309,9 +309,9 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             raise exceptions.ObjectNotFound("No such workflow found.")
         return stored_workflow
 
-    def get_stored_accessible_workflow(self, trans, workflow_id, by_stored_id=True):
-        """Get a stored workflow from a encoded stored workflow id and
-        make sure it accessible to the user.
+    def get_stored_accessible_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
+        """Get a stored workflow from an encoded id or UUID and
+        make sure it is accessible to the user.
         """
         stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
 
@@ -321,9 +321,15 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                 user=trans.user, stored_workflow=stored_workflow
             )
             if get_count(trans.sa_session, stmt) == 0:
-                message = "Workflow is not owned by or shared with current user"
+                message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
 
+        return stored_workflow
+
+    def get_stored_owned_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
+        """Get a stored workflow and make sure the user owns it (or is an admin)."""
+        stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
+        self.check_security(trans, stored_workflow, check_ownership=True)
         return stored_workflow
 
     def attach_stored_workflow(self, trans, workflow):
@@ -338,8 +344,8 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             return stored_workflow
 
     def get_owned_workflow(self, trans, encoded_workflow_id):
-        """Get a workflow (non-stored) from a encoded workflow id and
-        make sure it accessible to the user.
+        """Get a workflow (non-stored) from an encoded workflow id and
+        make sure it is owned by the user (or the user is an admin).
         """
         workflow_id = decode_id(self.app, encoded_workflow_id)
         workflow = trans.sa_session.get(Workflow, workflow_id)

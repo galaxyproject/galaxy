@@ -357,6 +357,32 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
             workflows_url = self._api_url(f"workflows/{workflow_id}")
             assert get(workflows_url).status_code == 403
 
+    def test_shared_user_can_show_workflow(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_show")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        assert self._show_workflow(workflow_id)["name"] == "test_shared_show"
+
+    def test_anon_can_show_importable_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_importable_show", importable=True)
+        with self._different_user(anon=True):
+            assert self._show_workflow(workflow_id)["name"] == "test_importable_show"
+
+    def test_admin_can_show_private_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_admin_show")
+        show_response = self._get(f"workflows/{workflow_id}", admin=True)
+        self._assert_status_code_is(show_response, 200)
+        assert show_response.json()["name"] == "test_admin_show"
+
+    def test_cannot_show_workflow_with_unset_importable(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_unset_importable")
+        self._assert_status_code_is_ok(
+            self.workflow_populator.update_workflow_fields(workflow_id, {"importable": None})
+        )
+        with self._different_user():
+            self._assert_status_code_is(self._get(f"workflows/{workflow_id}"), 403)
+
     def test_cannot_download_private_workflow(self):
         workflow_id = self.workflow_populator.simple_workflow("test_not_downloadable")
         with self._different_user():
@@ -462,6 +488,114 @@ steps:
             workflow_undelete_url = self._api_url(f"workflows/{workflow_id}/undelete", use_key=True)
             undelete_response = post(workflow_undelete_url)
             self._assert_status_code_is(undelete_response, 403)
+
+    def test_update_show_in_tool_panel(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_update_show_in_tool_panel")
+        self._assert_status_code_is_ok(self._update_workflow(workflow_id, {"show_in_tool_panel": True}))
+        assert self._shows_in_tool_panel(workflow_id)
+        self._assert_status_code_is_ok(self._update_workflow(workflow_id, {"show_in_tool_panel": False}))
+        assert not self._shows_in_tool_panel(workflow_id)
+
+    def test_shared_user_can_update_show_in_tool_panel(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_show_in_tool_panel")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        for key in ("show_in_tool_panel", "menu_entry"):
+            self._assert_status_code_is_ok(self._update_workflow(workflow_id, {key: True}))
+            assert self._shows_in_tool_panel(workflow_id, show_shared=True)
+            self._assert_status_code_is_ok(self._update_workflow(workflow_id, {key: False}))
+            assert not self._shows_in_tool_panel(workflow_id, show_shared=True)
+
+    def test_other_can_update_show_in_tool_panel_for_published(self):
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_published_show_in_tool_panel", publish=True)
+        response = self.workflow_populator.update_workflow_fields(workflow_id, {"show_in_tool_panel": True})
+        self._assert_status_code_is_ok(response)
+        assert self._shows_in_tool_panel(workflow_id, show_published=True)
+
+    def test_update_show_in_tool_panel_by_uuid(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_show_in_tool_panel_by_uuid")
+        workflow_uuid = self._show_workflow(workflow_id)["latest_workflow_uuid"]
+        update_fields = self.workflow_populator.update_workflow_fields
+        self._assert_status_code_is_ok(update_fields(workflow_uuid, {"show_in_tool_panel": True}))
+        assert self._shows_in_tool_panel(workflow_id)
+        self._assert_status_code_is_ok(update_fields(workflow_uuid, {"show_in_tool_panel": False}))
+        assert not self._shows_in_tool_panel(workflow_id)
+
+    def test_other_cannot_update(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_other_update")
+        with self._different_user():
+            for update in ({"name": "other name"}, {"published": True}, {"show_in_tool_panel": True}):
+                self._assert_status_code_is(self._update_workflow(workflow_id, update), 403)
+        workflow = self._show_workflow(workflow_id)
+        assert workflow["name"] == "test_other_update"
+        assert workflow["published"] is False
+
+    def test_admin_can_update_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_admin_update")
+        response = self.workflow_populator.update_workflow_fields(workflow_id, {"hidden": True}, admin=True)
+        self._assert_status_code_is_ok(response)
+        assert self._show_workflow(workflow_id)["hidden"] is True
+
+    def test_shared_user_cannot_update_name_with_show_in_tool_panel(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_update_name")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        update = {"show_in_tool_panel": True, "name": "other name"}
+        self._assert_status_code_is(self._update_workflow(workflow_id, update), 403)
+        assert not self._shows_in_tool_panel(workflow_id, show_shared=True)
+        assert self._show_workflow(workflow_id)["name"] == "test_shared_update_name"
+
+    def test_other_cannot_refactor(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_other_refactor")
+        actions = [{"action_type": "update_name", "name": "other name"}]
+        with self._different_user():
+            for dry_run in (True, False):
+                refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=dry_run)
+                self._assert_status_code_is(refactor_response, 403)
+        assert self._show_workflow(workflow_id)["name"] == "test_other_refactor"
+
+    def test_shared_user_cannot_refactor_or_update(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_refactor")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        actions = [{"action_type": "update_name", "name": "other name"}]
+        for dry_run in (True, False):
+            refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=dry_run)
+            self._assert_status_code_is(refactor_response, 403)
+        for fields in ({"tags": ["other"]}, {"hidden": True}):
+            update_response = self.workflow_populator.update_workflow_fields(workflow_id, fields)
+            self._assert_status_code_is(update_response, 403)
+        workflow = self._show_workflow(workflow_id)
+        assert workflow["name"] == "test_shared_refactor"
+        assert workflow["tags"] == []
+        assert workflow["hidden"] is False
+
+    def test_set_workflow_menu(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            shared_workflow_id = self.workflow_populator.simple_workflow("test_set_menu_shared")
+            self.workflow_populator.share_with_user(shared_workflow_id, my_email)
+            private_workflow_id = self.workflow_populator.simple_workflow("test_set_menu_private")
+        menu_response = self.workflow_populator.set_workflow_menu([shared_workflow_id])
+        self._assert_status_code_is_ok(menu_response)
+        assert self._shows_in_tool_panel(shared_workflow_id, show_shared=True)
+        menu_response = self.workflow_populator.set_workflow_menu([shared_workflow_id, private_workflow_id])
+        self._assert_status_code_is(menu_response, 403)
+        assert self._shows_in_tool_panel(shared_workflow_id, show_shared=True)
+
+    def test_set_workflow_menu_drops_duplicate_ids(self):
+        workflow_id_1 = self.workflow_populator.simple_workflow("test_set_menu_dup_1")
+        workflow_id_2 = self.workflow_populator.simple_workflow("test_set_menu_dup_2")
+        menu_response = self.workflow_populator.set_workflow_menu([workflow_id_1, workflow_id_2, workflow_id_1])
+        self._assert_status_code_is_ok(menu_response)
+        menu = self._get("workflows/menu").json()
+        assert len(menu["ids_in_menu"]) == 2
+        assert self._shows_in_tool_panel(workflow_id_1)
+        assert self._shows_in_tool_panel(workflow_id_2)
 
     def test_index(self):
         index_response = self._get("workflows")
@@ -8945,13 +9079,13 @@ outer_input:
         response = self._show_workflow(workflow_id)
         assert not response["published"]
         assert not response["importable"]
-        published_worklow = self._put(f"workflows/{workflow_id}", data={"published": True}, json=True).json()
+        published_worklow = self.workflow_populator.update_workflow_fields(workflow_id, {"published": True}).json()
         assert published_worklow["published"]
-        importable_worklow = self._put(f"workflows/{workflow_id}", data={"importable": True}, json=True).json()
+        importable_worklow = self.workflow_populator.update_workflow_fields(workflow_id, {"importable": True}).json()
         assert importable_worklow["importable"]
-        unpublished_worklow = self._put(f"workflows/{workflow_id}", data={"published": False}, json=True).json()
+        unpublished_worklow = self.workflow_populator.update_workflow_fields(workflow_id, {"published": False}).json()
         assert not unpublished_worklow["published"]
-        unimportable_worklow = self._put(f"workflows/{workflow_id}", data={"importable": False}, json=True).json()
+        unimportable_worklow = self.workflow_populator.update_workflow_fields(workflow_id, {"importable": False}).json()
         assert not unimportable_worklow["importable"]
 
     def test_workflow_from_path_requires_admin(self):
@@ -9148,6 +9282,12 @@ outer_input:
         show_response = self._get(f"workflows/{workflow_id}")
         self._assert_status_code_is(show_response, 200)
         return show_response.json()
+
+    def _shows_in_tool_panel(self, workflow_id, show_shared=None, show_published=None):
+        workflows = self.workflow_populator.index(show_shared=show_shared, show_published=show_published)
+        matches = [w["show_in_tool_panel"] for w in workflows if w["id"] == workflow_id]
+        assert len(matches) == 1, f"expected workflow {workflow_id} once in index, found {len(matches)}"
+        return matches[0]
 
     def _assert_looks_like_instance_workflow_representation(self, workflow):
         self._assert_has_keys(workflow, "url", "owner", "inputs", "annotation", "steps")
