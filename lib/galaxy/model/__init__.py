@@ -4334,7 +4334,6 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
             # else ignoring object_store_ids on HDCAs...
 
         if "ids" in kwds:
-            assert "object_store_ids" not in kwds
             ids = kwds["ids"]
             max_in_filter_length = kwds.get("max_in_filter_length", MAX_IN_FILTER_LENGTH)
             if len(ids) < max_in_filter_length:
