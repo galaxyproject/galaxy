@@ -212,22 +212,26 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
 
         ld.deleted = True
         if payload.purge:
+            ldda = ld.library_dataset_dataset_association
+            # Purging is meant to be irreversible, so all versions are retired with the library dataset.
+            retired_lddas = [ldda, *ld.expired_datasets]
+            for retired_ldda in retired_lddas:
+                retired_ldda.mark_deleted()
             ld.purged = True
-            trans.sa_session.add(ld)
+            trans.sa_session.add_all([ld, *retired_lddas])
             trans.sa_session.commit()
 
             # TODO: had to change this up a bit from Dataset.user_can_purge
-            dataset = ld.library_dataset_dataset_association.dataset
+            dataset = ldda.dataset
             no_history_assoc = len(dataset.history_associations) == len(dataset.purged_history_associations)
-            no_library_assoc = dataset.library_associations == [ld.library_dataset_dataset_association]
+            no_library_assoc = dataset.library_associations == [ldda]
             can_purge_dataset = not dataset.purged and no_history_assoc and no_library_assoc
 
             if can_purge_dataset:
                 try:
-                    ld.library_dataset_dataset_association.dataset.full_delete()
-                    trans.sa_session.add(ld.dataset)
+                    dataset.full_delete()
                 except Exception:
-                    pass
+                    log.exception("Failed to purge dataset %s of library dataset %s", dataset.id, ld.id)
                 # flush now to preserve deleted state in case of later interruption
                 trans.sa_session.commit()
             rval["purged"] = True

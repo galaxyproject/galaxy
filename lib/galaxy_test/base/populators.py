@@ -3958,6 +3958,12 @@ class LibraryPopulator:
         response.raise_for_status()
         return response.json()
 
+    def delete_library_item(self, library_id: str, library_dataset_id: str, purge: bool = False) -> dict[str, Any]:
+        url = f"libraries/{library_id}/contents/{library_dataset_id}"
+        response = self.galaxy_interactor.delete(url, data={"purge": purge}, json=True)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
     def show_ldda(self, ldda_id):
         response = self.galaxy_interactor.get(f"datasets/{ldda_id}?hda_ldda=ldda")
         response.raise_for_status()
