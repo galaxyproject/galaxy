@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
-import { defineComponent } from "vue";
+import { defineComponent, nextTick, ref } from "vue";
 
 import GProgress from "./GProgress.vue";
 import GProgressBar from "./GProgressBar.vue";
@@ -105,6 +105,35 @@ describe("GProgress", () => {
 
         expect(root.attributes("role")).toBe("group");
         expect(root.attributes("aria-label")).toBe("Job states");
+    });
+
+    it("updates the track's role when its stacked content comes and goes", async () => {
+        const showBars = ref(false);
+        const wrapper = mount(
+            defineComponent({
+                components: { GProgress, GProgressBar },
+                setup: () => ({ showBars }),
+                template: `
+                    <GProgress :value="3" aria-label="Job states">
+                        <template v-if="showBars" #default>
+                            <GProgressBar :value="2" aria-label="Failed" />
+                        </template>
+                    </GProgress>`,
+            }),
+        );
+        const root = () => wrapper.get(".g-progress");
+
+        expect(root().attributes("role")).toBeUndefined();
+
+        showBars.value = true;
+        await nextTick();
+        expect(root().attributes("role")).toBe("group");
+        expect(root().attributes("aria-label")).toBe("Job states");
+
+        showBars.value = false;
+        await nextTick();
+        expect(root().attributes("role")).toBeUndefined();
+        expect(bars(wrapper)[0]!.attributes("aria-label")).toBe("Job states");
     });
 
     it("lets a bar override the progress maximum", () => {

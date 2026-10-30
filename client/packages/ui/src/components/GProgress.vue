@@ -8,7 +8,7 @@
  * Attributes such as `class` land on the track.
  */
 
-import { computed, provide, useSlots } from "vue";
+import { computed, provide } from "vue";
 
 import { progressKey, type ProgressVariant, toNumber } from "./progressContext";
 
@@ -52,8 +52,6 @@ const props = withDefaults(defineProps<Props>(), {
     ariaLabelledby: undefined,
 });
 
-const slots = useSlots();
-
 const max = computed(() => {
     const max = toNumber(props.max, 100);
     return max > 0 ? max : 100;
@@ -68,17 +66,15 @@ provide(progressKey, {
     showValue: computed(() => props.showValue),
     precision: computed(() => Math.max(Math.floor(toNumber(props.precision, 0)), 0)),
 });
-
-const stacked = computed(() => Boolean(slots.default));
 </script>
 
 <template>
     <div
         class="g-progress"
         :style="{ height: props.height }"
-        :role="stacked && (props.ariaLabel || props.ariaLabelledby) ? 'group' : undefined"
-        :aria-label="stacked ? props.ariaLabel : undefined"
-        :aria-labelledby="stacked ? props.ariaLabelledby : undefined">
+        :role="$slots.default && (props.ariaLabel || props.ariaLabelledby) ? 'group' : undefined"
+        :aria-label="$slots.default ? props.ariaLabel : undefined"
+        :aria-labelledby="$slots.default ? props.ariaLabelledby : undefined">
         <slot>
             <GProgressBar
                 :value="props.value"
