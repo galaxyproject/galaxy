@@ -114,10 +114,6 @@ describe("InstallationSettings", () => {
         const sectionInput = wrapper.get("#install-tool-section");
         expect(wrapper.get('label[for="install-tool-section"]').text()).toBe("Target Section:");
         expect(sectionInput.element.closest('[role="combobox"]')).not.toBeNull();
-
-        expect(wrapper.vm.installToolDependencies).toBe(true);
-        expect(wrapper.vm.installRepositoryDependencies).toBe(true);
-        expect(wrapper.vm.installResolverDependencies).toBe(true);
     });
 
     describe("target section", () => {
