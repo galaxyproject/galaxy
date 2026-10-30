@@ -104,6 +104,21 @@ function isApiException(e: unknown): e is ApiMessageException {
     return e instanceof Object && "err_msg" in e
 }
 
+// Only paths on this site, so a crafted ?redirect= can't send someone off-site after logging in. Resolving
+// against our origin catches what prefix checks miss, like "/\t/evil.example" parsing as "//evil.example".
+export function safeReturnPath(value: string | null | undefined): string | null {
+    if (!value?.startsWith("/")) {
+        return null
+    }
+    const url = new URL(value, window.location.origin)
+    return url.origin === window.location.origin ? url.pathname + url.search + url.hash : null
+}
+
+// Login and register links that carry the page to return to after logging in.
+export function withRedirect(path: "/login" | "/register", returnTo: string | null | undefined): string {
+    return returnTo ? `${path}?redirect=${encodeURIComponent(returnTo)}` : path
+}
+
 export function queryParamToString(param: LocationQueryValue | LocationQueryValue[]): string | null {
     return Array.isArray(param) ? param[0] : param
 }
