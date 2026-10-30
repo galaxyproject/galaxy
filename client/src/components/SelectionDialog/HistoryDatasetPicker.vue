@@ -2,10 +2,15 @@
 import { faHdd } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref } from "vue";
 
-import { GalaxyApi, type HDASummary, type HistorySortByLiteral, type HistorySummary } from "@/api";
+import { GalaxyApi, type HDASummary, type HistorySortByLiteral } from "@/api";
 import { getMyHistories } from "@/api/histories";
 import type { TableField } from "@/components/Common/GTable.types";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
+import {
+    datasetToItem,
+    type HistorySelectionItem,
+    historyToItem,
+} from "@/components/SelectionDialog/selectionAdapters";
 import {
     type ItemsProvider,
     type ItemsProviderContext,
@@ -15,15 +20,6 @@ import {
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
-
-interface HistoryRecord extends SelectionItem {
-    size: number;
-    update_time: string;
-}
-
-interface DatasetRecord extends SelectionItem {
-    update_time: string | null;
-}
 
 interface Props {
     title?: string;
@@ -86,35 +82,6 @@ const fields = computed<TableField[]>(() => {
     }
 });
 
-function historyEntryToRecord(entry: HistorySummary): HistoryRecord {
-    const result: HistoryRecord = {
-        id: entry.id,
-        label: entry.name,
-        details: entry.annotation || "",
-        isLeaf: false,
-        url: entry.url,
-        size: entry.count,
-        update_time: entry.update_time,
-        entry: entry,
-    };
-
-    return result;
-}
-
-function datasetEntryToRecord(entry: HDASummary): DatasetRecord {
-    const result: DatasetRecord = {
-        id: entry.id,
-        label: entry.name || "",
-        details: "",
-        isLeaf: true,
-        url: entry.url,
-        update_time: entry.update_time,
-        entry: entry,
-    };
-
-    return result;
-}
-
 function formatRows() {
     hasValue.value = selected.value.length > 0;
 
@@ -155,7 +122,7 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
 
         totalItems.value = total;
 
-        items.value = data.map(historyEntryToRecord);
+        items.value = data.map(historyToItem);
 
         formatRows();
 
@@ -168,7 +135,7 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
     }
 }
 
-async function datasetsProvider(ctx: ItemsProviderContext, selectedHistory: HistoryRecord) {
+async function datasetsProvider(ctx: ItemsProviderContext, selectedHistory: HistorySelectionItem) {
     loading.value = true;
 
     try {
@@ -198,7 +165,7 @@ async function datasetsProvider(ctx: ItemsProviderContext, selectedHistory: Hist
 
         totalItems.value = parseInt(response.headers.get("total_matches") ?? "0");
 
-        items.value = (data as HDASummary[]).map(datasetEntryToRecord);
+        items.value = (data as HDASummary[]).map(datasetToItem);
 
         formatRows();
 
@@ -217,7 +184,7 @@ function onHistoryClick(item: SelectionItem) {
         selectionDialog.value?.resetFilter();
         selectionDialog.value?.resetPagination();
         datasetsVisible.value = true;
-        itemsProvider.value = (ctx: ItemsProviderContext) => datasetsProvider(ctx, item as HistoryRecord);
+        itemsProvider.value = (ctx: ItemsProviderContext) => datasetsProvider(ctx, item as HistorySelectionItem);
     }
 }
 

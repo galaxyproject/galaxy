@@ -12,6 +12,7 @@ import {
 } from "@/api/remoteFiles";
 import type { TableField } from "@/components/Common/GTable.types";
 import { fileSourcePluginToItem, isSamePath, isSubPath } from "@/components/FilesDialog/utilities";
+import { filesDialogEntryToItem } from "@/components/SelectionDialog/selectionAdapters";
 import {
     type ItemsProvider,
     type ItemsProviderContext,
@@ -222,7 +223,7 @@ function selectDirectoryRecursive(record: SelectionItem) {
                 }
                 incoming.entries.forEach((item) => {
                     // construct record
-                    const subRecord = entryToRecord(item);
+                    const subRecord = filesDialogEntryToItem(item);
                     if (subRecord.isLeaf) {
                         // select file under this path
                         selectSingleRecord(subRecord, true);
@@ -390,7 +391,7 @@ function load() {
         isBusy.value = true;
         browseRemoteFiles(urlTracker.current.value?.url, false, props.requireWritable)
             .then((result) => {
-                items.value = filterByMode(result.entries).map(entryToRecord);
+                items.value = filterByMode(result.entries).map(filesDialogEntryToItem);
                 totalItems.value = result.totalMatches;
                 formatRows();
                 showTime.value = true;
@@ -445,7 +446,7 @@ async function provideItems(ctx: ItemsProviderContext, url?: string): Promise<Se
         const offset = (ctx.currentPage ? ctx.currentPage - 1 : 0) * ctx.perPage;
         query.value = ctx.filter;
         const response = await browseRemoteFiles(url, false, props.requireWritable, limit, offset, query.value);
-        const result = response.entries.map(entryToRecord);
+        const result = response.entries.map(filesDialogEntryToItem);
         totalItems.value = response.totalMatches;
         items.value = result;
         formatRows();
@@ -464,20 +465,6 @@ function filterByMode(results: RemoteEntry[]): RemoteEntry[] {
         return results.filter((item) => item.class === "Directory");
     }
     return results;
-}
-
-function entryToRecord(entry: RemoteEntry): SelectionItem {
-    const result = {
-        id: entry.uri,
-        label: entry.name,
-        time: entry.class === "File" ? (entry.ctime ?? "") : "",
-        details: entry.class === "File" ? (entry.ctime ?? "") : "",
-        isLeaf: entry.class === "File",
-        url: entry.uri,
-        size: entry.class === "File" ? entry.size : 0,
-        entry: entry,
-    };
-    return result;
 }
 
 /** select all files in current folder**/

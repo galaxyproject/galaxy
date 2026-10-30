@@ -2,19 +2,12 @@
 import axios from "axios";
 import { onMounted, ref } from "vue";
 
+import { type CollectionEntry, collectionToItem } from "@/components/SelectionDialog/selectionAdapters";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
-
-interface HistoryItem {
-    id: string;
-    name: string;
-    created_time: string;
-    hid: number;
-    collection_type?: string;
-}
 
 interface Props {
     callback?: (results: SelectionItem) => void;
@@ -33,7 +26,7 @@ const emit = defineEmits<{
 }>();
 
 const errorMessage = ref("");
-const items = ref([]);
+const items = ref<SelectionItem[]>([]);
 const modalShow = ref(true);
 const optionsShow = ref(false);
 
@@ -56,21 +49,14 @@ function load() {
     axios
         .get(url)
         .then((response) => {
-            let collection_instances = response.data.sort((a: HistoryItem, b: HistoryItem) => b.hid - a.hid);
+            let collection_instances = response.data.sort((a: CollectionEntry, b: CollectionEntry) => b.hid - a.hid);
             if (props.collectionTypes?.length) {
                 collection_instances = collection_instances.filter(
-                    (item: HistoryItem) =>
+                    (item: CollectionEntry) =>
                         item.collection_type && props.collectionTypes!.includes(item.collection_type),
                 );
             }
-            items.value = collection_instances.map((item: HistoryItem) => {
-                return {
-                    id: item.id,
-                    label: item.name,
-                    time: item.created_time,
-                    isLeaf: true,
-                };
-            });
+            items.value = collection_instances.map(collectionToItem);
             optionsShow.value = true;
         })
         .catch((error) => {
