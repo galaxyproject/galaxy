@@ -8877,8 +8877,10 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         element_obj = self.element_object
         if isinstance(element_obj, HistoryDatasetAssociation):
             rval["hda"] = element_obj.serialize(id_encoder, serialization_options, for_link=True)
-        else:
+        elif element_obj is not None:
             rval["child_collection"] = element_obj.serialize(id_encoder, serialization_options)
+        # Filtered mapped outputs can leave uninitialized collection elements.
+        # Preserve their position and identifier without dereferencing None.
         return rval
 
 

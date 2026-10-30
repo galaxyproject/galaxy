@@ -1218,6 +1218,48 @@ def test_import_export_edit_datasets():
     assert d1.dataset.object_store_id == "foo1", d1.dataset.object_store_id
 
 
+@pytest.mark.parametrize("nested", [False, True])
+def test_import_export_uninitialized_collection_elements(tmp_path, nested):
+    """Filtered mapped outputs retain empty slots while metadata is exported."""
+    app = _mock_app()
+    user = model.User(email="uninitialized@example.com", password="password")
+    history = model.History(name="Mapped outputs", user=user)
+    leaf = model.DatasetCollection(collection_type="list")
+    model.DatasetCollectionElement(
+        collection=leaf,
+        element=model.DatasetCollectionElement.UNINITIALIZED_ELEMENT,
+        element_index=0,
+        element_identifier="run_1",
+        columns=["sample annotation"],
+    )
+    model.DatasetCollectionElement(
+        collection=leaf,
+        element=model.DatasetCollectionElement.UNINITIALIZED_ELEMENT,
+        element_index=1,
+        element_identifier="run_2",
+    )
+    collection = leaf
+    if nested:
+        collection = model.DatasetCollection(collection_type="list:list")
+        model.DatasetCollectionElement(collection=collection, element=leaf, element_index=0, element_identifier="batch")
+    hdca = model.HistoryDatasetCollectionAssociation(history=history, collection=collection, hid=1, name="Filtered")
+    app.add_and_commit(hdca)
+    with store.DirectoryModelExportStore(tmp_path, app=app) as export_store:
+        export_store.export_collection(hdca)
+    imported_history = model.History(name="Imported mapped outputs", user=user)
+    app.add_and_commit(imported_history)
+    _perform_import_from_directory(tmp_path, app, user, imported_history)
+    imported = imported_history.dataset_collections[0].collection
+    if nested:
+        assert imported.elements[0].element_identifier == "batch"
+        imported = imported.elements[0].child_collection
+    assert [(e.element_identifier, e.element_index, e.element_object) for e in imported.elements] == [
+        ("run_1", 0, None),
+        ("run_2", 1, None),
+    ]
+    assert imported.elements[0].columns == ["sample annotation"]
+
+
 def test_import_export_edit_collection(tmp_path):
     """Test modifying existing collections with imports."""
     app = _mock_app()

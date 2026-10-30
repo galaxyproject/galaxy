@@ -929,6 +929,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dce.hda = hda
                     elif "child_collection" in element_attrs:
                         dce.child_collection = import_collection(element_attrs["child_collection"])
+                    elif "element_type" in element_attrs and element_attrs["element_type"] is None:
+                        # Retain an explicitly uninitialized element, including
+                        # its index, identifier and sample-sheet columns.
+                        pass
                     else:
                         raise Exception("Unknown collection element type encountered.")
                 dc.element_count = len(elements_attrs)
