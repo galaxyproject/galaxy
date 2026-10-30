@@ -881,6 +881,11 @@ extra_dirs:
 """
 
 
+# The examples cache under a relative ``database/``, shared by every test run from the checkout.
+AZURE_TEMP_CACHE_TEST_CONFIG_YAML = get_example("azure_simple.yml").replace("database/", "${temp_directory}/")
+CLOUD_AWS_TEMP_CACHE_TEST_CONFIG_YAML = get_example("cloud_aws_simple.yml").replace("database/", "${temp_directory}/")
+
+
 def _cache_path_for(object_store, dataset):
     rel_path = object_store._construct_path(dataset)
     return object_store._get_cache_path(rel_path, object_store._get_object_id(dataset))
@@ -1379,7 +1384,7 @@ def test_get_data_head_boto3_fails_for_a_missing_object():
 
 @patch_object_stores_to_skip_initialize
 def test_get_data_head_azure_reads_a_byte_range_instead_of_a_stale_cached_copy():
-    with TestConfig(get_example("azure_simple.yml")) as (directory, object_store):
+    with TestConfig(AZURE_TEMP_CACHE_TEST_CONFIG_YAML) as (directory, object_store):
         dataset = MockDataset(1)
         cache_path = _write_cached(object_store, dataset, b"")
         blob_client = MagicMock()
@@ -1394,7 +1399,7 @@ def test_get_data_head_azure_reads_a_byte_range_instead_of_a_stale_cached_copy()
 
 @patch_object_stores_to_skip_initialize
 def test_get_data_head_stops_streaming_once_it_has_enough_bytes():
-    with TestConfig(get_example("cloud_aws_simple.yml")) as (directory, object_store):
+    with TestConfig(CLOUD_AWS_TEMP_CACHE_TEST_CONFIG_YAML) as (directory, object_store):
         dataset = MockDataset(1)
         _write_cached(object_store, dataset, b"")
         closed = []
