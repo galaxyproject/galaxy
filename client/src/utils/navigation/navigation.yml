@@ -1052,6 +1052,8 @@ workflow_editor:
 
   best_practices:
     selectors:
+      section_formal_inputs: '[data-description="linting formal inputs"]'
+      item_formal_input: '[data-description="linting formal inputs"] [data-item-index="${index}"]'
       section_input_metadata: '[data-description="linting input metadata"]'
       item_input_metadata: '[data-description="linting input metadata"] [data-item-index="${index}"]'
 
@@ -1076,6 +1078,7 @@ workflow_editor:
     node_inspector: '.tool-inspector'
     node_inspector_close: ".tool-inspector [title='close']"
     canvas_body: '#workflow-canvas'
+    canvas_loading: '#workflow-canvas .galaxy-loading-shade'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
     license_selector: '[data-description="license select"]'

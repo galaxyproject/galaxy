@@ -68,47 +68,45 @@ export class UntypedParameters {
         this.parameters.push(untypedParameter);
         return untypedParameter;
     }
+}
 
-    getParameterFromMatch(match: string) {
-        return this.getParameter(match.substring(2, match.length - 1));
-    }
+const REPLACEMENT_PARAMETER_RE = /\$\{(.+?)\}/g;
+
+/** Names of the `${name}` replacement parameters in a string. */
+function replacementParameterNames(value: string): string[] {
+    return Array.from(value.matchAll(REPLACEMENT_PARAMETER_RE), (match) => match[1]!);
 }
 
 export function getUntypedWorkflowParameters(steps: Steps) {
     const untypedParameters = new UntypedParameters();
-    const parameter_re = /\$\{.+?\}/g;
+    // Runtime fills rename ${label} from the parameter input with that label.
+    const parameterInputLabels = new Set(
+        Object.values(steps)
+            .filter((step) => step.type == "parameter_input" && step.label)
+            .map((step) => step.label),
+    );
     Object.values(steps).forEach((step) => {
         if (step.config_form?.inputs) {
             // TODO: with new tool state we could type this and drop the any
             Utils.deepEach(step.config_form.inputs, (d: any) => {
                 if (typeof d.value == "string") {
-                    const formMatches = d.value.match(parameter_re);
-                    if (formMatches) {
-                        for (const match of formMatches) {
-                            const untypedParameter = untypedParameters.getParameterFromMatch(match);
-                            new ToolInputUntypedParameterReference(untypedParameter, step, d);
-                        }
+                    for (const name of replacementParameterNames(d.value)) {
+                        new ToolInputUntypedParameterReference(untypedParameters.getParameter(name), step, d);
                     }
                 }
             });
         }
-        if (step.post_job_actions) {
-            Object.values(step.post_job_actions).forEach((pja) => {
-                if (pja.action_arguments) {
-                    Object.values(pja.action_arguments).forEach((action_argument) => {
-                        if (typeof action_argument === "string") {
-                            const arg_matches = action_argument.match(parameter_re);
-                            if (arg_matches) {
-                                for (const match of arg_matches) {
-                                    const untypedParameter = untypedParameters.getParameterFromMatch(match);
-                                    new PjaUntypedParameterReference(untypedParameter, step, pja);
-                                }
-                            }
-                        }
-                    });
+        // Only rename actions substitute ${...} at runtime.
+        Object.values(step.post_job_actions ?? {}).forEach((pja) => {
+            const newname = pja.action_type == "RenameDatasetAction" ? pja.action_arguments?.newname : undefined;
+            if (typeof newname === "string") {
+                for (const name of replacementParameterNames(newname)) {
+                    if (!parameterInputLabels.has(name)) {
+                        new PjaUntypedParameterReference(untypedParameters.getParameter(name), step, pja);
+                    }
                 }
-            });
-        }
+            }
+        });
     });
     return untypedParameters;
 }
