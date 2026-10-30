@@ -182,6 +182,15 @@ class TestHistoryContentsApi(ApiTestCase):
         hda_details = self.__check_for_hda(contents_response, hda1)
         self.__assert_hda_has_full_details(hda_details)
 
+    def test_index_hda_by_ids(self, history_id):
+        hda1 = self.dataset_populator.new_dataset(history_id)
+        self.dataset_populator.new_dataset(history_id)
+        contents_response = self._get(f"histories/{history_id}/contents?ids={hda1['id']}")
+        self._assert_status_code_is(contents_response, 200)
+        contents = contents_response.json()
+        assert [item["id"] for item in contents] == [hda1["id"]]
+        self.__assert_hda_has_full_details(contents[0])
+
     def test_index_detail_parameter_error(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id)
         # Invalid details should return 400
