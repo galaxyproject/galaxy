@@ -363,7 +363,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
             # No byte range can be satisfied in an empty object.
             if code == "InvalidRange":
                 return b""
-            if code == "NoSuchKey":
+            if code in ("NoSuchKey", "404"):
                 raise ObjectNotFound(f"objectstore.get_data_head, object does not exist: {rel_path}")
             raise
         body = response["Body"]
