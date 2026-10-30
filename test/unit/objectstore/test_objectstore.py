@@ -1409,16 +1409,15 @@ def test_get_data_head_stops_streaming_once_it_has_enough_bytes():
 
 @patch_object_stores_to_skip_initialize
 def test_get_data_head_reads_the_cached_copy_when_the_backend_cannot_stream():
-    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+    with TestConfig(PITHOS_TEST_CONFIG_YAML) as (directory, object_store):
         dataset = MockDataset(1)
         _write_cached(object_store, dataset, b"the cached data")
-        with patch.object(object_store, "_read_remote_head", return_value=None):
-            assert object_store.get_data_head(dataset, 10) == b"the cached"
+        assert object_store.get_data_head(dataset, 10) == b"the cached"
 
 
 @patch_object_stores_to_skip_initialize
 def test_get_data_head_refreshes_an_empty_cached_copy_when_the_backend_cannot_stream():
-    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+    with TestConfig(PITHOS_TEST_CONFIG_YAML) as (directory, object_store):
         dataset = MockDataset(1)
         _write_cached(object_store, dataset, b"")
 
@@ -1428,7 +1427,6 @@ def test_get_data_head_refreshes_an_empty_cached_copy_when_the_backend_cannot_st
             return True
 
         with (
-            patch.object(object_store, "_read_remote_head", return_value=None),
             patch.object(object_store, "_exists", return_value=True),
             patch.object(object_store, "_download", side_effect=download),
         ):
