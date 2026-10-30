@@ -1383,6 +1383,23 @@ def test_get_data_head_boto3_fails_for_a_missing_object():
 
 
 @patch_object_stores_to_skip_initialize
+def test_get_data_head_boto3_fails_for_a_missing_object_with_an_empty_cached_copy():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        # Created along with the object, so it doesn't show the object was ever written.
+        _write_cached(object_store, dataset, b"")
+        with _stub_s3_client(object_store) as stubber:
+            stubber.add_client_error(
+                "get_object",
+                service_error_code="NoSuchKey",
+                http_status_code=404,
+                expected_params=_get_object_head_params(object_store, dataset, 10),
+            )
+            with pytest.raises(ObjectNotFound):
+                object_store.get_data_head(dataset, 10)
+
+
+@patch_object_stores_to_skip_initialize
 def test_get_data_head_azure_reads_a_byte_range_instead_of_a_stale_cached_copy():
     with TestConfig(AZURE_TEMP_CACHE_TEST_CONFIG_YAML) as (directory, object_store):
         dataset = MockDataset(1)
@@ -1420,6 +1437,22 @@ def test_get_data_head_azure_fails_for_a_missing_blob():
         with patch.object(object_store, "_blob_client", return_value=blob_client):
             with pytest.raises(ObjectNotFound):
                 object_store.get_data_head(MockDataset(1), 10)
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_boto3_reads_the_cached_copy_of_an_object_missing_from_the_bucket():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        # As left by a failed push.
+        _write_cached(object_store, dataset, b"the cached data")
+        with _stub_s3_client(object_store) as stubber:
+            stubber.add_client_error(
+                "get_object",
+                service_error_code="NoSuchKey",
+                http_status_code=404,
+                expected_params=_get_object_head_params(object_store, dataset, 10),
+            )
+            assert object_store.get_data_head(dataset, 10) == b"the cached"
 
 
 @patch_object_stores_to_skip_initialize

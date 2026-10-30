@@ -442,6 +442,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         Unlike `get_data`, caching stores read these bytes from their backend instead of their cache: the
         cached copy of an object written from another host (e.g. by a remote job) can be stale. Backends
         that can't read part of an object read their cached copy instead, pulled again only when it is empty.
+        An object missing from their backend, as after a failed push, is read from a non-empty cached copy.
 
         If the object does not exist raises `ObjectNotFound`; a `size` of 0 or less returns `b""` without
         checking.

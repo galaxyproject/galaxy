@@ -240,7 +240,17 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         return _ClosingIterator(iterator, stream.close)
 
     def _get_data_head(self, obj, size: int, **kwargs) -> bytes:
-        head = self._read_remote_head(self._construct_path(obj, **kwargs), size)
+        rel_path = self._construct_path(obj, **kwargs)
+        try:
+            head = self._read_remote_head(rel_path, size)
+        except ObjectNotFound:
+            # A failed push leaves the object only in the cache. An empty cached copy proves nothing:
+            # it is created along with the object, before any data is written to it.
+            cache_path = self._get_cache_path(rel_path, self._get_object_id(obj))
+            if not (self._in_cache(cache_path) and os.path.getsize(cache_path) > 0):
+                raise
+            with open(cache_path, "rb") as f:
+                return f.read(size)
         if head is not None:
             return head
         # This backend can't read part of the object: read the cached copy, which `_get_filename`
