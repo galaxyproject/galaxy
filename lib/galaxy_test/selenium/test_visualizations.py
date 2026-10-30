@@ -64,6 +64,30 @@ class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
 
     @selenium_test
     @managed_history
+    def test_display_application_links(self):
+        self.dataset_populator.new_dataset(
+            self.current_history_id(), content="chr1\t100\t200\ta\n", file_type="bed", dbkey="hg38", wait=True
+        )
+        details = self.dataset_populator.get_history_dataset_details(self.current_history_id(), hid=1)
+        expected = {
+            app["label"]: [link["text"] for link in app["links"]]
+            for app in details["display_apps"] + details["display_types"]
+        }
+        assert expected["display at UCSC"] == ["main"]
+        assert self.dataset_display_applications(1) == expected
+        self.screenshot("dataset_display_application_links")
+
+    @selenium_test
+    @managed_history
+    def test_no_display_application_links(self):
+        self.dataset_populator.new_dataset(
+            self.current_history_id(), content="No display applications.\n", file_type="txt", wait=True
+        )
+        assert self.dataset_display_applications(1) == {}
+        self.screenshot("dataset_display_application_links_empty")
+
+    @selenium_test
+    @managed_history
     @skip_without_visualization_plugin("igv")
     def test_igv_loads_correct_genome(self):
         hid = 1

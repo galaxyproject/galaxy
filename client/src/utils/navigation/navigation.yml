@@ -439,6 +439,8 @@ history_storage:
 storage_dashboard:
   selectors:
     free_space_link: '[data-description="free-space card"] button'
+    refresh_disk_usage: '#refresh-disk-usage'
+    recalculating: '.refreshing-alert'
     explore_usage_link: '[data-description="explore-storage card"] button'
 
   # Free up disk space; review_link/no_items take a cleanup id (e.g. deleted_datasets), the rest are the shared dialogs
@@ -1026,6 +1028,10 @@ workflows:
 visualization:
   selectors:
     activity: '#activity-visualizations'
+    display_applications: '[data-description="dataset display applications"]'
+    display_application_items: '[data-description="dataset display application"]'
+    display_application_label: '[data-description="display application label"]'
+    display_application_links: 'a'
     matched_plugin: '#center [data-plugin-name*="${id}"]'
     show_all_button: '[data-description="visualizations show list"]'
 
@@ -1205,6 +1211,7 @@ workflow_editor:
 
   best_practices:
     selectors:
+      sections: '[data-description^="linting "]'
       section_input_metadata: '[data-description="linting input metadata"]'
       item_input_metadata: '[data-description="linting input metadata"] [data-item-index="${index}"]'
       section_conditional_gates: '[data-description="linting conditional gates"]'
@@ -1232,6 +1239,8 @@ workflow_editor:
     node_inspector_close: ".tool-inspector [title='close']"
     canvas_body: '#workflow-canvas'
     canvas_loading: '#workflow-canvas .galaxy-loading-shade'
+    attributes_panel: '#edit-attributes'
+    edit_tags_toggle: '#edit-attributes .stateless-tags .toggle-button'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
     license_selector: '[data-description="license select"]'

@@ -1,6 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { h } from "vue";
 
 import DisplayApplications from "./DisplayApplications.vue";
@@ -8,6 +8,7 @@ import DisplayApplications from "./DisplayApplications.vue";
 const localVue = getLocalVue();
 
 const raw = {
+    id: "dataset-id",
     display_apps: [
         {
             label: "app-1",
@@ -64,6 +65,8 @@ const raw = {
     ],
 };
 
+let providerResult;
+
 vi.mock("../providers/DatasetProvider", () => ({
     // A plain-object `render() { this.$slots... }` method gets routed through Vue
     // compat's legacy `with(this)` render-context wrapping (RENDER_FUNCTION compat),
@@ -71,7 +74,7 @@ vi.mock("../providers/DatasetProvider", () => ({
     // a render function sidesteps that entirely.
     default: {
         setup(_props, { slots }) {
-            return () => slots.default?.({ loading: false, result: raw });
+            return () => slots.default?.({ loading: false, result: providerResult });
         },
     },
 }));
@@ -100,6 +103,31 @@ function getUrl(i) {
 }
 
 describe("DisplayApplications", () => {
+    beforeEach(() => {
+        providerResult = raw;
+    });
+
+    it.each([
+        ["loading", null],
+        ["failed", {}],
+        ["stale", { ...raw, id: "another-dataset-id" }],
+    ])("does not expose a ready catalog for a %s provider result", (_state, result) => {
+        providerResult = result;
+        const wrapper = mountTarget();
+
+        expect(wrapper.find('[data-description="dataset display applications"]').exists()).toBe(false);
+        expect(wrapper.findAll("a")).toHaveLength(0);
+    });
+
+    it("exposes a successfully loaded empty catalog without display links or guidance", () => {
+        providerResult = { id: "dataset-id", display_apps: [], display_types: [] };
+        const wrapper = mountTarget();
+
+        expect(wrapper.find('[data-description="dataset display applications"]').exists()).toBe(true);
+        expect(wrapper.findAll("a")).toHaveLength(0);
+        expect(wrapper.text()).not.toContain("You can display your dataset");
+    });
+
     it("check props", async () => {
         const wrapper = mountTarget();
 
