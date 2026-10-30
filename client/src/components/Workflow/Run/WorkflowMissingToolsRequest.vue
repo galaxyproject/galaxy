@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { useCanRequestToolInstallation } from "@/composables/toolInstallationRequest";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import ToolInstallationRequestDialog from "@/components/Workflow/ToolInstallationRequestDialog.vue";
 
@@ -26,9 +26,9 @@ const toolCount = computed(() => props.missingToolIds.length);
 
 <template>
     <div v-if="showButton" class="workflow-missing-tools-request mt-3">
-        <BAlert v-if="submitted" variant="success" show>
+        <GAlert v-if="submitted" variant="success" show>
             Installation request sent. Check your notifications for updates.
-        </BAlert>
+        </GAlert>
 
         <GButton
             v-else

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { submitToolInstallationRequest } from "@/api/notifications";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { isValidNetworkUrl } from "@/utils/url";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 
@@ -145,13 +145,13 @@ async function submit() {
         @ok="submit"
         @cancel="close"
         @update:show="emit('update:show', $event)">
-        <BAlert v-if="successMessage" variant="success" show>
+        <GAlert v-if="successMessage" variant="success" show>
             {{ successMessage }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = ''">
+        <GAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = ''">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
 
         <div v-if="!successMessage">
             <p class="mb-3 text-muted">
