@@ -30,9 +30,9 @@ class TestCompressionUtil(TestCase):
         self.assert_format_detected("test-data/4.bed.bz2", None, ["gzip", "zip"])
 
     def test_get_fileobj_raw_tar_with_stray_zip_end_record(self):
-        # A zip end-of-central-directory record near the end of a tar fools zipfile.is_zipfile.
+        # A zip end-of-central-directory record near the end of a tar fools zipfile.is_zipfile
+        # before Python 3.14, which also checks for the central directory itself.
         path = "test-data/tar_with_stray_zip_end_record.tar"
-        assert zipfile.is_zipfile(path)
         with open(path, "rb") as expected:
             expected_bytes = expected.read()
         fmt, fh = get_fileobj_raw(path, "rb")
