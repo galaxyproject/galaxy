@@ -18,6 +18,18 @@ class TestCollectionBuilders(SeleniumTestCase):
         self.screenshot("collection_builder_wizard_list")
         self.collection_builder_create()
         self._wait_for_hid_visible(3)
+        self._assert_selection_cleared()
+
+    @selenium_test
+    @managed_history
+    def test_build_list_open_keeps_selection(self):
+        self.perform_upload(self.get_filename("1.fasta"))
+        self._wait_for_and_select([1])
+        self.history_panel_build_list_auto()
+        self.components.collection_builders.name.wait_for_visible()
+        multi_operations = self.navigation.history_panel.multi_operations.selectors
+        self.wait_for_visible(multi_operations.selected_content_menu)
+        self.wait_for_visible(multi_operations.item_selector)
 
     @selenium_test
     @managed_history
@@ -46,6 +58,7 @@ class TestCollectionBuilders(SeleniumTestCase):
         self.screenshot("collection_builder_paired_list")
         self.collection_builder_create()
         self._wait_for_hid_visible(5)
+        self._assert_selection_cleared()
         # switch to hidden filters to see the hidden datasets appear
         self._show_hidden_content()
         self._wait_for_hid_visible(1)
@@ -170,6 +183,11 @@ class TestCollectionBuilders(SeleniumTestCase):
         timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
         row_selector = self.content_item_by_attributes(hid=hid, state=state)
         self.wait_for_visible(row_selector, timeout=timeout)
+
+    def _assert_selection_cleared(self):
+        multi_operations = self.navigation.history_panel.multi_operations.selectors
+        self.wait_for_absent(multi_operations.selected_content_menu)
+        self.wait_for_absent(multi_operations.item_selector)
 
     def _collection_dropdown(self, option_description):
         return self.use_bootstrap_dropdown(option=option_description, menu="selected content menu")
