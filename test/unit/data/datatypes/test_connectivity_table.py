@@ -1,5 +1,4 @@
 import os
-from types import SimpleNamespace
 
 import pytest
 
@@ -10,9 +9,6 @@ from galaxy.util import galaxy_directory
 @pytest.fixture
 def dataset():
     class MockDataset:
-        def __init__(self):
-            self.metadata = SimpleNamespace(column_names=None, comment_lines=None, delimiter="\t")
-
         def get_file_name(self, sync_cache=True, auth=None):
             return os.path.join(galaxy_directory(), "test-data/1.ct")
 

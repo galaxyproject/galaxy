@@ -167,17 +167,7 @@ class TabularData(Text):
         )
 
     def _get_data_line_offset(self, dataset: DatasetProtocol, offset: int = 0) -> int:
-        if offset:
-            return 0
-        data_line_offset = self.data_line_offset
-        column_names = dataset.metadata.column_names
-        comment_lines = dataset.metadata.comment_lines
-        if not column_names:
-            return data_line_offset
-        try:
-            return max(data_line_offset, int(comment_lines))
-        except (TypeError, ValueError):
-            return data_line_offset
+        return self.data_line_offset
 
     def _read_chunk(self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int, ck_size: int | None = None):
         with compression_utils.get_fileobj(dataset.get_file_name()) as f:
@@ -277,7 +267,7 @@ class TabularData(Text):
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
             columns = min(columns, self.max_peek_columns)
-            column_headers: list[str | None] = [None] * columns
+            column_headers = [None] * columns
 
             # fill in empty headers with data from column_names
             assert column_names is not None
@@ -435,12 +425,19 @@ class Tabular(TabularData):
         **kwd,
     ) -> None:
         """
-        Determine tabular metadata including column count, column types, line
-        counts, and optional column names. Subclasses can pass ``skip`` when
-        they know how many leading lines are not data. ``max_data_lines`` limits
-        how many data lines are inspected; when the limit is reached before EOF,
-        optional line-count metadata is cleared because the full counts are
-        unknown.
+        Tries to determine the number of columns as well as those columns that
+        contain numerical values in the dataset.  A skip parameter is used
+        because various tabular data types reuse this function, and their data
+        type classes are responsible to determine how many invalid comment
+        lines should be skipped. Using None for skip will cause skip to be
+        zero, but the first line will be processed as a header. A
+        max_data_lines parameter is used because various tabular data types
+        reuse this function, and their data type classes are responsible to
+        determine how many data lines should be processed to ensure that the
+        non-optional metadata parameters are properly set; if used, optional
+        metadata parameters will be set to None, unless the entire file has
+        already been read. Using None for max_data_lines will process all data
+        lines.
 
         Items of interest:
 
@@ -543,9 +540,11 @@ class Tabular(TabularData):
                                 if type_overrules_type(column_type, column_types[field_count]):
                                     column_types[field_count] = column_type
                         if i == 0 and requested_skip is None:
-                            # The first line may be a header. Use its type guesses only as fallbacks after checking
-                            # later rows.
-                            # This is far from perfect, as
+                            # This is our first line, people seem to like to upload files that have a header line, but do not
+                            # start with '#' (i.e. all column types would then most likely be detected as str).  We will assume
+                            # that the first line is always a header (this was previous behavior - it was always skipped).  When
+                            # the requested skip is None, we only use the data from the first line if we have no other data for
+                            # a column.  This is far from perfect, as
                             # 1,2,3	1.1	2.2	qwerty
                             # 0	0		1,2,3
                             # will be detected as
@@ -1494,6 +1493,12 @@ class BaseCSV(TabularData):
         dataset.metadata.column_names = header_row
         dataset.metadata.delimiter = self.dialect.delimiter
 
+    def _get_data_line_offset(self, dataset: DatasetProtocol, offset: int = 0) -> int:
+        # The header row is rendered from column_names, so skip it in the data rows of the first chunk.
+        if offset:
+            return 0
+        return int(bool(dataset.metadata.column_names))
+
 
 @dataproviders.decorators.has_dataproviders
 class CSV(BaseCSV):
@@ -1651,7 +1656,7 @@ class ConnectivityTable(Tabular):
         return False
 
     def get_chunk(
-        self, trans: "ProvidesAppContext", dataset: DatasetProtocol, offset: int = 0, ck_size: int | None = None
+        self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int = 0, ck_size: int | None = None
     ) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         try:
@@ -1669,7 +1674,7 @@ class ConnectivityTable(Tabular):
             {
                 "ck_data": util.unicodify(ck_data),
                 "offset": last_read,
-                "data_line_offset": self._get_data_line_offset(dataset, offset),
+                "data_line_offset": self.data_line_offset,
             }
         )
 
