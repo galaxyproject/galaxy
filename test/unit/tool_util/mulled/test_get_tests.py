@@ -1,9 +1,9 @@
 import os.path
-from urllib.parse import urlparse
 from unittest import (
     mock,
     SkipTest,
 )
+from urllib.parse import urlparse
 
 from galaxy.tool_util.deps.mulled.get_tests import (
     deep_test_search,
