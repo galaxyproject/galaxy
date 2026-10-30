@@ -13,6 +13,7 @@ import pytest
 
 from galaxy_test.base.decorators import requires_tool_id
 from galaxy_test.base.populators import (
+    DatasetPopulator,
     DescribeToolExecution,
     DescribeToolInputs,
     RequiredTool,
@@ -570,6 +571,58 @@ def test_map_over_paired_or_unpaired_with_list_of_lists(target_history: TargetHi
     assert output_collection.details["collection_type"] == "list:list"
     as_dict_0 = output_collection.with_element_dict(0)
     assert len(as_dict_0["object"]["elements"]) == 3
+
+
+@requires_tool_id("collection_list_paired_or_unpaired")
+def test_map_over_list_paired_or_unpaired_with_list_of_lists(
+    target_history: TargetHistory, required_tool: RequiredTool
+):
+    hdca = target_history.with_example_list_of_lists()
+    execute = required_tool.execute().with_inputs(
+        {"f1": {"batch": True, "values": [{"map_over_type": "list:paired_or_unpaired", **hdca.src_dict}]}}
+    )
+    execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_collection_type_is("list")
+    output_collection.assert_has_dataset_element("test0")
+
+
+@requires_tool_id("collection_list_paired_or_unpaired")
+def test_map_over_list_paired_or_unpaired_with_list_of_list_of_pairs(
+    target_history: TargetHistory, required_tool: RequiredTool
+):
+    hdca = target_history.with_example_list_of_list_of_pairs()
+    execute = required_tool.execute().with_inputs(
+        {"f1": {"batch": True, "values": [{"map_over_type": "list:paired_or_unpaired", **hdca.src_dict}]}}
+    )
+    execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_collection_type_is("list")
+    output_collection.assert_has_dataset_element("test0").with_contents_stripped("123\n456\n789\n0ab")
+
+
+@requires_tool_id("collection_list_paired_or_unpaired")
+def test_build_lists_list_of_lists_mapped_over_list_paired_or_unpaired(
+    target_history: TargetHistory, required_tool: RequiredTool, dataset_populator: DatasetPopulator
+):
+    hdca = target_history.with_example_list_of_lists()
+    options = _build_hdca_options(dataset_populator, "collection_list_paired_or_unpaired", target_history.id, "f1")
+    assert options[hdca.id].get("map_over_type") == "list:paired_or_unpaired"
+
+
+@requires_tool_id("__SAMPLE_SHEET_TO_TABULAR__")
+def test_build_does_not_list_list_of_lists_mapped_over_sample_sheet(
+    target_history: TargetHistory, required_tool: RequiredTool, dataset_populator: DatasetPopulator
+):
+    hdca = target_history.with_example_list_of_lists()
+    options = _build_hdca_options(dataset_populator, "__SAMPLE_SHEET_TO_TABULAR__", target_history.id, "input")
+    assert hdca.id not in options
+
+
+def _build_hdca_options(dataset_populator: DatasetPopulator, tool_id: str, history_id: str, input_name: str):
+    tool_state = dataset_populator.build_tool_state(tool_id, history_id)
+    tool_input = next(i for i in tool_state["inputs"] if i["name"] == input_name)
+    return {option["id"]: option for option in tool_input["options"]["hdca"]}
 
 
 @requires_tool_id("collection_paired_or_unpaired")
