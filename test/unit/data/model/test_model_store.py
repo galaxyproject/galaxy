@@ -1252,7 +1252,9 @@ def test_import_export_uninitialized_collection_elements(tmp_path, nested):
     imported = imported_history.dataset_collections[0].collection
     if nested:
         assert imported.elements[0].element_identifier == "batch"
-        imported = imported.elements[0].child_collection
+        child = imported.elements[0].child_collection
+        assert child is not None
+        imported = child
     assert [(e.element_identifier, e.element_index, e.element_object) for e in imported.elements] == [
         ("run_1", 0, None),
         ("run_2", 1, None),
