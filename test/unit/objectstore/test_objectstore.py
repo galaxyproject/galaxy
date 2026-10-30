@@ -1398,6 +1398,31 @@ def test_get_data_head_azure_reads_a_byte_range_instead_of_a_stale_cached_copy()
 
 
 @patch_object_stores_to_skip_initialize
+def test_get_data_head_azure_reads_nothing_from_an_empty_blob():
+    azure_exceptions = pytest.importorskip("azure.core.exceptions")
+    with TestConfig(AZURE_TEMP_CACHE_TEST_CONFIG_YAML) as (directory, object_store):
+        blob_client = MagicMock()
+        blob_client.download_blob.side_effect = azure_exceptions.HttpResponseError(
+            response=SimpleNamespace(status_code=416, reason="Range Not Satisfiable")
+        )
+        with patch.object(object_store, "_blob_client", return_value=blob_client):
+            assert object_store.get_data_head(MockDataset(1), 10) == b""
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_azure_fails_for_a_missing_blob():
+    azure_exceptions = pytest.importorskip("azure.core.exceptions")
+    with TestConfig(AZURE_TEMP_CACHE_TEST_CONFIG_YAML) as (directory, object_store):
+        blob_client = MagicMock()
+        blob_client.download_blob.side_effect = azure_exceptions.ResourceNotFoundError(
+            response=SimpleNamespace(status_code=404, reason="The specified blob does not exist.")
+        )
+        with patch.object(object_store, "_blob_client", return_value=blob_client):
+            with pytest.raises(ObjectNotFound):
+                object_store.get_data_head(MockDataset(1), 10)
+
+
+@patch_object_stores_to_skip_initialize
 def test_get_data_head_stops_streaming_once_it_has_enough_bytes():
     with TestConfig(CLOUD_AWS_TEMP_CACHE_TEST_CONFIG_YAML) as (directory, object_store):
         dataset = MockDataset(1)
