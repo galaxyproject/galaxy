@@ -76,8 +76,7 @@ onMounted(async () => {
         if (error) {
             errorMessage.value = error.err_msg;
         } else if (currentUser.value === null) {
-            // A load that resolves can still leave no user, so keep a fallback message.
-            errorMessage.value = userError ? errorMessageAsString(userError) : "Failed to load the current user.";
+            errorMessage.value = errorMessageAsString(userError);
         } else if (data?.latest_revision?.config) {
             visualizationConfig.value = data.latest_revision.config;
             visualizationTitle.value = data.title;
