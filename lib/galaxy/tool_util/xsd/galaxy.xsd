@@ -4587,6 +4587,11 @@ core Galaxy tools until the interface around files has stabilized.
 Currently ``directory_uri`` parameters provide user's the option of selecting a writable
 directory destination for unstructured outputs of tools (e.g. history exports).
 
+#### ``rules``
+
+This is used by the core ``__APPLY_RULES__`` tool to build a list of rules in the Galaxy
+rules DSL for reorganizing a collection. This should only be used by core Galaxy tools.
+
 This covers examples of the most common parameter types, the remaining parameter
 types are more obsecure and less likely to be useful for most tool authors.
 
@@ -4606,7 +4611,8 @@ the tool form widget is different. Currently valid parameter types are:
 ``text``,  ``integer``,  ``float``,  ``boolean``,  ``genomebuild``,  ``select``,
 ``color``,  ``data_column``,  ``hidden``,  ``hidden_data``,  ``baseurl``,
 ``file``,  ``ftpfile``,  ``data``,  ``data_collection``,
-``drill_down``. The definition of supported parameter types as defined in the
+``drill_down``,  ``group_tag``,  ``directory_uri``,  ``rules``. The definition
+of supported parameter types as defined in the
 ``parameter_types`` dictionary in
 [/lib/galaxy/tools/parameters/basic.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/basic.py).
 
@@ -4730,7 +4736,7 @@ Used with select lists whose options are dynamically generated
 based on certain metadata attributes of the dataset or collection upon which
 this parameter depends (usually but not always the tool's input dataset).
 Used only when the ``type`` attribute value is ``data_column``, ``group_tag``,
-or ``select``.
+``rules``, or ``select``.
             ]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -4941,6 +4947,7 @@ Define the ``options`` inline instead, sharing them through macros if needed.</x
       <xs:enumeration value="group_tag"/>
       <xs:enumeration value="data_collection"/>
       <xs:enumeration value="directory_uri"/>
+      <xs:enumeration value="rules"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:complexType name="Command">

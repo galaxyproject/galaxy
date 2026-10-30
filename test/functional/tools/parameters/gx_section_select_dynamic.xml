@@ -4,8 +4,8 @@ echo '$section_parameter.parameter' >> '$output'
     ]]></command>
     <code file="gx_select_dynamic_options.py"/>
     <inputs>
-        <section name="section_parameter">
-            <param name="ref_parameter" type="data" ext="txt" >
+        <section name="section_parameter" title="Section Parameter">
+            <param name="ref_parameter" type="data" format="txt" >
             </param>
             <param name="parameter" type="select" dynamic_options="every_other_word(ref_parameter.dataset.get_file_name())">
             </param>

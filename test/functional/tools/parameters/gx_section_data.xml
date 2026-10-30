@@ -3,8 +3,8 @@
 cat '$parameter.data_parameter' >> '$output'
     ]]></command>
     <inputs>
-        <section name="parameter">
-            <param name="data_parameter" type="data" ext="data" />
+        <section name="parameter" title="Section Parameter">
+            <param name="data_parameter" type="data" />
         </section>
     </inputs>
     <outputs>

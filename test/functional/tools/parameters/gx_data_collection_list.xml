@@ -3,7 +3,7 @@
 cat #for $q in $parameter# '$q' #end for# > '$output'
     ]]></command>
     <inputs>
-        <param name="parameter" type="data_collection" collection_type="list" ext="data" />
+        <param name="parameter" type="data_collection" collection_type="list" />
     </inputs>
     <outputs>
         <data name="output" format="data" />
