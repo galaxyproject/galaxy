@@ -455,7 +455,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
             with self._atomic_download(local_file_path, size) as tmp:
                 self._client.download_file(self.bucket, key, tmp)
 
-    def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
+    def _get_object_url(self, obj, content_disposition=None, content_type=None, expires_in=None, **kwargs):
         try:
             if self._exists(obj, **kwargs):
                 rel_path = self._construct_path(obj, **kwargs)
@@ -470,7 +470,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 url = self._client.generate_presigned_url(
                     ClientMethod="get_object",
                     Params=params,
-                    ExpiresIn=3600,
+                    ExpiresIn=3600 if expires_in is None else expires_in,
                     HttpMethod="GET",
                 )
                 return url

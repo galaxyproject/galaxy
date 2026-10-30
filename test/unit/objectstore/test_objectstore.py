@@ -2,6 +2,10 @@ import hashlib
 import os
 import shutil
 import time
+from datetime import (
+    datetime,
+    timedelta,
+)
 from functools import wraps
 from tempfile import (
     mkdtemp,
@@ -967,6 +971,133 @@ def test_get_data_stream_bypasses_cache_when_object_is_bigger_than_cache():
         cache_path = _cache_path_for(object_store, dataset)
         assert not os.path.exists(cache_path)
         assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_can_leave_the_cache_untouched():
+    # A one-off read, e.g. staging a job input to a remote runner, should not fill the cache.
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        with (
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1", b"chunk2"])),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(dataset, write_cache=False)
+            assert stream is not None
+            assert b"".join(stream) == b"chunk1chunk2"
+
+        cache_path = _cache_path_for(object_store, dataset)
+        assert not os.path.exists(cache_path)
+        assert _leftover_temp_files(cache_path) == []
+
+
+METADATA_FILE_PATH = dict(extra_dir="_metadata_files", extra_dir_at_root=True, alt_name="metadata_5.dat")
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_reads_an_object_at_a_path_within_the_object():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        with (
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"meta"])) as stream_remote,
+            patch.object(object_store, "_get_remote_size", return_value=4),
+        ):
+            stream = object_store.get_data_stream(dataset, write_cache=False, **METADATA_FILE_PATH)
+            assert stream is not None
+            assert b"".join(stream) == b"meta"
+        stream_remote.assert_called_once_with(object_store._construct_path(dataset, **METADATA_FILE_PATH))
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_direct_download_url_for_a_path_within_the_object():
+    with TestConfig(get_example("boto3_direct_download.yml")) as (directory, object_store):
+        object_store._client = MagicMock()
+        object_store._client.generate_presigned_url.return_value = "https://s3.example.org/signed"
+        dataset = MockDataset(1)
+        with patch.object(object_store, "_exists", return_value=True):
+            url = object_store.get_direct_download_url(dataset, **METADATA_FILE_PATH)
+        assert url == "https://s3.example.org/signed"
+        _, call_kwargs = object_store._client.generate_presigned_url.call_args
+        assert call_kwargs["Params"]["Key"] == object_store._construct_path(dataset, **METADATA_FILE_PATH)
+
+
+# Shorter than any store's default, as for a client that follows the URL at once.
+PRESIGN_LIFETIME = 60
+
+DISTRIBUTED_DIRECT_DOWNLOAD_CONFIG_YAML = """
+type: distributed
+backends:
+- id: presigning
+  weight: 1
+  type: boto3
+  enable_direct_download: true
+  auth:
+    access_key: access_moo
+    secret_key: secret_cow
+  bucket:
+    name: unique_bucket_name_all_lowercase
+  cache:
+    path: ${temp_directory}/object_store_cache
+    size: 1000
+  extra_dirs:
+  - type: job_work
+    path: ${temp_directory}/job_working_directory_boto3
+  - type: temp
+    path: ${temp_directory}/tmp_boto3
+"""
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_direct_download_url_lasts_as_long_as_asked():
+    with TestConfig(get_example("boto3_direct_download.yml")) as (directory, object_store):
+        object_store._client = MagicMock()
+        with patch.object(object_store, "_exists", return_value=True):
+            object_store.get_direct_download_url(MockDataset(1), expires_in=PRESIGN_LIFETIME)
+        _, call_kwargs = object_store._client.generate_presigned_url.call_args
+        assert call_kwargs["ExpiresIn"] == PRESIGN_LIFETIME
+
+
+@patch_object_stores_to_skip_initialize
+def test_distributed_get_direct_download_url_lasts_as_long_as_asked():
+    with TestConfig(DISTRIBUTED_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
+        backend = object_store.backends["presigning"]
+        backend._client = MagicMock()
+        dataset = MockDataset(1)
+        dataset.object_store_id = "presigning"
+        with patch.object(backend, "_exists", return_value=True):
+            object_store.get_direct_download_url(dataset, expires_in=PRESIGN_LIFETIME)
+        _, call_kwargs = backend._client.generate_presigned_url.call_args
+        assert call_kwargs["ExpiresIn"] == PRESIGN_LIFETIME
+
+
+@patch_object_stores_to_skip_initialize
+def test_azure_get_direct_download_url_lasts_as_long_as_asked():
+    config = get_example("azure_simple.yml") + "enable_direct_download: true\n"
+    with TestConfig(config) as (directory, object_store):
+        issued = datetime(2026, 1, 1)
+        with (
+            patch.object(object_store, "_exists", return_value=True),
+            patch.object(object_store, "_blob_client"),
+            patch("galaxy.objectstore.azure_blob.now", return_value=issued),
+            # create=True: the Azure SDK is optional, so these names may not be bound.
+            patch("galaxy.objectstore.azure_blob.BlobSasPermissions", create=True),
+            patch("galaxy.objectstore.azure_blob.generate_blob_sas", create=True, return_value="sig=x") as generate_sas,
+        ):
+            object_store.get_direct_download_url(MockDataset(1), expires_in=PRESIGN_LIFETIME)
+        assert generate_sas.call_args.kwargs["expiry"] == issued + timedelta(seconds=PRESIGN_LIFETIME)
+
+
+@patch_object_stores_to_skip_initialize
+def test_s3_get_direct_download_url_lasts_as_long_as_asked():
+    with TestConfig(S3_TEST_CONFIG_YAML + "enable_direct_download: true\n") as (directory, object_store):
+        object_store._bucket = MagicMock()
+        with (
+            patch.object(object_store, "_exists", return_value=True),
+            # create=True: boto is optional, so Key may not be bound.
+            patch("galaxy.objectstore.s3.Key", create=True) as key,
+        ):
+            object_store.get_direct_download_url(MockDataset(1), expires_in=PRESIGN_LIFETIME)
+        assert key.return_value.generate_url.call_args.kwargs["expires_in"] == PRESIGN_LIFETIME
 
 
 @patch_object_stores_to_skip_initialize
@@ -2044,6 +2175,18 @@ def test_cloud_get_direct_download_url_forwards_response_headers():
             content_disposition='attachment; filename="Galaxy1-[data].txt"',
             content_type="application/octet-stream",
         )
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_get_direct_download_url_lasts_as_long_as_asked():
+    with TestConfig(CLOUD_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
+        key = _cloud_object()
+        bucket = _cloud_bucket()
+        bucket.objects.get.return_value = key
+        object_store.bucket = bucket
+        with patch.object(object_store, "_exists", return_value=True):
+            object_store.get_direct_download_url(MockDataset(1), expires_in=PRESIGN_LIFETIME)
+        assert key.generate_url.call_args.kwargs["expires_in"] == PRESIGN_LIFETIME
 
 
 @patch_object_stores_to_skip_initialize

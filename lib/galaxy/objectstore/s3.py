@@ -411,7 +411,7 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
             with self._atomic_download(local_file_path, obj.size) as tmp:
                 obj.get_contents_to_filename(tmp)
 
-    def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
+    def _get_object_url(self, obj, content_disposition=None, content_type=None, expires_in=None, **kwargs):
         if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
@@ -421,7 +421,10 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
                     response_headers["response-content-disposition"] = content_disposition
                 if content_type is not None:
                     response_headers["response-content-type"] = content_type
-                return key.generate_url(expires_in=86400, response_headers=response_headers or None)  # 24hrs
+                return key.generate_url(
+                    expires_in=86400 if expires_in is None else expires_in,  # 24hrs
+                    response_headers=response_headers or None,
+                )
             except S3ResponseError:
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)
         return None

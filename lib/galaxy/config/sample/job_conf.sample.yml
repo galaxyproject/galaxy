@@ -928,6 +928,29 @@ execution:
        #file_action_config: file_actions.yaml
        #file_actions: {}
 
+       # With 'remote_transfer', Pulsar fetches inputs through Galaxy's job
+       # files API, which reads them from paths on Galaxy's disk. Set
+       # 'object_store_staging' to have Galaxy serve inputs from the object
+       # store by identity instead, so they are not pulled into Galaxy's cache
+       # first: 'stream' streams them through Galaxy, while 'redirect' sends
+       # Pulsar (0.15.16 or later) to a presigned URL when the object store has
+       # enable_direct_download set, and streams otherwise. Use 'redirect' only
+       # if Pulsar can reach the object store. Requires rewrite_parameters.
+       # Each input's URL is signed in its query string and works until the
+       # job finishes, and a presigned URL for 15 minutes, so keep query
+       # strings out of access logs, as for the job_key of job files URLs.
+       # Pulsar needs no object store credentials for this; where Pulsar mounts
+       # Galaxy's disk, the path rules above avoid the transfer instead.
+       # Galaxy pulls no input into its cache here, so a path rule that sends
+       # an object store input to a local action ('none', 'rewrite', 'copy',
+       # 'remote_copy') fails the job; such rules suit disk stores only.
+       # Inputs with no copy in the object store, such as deferred datasets
+       # Galaxy materializes for the job, still go through the job files API,
+       # as do tool files and outputs, so the Galaxy hosts answering Pulsar
+       # must still see the handler's job directory; only the object store
+       # cache need not be shared.
+       #object_store_staging: stream
+
        # The non-legacy Pulsar runners will attempt to resolve Galaxy
        # dependencies remotely - to enable this set a tool_dependency_dir
        # in Pulsar's configuration (can work with all the same dependency

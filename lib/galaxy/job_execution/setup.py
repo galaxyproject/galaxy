@@ -240,14 +240,18 @@ class JobIO(UsesDictVisibleKeys):
             filenames.extend(self.get_input_dataset_fnames(ds))
         return filenames
 
-    def get_input_paths(self, materialized_objects: dict[str, DeferrableObjectsT] | None) -> list[DatasetPath]:
+    def get_input_paths(
+        self, materialized_objects: dict[str, DeferrableObjectsT] | None, sync_cache: bool = True
+    ) -> list[DatasetPath]:
         paths = []
         for ds in self.get_input_datasets(materialized_objects):
-            paths.append(self.get_input_path(ds))
+            paths.append(self.get_input_path(ds, sync_cache=sync_cache))
         return paths
 
-    def get_input_path(self, dataset: DatasetInstance) -> DatasetPath:
-        real_path = dataset.get_file_name()
+    def get_input_path(self, dataset: DatasetInstance, sync_cache: bool = True) -> DatasetPath:
+        """With ``sync_cache=False`` the path is computed without pulling the input into the
+        object store cache, for inputs a remote runner stages by object store identity."""
+        real_path = dataset.get_file_name(sync_cache=sync_cache)
         false_path = self.dataset_path_rewriter.rewrite_dataset_path(dataset, "input")
         assert dataset.dataset is not None
         return DatasetPath(
