@@ -1,6 +1,6 @@
 import "@/composables/__mocks__/filter";
 
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -64,6 +64,31 @@ describe("InstallationSettings", () => {
         await radios[1].setValue(true);
         await wrapper.find(".g-modal-confirm-buttons button:last-child").trigger("click");
         expect(wrapper.emitted("ok")[0][0].shed_tool_conf).toBe("second_conf.xml");
+    });
+
+    it("installs with the dependency choices made in the labelled checkboxes", async () => {
+        const wrapper = mount(InstallationSettings, {
+            props: {
+                repo: { name: "name", owner: "owner" },
+                changesetRevision: "changesetRevision",
+                requiresPanel: false,
+                toolshedUrl: "toolshedUrl",
+            },
+            global: localVue,
+        });
+        const checkboxes = wrapper.findAll("input[type=checkbox]");
+        expect(checkboxes.map((checkbox) => checkbox.element.closest("label")?.textContent.trim())).toEqual([
+            "Install resolvable dependencies",
+            "Install repository dependencies",
+            "Install tool dependencies",
+        ]);
+        expect(checkboxes.map((checkbox) => checkbox.element.checked)).toEqual([true, true, true]);
+        await nth(checkboxes, 2).setValue(false);
+        await wrapper.find(".g-modal-confirm-buttons button:last-child").trigger("click");
+        const request = emittedArg(wrapper, "ok");
+        expect(request.install_resolver_dependencies).toBe(true);
+        expect(request.install_repository_dependencies).toBe(true);
+        expect(request.install_tool_dependencies).toBe(false);
     });
 
     it("test tool repository installer interface", () => {
