@@ -1,0 +1,325 @@
+import json
+import posixpath
+import re
+import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
+from typing import (
+    Annotated,
+    Any,
+    Literal,
+)
+
+from pydantic import (
+    Field,
+    field_validator,
+)
+from urllib3.util import parse_url
+
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    MessageException,
+    ObjectNotFound,
+    RequestParameterInvalidException,
+)
+from galaxy.files.models import (
+    AnyRemoteEntry,
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
+    RemoteDirectory,
+    RemoteFile,
+    RemoteFileHash,
+)
+from galaxy.files.uris import (
+    get_checking_every_redirect,
+    refuse_a_private_address,
+)
+from galaxy.util import (
+    requests,
+    stream_to_path,
+)
+from galaxy.util.config_templates import TemplateExpansion
+from . import BaseFilesSource
+
+PAGE_SIZE = 100
+CONTENT_BUNDLE = "ORIGINAL"
+MAX_REDIRECTS = 5
+EXAMPLE_API_URL = "https://demo.dspace.org/server/api"
+
+
+class DSpaceFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    api_url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    writable: Literal[False] = False
+
+
+class DSpaceFileSourceConfiguration(BaseFileSourceConfiguration):
+    api_url: Annotated[
+        str,
+        Field(
+            title="DSpace REST API URL",
+            description=f"The REST API of a DSpace 7 or newer server, e.g. {EXAMPLE_API_URL}.",
+        ),
+    ]
+    token: Annotated[
+        str | None,
+        Field(
+            title="DSpace token",
+            description="Optional bearer token, sent only to the api_url server, for items that are not public.",
+        ),
+    ] = None
+    writable: Literal[False] = False
+
+    @field_validator("token")
+    @classmethod
+    def strip_token(cls, value: str | None) -> str | None:
+        return (value or "").strip() or None
+
+
+class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, DSpaceFileSourceConfiguration]):
+    plugin_type = "dspace"
+    supports_pagination = True
+    supports_search = True
+
+    template_config_class = DSpaceFileSourceTemplateConfiguration
+    resolved_config_class = DSpaceFileSourceConfiguration
+
+    def _list(
+        self,
+        context: FilesSourceRuntimeContext[DSpaceFileSourceConfiguration],
+        path: str = "/",
+        recursive: bool = False,
+        write_intent: bool = False,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
+    ) -> tuple[list[AnyRemoteEntry], int]:
+        if recursive:
+            raise RequestParameterInvalidException("Recursive listing is not supported for DSpace file sources.")
+        parts = self._split(path)
+        if len(parts) == 2:
+            parts[1] = self._uuid(parts[1], path)
+        config = context.config
+        if config.token:
+            # DSpace quietly treats an expired token as no token, so ask whether it still logs in
+            status = self._get_json(config, self._url(config.api_url, "authn/status"), {})
+            if not status.get("authenticated"):
+                raise self._token_not_accepted()
+        query = query.strip() if query else None
+        if not parts:
+            endpoint = "core/communities/search/top"
+            if query:
+                # this endpoint has no search, so filter all top communities by name
+                communities = self._directories("communities", self._all(config, endpoint, {}, "communities"))
+                return self._filter_and_page(communities, limit, offset, query)
+            objects, total = self._objects(config, endpoint, {}, "communities", limit, offset)
+            return self._directories("communities", objects), total
+        if len(parts) == 2 and parts[0] == "communities":
+            children = self._directories(
+                "communities", self._all(config, f"core/communities/{parts[1]}/subcommunities", {}, "subcommunities")
+            ) + self._directories(
+                "collections", self._all(config, f"core/communities/{parts[1]}/collections", {}, "collections")
+            )
+            return self._filter_and_page(children, limit, offset, query)
+        if len(parts) == 2 and parts[0] == "collections":
+            params = {"dsoType": "ITEM", "scope": parts[1], "sort": "dc.title,ASC"}
+            if query:
+                # DSpace matches whole words only; a trailing * also finds partial ones, but breaks words like "a-b"
+                params["query"] = " ".join(f"{word}*" if re.fullmatch(r"\w+", word) else word for word in query.split())
+            try:
+                items, total = self._objects(config, "discover/search/objects", params, "searchResult", limit, offset)
+            except RequestParameterInvalidException as e:
+                if not query:
+                    raise
+                raise RequestParameterInvalidException(
+                    f'DSpace could not search for {query}. Try it without symbols like ( or ".'
+                ) from e
+            return self._directories("items", items), total
+        if len(parts) == 2 and parts[0] == "items":
+            bitstreams = self._bitstreams(config, parts[1])
+            files: list[AnyRemoteEntry] = [self._file(bitstream) for bitstream in bitstreams]
+            return self._filter_and_page(files, limit, offset, query)
+        raise ObjectNotFound(f"The specified DSpace path is not a directory [{path}].")
+
+    def _realize_to(
+        self,
+        source_path: str,
+        native_path: str,
+        context: FilesSourceRuntimeContext[DSpaceFileSourceConfiguration],
+    ) -> None:
+        # the file name at the end only names the dataset, so it is not normalized (a name of ".." stays a name)
+        parts = (source_path or "").strip("/").split("/", 2)
+        if len(parts) != 3 or parts[0] != "bitstreams":
+            raise ObjectNotFound(f"The specified DSpace path is not a file [{source_path}].")
+        bitstream_id = self._uuid(parts[1], source_path)
+        config = context.config
+        with self._open_url(config, self._url(config.api_url, f"core/bitstreams/{bitstream_id}/content")) as response:
+            stream_to_path(response, native_path)
+
+    def _write_from(
+        self,
+        target_path: str,
+        native_path: str,
+        context: FilesSourceRuntimeContext[DSpaceFileSourceConfiguration],
+    ) -> str | None:
+        raise MessageException("DSpace file sources are read-only.")
+
+    def _bitstreams(self, config: DSpaceFileSourceConfiguration, item_id: str) -> list[dict[str, Any]]:
+        bundles = self._all(config, f"core/items/{item_id}/bundles", {}, "bundles")
+        return [
+            bitstream
+            for bundle in bundles
+            if bundle.get("name") == CONTENT_BUNDLE
+            for bitstream in self._all(
+                config, f"core/bundles/{bundle['uuid']}/bitstreams", {"embed": "format"}, "bitstreams"
+            )
+        ]
+
+    def _file(self, bitstream: dict[str, Any]) -> RemoteFile:
+        path = f"/bitstreams/{bitstream['uuid']}/{bitstream['name']}"
+        checksum = bitstream.get("checkSum") or {}
+        mimetype = bitstream.get("_embedded", {}).get("format", {}).get("mimetype")
+        hashes = None
+        # DSpace can put a citation cover page in front of a PDF on download, which changes its MD5
+        if checksum.get("checkSumAlgorithm") == "MD5" and checksum.get("value") and mimetype != "application/pdf":
+            hashes = [RemoteFileHash(hash_function="MD5", hash_value=checksum["value"].lower())]
+        return RemoteFile(
+            name=bitstream["name"],
+            size=bitstream.get("sizeBytes") or 0,
+            uri=self.uri_from_path(path),
+            path=path,
+            hashes=hashes,
+        )
+
+    def _directories(self, kind: str, objects: list[dict[str, Any]]) -> list[AnyRemoteEntry]:
+        return [
+            RemoteDirectory(name=obj.get("name") or obj["uuid"], uri=self.uri_from_path(path), path=path)
+            for obj in objects
+            for path in [f"/{kind}/{obj['uuid']}"]
+        ]
+
+    def _objects(
+        self,
+        config: DSpaceFileSourceConfiguration,
+        endpoint: str,
+        params: dict[str, str],
+        key: str,
+        limit: int | None,
+        offset: int | None,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """List one page of objects from the server."""
+        if limit is None:
+            # shortcut: unpaged listings (the file set wizards) get the first PAGE_SIZE objects, not a whole
+            # collection; page through here if users need more.
+            limit = PAGE_SIZE
+        # shortcut: DSpace pages by page number, so an offset that is not a multiple of limit is rounded down;
+        # fetch two pages and slice if a client ever sends unaligned offsets.
+        return self._page(config, endpoint, {**params, "size": str(limit), "page": str((offset or 0) // limit)}, key)
+
+    def _all(
+        self, config: DSpaceFileSourceConfiguration, endpoint: str, params: dict[str, str], key: str
+    ) -> list[dict[str, Any]]:
+        objects: list[dict[str, Any]] = []
+        page = 0
+        while True:
+            batch, total = self._page(config, endpoint, {**params, "size": str(PAGE_SIZE), "page": str(page)}, key)
+            objects.extend(batch)
+            page += 1
+            if not batch or len(objects) >= total:
+                return objects
+
+    def _page(
+        self, config: DSpaceFileSourceConfiguration, endpoint: str, params: dict[str, str], key: str
+    ) -> tuple[list[dict[str, Any]], int]:
+        data = self._get_json(config, self._url(config.api_url, endpoint), params)
+        if key == "searchResult":
+            data = data.get("_embedded", {}).get("searchResult", {})
+            objects = [obj["_embedded"]["indexableObject"] for obj in data.get("_embedded", {}).get("objects", [])]
+        else:
+            objects = data.get("_embedded", {}).get(key, [])
+        return objects, data.get("page", {}).get("totalElements", len(objects))
+
+    def _filter_and_page(
+        self, entries: list[AnyRemoteEntry], limit: int | None, offset: int | None, query: str | None
+    ) -> tuple[list[AnyRemoteEntry], int]:
+        if query:
+            entries = [entry for entry in entries if query.lower() in entry.name.lower()]
+        start = offset or 0
+        return entries[start : start + limit if limit is not None else None], len(entries)
+
+    def _get_json(self, config: DSpaceFileSourceConfiguration, url: str, params: dict[str, str]) -> dict[str, Any]:
+        with self._open_url(config, url, params, accept="application/json") as response:
+            try:
+                data: dict[str, Any] = json.load(response)
+                return data
+            except ValueError as e:
+                raise MessageException(f"{url} did not answer like a DSpace 7 or newer REST API.") from e
+
+    @contextmanager
+    def _open_url(
+        self,
+        config: DSpaceFileSourceConfiguration,
+        url: str,
+        params: dict[str, str] | None = None,
+        accept: str = "application/octet-stream",
+    ) -> Iterator[Any]:
+        token = config.token
+        api_origin = self._origin(config.api_url)
+
+        def check_url(hop: str) -> None:
+            refuse_a_private_address(
+                hop, self._file_sources_config.fetch_url_allowlist or [], self.label, EXAMPLE_API_URL
+            )
+
+        def headers_for(hop: str) -> dict[str, str]:
+            headers = {"Accept": accept, "User-Agent": "Galaxy DSpace file source"}
+            if token and self._origin(hop) == api_origin:
+                headers["Authorization"] = f"Bearer {token}"
+            return headers
+
+        try:
+            with get_checking_every_redirect(url, check_url, headers_for, params, MAX_REDIRECTS) as response:
+                if response.status_code == 400 and "Authorization" in headers_for(response.url):
+                    # DSpace answers 400 to a login token it no longer accepts
+                    raise self._token_not_accepted()
+                if response.status_code == 422:
+                    raise RequestParameterInvalidException(f"DSpace could not process the request [{response.url}].")
+                if response.status_code == 404:
+                    raise ObjectNotFound(f"DSpace object not found [{response.url}].")
+                if response.status_code in (401, 403):
+                    hint = "Check the token of" if token else "It is not public, and there is no token in"
+                    raise AuthenticationRequired(f"DSpace refused access to {response.url}. {hint} {self.label}.")
+                response.raise_for_status()
+                response.raw.decode_content = True
+                yield response.raw
+        except requests.exceptions.RequestException as e:
+            raise MessageException(f"Could not get {url} from DSpace. Reason: {e}") from e
+
+    def _token_not_accepted(self) -> AuthenticationRequired:
+        return AuthenticationRequired(
+            f"DSpace did not accept the token of {self.label}; it may have expired. "
+            "Log in to DSpace again and update the token."
+        )
+
+    def _origin(self, url: str) -> tuple[str | None, str | None, int | None]:
+        parsed = parse_url(url.strip())
+        return parsed.scheme, parsed.host, parsed.port
+
+    def _url(self, api_url: str, endpoint: str) -> str:
+        return f"{api_url.rstrip('/')}/{endpoint}"
+
+    def _uuid(self, value: str, path: str) -> str:
+        # DSpace answers 400 to an id that is not a uuid, the same as to a token it no longer accepts
+        try:
+            return str(uuid.UUID(value))
+        except ValueError as e:
+            raise ObjectNotFound(f"The specified DSpace path has no valid DSpace id [{path}].") from e
+
+    def _split(self, path: str, maxsplit: int = -1) -> list[str]:
+        path = posixpath.normpath(f"/{path or ''}").strip("/")
+        return path.split("/", maxsplit) if path else []
+
+
+__all__ = ("DSpaceFilesSource",)
