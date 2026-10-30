@@ -382,7 +382,7 @@ describe("WorkflowExtractionForm", () => {
             await clickCreateButton(wrapper);
             expect(extractWorkflowByIds).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    output_labels: [{ id: "ds-1", kind: "hda", label: "output1" }],
+                    output_labels: [{ id: "ds-1", src: "hda", label: "output1" }],
                 }),
             );
         });
@@ -632,7 +632,7 @@ describe("WorkflowExtractionForm", () => {
             await clickCreateButton(wrapper);
             expect(extractWorkflowByIds).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    step_labels: [{ kind: "job", id: "job-tool-1", label: "concatenate" }],
+                    step_labels: [{ src: "job", id: "job-tool-1", label: "concatenate" }],
                 }),
             );
         });
@@ -645,7 +645,7 @@ describe("WorkflowExtractionForm", () => {
             await clickCreateButton(wrapper);
             expect(extractWorkflowByIds).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    step_labels: [{ kind: "implicit_collection_jobs", id: "icj-1", label: "first map" }],
+                    step_labels: [{ src: "implicit_collection_jobs", id: "icj-1", label: "first map" }],
                 }),
             );
         });
