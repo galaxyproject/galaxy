@@ -1,14 +1,8 @@
 import type { components } from "@/api/schema";
-import {
-    ApiError,
-    isRetryableApiError,
-    MAX_RETRIES,
-    rethrowSimpleWithStatus,
-    RETRY_BACKOFF_CAP_MS,
-    retryBackoffMs,
-} from "@/utils/simple-error";
+import { ApiError, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 import { GalaxyApi } from "./client";
+import { RETRY_ON_429_HEADER } from "./client/rateLimiter";
 
 export type JobDestinationParams = components["schemas"]["JobDestinationParams"];
 export type ShowFullJobResponse = components["schemas"]["ShowFullJobResponse"];
@@ -62,6 +56,8 @@ export async function deleteJob(jobId: string, message?: string): Promise<boolea
     const { data, error, response } = await GalaxyApi().DELETE("/api/jobs/{job_id}", {
         params: { path: { job_id: jobId } },
         body: message ? { message } : undefined,
+        // Stopping a job is safe to repeat, so let the rate limiter retry it.
+        headers: { [RETRY_ON_429_HEADER]: "1" },
     });
 
     if (error) {
@@ -80,8 +76,9 @@ export interface StopJobsResult {
 }
 
 /**
- * Stop several jobs with bounded concurrency, retrying rate-limited and transient
- * failures with backoff. Never rejects: failures are collected per job.
+ * Stop several jobs with bounded concurrency. The GalaxyApi rate limiter retries
+ * rate-limited stops; once one gives up, queued jobs fail with its error unsent.
+ * Never rejects: failures are collected per job.
  * @param onProgress Called with the number of jobs handled so far.
  */
 export async function stopJobs(
@@ -91,35 +88,23 @@ export async function stopJobs(
 ): Promise<StopJobsResult> {
     const result: StopJobsResult = { stopped: [], failed: [] };
     const queue = [...jobIds];
-
-    async function stopWithRetry(jobId: string) {
-        for (let attempt = 1; ; attempt++) {
-            try {
-                await deleteJob(jobId, message);
-                return;
-            } catch (error) {
-                const retryAfterMs = error instanceof ApiError ? error.retryAfterMs : undefined;
-                const canRetry =
-                    error instanceof Error &&
-                    isRetryableApiError(error) &&
-                    attempt <= MAX_RETRIES &&
-                    (retryAfterMs === undefined || retryAfterMs <= RETRY_BACKOFF_CAP_MS);
-                if (!canRetry) {
-                    throw error;
-                }
-                await new Promise((resolve) => setTimeout(resolve, retryBackoffMs(attempt, retryAfterMs)));
-            }
-        }
-    }
+    let rateLimitError: Error | undefined;
 
     async function worker() {
         let jobId;
         while ((jobId = queue.shift()) !== undefined) {
             try {
-                await stopWithRetry(jobId);
+                if (rateLimitError) {
+                    throw rateLimitError;
+                }
+                await deleteJob(jobId, message);
                 result.stopped.push(jobId);
             } catch (error) {
-                result.failed.push({ jobId, error: error instanceof Error ? error : new Error(String(error)) });
+                const failure = error instanceof Error ? error : new Error(String(error));
+                if (failure instanceof ApiError && failure.status === 429) {
+                    rateLimitError = failure;
+                }
+                result.failed.push({ jobId, error: failure });
             }
             onProgress?.(result.stopped.length + result.failed.length);
         }
