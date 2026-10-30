@@ -2969,6 +2969,43 @@ test_data:
                 == "ok"
             )
 
+    @skip_without_tool("collection_creates_dynamic_list_failbool")
+    def test_workflow_fails_when_discovered_collection_producer_fails_empty(self):
+        # A job that fails before writing anything must not leave its discovered collection
+        # populated and empty: the mapped step would run zero jobs and the reducer would
+        # succeed over nothing, so the invocation would complete with no data.
+        with self.dataset_populator.test_history() as history_id:
+            job_summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+steps:
+  produce:
+    tool_id: collection_creates_dynamic_list_failbool
+    state:
+      failbool: true
+  per_element:
+    tool_id: cat1
+    in:
+      input1: produce/list_output
+  reduce:
+    tool_id: cat_list
+    in:
+      input1: per_element/out_file1
+""",
+                history_id=history_id,
+                assert_ok=False,
+                wait=True,
+            )
+            invocation = self.workflow_populator.get_invocation(job_summary.invocation_id, step_details=True)
+            assert invocation["state"] == "failed", invocation
+            assert invocation["messages"][0]["reason"] == "collection_failed", invocation["messages"]
+            produce_hdca = invocation["steps"][0]["output_collections"]["list_output"]["id"]
+            details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=produce_hdca, assert_ok=False
+            )
+            assert details["populated_state"] == "failed", details
+            assert not invocation["steps"][2]["jobs"], invocation["steps"][2]
+
     @skip_without_tool("multi_data_optional")
     def test_workflow_list_list_multi_data_map_over(self):
         # Test that a list:list is reduced to list with a multiple="true" data input
