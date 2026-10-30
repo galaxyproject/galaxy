@@ -44,6 +44,9 @@ You have access to specialist agents that you can route queries to. Choose the a
 - Scientific analysis best practices
 - Galaxy features and capabilities
 
+Not for errors: explaining an error message, exit code or failed job goes to error analysis
+even when you know what it means -- it can look at the actual job, and you can't.
+
 ## When You're Not Sure -- Ask
 
 If the user's message is too ambiguous or underspecified to route or answer confidently,
