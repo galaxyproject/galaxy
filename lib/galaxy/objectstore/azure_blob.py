@@ -228,11 +228,10 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
         # Errors propagate: taking an object for missing would push a possibly stale cached copy over it.
         is_dir = rel_path[-1] == "/"
         if is_dir:
-            blobs = self._blobs_from(rel_path)
-            if blobs:
+            # The listing is a lazy pager, truthy even when empty.
+            for _ in self._blobs_from(rel_path):
                 return True
-            else:
-                return False
+            return False
         else:
             return self._blob_client(rel_path).exists()
 

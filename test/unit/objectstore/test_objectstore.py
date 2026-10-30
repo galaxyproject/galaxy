@@ -1440,6 +1440,14 @@ def test_get_data_head_azure_fails_for_a_missing_blob():
 
 
 @patch_object_stores_to_skip_initialize
+def test_exists_remotely_azure_reports_a_directory_without_blobs_as_missing():
+    with TestConfig(get_example("azure_simple.yml")) as (directory, object_store):
+        # Like the SDK's pager, an empty iterator is truthy.
+        with patch.object(object_store, "_blobs_from", return_value=iter([])):
+            assert object_store._exists_remotely("000/dataset_1_files/") is False
+
+
+@patch_object_stores_to_skip_initialize
 def test_get_data_head_boto3_reads_the_cached_copy_of_an_object_missing_from_the_bucket():
     with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
         dataset = MockDataset(1)
