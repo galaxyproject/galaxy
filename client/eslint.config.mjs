@@ -42,6 +42,28 @@ const baseRules = {
     // Bootstrap-vue isn't registered globally, so its components have to be
     // imported where they're used. Only checks bootstrap-vue names.
     "vue/no-undef-components": ["error", { ignorePatterns: ["^(?!b-|B[A-Z])"] }],
+    // client/patches/bootstrap-vue@2.23.1.patch doesn't fix v-model on these under
+    // Vue 3 compat, so they'd silently stop updating their bound values.
+    "no-restricted-imports": [
+        "error",
+        {
+            paths: [
+                {
+                    name: "bootstrap-vue",
+                    importNames: [
+                        "BFormCheckbox",
+                        "BFormCheckboxGroup",
+                        "BFormRadio",
+                        "BFormRadioGroup",
+                        "BFormSelect",
+                        "BFormTags",
+                    ],
+                    message:
+                        "Unpatched under Vue 3 compat; use GCheckbox, GCheckboxGroup, GRadio, GRadioGroup or GSelect.",
+                },
+            ],
+        },
+    ],
 
     // Downgrade the severity of some rules to warnings as a transition measure.
     // For example, vue/multi-word-component names is considered an error,
