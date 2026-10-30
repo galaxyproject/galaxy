@@ -52,6 +52,7 @@ from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util import hg_util
+from tool_shed.util.common_util import generate_clone_url_for
 from tool_shed.util.metadata_util import (
     build_invalid_tools,
     get_all_dependencies,
@@ -88,6 +89,7 @@ from tool_shed.webapp.search.repo_search import (
     RepoSearch,
 )
 from tool_shed_client.schema import (
+    CategorySummary,
     CreateRepositoryRequest,
     DetailedRepository,
     ExtraRepoInfo,
@@ -725,16 +727,19 @@ def create_repository(trans: ProvidesUserContext, request: CreateRepositoryReque
     return repo
 
 
-def to_element_dict(app: ToolShedApp, repository: Repository, include_categories: bool = False) -> dict[str, Any]:
+def to_element_dict(app: ToolShedApp, repository: Repository) -> dict[str, Any]:
     value_mapper = get_value_mapper(app)
-    repository_dict = repository.to_dict(view="element", value_mapper=value_mapper)
-    if include_categories:
-        category_ids = []
-        for rca in repository.categories:
-            assert rca.category is not None
-            category_ids.append(app.security.encode_id(rca.category.id))
-        repository_dict["category_ids"] = category_ids
-    return repository_dict
+    return repository.to_dict(view="element", value_mapper=value_mapper)
+
+
+def repository_categories(app: ToolShedApp, repository: Repository) -> list[CategorySummary]:
+    """The repository's live categories, by name."""
+    categories = [
+        CategorySummary(id=app.security.encode_id(rca.category.id), name=rca.category.name)
+        for rca in repository.categories
+        if rca.category and not rca.category.deleted
+    ]
+    return sorted(categories, key=lambda category: category.name.lower())
 
 
 def repositories_by_category(
@@ -761,8 +766,12 @@ def to_model(app: ToolShedApp, repository: Repository) -> SchemaRepository:
     return SchemaRepository(**to_element_dict(app, repository))
 
 
-def to_detailed_model(app: ToolShedApp, repository: Repository) -> DetailedRepository:
-    return DetailedRepository(**to_element_dict(app, repository))
+def to_detailed_model(trans: ProvidesRepositoriesContext, repository: Repository) -> DetailedRepository:
+    return DetailedRepository(
+        **to_element_dict(trans.app, repository),
+        categories=repository_categories(trans.app, repository),
+        clone_url=generate_clone_url_for(trans, repository),
+    )
 
 
 def upload_tar_and_set_metadata(

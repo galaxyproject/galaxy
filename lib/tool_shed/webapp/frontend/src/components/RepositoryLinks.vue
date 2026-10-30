@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { faCode, faHouse, faLink } from "@fortawesome/free-solid-svg-icons"
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core"
+import { faCode, faCodeFork, faCopy, faHouse, faLink } from "@fortawesome/free-solid-svg-icons"
 import { GButton } from "@galaxyproject/galaxy-ui"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCopy } from "@fortawesome/free-solid-svg-icons"
 import { computed } from "vue"
 import { copyAndNotify } from "@/util"
 import { components } from "@/schema"
@@ -14,68 +14,74 @@ interface RepositoryLinkProps {
     currentRevision: string | null
 }
 
-// why are the v-if's below not preventing needing undefined here typescript?
-function copyLink(link: string | undefined) {
-    if (link) {
-        const absoluteLink = link.startsWith("http") ? link : `${window.location.origin}${link}`
-        copyAndNotify(absoluteLink, "Link copied to your clipboard")
+// A link when it has an href, otherwise a command to copy
+interface LinkRow {
+    label: string
+    icon: IconDefinition
+    text: string
+    href?: string
+    copyText: string
+    copyLabel: string
+    copyMessage: string
+}
+
+function urlRow(label: string, icon: IconDefinition, href: string): LinkRow {
+    const copyText = href.startsWith("http") ? href : `${window.location.origin}${href}`
+    return {
+        label,
+        icon,
+        text: href,
+        href,
+        copyText,
+        copyLabel: "Copy link",
+        copyMessage: "Link copied to your clipboard",
     }
 }
 
 const props = defineProps<RepositoryLinkProps>()
-const link = computed(() => `/view/${props.repository.owner}/${props.repository.name}/${props.currentRevision}`)
-const homepage = computed(() => props.repository.homepage_url)
-const dev_url = computed(() => props.repository.remote_repository_url)
+
+const rows = computed(() => {
+    const { owner, name, homepage_url, remote_repository_url, clone_url } = props.repository
+    const rows: LinkRow[] = []
+    if (props.currentRevision) {
+        rows.push(urlRow("Permalink", faLink, `/view/${owner}/${name}/${props.currentRevision}`))
+    }
+    if (homepage_url) {
+        rows.push(urlRow("Homepage", faHouse, homepage_url))
+    }
+    if (remote_repository_url) {
+        rows.push(urlRow("Development repository", faCode, remote_repository_url))
+    }
+    if (clone_url) {
+        const command = `hg clone ${clone_url}`
+        rows.push({
+            label: "Mercurial clone",
+            icon: faCodeFork,
+            text: command,
+            copyText: command,
+            copyLabel: "Copy clone command",
+            copyMessage: "Clone command copied to your clipboard",
+        })
+    }
+    return rows
+})
 </script>
 <template>
     <ul class="repository-links">
-        <li v-if="currentRevision" class="repository-link">
-            <FontAwesomeIcon :icon="faLink" class="repository-link-icon" fixed-width />
+        <li v-for="row in rows" :key="row.label" class="repository-link">
+            <FontAwesomeIcon :icon="row.icon" class="repository-link-icon" fixed-width />
             <span class="repository-link-text">
-                <span class="repository-link-label">Permalink</span>
-                <a class="repository-link-url" :href="link">{{ link }}</a>
+                <span class="repository-link-label">{{ row.label }}</span>
+                <a v-if="row.href" class="repository-link-url" :href="row.href">{{ row.text }}</a>
+                <code v-else class="repository-link-url repository-link-command" :title="row.text">{{ row.text }}</code>
             </span>
             <GButton
                 icon-only
                 transparent
                 size="small"
-                aria-label="Copy link"
-                title="Copy link"
-                @click="copyLink(link)"
-            >
-                <FontAwesomeIcon :icon="faCopy" />
-            </GButton>
-        </li>
-        <li v-if="homepage" class="repository-link">
-            <FontAwesomeIcon :icon="faHouse" class="repository-link-icon" fixed-width />
-            <span class="repository-link-text">
-                <span class="repository-link-label">Homepage</span>
-                <a class="repository-link-url" :href="homepage">{{ homepage }}</a>
-            </span>
-            <GButton
-                icon-only
-                transparent
-                size="small"
-                aria-label="Copy link"
-                title="Copy link"
-                @click="copyLink(homepage)"
-            >
-                <FontAwesomeIcon :icon="faCopy" />
-            </GButton>
-        </li>
-        <li v-if="dev_url" class="repository-link">
-            <FontAwesomeIcon :icon="faCode" class="repository-link-icon" fixed-width />
-            <span class="repository-link-text">
-                <span class="repository-link-label">Development repository</span>
-                <a class="repository-link-url" :href="dev_url">{{ dev_url }}</a>
-            </span>
-            <GButton
-                icon-only
-                transparent
-                size="small"
-                aria-label="Copy link"
-                title="Copy link"
-                @click="copyLink(dev_url)"
+                :aria-label="row.copyLabel"
+                :title="row.copyLabel"
+                @click="copyAndNotify(row.copyText, row.copyMessage)"
             >
                 <FontAwesomeIcon :icon="faCopy" />
             </GButton>
