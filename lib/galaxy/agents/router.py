@@ -26,7 +26,9 @@ import anyio
 from pydantic import ValidationError
 from pydantic_ai import (
     Agent,
+    ModelRetry,
     RunContext,
+    TextOutput,
     UnexpectedModelBehavior,
 )
 
@@ -42,6 +44,35 @@ from .base import (
 )
 
 log = logging.getLogger(__name__)
+
+_CODE_FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL)
+
+
+def _is_written_out_handoff(text: str) -> bool:
+    """A direct answer that is really a hand-off call the model wrote as JSON text."""
+    stripped = text.strip()
+    fenced = _CODE_FENCE.match(stripped)
+    if fenced:
+        stripped = fenced.group(1)
+    try:
+        parsed = json.loads(stripped)
+    except ValueError:
+        return False
+    if not isinstance(parsed, dict):
+        return False
+    if set(parsed) == {"task"}:
+        return True
+    called = parsed.get("tool") or parsed.get("name") or ""
+    return isinstance(called, str) and ("hand_off_to_" in called or called.startswith("final_result"))
+
+
+def _direct_answer(text: str) -> str:
+    if _is_written_out_handoff(text):
+        raise ModelRetry(
+            "You wrote a hand-off out as text. Call the hand_off_to_* function instead, "
+            "or answer the user in plain prose."
+        )
+    return text
 
 
 class QueryRouterAgent(BaseGalaxyAgent):
@@ -97,7 +128,9 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 orchestrator_handoff,
                 gtn_handoff,
                 clarification_output,
-                str,  # Default: answer directly
+                # Default: answer directly. gpt-oss sometimes writes a hand-off out as JSON
+                # text instead of calling it; that gets retried rather than shown to the user.
+                TextOutput(_direct_answer),
             ],
             instructions=self.get_system_prompt(),
             retries=self._get_retries(),
