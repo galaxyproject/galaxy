@@ -508,6 +508,40 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_test
+    @managed_history
+    def test_run_reuses_equivalent_job(self) -> None:
+        history_id = self.current_history_id()
+        self.dataset_populator.new_dataset(history_id, content="a b c", name="reuse_input.txt", wait=True)
+        selected = self.components.tool_form.parameter_data_select_value(parameter="input1")
+
+        @retry_assertion_during_transitions
+        def assert_input_selected():
+            assert (text := selected.wait_for_text()) == "1: reuse_input.txt", text
+
+        for reuse in (False, True):
+            self.home()
+            self.tool_open("cat1")
+            # Wait for the form's default pick so it can't override ours.
+            selected.wait_for_visible()
+            self.tool_form_select_data("input1", "reuse_input.txt")
+            if reuse:
+                self.tool_form_set_use_cached_job()
+                # let the CSS switch transition finish so the screenshot shows it on
+                self.sleep_for(self.wait_types.UX_RENDER)
+                self.screenshot("tool_form_use_cached_job")
+            assert_input_selected()
+            self.tool_form_execute()
+            self.history_panel_wait_for_hid_ok(3 if reuse else 2)
+        original, rerun = (
+            self.dataset_populator.get_job_details(
+                self.dataset_populator.get_history_dataset_details(history_id, hid=hid)["creating_job"], full=True
+            ).json()
+            for hid in (2, 3)
+        )
+        assert original["copied_from_job_id"] is None
+        assert rerun["copied_from_job_id"] == original["id"]
+
+    @selenium_test
     def test_dataset_state_filtering(self):
         # upload an ok (HID 1) and a discarded (HID 2) dataset and run a tool
         # normally HID 2 would be selected but since it is discarded - it won't
