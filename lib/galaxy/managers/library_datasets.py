@@ -20,6 +20,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.datasets import ensure_datatype_change_keeps_encryption
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model import (
     LibraryDataset,
@@ -99,6 +100,12 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
         new_data: dict[str, Any],
         flush: bool = True,
     ) -> None:
+        new_file_ext = new_data.get("file_ext", None)
+        if new_file_ext is not None and new_file_ext not in ("auto", ldda.extension):
+            # Before changing anything, refused requests don't leave the dataset partly updated.
+            ensure_datatype_change_keeps_encryption(
+                ldda, self.app.datatypes_registry.get_datatype_by_extension(new_file_ext)
+            )
         changed = False
         new_name = new_data.get("name", None)
         if new_name is not None and new_name != ldda.name:
@@ -112,7 +119,6 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
         if new_message is not None and new_message != ldda.message:
             ldda.message = new_message
             changed = True
-        new_file_ext = new_data.get("file_ext", None)
         if new_file_ext == "auto":
             self.ldda_manager.detect_datatype(trans, ldda)
         elif new_file_ext is not None and new_file_ext != ldda.extension:

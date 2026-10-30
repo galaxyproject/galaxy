@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from galaxy.jobs import JobConfiguration
     from galaxy.jobs.manager import JobManager
     from galaxy.managers.collections import DatasetCollectionManager
+    from galaxy.managers.dataset_protection import DatasetProtectionManager
     from galaxy.managers.folders import FolderManager
     from galaxy.managers.hdas import HDAManager
     from galaxy.managers.histories import HistoryManager
@@ -139,6 +140,7 @@ class MinimalManagerApp(MinimalApp):
     dataset_collection_manager: "DatasetCollectionManager"
     history_manager: "HistoryManager"
     hda_manager: "HDAManager"
+    dataset_protection: "DatasetProtectionManager"
     workflow_manager: "WorkflowsManager"
     workflow_contents_manager: "WorkflowContentsManager"
     library_folder_manager: "FolderManager"

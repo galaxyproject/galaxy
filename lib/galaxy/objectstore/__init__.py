@@ -436,6 +436,19 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
+    def get_data_head(self, obj, size: int) -> bytes:
+        """Return the first `size` bytes of `obj` (fewer if it is smaller) as stored in the backing store.
+
+        Unlike `get_data`, caching stores read these bytes from their backend instead of their cache: the
+        cached copy of an object written from another host (e.g. by a remote job) can be stale. Backends
+        that can't read part of an object read their cached copy instead, pulled again only when it is empty.
+
+        If the object does not exist raises `ObjectNotFound`; a `size` of 0 or less returns `b""` without
+        checking.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def get_concrete_store_name(self, obj):
         """Return a display name or title of the objectstore corresponding to obj.
 
@@ -821,6 +834,11 @@ class BaseObjectStore(ObjectStore):
     def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
         # Stores that cannot stream their objects remotely (e.g. disk) get this no-op default.
         return None
+
+    def get_data_head(self, obj, size: int) -> bytes:
+        if size <= 0:
+            return b""
+        return self._invoke("get_data_head", obj, size=size)
 
     def get_concrete_store_backends(self) -> list[ConcreteObjectStore]:
         return self._invoke("get_concrete_store_backends")
@@ -1292,6 +1310,10 @@ class DiskObjectStore(ConcreteObjectStore):
         data_file.close()
         return content
 
+    def _get_data_head(self, obj, size: int, **kwargs) -> bytes:
+        with open(self._get_filename(obj, **kwargs), "rb") as f:
+            return f.read(size)
+
     def _get_filename(self, obj, sync_cache: bool = True, **kwargs) -> str:
         """
         Override `ObjectStore`'s stub.
@@ -1460,6 +1482,10 @@ class NestedObjectStore(BaseObjectStore):
     def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
         """For the first backend that has this `obj`, stream it from that backend."""
         return self._call_method("_get_data_stream", obj, None, False, **kwargs)
+
+    def _get_data_head(self, obj, size: int, **kwargs) -> bytes:
+        """For the first backend that has this `obj`, read the start of it from that backend."""
+        return self._call_method("_get_data_head", obj, ObjectNotFound, True, size=size, **kwargs)
 
     def _get_concrete_store_backends(self, **kwargs):
         backends = []

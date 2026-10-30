@@ -52,6 +52,7 @@ from galaxy.managers.admin_extensions import AdminExtensionsManager
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.dataset_protection import DatasetProtectionManager
 from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.file_source_instances import (
     FileSourceInstancesManager,
@@ -800,6 +801,10 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.user_manager = self._register_singleton(UserManager)
         self._register_singleton(GalaxySessionManager)
         self.hda_manager = self._register_singleton(HDAManager)
+        self.dataset_protection = self._register_singleton(
+            DatasetProtectionManager,
+            DatasetProtectionManager(self.config, self[galaxy_scoped_session], self.job_config.limits.walltime_delta),
+        )
         self.history_manager = self._register_singleton(HistoryManager)
         self.job_search = self._register_singleton(JobSearch)
         self.dataset_collection_manager = self._register_singleton(DatasetCollectionManager)

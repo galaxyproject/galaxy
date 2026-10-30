@@ -1,0 +1,316 @@
+"""Protect the outputs of protected jobs before Galaxy persists them.
+
+Runs on the compute host while collecting outputs (``set_metadata``). Every output
+file is encrypted in place right before it would be pushed to the object store,
+whatever way the output was produced (declared, ``from_work_dir``, discovered,
+collection element, extra files). The result for every output is recorded in a
+sidecar file that Galaxy checks when finishing the job, and from which it creates
+the grants to use the outputs in further jobs.
+"""
+
+import logging
+import os
+import shutil
+from typing import (
+    Annotated,
+    Any,
+    Final,
+    Literal,
+    TYPE_CHECKING,
+)
+
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationError,
+)
+
+from galaxy.datatypes import sniff
+from galaxy.util.crypt4gh import (
+    CRYPT4GH_FILE_EXT,
+    iter_relpaths,
+    unwrap_crypt4gh_file_ext,
+    wrap_crypt4gh_file_ext,
+)
+from . import (
+    CRYPT4GH_SCHEME,
+    ProtectionError,
+    ProtectionPlan,
+    user_message,
+    write_private_file,
+)
+from .crypt4gh import Crypt4GHJobRuntime
+
+if TYPE_CHECKING:
+    from galaxy.datatypes.registry import Registry
+    from galaxy.model import DatasetInstance
+
+log = logging.getLogger(__name__)
+
+SIDECAR_FILE = os.path.join("metadata", "outputs_populated", "protection.json")
+
+OUTCOME_PROTECTED: Final = "protected"
+OUTCOME_PURGED: Final = "purged"
+OUTCOME_DEFERRED: Final = "deferred"
+OUTCOME_FAILED: Final = "failed"
+# Outputs without content, nothing to protect.
+CONTENTLESS_OUTCOMES = (OUTCOME_PURGED, OUTCOME_DEFERRED)
+
+UnprotectedOutcome = Literal["purged", "deferred", "failed"]
+
+
+class ProtectedOutput(BaseModel):
+    """An output encrypted for the job's user."""
+
+    outcome: Literal["protected"] = OUTCOME_PROTECTED
+    ext: str
+    header_sha256: str
+    # None when the file copies an encrypted input, see ProtectedFileResult.
+    compute_header: str | None
+    # Compute headers of the extra files by relative path, None for copies of encrypted inputs.
+    extra_files: dict[str, str | None] = Field(default_factory=dict)
+
+
+class UnprotectedOutput(BaseModel):
+    outcome: UnprotectedOutcome
+
+
+OutputRecord = Annotated[ProtectedOutput | UnprotectedOutput, Field(discriminator="outcome")]
+
+
+class ProtectionSidecar(BaseModel):
+    """What the compute host reports about protecting the outputs of a job, for Galaxy to check."""
+
+    # Compute keypair the outputs are encrypted to, None when the inputs were never staged.
+    key_ref: str | None = None
+    key_expiration: str | None = None
+    # Outputs by dataset UUID.
+    datasets: dict[str, OutputRecord] = Field(default_factory=dict)
+    errors: list[str] = Field(default_factory=list)
+
+    def write(self, job_directory: str) -> None:
+        path = os.path.join(job_directory, SIDECAR_FILE)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        # Compute headers are bearer capabilities.
+        write_private_file(path, self.model_dump_json())
+
+    @classmethod
+    def read(cls, job_directory: str) -> "ProtectionSidecar | None":
+        """The report of the compute host, ``None`` if it wrote none or an invalid one."""
+        path = os.path.join(job_directory, SIDECAR_FILE)
+        if not os.path.exists(path):
+            return None
+        with open(path) as f:
+            content = f.read()
+        try:
+            return cls.model_validate_json(content)
+        except ValidationError:
+            # Errors would show the compute headers.
+            log.error("Invalid protection results in %s", path)
+            return None
+
+
+class OutputProtector:
+    # Recorded as the protection scheme of the job.
+    scheme = CRYPT4GH_SCHEME
+
+    def __init__(self, runtime: Crypt4GHJobRuntime, datatypes_registry: "Registry"):
+        self.runtime = runtime
+        self.datatypes_registry = datatypes_registry
+        self.records: dict[str, OutputRecord] = {}
+        self.errors: list[str] = []
+
+    @classmethod
+    def for_job(cls, metadata_params: dict[str, Any], datatypes_registry: "Registry") -> "OutputProtector | None":
+        plan_path = metadata_params.get("protection_plan")
+        if not plan_path:
+            return None
+        if not os.path.exists(plan_path):
+            raise ProtectionError("The protection plan of this job is missing, its outputs can't be protected.")
+        return cls(Crypt4GHJobRuntime(ProtectionPlan.read(plan_path)), datatypes_registry)
+
+    def protect(
+        self,
+        dataset_instance: "DatasetInstance",
+        path: str,
+        extra_files_path: str | None = None,
+        link_data: bool = False,
+    ) -> None:
+        """Encrypt the files of an output in place and switch it to the matching Crypt4GH datatype.
+
+        On failure the plaintext is removed, so nothing unprotected can be persisted afterwards.
+        """
+        uuid = self._uuid(dataset_instance)
+        try:
+            if link_data:
+                # Linked files stay where they are, they can't be encrypted in place.
+                raise ProtectionError("outputs of protected jobs can't be linked data")
+            ext = self._protected_ext(dataset_instance.extension, path)
+            result = self.runtime.protect_file(path)
+            extra_files = self._protect_extra_files(extra_files_path)
+        except Exception as e:
+            if not link_data:
+                self._discard(path, extra_files_path)
+            raise self._failed(dataset_instance, e) from e
+        dataset_instance.extension = ext
+        self.records[uuid] = ProtectedOutput(
+            ext=ext,
+            header_sha256=result.header_sha256,
+            compute_header=result.compute_header,
+            extra_files=extra_files,
+        )
+
+    def protect_declared(
+        self, dataset_instance: "DatasetInstance", external_filename: str | None, link_data_only: bool
+    ) -> bool:
+        """Protect a declared output before anything queues it for the object store.
+
+        Returns whether the output was stored already, while discovering outputs (assign_primary_output).
+        """
+        dataset = dataset_instance.dataset
+        assert dataset
+        if external_filename is None:
+            self._record_outcome(dataset_instance, OUTCOME_DEFERRED)
+        elif dataset.purged:
+            self._record_outcome(dataset_instance, OUTCOME_PURGED)
+        elif protected_ext := self.protected_ext(dataset_instance):
+            # The tool provided extension may have been applied again since. Read it from the object
+            # store, not from the declared file.
+            dataset_instance.extension = protected_ext
+            dataset.external_filename = None
+            self.protect_extra_files(dataset_instance, dataset.external_extra_files_path)
+            return True
+        else:
+            self.protect(
+                dataset_instance, external_filename, dataset.external_extra_files_path, link_data=link_data_only
+            )
+        return False
+
+    def protect_extra_files(self, dataset_instance: "DatasetInstance", extra_files_path: str | None) -> None:
+        """Encrypt the extra files of an output protected earlier without them, see :meth:`protect`.
+
+        Outputs assigned a discovered file (assign_primary_output) are protected before their
+        extra files are located.
+        """
+        record = self.records[self._uuid(dataset_instance)]
+        if not isinstance(record, ProtectedOutput) or record.extra_files:
+            return
+        try:
+            record.extra_files = self._protect_extra_files(extra_files_path)
+        except Exception as e:
+            self._discard_extra_files(extra_files_path)
+            raise self._failed(dataset_instance, e) from e
+
+    def _failed(self, dataset_instance: "DatasetInstance", error: Exception) -> ProtectionError:
+        """Record that an output could not be protected, its plaintext must be discarded already."""
+        message = user_message(error)
+        self.records[self._uuid(dataset_instance)] = UnprotectedOutput(outcome=OUTCOME_FAILED)
+        self.errors.append(f"Output '{dataset_instance.name}' could not be protected: {message}")
+        return ProtectionError(message)
+
+    def _protect_extra_files(self, extra_files_path: str | None) -> dict[str, str | None]:
+        """Encrypt every extra file in place, return their compute headers by relative path."""
+        if not extra_files_path or not os.path.isdir(extra_files_path):
+            return {}
+        return {
+            relpath: self.runtime.protect_file(os.path.join(extra_files_path, relpath)).compute_header
+            for relpath in iter_relpaths(extra_files_path)
+        }
+
+    def protect_all(self, outputs: list[tuple["DatasetInstance", str, str | None, bool]]) -> None:
+        """Protect several outputs, see :meth:`protect`: ``(dataset_instance, path, extra_files_path, link_data)``.
+
+        Stops at the first failure: the job fails anyway, don't keep calling the key service. Galaxy purges
+        what isn't protected, the plaintext of the remaining outputs is removed like for failed outputs.
+        """
+        for index, output in enumerate(outputs):
+            try:
+                self.protect(*output)
+            except Exception:
+                for _, path, extra_files_path, link_data in outputs[index + 1 :]:
+                    if not link_data:
+                        self._discard(path, extra_files_path)
+                raise
+
+    def _record_outcome(self, dataset_instance: "DatasetInstance", outcome: UnprotectedOutcome) -> None:
+        self.records.setdefault(self._uuid(dataset_instance), UnprotectedOutput(outcome=outcome))
+
+    def record_deferred(self, dataset_instance: "DatasetInstance") -> None:
+        self._record_outcome(dataset_instance, OUTCOME_DEFERRED)
+
+    @staticmethod
+    def without_tool_metadata(attributes: dict[str, Any] | None) -> dict[str, Any]:
+        """Tool provided attributes of an output, without those that may be derived from the decrypted data."""
+        return {key: value for key, value in (attributes or {}).items() if key not in ("metadata", "info")}
+
+    def protected_ext(self, dataset_instance: "DatasetInstance") -> str | None:
+        """Extension of an output protected earlier, ``None`` for other datasets."""
+        record = self.records.get(self._uuid(dataset_instance))
+        return record.ext if isinstance(record, ProtectedOutput) else None
+
+    def fail(self, job_directory: str, message: str) -> ProtectionError:
+        """Fail the job before any output is stored, Galaxy shows the errors reported to it."""
+        self.errors.append(message)
+        self._write_sidecar(job_directory)
+        return ProtectionError(message)
+
+    def finish(self, dataset_instances: list["DatasetInstance"], job_directory: str) -> bool:
+        """Report the protection of every output to Galaxy, return whether all of them were protected."""
+        self._check_complete(dataset_instances)
+        self._write_sidecar(job_directory)
+        return not self.errors
+
+    def _check_complete(self, dataset_instances: list["DatasetInstance"]) -> None:
+        """Record an error for every output that went around the protection."""
+        for dataset_instance in dataset_instances:
+            dataset = dataset_instance.dataset
+            if dataset is not None and dataset.purged:
+                self._record_outcome(dataset_instance, OUTCOME_PURGED)
+                continue
+            if self._uuid(dataset_instance) not in self.records:
+                self.records[self._uuid(dataset_instance)] = UnprotectedOutput(outcome=OUTCOME_FAILED)
+                self.errors.append(f"Output '{dataset_instance.name}' was not protected.")
+
+    def _write_sidecar(self, job_directory: str) -> None:
+        sidecar = ProtectionSidecar(datasets=self.records, errors=self.errors)
+        try:
+            sidecar.key_ref = self.runtime.key_ref
+            sidecar.key_expiration = self.runtime.key_expiration
+        except ProtectionError:
+            # The inputs were never staged, there are no outputs to use again.
+            pass
+        sidecar.write(job_directory)
+
+    def _protected_ext(self, ext: str | None, path: str) -> str:
+        inner_ext = unwrap_crypt4gh_file_ext(ext or "") or ext or "data"
+        if inner_ext in ("auto", "_sniff_"):
+            # Sniffing needs the plaintext, so it has to happen now.
+            inner_ext = sniff.guess_ext(path, self.datatypes_registry.sniff_order)
+        if inner_ext == CRYPT4GH_FILE_EXT:
+            return CRYPT4GH_FILE_EXT
+        protected_ext = wrap_crypt4gh_file_ext(inner_ext)
+        if self.datatypes_registry.get_datatype_by_extension(protected_ext) is None:
+            return CRYPT4GH_FILE_EXT
+        return protected_ext
+
+    @staticmethod
+    def _uuid(dataset_instance: "DatasetInstance") -> str:
+        assert dataset_instance.dataset
+        return str(dataset_instance.dataset.uuid)
+
+    @classmethod
+    def _discard(cls, path: str, extra_files_path: str | None) -> None:
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+        except OSError:
+            log.exception("Could not remove an output that failed to be protected")
+        cls._discard_extra_files(extra_files_path)
+
+    @staticmethod
+    def _discard_extra_files(extra_files_path: str | None) -> None:
+        try:
+            if extra_files_path and os.path.isdir(extra_files_path):
+                shutil.rmtree(extra_files_path)
+        except OSError:
+            log.exception("Could not remove an output that failed to be protected")

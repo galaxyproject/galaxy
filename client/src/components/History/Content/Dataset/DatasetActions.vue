@@ -1,11 +1,22 @@
 <script setup lang="ts">
-import { faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import {
+    faBug,
+    faChartBar,
+    faCheck,
+    faInfoCircle,
+    faKey,
+    faLink,
+    faRedo,
+    faSitemap,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 
 import { type HDADetailed, userOwnsHistory } from "@/api";
+import { useConfig } from "@/composables/config";
+import { getCrypt4ghHeader, isCrypt4ghExtension, useDatasetProtection } from "@/composables/datasetProtection";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { copy as sendToClipboard } from "@/utils/clipboard";
@@ -66,6 +77,31 @@ const showVisualizations = computed(() => {
 const showRerun = computed(() => {
     return props.item.accessible && props.item.rerunnable && props.item.creating_job && props.item.state != "upload";
 });
+
+const { config } = useConfig();
+const { isAnonymous } = storeToRefs(useUserStore());
+
+const isCrypt4gh = computed(() => {
+    return Boolean(config.value?.crypt4gh_enabled) && isCrypt4ghExtension(props.item.extension);
+});
+const showAuthorizeCompute = computed(() => {
+    return isCrypt4gh.value && !isAnonymous.value && !props.item.purged && props.item.state === "ok";
+});
+const datasetId = computed(() => props.item.id);
+const { status: protectionStatus, authorizing, authorize } = useDatasetProtection(datasetId, showAuthorizeCompute);
+const authorizeComputeTitle = computed(() => {
+    if (authorizing.value) {
+        return localize("Authorizing...");
+    }
+    const expiresAt = protectionStatus.value?.ready ? protectionStatus.value.expires_at : null;
+    if (expiresAt) {
+        return `${localize("Authorized for your jobs until")} ${new Date(`${expiresAt}Z`).toLocaleString()}. ${localize("Click to renew.")}`;
+    }
+    return `${localize("Authorize your jobs to decrypt this dataset.")} ${localize(
+        "Authorization is personal: sharing this dataset does not let others compute on it.",
+    )}`;
+});
+
 const reportErrorUrl = computed(() => {
     return prependPath(props.itemUrls.reportError!);
 });
@@ -109,6 +145,10 @@ function onVisualize() {
 
 function onRerun() {
     router.push(`/?job_id=${props.item.creating_job}`);
+}
+
+function onAuthorizeCompute() {
+    authorize(getCrypt4ghHeader(props.item));
 }
 </script>
 
@@ -193,7 +233,36 @@ function onRerun() {
                     @click.prevent.stop="onRerun">
                     <FontAwesomeIcon :icon="faRedo" />
                 </GButton>
+
+                <GButton
+                    v-if="showAuthorizeCompute"
+                    v-g-tooltip.hover
+                    class="authorize-compute-btn px-1"
+                    :title="authorizeComputeTitle"
+                    size="small"
+                    transparent
+                    :disabled="authorizing"
+                    @click.prevent.stop="onAuthorizeCompute">
+                    <FontAwesomeLayers>
+                        <FontAwesomeIcon :icon="faKey" fixed-width />
+                        <FontAwesomeIcon
+                            v-if="protectionStatus?.ready"
+                            :icon="faCheck"
+                            class="authorized-check"
+                            fixed-width
+                            transform="shrink-6 right-6 down-6" />
+                    </FontAwesomeLayers>
+                </GButton>
             </div>
         </div>
     </div>
 </template>
+
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
+.authorized-check {
+    // Readable on the green background of finished datasets.
+    color: $state-success-text;
+}
+</style>
