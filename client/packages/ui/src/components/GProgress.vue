@@ -89,11 +89,15 @@ provide(progressKey, {
 .g-progress {
     display: flex;
     box-sizing: border-box;
-    height: 1rem;
     overflow: hidden;
     border-radius: var(--spacing-1);
     background-color: var(--color-grey-200);
     font-size: var(--font-size-small);
     line-height: 0;
+}
+
+// Zero specificity, so a consumer's own class on the track sets its height whatever the CSS order
+:where(.g-progress) {
+    height: 1rem;
 }
 </style>
