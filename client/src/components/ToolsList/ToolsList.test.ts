@@ -9,8 +9,11 @@ import toolsListUntyped from "@/components/ToolsView/testData/toolsList.json";
 import type { Tool } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 
+import ToolFilterChip from "./ToolFilterChip.vue";
 import ToolsList from "./ToolsList.vue";
+import ToolsListSectionFilters from "./ToolsListSectionFilters.vue";
 import ToolsListTable from "./ToolsListTable.vue";
+import ToolsListTagFilter from "./ToolsListTagFilter.vue";
 
 const FILTER_INPUTS = {
     "[placeholder='any name']": "name-filter",
@@ -68,16 +71,6 @@ vi.mock("vue-router", async (importOriginal) => {
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
 
-function toToolsById(list: Tool[]) {
-    return list.reduce(
-        (acc, tool) => {
-            acc[tool.id] = tool;
-            return acc;
-        },
-        {} as Record<string, Tool>,
-    );
-}
-
 describe("ToolsList", () => {
     let fetchToolsMock: ReturnType<typeof vi.spyOn>;
     let pinia: ReturnType<typeof createTestingPinia>;
@@ -87,7 +80,7 @@ describe("ToolsList", () => {
         setActivePinia(pinia);
 
         const toolStore = useToolStore(pinia);
-        toolStore.toolsById = toToolsById(toolsList);
+        toolStore.saveAllTools(toolsList);
         fetchToolsMock = vi.spyOn(toolStore, "fetchTools").mockResolvedValue();
         vi.spyOn(toolStore, "fetchToolSections").mockResolvedValue();
         vi.spyOn(toolStore, "fetchToolTagsMapping").mockResolvedValue();
@@ -99,6 +92,226 @@ describe("ToolsList", () => {
 
     afterEach(() => {
         vi.useRealTimers();
+    });
+
+    it.each(["#favorites", "fastqc #favs", RAW_TAG_SEARCH, "tag:alpha OR tag:beta"])(
+        "keeps unrepresentable search %s out of the structured pickers",
+        async (search) => {
+            const wrapper = mount(ToolsList as object, { localVue, pinia, router, propsData: { search } });
+            await flushPromises();
+            expect(wrapper.findComponent(ToolsListTagFilter).props("selectedTags")).toEqual([]);
+            expect(wrapper.findComponent(ToolsListTagFilter).props("disabled")).toBe(true);
+            expect(wrapper.get(".tool-tags-dropdown button.dropdown-toggle").attributes("disabled")).toBeDefined();
+            expect(wrapper.get(".tool-section-dropdown button.dropdown-toggle").attributes("disabled")).toBeDefined();
+            expect(wrapper.find('button[title^="Remove tag"]').exists()).toBe(false);
+            expect(wrapper.text()).not.toContain("Tools must match all selected tags.");
+            expect(wrapper.text()).toContain("Edit this search in the search field to preserve its conditions.");
+            expect((wrapper.get("input.search-query").element as HTMLInputElement).value).toBe(search);
+            await wrapper.get('[data-description="clear-all-tool-filters"]').trigger("click");
+            await flushPromises();
+            expect(wrapper.findComponent(ToolsListTagFilter).props("disabled")).toBe(false);
+        },
+    );
+
+    it.each([
+        ["fastqc", [], 'fastqc tag:"data cleanup"', '(fastqc) AND (tool_tags:("data cleanup"))'],
+        [
+            "owner:devteam fastqc",
+            [],
+            'fastqc owner:devteam tag:"data cleanup"',
+            '(fastqc) AND ((owner:(devteam) AND tool_tags:("data cleanup")))',
+        ],
+        [
+            "tag:collection_ops fastqc",
+            ["collection_ops"],
+            'fastqc tag:collection_ops tag:"data cleanup"',
+            '(fastqc) AND ((tool_tags:(collection_ops) AND tool_tags:("data cleanup")))',
+        ],
+        [MIXED_TAG_SEARCH, ["data cleanup"], "trim", "trim"],
+        ["unknown:term", [], 'unknown:term tag:"data cleanup"', '(unknown:term) AND (tool_tags:("data cleanup"))'],
+    ])(
+        "keeps the free text of %s when toggling a tag with the picker",
+        async (search, selectedTags, expectedSearch, expectedQuery) => {
+            const wrapper = mount(ToolsList as object, { localVue, pinia, router, propsData: { search } });
+            await flushPromises();
+            const selector = wrapper.findComponent(ToolsListTagFilter);
+            expect(selector.props("disabled")).toBe(false);
+            expect(selector.props("selectedTags")).toEqual(selectedTags);
+            expect(wrapper.text()).not.toContain("Edit this search in the search field to preserve its conditions.");
+            selector.vm.$emit("toggle-tag", "data cleanup");
+            await flushPromises();
+            expect((wrapper.get("input.search-query").element as HTMLInputElement).value).toBe(expectedSearch);
+            expect(routerPushMock).toHaveBeenLastCalledWith({ path: "/tools/list", query: { search: expectedSearch } });
+            expect(fetchToolsMock).toHaveBeenLastCalledWith(expectedQuery);
+        },
+    );
+
+    it.each([
+        ["fastqc name:foo name:bar", 'fastqc name:foo name:bar tag:"data cleanup"'],
+        ['fastqc help:"format: SAM"', 'fastqc help:"format: SAM" tag:"data cleanup"'],
+        ['fastqc tag:"Data Cleanup" owner:devteam', "fastqc owner:devteam"],
+    ])("keeps every other condition of %s when toggling a tag with the picker", async (search, expectedSearch) => {
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router, propsData: { search } });
+        await flushPromises();
+        wrapper.findComponent(ToolsListTagFilter).vm.$emit("toggle-tag", "data cleanup");
+        await flushPromises();
+        expect((wrapper.get("input.search-query").element as HTMLInputElement).value).toBe(expectedSearch);
+    });
+
+    it("keeps the free text when choosing an ontology with the picker", async () => {
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router, propsData: { search: "fastqc" } });
+        await flushPromises();
+        expect(wrapper.get(".tool-section-dropdown button.dropdown-toggle").attributes("disabled")).toBeUndefined();
+        wrapper.findComponent(ToolsListSectionFilters).vm.$emit("apply-filter", "ontology", '"operation_1"');
+        await flushPromises();
+        expect((wrapper.get("input.search-query").element as HTMLInputElement).value).toBe(
+            'fastqc ontology:"operation_1"',
+        );
+        expect(fetchToolsMock).toHaveBeenLastCalledWith("(fastqc) AND (edam_operations:(operation_1))");
+    });
+
+    it("labels the reset button by what it clears", async () => {
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router, propsData: { search: "fastqc" } });
+        await flushPromises();
+        expect(wrapper.get('[data-description="clear-all-tool-filters"]').text()).toBe("Clear search");
+        wrapper.findComponent(ToolsListTagFilter).vm.$emit("toggle-tag", "data cleanup");
+        await flushPromises();
+        expect(wrapper.get('[data-description="clear-all-tool-filters"]').text()).toBe("Clear all filters");
+    });
+
+    it("reports a failed tag catalog request in the tag picker", async () => {
+        vi.spyOn(useToolStore(), "fetchToolTagsMapping").mockRejectedValue(new Error("boom"));
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router });
+        await flushPromises();
+        const selector = wrapper.findComponent(ToolsListTagFilter);
+        expect(selector.props("loading")).toBe(false);
+        await wrapper.get(".tool-tags-dropdown button.dropdown-toggle").trigger("click");
+        expect(selector.text()).toContain("Could not load tags/categories.");
+        expect(selector.text()).not.toContain("No tags available.");
+    });
+
+    it("only offers to favorite ontology filters that are EDAM terms", async () => {
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router, propsData: { ontology: "foo" } });
+        await flushPromises();
+        const chip = wrapper.findComponent(ToolFilterChip);
+        expect(chip.find('button[title="Remove ontology foo"]').exists()).toBe(true);
+        expect(chip.findAll("button")).toHaveLength(1);
+
+        const edamWrapper = mount(ToolsList as object, {
+            localVue,
+            pinia,
+            router,
+            propsData: { ontology: '"topic_0003"' },
+        });
+        await flushPromises();
+        expect(edamWrapper.findComponent(ToolFilterChip).findAll("button")).toHaveLength(2);
+    });
+
+    it("supports a structured tag with AND in its quoted name", async () => {
+        const wrapper = mount(ToolsList as object, {
+            localVue,
+            pinia,
+            router,
+            propsData: { tag: ["DNA AND RNA"] },
+        });
+        await flushPromises();
+        expect(wrapper.findComponent(ToolsListTagFilter).props("selectedTags")).toEqual(["DNA AND RNA"]);
+        expect(wrapper.findComponent(ToolsListTagFilter).props("disabled")).toBe(false);
+        expect(fetchToolsMock).toHaveBeenCalledWith('(tool_tags:("dna and rna"))');
+    });
+
+    it("explains tag matching and clears all filters, chips, and URL parameters", async () => {
+        const wrapper = mount(ToolsList as object, {
+            localVue,
+            pinia,
+            router,
+            propsData: { tag: ["data cleanup", "collection_ops"], ontology: '"operation_1"', owner: "devteam" },
+        });
+        await flushPromises();
+        expect(wrapper.text()).toContain("Tools must match all selected tags.");
+        expect(wrapper.find('button[title="Remove ontology operation_1"]').exists()).toBe(true);
+        await wrapper.get('[data-description="clear-all-tool-filters"]').trigger("click");
+        await flushPromises();
+        expect((wrapper.get("input.search-query").element as HTMLInputElement).value).toBe("");
+        expect(wrapper.findComponent(ToolsListTagFilter).props("selectedTags")).toEqual([]);
+        expect(wrapper.find('button[title="Remove ontology operation_1"]').exists()).toBe(false);
+        expect(wrapper.find('[data-description="clear-all-tool-filters"]').exists()).toBe(false);
+        expect(routerPushMock).toHaveBeenLastCalledWith({ path: "/tools/list" });
+        expect(fetchToolsMock).toHaveBeenLastCalledWith("");
+    });
+
+    it("helps recover from empty results and hides the empty state while loading", async () => {
+        const toolStore = useToolStore();
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router, propsData: { owner: "missing" } });
+        await flushPromises();
+        expect(wrapper.text()).toContain("No tools match your search.");
+        toolStore.loading = true;
+        await flushPromises();
+        expect(wrapper.text()).not.toContain("No tools match your search.");
+        toolStore.loading = false;
+        await flushPromises();
+        const reset = wrapper.findAll("button").find((button) => button.text() === "Clear filters and show all tools")!;
+        await reset.trigger("click");
+        await flushPromises();
+        expect(wrapper.text()).not.toContain("No tools match your search.");
+        expect(wrapper.findComponent(ToolsListTable).exists()).toBe(true);
+        expect(routerPushMock).toHaveBeenLastCalledWith({ path: "/tools/list" });
+    });
+
+    it("keeps the ontology chip visible during ontology search and removes only that filter", async () => {
+        const toolStore = useToolStore();
+        toolStore.toolSections["ontology:edam_operations"] = {
+            operation_1: { id: "operation_1", name: "Quality control", model_class: "ToolSection", tools: ["fastqc"] },
+        };
+        const wrapper = mount(ToolsList as object, {
+            localVue,
+            pinia,
+            router,
+            propsData: { ontology: '"operation_1"', tag: ["data cleanup"] },
+        });
+        await flushPromises();
+        await wrapper.get(".tool-section-dropdown button.dropdown-toggle").trigger("click");
+        await wrapper.get('input[aria-label="Search ontologies"]').setValue("unrelated search");
+        const chip = wrapper.get('button[title="Remove ontology Quality control"]');
+        expect(chip.classes()).toContain("g-outline");
+        await chip.trigger("click");
+        await flushPromises();
+        expect(wrapper.find('button[title="Remove ontology Quality control"]').exists()).toBe(false);
+        expect(routerPushMock).toHaveBeenLastCalledWith({ path: "/tools/list", query: { tag: ["data cleanup"] } });
+    });
+
+    it("populates the selector from the tag mapping even if cached tools have no tags", async () => {
+        const toolStore = useToolStore();
+        toolStore.saveAllTools([{ id: "fastqc", name: "FastQC" } as Tool]);
+        toolStore.toolTagsById = { uncached_tool: ["Quality Control", "Get Data"] };
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router });
+        await flushPromises();
+        expect(wrapper.findComponent(ToolsListTagFilter).props("tags")).toEqual(["Get Data", "Quality Control"]);
+    });
+
+    it("synchronizes tag selection and removal with search text, URL, and backend queries", async () => {
+        const wrapper = mount(ToolsList as object, {
+            localVue,
+            pinia,
+            router,
+            propsData: { owner: "devteam" },
+        });
+        await flushPromises();
+        const selector = wrapper.findComponent(ToolsListTagFilter);
+        selector.vm.$emit("toggle-tag", "data cleanup");
+        await flushPromises();
+        expect(selector.props("selectedTags")).toEqual(["data cleanup"]);
+        expect(routerPushMock).toHaveBeenLastCalledWith({
+            path: "/tools/list",
+            query: { owner: "devteam", tag: ["data cleanup"] },
+        });
+        expect(fetchToolsMock).toHaveBeenLastCalledWith('(owner:(devteam) AND tool_tags:("data cleanup"))');
+
+        selector.vm.$emit("toggle-tag", "data cleanup");
+        await flushPromises();
+        expect(selector.props("selectedTags")).toEqual([]);
+        expect(routerPushMock).toHaveBeenLastCalledWith({ path: "/tools/list", query: { owner: "devteam" } });
+        expect(fetchToolsMock).toHaveBeenLastCalledWith("(owner:(devteam))");
     });
 
     it("performs an advanced search with a router push", async () => {
