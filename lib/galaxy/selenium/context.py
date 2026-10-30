@@ -1,4 +1,5 @@
 import os
+import shutil
 from abc import abstractmethod
 from urllib.parse import urljoin
 
@@ -9,12 +10,18 @@ from .navigates_galaxy import (
     galaxy_timeout_handler,
     NavigatesGalaxy,
 )
+from .stories import (
+    NoopStory,
+    StoryBase,
+)
 
 
 class GalaxySeleniumContext(NavigatesGalaxy):
     url: str
     target_url_from_selenium: str
     configured_driver: ConfiguredDriver
+    # Story being collected; the stateless null object unless one is assigned.
+    story: StoryBase = NoopStory()
 
     @property
     def _driver_impl(self):
@@ -33,20 +40,30 @@ class GalaxySeleniumContext(NavigatesGalaxy):
             base = self.url
         return urljoin(base, url)
 
-    def screenshot(self, label: str):
-        """If GALAXY_TEST_SCREENSHOTS_DIRECTORY is set create a screenshot there named <label>.png.
+    def screenshot(self, label: str, caption: str | None = None):
+        """Save a screenshot when an output path is configured and add it to the story.
 
-        Unlike the above "snapshot" feature, this will be written out regardless and not in a per-test
-        directory. The above method is used for debugging failures within a specific test. This method
-        if more for creating a set of images to augment automated testing with manual human inspection
-        after a test or test suite has executed.
+        A story numbers its screenshots in its own directory; the usual screenshot
+        path then gets a copy. The caption defaults to the label. Unlike failure
+        snapshots, these images are captured during successful runs too.
         """
         target = self._screenshot_path(label)
-        if target is None:
-            return
+        story_target = self.story.screenshot_path(label)
+        if story_target is None:
+            if target is not None:
+                self.save_screenshot(target)
+            return target
 
-        self.save_screenshot(target)
-        return target
+        self.save_screenshot(story_target)
+        if target is not None:
+            # Copy rather than capture again - the page has moved on.
+            shutil.copyfile(story_target, target)
+        self.story.add_screenshot(story_target, caption or label)
+        return story_target
+
+    def document(self, markdown_content: str):
+        """Add markdown narration to the story, interleaved with the screenshots."""
+        self.story.add_documentation(markdown_content)
 
     @abstractmethod
     def _screenshot_path(self, label: str, extension=".png") -> str | None:

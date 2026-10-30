@@ -5,12 +5,12 @@ import yaml
 from pydantic import ValidationError
 
 from galaxy.navigation.data import load_root_component
-from galaxy.schema.tours import TourDetails
-from ._impl import (
+from galaxy.navigation.tours import (
     get_tour_id_from_path,
     load_tour_from_path,
-    tour_paths,
 )
+from galaxy.schema.tours import TourDetails
+from ._impl import tour_paths
 
 DESCRIPTION = "Perform static validation of a tour."
 

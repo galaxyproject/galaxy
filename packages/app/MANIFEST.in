@@ -10,7 +10,6 @@ include src/galaxy/dependencies/dev-requirements.txt
 include src/galaxy/dependencies/update_lint_requirements.sh
 include src/galaxy/dependencies/pinned-lint-requirements.txt
 include src/galaxy/dependencies/pinned-test-requirements.txt
-include src/galaxy/managers/markdown_export_base.css
 include src/galaxy/managers/licenses.json
 include src/galaxy/app_unittest_utils/fetch_workbook_list_pairs_without_ids_example.xlsx
 include src/galaxy/app_unittest_utils/fetch_workbook_paired.xlsx

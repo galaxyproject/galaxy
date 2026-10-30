@@ -593,11 +593,20 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
     def test_run_apply_rules_tutorial(self):
+        """Build a list of datasets from a pasted table, then reshape it with Apply Rules.
+
+        Each step is captured so that this test doubles as the Apply Rules tutorial.
+        """
+        self.document(
+            "Start from a table of URLs. The rule builder maps its columns onto a "
+            "collection, and the **Apply Rules** tool then reshapes that collection "
+            "without copying any data."
+        )
         self.home()
         self.upload_context("rule").creating("collections").from_source("pasted_table").paste_content(
             self._apply_rules_tutorial_table()
         )
-        self.screenshot("rules_apply_rules_example_4_1_input_paste")
+        self.screenshot("rules_apply_rules_example_4_1_input_paste", "The example table pasted into the rule builder")
         rule_builder = self.components.rule_builder
         rule_builder._.wait_for_visible()
         self.rule_builder_set_mapping("url", "A")
@@ -605,12 +614,18 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
         self.rule_builder_set_collection_name("flat_count_list")
         self.rule_builder_set_extension("txt")
 
-        self.screenshot("rules_apply_rules_example_4_2_input_rules")
+        self.screenshot(
+            "rules_apply_rules_example_4_2_input_rules", "Column A mapped to the URL, column B to the list identifier"
+        )
         self.components.file_set_wizard.wizard_submit_button.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(1)
-        self.screenshot("rules_apply_rules_example_4_3_input_ready")
+        self.screenshot("rules_apply_rules_example_4_3_input_ready", "The uploaded collection in the history")
+        self.document(
+            "The rules above produced a flat list. The remaining steps all start from "
+            "that same list and only change its structure."
+        )
         self.history_multi_view_display_collection_contents(1, "list")
-        self.screenshot("rules_apply_rules_example_4_4_input_list")
+        self.screenshot("rules_apply_rules_example_4_4_input_list", "The flat list of datasets it produced")
         self.home()
         add_depth_rules = {
             "rules": [
@@ -630,13 +645,22 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
         self._tool_apply_with_source(
             add_depth_rules,
             hid=1,
-            landing_screenshot="rules_apply_rules_example_4_5_apply_rules_landing",
-            rule_init_screenshot="rules_apply_rules_example_4_6_apply_rules_init_flat",
-            rule_complete_screenshot="rules_apply_rules_example_4_7_apply_rules_add_depth",
+            landing_screenshot=(
+                "rules_apply_rules_example_4_5_apply_rules_landing",
+                "The Apply Rules tool with the flat list selected",
+            ),
+            rule_init_screenshot=(
+                "rules_apply_rules_example_4_6_apply_rules_init_flat",
+                "The rule editor opened on the flat list",
+            ),
+            rule_complete_screenshot=(
+                "rules_apply_rules_example_4_7_apply_rules_add_depth",
+                "Rules splitting each identifier into three levels",
+            ),
         )
         self.history_panel_wait_for_hid_ok(16)
         self.history_multi_view_display_collection_contents(16, "list:list:list")
-        self.screenshot("rules_apply_rules_example_4_8_nested")
+        self.screenshot("rules_apply_rules_example_4_8_nested", "The same datasets nested three levels deep")
         self.home()
         invert_rules = {
             "rules": [
@@ -662,12 +686,18 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
         }
         self._tool_apply_with_source(
             invert_rules,
-            rule_init_screenshot="rules_apply_rules_example_4_9_apply_rules_init_nested",
-            rule_complete_screenshot="rules_apply_rules_example_4_10_apply_rules_inverted",
+            rule_init_screenshot=(
+                "rules_apply_rules_example_4_9_apply_rules_init_nested",
+                "The rule editor opened on the nested list",
+            ),
+            rule_complete_screenshot=(
+                "rules_apply_rules_example_4_10_apply_rules_inverted",
+                "Rules reordering the three identifier levels",
+            ),
         )
         self.history_panel_wait_for_hid_ok(24)
         self.history_multi_view_display_collection_contents(24, "list:list:list")
-        self.screenshot("rules_apply_rules_example_4_11_inverted")
+        self.screenshot("rules_apply_rules_example_4_11_inverted", "The same nesting with the levels reordered")
         self.home()
         filter_rules = {
             "rules": [
@@ -690,11 +720,18 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
             ],
         }
         self._tool_apply_with_source(
-            filter_rules, hid=1, rule_complete_screenshot="rules_apply_rules_example_4_12_apply_rules_filter"
+            filter_rules,
+            hid=1,
+            rule_complete_screenshot=(
+                "rules_apply_rules_example_4_12_apply_rules_filter",
+                "A regex filter keeping only the single-end datasets",
+            ),
         )
         self.history_panel_wait_for_hid_ok(28)
         self.history_multi_view_display_collection_contents(28, "list")
-        self.screenshot("rules_apply_rules_example_4_13_filtered")
+        self.screenshot(
+            "rules_apply_rules_example_4_13_filtered", "A flat list filtered down to the single-end datasets"
+        )
         self.home()
         filter_and_nest_rules = {
             "rules": [
@@ -720,11 +757,14 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
         self._tool_apply_with_source(
             filter_and_nest_rules,
             hid=1,
-            rule_complete_screenshot="rules_apply_rules_example_4_14_apply_rules_filtered_and_nested",
+            rule_complete_screenshot=(
+                "rules_apply_rules_example_4_14_apply_rules_filtered_and_nested",
+                "The same filter plus a regex that adds a nesting level",
+            ),
         )
         self.history_panel_wait_for_hid_ok(32)
         self.history_multi_view_display_collection_contents(32, "list:list")
-        self.screenshot("rules_apply_rules_example_4_15_filtered_and_nested")
+        self.screenshot("rules_apply_rules_example_4_15_filtered_and_nested", "Filtering and nesting applied together")
 
     def _apply_rules_and_check(self, example: dict[str, Any]) -> None:
         rule_builder = self.components.rule_builder
@@ -750,21 +790,27 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
         example["check"](output_hdca, self.dataset_populator)
 
     def _tool_apply_with_source(
-        self, rules_json, hid=None, landing_screenshot=None, rule_init_screenshot=None, rule_complete_screenshot=None
+        self,
+        rules_json,
+        hid=None,
+        landing_screenshot: tuple[str, str] | None = None,
+        rule_init_screenshot: tuple[str, str] | None = None,
+        rule_complete_screenshot: tuple[str, str] | None = None,
     ):
+        """Run Apply Rules with ``rules_json``; each screenshot is a ``(label, caption)`` pair."""
         self._tool_open_apply_rules()
         if hid:
             self.tool_set_value("input", f"{hid}:", expected_type="data_collection")
         if landing_screenshot:
-            self.screenshot(landing_screenshot)
+            self.screenshot(*landing_screenshot)
         rule_builder = self.components.rule_builder
         self.tool_parameter_edit_rules()
         rule_builder._.wait_for_visible()
         if rule_init_screenshot:
-            self.screenshot(rule_init_screenshot)
+            self.screenshot(*rule_init_screenshot)
         self.rule_builder_set_source(json.dumps(rules_json))
         if rule_complete_screenshot:
-            self.screenshot(rule_complete_screenshot)
+            self.screenshot(*rule_complete_screenshot)
         rule_builder.main_button_ok.wait_for_and_click()
         self.tool_form_execute()
 
