@@ -61,6 +61,7 @@ from galaxy.model import (
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.schema import PdfDocumentType
 from galaxy.schema.tasks import GeneratePdfDownload
+from galaxy.schema.workflows import ContentRef
 from galaxy.short_term_storage import (
     ShortTermStorageMonitor,
     storage_context,
@@ -86,12 +87,18 @@ STEP_LABEL_PATTERN = re.compile(rf"step=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 PATH_LABEL_PATTERN = re.compile(rf"path=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 
 # Matches encoded and unencoded ids in galaxy blocks
-UNENCODED_ID_PATTERN = re.compile(
-    r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([\d]+)"
+OBJECT_ID_ARGUMENTS = (
+    "history_id",
+    "workflow_id",
+    "history_dataset_id",
+    "history_dataset_collection_id",
+    "job_id",
+    "implicit_collection_jobs_id",
+    "invocation_id",
 )
-ENCODED_ID_PATTERN = re.compile(
-    r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([a-z0-9]+)"
-)
+_OBJECT_ID_ARGUMENT_ALTERNATION = "|".join(OBJECT_ID_ARGUMENTS)
+UNENCODED_ID_PATTERN = re.compile(rf"({_OBJECT_ID_ARGUMENT_ALTERNATION})=([\d]+)")
+ENCODED_ID_PATTERN = re.compile(rf"({_OBJECT_ID_ARGUMENT_ALTERNATION})=([a-z0-9]+)")
 
 # Matches blocks of various types
 GALAXY_FENCED_BLOCK = re.compile(r"^```\s*galaxy\s*(.*?)^```", re.MULTILINE | re.DOTALL)
@@ -142,8 +149,8 @@ def ready_galaxy_markdown_for_import(trans: ProvidesAppContext, external_galaxy_
 
         return whole_match
 
-    internal_markdown = _remap_galaxy_markdown_calls(_remap, external_galaxy_markdown)
-    internal_markdown = _remap_galaxy_markdown_embedded_containers(_remap_embed_container, internal_markdown)
+    internal_markdown = remap_galaxy_markdown_calls(_remap, external_galaxy_markdown)
+    internal_markdown = remap_galaxy_markdown_embedded_containers(_remap_embed_container, internal_markdown)
     internal_markdown = process_invocation_ids(trans.security.decode_id, internal_markdown)
     return internal_markdown
 
@@ -239,10 +246,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
             return whole_match
 
-        export_markdown = _remap_galaxy_markdown_embedded_containers(
+        export_markdown = remap_galaxy_markdown_embedded_containers(
             _remap_embed_container_ids, export_markdown_raw_embed
         )
-        export_markdown_embed_expanded = _remap_galaxy_markdown_embedded_containers(
+        export_markdown_embed_expanded = remap_galaxy_markdown_embedded_containers(
             _remap_embed_container, export_markdown_raw_embed
         )
         return export_markdown, export_markdown_embed_expanded
@@ -419,7 +426,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 line, *_ = self._encode_line(trans, line)
                 return self.handle_error(container, line, str(e))
 
-        return _remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
+        return remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
 
     def _encode_line(self, trans: ProvidesAppContext, line):
         object_type = None
@@ -688,9 +695,6 @@ def ready_galaxy_markdown_for_export(trans: ProvidesHistoryContext, internal_gal
     export_markdown, export_markdown_embed_expanded = directive_handler.walk(trans, internal_galaxy_markdown)
     export_markdown = process_invocation_ids(lambda value: trans.security.encode_id(int(value)), export_markdown)
     return export_markdown, export_markdown_embed_expanded, extra_rendering_data
-
-
-ContentRef = tuple[str, int]  # ("hda", hda.id) or ("hdca", hdca.id)
 
 
 @dataclass
@@ -1261,10 +1265,28 @@ def populate_invocation_markdown(trans: ProvidesHistoryContext, invocation, work
 
         return whole_match
 
-    galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
-    galaxy_markdown = _remap_galaxy_markdown_embedded_containers(_remap_embed_container, galaxy_markdown)
+    galaxy_markdown = remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    galaxy_markdown = remap_galaxy_markdown_embedded_containers(_remap_embed_container, galaxy_markdown)
     galaxy_markdown = process_invocation_ids(lambda _: invocation.id, galaxy_markdown)
     return galaxy_markdown
+
+
+def _invocation_section(kind: Literal["input", "output"], assoc: Any, label: str | None) -> str:
+    """One expanded ``invocation_inputs``/``invocation_outputs`` section displaying the invocation
+    association's dataset or collection by id, or nothing for an unlabeled or empty association."""
+    if assoc.history_content_type == "dataset":
+        title, directive, content = "Dataset", "history_dataset_display(history_dataset_id", assoc.dataset
+    else:
+        title, directive, content = (
+            "Dataset Collection",
+            "history_dataset_collection_display(history_dataset_collection_id",
+            assoc.dataset_collection,
+        )
+    if not label or content is None:
+        return ""
+    # The label only titles the section; keep it on the heading line.
+    heading = " ".join(label.splitlines())
+    return f"#### {kind.capitalize()} {title}: {heading}\n```galaxy\n{directive}={content.id})\n```\n"
 
 
 def resolve_invocation_markdown(trans: ProvidesUserContext, workflow_markdown):
@@ -1301,40 +1323,12 @@ def resolve_invocation_markdown(trans: ProvidesUserContext, workflow_markdown):
         if container == "invocation_outputs":
             section_markdown = ""
             for output_assoc in invocation.output_associations:
-                if output_assoc.workflow_output.label:
-                    if output_assoc.history_content_type == "dataset":
-                        section_markdown += (
-                            f"#### Output Dataset: {output_assoc.workflow_output.label}\n"
-                            "```galaxy\n"
-                            f'history_dataset_display(output="{output_assoc.workflow_output.label}")\n'
-                            "```\n"
-                        )
-                    else:
-                        section_markdown += (
-                            f"#### Output Dataset Collection: {output_assoc.workflow_output.label}\n"
-                            "```galaxy\n"
-                            f'history_dataset_collection_display(output="{output_assoc.workflow_output.label}")\n'
-                            "```\n"
-                        )
+                section_markdown += _invocation_section("output", output_assoc, output_assoc.workflow_output.label)
             return section_markdown, True
         elif container == "invocation_inputs":
             section_markdown = ""
             for input_assoc in invocation.input_associations:
-                if input_assoc.workflow_step.label:
-                    if input_assoc.history_content_type == "dataset":
-                        section_markdown += (
-                            f"#### Input Dataset: {input_assoc.workflow_step.label}\n"
-                            "```galaxy\n"
-                            f'history_dataset_display(input="{input_assoc.workflow_step.label}")\n'
-                            "```\n"
-                        )
-                    else:
-                        section_markdown += (
-                            f"#### Input Dataset Collection: {input_assoc.workflow_step.label}\n"
-                            "```galaxy\n"
-                            f"history_dataset_collection_display(input={input_assoc.workflow_step.label})\n"
-                            "```\n"
-                        )
+                section_markdown += _invocation_section("input", input_assoc, input_assoc.workflow_step.label)
             return section_markdown, True
         elif container == "invocation_time":
             return (f"invocation_time(invocation_id={invocation.id})\n", False)
@@ -1437,8 +1431,8 @@ def resolve_invocation_markdown(trans: ProvidesUserContext, workflow_markdown):
 
         return whole_match
 
-    workflow_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
-    workflow_markdown = _remap_galaxy_markdown_embedded_containers(_remap_embed_container, workflow_markdown)
+    workflow_markdown = remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    workflow_markdown = remap_galaxy_markdown_embedded_containers(_remap_embed_container, workflow_markdown)
     return workflow_markdown
 
 
@@ -1511,7 +1505,7 @@ def resolve_job_markdown(trans: ProvidesHistoryContext, job, job_markdown):
             line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
         return (line, False)
 
-    galaxy_markdown = _remap_galaxy_markdown_calls(_remap, job_markdown)
+    galaxy_markdown = remap_galaxy_markdown_calls(_remap, job_markdown)
     return galaxy_markdown
 
 
@@ -1571,7 +1565,7 @@ def _remap_galaxy_markdown_containers(func, markdown):
     return new_markdown
 
 
-def _remap_galaxy_markdown_embedded_containers(func, markdown):
+def remap_galaxy_markdown_embedded_containers(func, markdown):
     new_markdown = markdown
 
     searching_from = 0
@@ -1602,7 +1596,7 @@ def _parse_directive_argument_value(arg_name: str, line: str) -> str | None:
     return value
 
 
-def _remap_galaxy_markdown_calls(func, markdown):
+def remap_galaxy_markdown_calls(func, markdown):
     def _remap_container(container):
         match = None
         for line in container.splitlines():
@@ -1630,6 +1624,9 @@ def check_galaxy_markdown(*args, **kwds):
 
 __all__ = (
     "check_galaxy_markdown",
+    "OBJECT_ID_ARGUMENTS",
+    "remap_galaxy_markdown_calls",
+    "remap_galaxy_markdown_embedded_containers",
     "internal_galaxy_markdown_to_pdf",
     "populate_invocation_markdown",
     "ready_galaxy_markdown_for_export",

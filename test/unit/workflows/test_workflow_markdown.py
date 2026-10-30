@@ -41,7 +41,7 @@ invocation_inputs()
     assert "```galaxy\ninvocation_inputs(invocation_id=44)\n```" in galaxy_markdown
     galaxy_markdown = resolve_markdown(galaxy_markdown)
     assert "Input Dataset: input1" in galaxy_markdown
-    assert '```galaxy\nhistory_dataset_display(input="input1")\n```' in galaxy_markdown
+    assert "```galaxy\nhistory_dataset_display(history_dataset_id=567)\n```" in galaxy_markdown
     assert len(galaxy_markdown.split("```")) == 3
 
 
@@ -57,8 +57,50 @@ invocation_outputs()
     assert "```galaxy\ninvocation_outputs(invocation_id=44)" in galaxy_markdown
     galaxy_markdown = resolve_markdown(galaxy_markdown)
     assert "Output Dataset: output_label" in galaxy_markdown
-    assert '```galaxy\nhistory_dataset_display(output="output_label")\n```' in galaxy_markdown
+    assert "```galaxy\nhistory_dataset_display(history_dataset_id=563)\n```" in galaxy_markdown
     assert len(galaxy_markdown.split("```")) == 5
+
+
+def test_inputs_section_expansion_keeps_labels_in_headings():
+    trans = MockTrans()
+    invocation = example_invocation(trans)
+    workflow = invocation.workflow
+    workflow.steps[0].label = 'my "reads"'
+    workflow.steps[1].type = "data_collection_input"
+    workflow.steps[1].label = "my\n```galaxy\nreads"
+    hdca = model.HistoryDatasetCollectionAssociation()
+    hdca.id = 568
+    invocation.add_input(hdca, step=workflow.steps[1])
+
+    galaxy_markdown = resolve_markdown("```galaxy\ninvocation_inputs(invocation_id=44)\n```\n", invocation)
+
+    validate_galaxy_markdown(galaxy_markdown)
+    assert '#### Input Dataset: my "reads"\n```galaxy\nhistory_dataset_display(history_dataset_id=567)\n```' in (
+        galaxy_markdown
+    )
+    assert (
+        "#### Input Dataset Collection: my ```galaxy reads\n"
+        "```galaxy\nhistory_dataset_collection_display(history_dataset_collection_id=568)\n```"
+    ) in galaxy_markdown
+
+
+def test_outputs_section_expansion_skips_unlabeled_and_empty_outputs():
+    trans = MockTrans()
+    invocation = example_invocation(trans)
+    out_hda = model.HistoryDatasetAssociation(create_dataset=True, sa_session=trans.sa_session)
+    out_hda.id = 564
+    workflow = invocation.workflow
+    invocation.add_output(model.WorkflowOutput(workflow.steps[3], label=None), workflow.steps[3], out_hda)
+    empty_output = model.WorkflowInvocationOutputDatasetAssociation()
+    empty_output.workflow_output = model.WorkflowOutput(workflow.steps[3], label="empty")
+    invocation.output_datasets.append(empty_output)
+
+    galaxy_markdown = resolve_markdown("```galaxy\ninvocation_outputs(invocation_id=44)\n```\n", invocation)
+
+    validate_galaxy_markdown(galaxy_markdown)
+    assert "#### Output Dataset: output_label\n" in galaxy_markdown
+    assert "history_dataset_id=564" not in galaxy_markdown
+    assert "empty" not in galaxy_markdown
 
 
 def test_input_reference_mapping():
@@ -166,13 +208,13 @@ def populate_markdown(workflow_markdown):
     return galaxy_markdown
 
 
-def resolve_markdown(workflow_markdown):
+def resolve_markdown(workflow_markdown, invocation=None):
     # Convert internal Galaxy markdown with invocation ids and labels
     # to object id references and expanded sections.
     trans = MockTrans()
     validate_galaxy_markdown(workflow_markdown)
     trans.app.workflow_manager = mock.MagicMock()
-    invocation = example_invocation(trans)
+    invocation = invocation or example_invocation(trans)
     trans.app.workflow_manager.get_invocation.side_effect = [invocation, invocation]
     galaxy_markdown = resolve_invocation_markdown(cast(ProvidesHistoryContext, trans), workflow_markdown)
     return galaxy_markdown

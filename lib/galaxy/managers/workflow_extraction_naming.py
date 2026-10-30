@@ -8,10 +8,11 @@ from typing import (
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.jobs import get_output_name
-from galaxy.managers.markdown_parse import UNQUOTABLE_ARGUMENT_CHARS
+from galaxy.managers.markdown_parse import UNQUOTABLE_ARGUMENT_PATTERN
 from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    HistoryItem,
     Job,
 )
 from galaxy.tool_util.parser.output_objects import ToolOutputBase
@@ -19,10 +20,10 @@ from galaxy.workflow.extract import (
     get_original_hda,
     get_original_hdca,
     skip_output_assoc_name,
+    tool_for_job,
 )
 
 SuggestedNameSource = Literal["renamed", "rendered_label", "bare_label", "port_name"]
-OutputContentKind = Literal["hda", "hdca"]
 
 
 @dataclass(frozen=True)
@@ -31,37 +32,32 @@ class SuggestedName:
     source: SuggestedNameSource
 
 
-UNQUOTABLE_PATTERN = re.compile(f"[{re.escape(UNQUOTABLE_ARGUMENT_CHARS)}]")
+MAX_LABEL_LENGTH = 255
 
 
 def normalize_label(value: str | None) -> str:
-    """Collapse internal whitespace, drop characters a report directive cannot
-    quote, and clamp to the workflow-label length limit.
-
-    Returns ``""`` for empty/blank input; callers decide whether that is an error
-    (user-supplied labels) or a fall-back trigger (auto-generated labels). Dropping
-    rather than rejecting suits the auto-generated case, where the label is derived
-    from a dataset name the user never typed here and so cannot correct.
-    """
+    """Collapse internal whitespace and clamp to the workflow-label length limit."""
     if not value:
         return ""
-    collapsed = re.sub(r"\s+", " ", value.strip())
-    return UNQUOTABLE_PATTERN.sub("", collapsed)[:255]
+    return re.sub(r"\s+", " ", value.strip())[:MAX_LABEL_LENGTH]
 
 
-def suggested_output_name(
-    trans: ProvidesHistoryContext, content_id: int, content_kind: OutputContentKind
-) -> SuggestedName | None:
+def normalize_generated_label(value: str | None) -> str:
+    """``normalize_label`` minus characters a report directive cannot quote."""
+    return normalize_label(UNQUOTABLE_ARGUMENT_PATTERN.sub(" ", value or ""))
+
+
+def suggested_output_name(trans: ProvidesHistoryContext, content: HistoryItem) -> SuggestedName | None:
     """Return a best-effort workflow output label suggestion for an HDA/HDCA."""
-    if content_kind == "hda":
-        hda = trans.sa_session.get(HistoryDatasetAssociation, content_id)
-        if hda is None:
-            return None
-        return _suggested_hda_output_name(trans, get_original_hda(hda))
-    hdca = trans.sa_session.get(HistoryDatasetCollectionAssociation, content_id)
-    if hdca is None:
+    suggested: SuggestedName | None
+    if isinstance(content, HistoryDatasetCollectionAssociation):
+        suggested = _suggested_hdca_output_name(trans, get_original_hdca(content))
+    else:
+        suggested = _suggested_hda_output_name(trans, get_original_hda(content))
+    if suggested is None:
         return None
-    return _suggested_hdca_output_name(trans, get_original_hdca(hdca))
+    name = normalize_generated_label(suggested.name)
+    return SuggestedName(name=name, source=suggested.source) if name else None
 
 
 def _suggested_hda_output_name(trans: ProvidesHistoryContext, hda: HistoryDatasetAssociation) -> SuggestedName | None:
@@ -72,7 +68,7 @@ def _suggested_hda_output_name(trans: ProvidesHistoryContext, hda: HistoryDatase
     if assoc is None:
         return _content_name(hda)
     job = assoc.job
-    tool = _tool_for_job(trans, job)
+    tool = tool_for_job(trans, job)
     tool_output = tool.outputs.get(assoc.name) if tool is not None else None
     params = _params_for_job(tool, job)
     return _apply_chain(content_name=hda.name, tool_output=tool_output, port_name=assoc.name, params=params, tool=tool)
@@ -94,7 +90,7 @@ def _suggested_hdca_output_name(
     if not output_name:
         return _content_name(hdca)
 
-    tool = _tool_for_job(trans, job) if job is not None else None
+    tool = tool_for_job(trans, job) if job is not None else None
     tool_output = None
     if tool is not None:
         tool_output = tool.output_collections.get(output_name) or tool.outputs.get(output_name)
@@ -106,15 +102,6 @@ def _suggested_hdca_output_name(
         params=params,
         tool=tool,
     )
-
-
-def _tool_for_job(trans: ProvidesHistoryContext, job: Job | None):
-    if job is None:
-        return None
-    try:
-        return trans.app.toolbox.tool_for_job(job, user=trans.user)
-    except Exception:
-        return None
 
 
 def _params_for_job(tool, job: Job | None):

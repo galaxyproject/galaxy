@@ -353,6 +353,16 @@ class WorkflowExtractionOutput(Model):
         title="Exposed",
         description="Whether this output should be preselected for exposure as a workflow output.",
     )
+    referenced_by_report: bool = Field(
+        False,
+        title="Referenced By Report",
+        description="Whether the notebook report uses this output, which keeps it a workflow output.",
+    )
+
+
+# A history item named by kind and id: an HDA or an HDCA.
+ContentKind = Literal["hda", "hdca"]
+ContentRef = tuple[ContentKind, int]
 
 
 class OutputLabelHint(Model):
@@ -361,7 +371,7 @@ class OutputLabelHint(Model):
         title="ID",
         description="Decoded ID of the concrete HDA/HDCA output to expose.",
     )
-    kind: Literal["hda", "hdca"] = Field(
+    kind: ContentKind = Field(
         ...,
         title="Kind",
         description="Whether the output ID identifies an HDA or an HDCA.",
@@ -586,11 +596,6 @@ class WorkflowExtractionByIdsPayload(Model):
             "markdown is rewritten so each dataset/collection/job directive references the workflow's "
             "inputs/outputs/steps by label."
         ),
-    )
-    report_title: str | None = Field(
-        None,
-        title="Report Title",
-        description="Title for the workflow report built from from_page_id; defaults to the workflow name.",
     )
 
     @model_validator(mode="after")
