@@ -15,7 +15,7 @@ vi.mock("@/composables/config", () => ({
         config: {
             install_tool_dependencies: true,
             install_repository_dependencies: true,
-            install_resolver_dependencies: true,
+            install_resolver_dependencies: false,
         },
         isConfigLoaded: true,
     }),
@@ -82,11 +82,11 @@ describe("InstallationSettings", () => {
             "Install repository dependencies",
             "Install tool dependencies",
         ]);
-        expect(checkboxes.map((checkbox) => checkbox.element.checked)).toEqual([true, true, true]);
+        expect(checkboxes.map((checkbox) => checkbox.element.checked)).toEqual([false, true, true]);
         await nth(checkboxes, 2).setValue(false);
         await wrapper.find(".g-modal-confirm-buttons button:last-child").trigger("click");
         const request = emittedArg(wrapper, "ok");
-        expect(request.install_resolver_dependencies).toBe(true);
+        expect(request.install_resolver_dependencies).toBe(false);
         expect(request.install_repository_dependencies).toBe(true);
         expect(request.install_tool_dependencies).toBe(false);
     });
