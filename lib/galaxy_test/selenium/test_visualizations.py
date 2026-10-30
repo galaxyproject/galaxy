@@ -101,6 +101,18 @@ class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
             self.sleep_for(self.wait_types.UX_TRANSITION)
 
         self.navigate_to_saved_visualizations()
+        self.select_grid_operation("igv with hg18", "Open")
+
+        # Saving one's own visualization again updates it rather than making a copy.
+        with self.visualization_panel():
+            self._wait_for_igv_container()
+            igv = self.components.igv
+            igv.expand_button.wait_for_and_click()
+            igv.save_button.wait_for_and_click()
+            self.sleep_for(self.wait_types.UX_TRANSITION)
+
+        saved = [v for v in self.api_get("visualizations") if v["title"] == "igv with hg18"]
+        assert len(saved) == 1, saved
 
     def _wait_for_igv_container(self):
         igv = self.components.igv
