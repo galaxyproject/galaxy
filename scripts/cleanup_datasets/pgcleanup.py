@@ -1438,9 +1438,14 @@ class Cleanup:
             log.info("Finished %s", name)
 
 
-if __name__ == "__main__":
+def main():
     with Cleanup() as app:
         try:
             app.run()
         except Exception:
             log.exception("Caught exception in run sequence:")
+            sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
