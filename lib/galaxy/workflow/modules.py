@@ -136,6 +136,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
@@ -2783,6 +2784,10 @@ class ToolModule(WorkflowModule):
             self.compute_runtime_state(self.trans, step=None, step_updates=None)
             self.augment_tool_state_for_input_connections(**kwds)
             self.tool.check_and_update_param_values(self.state.inputs, self.trans, workflow_building_mode=True)
+        elif self.tool and kwds.get("input_connections"):
+            # Without the repeat instance a connection targets, the connection is dropped at runtime
+            # with no error - so this cannot depend on fill_defaults.
+            self.augment_tool_state_for_input_connections(**kwds)
 
     def augment_tool_state_for_input_connections(self, **kwds):
         """Update tool state to accommodate specified input connections.
@@ -2825,8 +2830,8 @@ class ToolModule(WorkflowModule):
                 return
 
             index = int(index)
-            repeat = self.tool.inputs[repeat_name]
-            if repeat.type != "repeat":
+            repeat = self.tool.inputs.get(repeat_name)
+            if not isinstance(repeat, Repeat):
                 return
 
             if repeat_name not in inputs_states:
@@ -2835,7 +2840,13 @@ class ToolModule(WorkflowModule):
             repeat_values = inputs_states[repeat_name]
             repeat_instance_state = None
             while index >= len(repeat_values):
-                repeat_instance_state = {"__index__": len(repeat_values)}
+                if kwds.get("fill_defaults", False):
+                    repeat_instance_state = {"__index__": len(repeat_values)}
+                else:
+                    # Nothing else fills a new instance without fill_defaults.
+                    repeat_instance_state = repeat.get_initial_instance(
+                        self.trans, ExpressionContext(inputs_states), len(repeat_values)
+                    )
                 repeat_values.append(repeat_instance_state)
 
             if repeat_instance_state:

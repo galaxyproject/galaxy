@@ -5274,6 +5274,96 @@ steps:
                 }
             ]
 
+    @skip_without_tool("cat1")
+    def test_repeat_connection_without_fill_defaults(self):
+        # A format2 `in:` connection into a repeat leaves the stored state with no repeat instance.
+        # Imported without fill_defaults (the API default), the connection used to be dropped at
+        # runtime and the job ran on the first input only.
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  first: data
+  second: data
+steps:
+  cat:
+    tool_id: cat1
+    in:
+      input1: first
+      queries_0|input2: second
+""",
+            fill_defaults=False,
+        )
+        with self.dataset_populator.test_history() as history_id:
+            first = self.dataset_populator.new_dataset(history_id, content="a\n", wait=True)
+            second = self.dataset_populator.new_dataset(history_id, content="b\n", wait=True)
+            self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(first), "1": self._ds_entry(second)}
+            )
+            content = self.dataset_populator.get_history_dataset_content(history_id, hid=3)
+            assert content.split() == ["a", "b"], content
+
+    @skip_without_tool("__BUILD_LIST__")
+    def test_repeat_connection_with_conditional_without_fill_defaults(self):
+        # __BUILD_LIST__ 1.2.0 has a conditional beside the repeat's data input; the added repeat
+        # instance needs its defaults or the invocation reports missing values.
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  first: data
+  second: data
+steps:
+  build:
+    tool_id: __BUILD_LIST__
+    tool_version: "1.2.0"
+    in:
+      datasets_0|input: first
+      datasets_1|input: second
+""",
+            fill_defaults=False,
+        )
+        with self.dataset_populator.test_history() as history_id:
+            first = self.dataset_populator.new_dataset(history_id, content="a\n", wait=True)
+            second = self.dataset_populator.new_dataset(history_id, content="b\n", wait=True)
+            self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(first), "1": self._ds_entry(second)}
+            )
+            details = self.dataset_populator.get_history_collection_details(history_id)
+            assert details["element_count"] == 2, details
+            # Identifiers come from the id_cond default (idx).
+            elements = details["elements"]
+            assert [e["element_identifier"] for e in elements] == ["0", "1"], details
+            contents = [
+                self.dataset_populator.get_history_dataset_content(history_id, dataset_id=e["object"]["id"])
+                for e in elements
+            ]
+            assert [c.strip() for c in contents] == ["a", "b"], contents
+
+    @skip_without_tool("section_name_digit_suffix")
+    def test_section_name_digit_suffix_connection_without_fill_defaults(self):
+        # `opts_1|input1` targets a section, not instance 1 of a repeat named `opts`.
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  first: data
+steps:
+  cat:
+    tool_id: section_name_digit_suffix
+    in:
+      opts_1|input1: first
+""",
+            fill_defaults=False,
+        )
+        with self.dataset_populator.test_history() as history_id:
+            first = self.dataset_populator.new_dataset(history_id, content="a\n", wait=True)
+            self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(first)}
+            )
+            content = self.dataset_populator.get_history_dataset_content(history_id, hid=2)
+            assert content.split() == ["a"], content
+
     def test_run_subworkflow_with_required_input_with_default_unconnected(self):
         """Test subworkflow with required parameter input that has default value but is unconnected.
 

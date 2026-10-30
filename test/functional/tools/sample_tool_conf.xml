@@ -65,6 +65,7 @@
   <tool file="select_from_dataset.xml" />
   <tool file="select_from_dataset_in_conditional.xml" />
   <tool file="conditional_name_digit_suffix.xml" />
+  <tool file="section_name_digit_suffix.xml" />
   <tool file="select_from_csvdataset.xml" />
   <tool file="select_from_dataset_optional.xml" />
   <tool file="drill_down.xml" />
