@@ -10620,6 +10620,27 @@ steps:
         assert len(options) == 1
         assert options[0] == ["hg19", "hg19_value", False]
 
+    @skip_without_tool("select_from_duplicate_value_table")
+    def test_value_restriction_collapses_duplicate_table_values(self):
+        expected = [["Human old", "hg38", False], ["Mouse", "mm10", False]]
+        with self.dataset_populator.test_history() as history_id:
+            tool_state = self.dataset_populator.build_tool_state("select_from_duplicate_value_table", history_id)
+            assert tool_state["inputs"][0]["options"] == expected
+            workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  select_text:
+     type: text
+     restrictOnConnections: true
+steps:
+  select:
+    tool_id: select_from_duplicate_value_table
+    in:
+      ref: select_text
+""")
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        assert run_workflow["steps"][0]["inputs"][0]["options"] == expected
+
     def test_value_restriction_with_select_and_text_param(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
@@ -11909,6 +11930,70 @@ outer_input:
                 t["representation"]["name"] == TOOL_WITH_SHELL_COMMAND["name"] for t in owned
             ), f"Expected an owned UDT after workflow import: {owned}"
 
+    @pytest.mark.parametrize(
+        "metadata,stock_first,nested",
+        [
+            ("last_output", False, False),
+            ("annotation", False, False),
+            ("output", False, False),
+            ("output", False, True),
+            ("rename", False, False),
+            ("rename", False, True),
+            ("output", True, False),
+            ("output", True, True),
+        ],
+    )
+    def test_import_embedded_user_tools_after_step_metadata(self, metadata, stock_first, nested):
+        first_output = "out_file1" if stock_first else "output"
+        workflow: dict[str, Any] = {
+            "class": "GalaxyWorkflow",
+            "inputs": {"input": {"type": "data"}},
+            "outputs": {"result": {"outputSource": "b/output"}},
+            "steps": {
+                "a": {"run": TOOL_WITH_SHELL_COMMAND, "in": {"input": "input"}},
+                "b": {"run": TOOL_WITH_SHELL_COMMAND, "in": {"input": f"a/{first_output}"}},
+            },
+        }
+        if stock_first:
+            workflow["steps"]["a"] = {"tool_id": "cat1", "in": {"input1": "input"}}
+        if metadata == "annotation":
+            workflow["steps"]["a"]["doc"] = "An annotated earlier step"
+        elif metadata == "output":
+            workflow["outputs"]["earlier"] = {"outputSource": f"a/{first_output}"}
+        elif metadata == "rename":
+            workflow["steps"]["a"]["out"] = {first_output: {"rename": "renamed earlier output"}}
+        if nested:
+            workflow = {
+                "class": "GalaxyWorkflow",
+                "inputs": {"input": {"type": "data"}},
+                "outputs": {"result": {"outputSource": "nested/result"}},
+                "steps": {"nested": {"run": workflow, "in": {"input": "input"}}},
+            }
+        with self.dataset_populator.user_tool_execute_permissions():
+            tools_before = len(self.dataset_populator.get_unprivileged_tools())
+            workflow_id = self.workflow_populator.upload_yaml_workflow(yaml.safe_dump(workflow))
+            # One persisted tool per embedded user-tool step.
+            assert len(self.dataset_populator.get_unprivileged_tools()) == tools_before + (1 if stock_first else 2)
+            downloaded = self.workflow_populator.download_workflow(workflow_id)
+            if nested:
+                downloaded = next(s["subworkflow"] for s in downloaded["steps"].values() if s["type"] == "subworkflow")
+            tools = [s for s in downloaded["steps"].values() if s["type"] == "tool"]
+            assert len(tools) == 2
+            if stock_first:
+                assert tools[0]["tool_id"] == "cat1"
+            else:
+                assert tools[0]["tool_representation"]["class"] == "GalaxyUserTool"
+            assert tools[1]["tool_representation"]["class"] == "GalaxyUserTool"
+            assert tools[1]["workflow_outputs"][0]["label"] == "result"
+            if metadata == "annotation":
+                assert tools[0]["annotation"] == "An annotated earlier step"
+            elif metadata == "output":
+                assert tools[0]["workflow_outputs"][0]["label"] == "earlier"
+            elif metadata == "rename":
+                action = tools[0]["post_job_actions"][f"RenameDatasetAction{first_output}"]
+                assert action["action_arguments"]["newname"] == "renamed earlier output"
+            assert tools[1]["input_connections"]["input"] == {"id": tools[0]["id"], "output_name": first_output}
+
     def _build_user_defined_tool_run_workflow_dict(
         self,
         content_id: str | None,
@@ -12472,6 +12557,47 @@ steps:
 
 class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):
     require_admin_user = True
+
+    @pytest.mark.parametrize("metadata", ["output", "rename"])
+    def test_import_embedded_admin_tool_after_step_metadata(self, metadata):
+        workflow: dict[str, Any] = {
+            "a_galaxy_workflow": "true",
+            "name": "Embedded admin tool after step metadata",
+            "annotation": "",
+            "format-version": "0.1",
+            "steps": {
+                "0": {"id": 0, "type": "tool", "tool_id": "cat1", "tool_state": "{}"},
+                "1": {
+                    "id": 1,
+                    "type": "tool",
+                    "tool_representation": dict(TOOL_WITH_SHELL_COMMAND, **{"class": "GalaxyTool"}),
+                    "tool_state": "{}",
+                    "input_connections": {"input": {"id": 0, "output_name": "out_file1"}},
+                    "workflow_outputs": [{"output_name": "output", "label": "result"}],
+                },
+            },
+        }
+        if metadata == "output":
+            workflow["steps"]["0"]["workflow_outputs"] = [{"output_name": "out_file1", "label": "earlier"}]
+        else:
+            workflow["steps"]["0"]["post_job_actions"] = {
+                "RenameDatasetActionout_file1": {
+                    "action_type": "RenameDatasetAction",
+                    "output_name": "out_file1",
+                    "action_arguments": {"newname": "renamed earlier output"},
+                }
+            }
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        downloaded = self.workflow_populator.download_workflow(workflow_id)
+        assert downloaded["steps"]["1"]["tool_representation"]["class"] == "GalaxyTool"
+        assert downloaded["steps"]["1"]["workflow_outputs"][0]["label"] == "result"
+        assert downloaded["steps"]["1"]["input_connections"]["input"] == {"id": 0, "output_name": "out_file1"}
+        first_step = downloaded["steps"]["0"]
+        if metadata == "output":
+            assert first_step["workflow_outputs"][0]["label"] == "earlier"
+        else:
+            action = first_step["post_job_actions"]["RenameDatasetActionout_file1"]
+            assert action["action_arguments"]["newname"] == "renamed earlier output"
 
 
 class TestCachedWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):

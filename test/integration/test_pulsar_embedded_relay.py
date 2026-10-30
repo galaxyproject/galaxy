@@ -16,6 +16,8 @@ from galaxy_test.driver.integration_util import (
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_mq_job_conf.yml")
 AMQP_URL = os.environ.get("GALAXY_TEST_PULSAR_RELAY")
+# Outside the 8000-10000 range Galaxy test servers pick their ports from.
+RELAY_PORT = 19001
 
 JOB_CONF_TEMPLATE = """
 runners:
@@ -61,13 +63,13 @@ def _handle_galaxy_config_kwds(cls, config):
         cls.container_name,
         env_vars={"PULSAR_BOOTSTRAP_ADMIN_USERNAME": "admin", "PULSAR_BOOTSTRAP_ADMIN_PASSWORD": random_password},
         remove=False,
-        ports=[(9001, 8080)],
+        ports=[(RELAY_PORT, 8080)],
     )
     jobs_directory = os.path.join(cls._test_driver.mkdtemp(), "pulsar_staging")
     safe_makedirs(jobs_directory)
     job_conf_template = string.Template(JOB_CONF_TEMPLATE)
     job_conf_str = job_conf_template.substitute(
-        amqp_url="http://localhost:9001",
+        amqp_url=f"http://localhost:{RELAY_PORT}",
         jobs_directory=jobs_directory,
         galaxy_home=os.path.join(SCRIPT_DIRECTORY, os.pardir),
         relay_password=random_password,

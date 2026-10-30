@@ -463,6 +463,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def go_to_workflow_export(self, workflow_id: str) -> None:
         self.navigate_to(self.build_url(f"workflows/export?id={workflow_id}"))
 
+    def go_to_page_sharing(self, page_id: str) -> None:
+        self.navigate_to(self.build_url(f"pages/sharing?id={page_id}"))
+
     def go_to_history_sharing(self, history_id: str) -> None:
         self.navigate_to(self.build_url(f"histories/sharing?id={history_id}"))
 

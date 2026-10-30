@@ -123,6 +123,33 @@ subdirectory in `tool_data_path` (in a subdirectory that has the name of the
 toolshed). By default this is `tool-data/toolshed.g2.bx.psu.edu/`. Note that
 these directories will also contain tool data table config files, but they are unused.
 
+### Duplicate values
+
+Rows that share a `value` are all kept, so tools can filter them, for example by
+index version. For a tool select, the tool's filters, including sorting filters,
+run first. If several rows still match the submitted value, Galaxy uses the first
+one and logs a warning naming it. The submitted value comes from the select's
+`value` column, which may differ from the table's. Table-backed dropdowns show one
+choice per submitted value, labelled from the first remaining row; dataset choices
+stay separate. The data-table field API applies no tool filters and returns the
+first matching row.
+
+Apart from the tool's filters, only source and row order decide which copy is
+used; local, CVMFS and IDC files are treated alike. This lets references be deployed to IDC while local copies still
+exist. With the IDC file listed after the local file, a local `/local/hg38.fa` row
+keeps precedence over an IDC `/idc/hg38.fa` row when both survive the tool's
+filters, so adding the IDC row leaves existing selections on the local file.
+
+Check the effective order on each server. Unless `shed_tool_data_table_config` is
+listed in `tool_data_table_config_path`, Galaxy reads it last, after an IDC file
+appended to that list, so IDC rows take precedence over rows from installed tools.
+The reference used for an existing submitted value, for example when rerunning a
+job, changes when you:
+
+- reorder config files or rows,
+- remove the first matching row, or
+- add a row for that value to an earlier file, for example through a data manager.
+
 ## The `huggingface` shared data table
 
 Galaxy tools that consume pre-downloaded Hugging Face models share a single
