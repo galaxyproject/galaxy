@@ -1,5 +1,6 @@
 """Unit tests for Pulsar job runner utility methods and client construction."""
 
+from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import (
     Any,
@@ -39,12 +40,16 @@ from galaxy.jobs.runners import (
 )
 from galaxy.jobs.runners.pulsar import (  # type: ignore[attr-defined]
     build_client_manager,
+    effective_dependency_resolution,
     PulsarJobRunner,
 )
 
 
-def _container(container_id, image_identifier_is_path=True):
-    return SimpleNamespace(container_id=container_id, image_identifier_is_path=image_identifier_is_path)
+@dataclass
+class MockContainer:
+    container_id: str = "busybox"
+    image_identifier_is_path: bool = True
+    resolve_dependencies: bool = False
 
 
 class _ComputeEnvironment:
@@ -62,7 +67,7 @@ REWRITTEN = "/job/dir/.cvmfsexec/dist/cvmfs/singularity.galaxyproject.org/all/im
 
 
 def test_rewrite_container_applies_compute_environment_rewrite():
-    container = _container(IMAGE)
+    container = MockContainer(IMAGE)
     compute_environment = _ComputeEnvironment({IMAGE: REWRITTEN})
     PulsarJobRunner._rewrite_container_for_compute_environment(container, compute_environment)
     assert container.container_id == REWRITTEN
@@ -70,7 +75,7 @@ def test_rewrite_container_applies_compute_environment_rewrite():
 
 def test_rewrite_container_noop_without_matching_rule():
     # container_path_rewrite returns None when no file_actions rule matches.
-    container = _container(IMAGE)
+    container = MockContainer(IMAGE)
     compute_environment = _ComputeEnvironment({})
     PulsarJobRunner._rewrite_container_for_compute_environment(container, compute_environment)
     assert container.container_id == IMAGE
@@ -79,7 +84,7 @@ def test_rewrite_container_noop_without_matching_rule():
 def test_rewrite_container_noop_when_identifier_not_a_path():
     # A registry/docker:// identifier is resolved by the compute node itself;
     # never route it through the path rewriter even if a rule would match.
-    container = _container("docker://quay.io/biocontainers/bwa", image_identifier_is_path=False)
+    container = MockContainer("docker://quay.io/biocontainers/bwa", image_identifier_is_path=False)
     compute_environment = _ComputeEnvironment({"docker://quay.io/biocontainers/bwa": REWRITTEN})
     PulsarJobRunner._rewrite_container_for_compute_environment(container, compute_environment)
     assert container.container_id == "docker://quay.io/biocontainers/bwa"
@@ -87,7 +92,7 @@ def test_rewrite_container_noop_when_identifier_not_a_path():
 
 def test_rewrite_container_noop_without_compute_environment():
     # No compute environment => not rewrite_parameters mode; leave image as-is.
-    container = _container(IMAGE)
+    container = MockContainer(IMAGE)
     PulsarJobRunner._rewrite_container_for_compute_environment(container, None)
     assert container.container_id == IMAGE
 
@@ -375,3 +380,25 @@ def test_host_metadata_does_not_resolve_container(config):
     runner = _runner()
     wrapper = SimpleNamespace(job_destination=SimpleNamespace(params=config))
     assert runner._get_metadata_container(wrapper) is None
+
+
+@pytest.mark.parametrize(
+    "destination_params, container, expected",
+    [
+        ({}, None, "remote"),
+        ({"dependency_resolution": "local"}, None, "local"),
+        ({}, MockContainer(), "none"),
+        ({"dependency_resolution": "local"}, MockContainer(), "none"),
+        ({}, MockContainer(resolve_dependencies=True), "remote"),
+        ({"dependency_resolution": "local"}, MockContainer(resolve_dependencies=True), "local"),
+        ({"dependency_resolution": "none"}, MockContainer(resolve_dependencies=True), "none"),
+    ],
+)
+def test_dependency_resolution_skipped_for_containers(destination_params, container, expected):
+    assert effective_dependency_resolution(destination_params, container) == expected
+
+
+@pytest.mark.parametrize("container", [None, MockContainer()])
+def test_unknown_dependency_resolution_rejected(container):
+    with pytest.raises(Exception, match="Unknown dependency_resolution value encountered conda"):
+        effective_dependency_resolution({"dependency_resolution": "conda"}, container)

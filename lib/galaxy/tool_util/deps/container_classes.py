@@ -177,6 +177,11 @@ class Container(metaclass=ABCMeta):
         """
 
 
+def requires_dependency_resolution(container: Container | None) -> bool:
+    """Should tool requirements be resolved for a job run in ``container`` (``None`` for the host)?"""
+    return not container or container.resolve_dependencies
+
+
 class Volume:
     """
     helper class to manage a container volume string
