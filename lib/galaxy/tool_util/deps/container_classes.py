@@ -336,6 +336,7 @@ def _job_directory_volumes(job_info: "JobInfo", tool_info: "ToolInfo") -> str:
     if job_info.job_type != "tool":
         # Prolog and epilog containers (e.g. containerized metadata) run Galaxy's own code on the job directory.
         return "$job_directory:ro,$job_directory/outputs:rw"
+    # Tools before profile 20.01 may move their config files elsewhere (e.g. ``mv $script_file script.R``), see #9234.
     legacy_configs = job_info.job_directory_type != "pulsar" and Version(str(tool_info.profile)) <= Version("19.09")
     volumes = ["$job_directory/tool_script.sh:ro"]
     for name in _job_directory_subdirectories(job_info):
@@ -345,17 +346,15 @@ def _job_directory_volumes(job_info: "JobInfo", tool_info: "ToolInfo") -> str:
 
 
 def _create_job_directory_subdirectories_command(job_info: "JobInfo") -> str:
-    """Create default mounted job directory subdirectories, some are only created when a job needs them.
+    """Create the Pulsar unstructured directory, which Pulsar only creates when staging unstructured files.
 
     Volume sources must exist: Singularity refuses to start without them and Docker would
-    create them as root.
+    create them as root. Galaxy and Pulsar create the other default subdirectories along
+    with the job directory.
     """
-    if not job_info.job_directory or job_info.job_type != "tool":
+    if not job_info.job_directory or job_info.job_type != "tool" or job_info.job_directory_type != "pulsar":
         return ""
-    paths = " ".join(
-        f'"{os.path.join(job_info.job_directory, name)}"' for name in _job_directory_subdirectories(job_info)
-    )
-    return f"mkdir -p {paths}"
+    return f'mkdir -p "{os.path.join(job_info.job_directory, "unstructured")}"'
 
 
 class HasDockerLikeVolumes:

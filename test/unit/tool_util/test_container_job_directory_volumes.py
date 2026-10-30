@@ -63,8 +63,11 @@ def test_default_volumes_do_not_expose_job_directory(container_class, job_direct
     assert f"{JOB_DIRECTORY}/metadata" not in sources
     if job_directory_type == "pulsar":
         assert f"{JOB_DIRECTORY}/unstructured" in sources
-    # Mount sources must exist before the container starts.
-    assert f'mkdir -p "{JOB_DIRECTORY}/inputs" "{JOB_DIRECTORY}/configs"' in command
+        # Mount sources must exist before the container starts, Pulsar creates this one lazily.
+        assert f'mkdir -p "{JOB_DIRECTORY}/unstructured"' in command
+    else:
+        # Galaxy creates the mounted subdirectories with the job directory.
+        assert "mkdir -p" not in command
 
 
 @pytest.mark.parametrize("container_class", [DockerContainer, SingularityContainer])

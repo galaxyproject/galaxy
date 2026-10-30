@@ -1439,7 +1439,9 @@ class MinimalJobWrapper(HasResourceParameters):
             # The tool execution is given a working directory beneath the
             # "job" working directory.
             safe_makedirs(self.tool_working_directory)
-            safe_makedirs(os.path.join(working_directory, "outputs"))
+            # Created up front, container volumes default to mounting these.
+            for name in ("inputs", "configs", "outputs"):
+                safe_makedirs(os.path.join(working_directory, name))
             log.debug("(%s) Working directory for job is: %s", self.job_id, self.working_directory)
         except ObjectInvalid:
             raise Exception("(%s) Unable to create job working directory", job.id)
