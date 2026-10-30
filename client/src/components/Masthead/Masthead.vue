@@ -228,8 +228,7 @@ onMounted(() => {
                         icon: faSignOutAlt,
                         handler: () => userLogout(),
                     },
-                ]"
-                @click="userLogout" />
+                ]" />
             <MastheadDropdown
                 v-if="currentUser && !isAnonymous && config.single_user"
                 id="user"
