@@ -26,6 +26,13 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
             assert before_latest_history_item.id != after_latest_history_item.id
         return after_latest_history_item
 
+    def _click_and_assert_success_alert(self, button):
+        """Click an Edit Dataset Attributes ``button`` and assert its alert reports success."""
+        button.wait_for_and_click()
+        alert = self.components.edit_dataset_attributes.alert
+        alert.wait_for_visible()
+        assert alert.has_class("alert-success")
+
     @selenium_test
     @managed_history
     def test_history_dataset_display_text(self):
@@ -82,11 +89,9 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
             "critical", excludes=FORMS_VIOLATIONS
         )
         name_component.wait_for_and_clear_and_send_keys(new_name)
-        edit_dataset_attributes.save_button.wait_for_and_click()
-        edit_dataset_attributes.alert.wait_for_visible()
+        self._click_and_assert_success_alert(edit_dataset_attributes.save_button)
 
-        # assert success message, name updated in form and in history panel
-        assert edit_dataset_attributes.alert.has_class("alert-success")
+        # assert name updated in form and in history panel
         assert name_component.wait_for_value() == new_name
 
         # the history panel picks up the new name on its next history poll
@@ -113,11 +118,7 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
         info_component = edit_dataset_attributes.info_input
         info_component.wait_for_and_clear_and_send_keys(TEST_INFO)
 
-        edit_dataset_attributes.save_button.wait_for_and_click()
-        edit_dataset_attributes.alert.wait_for_visible()
-
-        # assert success message, name updated in form and in history panel
-        assert edit_dataset_attributes.alert.has_class("alert-success")
+        self._click_and_assert_success_alert(edit_dataset_attributes.save_button)
 
         # reopen and check that attributes are updated
         self.home()
@@ -142,11 +143,7 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
         datatypes_tab.wait_for_and_click()
         assert datatype_component.wait_for_text() == provided_datatype
 
-        # click auto detect datatype button
-        edit_dataset_attributes.auto_detect_datatype_button.wait_for_and_click()
-        edit_dataset_attributes.alert.wait_for_visible()
-
-        assert edit_dataset_attributes.alert.has_class("alert-success")
+        self._click_and_assert_success_alert(edit_dataset_attributes.auto_detect_datatype_button)
 
         # reopen and check that datatype is updated
         self.home()
@@ -155,3 +152,42 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
         datatypes_tab.wait_for_and_click()
 
         assert datatype_component.wait_for_text() == expected_datatype
+
+    @selenium_test
+    @managed_history
+    def test_history_dataset_auto_detect_metadata(self):
+        history_id = self.current_history_id()
+        hda = self.dataset_populator.new_dataset(
+            history_id, content="chr1\t100\t200\tr1\t0\t+\n", file_type="bed", wait=True
+        )
+        hid = hda["hid"]
+
+        def comment_lines_metadata():
+            return self.dataset_populator.get_history_dataset_details(history_id, hid=hid)["metadata_comment_lines"]
+
+        assert comment_lines_metadata() == 0
+        self.home()
+        self.history_panel_wait_for_hid_ok(hid)
+        self.history_panel_item_edit(hid=hid)
+        edit_dataset_attributes = self.components.edit_dataset_attributes
+        comment_lines = edit_dataset_attributes.metadata_input(name="comment_lines")
+        comment_lines.wait_for_and_clear_and_send_keys("3")
+        self._click_and_assert_success_alert(edit_dataset_attributes.save_button)
+        # form saves store text metadata as a string
+        assert int(comment_lines_metadata()) == 3
+        self.screenshot("dataset_edit_attributes_metadata_saved")
+
+        edit_dataset_attributes.auto_detect_metadata_button.wait_for_and_click()
+        # the save's success alert is still showing, so wait on Auto-detect's own text
+        self._wait_on(
+            lambda: edit_dataset_attributes.alert.wait_for_text() == "Auto-detect operation successfully submitted.",
+            "auto-detect to be submitted",
+        )
+        self.history_panel_wait_for_hid_ok(hid)
+        self._wait_on(lambda: comment_lines_metadata() == 0, "comment_lines to be re-detected as 0")
+
+        # reopen and check the form shows the re-detected value
+        self.home()
+        self.history_panel_item_edit(hid=hid)
+        assert comment_lines.wait_for_value() == "0"
+        self.screenshot("dataset_edit_attributes_metadata_auto_detected")
