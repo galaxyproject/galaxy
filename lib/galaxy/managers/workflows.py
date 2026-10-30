@@ -1114,6 +1114,10 @@ class WorkflowContentsManager(UsesAnnotations):
                     dry_run=dry_run,
                     resolving_urls=resolving_urls,
                 )
+            if step_dict.get("type") == "tool" and step_dict.get("tool_representation"):
+                # Creating embedded tools commits the session. Resolve them before
+                # outputs or post-job actions add partially built steps to it.
+                step_dict["tool_uuid"] = ToolModule.resolve_tool_uuid(trans, step_dict)
 
         module_kwds = workflow_state_resolution_options.model_dump()
         module_kwds.update(kwds)  # TODO: maybe drop this?

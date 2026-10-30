@@ -20,11 +20,13 @@ import io
 import os
 import tempfile
 import time
+import uuid
 from dataclasses import (
     dataclass,
     replace,
 )
 from typing import Any
+from unittest.mock import patch
 from urllib.parse import (
     urlencode,
     urlsplit,
@@ -246,6 +248,30 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             api_asserts.assert_status_code_is(response, 400)
             api_asserts.assert_error_code_is(response, 400008)
             assert response.json()["err_msg"] == err_msg
+        _assert_file_contents(job.output_path, "")
+
+    def test_write_relative_path_rejected(self):
+        job = self._running_job()
+        relative_path = os.path.join(f"job_files_relative_{uuid.uuid4().hex}", "work")
+        for path in [relative_path, "123"]:
+            for form_auth in [False, True]:
+                response = self._post_job_file(job, path, TEST_OUTPUT_TEXT, form_auth=form_auth)
+                api_asserts.assert_status_code_is(response, 400)
+                api_asserts.assert_error_message_contains(response, "absolute path")
+        assert not os.path.exists(relative_path)
+
+    def test_write_invalid_upload_sources_rejected(self):
+        job = self._running_job()
+        response = self._post_job_file(job, job.output_path, data={"session_id": "not/a-session"})
+        api_asserts.assert_status_code_is(response, 400)
+        api_asserts.assert_error_message_contains(response, "Invalid session id")
+
+        upload_path = os.path.join(self.nginx_upload_job_files_store, "unconfigured")
+        _write_file(upload_path, "not an upload")
+        with patch.object(self._app.config, "nginx_upload_job_files_store", None):
+            response = self._post_job_file(job, job.output_path, data={"__file_path": upload_path})
+        api_asserts.assert_status_code_is(response, 403)
+        api_asserts.assert_error_message_contains(response, "nginx_upload_module")
         _assert_file_contents(job.output_path, "")
 
     def test_write_without_file(self):
