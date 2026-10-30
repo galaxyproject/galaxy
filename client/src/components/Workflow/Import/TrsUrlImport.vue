@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BForm, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 interface Props {
@@ -49,10 +49,10 @@ defineExpose({ triggerImport });
 </script>
 
 <template>
-    <BForm class="mt-4" @submit="submit">
+    <form class="mt-4" @submit="submit">
         <BFormGroup label="TRS URL:" label-class="font-weight-bold">
             <BFormInput id="trs-import-url-input" v-model="trsUrl" aria-label="TRS URL" type="url" />
             If the workflow is accessible via a TRS URL, enter the URL above and click Import.
         </BFormGroup>
-    </BForm>
+    </form>
 </template>

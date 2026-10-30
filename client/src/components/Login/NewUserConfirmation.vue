@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BCard, BCardBody, BCardFooter, BEmbed, BForm, BFormGroup } from "bootstrap-vue";
+import { BCard, BCardBody, BCardFooter, BEmbed, BFormGroup } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -107,7 +107,7 @@ async function submit() {
                     {{ messageText }}
                 </GAlert>
 
-                <BForm id="confirmation" @submit.prevent="submit()">
+                <form id="confirmation" @submit.prevent="submit()">
                     <BCard no-body header="Confirm new account creation">
                         <BCardBody>
                             <p>Looks like you are about to create a new account!</p>
@@ -160,7 +160,7 @@ async function submit() {
                             </a>
                         </BCardFooter>
                     </BCard>
-                </BForm>
+                </form>
             </div>
 
             <div v-if="termsUrl" class="col">
