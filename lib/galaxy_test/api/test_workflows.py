@@ -3491,6 +3491,76 @@ input_data:
             assert output_details["extension"] == "expression.json"
             assert output_details["misc_blurb"] == "skipped"
 
+    def test_pick_value_from_skipped_step_filtered_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs: []
+steps:
+  producer:
+    tool_id: output_filter
+    state:
+      produce_out_1: false
+    when: $(false)
+  pick:
+    type: pick_value
+    state:
+      mode: first_or_skip
+    in:
+      input_0: producer/out_1
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            output_details = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=invocation["outputs"]["picked"]["id"]
+            )
+            assert output_details["extension"] == "expression.json"
+            assert output_details["misc_blurb"] == "skipped"
+
+    def test_skipped_mapped_step_filtered_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input_list: collection
+steps:
+  producer:
+    tool_id: output_filter_with_input
+    in:
+      input_1: input_list
+    state:
+      produce_out_1: false
+    when: $(false)
+  consumer:
+    tool_id: cat1
+    in:
+      input1: producer/out_1
+outputs:
+  filtered:
+    outputSource: producer/out_1
+test_data:
+  input_list:
+    collection_type: list
+    elements:
+      - identifier: el1
+        content: a
+      - identifier: el2
+        content: b
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+            hdca = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=invocation["output_collections"]["filtered"]["id"]
+            )
+            assert [e["element_identifier"] for e in hdca["elements"]] == ["el1", "el2"]
+            for element in hdca["elements"]:
+                assert element["object"]["file_ext"] == "expression.json"
+
     def test_pick_value_the_only_non_null(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
