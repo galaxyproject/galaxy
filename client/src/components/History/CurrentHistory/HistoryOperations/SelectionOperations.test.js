@@ -3,9 +3,10 @@ import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
 
 import SelectionOperations from "./SelectionOperations.vue";
 
@@ -33,7 +34,7 @@ const getHiddenSelection = () => new Map([["FAKE_ID", { visible: false }]]);
 const getDeletedSelection = () => new Map([["FAKE_ID", { deleted: true }]]);
 const getActiveSelection = () => new Map([["FAKE_ID", { deleted: false }]]);
 
-async function mountSelectionOperationsWrapper(config) {
+async function mountSelectionOperationsWrapper(config, propsData = {}) {
     setupMockConfig(config);
 
     const pinia = createPinia();
@@ -46,9 +47,18 @@ async function mountSelectionOperationsWrapper(config) {
             isQuerySelection: false,
             totalItemsInQuery: 5,
             isMultiViewItem: false,
+            ...propsData,
         },
         localVue,
         pinia,
+        mocks: {
+            $route: { path: "/" },
+            $router: { push: vi.fn() },
+        },
+        stubs: {
+            BDropdownItem: { template: "<button @click=\"$emit('click')\"><slot /></button>" },
+            CollectionCreatorIndex: { name: "CollectionCreatorIndex", template: "<div />" },
+        },
     });
     await flushPromises();
     return wrapper;
@@ -320,6 +330,38 @@ describe("History Selection Operations", () => {
                 expect(errorEvent).toHaveProperty("result");
                 expect(errorEvent.result).toEqual(BULK_ERROR_RESPONSE);
             });
+        });
+    });
+
+    describe("Collection Building", () => {
+        const selection = new Map([
+            ["dataset-1", { id: "1", history_content_type: "dataset" }],
+            ["dataset-2", { id: "2", history_content_type: "dataset" }],
+        ]);
+
+        beforeEach(async () => {
+            wrapper = await mountSelectionOperationsWrapper(TASKS_CONFIG, { contentSelection: selection });
+        });
+
+        it("should hand the selection to the list wizard and keep selection mode", async () => {
+            await wrapper.find('[data-description="auto build list"]').trigger("click");
+            expect(useCollectionBuilderItemSelection().selectedItems).toEqual(Array.from(selection.values()));
+            expect(wrapper.vm.$router.push).toHaveBeenCalledWith("/collection/new_list?advanced=false");
+            expect(wrapper.emitted("update:show-selection")).toBeUndefined();
+        });
+
+        it("should leave selection mode when the list wizard creates a collection", async () => {
+            await wrapper.find('[data-description="auto build list"]').trigger("click");
+            useCollectionBuilderItemSelection().markCollectionCreated();
+            await flushPromises();
+            expect(wrapper.emitted("update:show-selection")).toEqual([[false]]);
+        });
+
+        it("should leave selection mode when the creator modal creates a collection", async () => {
+            await wrapper.setProps({ isQuerySelection: true, selectionSize: 5 });
+            await wrapper.find('[data-description="build list all"]').trigger("click");
+            wrapper.findComponent({ name: "CollectionCreatorIndex" }).vm.$emit("created-collection", { id: "c1" });
+            expect(wrapper.emitted("update:show-selection")).toEqual([[false]]);
         });
     });
 

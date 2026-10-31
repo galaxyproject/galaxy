@@ -158,6 +158,7 @@ async function onCreate(payload: CreateNewCollectionPayload) {
     try {
         await createHistoryDatasetCollectionInstanceFull(payload);
         collectionCreated.value = true;
+        store.markCollectionCreated();
     } catch (e) {
         creationError.value = errorMessageAsString(e);
     }
