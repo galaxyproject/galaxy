@@ -17,6 +17,7 @@ import {
     faPlay,
     faSitemap,
     faTable,
+    faTasks,
     faUpload,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
@@ -78,6 +79,19 @@ export const defaultActivities = [
         title: "Workflows",
         to: "/workflows/list",
         tooltip: "Search and run workflows",
+        visible: true,
+    },
+    {
+        anonymous: false,
+        description: "Displays your jobs.",
+        icon: faTasks,
+        id: "jobs",
+        mutable: false,
+        optional: true,
+        panel: true,
+        title: "Jobs",
+        to: null,
+        tooltip: "Show your jobs",
         visible: true,
     },
     {

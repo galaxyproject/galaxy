@@ -1,4 +1,4 @@
-import type { components } from "@/api/schema";
+import type { components, GalaxyApiPaths } from "@/api/schema";
 import type { ToolFormConfig } from "@/api/tools";
 import type { FormData } from "@/components/Form/composables/useFormState";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -15,6 +15,8 @@ export type JobInputSummary = components["schemas"]["JobInputSummary"];
 export type JobDisplayParametersSummary = components["schemas"]["JobDisplayParametersSummary"];
 export type JobMetric = components["schemas"]["JobMetric"];
 export type JobRequest = components["schemas"]["JobRequest"];
+export type JobsQueryParams = GalaxyApiPaths["/api/jobs"]["get"]["parameters"]["query"];
+type JobIndexSortByEnum = components["schemas"]["JobIndexSortByEnum"];
 
 export type JobMessage =
     | components["schemas"]["ExitCodeJobMessage"]
@@ -26,19 +28,44 @@ export type JobMessage =
     | components["schemas"]["UnknownDatatypeJobMessage"]
     | components["schemas"]["RuntimeEnvironmentWarningJobMessage"];
 
+export type JobFetchExtraParams = Omit<JobsQueryParams, "limit" | "offset" | "order_by">;
+
 export const NON_TERMINAL_STATES = [
     "new",
     "queued",
     "running",
+    "finishing",
     "waiting",
     "paused",
     "resubmitted",
     "upload",
-    "stopping",
     "deleting",
 ];
 export const ERROR_STATES = ["error", "deleted", "failed"];
 export const TERMINAL_STATES = ["ok", "skipped", "stop"].concat(ERROR_STATES);
+
+/** Every job state, keyed in display order; `satisfies` fails typecheck when the schema adds one. */
+const JOB_STATE_ORDER = {
+    new: true,
+    resubmitted: true,
+    upload: true,
+    waiting: true,
+    queued: true,
+    running: true,
+    finishing: true,
+    paused: true,
+    stop: true,
+    stopped: true,
+    ok: true,
+    skipped: true,
+    error: true,
+    failed: true,
+    deleting: true,
+    deleted: true,
+} satisfies Record<JobState, true>;
+
+/** All the states a job can be in, ordered from "just created" to "done", for display in filters. */
+export const JOB_STATES = Object.keys(JOB_STATE_ORDER) as JobState[];
 
 export interface JobResponse {
     produces_entry_points?: boolean;
@@ -116,4 +143,37 @@ export async function submitJobRequest(jobRequest: JobRequest) {
         rethrowSimple(error);
     }
     return data;
+}
+
+/**
+ * Fetch a page of jobs.
+ *
+ * @param offset Return jobs starting from this position
+ * @param limit Maximum number of jobs to return
+ * @param extraProps Additional query params, e.g. `user_id` or the filters built by `jobsFilterParams`
+ * @param orderBy How to sort/paginate the results. Defaults to `update_time`
+ * @returns A tuple of the list of jobs and the total number of matching jobs
+ */
+export async function fetchJobs(
+    offset = 0,
+    limit = 20,
+    extraProps?: JobFetchExtraParams,
+    orderBy: JobIndexSortByEnum = "update_time",
+) {
+    const params: JobsQueryParams = {
+        limit,
+        offset,
+        order_by: orderBy,
+        include_total_count: true,
+        ...extraProps,
+    };
+
+    const { data, error, response } = await GalaxyApi().GET("/api/jobs", { params: { query: params } });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
+    return [data, totalMatches] as const;
 }

@@ -45428,12 +45428,18 @@ export interface operations {
                 limit?: number;
                 /** @description Return jobs starting from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, jobs 200-299 will be returned. */
                 offset?: number;
+                /** @description If true, the total number of jobs matching the query is returned in the `total_matches` response header. */
+                include_total_count?: boolean;
                 /** @description A list or comma-separated list of states to filter job query on. If unspecified, jobs of any state may be returned. */
                 state?: string[] | null;
+                /** @description Limit listing of jobs to those that match one of the included job ids. If none, all are returned. Lets a caller refresh a known set of jobs (e.g. the ones currently displayed) in a single request instead of one request per job. */
+                job_id?: string[] | null;
                 /** @description Limit listing of jobs to those that match one of the included tool_ids. If none, all are returned */
                 tool_id?: string[] | null;
                 /** @description Limit listing of jobs to those that match one of the included tool ID sql-like patterns. If none, all are returned */
                 tool_id_like?: string[] | null;
+                /** @description Exclude jobs whose tool_id matches one of the given values. If none, no jobs are excluded on this basis. */
+                exclude_tool_ids?: string[] | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */

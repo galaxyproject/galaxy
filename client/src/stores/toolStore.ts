@@ -123,10 +123,14 @@ export const useToolStore = defineStore("toolStore", () => {
     const panels = ref<Record<string, Panel>>({});
     const searchWorker = ref<Worker | undefined>(undefined);
     const toolTagsLoaded = ref(false);
+    /** Whether `toolsById` contains the full tool list, not just individually fetched tools. */
+    const allToolsLoaded = ref(false);
     const toolsById = shallowRef<Record<string, Tool>>({});
     const toolResults = ref<Record<string, string[]>>({});
     const toolSections = ref<Record<string, Record<string, ToolPanelItem>>>({});
     const fetchedHelpIds = ref<Map<string, Promise<void>>>(new Map());
+    /** In-flight tool requests by id, so concurrent `fetchToolForId` callers share one request */
+    const toolFetches = new Map<string, Promise<void>>();
     const helpDataCached = ref<Record<string, ToolHelpData>>({});
 
     const currentToolSections = computed(() => {
@@ -184,6 +188,30 @@ export const useToolStore = defineStore("toolStore", () => {
         return (toolId: string, defaultValue = "...") => {
             const details = toolsById.value[toolId];
             return details?.name || defaultValue;
+        };
+    });
+
+    /**
+     * Get the IDs of tools whose name matches the given query string.
+     * @param queryName A name query to filter tools by.
+     * @param exact Whether to match the name exactly (user typed in quoted '' name). Defaults to `false`.
+     *
+     *              Function is **case-insensitive** for `exact = true` on purpose because we're not expecting
+     *              users to type tool names with exact casing, but rather to match only the tool they are looking for.
+     *              For e.g.: There are two tools, "Advanced Cut" and "Cut", and the user types `"'cut'"`, it should
+     *              only match "Cut". If `exact = false`, it would match both "Advanced Cut" and "Cut".
+     * @returns An array of tool IDs whose names match the given query.
+     */
+    const getToolIdsByName = computed(() => {
+        return (queryName: string, exact = false) => {
+            function matches(name: string) {
+                return exact ? name === lowerQuery : name.includes(lowerQuery);
+            }
+
+            const lowerQuery = queryName.trim().toLowerCase();
+            return Object.values(toolsById.value)
+                .filter((tool) => matches(tool.name.toLowerCase()))
+                .map((tool) => tool.id);
         };
     });
 
@@ -250,12 +278,25 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     async function fetchToolForId(toolId: string) {
-        try {
-            const { data } = await axios.get(`${getAppRoot()}api/tools/${toolId}`);
-            saveToolForId(toolId, data);
-        } catch (e) {
-            rethrowSimple(e);
+        if (toolsById.value[toolId]) {
+            return;
         }
+        const existing = toolFetches.get(toolId);
+        if (existing) {
+            return existing;
+        }
+        const promise = (async () => {
+            try {
+                const { data } = await axios.get(`${getAppRoot()}api/tools/${toolId}`);
+                saveToolForId(toolId, data);
+            } catch (e) {
+                rethrowSimple(e);
+            } finally {
+                toolFetches.delete(toolId);
+            }
+        })();
+        toolFetches.set(toolId, promise);
+        return promise;
     }
 
     async function fetchTools(q?: string) {
@@ -274,8 +315,9 @@ export const useToolStore = defineStore("toolStore", () => {
                 }
             }
 
-            // Fetch all tools by IDs if not already fetched.
-            if (Object.keys(toolsById.value).length === 0) {
+            // `toolsById` may already contain some tools fetched individually, so we check
+            // `allToolsLoaded` to determine if we need to fetch the full list.
+            if (!allToolsLoaded.value) {
                 const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { in_panel: false } });
                 saveAllTools(data as Tool[]);
             }
@@ -368,6 +410,7 @@ export const useToolStore = defineStore("toolStore", () => {
             },
             {} as Record<string, Tool>,
         );
+        allToolsLoaded.value = true;
         // The bulk /api/tools payload doesn't carry tool_tags; reset the loaded
         // flag so the next mount of the My Tools panel re-fetches the mapping.
         toolTagsLoaded.value = false;
@@ -424,6 +467,7 @@ export const useToolStore = defineStore("toolStore", () => {
         isPanelPopulated,
         loading,
         getToolForId,
+        getToolIdsByName,
         getToolNameById,
         getToolsById,
         getInteractiveTools,

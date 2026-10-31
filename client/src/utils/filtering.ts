@@ -508,11 +508,14 @@ export default class Filtering<T> {
             if (!isValid) {
                 continue;
             }
-            // A quoted value keeps its original case (exact, case-sensitive match); an unquoted
-            // value is folded to lower case. Either way surrounding quotes are stripped here --
-            // `getQueryDict`/`getFilterText` recover quoted-ness from the source text.
+            // A quoted value, or one written for a key whose own handler is an equals match (e.g.
+            // `tool_id_eq`), keeps its original case; anything else is folded to lower case.
+            // Surrounding quotes are stripped here either way and `getQueryDict`/`getFilterText`
+            // recover quoted-ness from the source text.
             const value = this.quoteStrings
-                ? ((token.quoted ? stripQuotes(token.value) : toLowerNoQuotes(token.value)) as T)
+                ? ((token.quoted || this.isEqualsKey(key)
+                      ? stripQuotes(token.value)
+                      : toLowerNoQuotes(token.value)) as T)
                 : (token.value as T);
             if (this.validFilters[key]?.type === "MultiTags") {
                 if (result[key] === undefined) {
@@ -554,6 +557,14 @@ export default class Filtering<T> {
      */
     private exactMatchKeyFor(key: string): string {
         return this.validFilters[`${key}_eq`] !== undefined ? `${key}_eq` : key;
+    }
+
+    /** Whether `key` is an explicit exact-match sibling key (e.g. `tool_id_eq`), as opposed to a
+     * key whose own handler merely happens to use an equals comparison (e.g. `state`). Only the
+     * former should keep its case: the latter still needs folding to match backend values.
+     */
+    private isEqualsKey(key: string): boolean {
+        return key.endsWith("_eq") && this.validFilters[key] !== undefined;
     }
 
     /** Build a text filter from filters {filter: "value", ...} => "filter:value"

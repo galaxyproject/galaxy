@@ -155,6 +155,63 @@ class TestJobsApi(ApiTestCase, TestsTools):
             assert len(jobs) == 0
 
     @requires_new_history
+    def test_index_total_matches(self, history_id):
+        for _ in range(3):
+            self.__history_with_new_dataset(history_id)
+
+        jobs, total_matches = self.__jobs_index_with_total(data={"history_id": history_id, "limit": 1})
+        assert len(jobs) == 1
+        assert total_matches == 3
+
+        jobs, total_matches = self.__jobs_index_with_total(data={"history_id": history_id, "limit": 1, "offset": 2})
+        assert len(jobs) == 1
+        assert total_matches == 3
+
+        jobs, total_matches = self.__jobs_index_with_total(
+            data={"history_id": history_id, "search": "tool:no_such_tool"}
+        )
+        assert jobs == []
+        assert total_matches == 0
+
+        no_count_response = self._get("jobs", data={"history_id": history_id, "limit": 1})
+        self._assert_status_code_is(no_count_response, 200)
+        assert "total_matches" not in no_count_response.headers
+
+    @requires_new_history
+    def test_index_job_ids(self, history_id):
+        for _ in range(3):
+            self.__history_with_new_dataset(history_id)
+
+        all_jobs = self.__jobs_index(data={"history_id": history_id})
+        assert len(all_jobs) == 3
+        wanted_ids = [all_jobs[0]["id"], all_jobs[2]["id"]]
+
+        jobs = self.__jobs_index(data={"job_id": wanted_ids})
+        assert sorted(job["id"] for job in jobs) == sorted(wanted_ids)
+
+        bad_response = self._get("jobs", data={"job_id": "not-a-valid-id"})
+        self._assert_status_code_is(bad_response, 400)
+
+    @requires_new_history
+    @skip_without_tool("cat1")
+    def test_index_exclude_tool_ids(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": hda["id"]}},
+            history_id=history_id,
+        )
+
+        all_jobs = self.__jobs_index(data={"history_id": history_id})
+        tool_ids = {job["tool_id"] for job in all_jobs}
+        assert "__DATA_FETCH__" in tool_ids
+        assert "cat1" in tool_ids
+
+        jobs = self.__jobs_index(data={"history_id": history_id, "exclude_tool_ids": "__DATA_FETCH__"})
+        assert all(job["tool_id"] != "__DATA_FETCH__" for job in jobs)
+        assert any(job["tool_id"] == "cat1" for job in jobs)
+
+    @requires_new_history
     @skip_without_tool("cat1")
     def test_index_workflow_and_invocation_filter(self, history_id):
         workflow_simple = """
@@ -1576,6 +1633,12 @@ steps:
         jobs = jobs_response.json()
         assert isinstance(jobs, list)
         return jobs
+
+    def __jobs_index_with_total(self, data=None, **kwds):
+        data = {**(data or {}), "include_total_count": True}
+        jobs_response = self._get("jobs", data=data, **kwds)
+        self._assert_status_code_is(jobs_response, 200)
+        return jobs_response.json(), int(jobs_response.headers["total_matches"])
 
 
 class TestDataManagerJobsApi(ApiTestCase):

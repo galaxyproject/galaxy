@@ -33,7 +33,6 @@ from sqlalchemy import (
     delete,
     desc,
     false,
-    func,
     or_,
     select,
     true,
@@ -62,6 +61,7 @@ from galaxy.managers import (
 from galaxy.managers.base import (
     apply_sort_column,
     decode_id,
+    get_count,
     security_check,
     sort_expression,
 )
@@ -2853,8 +2853,3 @@ def _get_invocation(session, invocation_id):
     stmt = select(WorkflowInvocation)
     stmt = stmt.where(WorkflowInvocation.id == invocation_id).limit(1)
     return session.scalars(stmt).first()
-
-
-def get_count(session, statement):
-    stmt = select(func.count()).select_from(statement.subquery())
-    return session.scalar(stmt)
