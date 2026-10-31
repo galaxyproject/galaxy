@@ -1,17 +1,27 @@
 import os
 import shutil
+from typing import cast
 
 import pytest
 
+from galaxy.objectstore import (
+    HierarchicalObjectStore,
+    ObjectStore,
+)
 from galaxy_test.base.populators import skip_without_tool
 from ._base import (
     BaseSwiftObjectStoreIntegrationTestCase,
     files_count,
     get_files,
+    GetDataHeadTests,
 )
 
 
-class TestCacheOperation(BaseSwiftObjectStoreIntegrationTestCase):
+class TestCacheOperation(BaseSwiftObjectStoreIntegrationTestCase, GetDataHeadTests):
+    def _get_data_head_store(self) -> ObjectStore:
+        # The boto3 store itself: the hierarchical store fails for a missing object before asking it.
+        return cast(HierarchicalObjectStore, self._app.object_store).backends[0]
+
     def tearDown(self):
         shutil.rmtree(self.object_store_cache_path)
         os.mkdir(self.object_store_cache_path)
