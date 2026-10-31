@@ -61,7 +61,6 @@ if [ "$mode" = upgrade ] && [ -z "$pkg" ]; then
     install_uv uv
     latest_uv_version="$("$uv" --version | awk '{ print $2 }')"
     awk -v v="$latest_uv_version" '$1 == "uv" { $2 = v } { print }' .tool-versions > "$temp_dir/tool-versions"
-    cp "$temp_dir/tool-versions" .tool-versions
 else
     # Use the caller's uv if it's the pinned version, otherwise install that.
     if command -v uv >/dev/null && [ "$(uv --version | awk '{ print $2 }')" = "$pinned_uv_version" ]; then
@@ -105,4 +104,7 @@ if [ "$mode" != check ]; then
     for file in pinned-test-requirements.txt dev-requirements.txt pinned-typecheck-requirements.txt; do
         cp "$temp_dir/$file" "$requirements_dir/$file"
     done
+fi
+if [ -f "$temp_dir/tool-versions" ]; then
+    cp "$temp_dir/tool-versions" .tool-versions
 fi
