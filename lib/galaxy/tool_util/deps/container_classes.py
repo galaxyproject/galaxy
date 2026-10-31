@@ -317,6 +317,46 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> list[str]:
     return list(target_to_volume.values())
 
 
+def _job_directory_subdirectories(job_info: "JobInfo") -> list[str]:
+    """Return the job directory subdirectories that tool containers need by default.
+
+    The job directory itself is not mounted. Besides these subdirectories it holds the job
+    script, the files metadata is set from (possibly including object store credentials) and,
+    for Pulsar, the launch_config with the job's Galaxy callback credentials - none of which
+    the tool needs, and some of which run outside of the container.
+    """
+    if job_info.job_directory_type == "pulsar":
+        # Pulsar stages inputs, config files and unstructured files (e.g. referenced
+        # by .loc files) into these.
+        return ["inputs", "configs", "unstructured", "outputs"]
+    return ["inputs", "configs", "outputs"]
+
+
+def _job_directory_volumes(job_info: "JobInfo", tool_info: "ToolInfo") -> str:
+    if job_info.job_type != "tool":
+        # Prolog and epilog containers (e.g. containerized metadata) run Galaxy's own code on the job directory.
+        return "$job_directory:ro,$job_directory/outputs:rw"
+    # Tools before profile 20.01 may move their config files elsewhere (e.g. ``mv $script_file script.R``), see #9234.
+    legacy_configs = job_info.job_directory_type != "pulsar" and Version(str(tool_info.profile)) <= Version("19.09")
+    volumes = ["$job_directory/tool_script.sh:ro"]
+    for name in _job_directory_subdirectories(job_info):
+        mode = "rw" if name == "outputs" or (name == "configs" and legacy_configs) else "ro"
+        volumes.append(f"$job_directory/{name}:{mode}")
+    return ",".join(volumes)
+
+
+def _create_job_directory_subdirectories_command(job_info: "JobInfo") -> str:
+    """Create the Pulsar unstructured directory, which Pulsar only creates when staging unstructured files.
+
+    Volume sources must exist: Singularity refuses to start without them and Docker would
+    create them as root. Galaxy and Pulsar create the other default subdirectories along
+    with the job directory.
+    """
+    if not job_info.job_directory or job_info.job_type != "tool" or job_info.job_directory_type != "pulsar":
+        return ""
+    return f'mkdir -p "{os.path.join(job_info.job_directory, "unstructured")}"'
+
+
 class HasDockerLikeVolumes:
     """Mixin to share functionality related to Docker volume handling.
 
@@ -374,11 +414,11 @@ class HasDockerLikeVolumes:
 
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
             # We have a Pulsar job directory, so everything needed (excluding index
-            # files) should be available in job_directory...
-            defaults = "$job_directory:ro"
+            # files) should be available in its subdirectories...
+            defaults = _job_directory_volumes(self.job_info, self.tool_info)
             if self.job_info.tool_directory:
                 defaults += ",$tool_directory:ro"
-            defaults += ",$job_directory/outputs:rw,$working_directory:rw"
+            defaults += ",$working_directory:rw"
         else:
             if self.job_info.tmp_directory is not None:
                 defaults = "$tmp_directory:rw"
@@ -393,9 +433,7 @@ class HasDockerLikeVolumes:
             if self.job_info.tool_directory:
                 defaults += ",$tool_directory:ro"
             if self.job_info.job_directory:
-                defaults += ",$job_directory:ro,$job_directory/outputs:rw"
-                if Version(str(self.tool_info.profile)) <= Version("19.09"):
-                    defaults += ",$job_directory/configs:rw"
+                defaults += f",{_job_directory_volumes(self.job_info, self.tool_info)}"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
             defaults += ",$working_directory:rw"
@@ -521,12 +559,14 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         # Standard error is:
         #    Error response from daemon: Cannot kill container: 2b0b961527574ebc873256b481bbe72e: No such container: 2b0b961527574ebc873256b481bbe72e
         pass_through_commands = "\n".join(pass_through)
+        create_job_directory_subdirectories_command = _create_job_directory_subdirectories_command(self.job_info)
         return f"""
 _on_exit() {{
   {kill_command} &> /dev/null
 }}
 {TRAP_KILL_CONTAINER}
 {pass_through_commands}
+{create_job_directory_subdirectories_command}
 {cache_command}
 {run_command}"""
 
@@ -632,6 +672,9 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             no_mount=self.prop("no_mount", singularity_util.DEFAULT_NO_MOUNT),
             **self.get_singularity_target_kwds(),
         )
+        create_job_directory_subdirectories_command = _create_job_directory_subdirectories_command(self.job_info)
+        if create_job_directory_subdirectories_command:
+            pass_through.append(create_job_directory_subdirectories_command)
         return "\n".join(["(", *pass_through, run_command, ")"])
 
 

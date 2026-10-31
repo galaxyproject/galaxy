@@ -86,6 +86,12 @@ class AbstractTestCases:
             expected_path = os.path.join(self.working_directory, "outputs", "COMMAND_VERSION")
             assert version_path == expected_path
 
+        def test_working_directory_has_container_mounted_subdirectories(self):
+            wrapper = self._wrapper()
+            # Container volumes default to mounting these, so they must exist before the job runs.
+            for name in ("inputs", "configs", "outputs"):
+                assert os.path.isdir(os.path.join(wrapper.working_directory, name))
+
         def test_prepare_sets_command_line(self):
             with self._prepared_wrapper() as wrapper:
                 assert TEST_COMMAND in wrapper.command_line
