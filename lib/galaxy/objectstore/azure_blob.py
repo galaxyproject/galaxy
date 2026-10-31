@@ -90,9 +90,7 @@ def parse_config_xml(config_xml):
             "transfer": transfer_dict,
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
-            "enable_direct_download": CachingConcreteObjectStore.parse_enable_direct_download_from_config_xml(
-                config_xml
-            ),
+            **CachingConcreteObjectStore.parse_direct_download_config_from_config_xml(config_xml),
         }
         name = config_xml.attrib.get("name", None)
         if name is not None:
@@ -327,7 +325,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                     container_name=self.container_name,
                     blob_name=rel_path,
                     permission=BlobSasPermissions(read=True),
-                    expiry=now() + timedelta(hours=1),
+                    expiry=now() + timedelta(seconds=self.direct_download_expires_in),
                     content_disposition=content_disposition,
                     content_type=content_type,
                 )

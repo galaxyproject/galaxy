@@ -95,9 +95,7 @@ def parse_config_xml(config_xml):
             "cache": cache_dict,
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
-            "enable_direct_download": CachingConcreteObjectStore.parse_enable_direct_download_from_config_xml(
-                config_xml
-            ),
+            **CachingConcreteObjectStore.parse_direct_download_config_from_config_xml(config_xml),
         }
         name = config_xml.attrib.get("name", None)
         if name is not None:
@@ -421,7 +419,9 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
                     response_headers["response-content-disposition"] = content_disposition
                 if content_type is not None:
                     response_headers["response-content-type"] = content_type
-                return key.generate_url(expires_in=86400, response_headers=response_headers or None)  # 24hrs
+                return key.generate_url(
+                    expires_in=self.direct_download_expires_in, response_headers=response_headers or None
+                )
             except S3ResponseError:
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)
         return None

@@ -73,6 +73,7 @@ NO_SESSION_ERROR_MESSAGE = (
     "Attempted to 'create' object store entity in configuration with no database session present."
 )
 DEFAULT_PRIVATE = False
+DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN = 3600  # seconds
 DEFAULT_QUOTA_SOURCE = None  # Just track quota right on user object in Galaxy.
 DEFAULT_QUOTA_ENABLED = True  # enable quota tracking in object stores by default
 DEFAULT_DEVICE_ID = None
@@ -861,6 +862,18 @@ class BaseObjectStore(ObjectStore):
         return enable_direct_download
 
     @classmethod
+    def parse_direct_download_config_from_config_xml(clazz, config_xml: Any) -> dict[str, Any]:
+        expires_in = DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN
+        if config_xml is not None:
+            expires_in = _parse_direct_download_expires_in(
+                config_xml.attrib.get("direct_download_expires_in", DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN)
+            )
+        return {
+            "enable_direct_download": clazz.parse_enable_direct_download_from_config_xml(config_xml),
+            "direct_download_expires_in": expires_in,
+        }
+
+    @classmethod
     def parse_badges_from_config_xml(clazz, badges_xml):
         badges = []
         for e in badges_xml:
@@ -875,6 +888,16 @@ class BaseObjectStore(ObjectStore):
 
     def get_device_source_map(self):
         return DeviceSourceMap()
+
+
+def _parse_direct_download_expires_in(value: Any) -> int:
+    try:
+        expires_in = int(value)
+    except (TypeError, ValueError):
+        expires_in = 0
+    if expires_in <= 0:
+        raise ValueError(f"direct_download_expires_in must be a positive number of seconds, got {value!r}")
+    return expires_in
 
 
 @dataclass
@@ -928,6 +951,9 @@ class ConcreteObjectStore(BaseObjectStore):
         # presigned URL) instead of streaming through Galaxy. Opt-in; only meaningful for stores whose
         # _get_object_url returns a usable URL.
         self.enable_direct_download = asbool(config_dict.get("enable_direct_download", False))
+        self.direct_download_expires_in = _parse_direct_download_expires_in(
+            config_dict.get("direct_download_expires_in", DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN)
+        )
         self.badges = read_badges(config_dict)
 
     def get_concrete_store_backends(self):
@@ -949,6 +975,7 @@ class ConcreteObjectStore(BaseObjectStore):
         rval["badges"] = self._get_concrete_store_badges(None)
         rval["device"] = self.device_id
         rval["enable_direct_download"] = self.enable_direct_download
+        rval["direct_download_expires_in"] = self.direct_download_expires_in
         rval["object_expires_after_days"] = self.object_expires_after_days
         return rval
 
