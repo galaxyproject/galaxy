@@ -17,12 +17,22 @@ from galaxy.util import requests
 from galaxy.util.commands import which
 
 
-def is_site_up(url: str) -> bool:
+def site_down_reason(url: str) -> Optional[str]:
     try:
         response = requests.get(url, timeout=10)
-        return response.status_code == 200
-    except Exception:
-        return False
+    except Exception as e:
+        return f"request failed: {e}"
+    if response.status_code == 200:
+        return None
+    if response.headers.get("cf-mitigated") == "challenge":
+        return f"Cloudflare challenged the request (HTTP {response.status_code})"
+    if response.headers.get("server") == "cloudflare":
+        return f"Cloudflare returned HTTP {response.status_code}"
+    return f"HTTP {response.status_code}"
+
+
+def is_site_up(url: str) -> bool:
+    return site_down_reason(url) is None
 
 
 P = ParamSpec("P")
@@ -51,8 +61,9 @@ def skip_if_site_down(
     def method_wrapper(method: Callable[P, T]) -> Callable[P, T]:
         @wraps(method)
         def wrapped_method(*args: P.args, **kwargs: P.kwargs) -> T:
-            if not is_site_up(url):
-                raise SkipTest(f"Test depends on [{url}] being up and it appears to be down.")
+            reason = site_down_reason(url)
+            if reason:
+                raise SkipTest(f"Test depends on [{url}] being up and it appears to be down ({reason}).")
             if unavailable_pattern is None:
                 return method(*args, **kwargs)
             try:
@@ -69,11 +80,34 @@ def skip_if_site_down(
     return method_wrapper
 
 
+def skip_on_network_error(method: Callable[P, T]) -> Callable[P, T]:
+    """Skip the test if it fails because a remote site could not be reached or timed out."""
+
+    @wraps(method)
+    def wrapped_method(*args: P.args, **kwargs: P.kwargs) -> T:
+        try:
+            return method(*args, **kwargs)
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            raise SkipTest(f"Test depends on a remote site that could not be reached: {e}") from e
+
+    return wrapped_method
+
+
 skip_if_github_down = skip_if_site_down("https://github.com/")
 # Quay's homepage can be available while API requests are rate-limited or fail during pagination.
 skip_if_quay_down = skip_if_site_down(
     "https://quay.io/",
     unavailable_pattern=r"\b(?:429 Client|5\d\d Server) Error: [^\n]* for url: https://quay\.io/api/",
+)
+# WorkflowHub (or Cloudflare in front of it) can be down or blocking CI runners while the homepage
+# check still passes. Galaxy's TRS proxy then reports the challenge, block or overload page it got
+# back as the error message, or raises the requests error for a timeout or connection failure.
+skip_if_workflowhub_down = skip_if_site_down(
+    "https://workflowhub.eu/",
+    unavailable_pattern=(
+        r"<title>Just a moment\.\.\.</title>|[Cc]loudflare|under heavy load"
+        r"|HTTPSConnectionPool\(host='workflowhub\.eu', port=443\)"
+    ),
 )
 
 

@@ -1,11 +1,17 @@
 import base64
 from os import environ
+from unittest import (
+    mock,
+    SkipTest,
+)
 
 import pytest
 import yaml
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ConfigDoesNotAllowException
+from galaxy.util import requests
+from galaxy.util.unittest_utils import skip_if_workflowhub_down
 from galaxy.workflow.trs_proxy import (
     GA4GH_GALAXY_DESCRIPTOR,
     parse_search_kwds,
@@ -119,6 +125,7 @@ def test_match_url():
     assert expected_exception, "matching url against localhost should fail"
 
 
+@skip_if_workflowhub_down
 def test_server_from_url():
     proxy = get_trs_proxy()
     server = proxy.server_from_url("https://workflowhub.eu")
@@ -170,3 +177,57 @@ def test_search():
 
     response = server.get_tools(descriptorType="GALAXY")
     assert len(response) == 2
+
+
+def _response(status_code, text, headers=None):
+    response = requests.Response()
+    response.status_code = status_code
+    response._content = text.encode()
+    response.headers.update(headers or {})
+    return response
+
+
+def _mock_get(trs_response):
+    def get(url, **kwargs):
+        if url == "https://workflowhub.eu/":
+            return _response(200, "<html>WorkflowHub</html>")
+        if isinstance(trs_response, Exception):
+            raise trs_response
+        return trs_response
+
+    return mock.patch.object(requests, "get", side_effect=get)
+
+
+@pytest.mark.parametrize(
+    "trs_response",
+    [
+        _response(403, "<title>Just a moment...</title>", {"cf-mitigated": "challenge", "server": "cloudflare"}),
+        _response(503, "<h2>This website is under heavy load (queue full)</h2>"),
+        requests.exceptions.ReadTimeout(
+            "HTTPSConnectionPool(host='workflowhub.eu', port=443): Read timed out. (read timeout=600)"
+        ),
+        requests.exceptions.ConnectionError(
+            "HTTPSConnectionPool(host='workflowhub.eu', port=443): Max retries exceeded with url: "
+            "/ga4gh/trs/v2/tools/138 (Caused by NewConnectionError('Failed to establish a new connection'))"
+        ),
+    ],
+)
+def test_skip_if_workflowhub_down_skips_unavailable_server(trs_response):
+    @skip_if_workflowhub_down
+    def fetch_tool():
+        get_trs_proxy().server_from_url("https://workflowhub.eu").get_tool("138")
+
+    with _mock_get(trs_response):
+        with pytest.raises(SkipTest):
+            fetch_tool()
+
+
+def test_skip_if_workflowhub_down_reports_other_failures():
+    @skip_if_workflowhub_down
+    def fetch_tool():
+        tool = get_trs_proxy().server_from_url("https://workflowhub.eu").get_tool("138")
+        assert "description" in tool
+
+    with _mock_get(_response(200, '{"id": "138"}')):
+        with pytest.raises(AssertionError):
+            fetch_tool()
