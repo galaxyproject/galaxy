@@ -159,6 +159,7 @@
 
 <script>
 import { BAlert } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { ref } from "vue";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -213,6 +214,7 @@ export default {
         const { confirm } = useConfirmDialog();
         const objectStoreStore = useObjectStoreStore();
         const { isAnonymous } = useUserStore();
+        const { collectionsCreated } = storeToRefs(useCollectionBuilderItemSelection());
 
         // Modals for selection operations
         const showChangeDbKeyModal = ref(false);
@@ -232,6 +234,7 @@ export default {
         }
 
         return {
+            collectionsCreated,
             config,
             confirm,
             isAnonymous,
@@ -370,6 +373,9 @@ export default {
                 this.$emit("update:show-selection", true);
             }
         },
+        collectionsCreated() {
+            this.createdCollection();
+        },
     },
     methods: {
         listWizard(advanced) {
@@ -384,6 +390,9 @@ export default {
             } else {
                 this.$router.push(`/collection/new_list?advanced=${advanced}`);
             }
+        },
+        createdCollection() {
+            this.$emit("update:show-selection", false);
         },
         // Selected content manipulation, hide/show/delete/purge (using the confirm dialog)
         async confirmAndRun(operation, message, options = {}) {
