@@ -1,0 +1,181 @@
+/*
+ * Design tokens for galaxy-ui and the Galaxy client. This is the only file to
+ * hand-edit; run `pnpm --filter @galaxyproject/galaxy-ui build:tokens` to
+ * regenerate tokens.css (the plain `:root` form for consumers without
+ * Tailwind). A test fails if tokens.css is out of date.
+ *
+ * Naming follows Tailwind and shadcn/ui wherever they have a name, so the
+ * same names work as CSS variables now and as Tailwind utilities later
+ * (`bg-primary`, `text-muted-foreground`, `text-sm`). Galaxy-only additions:
+ * `selected`, `highlight`, `inverse`.
+ *
+ * Prefer the semantic names over raw palette shades in new code.
+ *
+ * `static` makes Tailwind emit every token, not only those a utility uses:
+ * components read them through var().
+ */
+@theme static {
+    /* palette */
+    --color-blue-900: #040b21;
+    --color-blue-800: #191f33;
+    --color-blue-700: #2c3143;
+    --color-blue-600: #25537b;
+    --color-blue-500: #197cd2;
+    --color-blue-400: #48a1dd;
+    --color-blue-300: #80c3ea;
+    --color-blue-200: #daecf8;
+    --color-blue-100: #f1f9fe;
+
+    --color-gray-900: #191919;
+    --color-gray-800: #23262f;
+    --color-gray-700: #35373f;
+    --color-gray-600: #484a52;
+    --color-gray-500: #63656d;
+    --color-gray-400: #8f9199;
+    --color-gray-300: #aab0b4;
+    --color-gray-250: #c1c8d0;
+    --color-gray-200: #dee2e6;
+    --color-gray-100: #f8f9fa;
+
+    --color-green-900: #002a1f;
+    --color-green-800: #003f2e;
+    --color-green-700: #006f50;
+    --color-green-600: #25a35b;
+    --color-green-500: #66cc66;
+    --color-green-400: #98e192;
+    --color-green-300: #c8edc8;
+    --color-green-200: #e0f7df;
+    --color-green-100: #f3fbf2;
+
+    --color-yellow-900: #362100;
+    --color-yellow-800: #462b00;
+    --color-yellow-700: #7f5102;
+    --color-yellow-600: #f0aa02;
+    --color-yellow-500: #ffd700;
+    --color-yellow-400: #ffe848;
+    --color-yellow-300: #fff489;
+    --color-yellow-200: #fefbc5;
+    --color-yellow-100: #fefeea;
+
+    --color-orange-900: #391100;
+    --color-orange-800: #461500;
+    --color-orange-700: #9b3a00;
+    --color-orange-600: #fe7e03;
+    --color-orange-500: #ff9b2f;
+    --color-orange-400: #ffae52;
+    --color-orange-300: #ffc985;
+    --color-orange-200: #ffedd5;
+    --color-orange-100: #fffaf1;
+
+    --color-red-900: #430111;
+    --color-red-800: #63021a;
+    --color-red-700: #91081b;
+    --color-red-600: #e31a1e;
+    --color-red-500: #f33b36;
+    --color-red-400: #ff817b;
+    --color-red-300: #f4a3a5;
+    --color-red-200: #fdd4d5;
+    --color-red-100: #fff3f3;
+
+    /* deprecated: `grey` predates the move to Tailwind's spelling */
+    --color-grey-900: var(--color-gray-900);
+    --color-grey-800: var(--color-gray-800);
+    --color-grey-700: var(--color-gray-700);
+    --color-grey-600: var(--color-gray-600);
+    --color-grey-500: var(--color-gray-500);
+    --color-grey-400: var(--color-gray-400);
+    --color-grey-300: var(--color-gray-300);
+    --color-grey-250: var(--color-gray-250);
+    --color-grey-200: var(--color-gray-200);
+    --color-grey-100: var(--color-gray-100);
+
+    /* surfaces: Galaxy separates surfaces with borders and shadows, not tone */
+    --color-background: #ffffff;
+    --color-foreground: var(--color-blue-700);
+    --color-card: var(--color-background);
+    --color-card-foreground: var(--color-foreground);
+    --color-popover: var(--color-background);
+    --color-popover-foreground: var(--color-foreground);
+    --color-muted: var(--color-gray-100);
+    --color-muted-foreground: var(--color-gray-600);
+
+    /* side panels and the activity bar */
+    --color-sidebar: var(--color-gray-100);
+    --color-sidebar-foreground: var(--color-foreground);
+    --color-sidebar-primary: var(--color-primary);
+    --color-sidebar-primary-foreground: var(--color-primary-foreground);
+    --color-sidebar-accent: var(--color-gray-200);
+    --color-sidebar-accent-foreground: var(--color-foreground);
+    --color-sidebar-border: var(--color-border);
+    --color-sidebar-ring: var(--color-ring);
+
+    /* interaction: `accent` is the hover surface, `selected` a persistent selection */
+    /* not brand-tokens' gold --color-accent; the Tool Shed loads both, and this one wins */
+    --color-accent: var(--color-blue-100);
+    --color-accent-foreground: var(--color-foreground);
+    --color-selected: var(--color-blue-200);
+    --color-selected-foreground: var(--color-foreground);
+
+    /* brand and status */
+    --color-primary: var(--color-blue-600);
+    --color-primary-foreground: #ffffff;
+    --color-secondary: var(--color-gray-200);
+    --color-secondary-foreground: var(--color-foreground);
+    --color-highlight: var(--color-yellow-500);
+    --color-highlight-foreground: var(--color-blue-700);
+    --color-inverse: var(--color-blue-800);
+    --color-inverse-foreground: #ffffff;
+    --color-success: var(--color-green-500);
+    --color-success-foreground: var(--color-foreground);
+    /* today's $brand-info: no palette shade carries white text at 4.5:1 and looks the same */
+    --color-info: #2077b3;
+    --color-info-foreground: #ffffff;
+    --color-warning: var(--color-orange-600);
+    --color-warning-foreground: var(--color-foreground);
+    --color-danger: var(--color-red-600);
+    --color-danger-foreground: #ffffff;
+
+    /* lines */
+    --color-border: var(--color-gray-300);
+    /* brand-tokens' ebony-clay-400: a blue-gray like today's border, dark enough for 3:1 */
+    --color-input: #8992b2;
+    --color-ring: var(--color-blue-500);
+
+    /* deprecated: use --color-background */
+    --background-color: var(--color-background);
+
+    /* spacing: --spacing-N equals Tailwind's p-N */
+    --spacing: 0.25rem;
+    --spacing-1: var(--spacing);
+    --spacing-2: calc(var(--spacing) * 2);
+    --spacing-3: calc(var(--spacing) * 3);
+    --spacing-4: calc(var(--spacing) * 4);
+    --spacing-5: calc(var(--spacing) * 5);
+    --spacing-6: calc(var(--spacing) * 6);
+    --spacing-7: calc(var(--spacing) * 7);
+    --spacing-8: calc(var(--spacing) * 8);
+
+    /* type: body text is text-sm, as in Tailwind's dense layouts */
+    --text-xs: 0.75rem;
+    --text-sm: 0.85rem;
+    --text-base: 1rem;
+
+    /* deprecated: use the --text-* names */
+    --font-size-small: var(--text-xs);
+    --font-size-medium: var(--text-sm);
+    --font-size-large: var(--text-base);
+
+    /* form fields: the height is one line plus the vertical padding and two 1px borders */
+    --field-height-medium: calc(1.5em + 2 * var(--field-padding-y-medium) + 2px);
+    --field-height-small: calc(1.5em + 2 * var(--field-padding-y-small) + 2px);
+    --field-height-large: calc(1.5em + 2 * var(--field-padding-y-large) + 2px);
+    --field-padding-y-medium: 0.375rem;
+    --field-padding-x-medium: 0.75rem;
+    --field-padding-y-small: 0.25rem;
+    --field-padding-x-small: 0.5rem;
+    --field-padding-y-large: 0.5rem;
+    --field-padding-x-large: 1rem;
+    --field-radius-medium: var(--spacing-1);
+    --field-radius-small: 0.2rem;
+    --field-radius-large: 0.3rem;
+}
