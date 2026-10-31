@@ -1280,6 +1280,10 @@ class MinimalJobWrapper(HasResourceParameters):
             os.mkdir(self.working_directory)
 
         job = self._load_job()
+        if (dynamic_tool := job.dynamic_tool) is not None and not dynamic_tool.public:
+            # The owner's execution role is checked when the job is created and again
+            # here, so revoking it also fails jobs that are already queued.
+            self.app.dynamic_tool_manager.ensure_can_use_unprivileged_tool(job.user)
 
         def get_special():
             stmt = select(model.JobExportHistoryArchive).filter_by(job=job).limit(1)

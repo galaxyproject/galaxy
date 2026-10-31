@@ -96,8 +96,10 @@ class DynamicToolManager(ModelManager[DynamicTool]):
 
     model_class = DynamicTool
 
-    def ensure_can_use_unprivileged_tool(self, user: model.User):
-        if not any(role.type == model.Role.types.USER_TOOL_EXECUTE and not role.deleted for role in user.all_roles()):
+    def ensure_can_use_unprivileged_tool(self, user: Optional[model.User]):
+        if user is None or not any(
+            role.type == model.Role.types.USER_TOOL_EXECUTE and not role.deleted for role in user.all_roles()
+        ):
             raise exceptions.InsufficientPermissionsException("User is not allowed to run unprivileged tools")
 
     def ensure_beta_tool_formats_enabled(self) -> None:
