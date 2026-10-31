@@ -148,6 +148,8 @@
 </template>
 
 <script>
+import { storeToRefs } from "pinia";
+
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import {
     addTagsToSelectedContent,
@@ -187,7 +189,8 @@ export default {
     },
     setup() {
         const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
+        const { collectionsCreated } = storeToRefs(useCollectionBuilderItemSelection());
+        return { config, isConfigLoaded, collectionsCreated };
     },
     data: function () {
         return {
@@ -296,6 +299,9 @@ export default {
                 this.$emit("update:show-selection", true);
             }
         },
+        collectionsCreated() {
+            this.createdCollection();
+        },
     },
     methods: {
         listWizard(advanced) {
@@ -310,6 +316,9 @@ export default {
             } else {
                 this.$router.push(`/collection/new_list?advanced=${advanced}`);
             }
+        },
+        createdCollection() {
+            this.$emit("update:show-selection", false);
         },
         // Selected content manipulation, hide/show/delete/purge
         hideSelected() {
