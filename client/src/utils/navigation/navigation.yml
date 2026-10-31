@@ -339,6 +339,8 @@ history_panel:
       show_button: '.show-history-content-selectors-btn'
       action_button: '.history-contents-list-action-menu-btn'
       action_menu: '.list-action-menu .dropdown-menu'
+      selected_content_menu: '[data-description="selected content menu"]'
+      item_selector: '.content-item .selector'
 
     labels:
       build_pair: "Build Dataset Pair"

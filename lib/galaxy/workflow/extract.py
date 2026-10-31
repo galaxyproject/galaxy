@@ -881,7 +881,7 @@ def extract_steps_by_ids(
     job_step_labels: dict[int, str] = {}
     icj_step_labels: dict[int, str] = {}
     for label_hint in step_labels or []:
-        if label_hint.kind == "job":
+        if label_hint.src == "job":
             job_step_labels[label_hint.id] = label_hint.label
         else:
             icj_step_labels[label_hint.id] = label_hint.label
@@ -1021,15 +1021,15 @@ def extract_steps_by_ids(
     _connect_parameter_inputs(trans, job_steps)
 
     for output_label in output_labels:
-        kind = output_label.kind
+        src = output_label.src
         content_id = output_label.id
         label = output_label.label
-        normalized_kind, normalized_content_id = normalize_output_label_key(trans, kind, content_id)
-        id_key = output_label_to_id_key(normalized_kind, normalized_content_id)
+        normalized_src, normalized_content_id = normalize_output_label_key(trans, src, content_id)
+        id_key = output_label_to_id_key(normalized_src, normalized_content_id)
         output_pair = id_to_output_pair.get(id_key)
         if output_pair is None:
             raise exceptions.RequestParameterInvalidException(
-                f"output_labels includes {kind} id {content_id} that was not produced by a selected extraction step"
+                f"output_labels includes {src} id {content_id} that was not produced by a selected extraction step"
             )
         step, output_name = output_pair
         step.create_or_update_workflow_output(output_name=output_name, label=label, uuid=None)
