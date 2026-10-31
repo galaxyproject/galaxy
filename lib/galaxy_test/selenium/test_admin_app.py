@@ -183,12 +183,13 @@ class TestAdminApp(SeleniumTestCase):
             )
             self.screenshot("admin_jobs_stopped")
 
-            jobs = self.dataset_populator._get(
-                "jobs", {"history_id": history_id, "view": "admin_job_list", "tool_id": "cat_data_and_sleep"}
-            ).json()
-            job = next(job for job in jobs if job["id"] == job_id)
-            assert job["state"] in ("deleting", "deleted"), job
-            assert job["info"] == "selenium maintenance", job
+            output_id = run["outputs"][0]["id"]
+
+            def output_stopped_with_message(*_):
+                output = self.dataset_populator.get_history_dataset_details_raw(history_id, output_id).json()
+                return output["deleted"] and output["misc_info"] == "selenium maintenance"
+
+            self._wait_on(output_stopped_with_message, "output deleted with the stop message")
         finally:
             # Don't leave a 10 minute job running if the UI failed to stop it.
             self.dataset_populator.cancel_job(job_id)
