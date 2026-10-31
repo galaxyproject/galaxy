@@ -1834,6 +1834,7 @@ class NavigatesGalaxy(HasDriver):
         self.components.workflows.workflow_drop_down.wait_for_and_click()
         self.components.workflows.view_external_link.wait_for_and_click()
 
+    @retry_during_transitions
     def workflow_index_click_tag_display(self, workflow_index=0):
         workflow_element = self.workflow_card_element(workflow_index=workflow_index)
         workflow_element.find_element(By.CSS_SELECTOR, ".stateless-tags .headless-multiselect .toggle-button").click()
