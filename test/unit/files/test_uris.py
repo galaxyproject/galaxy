@@ -1,13 +1,18 @@
 import ipaddress
 
 import pytest
+import requests
+import responses
 
 from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
+    MessageException,
     RequestParameterInvalidException,
 )
 from galaxy.files.uris import (
+    get_checking_every_redirect,
+    refuse_a_private_address,
     validate_non_local,
     validate_uri_access,
 )
@@ -65,6 +70,46 @@ def test_validate_non_local_strips_surrounding_whitespace():
     # slip through to getaddrinfo and raise an opaque error.
     assert validates_as_non_local("  http://google.com/x  ", [])
     assert validates_as_non_local("\thttp://google.com/x\n", [])
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_refuse_a_private_address_parses_the_url_as_requests_does():
+    refuse_a_private_address("https://google.com/api", [], "Repo", "https://example.org/api")
+    refuse_a_private_address("http://[::1]:8080/api", [ipaddress.ip_address("::1")], "Repo", "https://example.org/api")
+    for private in ("HTTP://127.0.0.1/api", "http://[::1]:8080/api", " http://169.254.169.254/latest"):
+        with pytest.raises(ConfigDoesNotAllowException, match="Repo points to .* fetch_url_allowlist"):
+            refuse_a_private_address(private, [], "Repo", "https://example.org/api")
+    for malformed in ("ftp://google.com/api", "google.com/api", "http:///api"):
+        with pytest.raises(MessageException, match="Repo needs an http or https URL like https://example.org/api"):
+            refuse_a_private_address(malformed, [], "Repo", "https://example.org/api")
+
+
+@responses.activate
+def test_get_checking_every_redirect_checks_each_hop_before_requesting_it():
+    responses.get("http://a.test/start", status=302, headers={"Location": "http://b.test/next"})
+    responses.get("http://b.test/next", status=302, headers={"Location": "/end"})
+    responses.get("http://b.test/end", body=b"done")
+    checked: list[str] = []
+
+    def headers_for(url):
+        return {"X-Origin": url.split("/")[2]}
+
+    with get_checking_every_redirect("http://a.test/start", checked.append, headers_for) as response:
+        assert response.content == b"done"
+    assert checked == ["http://a.test/start", "http://b.test/next", "http://b.test/end"]
+    assert [call.request.headers["X-Origin"] for call in responses.calls] == ["a.test", "b.test", "b.test"]
+
+    def refuse_b(url):
+        if "b.test" in url:
+            raise ConfigDoesNotAllowException()
+
+    with pytest.raises(ConfigDoesNotAllowException):
+        with get_checking_every_redirect("http://a.test/start", refuse_b, headers_for):
+            pass
+    assert len(responses.calls) == 4
+    with pytest.raises(requests.exceptions.TooManyRedirects):
+        with get_checking_every_redirect("http://a.test/start", checked.append, headers_for, max_redirects=1):
+            pass
 
 
 def validates_as_non_local(uri: str, allow_list):
