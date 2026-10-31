@@ -3491,6 +3491,65 @@ input_data:
             assert output_details["extension"] == "expression.json"
             assert output_details["misc_blurb"] == "skipped"
 
+    def test_pick_value_from_filtered_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs: []
+steps:
+  producer:
+    tool_id: output_filter
+    state:
+      produce_out_1: false
+      filter_text_1: foo
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: producer/out_1
+      input_1: producer/out_2
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+            content = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=invocation["outputs"]["picked"]["id"]
+            )
+            assert content.strip() == "2"
+
+    def test_optional_multiple_input_from_filtered_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs: []
+steps:
+  producer:
+    tool_id: output_filter
+    state:
+      produce_out_1: false
+      filter_text_1: foo
+  consumer:
+    tool_id: multi_data_optional
+    in:
+      input1:
+        - producer/out_1
+        - producer/out_2
+outputs:
+  consumed:
+    outputSource: consumer/out1
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+            content = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=invocation["outputs"]["consumed"]["id"]
+            )
+            assert content.strip() == "2"
+
     def test_pick_value_the_only_non_null(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
