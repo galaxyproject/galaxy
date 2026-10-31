@@ -35,6 +35,7 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -63,6 +64,7 @@ _FileSignature = tuple[int, int, int]
 # pysqlite's 5s default is too short for slow commits (network/FUSE
 # filesystems) when several processes write one store.
 SQLITE_BUSY_TIMEOUT_SECONDS = 60
+SCHEMA_CREATE_ATTEMPTS = 3
 
 
 _P = ParamSpec("_P")
@@ -163,15 +165,29 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             # Only auto-create schema on local/file backends. For shared
             # databases the operator should manage migrations explicitly
             # to avoid surprises.
-            _metadata.create_all(self._engine)
+            self._create_schema()
         elif not read_only:
             # Best-effort create_all on remote backends - harmless if
             # tables already exist.
             try:
-                _metadata.create_all(self._engine)
+                self._create_schema()
             except Exception as e:
                 log.error(f"could not auto-create tool source tables on {self._engine.url.drivername!r}: {e}")
         self._Session = sessionmaker(bind=self._engine, future=True)
+
+    def _create_schema(self) -> None:
+        # ``create_all`` checks for each table/index and then issues DDL
+        # non-atomically, so another process initializing the same empty
+        # database can create an object in between. Retry: the existence
+        # check then sees it. Other errors propagate unchanged.
+        for attempt in range(SCHEMA_CREATE_ATTEMPTS):
+            try:
+                _metadata.create_all(self._engine)
+                return
+            except OperationalError as e:
+                if "already exists" not in str(e) or attempt == SCHEMA_CREATE_ATTEMPTS - 1:
+                    raise
+                log.debug("concurrent tool source schema creation detected, retrying: %s", e)
 
     def _is_remote_engine(self) -> bool:
         return self._engine.url.drivername.split("+")[0] not in {"sqlite"}

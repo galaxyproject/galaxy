@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from sqlalchemy import event
+from sqlalchemy.exc import OperationalError
 
 import galaxy.tools.source_store.sqlalchemy as sqlalchemy_store_module
 from galaxy.tools.source_store import (
@@ -201,3 +202,34 @@ def test_writes_from_threads_are_serialized(sqlite_path):
 
     assert max_open_writes == 1
     assert store.count() == 8
+
+
+def test_concurrent_schema_creation_race_is_tolerated(sqlite_path, monkeypatch):
+    """Another process creating the schema between the existence check and DDL must not crash."""
+    metadata = sqlalchemy_store_module._metadata
+    real_create_all = metadata.create_all
+    calls = []
+
+    def racing_create_all(bind, *args, **kwargs):
+        calls.append(1)
+        if len(calls) == 1:
+            # Simulate a competing process winning the race: tables get created
+            # after our existence check, so our DDL hits "already exists".
+            real_create_all(bind)
+            return real_create_all(bind, checkfirst=False)
+        return real_create_all(bind, *args, **kwargs)
+
+    monkeypatch.setattr(metadata, "create_all", racing_create_all)
+    store = SqliteToolSourceStore(_sqlite_url(sqlite_path))
+    assert len(calls) == 2
+    store.store(_source())
+    assert store.get("h1") is not None
+
+
+def test_schema_creation_propagates_unrelated_operational_errors(sqlite_path, monkeypatch):
+    def failing_create_all(bind, *args, **kwargs):
+        raise OperationalError("CREATE TABLE", {}, Exception("disk I/O error"))
+
+    monkeypatch.setattr(sqlalchemy_store_module._metadata, "create_all", failing_create_all)
+    with pytest.raises(OperationalError):
+        SqliteToolSourceStore(_sqlite_url(sqlite_path))
