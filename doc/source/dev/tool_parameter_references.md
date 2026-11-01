@@ -64,7 +64,9 @@ Terms used throughout:
 - **Lexical scope**: a parameter's own grouping level plus the levels enclosing it, as written in
   the tool.
 - **File flavor** and **modelled** YAML tools: a `.yml` file loaded from disk unvalidated, versus a
-  tool posted through the API and validated by pydantic models (see [YAML](#yaml)).
+  tool posted through the API and validated by pydantic models. Separately, a YAML tool that
+  declares `class` is read in the **canonical** dialect (`parameters:`), and a classless one in the
+  **legacy** dialect (`blocks:`) (see [YAML](#yaml)).
 
 Repeats are where the styles diverge the most:
 
@@ -135,15 +137,15 @@ passes the reference string to the XML resolver unchanged, so the XML rules, inc
 fallbacks, apply. The differences come from which features and groupings YAML supports, and from
 the expression language.
 
-| Topic                                    | XML                                                                                                                             | YAML                                                                                                             |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Groupings                                | sections, conditionals, repeats                                                                                                 | file flavor: conditionals and repeats (`blocks:`); modelled: conditionals only; sections: neither                |
-| Command language                         | Cheetah, dotted path with a bare-name fallback                                                                                  | JavaScript dotted path over `inputs` (modelled tools require it); Cheetah `command:` in file flavor only         |
-| Output attributes (`format_source`, ...) | pipe paths, checked by linters                                                                                                  | the same pipe paths, inside a JavaScript-style tool, not validated against declared inputs                       |
-| Features absent from YAML                | n/a                                                                                                                             | `change_format`, `<filter>`, `<actions>`, environment variables, dynamic options; `data_ref` in file flavor only |
-| Test inputs                              | nested elements or flat `cond\|input1`; bare names up to profile 24.1                                                           | nested dicts only; flat and bare keys rejected (unless `expect_failure`)                                         |
-| Default profile                          | `16.01`, so legacy behavior applies                                                                                             | `24.2`, so `structured_like: input1` still resolves                                                              |
-| Linting of references                    | `OutputsFormatSourceReference`, `OutputsStructuredLikeReference` (repeat-aware; `metadata_source` and `type_source` not linted) | none for output attributes; modelled tools check only the first name after `inputs.`                             |
+| Topic                                    | XML                                                                                                                             | YAML                                                                                                                     |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Groupings                                | sections, conditionals, repeats                                                                                                 | canonical (`class` declared): sections, conditionals, repeats; legacy (classless): conditionals and repeats, no sections |
+| Command language                         | Cheetah, dotted path with a bare-name fallback                                                                                  | JavaScript dotted path over `inputs` (modelled tools require it); Cheetah `command:` in file flavor only                 |
+| Output attributes (`format_source`, ...) | pipe paths, checked by linters                                                                                                  | the same pipe paths, inside a JavaScript-style tool, not validated against declared inputs                               |
+| Features absent from YAML                | n/a                                                                                                                             | `change_format`, `<filter>`, `<actions>`, environment variables, dynamic options; `data_ref` in file flavor only         |
+| Test inputs                              | nested elements or flat `cond\|input1`; bare names up to profile 24.1                                                           | nested dicts only; flat and bare keys rejected (unless `expect_failure`)                                                 |
+| Default profile                          | `16.01`, so legacy behavior applies                                                                                             | `24.2`, so `structured_like: input1` still resolves                                                                      |
+| Linting of references                    | `OutputsFormatSourceReference`, `OutputsStructuredLikeReference` (repeat-aware; `metadata_source` and `type_source` not linted) | none for output attributes; modelled tools check only the first name after `inputs.`                                     |
 
 When adding a feature that references parameters, the YAML side is where the inconsistency shows:
 one tool mixes `inputs.cond.input1` in its command with `cond|input1` in its outputs.
@@ -402,18 +404,22 @@ When mapped over, it is resolved like `structured_like`, so conditionals work an
 ### YAML
 
 YAML tools write their command in JavaScript dotted paths, but their output attributes are pipe
-paths resolved by the XML code, and their tests use nested state. They also support fewer groupings
-than XML: **modelled tools can load only conditionals, file-flavor tools conditionals and repeats,
-and neither can load sections** (see the warning below).
+paths resolved by the XML code, and their tests use nested state. Which groupings load depends on
+the dialect: **a tool that declares `class` loads sections, conditionals and repeats; a classless
+file loads conditionals and repeats, but no sections**.
 
-Both flavors end up in the same parser, `YamlToolSource` in `galaxy.tool_util.parser.yaml`, but
-they accept different input shapes:
+Two independent axes decide how a YAML tool is read. Its **dialect** is chosen by `class`:
+`class: GalaxyTool` or `GalaxyUserTool` selects the canonical reader (`CanonicalYamlInputSource`),
+which nests repeat and section children under `parameters:`; a classless file keeps the legacy
+reader (`YamlInputSource`), which nests repeat children under `blocks:` and has no `section` type.
+Its **validation** is chosen by how it is loaded:
 
 - **File flavor**: a `.yml` tool on disk, loaded by `get_tool_source` when beta tool formats are
   enabled. `class` is optional (`GalaxyTool` or absent). The raw dict goes straight to the parser
-  and nothing validates it first. This is the shape `test/functional/tools/simple_constructs.yml`
-  uses: repeats nest under `blocks:`, a conditional can use a `when:` mapping, and the command can
-  be a Cheetah `command:` or a JavaScript `shell_command:`.
+  and nothing validates it first. `test/functional/tools/simple_constructs.yml` is a file-flavor
+  tool that declares `class: GalaxyTool`; a conditional can still use a `when:` mapping, and the
+  command can be a Cheetah `command:` or a JavaScript `shell_command:`. No in-tree test tool uses
+  the classless `blocks:` dialect any more.
 - **Modelled**: `class: GalaxyTool` posted to `/api/dynamic_tools` (admin), or
   `class: GalaxyUserTool` posted to `/api/unprivileged_tools`. Both are validated first by the
   pydantic models in `galaxy.tool_util_models` (`YamlToolSource` and `UserToolSource` in
@@ -443,15 +449,8 @@ YAML tools use four of the five styles:
 
 #### Running Example in YAML
 
-The following example shows how the models represent the running example. It is illustrative
-and cannot currently be loaded:
-
-```{warning}
-The parser has no `section` input type (`Unknown Galaxy parameter type section`). It also reads
-repeat children from `blocks:`, which the models forbid, so a modelled repeat fails with
-`KeyError: 'blocks'`. Modelled YAML tools currently support only conditionals among the groupings;
-file-flavor tools support conditionals and repeats (`blocks:`). Neither supports sections.
-```
+The running example as a `GalaxyUserTool`, which passes model validation and loads with all
+three groupings:
 
 ```yaml
 class: GalaxyUserTool
@@ -504,7 +503,7 @@ outputs:
     from_work_dir: out.txt
 ```
 
-As a file-flavor tool, the example has to drop `adv`. Its repeat looks like this:
+A classless file would have to drop `adv` and nest the repeat under `blocks:`:
 
 ```yaml
 - name: queries
@@ -517,13 +516,11 @@ As a file-flavor tool, the example has to drop `adv`. Its repeat looks like this
 
 <details><summary>Verification</summary>
 
-- **Tested:** [`test_repeat_of_data` and `test_section_recurses`](https://github.com/galaxyproject/galaxy/blob/dev/test/unit/tool_util/test_yaml_parameters.py)
-  validate authoring models and call `to_internal()`. They establish model conversion, not loading
-  through `YamlToolSource`.
-- **Source-inspected:** [`YamlInputSource`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tool_util/parser/yaml.py) reads repeat
-  children from `blocks:`; [`_from_input_source_galaxy`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tool_util/parameters/factory.py)
-  rejects an unknown leaf type such as `section`.
-- **Unverified:** add a parser/loading regression test that crosses this model/parser boundary.
+- **Tested:** [`test_repeat_contract` and `test_section_contract`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/api/test_user_tool_contract.py)
+  load class-declaring repeat and section tools from disk, API YAML and API JSON, and assert form
+  defaults and the `$(inputs)` values.
+- **Source-inspected:** the classless [`YamlInputSource`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tool_util/parser/yaml.py)
+  still reads repeat children from `blocks:` and has no `section` type.
 
 </details>
 
@@ -540,8 +537,7 @@ converted for runtime by `runtimeify` (see [Tool State](tool_state.md)). In that
 - A repeat is an array of objects: `inputs.queries[1].input2.path`, or
   `inputs.queries.map((q) => q.input2.path)`. Nested repeats are nested arrays:
   `inputs.outer[0].inner[1].x`.
-- A section would be an object (`inputs.adv.size`, the form the model's own examples use), but
-  sections do not load today.
+- A section is an object: `inputs.adv.size`.
 - A data input is a CWL `File`-like object, so `.path` is required to get a path. A collection input
   exposes its elements as `.elements`, for example `inputs.f1.elements.forward.path`.
 - Dotted and bracketed property access (`inputs.cond['input1'].path`) both work. Pipe paths are not
@@ -560,7 +556,9 @@ Validation and runtime caveats:
 - The tool editor types `inputs` from `/api/unprivileged_tools/runtime_model`. There a conditional
   is a `oneOf` of one object per case, keyed on the test parameter's value.
 - Jobs without a stored tool state, for example jobs from the legacy run API, fall back to the
-  deprecated `to_cwl` conversion. Whether that produces the same shape is unverified.
+  deprecated `to_cwl` conversion after dropping `__index__` and `__current_case__`. For
+  class-declaring conditional, repeat and section tools, the contract tests assert the same
+  `inputs` shape across legacy, `21.01` and request submissions.
 - `configfiles` always use JavaScript. A file-flavor tool that pairs Cheetah `command:` with
   `configfiles` evaluates them against a Cheetah `param_dict` that has no `inputs` key. This
   combination is untested.
@@ -574,8 +572,11 @@ Validation and runtime caveats:
   Neither establishes that Cheetah `command:` works with JavaScript configfiles.
 - **Source-inspected:** [`UserToolEvaluator.build_param_dict`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/evaluation.py)
   selects `runtimeify` when validated job state exists, otherwise `to_cwl`.
-- **Unverified:** runtime-shape parity between those paths and the mixed-language configfile case
-  need execution checks.
+- **Tested:** [`test_user_tool_contract.py`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/api/test_user_tool_contract.py)
+  runs its repeat, section and conditional tools under each `tool_input_format` and asserts the same
+  `$(inputs)` JSON.
+- **Unverified:** the mixed-language configfile case and classless tools' runtime shape need
+  execution checks.
 
 </details>
 
@@ -1134,8 +1135,7 @@ a test that asserts the outcome, then update the relevant claim and verification
 | Behavior                                    | Check needed to close the gap                                                                                                                                                      | Test level                          |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | Repeat-indexed `default_identifier_source`  | Map over `queries_0\|input2` and assert output element identifiers; also assert the behavior for an unmatched source                                                               | API execution with an XML test tool |
-| Modelled YAML groupings                     | Pass section and repeat definitions through model validation and actual tool loading; assert the parser/model mismatch, then update the compatibility warning if support changes   | Parser/loading regression           |
-| Legacy YAML runtime state                   | Execute the same conditional/repeat file-flavor tool through legacy and request submission; assert the values and paths exposed to JavaScript                                      | API execution with a YAML test tool |
+| Classless YAML runtime state                | Execute the same conditional/repeat classless (`blocks:`) tool through legacy and request submission; assert the values and paths exposed to JavaScript                            | API execution with a YAML test tool |
 | Cheetah command with JavaScript configfiles | Load a file-flavor tool combining `command:` and a configfile that reads `inputs`; assert the resulting content or explicit failure                                                | Tool execution                      |
 | Job resources through `/api/jobs`           | Configure injected resource inputs and submit a tool test with resource overrides through the request API; assert both acceptance and the applied values                           | Integration/API execution           |
 | Workflow repeat augmentation                | Import and invoke connections to nested repeats and repeats beneath sections/conditionals, starting without the required instances; distinguish path lookup from instance creation | Workflow API execution              |
