@@ -64,7 +64,7 @@ def test_default_volumes_do_not_expose_job_directory(container_class, job_direct
     if job_directory_type == "pulsar":
         assert f"{JOB_DIRECTORY}/unstructured" in sources
         # Mount sources must exist before the container starts, Pulsar creates this one lazily.
-        assert f'mkdir -p "{JOB_DIRECTORY}/unstructured"' in command
+        assert f"mkdir -p {JOB_DIRECTORY}/unstructured" in command
     else:
         # Galaxy creates the mounted subdirectories with the job directory.
         assert "mkdir -p" not in command

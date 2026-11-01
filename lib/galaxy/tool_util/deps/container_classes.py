@@ -1,4 +1,5 @@
 import os
+import shlex
 import string
 from abc import (
     ABCMeta,
@@ -358,7 +359,7 @@ def _create_job_directory_subdirectories_command(job_info: "JobInfo") -> str:
     """
     if not job_info.job_directory or job_info.job_type != "tool" or job_info.job_directory_type != "pulsar":
         return ""
-    return f'mkdir -p "{os.path.join(job_info.job_directory, "unstructured")}"'
+    return f"mkdir -p {shlex.quote(os.path.join(job_info.job_directory, 'unstructured'))}"
 
 
 class HasDockerLikeVolumes:
