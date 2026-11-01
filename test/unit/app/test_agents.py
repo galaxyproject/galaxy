@@ -1348,6 +1348,23 @@ class TestAgentUnitMocked:
         assert len(replayed) < 50_000
 
     @pytest.mark.asyncio
+    async def test_error_analysis_keeps_the_newest_turn_when_it_nearly_fills_the_budget(self):
+        """A History reply that fits the budget alone but not with its request mustn't take the
+        request down with it -- then the reply dangles, gets dropped too, and nothing is replayed."""
+        self.mock_config.ai_model = "gpt-4o"
+        agent = ErrorAnalysisAgent(self.deps)
+        seen: list[ModelMessage] = []
+        history: list[ModelMessage] = [
+            ModelRequest(parts=[UserPromptPart(content="did anything in my history fail? " + "x" * 3_000)]),
+            ModelResponse(parts=[TextPart(content=f"tool {MIRDEEP2_TOOL_ID} failed\n" + "ok dataset\n" * 3_400)]),
+        ]
+
+        with agent.agent.override(model=FunctionModel(_structured_error_analysis(seen))):
+            await agent.process("why did it fail?", context={"conversation_history": history})
+
+        assert MIRDEEP2_TOOL_ID in _message_texts(seen)
+
+    @pytest.mark.asyncio
     async def test_subject_survives_routing_into_error_analysis(self):
         """End to end through the router: tool named by a History reply, then a clarification,
         then a follow-up without the tool's name that routes to error analysis. The tool has to
