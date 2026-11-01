@@ -328,7 +328,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
             log.exception("Could not delete blob '%s' from Azure", rel_path)
             return False
 
-    def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
+    def _get_object_url(self, obj, content_disposition=None, content_type=None, expires_in=None, **kwargs):
         if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
@@ -340,7 +340,8 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                     container_name=self.container_name,
                     blob_name=rel_path,
                     permission=BlobSasPermissions(read=True),
-                    expiry=now() + timedelta(seconds=self.direct_download_expires_in),
+                    expiry=now()
+                    + timedelta(seconds=self.direct_download_expires_in if expires_in is None else expires_in),
                     content_disposition=content_disposition,
                     content_type=content_type,
                 )

@@ -9,11 +9,13 @@ staging read it from a path on Galaxy's disk, the checks below would fail.
 import os
 import string
 import time
+from unittest import mock
 
 import requests
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.managers import job_object_staging
 from galaxy.managers.job_object_staging import input_url
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy_test.base.populators import DatasetPopulator
@@ -71,7 +73,8 @@ class TestPulsarObjectStagingStream(BaseObjectStoreIntegrationTestCase):
     @classmethod
     def setUpClass(cls):
         cls.container_name = f"{cls.__name__}_container"
-        start_seaweedfs(cls.container_name)
+        # The store refuses unsigned and expired requests, as a real one does.
+        start_seaweedfs(cls.container_name, require_auth=True)
         super().setUpClass()
 
     @classmethod
@@ -171,6 +174,24 @@ class TestPulsarObjectStagingRedirect(TestPulsarObjectStagingStream):
         assert OBJECT_STORE_HOST in location
         assert requests.get(location).text == INPUT_CONTENT
         assert not os.path.exists(self._cache_path(hda_dict))
+
+    def test_presigned_url_soon_expires_but_the_staging_url_keeps_working(self):
+        history_id = self.dataset_populator.new_history()
+        hda_dict = self.dataset_populator.new_dataset(history_id, content=INPUT_CONTENT, wait=True)
+        hda = self._hda(hda_dict)
+        assert hda.dataset is not None
+        job = self._running_job_with_input(hda)
+        expires = int(time.time()) + 3600
+        url = input_url(
+            self._app.security, self.url.rstrip("/"), job.id, "dataset", hda.dataset.id, expires, redirect=True
+        )
+
+        with mock.patch.object(job_object_staging, "REDIRECT_URL_LIFETIME_SECONDS", 1):
+            location = requests.get(url, allow_redirects=False).headers["Location"]
+            time.sleep(2)
+            assert requests.get(location).status_code == 403
+            # A retry or resume asks Galaxy again, which presigns a new URL.
+            assert requests.get(url).text == INPUT_CONTENT
 
     def _running_job_with_input(self, hda):
         """A job whose handler is unknown, so its state stays as set here."""
