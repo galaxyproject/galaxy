@@ -1,4 +1,3 @@
-import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -11,7 +10,7 @@ const mockRoute = vi.hoisted(() => ({ path: "/workflows/trs_import", query: {} a
 const mockPush = vi.hoisted(() => vi.fn());
 const mockImportTrsToolFromUrl = vi.hoisted(() => vi.fn());
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: () => mockRoute,
     useRouter: () => ({ push: mockPush }),
 }));
@@ -30,8 +29,7 @@ vi.mock("@/components/Workflow/services", () => ({
 async function mountWithQuery(query: Record<string, string>) {
     mockRoute.query = query;
     const wrapper = mount(WorkflowImport as object, {
-        localVue: getLocalVue(),
-        pinia: createTestingPinia({ createSpy: vi.fn }),
+        global: getLocalVue(),
     });
     await flushPromises();
     return wrapper;
