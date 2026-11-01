@@ -770,7 +770,7 @@ class FileParameter(MetadataParameter):
             return MetadataTempFile(metadata_tmp_files_dir=metadata_tmp_files_dir, **kwds)
 
 
-class MetadataTempFilePathError(Exception):
+class MetadataTempFilePathError(ValueError):
     def __init__(self, path):
         super().__init__(f"Metadata temp file '{path}' is outside the job's metadata directory.")
 

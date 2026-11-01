@@ -99,6 +99,7 @@ from galaxy.model import (
     store,
     Task,
 )
+from galaxy.model.metadata import MetadataTempFilePathError
 from galaxy.model.store import copy_dataset_instance_metadata_attributes
 from galaxy.model.store.discover import (
     MaxDiscoveredFilesExceededError,
@@ -2228,13 +2229,17 @@ class MinimalJobWrapper(HasResourceParameters):
                 else:
                     dataset.state = model.HistoryDatasetAssociation.states.FAILED_METADATA
             else:
-                self.external_output_metadata.load_metadata(
-                    dataset,
-                    output_name,
-                    self.sa_session,
-                    working_directory=self.working_directory,
-                    remote_metadata_directory=remote_metadata_directory,
-                )
+                try:
+                    self.external_output_metadata.load_metadata(
+                        dataset,
+                        output_name,
+                        self.sa_session,
+                        working_directory=self.working_directory,
+                        remote_metadata_directory=remote_metadata_directory,
+                    )
+                except MetadataTempFilePathError as e:
+                    log.warning("(%s) Rejected metadata for output %s: %s", job.id, output_name, e)
+                    dataset.state = model.HistoryDatasetAssociation.states.FAILED_METADATA
             if final_job_state != job.states.ERROR:
                 line_count = context.get("line_count", None)
                 dataset.set_peek(line_count=line_count)
