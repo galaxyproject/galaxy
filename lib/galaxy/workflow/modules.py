@@ -1800,11 +1800,15 @@ class InputParameterModule(WorkflowModule):
                 # likely most important for parent workflows, where they run on primitive values.
                 input_param.validate(input_value, trans)
         except ValueError as e:
+            details = str(e)
+            if isinstance(e, ParameterValueError):
+                # Match run_request.py: name the step, not the runtime parameter "input".
+                details = f"{self.label or invocation_step.workflow_step.order_index + 1}: {e.message_suffix}"
             raise FailWorkflowEvaluation(
                 why=InvocationFailureWorkflowParameterInvalid(
                     reason=FailureReason.workflow_parameter_invalid,
                     workflow_step_id=invocation_step.workflow_step.id,
-                    details=str(e),
+                    details=details,
                 )
             )
         step_outputs = dict(output=input_value)

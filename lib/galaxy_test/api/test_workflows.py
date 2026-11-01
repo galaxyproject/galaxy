@@ -5238,7 +5238,7 @@ steps:
             assert len(invocation_details["messages"]) == 1
             message = invocation_details["messages"][0]
             assert message["reason"] == "workflow_parameter_invalid"
-            assert message["details"] == "Parameter 'input': must start with moo"
+            assert message["details"] == "inner_text: must start with moo"
             assert message["workflow_step_index_path"] == [1]
             assert message["workflow_step_id"] == 0
 
