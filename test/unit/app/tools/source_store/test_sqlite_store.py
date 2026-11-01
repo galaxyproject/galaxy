@@ -1,12 +1,17 @@
 """Unit tests for the SQLite tool source store."""
 
 import os
+import subprocess
+import sys
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
-from sqlalchemy import event
+from sqlalchemy import (
+    event,
+    inspect,
+)
 
 import galaxy.tools.source_store.sqlalchemy as sqlalchemy_store_module
 from galaxy.tools.source_store import (
@@ -201,3 +206,51 @@ def test_writes_from_threads_are_serialized(sqlite_path):
 
     assert max_open_writes == 1
     assert store.count() == 8
+
+
+_OPEN_STORE_ON_SIGNAL = """
+import os, sys, time
+from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
+url, ready, go = sys.argv[1:]
+open(ready, "w").close()
+while not os.path.exists(go):
+    time.sleep(0.001)
+SqlAlchemyToolSourceStore(url=url).dispose()
+"""
+
+
+def test_processes_opening_a_new_store_concurrently_all_succeed(sqlite_path):
+    """Independent processes opening one new database must not race on its schema."""
+    workdir = os.path.dirname(sqlite_path)
+    go = os.path.join(workdir, "go")
+    ready_files = [os.path.join(workdir, f"ready-{i}") for i in range(8)]
+    env = dict(os.environ, PYTHONPATH=os.pathsep.join(sys.path))
+    processes = [
+        subprocess.Popen(
+            [sys.executable, "-c", _OPEN_STORE_ON_SIGNAL, _sqlite_url(sqlite_path), ready, go],
+            env=env,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        for ready in ready_files
+    ]
+    try:
+        deadline = time.monotonic() + 120
+        while not all(os.path.exists(ready) for ready in ready_files):
+            assert all(p.poll() is None for p in processes), "a store process exited before the start signal"
+            assert time.monotonic() < deadline, "store processes did not start"
+            time.sleep(0.01)
+        open(go, "w").close()
+        errors = [p.communicate(timeout=120)[1] for p in processes]
+    finally:
+        for p in processes:
+            p.kill()
+    assert [p.returncode for p in processes] == [0] * len(processes), "\n".join(errors)
+
+    inspector = inspect(sqlalchemy_store_module.create_engine(_sqlite_url(sqlite_path)))
+    assert set(inspector.get_table_names()) == {"tool_source", "tool_index"}
+    assert {index["name"] for index in inspector.get_indexes("tool_source")} == {
+        "ix_tool_source_hash",
+        "ix_tool_source_source_path",
+        "ix_tool_source_tool_id",
+    }

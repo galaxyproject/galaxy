@@ -160,10 +160,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
         connect_args = {"timeout": SQLITE_BUSY_TIMEOUT_SECONDS} if is_sqlite else {}
         self._engine = create_engine(url, future=True, connect_args=connect_args)
         if not read_only and not self._is_remote_engine():
-            # Only auto-create schema on local/file backends. For shared
-            # databases the operator should manage migrations explicitly
-            # to avoid surprises.
-            _metadata.create_all(self._engine)
+            self._create_sqlite_schema()
         elif not read_only:
             # Best-effort create_all on remote backends - harmless if
             # tables already exist.
@@ -172,6 +169,21 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             except Exception as e:
                 log.error(f"could not auto-create tool source tables on {self._engine.url.drivername!r}: {e}")
         self._Session = sessionmaker(bind=self._engine, future=True)
+
+    def _create_sqlite_schema(self) -> None:
+        """Create missing tables and indexes as one transaction.
+
+        ``create_all`` checks for each table and then creates it in separate
+        statements, so processes opening a new database at the same time
+        can all see the table missing and all try to create it. Taking the
+        database write lock first makes the check and the DDL atomic across
+        processes. Later processes wait up to the busy timeout and then find
+        the complete schema.
+        """
+        with self._engine.connect() as connection:
+            connection.exec_driver_sql("BEGIN IMMEDIATE")
+            _metadata.create_all(connection)
+            connection.commit()
 
     def _is_remote_engine(self) -> bool:
         return self._engine.url.drivername.split("+")[0] not in {"sqlite"}
