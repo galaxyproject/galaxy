@@ -1,5 +1,6 @@
 """Unit tests for Pulsar job runner utility methods and client construction."""
 
+import queue
 from types import SimpleNamespace
 from typing import (
     Any,
@@ -35,6 +36,7 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.runners import (
     AsynchronousJobState,
+    ContainerNotAllowedError,
     pulsar as pulsar_runner,
 )
 from galaxy.jobs.runners.pulsar import (  # type: ignore[attr-defined]
@@ -375,3 +377,27 @@ def test_host_metadata_does_not_resolve_container(config):
     runner = _runner()
     wrapper = SimpleNamespace(job_destination=SimpleNamespace(params=config))
     assert runner._get_metadata_container(wrapper) is None
+
+
+def test_container_refusal_fails_job_without_resubmission():
+    runner = cast(Any, object.__new__(PulsarJobRunner))
+    runner.work_queue = queue.Queue()
+    client = SimpleNamespace(destination_params={"remote_container_handling": True}, setup=lambda *args: {})
+    runner.get_client_from_wrapper = lambda job_wrapper: client
+
+    def refuse(job_wrapper):
+        raise ContainerNotAllowedError("Container 'busybox' is not allowed")
+
+    runner._find_container = refuse
+    failures = []
+    job_wrapper = SimpleNamespace(
+        job_id=1,
+        tool=SimpleNamespace(id="cat", version="1.0", requires_galaxy_python_environment=False),
+        fail=lambda message, **kwargs: failures.append(message),
+    )
+
+    command_line, *_ = runner._PulsarJobRunner__prepare_job(job_wrapper, None)
+
+    assert command_line is None
+    assert failures == ["Container 'busybox' is not allowed"]
+    assert runner.work_queue.empty()

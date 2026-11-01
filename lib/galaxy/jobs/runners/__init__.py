@@ -100,6 +100,10 @@ GALAXY_LIB_ADJUST_TEMPLATE = """GALAXY_LIB="%s"; if [ "$GALAXY_LIB" != "None" ];
 GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then . "$GALAXY_VIRTUAL_ENV/bin/activate"; fi;"""
 
 
+class ContainerNotAllowedError(Exception):
+    """A user defined tool names a container image that the user_defined_tool_allowed_containers option does not allow."""
+
+
 class RunnerParams(ParamsWithSpecs):
     def _param_unknown_error(self, name):
         raise Exception(JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE % name)
@@ -386,7 +390,7 @@ class BaseJobRunner:
                 modify_command_for_container=modify_command_for_container,
                 stream_stdout_stderr=stream_stdout_stderr,
             )
-        except (ParameterValueError, ExpressionTemplateError) as e:
+        except (ParameterValueError, ExpressionTemplateError, ContainerNotAllowedError) as e:
             log.info("(%s) validation error preparing job: %s", job_id, unicodify(e))
             job_wrapper.fail(unicodify(e), exception=False)
             return False
@@ -638,6 +642,16 @@ class BaseJobRunner:
 
         tool = job_wrapper.tool
         assert tool
+        if tool.tool_type == "user_defined":
+            # Check the containers the tool declares, not the resolved container: container
+            # resolvers may map an allowed image to e.g. a cached Singularity image path.
+            allowlist = self.app.dynamic_tool_manager.container_allowlist
+            for container_description in tool.containers:
+                if not allowlist.allows(container_description.identifier):
+                    raise ContainerNotAllowedError(
+                        f"Container '{container_description.identifier}' is not allowed for user defined tools "
+                        f"on this Galaxy server. Allowed containers: {allowlist.describe()}"
+                    )
         if not compute_tool_directory:
             compute_tool_directory = str(tool.tool_dir) if tool.tool_dir is not None else None
 

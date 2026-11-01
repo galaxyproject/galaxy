@@ -6666,6 +6666,29 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_defined_tool_allowed_containers``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Container images that user defined tools may run in. User defined
+    tools run an arbitrary command in the image they name, so only
+    list images you trust. An entry ending in ``/*`` allows any image
+    below that registry or path, at any depth, with any tag or digest
+    (``quay.io/biocontainers/*``). An image without a tag or digest
+    allows any tag or digest of it (``docker.io/library/python``),
+    ``<image>:<tag>`` only that tag, and ``<image>@<digest>`` only
+    that digest. A lone ``*`` allows any image. An empty list allows
+    none, so no user defined tool can be created or run. References
+    are canonicalized before they are compared, so ``python`` and
+    ``docker.io/library/python`` are the same image. Tools are checked
+    when they are created and again when their jobs run. Malformed
+    entries prevent Galaxy from starting. See the user defined tools
+    admin documentation for details.
+:Default: ``['quay.io/biocontainers/*']``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beta_tool_formats``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -54,6 +54,7 @@ from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
+    ContainerNotAllowedError,
     JobState,
 )
 from galaxy.model.base import check_database_connection
@@ -658,6 +659,11 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 remote_job_directory=remote_job_directory,
                 metadata_container=metadata_container,
             )
+        except ContainerNotAllowedError as e:
+            # Fail without going through fail_job: resubmitting would fail the same way.
+            log.info("(%s) failure preparing job: %s", job_wrapper.job_id, unicodify(e))
+            job_wrapper.fail(unicodify(e))
+            return None, client, remote_job_config, compute_environment, remote_container
         except UnsupportedPulsarException:
             log.exception("failure running job %d, unsupported Pulsar target", job_wrapper.job_id)
             fail_or_resubmit = True
