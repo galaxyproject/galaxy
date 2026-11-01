@@ -66,8 +66,19 @@ def _is_written_out_handoff(text: str) -> bool:
     return isinstance(called, str) and ("hand_off_to_" in called or called.startswith("final_result"))
 
 
-def _direct_answer(text: str) -> str:
+def _direct_answer(ctx: RunContext[GalaxyAgentDependencies], text: str) -> str:
     if _is_written_out_handoff(text):
+        if ctx.retry >= ctx.max_retries:
+            # Out of retries, pydantic-ai would fail the run and the user would be told the AI
+            # service is down. Asking keeps the JSON from them and widens the next routing window.
+            return json.dumps(
+                {
+                    "__clarification__": True,
+                    "question": "I couldn't tell which specialist should take this. "
+                    "Could you say a bit more about what you need?",
+                    "options": [],
+                }
+            )
         raise ModelRetry(
             "You wrote a hand-off out as text. Call the hand_off_to_* function instead, "
             "or answer the user in plain prose."
