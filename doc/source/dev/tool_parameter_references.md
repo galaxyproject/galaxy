@@ -89,6 +89,8 @@ Traps that fail **silently** rather than with an error, each described in detail
   discovery ([Pipe Paths](#pipe-paths)).
 - YAML output attributes such as `format_source` are not checked against the declared inputs
   ([Output Source Attributes](#output-source-attributes)).
+- A YAML tool test's section values (`adv: {size: 3}`) are dropped, and the section keeps its
+  defaults ([Test Inputs](#test-inputs)).
 
 ## Tool Syntax
 
@@ -633,6 +635,9 @@ tests:
 - The parser then flattens the tree to `input`, `cond|sel`, `cond|input1`, `queries_0|input2` and
   `queries_1|input2`. Nested repeats flatten to keys like `outer_0|inner_1|x`. The flat keys feed
   the same test-expansion code as XML tests.
+- Sections are not flattened: `_flatten_parameter` has no section branch, so `adv: {size: 3}`
+  becomes a single `adv` key that test-case processing discards. The section silently keeps its
+  defaults.
 - These tests are submitted through the tool request API, except tests with credentials, which use
   the legacy API.
 
@@ -1135,6 +1140,7 @@ a test that asserts the outcome, then update the relevant claim and verification
 | Behavior                                    | Check needed to close the gap                                                                                                                                                      | Test level                          |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | Repeat-indexed `default_identifier_source`  | Map over `queries_0\|input2` and assert output element identifiers; also assert the behavior for an unmatched source                                                               | API execution with an XML test tool |
+| YAML test section inputs                    | Parse a YAML tool test that sets a section value; assert `adv\|size` reaches the flat inputs and the request                                                                       | Parser regression                   |
 | Classless YAML runtime state                | Execute the same conditional/repeat classless (`blocks:`) tool through legacy and request submission; assert the values and paths exposed to JavaScript                            | API execution with a YAML test tool |
 | Cheetah command with JavaScript configfiles | Load a file-flavor tool combining `command:` and a configfile that reads `inputs`; assert the resulting content or explicit failure                                                | Tool execution                      |
 | Job resources through `/api/jobs`           | Configure injected resource inputs and submit a tool test with resource overrides through the request API; assert both acceptance and the applied values                           | Integration/API execution           |
