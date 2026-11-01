@@ -2,7 +2,12 @@
 
 Galaxy uses several syntaxes to reference nested tool parameters. This reference compares the
 syntax, supported groupings and legacy behavior of tool definitions, APIs and workflows. It is
-intended for Galaxy developers evaluating new features or changes to existing features.
+intended for Galaxy developers evaluating new features or changes to existing features. It is
+groundwork for [#23444](https://github.com/galaxyproject/galaxy/issues/23444), which tracks
+settling on one canonical nested reference syntax.
+
+It describes Galaxy as it is. Notes marked **Open:** link the issues and pull requests that propose
+changing the behavior described next to them.
 
 Start with [At a Glance](#at-a-glance), then use [Tool Syntax](#tool-syntax), [API](#api) or
 [Workflows](#workflows) for the relevant interface. For how parameter _values_ are represented and
@@ -230,6 +235,14 @@ echo $adv.size $cond.sel
   `input` were multiple, it would create `input`, `input1`, `input2` and so on, and
   `format_source="input1"` would then resolve to `input`'s first dataset instead of `cond|input1`.
 
+  **Open:** [#23891](https://github.com/galaxyproject/galaxy/issues/23891) proposes resolving
+  `format_source` and `metadata_source` against the declared inputs at tool load, so Galaxy's
+  internal keys (`input2`, `coll2`, conversion names) and a numbered key shadowing an alias stop
+  resolving, and linting `metadata_source`.
+  [#23902](https://github.com/galaxyproject/galaxy/issues/23902) proposes that, from a new profile,
+  an unqualified reference that matches only through the legacy alias fails tool load, and the
+  runtime stops using the alias.
+
 - **The alias works only when the job is created** (`DefaultToolAction`). Several paths run later
   and look names up in a plain dict built from the job's input associations, which are recorded
   under full paths. Those paths accept only full paths:
@@ -279,6 +292,10 @@ linter requires a reference that resolves both with and without mapping. It warn
 legacy alias below profile 26.0, and errors on deeper bare names, on any bare nested name from
 26.0, on paths into repeats and on non-data inputs. The upgrade advice `18_01_consider_structured_like` still
 claims that 18.01+ tools must qualify, which contradicts the 26.0 gate in the code.
+
+**Open:** [#23884](https://github.com/galaxyproject/galaxy/issues/23884) reports this, and
+[#24524](https://github.com/galaxyproject/galaxy/pull/24524) proposes moving the advice to profile
+26.0.
 
 #### `type_source`
 
@@ -429,6 +446,10 @@ Its **validation** is chosen by how it is loaded:
   `shell_command` (JavaScript) is required. Groupings nest under `parameters:`, and a conditional's
   cases go in a `whens:` list. Unknown keys are rejected for `GalaxyUserTool`; on `GalaxyTool`
   outputs they are accepted and then dropped.
+
+**Open:** [#23888](https://github.com/galaxyproject/galaxy/issues/23888) proposes validating
+class-declaring YAML files on disk against the authoring model too, and rejecting unknown output
+keys.
 
 The syntax is documented in [Authoring User-Defined Tools](user_defined_tools_authoring.md). This
 section covers only how a YAML tool refers to its parameters by name.
@@ -990,6 +1011,9 @@ A native workflow keys connections by pipe path and stores state as nested JSON:
 - A single connection is written as a dict and several as a list. Import accepts both.
 - A connection key starting with `<repeat>_N|...` makes Galaxy grow the repeat to N+1 instances on load
   (`augment_tool_state_for_input_connections`). Connections to nested repeats are untested.
+  **Open:** [#23895](https://github.com/galaxyproject/galaxy/issues/23895) reports that under
+  `fill_defaults` import a connection into a nested repeat fails with a 500, and one into a repeat
+  under a section or conditional imports but the job runs without that input.
 - A connection that matches no input is ignored with only a logged warning ("Failed to use input
   connections").
 - `tool_state` encodings differ by consumer. The DB and `.ga` export hold one JSON string of the
@@ -1117,6 +1141,9 @@ dicts flattened on the way in:
 matches exactly, the first input whose pipe path ends in `|` plus the converted name is used, so
 `#{input1}` finds `cond|input1` (but not `cond|xinput1`) and `#{cond.input1}` finds
 `outer|cond|input1`. A reference that matches nothing renders as empty text.
+
+**Open:** [#23981](https://github.com/galaxyproject/galaxy/issues/23981) reports that a padded
+`#{name }` with no `| op` also renders as empty text.
 
 ### Refactor API
 
