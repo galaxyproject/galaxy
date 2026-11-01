@@ -18,7 +18,11 @@ from collections.abc import (
     Iterator,
 )
 from contextlib import nullcontext
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+)
 from typing import (
     Any,
     Concatenate,
@@ -28,13 +32,17 @@ from typing import (
 
 from sqlalchemy import (
     create_engine,
+    inspect,
     LargeBinary,
     MetaData,
+    or_,
     select,
     String,
     Text,
+    update,
 )
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -49,6 +57,7 @@ from .index import (
     ToolIndexEntry,
 )
 from .interface import (
+    PopulateLease,
     ReadOnlyStoreError,
     StoredToolSource,
     ToolSourceStore,
@@ -118,6 +127,106 @@ class _ToolIndexRow(_Base):
     built_at: Mapped[datetime | None] = mapped_column()
 
 
+class _PopulateLeaseRow(_Base):
+    __tablename__ = "tool_source_populate_lease"
+
+    # Singleton row (id 1). Times are naive UTC.
+    id: Mapped[int] = mapped_column(primary_key=True)
+    holder: Mapped[str | None] = mapped_column(String(255))
+    expires_at: Mapped[datetime | None] = mapped_column()
+    populated_at: Mapped[datetime | None] = mapped_column()
+
+
+_LEASE_ROW_ID = 1
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+class _SqlAlchemyPopulateLease(PopulateLease):
+    """Populate lease kept in a row of the store's own database.
+
+    Each operation is one short transaction, so waiting for a populate never
+    depends on the SQLite busy timeout. Expiry compares clocks of the hosts
+    sharing the store; the lease TTL must exceed their clock skew.
+    """
+
+    def __init__(self, store: "SqlAlchemyToolSourceStore") -> None:
+        self._store = store
+
+    def last_populated_at(self) -> datetime | None:
+        with self._store._session() as session:
+            return session.execute(
+                select(_PopulateLeaseRow.populated_at).where(_PopulateLeaseRow.id == _LEASE_ROW_ID)
+            ).scalar_one_or_none()
+
+    def try_acquire(self, holder: str, ttl: timedelta) -> bool:
+        now = _utcnow()
+        with self._store._session() as session:
+            # Read first so that waiters polling a held lease do not take the
+            # write lock on every poll.
+            current = session.execute(
+                select(_PopulateLeaseRow.holder, _PopulateLeaseRow.expires_at).where(
+                    _PopulateLeaseRow.id == _LEASE_ROW_ID
+                )
+            ).first()
+        if (
+            current is not None
+            and current.holder not in (None, holder)
+            and current.expires_at is not None
+            and current.expires_at >= now
+        ):
+            return False
+        with self._store._write_lock, self._store._session() as session:
+            result = session.execute(
+                update(_PopulateLeaseRow)
+                .where(
+                    _PopulateLeaseRow.id == _LEASE_ROW_ID,
+                    or_(
+                        _PopulateLeaseRow.holder.is_(None),
+                        _PopulateLeaseRow.holder == holder,
+                        _PopulateLeaseRow.expires_at < now,
+                    ),
+                )
+                .values(holder=holder, expires_at=now + ttl)
+            )
+            if result.rowcount:  # type: ignore[attr-defined]
+                session.commit()
+                return True
+            # Either another process holds the lease or the row does not
+            # exist yet; inserting it fails on the primary key in the first case.
+            session.add(_PopulateLeaseRow(id=_LEASE_ROW_ID, holder=holder, expires_at=now + ttl))
+            try:
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                return False
+            return True
+
+    def renew(self, holder: str, ttl: timedelta) -> bool:
+        with self._store._write_lock, self._store._session() as session:
+            result = session.execute(
+                update(_PopulateLeaseRow)
+                .where(_PopulateLeaseRow.id == _LEASE_ROW_ID, _PopulateLeaseRow.holder == holder)
+                .values(expires_at=_utcnow() + ttl)
+            )
+            session.commit()
+            return bool(result.rowcount)  # type: ignore[attr-defined]
+
+    def release(self, holder: str, populated: bool) -> None:
+        values: dict[str, Any] = {"holder": None, "expires_at": None}
+        if populated:
+            values["populated_at"] = _utcnow()
+        with self._store._write_lock, self._store._session() as session:
+            session.execute(
+                update(_PopulateLeaseRow)
+                .where(_PopulateLeaseRow.id == _LEASE_ROW_ID, _PopulateLeaseRow.holder == holder)
+                .values(**values)
+            )
+            session.commit()
+
+
 class SqlAlchemyToolSourceStore(ToolSourceStore):
     """A tool source store backed by any SQLAlchemy-compatible database.
 
@@ -177,9 +286,11 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
         statements, so processes opening a new database at the same time
         can all see the table missing and all try to create it. Taking the
         database write lock first makes the check and the DDL atomic across
-        processes. Later processes wait up to the busy timeout and then find
-        the complete schema.
+        processes; the lock is held only for the DDL. A store that already
+        has every table is opened without taking the lock.
         """
+        if set(_metadata.tables) <= set(inspect(self._engine).get_table_names()):
+            return
         with self._engine.connect() as connection:
             connection.exec_driver_sql("BEGIN IMMEDIATE")
             _metadata.create_all(connection)
@@ -418,6 +529,11 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
                 return
             self._engine.dispose()
         self._cached_index = None
+
+    def populate_lease(self) -> PopulateLease | None:
+        if self.read_only:
+            return None
+        return _SqlAlchemyPopulateLease(self)
 
     def dispose(self) -> None:
         self._engine.dispose()

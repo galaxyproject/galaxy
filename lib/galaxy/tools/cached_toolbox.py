@@ -54,6 +54,7 @@ from galaxy.tools.source_store import (
     ToolSourceStore,
 )
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
+from galaxy.tools.source_store.coordination import populate_once
 from galaxy.tools.source_store.discover import discover_tools
 from galaxy.tools.source_store.index import (
     ToolIndex,
@@ -618,10 +619,7 @@ class CachedToolBox(ToolBox):
             self._require_read_only_store_indexes()
             self._tool_index = self._store.load_index() or ToolIndex()
             if self._index_needs_population():
-                self._run_inline_populator()
-                # The inline populator uses a separate store instance.
-                self._store.invalidate_index_cache()
-                self._tool_index = self._store.load_index() or ToolIndex()
+                self._populate_once(self._index_needs_population)
             elif self._reindex_edited_sources:
                 self._reindex_edited_tool_files()
         else:
@@ -700,18 +698,15 @@ class CachedToolBox(ToolBox):
         # ``_index_panel_items`` only returns placements when the index is
         # populated, so it is non-None here.
         assert self._tool_index is not None
-        missing = {p.tool_id for p in placements if p.tool_id not in self._tool_index.entries}
+        missing = self._panel_ids_missing_from_index()
         if missing:
             log.info(
                 "CachedToolBox fast panel init found %d panel ids missing from index; running populator",
                 len(missing),
             )
-            self._run_inline_populator()
-            if self._store is not None:
-                self._store.invalidate_index_cache()
-                self._tool_index = self._store.load_index() or ToolIndex()
+            self._populate_once(lambda: bool(self._panel_ids_missing_from_index()))
             placements = self._index_panel_items()
-            missing = {p.tool_id for p in placements if p.tool_id not in self._tool_index.entries}
+            missing = self._panel_ids_missing_from_index()
             if missing or not placements:
                 log.debug("CachedToolBox fast panel init disabled; %d panel ids still missing from index", len(missing))
                 return False
@@ -736,6 +731,10 @@ class CachedToolBox(ToolBox):
         )
         self._tool_panel_loaded_from_index = True
         return True
+
+    def _panel_ids_missing_from_index(self) -> set[str]:
+        assert self._tool_index is not None
+        return {p.tool_id for p in self._index_panel_items() if p.tool_id not in self._tool_index.entries}
 
     def _load_indexed_panel_structure(
         self,
@@ -926,6 +925,41 @@ class CachedToolBox(ToolBox):
                     orphaned,
                 )
         return False
+
+    def _populate_once(self, still_needed: Callable[[], bool]) -> None:
+        """Populate inline unless another process sharing the store does it first.
+
+        Every process booting or reloading against a stale store would
+        otherwise populate it at the same time; the others wait for the one
+        holding the store's populate lease and then load its index.
+        ``still_needed`` runs on the reloaded index under the lease.
+        """
+
+        reloaded = False
+
+        def reload_and_check() -> bool:
+            nonlocal reloaded
+            self._reload_tool_index()
+            reloaded = True
+            return still_needed()
+
+        lease = self._store.populate_lease() if self._store is not None else None
+        populated = populate_once(
+            lease,
+            reload_and_check,
+            self._run_inline_populator,
+            # An index this Galaxy cannot load (e.g. written by another
+            # version during a rolling upgrade) reloads as empty.
+            peer_result_usable=lambda: bool(self._tool_index and self._tool_index.entries),
+        )
+        # The inline populator writes through a separate store instance.
+        if populated or not reloaded:
+            self._reload_tool_index()
+
+    def _reload_tool_index(self) -> None:
+        if self._store is not None:
+            self._store.invalidate_index_cache()
+            self._tool_index = self._store.load_index() or ToolIndex()
 
     def _run_inline_populator(self) -> None:
         """Cold-start hook: write source rows and metadata in this process.

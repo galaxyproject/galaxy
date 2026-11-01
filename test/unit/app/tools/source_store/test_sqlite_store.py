@@ -6,9 +6,11 @@ import sys
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 
 import pytest
 from sqlalchemy import (
+    create_engine,
     event,
     inspect,
 )
@@ -247,10 +249,28 @@ def test_processes_opening_a_new_store_concurrently_all_succeed(sqlite_path):
             p.kill()
     assert [p.returncode for p in processes] == [0] * len(processes), "\n".join(errors)
 
-    inspector = inspect(sqlalchemy_store_module.create_engine(_sqlite_url(sqlite_path)))
-    assert set(inspector.get_table_names()) == {"tool_source", "tool_index"}
+    inspector = inspect(create_engine(_sqlite_url(sqlite_path)))
+    assert set(inspector.get_table_names()) == {"tool_source", "tool_index", "tool_source_populate_lease"}
     assert {index["name"] for index in inspector.get_indexes("tool_source")} == {
         "ix_tool_source_hash",
         "ix_tool_source_source_path",
         "ix_tool_source_tool_id",
     }
+
+
+def test_opening_an_existing_store_adds_the_populate_lease_table(sqlite_path):
+    engine = create_engine(_sqlite_url(sqlite_path))
+    metadata = sqlalchemy_store_module._metadata
+    metadata.create_all(engine, tables=[metadata.tables["tool_source"], metadata.tables["tool_index"]])
+
+    store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+
+    assert "tool_source_populate_lease" in inspect(engine).get_table_names()
+    lease = store.populate_lease()
+    assert lease is not None
+    assert lease.try_acquire("me", ttl=timedelta(minutes=1))
+
+
+def test_read_only_store_has_no_populate_lease(sqlite_path):
+    SqliteToolSourceStore(url=_sqlite_url(sqlite_path)).dispose()
+    assert SqliteToolSourceStore(url=_sqlite_url(sqlite_path), read_only=True).populate_lease() is None
