@@ -202,6 +202,8 @@ class TestUserDefinedToolRequiresContainerPulsar(integration_util.IntegrationTes
             job_id = response.json()["jobs"][0]["id"]
             self.dataset_populator.wait_for_job(job_id)
             assert self.dataset_populator.get_job_details(job_id).json()["state"] == "error"
+            output = self.dataset_populator.get_history_dataset_details(history_id, assert_ok=False)
+            assert "Failed to find a container when required" in output["misc_info"]
 
 
 class TestUserDefinedToolRequiresContainerLocal(TestUserDefinedToolRequiresContainerPulsar):
