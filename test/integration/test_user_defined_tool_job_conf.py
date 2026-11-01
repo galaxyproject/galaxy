@@ -147,3 +147,62 @@ class TestCachedUserDefinedToolRecommendedJobSetupTPV(
     TestUserDefinedToolRecommendedJobSetupTPV,
 ):
     pass
+
+
+class TestUserDefinedToolRequiresContainerPulsar(integration_util.IntegrationTestCase):
+    """User defined tools fail on destinations without a container by default."""
+
+    user_defined_environment = "pulsar_embed"
+    dataset_populator: DatasetPopulator
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["require_container_for_user_defined_tools"] = True
+        config["enable_celery_tasks"] = False
+        config["metadata_strategy"] = "directory"
+        config["job_config"] = {
+            "runners": {
+                "local": {"load": "galaxy.jobs.runners.local:LocalJobRunner"},
+                "pulsar_embed": {
+                    "load": "galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner",
+                    "pulsar_app_config": {
+                        "tool_dependency_dir": "none",
+                        "conda_auto_init": False,
+                        "conda_auto_install": False,
+                    },
+                },
+            },
+            "execution": {
+                "default": "local",
+                "environments": {
+                    "local": {"runner": "local"},
+                    "pulsar_embed": {"runner": "pulsar_embed", "remote_metadata": True},
+                },
+            },
+            "tools": [{"class": "user_defined", "environment": cls.user_defined_environment}],
+        }
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def test_user_defined_tool_without_container_fails(self):
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_INSPECTING_JOB_DIRECTORY)
+            )
+            response = self.dataset_populator.run_tool_raw(
+                tool_id=None, tool_uuid=dynamic_tool["uuid"], inputs={}, history_id=history_id
+            )
+            response.raise_for_status()
+            job_id = response.json()["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id)
+            assert self.dataset_populator.get_job_details(job_id).json()["state"] == "error"
+
+
+class TestUserDefinedToolRequiresContainerLocal(TestUserDefinedToolRequiresContainerPulsar):
+    user_defined_environment = "local"
