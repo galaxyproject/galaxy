@@ -35,6 +35,8 @@ To enable this feature:
 3. Assign users or groups to this role.
 4. Review `user_defined_tool_allowed_containers`, which by default only allows BioContainers images (see [Allowed container images](#allowed-container-images)).
 
+Galaxy checks the role again when a job is prepared, so removing a user from the role, or deleting the role, also fails that user's queued user-defined tool jobs.
+
 ## Sharing User-Defined Tools
 
 User-defined tools are private to their creators. However, if a tool is embedded in a workflow, any user who imports that workflow will automatically have the tool created in their account.

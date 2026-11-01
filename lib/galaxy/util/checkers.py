@@ -5,6 +5,7 @@ import os
 import re
 import tarfile
 import zipfile
+from collections.abc import Generator
 from io import (
     BytesIO,
     StringIO,
@@ -205,7 +206,7 @@ def is_tar(file_path: str) -> bool:
     return tarfile.is_tarfile(file_path)
 
 
-def iter_zip(file_path: str):
+def iter_zip(file_path: str) -> Generator[tuple[IO[bytes], str], None, None]:
     with zipfile.ZipFile(file_path) as z:
         for f in filter(lambda x: not x.endswith("/"), z.namelist()):
             yield (z.open(f), f)

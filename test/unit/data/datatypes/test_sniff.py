@@ -14,6 +14,7 @@ from galaxy.datatypes.sniff import (
     handle_composite_file,
     handle_uploaded_dataset_file_internal,
 )
+from galaxy.util import galaxy_directory
 
 
 def assert_converts_to_1234_convert_sep2tabs(content, expected="1\t2\n3\t4\n"):
@@ -128,6 +129,14 @@ def test_file_prefix_detects_mime_type_of_compressed_file(tmp_path):
     assert file_prefix.compressed_encoding == "binary"
     assert file_prefix.mime_type == "text/plain"
     assert file_prefix.encoding == "us-ascii"
+
+
+def test_file_prefix_of_tar_misdetected_as_zip():
+    # zipfile.is_zipfile is fooled by a stray zip end record; sniffing must still read the file raw.
+    file_prefix = FilePrefix(os.path.join(galaxy_directory(), "test-data", "tar_with_stray_zip_end_record.tar"))
+
+    assert file_prefix.compressed_format is None
+    assert file_prefix.mime_type == "application/x-tar"
 
 
 def test_handle_composite_file_stages_legitimate_name(tmp_path):

@@ -267,6 +267,47 @@ def test_galactic_job_json_sample_sheet_paired_collection():
     assert len(el["element_identifiers"]) == 2
 
 
+def _read_tar_member(tf: tarfile.TarFile, name: str) -> bytes:
+    member = tf.extractfile(name)
+    assert member is not None
+    return member.read()
+
+
+def test_galactic_job_json_uploads_complete_tars(tmp_path):
+    (tmp_path / "input.bam").write_text("bam")
+    (tmp_path / "input.bam.bai").write_text("bai")
+    directory = tmp_path / "dir"
+    directory.mkdir()
+    (directory / "a.txt").write_text("a contents")
+
+    job = {
+        "with_secondary": {
+            "class": "File",
+            "path": "input.bam",
+            "secondaryFiles": [{"class": "File", "path": "input.bam.bai"}],
+        },
+        "a_directory": {"class": "Directory", "path": "dir"},
+    }
+    targets = []
+
+    def upload_func(target):
+        targets.append(target)
+        if isinstance(target, FileUploadTarget):
+            assert target.secondary_files
+            with tarfile.open(target.secondary_files) as tf:
+                assert _read_tar_member(tf, f"{SECONDARY_FILES_EXTRA_PREFIX}/input.bam.bai") == b"bai"
+                index = json.loads(_read_tar_member(tf, SECONDARY_FILES_INDEX_PATH))
+                assert index == {"order": ["input.bam.bai"]}
+        else:
+            assert isinstance(target, DirectoryUploadTarget)
+            with tarfile.open(target.tar_path) as tf:
+                assert _read_tar_member(tf, "./a.txt") == b"a contents"
+        return _mock_upload_func(target)
+
+    galactic_job_json(job, str(tmp_path), upload_func, _mock_collection_create_func, tool_or_workflow="tool")
+    assert {type(t) for t in targets} == {FileUploadTarget, DirectoryUploadTarget}
+
+
 def _mock_dataset_metadata(element_id):
     return {
         "history_content_type": "dataset",
