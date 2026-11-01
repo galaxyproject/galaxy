@@ -1,0 +1,13 @@
+<tool id="cache_dunder_section" name="Cache dunder section" version="1.0">
+    <command><![CDATA[
+echo '$__q2galaxy__GUI__section__extra_opts__.value' > '$output'
+    ]]></command>
+    <inputs>
+        <section name="__q2galaxy__GUI__section__extra_opts__" title="Options">
+            <param name="value" type="integer" value="1" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+</tool>

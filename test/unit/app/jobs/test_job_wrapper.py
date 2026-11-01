@@ -1,10 +1,12 @@
 import abc
+import json
 import os
 from contextlib import contextmanager
 from typing import (
     cast,
     TYPE_CHECKING,
 )
+from unittest.mock import Mock
 
 from galaxy.app_unittest_utils.tools_support import (
     MockContext,
@@ -94,6 +96,31 @@ class AbstractTestCases:
 class TestJobWrapper(AbstractTestCases.BaseWrapperTestCase):
     def _wrapper(self):
         return JobWrapper(self.job, self.queue)  # type: ignore[arg-type]
+
+    def test_prepare_cache_preserves_dunder_tool_inputs(self):
+        # QIIME2 wrappers use __-prefixed sections for scientific parameters.
+        section_name = "__q2galaxy__GUI__section__extra_opts__"
+        tool = self.app.toolbox.get(TEST_TOOL_ID)
+        tool.inputs = {section_name: Mock(value_to_basic=lambda value, *args, **kwds: value)}
+        tool.params_from_strings = lambda values: {key: json.loads(value) for key, value in values.items()}
+        self.app.job_search = Mock()
+        self.app.job_search.by_tool_input.return_value = None
+
+        for where in ('treatment1<>""', 'badpairwise10<>""'):
+            self.job.parameters = []
+            self.job.add_parameter(section_name, json.dumps({"where": where}))
+            self.job.add_parameter("__use_cached_job__", "true")
+            self.job.add_parameter("__workflow_invocation_uuid__", '"invocation-id"')
+            wrapper = self._wrapper()
+            evaluator = MockEvaluator(self.app, tool, self.job, wrapper.working_directory)
+            evaluator.use_cached_job = True
+            evaluator.consumes_names = False
+            wrapper._get_tool_evaluator = lambda *args, evaluator=evaluator, **kwargs: evaluator
+            wrapper.prepare()
+
+            arguments = self.app.job_search.by_tool_input.call_args.kwargs
+            assert arguments["param_dump"] == {section_name: {"where": where}}
+            assert arguments["require_name_match"] is False
 
 
 class TestTaskWrapper(AbstractTestCases.BaseWrapperTestCase):
