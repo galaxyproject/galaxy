@@ -291,6 +291,14 @@ def test_tag_built_none_when_repo_empty(monkeypatch):
     assert biocontainer_tag_built("quay.io/biocontainers/pandas:2.1.4--py311h1128e8f_0") is None
 
 
+def test_tag_built_none_for_digest_reference(monkeypatch):
+    def unexpected(*a, **k):
+        raise AssertionError("a digest reference names no tag to look up")
+
+    _patch_tags(monkeypatch, unexpected)
+    assert biocontainer_tag_built("quay.io/biocontainers/pandas@sha256:" + "a" * 64) is None
+
+
 def test_tag_built_none_on_network_error(monkeypatch):
     def boom(*a, **k):
         raise HTTPError("boom")

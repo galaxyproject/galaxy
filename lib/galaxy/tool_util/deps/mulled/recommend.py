@@ -38,6 +38,10 @@ from requests import (
 )
 
 from galaxy.tool_util.deps.conda_util import CondaTarget
+from galaxy.tool_util.deps.image_references import (
+    ImageReferenceError,
+    parse_image_reference,
+)
 from galaxy.util import requests
 from .util import (
     build_target,
@@ -231,24 +235,24 @@ def biocontainer_tag_built(image: str, *, session: Session | None = None) -> boo
       a build/version that was never published, e.g. a hallucinated
       ``--py311h1128e8f_0`` build suffix).
     - ``None``  -- the answer can't be established: the reference isn't a
-      ``quay.io/biocontainers`` image, it carries no tag, or the tag list
+      ``quay.io/biocontainers`` image, it carries no tag or is pinned by digest, or the tag list
       couldn't be fetched (missing repo or transient network failure).
 
     Callers should only treat a ``False`` as grounds to override a container --
     ``None`` is deliberately conservative so a network blip or a non-biocontainer
     image is never mistaken for a broken reference. Never raises.
     """
-    if not image:
+    try:
+        reference = parse_image_reference(image)
+    except ImageReferenceError:
         return None
-    prefix = f"{QUAY_BIOCONTAINERS_PREFIX}/"
-    if not image.startswith(prefix):
+    namespace, _, repo = reference.repository.partition("/")
+    if reference.registry != "quay.io" or namespace != BIOCONTAINERS_NAMESPACE or not repo:
         return None
-    ref = image[len(prefix) :]
-    if ":" not in ref:
+    # The runtime pulls the digest of a reference that has one, whatever its tag.
+    if not reference.tag or reference.digest:
         return None
-    repo, tag = ref.rsplit(":", 1)
-    if not repo or not tag:
-        return None
+    tag = reference.tag
 
     owns_session = session is None
     if session is None:
