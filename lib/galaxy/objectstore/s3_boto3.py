@@ -475,7 +475,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
     def _list_remote_keys(self, rel_path):
         return (key for key, _ in self._keys_with_sizes(rel_path))
 
-    def _get_object_url(self, obj, content_disposition=None, content_type=None, expires_in=None, **kwargs):
+    def _get_object_url(self, obj, content_disposition=None, content_type=None, *, expires_in: int, **kwargs):
         try:
             if self._exists(obj, **kwargs):
                 rel_path = self._construct_path(obj, **kwargs)
@@ -490,7 +490,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 url = self._client.generate_presigned_url(
                     ClientMethod="get_object",
                     Params=params,
-                    ExpiresIn=self.direct_download_expires_in if expires_in is None else expires_in,
+                    ExpiresIn=expires_in,
                     HttpMethod="GET",
                 )
                 return url

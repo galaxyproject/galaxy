@@ -206,6 +206,7 @@ bucket:
 # enable_direct_download: true
 # Seconds a direct download URL stays valid. Revoking access in Galaxy doesn't revoke URLs already
 # handed out. Applies to every store type supporting enable_direct_download. Defaults to 3600.
+# Pulsar jobs staging inputs by redirect get URLs that last 15 minutes, or this long if shorter.
 # direct_download_expires_in: 3600
 connection:  # not strictly needed but more of the API works with this.
   region: us-east-1

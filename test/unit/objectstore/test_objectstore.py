@@ -1197,6 +1197,19 @@ def test_get_direct_download_url_lasts_as_long_as_asked():
 
 
 @patch_object_stores_to_skip_initialize
+def test_get_direct_download_url_lasts_no_longer_than_the_store_allows():
+    config_str = get_example("boto3_direct_download.yml").replace(
+        "enable_direct_download: true", "enable_direct_download: true\ndirect_download_expires_in: 600"
+    )
+    with TestConfig(config_str) as (directory, object_store):
+        object_store._client = MagicMock()
+        with patch.object(object_store, "_exists", return_value=True):
+            object_store.get_direct_download_url(MockDataset(1), expires_in=900)
+        _, call_kwargs = object_store._client.generate_presigned_url.call_args
+        assert call_kwargs["ExpiresIn"] == 600
+
+
+@patch_object_stores_to_skip_initialize
 def test_distributed_get_direct_download_url_lasts_as_long_as_asked():
     with TestConfig(DISTRIBUTED_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
         backend = object_store.backends["presigning"]
