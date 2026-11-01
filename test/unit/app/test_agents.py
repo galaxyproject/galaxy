@@ -1213,26 +1213,26 @@ class TestAgentUnitMocked:
             history.append(ModelResponse(parts=[TextPart(content=f"question {i}?")]))
 
         routing_history = router._routing_history(history, clarification_turns=10)
-        # Three clarifications plus the turn before them, two messages a turn.
-        assert routing_history == history[-8:]
+        # The request that started the run plus the last three clarifications, two messages a turn.
+        assert routing_history == history[:2] + history[-6:]
 
     def test_router_keeps_the_subject_past_the_clarification_cap(self):
         """A fourth "which tool?" in a row mustn't push the turn that named the tool out of the
         window -- that's the loop this window exists to break."""
         router = QueryRouterAgent(self.deps)
         history = list(SUBJECT_THEN_CLARIFICATION_HISTORY)
-        for i in range(3):
+        for i in range(4):
             history.append(ModelRequest(parts=[UserPromptPart(content=f"answer {i}")]))
             history.append(ModelResponse(parts=[TextPart(content=f"Which tool is it, {i}?")]))
 
-        routing_history = router._routing_history(history, clarification_turns=4)
+        routing_history = router._routing_history(history, clarification_turns=5)
         assert routing_history is not None
         window = _message_texts(routing_history)
 
         assert MIRDEEP2_TOOL_ID in window
-        assert "Which tool is it, 2?" in window
-        # Still bounded: the oldest clarification and the unrelated first turn stay out.
-        assert "Which upstream tool" not in window
+        assert "Which tool is it, 3?" in window
+        # Still bounded: the middle of the run and the unrelated first turn stay out.
+        assert "Which tool is it, 0?" not in window
         assert "wrapper flaw" not in window
 
     @pytest.mark.parametrize("earlier_turn", [True, False])
