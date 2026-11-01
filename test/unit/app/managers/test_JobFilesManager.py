@@ -8,7 +8,11 @@ from galaxy import exceptions
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.managers.job_files import JobFilesManager
-from galaxy.model import Job
+from galaxy.model import (
+    Dataset,
+    HistoryDatasetAssociation,
+    Job,
+)
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore
 from galaxy.security.idencoding import IdEncodingHelper
@@ -120,3 +124,31 @@ def test_missing_params(manager, security, job):
         manager.authorize_write(job_id, None, job_key)
     with pytest.raises(exceptions.ObjectAttributeMissingException):
         manager.authorize_write(job_id, path, None)
+
+
+def test_empty_path(manager, security, job):
+    job_id, job_key = _keys(security)
+    with pytest.raises(exceptions.RequestParameterInvalidException):
+        manager.authorize_write(job_id, "", job_key)
+    with pytest.raises(exceptions.RequestParameterInvalidException):
+        manager.readable_path(job_id, "", job_key)
+
+
+def _hda(file_name=None, extra_files_path=None):
+    dataset = Dataset(external_filename=file_name)
+    dataset.external_extra_files_path = extra_files_path
+    return HistoryDatasetAssociation(dataset=dataset, create_dataset=False, flush=False)
+
+
+def _purged_hda():
+    hda = _hda()
+    hda.purged = hda.dataset.purged = True
+    return hda
+
+
+def test_purged_output_dataset_does_not_authorize_the_process_cwd(manager, security, job):
+    job_id, job_key = _keys(security)
+    # ``get_file_name()`` is empty for a purged dataset and ``abspath("")`` is the cwd.
+    job.add_output_dataset("output1", _purged_hda())
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.authorize_write(job_id, os.getcwd(), job_key)
