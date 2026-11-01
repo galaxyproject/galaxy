@@ -46,6 +46,11 @@ function triggerImport() {
 }
 
 defineExpose({ triggerImport });
+
+// Launch links (`/workflows/trs_import?trs_url=...`) import right away
+if (props.queryTrsUrl) {
+    emit("onImport", props.queryTrsUrl);
+}
 </script>
 
 <template>
