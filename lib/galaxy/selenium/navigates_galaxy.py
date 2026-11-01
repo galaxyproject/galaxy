@@ -2946,6 +2946,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.history_panel.histories_operation_menu.wait_for_and_click()
         self.components.history_panel.multi_view_button.wait_for_and_click()
 
+    def multi_history_copy_item(self, hid: int, from_history_id: str, to_history_id: str):
+        """In Multiview, copy item ``hid`` by dragging it from one history's column onto another's."""
+        panel = self.components.multi_history_panel
+        source = panel.history_column_item(history_id=from_history_id, hid=hid).wait_for_visible()
+        target = panel.history_column_drop_zone(history_id=to_history_id).wait_for_visible()
+        self.drag_and_drop(source, target)
+
     def history_multi_view_display_collection_contents(self, collection_hid, collection_type="list"):
         self.open_history_multi_view()
 
