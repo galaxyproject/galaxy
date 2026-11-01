@@ -9,9 +9,15 @@ from galaxy import (
     util,
 )
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.job_execution.setup import JobWorkingDirectory
+from galaxy.job_execution.setup import (
+    input_metadata_file_names,
+    JobWorkingDirectory,
+    restrict_job_files,
+)
 from galaxy.model import (
     Job,
+    JobToInputDatasetAssociation,
+    JobToInputLibraryDatasetAssociation,
     JobToOutputDatasetAssociation,
     JobToOutputLibraryDatasetAssociation,
 )
@@ -20,12 +26,20 @@ from galaxy.objectstore import BaseObjectStore
 from galaxy.security.idencoding import IdEncodingHelper
 
 APPENDABLE_FILE_NAMES = ("tool_stdout", "tool_stderr")
+# Job directories Pulsar stages results back to: the tool working directory, ``outputs`` (datasets written there with
+# ``outputs_to_working_directory``, tool streams, the version file) and the metadata directory.
+RESTRICTED_WRITABLE_DIRECTORIES = ("working", "outputs", "metadata")
+# The extended metadata model store, which Galaxy imports with permission to edit any object it names.
+RESTRICTED_UNWRITABLE_DIRECTORY = ["metadata", "outputs_populated"]
+# Written for extended metadata, holds the object store's credentials.
+RESTRICTED_UNREADABLE_FILE = os.path.join("metadata", "object_store_conf.json")
 
 
 class JobFilesManager:
     """Job runner access to low-level job files, authorized by job key only - never by user credentials.
 
-    Reads aren't limited to the job's own files, since tools also read unstructured inputs such as ``.loc`` files.
+    Reads aren't limited to the job's own files, since tools also read unstructured inputs such as ``.loc`` files -
+    except for jobs ``restrict_job_files`` confines, whose runners may only read and write the job's own files.
     """
 
     def __init__(
@@ -46,15 +60,18 @@ class JobFilesManager:
 
     def readable_path(self, encoded_job_id: str, path: str | None, job_key: str | None) -> str:
         job, path = self._authorize(encoded_job_id, path, job_key)
-        if os.path.isfile(path):
+        readable = not restrict_job_files(job) or self._is_job_file(job, path)
+        if readable and os.path.isfile(path):
             return path
-        if os.path.exists(path):
+        if readable and os.path.exists(path):
             raise exceptions.RequestParameterInvalidException("Path does not refer to a file.")
         # Inputs may be purged while the job is queued or running; pulsar handles that error.
         if re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path)):
             input_datasets = [jtid.dataset.dataset for jtid in job.input_datasets if jtid.dataset]
             if any(dataset and dataset.purged for dataset in input_datasets):
                 raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
+        if not readable:
+            raise exceptions.ItemAccessibilityException("Job is not authorized to read supplied path.")
         raise exceptions.ObjectNotFound("File not found.")
 
     def authorize_write(self, encoded_job_id: str, path: str | None, job_key: str | None) -> str:
@@ -62,12 +79,63 @@ class JobFilesManager:
         job, path = self._authorize(encoded_job_id, path, job_key)
         if not os.path.isabs(path):
             raise exceptions.RequestParameterInvalidException("'path' parameter must be an absolute path.")
+        if restrict_job_files(job):
+            return self._authorize_restricted_write(job, path)
         working_directory = JobWorkingDirectory(job, self._object_store).resolve()
         if util.in_directory(path, working_directory):
             return working_directory
         if dataset_path := self._output_dataset_path(job, path):
             return os.path.dirname(dataset_path)
         raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
+
+    def _authorize_restricted_write(self, job: Job, path: str) -> str:
+        """Allow only the job's outputs and the job directories results are staged back to.
+
+        Job scripts, ``configs/`` and ``inputs/`` are Galaxy-produced inputs the runner has no reason to rewrite.
+        """
+        if os.path.islink(path):
+            raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
+        if dataset_path := self._output_dataset_path(job, path):
+            return os.path.dirname(dataset_path)
+        working_directory = JobWorkingDirectory(job, self._object_store).resolve()
+        job_directory = os.path.realpath(working_directory)
+        # Relative to the resolved job directory, so that a symlink among the allowed directories can't widen them.
+        relative = os.path.relpath(os.path.realpath(path), job_directory).split(os.sep)
+        if (
+            len(relative) > 1
+            and relative[0] in RESTRICTED_WRITABLE_DIRECTORIES
+            and relative[:2] != RESTRICTED_UNWRITABLE_DIRECTORY
+        ):
+            return working_directory
+        raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
+
+    def _is_job_file(self, job: Job, path: str) -> bool:
+        """Whether ``path`` is in the job directory or is one of the job's datasets, inputs and their files included."""
+        target = os.path.realpath(path)
+        job_directory = os.path.realpath(JobWorkingDirectory(job, self._object_store).resolve())
+        if util.in_directory(target, job_directory):
+            return target != os.path.join(job_directory, RESTRICTED_UNREADABLE_FILE)
+        if self._output_dataset_path(job, path):
+            return True
+        input_assocs: list[JobToInputDatasetAssociation | JobToInputLibraryDatasetAssociation] = [
+            *job.input_datasets,
+            *job.input_library_datasets,
+        ]
+        # A purged input has an empty file name, which must not resolve to the Galaxy process cwd.
+        inputs = [
+            assoc.dataset for assoc in input_assocs if assoc.dataset and assoc.dataset.get_file_name(sync_cache=False)
+        ]
+        for dataset in inputs:
+            if os.path.realpath(dataset.get_file_name(sync_cache=False)) == target:
+                return True
+            if util.in_directory(target, dataset.extra_files_path):
+                return True
+        # Resolving metadata files can touch the object store, so only once the cheaper checks failed.
+        return any(
+            os.path.realpath(file_name) == target
+            for dataset in inputs
+            for file_name in input_metadata_file_names(dataset, sync_cache=False)
+        )
 
     def assert_job_active(self, encoded_job_id: str) -> None:
         """Check that a job whose write was already authorized is still queued or running."""

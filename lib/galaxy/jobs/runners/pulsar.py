@@ -47,6 +47,7 @@ from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
 )
+from galaxy.job_execution.setup import restrict_job_files
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
@@ -576,6 +577,13 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         fail_or_resubmit = False
         try:
             client = self.get_client_from_wrapper(job_wrapper)
+            if fail_message := PulsarJobRunner._restricted_job_files_error(
+                job_wrapper, PulsarJobRunner.__remote_metadata(client)
+            ):
+                job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
+                job_state.fail_message = fail_message
+                self.work_queue.put((self.fail_job, job_state))
+                return command_line, client, remote_job_config, compute_environment, remote_container
             assert job_wrapper.tool is not None
             tool = job_wrapper.tool
             remote_job_config = client.setup(tool.id, tool.version, tool.requires_galaxy_python_environment)
@@ -675,6 +683,26 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             self.work_queue.put((self.fail_job, job_state))
 
         return command_line, client, remote_job_config, compute_environment, remote_container
+
+    @staticmethod
+    def _restricted_job_files_error(job_wrapper: "MinimalJobWrapper", remote_metadata: bool | None) -> str | None:
+        """Refuse remote extended metadata for jobs whose job files are restricted.
+
+        Remote extended metadata returns outputs only through the model store in ``metadata/outputs_populated``.
+        Galaxy imports it with ``allow_edit`` and looks up the objects it names by database id without checking
+        that they belong to the job, so whoever writes it can edit any dataset, collection or job. The job files
+        API refuses those writes from these jobs.
+        """
+        if (
+            remote_metadata
+            and job_wrapper.external_output_metadata.extended
+            and restrict_job_files(job_wrapper.get_job())
+        ):
+            return (
+                "Remote extended metadata is not supported for user-defined tools or destinations with "
+                "job_files_policy: strict. Set metadata_strategy: directory or remote_metadata: false for this destination."
+            )
+        return None
 
     @staticmethod
     def _rewrite_container_for_compute_environment(container, compute_environment):

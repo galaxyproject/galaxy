@@ -36,6 +36,8 @@ from galaxy.util import (
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.path import StrPath
 
+JOB_FILES_POLICY_PARAM = "job_files_policy"
+STRICT_JOB_FILES_POLICY = "strict"
 TOOL_PROVIDED_JOB_METADATA_FILE = "galaxy.json"
 TOOL_PROVIDED_JOB_METADATA_KEYS = ["name", "info", "dbkey", "created_from_basename"]
 
@@ -210,12 +212,7 @@ class JobIO(UsesDictVisibleKeys):
         return cast(OutputHdasAndType, self.job_outputs.output_hdas_and_paths)
 
     def get_input_dataset_fnames(self, ds: DatasetInstance) -> list[str]:
-        filenames = [ds.get_file_name()]
-        # we will need to stage in metadata file names also
-        # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
-        for value in ds.metadata.values():
-            if isinstance(value, MetadataFile):
-                filenames.append(value.get_file_name())
+        filenames = [ds.get_file_name(), *input_metadata_file_names(ds)]
         if ds.dataset and ds.dataset.extra_files_path_exists():
             filenames.append(ds.dataset.extra_files_path)
         return filenames
@@ -324,6 +321,27 @@ class JobIO(UsesDictVisibleKeys):
             elif os.path.basename(dp.real_path) == file:
                 return dp.dataset_id
         return None
+
+
+def input_metadata_file_names(ds: DatasetInstance, sync_cache: bool = True) -> list[str]:
+    """Return the files of ``ds``'s file-valued metadata (a BAM index, for instance), which are staged with it."""
+    # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
+    return [
+        value.get_file_name(sync_cache=sync_cache) for value in ds.metadata.values() if isinstance(value, MetadataFile)
+    ]
+
+
+def restrict_job_files(job: Job) -> bool:
+    """Whether the job files API confines the job's runner to the job's own files.
+
+    Other jobs may read any file Galaxy can, such as the index files ``.loc`` files point at. User-defined tools have
+    no reference data, so their jobs need only their own files. Admins can confine other jobs by setting the
+    ``job_files_policy: strict`` destination parameter.
+    """
+    dynamic_tool = job.dynamic_tool
+    if dynamic_tool is not None and dynamic_tool.tool_format == "GalaxyUserTool":
+        return True
+    return (job.destination_params or {}).get(JOB_FILES_POLICY_PARAM) == STRICT_JOB_FILES_POLICY
 
 
 def ensure_configs_directory(work_dir: str) -> str:

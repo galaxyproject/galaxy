@@ -8,7 +8,11 @@ from galaxy import exceptions
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.managers.job_files import JobFilesManager
-from galaxy.model import Job
+from galaxy.model import (
+    DynamicTool,
+    Job,
+    MetadataFile,
+)
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore
 from galaxy.security.idencoding import IdEncodingHelper
@@ -130,10 +134,16 @@ def test_empty_path(manager, security, job):
         manager.readable_path(job_id, "", job_key)
 
 
-def _dataset(file_name, extra_files_path=None):
+def _dataset(file_name, extra_files_path=None, metadata_file_name=None):
+    metadata = {}
+    if metadata_file_name:
+        metadata_file = MetadataFile()
+        metadata_file.__dict__["get_file_name"] = lambda sync_cache=True: metadata_file_name
+        metadata["bam_index"] = metadata_file
     return SimpleNamespace(
         get_file_name=lambda sync_cache=True: file_name,
         extra_files_path=extra_files_path,
+        metadata=metadata,
         dataset=SimpleNamespace(purged=not file_name),
     )
 
@@ -153,3 +163,154 @@ def test_purged_output_dataset_does_not_authorize_the_process_cwd(manager, secur
     assert manager._output_dataset_path(job, os.getcwd()) is None
     with pytest.raises(exceptions.ItemAccessibilityException):
         manager.authorize_write(job_id, os.getcwd(), job_key)
+
+
+@pytest.fixture(params=["user_defined_tool", "strict_destination"])
+def restricted_job(request, job):
+    if request.param == "user_defined_tool":
+        job.dynamic_tool = DynamicTool(tool_format="GalaxyUserTool")
+    else:
+        job.destination_params = {"job_files_policy": "strict"}
+    return job
+
+
+def _write(path, content=""):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write(content)
+    return str(path)
+
+
+@pytest.fixture
+def job_files(tmp_path, job):
+    datasets = tmp_path / "objects"
+    input_extra_files = datasets / "dataset_1_files"
+    files = SimpleNamespace(
+        outside=_write(tmp_path / "galaxy.yml", "secret"),
+        input=_write(datasets / "dataset_1.dat", "input"),
+        input_extra_file=_write(input_extra_files / "index.html", "extra"),
+        input_metadata_file=_write(datasets / "_metadata_files" / "metadata_1.dat", "bai"),
+        output=_write(datasets / "dataset_2.dat"),
+        output_extra_files=str(datasets / "dataset_2_files"),
+    )
+    _set_datasets(
+        job,
+        inputs=[_dataset(files.input, str(input_extra_files), files.input_metadata_file)],
+        outputs=[_dataset(files.output, files.output_extra_files)],
+    )
+    return files
+
+
+def _job_path(job, *parts):
+    return os.path.join(_working_directory(job), *parts)
+
+
+@pytest.fixture
+def outside_link(restricted_job, job_files):
+    link = _job_path(restricted_job, "working", "link")
+    os.makedirs(os.path.dirname(link))
+    os.symlink(job_files.outside, link)
+    return link
+
+
+def test_restricted_job_reads_its_own_files(manager, security, restricted_job, job_files):
+    job_id, job_key = _keys(security)
+    paths = [
+        _write(_job_path(restricted_job, "tool_script.sh")),
+        _write(_job_path(restricted_job, "configs", "tmp_config")),
+        _write(_job_path(restricted_job, "inputs", "materialized.dat")),
+        job_files.input,
+        job_files.input_extra_file,
+        job_files.input_metadata_file,
+    ]
+    for path in paths:
+        assert manager.readable_path(job_id, path, job_key) == path
+
+
+def test_restricted_job_reads_nothing_else(manager, security, restricted_job, job_files, outside_link, tmp_path):
+    job_id, job_key = _keys(security)
+    object_store_conf = _write(_job_path(restricted_job, "metadata", "object_store_conf.json"))
+    for path in [job_files.outside, outside_link, object_store_conf, str(tmp_path / "missing")]:
+        with pytest.raises(exceptions.ItemAccessibilityException):
+            manager.readable_path(job_id, path, job_key)
+
+
+def test_unrestricted_job_reads_any_file(manager, security, job, job_files):
+    job_id, job_key = _keys(security)
+    assert manager.readable_path(job_id, job_files.outside, job_key) == job_files.outside
+
+
+def test_restricted_job_purged_input_does_not_match_the_process_cwd(manager, security, restricted_job):
+    job_id, job_key = _keys(security)
+    _set_datasets(restricted_job, inputs=[_dataset("")])
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.readable_path(job_id, os.getcwd(), job_key)
+
+
+def test_restricted_job_purged_input_is_reported(manager, security, restricted_job, tmp_path):
+    job_id, job_key = _keys(security)
+    _set_datasets(restricted_job, inputs=[_dataset("")])
+    with pytest.raises(exceptions.ItemDeletionException):
+        manager.readable_path(job_id, str(tmp_path / "dataset_1.dat"), job_key)
+
+
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "working/out.txt",
+        "working/sub/dir/galaxy.json",
+        "outputs/tool_stdout",
+        "outputs/COMMAND_VERSION",
+        "outputs/dataset_2.dat",
+        "metadata/metadata_out_HistoryDatasetAssociation_2",
+        "metadata/__instrument_core_galaxy_slots",
+    ],
+)
+def test_restricted_job_writes_staged_results(manager, security, restricted_job, relative):
+    job_id, job_key = _keys(security)
+    working_directory = _working_directory(restricted_job)
+    assert manager.authorize_write(job_id, _job_path(restricted_job, relative), job_key) == working_directory
+
+
+def test_restricted_job_writes_its_outputs(manager, security, restricted_job, job_files):
+    job_id, job_key = _keys(security)
+    output_directory = os.path.dirname(job_files.output)
+    assert manager.authorize_write(job_id, job_files.output, job_key) == output_directory
+    extra_file = os.path.join(job_files.output_extra_files, "child.txt")
+    assert manager.authorize_write(job_id, extra_file, job_key) == output_directory
+
+
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "tool_script.sh",
+        "command.sh",
+        "container_runtime.json",
+        "configs/tmp_config",
+        "inputs/materialized.dat",
+        "metadata/outputs_populated/collection.json",
+        "metadata/outputs_populated",
+        "working",
+        "working/../tool_script.sh",
+    ],
+)
+def test_restricted_job_refuses_other_job_directory_writes(manager, security, restricted_job, relative):
+    job_id, job_key = _keys(security)
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.authorize_write(job_id, _job_path(restricted_job, relative), job_key)
+
+
+def test_restricted_job_refuses_writes_outside_the_job(manager, security, restricted_job, job_files):
+    job_id, job_key = _keys(security)
+    for path in [job_files.outside, job_files.input, job_files.input_metadata_file]:
+        with pytest.raises(exceptions.ItemAccessibilityException):
+            manager.authorize_write(job_id, path, job_key)
+
+
+def test_restricted_job_refuses_writes_through_symlinks(manager, security, restricted_job, job_files, outside_link):
+    job_id, job_key = _keys(security)
+    linked_directory = _job_path(restricted_job, "outputs")
+    os.symlink(os.path.dirname(job_files.outside), linked_directory)
+    for path in [outside_link, os.path.join(linked_directory, "galaxy.yml")]:
+        with pytest.raises(exceptions.ItemAccessibilityException):
+            manager.authorize_write(job_id, path, job_key)

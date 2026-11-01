@@ -375,3 +375,10 @@ def test_host_metadata_does_not_resolve_container(config):
     runner = _runner()
     wrapper = SimpleNamespace(job_destination=SimpleNamespace(params=config))
     assert runner._get_metadata_container(wrapper) is None
+
+
+def test_restricted_job_files_allow_galaxy_side_extended_metadata():
+    job = model.Job()
+    job.dynamic_tool = model.DynamicTool(tool_format="GalaxyUserTool")
+    job_wrapper = SimpleNamespace(get_job=lambda: job, external_output_metadata=SimpleNamespace(extended=True))
+    assert PulsarJobRunner._restricted_job_files_error(cast(Any, job_wrapper), remote_metadata=False) is None

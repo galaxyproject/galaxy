@@ -126,6 +126,10 @@ Every user-defined tool names the image it runs in, and that reference is resolv
 
 Set `require_container: true` on any destination that accepts user-defined tools. Without it, a tool whose image cannot be resolved runs directly on the host instead of failing.
 
+## Job files
+
+A Pulsar destination with `remote_transfer` file actions reads job inputs from, and writes job outputs to, Galaxy's job files API. For jobs of user-defined tools, Galaxy confines it to the job's own files. Reads are limited to the job directory and the job's datasets, including input extra files and metadata files such as a BAM index. Writes are limited to the job's outputs and its `working`, `outputs` and `metadata` directories. The extended metadata model store, `metadata/outputs_populated`, cannot be written, so a user-defined tool job on a destination with `remote_metadata: true` and an extended `metadata_strategy` fails at submission. Use `metadata_strategy: directory` on such destinations. Other destinations can opt into the same restrictions with `job_files_policy: strict`.
+
 ## Limitations
 
 The user-defined tool language is still evolving, and additional safety audits are ongoing.

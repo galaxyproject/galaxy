@@ -945,6 +945,18 @@ execution:
        #use_remote_datatypes: false
        #remote_property_galaxy_home: /path/to/remote/galaxy-central
 
+       # With 'remote_transfer' file actions, Pulsar reads and writes job files
+       # through Galaxy's job files API. By default it may read any file Galaxy
+       # can read (tools may need reference data that '.loc' files point at),
+       # and write to the job directory and the job's outputs. Set
+       # job_files_policy to 'strict' to confine it to the job's own files:
+       # reads to the job directory and the job's datasets, writes to the
+       # job's outputs and its 'working', 'outputs' and 'metadata' directories,
+       # never to the extended metadata model store. Jobs of user-defined
+       # tools are always confined this way. Strict jobs cannot use remote
+       # extended metadata.
+       #job_files_policy: strict
+
        # If remote Pulsar server is configured to run jobs as the real user,
        # uncomment the following line to pass the current Galaxy user
        # along.
