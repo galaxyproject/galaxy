@@ -120,3 +120,37 @@ def test_missing_params(manager, security, job):
         manager.authorize_write(job_id, None, job_key)
     with pytest.raises(exceptions.ObjectAttributeMissingException):
         manager.authorize_write(job_id, path, None)
+
+
+def test_empty_path(manager, security, job):
+    job_id, job_key = _keys(security)
+    with pytest.raises(exceptions.RequestParameterInvalidException):
+        manager.authorize_write(job_id, "", job_key)
+    with pytest.raises(exceptions.RequestParameterInvalidException):
+        manager.readable_path(job_id, "", job_key)
+
+
+def _dataset(file_name, extra_files_path=None):
+    return SimpleNamespace(
+        get_file_name=lambda sync_cache=True: file_name,
+        extra_files_path=extra_files_path,
+        purged=not file_name,
+        dataset=SimpleNamespace(purged=not file_name),
+    )
+
+
+def _set_datasets(job, inputs=(), outputs=()):
+    # Bypass the relationships' backref machinery, which stand-in datasets can't satisfy.
+    job.__dict__["input_datasets"] = [SimpleNamespace(dataset=dataset) for dataset in inputs]
+    job.__dict__["input_library_datasets"] = []
+    job.__dict__["output_datasets"] = [SimpleNamespace(dataset=dataset) for dataset in outputs]
+    job.__dict__["output_library_datasets"] = []
+
+
+def test_purged_output_dataset_does_not_authorize_the_process_cwd(manager, security, job):
+    job_id, job_key = _keys(security)
+    # ``get_file_name()`` is empty for a purged dataset and ``abspath("")`` is the cwd.
+    _set_datasets(job, outputs=[_dataset("")])
+    assert manager._output_dataset_path(job, os.getcwd()) is None
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.authorize_write(job_id, os.getcwd(), job_key)

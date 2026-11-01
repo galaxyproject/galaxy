@@ -64,8 +64,6 @@ class JobFilesManager:
     def authorize_write(self, encoded_job_id: str, path: str | None, job_key: str | None) -> str:
         """Return a directory to stage uploads for ``path`` in - same filesystem, outside any extra files path."""
         job, path = self._authorize(encoded_job_id, path, job_key)
-        if not path:
-            raise exceptions.RequestParameterInvalidException("'path' parameter not provided or empty.")
         if not os.path.isabs(path):
             raise exceptions.RequestParameterInvalidException("'path' parameter must be an absolute path.")
         working_directory = JobWorkingDirectory(job, self._object_store).resolve()
@@ -120,7 +118,10 @@ class JobFilesManager:
         job_id = self._security.decode_id(encoded_job_id)
         if not util.safe_str_cmp(job_key, self._security.encode_id(job_id, kind="jobs_files")):
             raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
-        return self._active_job(job_id), path
+        job = self._active_job(job_id)
+        if not path:
+            raise exceptions.RequestParameterInvalidException("'path' parameter not provided or empty.")
+        return job, path
 
     def _active_job(self, job_id: int) -> Job:
         job = self._sa_session.get(Job, job_id)
@@ -143,6 +144,10 @@ class JobFilesManager:
             if not dataset:
                 continue
             dataset_path = dataset.get_file_name()
+            # A purged dataset, or one missing from its object store, has an empty file name,
+            # and ``abspath("")`` is the Galaxy process cwd.
+            if not dataset_path:
+                continue
             if os.path.abspath(dataset_path) == os.path.abspath(path) or util.in_directory(
                 path, dataset.extra_files_path
             ):
