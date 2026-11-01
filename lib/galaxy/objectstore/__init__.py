@@ -429,7 +429,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         supported by the backend, are baked into the URL so the client receives the right download filename
         and content type. ``extra_dir``, ``extra_dir_at_root`` and ``alt_name`` address a file stored with
         `obj` (e.g. a metadata file) as in ``get_filename``. ``expires_in`` is how long a presigned URL
-        lasts, in seconds; without it the store uses its own default.
+        lasts, in seconds, up to the store's ``direct_download_expires_in``, which is also the default.
         """
         raise NotImplementedError()
 
@@ -1066,13 +1066,18 @@ class ConcreteObjectStore(BaseObjectStore):
             object_expires_after_days=self.object_expires_after_days,
         )
 
-    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None, **kwargs) -> str | None:
+    def _get_direct_download_url(
+        self, obj, content_disposition=None, content_type=None, expires_in=None, **kwargs
+    ) -> str | None:
         if not self.enable_direct_download:
             return None
+        # A caller may ask for a shorter lifetime than the store's, never a longer one.
+        if expires_in is None or expires_in > self.direct_download_expires_in:
+            expires_in = self.direct_download_expires_in
         # _get_object_url is resolved via dynamic dispatch on each concrete backend; it is not
         # declared on ConcreteObjectStore so static analysis can't see it here.
         return self._get_object_url(  # type: ignore[attr-defined]
-            obj, content_disposition=content_disposition, content_type=content_type, **kwargs
+            obj, content_disposition=content_disposition, content_type=content_type, expires_in=expires_in, **kwargs
         )
 
     def _get_concrete_store_badges(self, obj) -> list[BadgeDict]:

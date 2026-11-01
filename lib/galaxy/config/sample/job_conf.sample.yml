@@ -939,8 +939,9 @@ execution:
        # Extra files of composite inputs are listed in the object store, which
        # irods, pithos, rucio and onedata stores cannot do.
        # Each input's URL is signed in its query string and works until the
-       # job finishes, and a presigned URL for 15 minutes, so keep query
-       # strings out of access logs, as for the job_key of job files URLs.
+       # job finishes, and a presigned URL for 15 minutes, or the store's
+       # direct_download_expires_in if shorter, so keep query strings out of
+       # access logs, as for the job_key of job files URLs.
        # Pulsar needs no object store credentials for this; where Pulsar mounts
        # Galaxy's disk, the path rules above avoid the transfer instead.
        # Galaxy pulls no input into its cache here, so a path rule that sends
