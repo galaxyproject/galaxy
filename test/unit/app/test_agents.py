@@ -1504,6 +1504,23 @@ class TestAgentUnitMocked:
         assert response.agent_type == AgentType.ERROR_ANALYSIS
 
     @pytest.mark.asyncio
+    async def test_router_asks_the_user_when_it_keeps_writing_handoffs_out(self):
+        """If every retry is another written-out hand-off, the user mustn't be told the AI
+        service is down -- it isn't. Ask them to say what they need instead."""
+        self.mock_config.ai_model = "gpt-4o"
+        router = QueryRouterAgent(self.deps)
+
+        def router_fn(messages, info):
+            return ModelResponse(parts=[TextPart(content='{"task": "Analyze the failed job."}')])
+
+        with router.agent.override(model=FunctionModel(router_fn)):
+            response = await router.process("the one you just found")
+
+        assert response.agent_type == "clarification"
+        assert "unavailable" not in response.content
+        assert '"task"' not in response.content
+
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "answer",
         [
