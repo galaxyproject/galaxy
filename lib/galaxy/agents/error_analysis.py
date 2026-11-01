@@ -247,13 +247,18 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         if not history:
             return history
         trimmed = [_trim_message(message) for message in history]
-        # Keep the newest messages that fit, so the conversation as a whole stays bounded too.
+        # Keep the newest messages that fit, so the conversation as a whole stays bounded too. The
+        # newest turn stays whole even past the budget: without its request the reply would dangle
+        # and be dropped below, and that reply is usually where the failed job was named.
         start = len(trimmed)
         total = 0
+        kept_a_request = False
         while start > 0:
-            total += _message_chars(trimmed[start - 1])
-            if total > HISTORY_CHAR_BUDGET and start < len(trimmed):
+            message = trimmed[start - 1]
+            total += _message_chars(message)
+            if total > HISTORY_CHAR_BUDGET and kept_a_request:
                 break
+            kept_a_request = kept_a_request or isinstance(message, ModelRequest)
             start -= 1
         kept = trimmed[start:]
         # A replayed conversation has to open on a request, not a dangling reply.
