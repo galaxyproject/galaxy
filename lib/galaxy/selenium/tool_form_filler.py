@@ -117,6 +117,8 @@ class ToolFormFiller:
 
     def enter_collection_mode(self, path: str) -> None:
         # A dataset field lists collections only in its collection (map over) mode.
+        # Its mode buttons render with the select, which may not be there yet just after tool_open.
+        self._tool_form.parameter_data_select(parameter=path).wait_for_visible()
         collection_mode = self._tool_form.parameter_data_input_collection(parameter=path)
         if collection_mode.is_absent:
             return

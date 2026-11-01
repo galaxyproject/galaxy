@@ -1008,11 +1008,11 @@ tool_form:
     repeat_move_down: '#${parameter}_down'
     repeat_clone: '#${parameter}_clone'
     section_header: '.ui-portlet-section .portlet-header'
-    # Only tool parameters, excluding workflow output cards in Additional Options.
+    # Only tool parameters, excluding workflow output cards in Additional Options. The h2 sits in a separator div.
     # A collapsed section's content is v-show'n out; skip headers that are themselves hidden in one.
     section_header_collapsed:
       type: xpath
-      selector: '//div[h2[normalize-space(.)="Tool Parameters"]]//*[contains(@class, "ui-portlet-section")]/*[contains(@class, "portlet-header")][following-sibling::*[contains(@class, "portlet-content")][contains(@style, "display: none")]][not(ancestor::*[contains(@style, "display: none")])]'
+      selector: '//h2[normalize-space(.)="Tool Parameters"]/ancestor::div[.//*[contains(@class, "ui-portlet-section")]][1]//*[contains(@class, "ui-portlet-section")]/*[contains(@class, "portlet-header")][following-sibling::*[contains(@class, "portlet-content")][contains(@style, "display: none")]][not(ancestor::*[contains(@style, "display: none")])]'
     # Relative to a section header: the content its click shows or hides.
     section_header_content:
       type: xpath

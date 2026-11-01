@@ -10,7 +10,7 @@
          an empty "inner", and two same-named "dup" repeats sit in sibling sections. -->
     <span data-description="galaxy tool version">1.0</span>
     <div>
-      <h2>Tool Parameters</h2>
+      <div class="separator heading"><h2>Tool Parameters</h2></div>
       <div id="form"></div>
     </div>
     <script>
@@ -18,7 +18,10 @@
         const div = document.createElement("div");
         div.className = "ui-form-element";
         div.id = `form-element-${id}`;
-        div.append(document.createElement("input"));
+        const field = document.createElement("div");
+        field.className = "ui-form-field";
+        field.append(document.createElement("input"));
+        div.append(field);
         return div;
       };
       const section = (children, collapsed) => {

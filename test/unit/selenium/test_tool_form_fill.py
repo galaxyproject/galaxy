@@ -63,6 +63,16 @@ def test_select_collection_waits_even_while_tooltip_blanks_title(fixture_page, p
     assert page.components.tool_form.parameter_data_selected(parameter="input1").wait_for_text() == "62: newer.txt"
 
 
+def test_select_collection_waits_for_the_field_to_render(fixture_page):
+    page = fixture_page("data_hid.html")
+    page.execute_script(
+        "const el = document.getElementById('form-element-input1'); const parent = el.parentNode;"
+        "el.remove(); setTimeout(() => parent.append(el), 500);"
+    )
+    page.tool_form_select_collection("input1", "62: newer.txt")
+    assert page.find_element_by_selector("#collection").get_attribute("class") == "g-pressed"
+
+
 def test_nested_repeat_with_same_name_only_inserts_in_the_enclosing_instance(fixture_page):
     page = fixture_page("nested_repeat.html")
     page.tool_form_fill(values={"same_0|inner_1|x": "v"})

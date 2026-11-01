@@ -9,7 +9,7 @@
          holds the collapsed "inner_sec". data-path exists only to drive this page. -->
     <span data-description="galaxy tool version">1.0</span>
     <div>
-      <h2>Tool Parameters</h2>
+      <div class="separator heading"><h2>Tool Parameters</h2></div>
       <div class="ui-portlet-section" id="sec">
         <div class="portlet-header">Sec</div>
         <div class="portlet-content" style="display: none">
@@ -32,11 +32,13 @@
       </div>
     </div>
     <div>
-      <h2>Additional Options</h2>
+      <div class="separator heading"><h2>Additional Options</h2></div>
       <div class="ui-portlet-section" id="output">
         <div class="portlet-header">Configure Output</div>
         <div class="portlet-content" style="display: none">
-          <div class="ui-form-element"><input /></div>
+          <div class="ui-form-element">
+            <div class="ui-form-field"><input /></div>
+          </div>
         </div>
       </div>
     </div>
@@ -48,7 +50,10 @@
         const div = document.createElement("div");
         div.className = "ui-form-element";
         div.id = `form-element-${path}_${n}|x`;
-        div.append(document.createElement("input"));
+        const field = document.createElement("div");
+        field.className = "ui-form-field";
+        field.append(document.createElement("input"));
+        div.append(field);
         // A repeat block is a non-collapsible FormCard: its operations sit in the header.
         const block = document.createElement("div");
         block.className = "ui-portlet-section card";
