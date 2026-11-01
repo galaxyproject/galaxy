@@ -24,6 +24,7 @@ from rocrate_validator import (
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.exceptions import MalformedContents
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.scoped_session import galaxy_scoped_session as scoped_session
@@ -1492,6 +1493,145 @@ def test_import_datasets_with_ids_fails_if_not_editing_models():
         # TODO: catch a better exception
         caught = e
     assert caught
+
+
+class CatJob(NamedTuple):
+    app: "TestApp"
+    history: model.History
+    input: model.HistoryDatasetAssociation
+    output: model.HistoryDatasetAssociation
+    job: model.Job
+
+
+@pytest.fixture
+def cat_job():
+    app = _mock_app(store_by="uuid")
+    u, h, d1, d2, j = _setup_simple_cat_job(app)
+    return CatJob(app, h, d1, d2, j)
+
+
+def _export_for_edit(directory, cat_job, *datasets):
+    with store.DirectoryModelExportStore(
+        directory, app=cat_job.app, for_edit=True, strip_metadata_files=False
+    ) as export_store:
+        for dataset in datasets:
+            export_store.add_dataset(dataset)
+
+
+def _edit_dataset_attrs(directory, **attributes):
+    attrs_path = directory / store.ATTRS_FILENAME_DATASETS
+    datasets_attrs = json.loads(attrs_path.read_text())
+    datasets_attrs[0].update(attributes)
+    attrs_path.write_text(json.dumps(datasets_attrs))
+    return datasets_attrs[0]
+
+
+def _import_job_outputs(directory, cat_job, allow_dataset_file_edit=True):
+    import_options = store.ImportOptions(
+        allow_dataset_object_edit=True,
+        allow_edit=True,
+        editable_objects=store.EditableObjects(cat_job.job, allow_dataset_file_edit=allow_dataset_file_edit),
+    )
+    _perform_import_from_directory(directory, cat_job.app, cat_job.history.user, cat_job.history, import_options)
+
+
+def test_import_edits_job_outputs(tmp_path, cat_job):
+    _export_for_edit(tmp_path, cat_job, cat_job.output)
+    _edit_dataset_attrs(tmp_path, name="edited")
+    _import_job_outputs(tmp_path, cat_job)
+    assert cat_job.output.name == "edited"
+
+
+def test_import_accepts_sessionless_string_ids(cat_job):
+    store.EditableObjects(cat_job.job).assert_editable(model.Job, str(cat_job.job.id))
+
+
+def test_import_edits_library_folders_the_user_can_add_to(cat_job):
+    editable = store.EditableObjects(cat_job.job, can_add_to_library_folder=lambda folder_id: folder_id == 7)
+    editable.assert_editable(model.LibraryFolder, 7)
+    with pytest.raises(MalformedContents, match="may not edit"):
+        editable.assert_editable(model.LibraryFolder, 8)
+
+
+def _forge_input_edit(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.input)
+
+
+def _forge_dataset_swap(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.output)
+    dataset_attrs = json.loads((directory / store.ATTRS_FILENAME_DATASETS).read_text())[0]["dataset"]
+    _edit_dataset_attrs(directory, dataset={**dataset_attrs, "id": cat_job.input.dataset.id})
+
+
+def _forge_collection_edit(directory, cat_job):
+    collection = model.DatasetCollection(collection_type="list")
+    hdca = model.HistoryDatasetCollectionAssociation(history=cat_job.history, hid=3, collection=collection)
+    cat_job.app.add_and_commit(hdca)
+    _export_for_edit(directory, cat_job, cat_job.output)
+    with store.DirectoryModelExportStore(directory, app=cat_job.app, for_edit=True) as export_store:
+        export_store.add_dataset_collection(hdca)
+
+
+def _forge_job_edit(directory, cat_job):
+    other_job = model.Job()
+    other_job.user = cat_job.history.user
+    other_job.tool_id = "cat1"
+    other_job.state = model.Job.states.OK
+    cat_job.app.add_and_commit(other_job)
+    _export_for_edit(directory, cat_job, cat_job.output)
+    jobs_attrs_path = directory / store.ATTRS_FILENAME_JOBS
+    jobs_attrs = json.loads(jobs_attrs_path.read_text())
+    jobs_attrs[0]["id"] = other_job.id
+    jobs_attrs_path.write_text(json.dumps(jobs_attrs))
+
+
+@pytest.mark.parametrize("forge", [_forge_input_edit, _forge_dataset_swap, _forge_collection_edit, _forge_job_edit])
+def test_import_refuses_objects_that_are_not_job_outputs(tmp_path, cat_job, forge):
+    forge(tmp_path, cat_job)
+    with pytest.raises(MalformedContents, match="may not edit"):
+        _import_job_outputs(tmp_path, cat_job)
+
+
+def test_import_refuses_metadata_file_of_another_dataset(tmp_path, cat_job):
+    index = NamedTemporaryFile("w")
+    index.write("cool bam index")
+    index.flush()
+    cat_job.input.extension = "bam"
+    cat_job.input.metadata.from_JSON_dict(
+        json_dict={"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index.name})}
+    )
+    cat_job.app.commit()
+    _export_for_edit(tmp_path, cat_job, cat_job.input)
+    _rewrite_export_as_new_datasets(tmp_path)
+    with pytest.raises(MalformedContents, match="may not reuse metadata file"):
+        _import_job_outputs(tmp_path, cat_job)
+
+
+def _forge_external_filename(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.output)
+    dataset_attrs = json.loads((directory / store.ATTRS_FILENAME_DATASETS).read_text())[0]["dataset"]
+    _edit_dataset_attrs(directory, dataset={**dataset_attrs, "external_filename": str(TEST_PATH_1)})
+
+
+def _forge_object_store_move(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.output)
+    dataset_attrs = json.loads((directory / store.ATTRS_FILENAME_DATASETS).read_text())[0]["dataset"]
+    _edit_dataset_attrs(directory, dataset={**dataset_attrs, "object_store_id": "other"})
+
+
+def _forge_new_dataset_in_user_object_store(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.output)
+    _rewrite_export_as_new_datasets(directory)
+    _edit_dataset_attrs(directory, dataset={"object_store_id": "user_objects://another-users-store"})
+
+
+@pytest.mark.parametrize(
+    "forge", [_forge_external_filename, _forge_object_store_move, _forge_new_dataset_in_user_object_store]
+)
+def test_user_defined_tool_import_refuses_dataset_file_edits(tmp_path, cat_job, forge):
+    forge(tmp_path, cat_job)
+    with pytest.raises(MalformedContents, match="may not (link|move)"):
+        _import_job_outputs(tmp_path, cat_job, allow_dataset_file_edit=False)
 
 
 def _setup_simple_export(export_kwds):
