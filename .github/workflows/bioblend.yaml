@@ -65,6 +65,8 @@ jobs:
           PGPASSWORD: postgres
           PGPORT: 5432
           PGHOST: localhost
+          # BioBlend's user-defined tool tests use busybox.
+          GALAXY_CONFIG_OVERRIDE_USER_DEFINED_TOOL_ALLOWED_CONTAINERS: '*'
         run: |
           # Create a PostgreSQL database for Galaxy. The default SQLite3 database makes test fail randomly because of "database locked" error.
           createdb -U postgres galaxy
