@@ -14,8 +14,8 @@ echo "parameter: $parameter" > '$output'
         <test>
             <param name="ref_parameter">
                 <collection type="paired">
-                    <element name="forward" value="simple_line.txt" tags="group:type:single" />
-                    <element name="reverse" value="simple_line_alternative.txt" tags="group:type:split" />
+                    <element name="forward" value="simple_line.txt" ftype="tabular" tags="group:type:single" />
+                    <element name="reverse" value="simple_line_alternative.txt" ftype="tabular" tags="group:type:split" />
                 </collection>
             </param>
             <param name="parameter" value="type:single" />

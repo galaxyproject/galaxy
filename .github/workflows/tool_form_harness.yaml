@@ -75,6 +75,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.10']
+        chunk: [0, 1, 2, 3]
     services:
       postgres:
         image: postgres:18
@@ -115,7 +116,7 @@ jobs:
           key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
           path: 'galaxy root/static'
       - name: Run tests
-        run: ./run_tests.sh -playwright lib/galaxy_test/selenium/test_tool_form_harness.py -- -n 3
+        run: ./run_tests.sh -playwright lib/galaxy_test/selenium/test_tool_form_harness.py -- -n 3 --num-shards=4 --shard-id=${{ matrix.chunk }}
         env:
           # Coverage slows the tests down; collect it for pushes and scheduled runs only.
           GALAXY_TEST_COVERAGE: ${{ github.event_name != 'pull_request' && '1' || '' }}
@@ -128,10 +129,10 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: Tool form harness test results (${{ matrix.python-version }})
+          name: Tool form harness test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/run_playwright_tests.html'
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: Tool form harness debug info (${{ matrix.python-version }})
+          name: Tool form harness debug info (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/database/test_errors'
