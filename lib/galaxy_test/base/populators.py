@@ -561,10 +561,8 @@ class BaseDatasetPopulator(BasePopulator):
         directory_path = test_data_resolver.get_filename(directory)
         assert os.path.isdir(directory_path)
 
-        tmp = tempfile.NamedTemporaryFile(delete=False)
-        tf = tarfile.open(fileobj=tmp, mode="w:")
-        tf.add(directory_path, ".")
-        tf.close()
+        with tempfile.NamedTemporaryFile(delete=False) as tmp, tarfile.open(fileobj=tmp, mode="w:") as tf:
+            tf.add(directory_path, ".")
 
         with open(tmp.name, "rb") as tar_f:
             destination = {"type": "hdas"}

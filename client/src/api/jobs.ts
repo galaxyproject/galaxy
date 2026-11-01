@@ -1,9 +1,10 @@
 import type { components } from "@/api/schema";
 import type { ToolFormConfig } from "@/api/tools";
 import type { FormData } from "@/components/Form/composables/useFormState";
-import { rethrowSimple } from "@/utils/simple-error";
+import { ApiError, rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 import { GalaxyApi } from "./client";
+import { RETRY_ON_429_HEADER } from "./client/rateLimiter";
 
 export type JobDestinationParams = components["schemas"]["JobDestinationParams"];
 export type ShowFullJobResponse = components["schemas"]["ShowFullJobResponse"];
@@ -76,13 +77,15 @@ export interface SubmitToolJobParams {
  * @returns A promise that resolves to a boolean indicating whether the job was successfully deleted or job was already in a terminal state.
  */
 export async function deleteJob(jobId: string, message?: string): Promise<boolean> {
-    const { data, error } = await GalaxyApi().DELETE("/api/jobs/{job_id}", {
+    const { data, error, response } = await GalaxyApi().DELETE("/api/jobs/{job_id}", {
         params: { path: { job_id: jobId } },
-        data: { message },
+        body: message ? { message } : undefined,
+        // Stopping a job is safe to repeat, so let the rate limiter retry it.
+        headers: { [RETRY_ON_429_HEADER]: "1" },
     });
 
     if (error) {
-        rethrowSimple(error);
+        rethrowSimpleWithStatus(error, response);
     }
 
     return data;
@@ -116,4 +119,51 @@ export async function submitJobRequest(jobRequest: JobRequest) {
         rethrowSimple(error);
     }
     return data;
+}
+
+/** Stops at most this many jobs at once, so bulk stops stay under proxy rate limits. */
+const STOP_JOBS_CONCURRENCY = 4;
+
+export interface StopJobsResult {
+    stopped: string[];
+    failed: { jobId: string; error: Error }[];
+}
+
+/**
+ * Stop several jobs with bounded concurrency. The GalaxyApi rate limiter retries
+ * rate-limited stops; once one gives up, queued jobs fail with its error unsent.
+ * Never rejects: failures are collected per job.
+ * @param onProgress Called with the number of jobs handled so far.
+ */
+export async function stopJobs(
+    jobIds: string[],
+    message?: string,
+    onProgress?: (done: number) => void,
+): Promise<StopJobsResult> {
+    const result: StopJobsResult = { stopped: [], failed: [] };
+    const queue = [...jobIds];
+    let rateLimitError: Error | undefined;
+
+    async function worker() {
+        let jobId;
+        while ((jobId = queue.shift()) !== undefined) {
+            try {
+                if (rateLimitError) {
+                    throw rateLimitError;
+                }
+                await deleteJob(jobId, message);
+                result.stopped.push(jobId);
+            } catch (error) {
+                const failure = error instanceof Error ? error : new Error(String(error));
+                if (failure instanceof ApiError && failure.status === 429) {
+                    rateLimitError = failure;
+                }
+                result.failed.push({ jobId, error: failure });
+            }
+            onProgress?.(result.stopped.length + result.failed.length);
+        }
+    }
+
+    await Promise.all(Array.from({ length: Math.min(STOP_JOBS_CONCURRENCY, jobIds.length) }, worker));
+    return result;
 }

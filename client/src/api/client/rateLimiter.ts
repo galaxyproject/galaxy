@@ -15,6 +15,13 @@ interface RateLimitConfig {
     maxRetries?: number;
 }
 
+/**
+ * Request header opting a non-GET request into 429 retries. Use it only for
+ * requests that are safe to repeat, such as stopping a job; the middleware
+ * strips it before sending.
+ */
+export const RETRY_ON_429_HEADER = "X-Galaxy-Retry-On-429";
+
 export const DEFAULT_CONFIG: Required<RateLimitConfig> = {
     maxRequests: 100,
     windowMs: 60000,
@@ -46,6 +53,10 @@ export function createRateLimiterMiddleware(config: RateLimitConfig = {}): Middl
 
     let requestCount = 0;
     let windowStart = Date.now();
+    /** Settles once every 429 backoff in progress has ended; new requests wait for it. */
+    let pause: Promise<unknown> = Promise.resolve();
+    /** Unsent copies of opted-in requests, so their bodies can be sent again on retry. */
+    const retryCopies = new WeakMap<Request, Request>();
 
     /** Resets the request window if the time has elapsed */
     function resetWindowIfNeeded() {
@@ -58,6 +69,11 @@ export function createRateLimiterMiddleware(config: RateLimitConfig = {}): Middl
 
     /** Places a request in the rate limiter queue */
     async function placeRequestInQueue(): Promise<void> {
+        let current;
+        do {
+            current = pause;
+            await current;
+        } while (current !== pause);
         resetWindowIfNeeded();
 
         if (requestCount < cfg.maxRequests) {
@@ -77,12 +93,20 @@ export function createRateLimiterMiddleware(config: RateLimitConfig = {}): Middl
     const middleware: Middleware = {
         async onRequest({ request }) {
             await placeRequestInQueue();
+            if (request.headers.has(RETRY_ON_429_HEADER)) {
+                const headers = new Headers(request.headers);
+                headers.delete(RETRY_ON_429_HEADER);
+                const stripped = new Request(request, { headers });
+                retryCopies.set(stripped, stripped.clone());
+                return stripped;
+            }
             return request;
         },
 
         async onResponse({ response: res, request }) {
+            const retryCopy = retryCopies.get(request);
             // Handle 429 Too Many Requests from server
-            if (res.status === 429 && request.method === "GET") {
+            if (res.status === 429 && (request.method === "GET" || retryCopy)) {
                 const firstDelay = retryDelayMs(1, res, request.url);
                 if (firstDelay === null) {
                     return res;
@@ -94,10 +118,12 @@ export function createRateLimiterMiddleware(config: RateLimitConfig = {}): Middl
                 let retryResponse = res;
                 while (retries < cfg.maxRetries) {
                     retries++;
-                    await new Promise((resolve) => setTimeout(resolve, delay));
+                    const backoff = new Promise((resolve) => setTimeout(resolve, delay));
+                    pause = Promise.all([pause, backoff]);
+                    await backoff;
 
                     // A tricky thing here is that we will bypass the middleware chain on retry
-                    retryResponse = await fetch(request);
+                    retryResponse = await fetch(retryCopy ? retryCopy.clone() : request);
                     if (retryResponse.status !== 429) {
                         return retryResponse;
                     }

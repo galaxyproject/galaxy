@@ -34,6 +34,8 @@ To enable this feature:
 2. Create a role of type `Custom Tool Execution` in the admin user interface.
 3. Assign users or groups to this role.
 
+Galaxy checks the role again when a job is prepared, so removing a user from the role, or deleting the role, also fails that user's queued user-defined tool jobs.
+
 ## Sharing User-Defined Tools
 
 User-defined tools are private to their creators. However, if a tool is embedded in a workflow, any user who imports that workflow will automatically have the tool created in their account.
