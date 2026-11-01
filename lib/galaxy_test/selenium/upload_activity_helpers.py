@@ -41,9 +41,7 @@ from typing import (
     TypeVar,
 )
 
-from galaxy.selenium.has_driver import exception_indicates_stale_element
 from galaxy.selenium.web_element_protocol import WebElementProtocol
-from galaxy.util.wait import TimeoutAssertionError
 from .framework import NavigatesGalaxyMixin
 
 T = TypeVar("T", bound="UploadItem")
@@ -344,32 +342,11 @@ class UploadContext(_UploadStaging):
             upload.remote_files_current_folder(folder=folder).wait_for_visible()
 
     def _search_remote_files(self, text: str) -> None:
-        """Type ``text`` into the browser's search and wait until every listed label contains it."""
+        """Type ``text`` into the browser's search and wait until its debounced query has loaded."""
         # a click on a row the debounced search is about to replace is lost or lands on another row
-        self.components.upload_activity.remote_files_search.wait_for_and_clear_and_send_keys(text)
-        # outlast the input's 500ms debounce, else a listing that already matches passes and the query fires later
-        self.driver_wrapper.sleep_for(self.driver_wrapper.wait_types.UX_RENDER)
-        try:
-            self.driver_wrapper._wait_on(
-                lambda: self._remote_labels_match(text),
-                f"remote files matching {text}",
-                wait_type=self.driver_wrapper.wait_types.UX_TRANSITION,
-            )
-        except TimeoutAssertionError:
-            # some sources (e.g. Invenio records) ignore the query; the debounced search has settled by now
-            pass
-
-    def _remote_labels_match(self, text: str) -> bool:
-        labels = self.components.upload_activity.remote_files_browser_labels.all()
-        try:
-            return bool(labels) and all(
-                text.lower() in (label.get_attribute("data-label") or "").lower() for label in labels
-            )
-        except Exception as e:
-            # the search re-rendered the list under us
-            if exception_indicates_stale_element(e):
-                return False
-            raise
+        upload = self.components.upload_activity
+        upload.remote_files_search.wait_for_and_clear_and_send_keys(text)
+        upload.remote_files_search_settled(query=text).wait_for_present()
 
     def _select_remote_file(self, file_label: str) -> None:
         # search first: a large source pages its files

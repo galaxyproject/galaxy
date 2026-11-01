@@ -1834,6 +1834,7 @@ upload_activity:
     remote_files_add_selected: '[data-test-id="remote-files-add-selected"]'
     remote_files_ftp_help: '.remote-files-upload [data-description="ftp upload help"]'
     remote_files_search: '.remote-files-upload .search-bar-container input'
+    remote_files_search_settled: '.remote-files-upload .search-bar-container[data-search-query="${query}"]:not([data-busy])'
     remote_files_current_folder:
       type: xpath
       selector: '//*[contains(@class, "remote-files-upload")]//*[contains(@class, "breadcrumb-current-label") and normalize-space()="${folder}"]'
