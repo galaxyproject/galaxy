@@ -1235,6 +1235,35 @@ class TestAgentUnitMocked:
         assert "Which upstream tool" not in window
         assert "wrapper flaw" not in window
 
+    @pytest.mark.parametrize("earlier_turn", [True, False])
+    def test_router_keeps_the_request_that_started_a_long_clarification_run(self, earlier_turn):
+        """The subject is often the request that started the run ("a tutorial on somatic variant
+        calling"), not the turn before it. Past the cap that request has to stay too, whether or
+        not anything came before it."""
+        router = QueryRouterAgent(self.deps)
+        history: list[ModelMessage] = []
+        if earlier_turn:
+            history += [
+                ModelRequest(parts=[UserPromptPart(content="Show my workflows")]),
+                ModelResponse(parts=[TextPart(content="You have 2 workflows.")]),
+            ]
+        history += [
+            ModelRequest(parts=[UserPromptPart(content="Need a tutorial on somatic variant calling")]),
+            ModelResponse(parts=[TextPart(content="Which caller?")]),
+        ]
+        for i in range(4):
+            history.append(ModelRequest(parts=[UserPromptPart(content=f"answer {i}")]))
+            history.append(ModelResponse(parts=[TextPart(content=f"question {i}?")]))
+
+        routing_history = router._routing_history(history, clarification_turns=5)
+        assert routing_history is not None
+        window = _message_texts(routing_history)
+
+        assert "somatic variant calling" in window
+        assert "question 3?" in window
+        # Still bounded: the middle of the run drops out.
+        assert "question 0?" not in window
+
     def test_router_routing_window_wider_than_the_history_keeps_all_of_it(self):
         """A window reaching back past the first turn routes on the whole (short) conversation."""
         router = QueryRouterAgent(self.deps)
