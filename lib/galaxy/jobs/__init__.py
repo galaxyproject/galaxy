@@ -109,6 +109,7 @@ from galaxy.objectstore import (
 from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.deps.container_classes import JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
@@ -1441,8 +1442,7 @@ class MinimalJobWrapper(HasResourceParameters):
             # The tool execution is given a working directory beneath the
             # "job" working directory.
             safe_makedirs(self.tool_working_directory)
-            # Created up front, container volumes default to mounting these.
-            for name in ("inputs", "configs", "outputs"):
+            for name in JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES:
                 safe_makedirs(os.path.join(working_directory, name))
             log.debug("(%s) Working directory for job is: %s", self.job_id, self.working_directory)
         except ObjectInvalid:

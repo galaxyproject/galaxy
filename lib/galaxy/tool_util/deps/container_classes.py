@@ -317,6 +317,10 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> list[str]:
     return list(target_to_volume.values())
 
 
+# Job directory subdirectories mounted into tool containers by default, Galaxy creates them with the job directory.
+JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES = ("inputs", "configs", "outputs")
+
+
 def _job_directory_subdirectories(job_info: "JobInfo") -> list[str]:
     """Return the job directory subdirectories that tool containers need by default.
 
@@ -328,8 +332,8 @@ def _job_directory_subdirectories(job_info: "JobInfo") -> list[str]:
     if job_info.job_directory_type == "pulsar":
         # Pulsar stages inputs, config files and unstructured files (e.g. referenced
         # by .loc files) into these.
-        return ["inputs", "configs", "unstructured", "outputs"]
-    return ["inputs", "configs", "outputs"]
+        return [*JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES, "unstructured"]
+    return list(JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES)
 
 
 def _job_directory_volumes(job_info: "JobInfo", tool_info: "ToolInfo") -> str:

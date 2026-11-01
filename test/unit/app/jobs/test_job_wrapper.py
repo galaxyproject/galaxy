@@ -25,6 +25,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.objectstore import BaseObjectStore
+from galaxy.tool_util.deps.container_classes import JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES
 from galaxy.tools import ToolBox
 from galaxy.tools.parameters.basic import DirectoryUriToolParameter
 from galaxy.util import XML
@@ -90,7 +91,7 @@ class AbstractTestCases:
         def test_working_directory_has_container_mounted_subdirectories(self):
             wrapper = self._wrapper()
             # Container volumes default to mounting these, so they must exist before the job runs.
-            for name in ("inputs", "configs", "outputs"):
+            for name in JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES:
                 assert os.path.isdir(os.path.join(wrapper.working_directory, name))
 
         def test_prepare_sets_command_line(self):
