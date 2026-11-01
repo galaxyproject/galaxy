@@ -55,28 +55,20 @@ def test_default_volumes_do_not_expose_job_directory(container_class, job_direct
     command = _container(container_class, job_directory_type).containerize_command("bash tool_script.sh")
     sources = _volumes(command)
     assert JOB_DIRECTORY not in sources
-    assert f"{JOB_DIRECTORY}/tool_script.sh" in sources
-    assert f"{JOB_DIRECTORY}/inputs" in sources
-    assert f"{JOB_DIRECTORY}/configs" in sources
-    assert f"{JOB_DIRECTORY}/outputs" in sources
-    assert WORKING_DIRECTORY in sources
+    assert sources[f"{JOB_DIRECTORY}/tool_script.sh"].endswith(":ro")
+    assert sources[f"{JOB_DIRECTORY}/inputs"].endswith(":ro")
+    assert sources[f"{JOB_DIRECTORY}/configs"].endswith(":ro")
+    # singularity binds are writable unless marked ro
+    assert not sources[f"{JOB_DIRECTORY}/outputs"].endswith(":ro")
+    assert not sources[WORKING_DIRECTORY].endswith(":ro")
     assert f"{JOB_DIRECTORY}/metadata" not in sources
     if job_directory_type == "pulsar":
-        assert f"{JOB_DIRECTORY}/unstructured" in sources
+        assert sources[f"{JOB_DIRECTORY}/unstructured"].endswith(":ro")
         # Mount sources must exist before the container starts, Pulsar creates this one lazily.
         assert f"mkdir -p {JOB_DIRECTORY}/unstructured" in command
     else:
         # Galaxy creates the mounted subdirectories with the job directory.
         assert "mkdir -p" not in command
-
-
-@pytest.mark.parametrize("container_class", [DockerContainer, SingularityContainer])
-def test_job_directory_tool_script_mounted_read_only(container_class):
-    command = _container(container_class, "pulsar").containerize_command("bash tool_script.sh")
-    volumes = _volumes(command)
-    assert volumes[f"{JOB_DIRECTORY}/tool_script.sh"].endswith(":ro")
-    assert volumes[f"{JOB_DIRECTORY}/inputs"].endswith(":ro")
-    assert volumes[f"{JOB_DIRECTORY}/configs"].endswith(":ro")
 
 
 @pytest.mark.parametrize("container_class", [DockerContainer, SingularityContainer])
