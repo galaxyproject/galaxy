@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 
 from galaxy.app import MinimalGalaxyApplication
@@ -54,7 +56,9 @@ def test_conflicting_shed_data_table_halts_startup_with_fix(tmp_path, shed_first
         shed_tool_data_table_config=str(shed_tool_data_table_config),
     )
     with pytest.raises(ConfigurationError) as exc_info:
-        MinimalGalaxyApplication._configure_tool_data_tables(StubApp(config), from_shed_config=False)
+        MinimalGalaxyApplication._configure_tool_data_tables(
+            cast(MinimalGalaxyApplication, StubApp(config)), from_shed_config=False
+        )
     assert isinstance(exc_info.value.__cause__, DataTableColumnMismatch)
     message = str(exc_info.value)
     if not shed_first:
