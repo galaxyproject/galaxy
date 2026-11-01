@@ -103,10 +103,9 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self._import_workflow_by_url(import_url)
 
     def _import_workflow_by_url(self, import_url):
+        # Launch links import without a click.
         full_url = self.build_url(import_url)
         self.driver.get(full_url)
-        self.components.workflows.workflow_trs_import.wait_for_visible()
-        self._click_wizard_import_button()
         self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
