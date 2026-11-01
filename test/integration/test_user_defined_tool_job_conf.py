@@ -89,6 +89,7 @@ class TestUserDefinedToolRecommendedJobSetup(
 
     framework_tool_and_types = True
     job_config_file = EMBEDDED_PULSAR_JOB_CONFIG_FILE
+    metadata_strategy = "directory"
     dataset_populator: DatasetPopulator
 
     @classmethod
@@ -96,7 +97,7 @@ class TestUserDefinedToolRecommendedJobSetup(
         super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = cls.job_config_file
         config["enable_celery_tasks"] = False
-        config["metadata_strategy"] = "directory"
+        config["metadata_strategy"] = cls.metadata_strategy
         config["admin_users"] = "udt@galaxy.org"
 
     def setUp(self):
@@ -161,6 +162,10 @@ class TestUserDefinedToolLocalDocker(integration_util.IntegrationTestCase, UserD
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+
+class TestUserDefinedToolExtendedMetadata(TestUserDefinedToolRecommendedJobSetup):
+    metadata_strategy = "extended"
 
 
 class TestUserDefinedToolRecommendedJobSetupTPV(TestUserDefinedToolRecommendedJobSetup):
