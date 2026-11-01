@@ -1332,8 +1332,8 @@ class MinimalJobWrapper(HasResourceParameters):
         return os.path.abspath(os.path.join(self.working_directory, "outputs", COMMAND_VERSION_FILENAME))
 
     def __prepare_upload_paramfile(self, job):
-        """Copy the upload paramfile into the working directory and use the stable path."""
-        new = os.path.join(self.working_directory, "upload_params.json")
+        """Copy the upload paramfile into the configs directory and use the stable path."""
+        new = os.path.join(ensure_configs_directory(self.working_directory), "upload_params.json")
         paramfile_parameter = next(iter(param for param in job.parameters if param.name == "paramfile"))
         if (param_file_path := json.loads(paramfile_parameter.value)) != new:
             try:
@@ -1415,7 +1415,9 @@ class MinimalJobWrapper(HasResourceParameters):
         self.galaxy_lib_dir  # noqa: B018
         if self.tool.requires_galaxy_python_environment or self.remote_command_line:
             # These tools (upload, metadata, data_source) may need access to the datatypes registry.
-            self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, "registry.xml"))
+            self.app.datatypes_registry.to_xml_file(
+                os.path.join(ensure_configs_directory(self.working_directory), "registry.xml")
+            )
         if self.remote_command_line:
             os.makedirs(os.path.join(self.working_directory, "metadata", "outputs_new"), exist_ok=True)
             self.job_io.to_json(path=os.path.join(self.working_directory, "metadata", "outputs_new", "job_io.json"))

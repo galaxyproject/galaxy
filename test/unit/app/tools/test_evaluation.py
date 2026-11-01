@@ -157,6 +157,16 @@ class TestToolEvaluator(TestCase, UsesApp):
         assert open(config_filename).read() == "4"
         assert command_line == f"prog1 {config_filename}"
 
+    def test_galaxy_environment_files_in_configs_directory(self):
+        # Containers mount the job directory's subdirectories, not its root.
+        self.job.tool_id = "upload1"
+        self.job.parameters.append(JobParameter(name="paramfile", value='"/tmp/upload_params_xyz"'))
+        self.tool._command_line = "upload.py '$GALAXY_DATATYPES_CONF_FILE' '$paramfile'"
+        self._set_compute_environment()
+        command_line = self.evaluator.build()[0]
+        configs_directory = os.path.join(self.test_directory, "configs")
+        assert command_line == f"upload.py '{configs_directory}/registry.xml' '{configs_directory}/upload_params.json'"
+
     def test_arbitrary_path_rewriting_wrapped(self):
         self.tool.check_values = True
         self.__test_arbitrary_path_rewriting()

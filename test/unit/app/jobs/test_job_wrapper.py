@@ -72,8 +72,9 @@ class AbstractTestCases:
             self.tear_down_app()
 
         @contextmanager
-        def _prepared_wrapper(self):
+        def _prepared_wrapper(self, requires_galaxy_python_environment=False):
             wrapper = self._wrapper()
+            wrapper.tool.requires_galaxy_python_environment = requires_galaxy_python_environment
             wrapper._get_tool_evaluator = lambda *args, **kwargs: MockEvaluator(  # type: ignore[method-assign]
                 wrapper.app, wrapper.tool, wrapper.get_job(), wrapper.working_directory
             )
@@ -108,6 +109,11 @@ class AbstractTestCases:
 class TestJobWrapper(AbstractTestCases.BaseWrapperTestCase):
     def _wrapper(self):
         return JobWrapper(self.job, self.queue)
+
+    def test_prepare_writes_registry_to_configs_directory(self):
+        with self._prepared_wrapper(requires_galaxy_python_environment=True) as wrapper:
+            assert os.path.isfile(os.path.join(wrapper.working_directory, "configs", "registry.xml"))
+            assert not os.path.exists(os.path.join(wrapper.working_directory, "registry.xml"))
 
 
 class TestTaskWrapper(AbstractTestCases.BaseWrapperTestCase):
