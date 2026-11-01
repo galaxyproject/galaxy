@@ -802,6 +802,14 @@ class WorkflowModule:
         return MapOverPlanner(self.trans).plan_map_over(progress, step, all_inputs)
 
 
+def workflow_step_name(step: WorkflowStep) -> str:
+    """Return the step label, a legacy input step's name, or its 1-based position."""
+    name = step.label
+    if not name and step.is_input_type and step.tool_inputs:
+        name = step.tool_inputs.get("name")
+    return str(name or step.order_index + 1)
+
+
 def disconnected_required_subworkflow_inputs(step: WorkflowStep, subworkflow: Workflow) -> list[WorkflowStep]:
     """Return the required input steps of ``subworkflow`` without a default that ``step`` doesn't connect."""
     connected_input_step_ids = {connection.input_subworkflow_step_id for connection in step.input_connections}
@@ -813,6 +821,11 @@ def disconnected_required_subworkflow_inputs(step: WorkflowStep, subworkflow: Wo
         and not input_step.input_optional
         and input_step.get_input_default_value(default_not_set) is default_not_set
     ]
+
+
+def disconnected_subworkflow_inputs_message(input_steps: list[WorkflowStep]) -> str:
+    input_names = ", ".join(f"'{workflow_step_name(input_step)}'" for input_step in input_steps)
+    return f"Subworkflow has disconnected required input {input_names}"
 
 
 class SubWorkflowModule(WorkflowModule):

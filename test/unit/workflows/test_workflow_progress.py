@@ -294,8 +294,15 @@ class TestWorkflowProgress(TestCase):
         )
 
 
-@pytest.mark.parametrize("connection_state", ["disconnected", "ready", "pending"])
-def test_disconnected_subworkflow_runtime_failure(connection_state):
+@pytest.mark.parametrize(
+    "connection_state,missing_names",
+    [
+        ("disconnected", "'1', 'missing_input'"),
+        ("ready", "'missing_input'"),
+        ("pending", "'missing_input'"),
+    ],
+)
+def test_disconnected_subworkflow_runtime_failure(connection_state, missing_names):
     # Persist a run directly: ordinary submission now rejects this saved graph.
     app = MockApp()
     workflow = yaml_to_model(TEST_SUBWORKFLOW_YAML)
@@ -327,7 +334,7 @@ def test_disconnected_subworkflow_runtime_failure(connection_state):
     assert exc.value.why.model_dump(exclude_none=True) == {
         "reason": FailureReason.unexpected_failure,
         "workflow_step_id": subworkflow_step.id,
-        "details": "Subworkflow has disconnected required input.",
+        "details": f"Subworkflow has disconnected required input {missing_names}",
     }
 
 

@@ -812,12 +812,12 @@ class WorkflowProgress:
         when_values=None,
     ) -> "WorkflowProgress":
         subworkflow = subworkflow_invocation.workflow
-        if modules.disconnected_required_subworkflow_inputs(step, subworkflow):
+        if disconnected_input_steps := modules.disconnected_required_subworkflow_inputs(step, subworkflow):
             raise modules.FailWorkflowEvaluation(
                 InvocationUnexpectedFailure(
                     reason=FailureReason.unexpected_failure,
                     workflow_step_id=step.id,
-                    details="Subworkflow has disconnected required input.",
+                    details=modules.disconnected_subworkflow_inputs_message(disconnected_input_steps),
                 )
             )
         subworkflow_inputs = {}

@@ -47,6 +47,8 @@ from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
 from galaxy.workflow.modules import (
     disconnected_required_subworkflow_inputs,
+    disconnected_subworkflow_inputs_message,
+    workflow_step_name,
     WorkflowModuleInjector,
 )
 from galaxy.workflow.resources import get_resource_mapper_function
@@ -207,7 +209,7 @@ def _normalize_step_parameters(
         if param_dict:
             if step.type == "parameter_input" and "input" not in param_dict:
                 raise exceptions.RequestParameterInvalidException(
-                    f"{step.label or step.order_index + 1}: legacy workflow parameter inputs must specify an 'input' value. "
+                    f"{workflow_step_name(step)}: legacy workflow parameter inputs must specify an 'input' value. "
                     "Prefer passing the parameter value directly in 'inputs'."
                 )
             normalized_param_map[step.id] = param_dict
@@ -333,13 +335,9 @@ def _get_input_or_not_found(
     item: InputT | None = trans.sa_session.get(model_class, trans.security.decode_id(data_request.id))
     if item is None:
         raise exceptions.ObjectNotFound(
-            f"{step.label or step.order_index + 1}: workflow input '{data_request.id}' ({data_request.src}) not found"
+            f"{workflow_step_name(step)}: workflow input '{data_request.id}' ({data_request.src}) not found"
         )
     return item
-
-
-def _step_name(step: "WorkflowStep") -> str:
-    return str(step.label or step.order_index + 1)
 
 
 def _validate_subworkflow_input_connections(workflow: "Workflow", step_path: tuple[str, ...] = ()) -> None:
@@ -348,12 +346,11 @@ def _validate_subworkflow_input_connections(workflow: "Workflow", step_path: tup
             continue
         subworkflow = step.subworkflow
         assert subworkflow
-        subworkflow_step_path = (*step_path, _step_name(step))
+        subworkflow_step_path = (*step_path, workflow_step_name(step))
         disconnected_input_steps = disconnected_required_subworkflow_inputs(step, subworkflow)
         if disconnected_input_steps:
-            input_names = ", ".join(f"'{_step_name(input_step)}'" for input_step in disconnected_input_steps)
             raise exceptions.RequestParameterInvalidException(
-                f"{' > '.join(subworkflow_step_path)}: Subworkflow has disconnected required input {input_names}"
+                f"{' > '.join(subworkflow_step_path)}: {disconnected_subworkflow_inputs_message(disconnected_input_steps)}"
             )
         _validate_subworkflow_input_connections(subworkflow, subworkflow_step_path)
 
@@ -464,7 +461,7 @@ def build_workflow_run_configs(
             if step.type == "parameter_input":
                 if isinstance(input_dict, dict):
                     raise exceptions.RequestParameterInvalidException(
-                        f"{step.label or step.order_index + 1}: workflow parameter inputs cannot be dictionaries. "
+                        f"{workflow_step_name(step)}: workflow parameter inputs cannot be dictionaries. "
                         "Pass the parameter value directly in 'inputs', without a 'parameter_value' wrapper."
                     )
                 module_injector.inject(step)
@@ -476,9 +473,7 @@ def build_workflow_run_configs(
                         # Store the validated values, not the submitted ones.
                         normalized_inputs[key] = input_param.to_python(input_dict, trans.app)
                 except ParameterValueError as e:
-                    raise exceptions.RequestParameterInvalidException(
-                        f"{step.label or step.order_index + 1}: {e.message_suffix}"
-                    )
+                    raise exceptions.RequestParameterInvalidException(f"{workflow_step_name(step)}: {e.message_suffix}")
                 continue
             try:
                 added_to_history = False
