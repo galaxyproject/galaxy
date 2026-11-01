@@ -717,7 +717,7 @@ class FileParameter(MetadataParameter):
                 value = str(value.uuid)
         return value
 
-    def from_external_value(self, value, parent, path_rewriter=None, metadata_tmp_files_dir=None):
+    def from_external_value(self, value, parent, path_rewriter=None, metadata_tmp_files_dir: str | None = None):
         """
         Turns a value read from a external dict into its value to be pushed directly into the metadata dict.
 
