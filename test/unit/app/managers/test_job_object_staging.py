@@ -149,6 +149,16 @@ def test_redirect_mode_answers_with_a_presigned_url(app, manager):
     assert presign.call_args.args[0] is _dataset(hda)
 
 
+def test_redirect_mode_asks_for_a_presigned_url_that_lasts_minutes(app, manager):
+    # Galaxy cannot revoke a presigned URL once the job ends, and the runner needs one only for the
+    # request it follows the redirect with: it asks Galaxy again to resume or retry.
+    hda = _stored_hda(app)
+    job = _running_job(app, hda)
+    with mock.patch.object(app.object_store, "get_direct_download_url", return_value="https://s3/signed") as presign:
+        manager.staged_input(**_signed(app, job, "dataset", _dataset(hda).id, redirect=True))
+    assert 0 < presign.call_args.kwargs["expires_in"] <= 15 * 60
+
+
 def test_redirect_mode_streams_when_the_store_cannot_presign(app, manager):
     hda = _stored_hda(app)
     job = _running_job(app, hda)
@@ -218,7 +228,7 @@ def test_input_metadata_file_is_presigned_at_its_path_within_the_dataset(app, ma
         staged = manager.staged_input(**_signed(app, job, "metadata_file", metadata_file.id, redirect=True))
     assert staged.redirect_url == "https://s3/meta"
     assert presign.call_args.args[0] is metadata_file
-    assert presign.call_args.kwargs == metadata_file.object_store_path_kwargs()
+    assert metadata_file.object_store_path_kwargs().items() <= presign.call_args.kwargs.items()
 
 
 def test_metadata_file_of_a_dataset_that_is_not_an_input_is_refused(app, manager):

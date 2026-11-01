@@ -375,13 +375,13 @@ class Cloud(CachingConcreteObjectStore):
             log.exception("Could not delete key '%s' from cloud", rel_path)
             return False
 
-    def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
+    def _get_object_url(self, obj, content_disposition=None, content_type=None, expires_in=None, **kwargs):
         if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
                 key = self.bucket.objects.get(rel_path)
                 return key.generate_url(
-                    expires_in=self.direct_download_expires_in,
+                    expires_in=self.direct_download_expires_in if expires_in is None else expires_in,
                     content_disposition=content_disposition,
                     content_type=content_type,
                 )
