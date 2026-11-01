@@ -119,7 +119,7 @@ Grouping support and resolver restrictions:
 | Command and config templates       | ✓                      | ✓                                  | ✓ `$queries[0].input2` / `inputs.queries[0]` | Cheetah also resolves a bare `$input1` by searching every level except repeats |
 | `format_source`, `metadata_source` | ✓                      | ✓                                  | ✓ `queries_0\|input2`                        | Legacy alias works only at job creation                                        |
 | `structured_like`                  | ✓                      | ✓                                  | unmapped only                                | When mapped over below profile 26.0, a bare name is searched recursively       |
-| `type_source`                      | ✓                      | mapped only                        | unmapped only                                | Unmapped, a path into a conditional raises `AttributeError`                    |
+| `type_source`                      | ✓                      | ✓                                  | unmapped only                                | A bare legacy alias of a nested input fails tool load                          |
 | `default_identifier_source`        | ✓                      | ✓                                  | `?`                                          | Exact match, no alias                                                          |
 | `change_format`                    | ✓                      | ✓                                  | ✓                                            | Errors are swallowed                                                           |
 | Output `<filter>`                  | ✓                      | ✓                                  | ✓                                            | Python `eval`; on error, the output is still created                           |
@@ -135,15 +135,15 @@ passes the reference string to the XML resolver unchanged, so the XML rules, inc
 fallbacks, apply. The differences come from which features and groupings YAML supports, and from
 the expression language.
 
-| Topic                                    | XML                                                                                    | YAML                                                                                                             |
-| ---------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Groupings                                | sections, conditionals, repeats                                                        | file flavor: conditionals and repeats (`blocks:`); modelled: conditionals only; sections: neither                |
-| Command language                         | Cheetah, dotted path with a bare-name fallback                                         | JavaScript dotted path over `inputs` (modelled tools require it); Cheetah `command:` in file flavor only         |
-| Output attributes (`format_source`, ...) | pipe paths, checked by linters                                                         | the same pipe paths, inside a JavaScript-style tool, not validated against declared inputs                       |
-| Features absent from YAML                | n/a                                                                                    | `change_format`, `<filter>`, `<actions>`, environment variables, dynamic options; `data_ref` in file flavor only |
-| Test inputs                              | nested elements or flat `cond\|input1`; bare names up to profile 24.1                  | nested dicts only; flat and bare keys rejected (unless `expect_failure`)                                         |
-| Default profile                          | `16.01`, so legacy behavior applies                                                    | `24.2`, so `structured_like: input1` still resolves                                                              |
-| Linting of references                    | `OutputsFormatSourceReference`, `OutputsStructuredLikeReference` (no repeat awareness) | none for output attributes; modelled tools check only the first name after `inputs.`                             |
+| Topic                                    | XML                                                                                                                             | YAML                                                                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Groupings                                | sections, conditionals, repeats                                                                                                 | file flavor: conditionals and repeats (`blocks:`); modelled: conditionals only; sections: neither                |
+| Command language                         | Cheetah, dotted path with a bare-name fallback                                                                                  | JavaScript dotted path over `inputs` (modelled tools require it); Cheetah `command:` in file flavor only         |
+| Output attributes (`format_source`, ...) | pipe paths, checked by linters                                                                                                  | the same pipe paths, inside a JavaScript-style tool, not validated against declared inputs                       |
+| Features absent from YAML                | n/a                                                                                                                             | `change_format`, `<filter>`, `<actions>`, environment variables, dynamic options; `data_ref` in file flavor only |
+| Test inputs                              | nested elements or flat `cond\|input1`; bare names up to profile 24.1                                                           | nested dicts only; flat and bare keys rejected (unless `expect_failure`)                                         |
+| Default profile                          | `16.01`, so legacy behavior applies                                                                                             | `24.2`, so `structured_like: input1` still resolves                                                              |
+| Linting of references                    | `OutputsFormatSourceReference`, `OutputsStructuredLikeReference` (repeat-aware; `metadata_source` and `type_source` not linted) | none for output attributes; modelled tools check only the first name after `inputs.`                             |
 
 When adding a feature that references parameters, the YAML side is where the inconsistency shows:
 one tool mixes `inputs.cond.input1` in its command with `cond|input1` in its outputs.
@@ -234,8 +234,11 @@ echo $adv.size $cond.sel
   - `MetadataSourceProvider`
 - `default_identifier_source` is looked up in the mapped-over collections by exact pipe path, with
   no alias.
-- The `OutputsFormatSourceReference` linter warns when an unqualified name matches a nested
-  parameter. It does not model repeats, so a name inside a repeat counts as top level and passes.
+- The `OutputsFormatSourceReference` linter keys inputs the way the runtime does, repeats included.
+  It warns on a legacy alias, naming the qualified path. It errors on a legacy alias in a collection
+  with `discover_datasets`, on a reference that matches no input (including a name inside a repeat
+  written without `queries_N|`), and on an element selector on a non-collection input.
+  `metadata_source` is not linted.
 
 <details><summary>Verification</summary>
 
@@ -268,7 +271,9 @@ echo $adv.size $cond.sel
 
 So `structured_like="input3"` (deep inside `adv|deep`) works only when mapped over with an old
 profile, and `queries_0|input2` works only without mapping. The `OutputsStructuredLikeReference`
-linter warns on unqualified nested names. The upgrade advice `18_01_consider_structured_like` still
+linter requires a reference that resolves both with and without mapping. It warns on a one-level
+legacy alias below profile 26.0, and errors on deeper bare names, on any bare nested name from
+26.0, on paths into repeats and on non-data inputs. The upgrade advice `18_01_consider_structured_like` still
 claims that 18.01+ tools must qualify, which contradicts the 26.0 gate in the code.
 
 #### `type_source`
@@ -277,13 +282,13 @@ claims that 18.01+ tools must qualify, which contradicts the 26.0 gate in the co
 <collection name="c" type_source="adv|input_collect" />
 ```
 
-Without mapping, the reference must first be a key in the legacy alias dict. Then the `|` segments
-are walked down `tool.inputs`, with any trailing `_N` stripped as a repeat index. As a result:
+Without mapping, the reference is looked up by exact pipe path among the collection inputs recorded
+while visiting the job's inputs. As a result:
 
-- Sections and repeats work.
-- A path into a conditional raises `AttributeError`, because `Conditional` has no `inputs`.
-- A bare alias such as `input1` passes the key check but then walks to `None`.
-- A real parameter name ending in `_<digit>` gets mangled by the stripping.
+- Sections, conditionals, repeats (`queries_0|coll`) and names ending in `_<digit>` all work.
+- A name that matches no collection input fails when the job runs.
+- A bare legacy alias of a nested collection input (`input_collect` for `cond|input_collect`) is
+  rejected at tool load, at every profile, with the qualified name in the error.
 
 When mapped over, it is resolved like `structured_like`, so conditionals work and repeats do not.
 
@@ -598,8 +603,9 @@ What differs for YAML tools:
   `format_source: cond|input1`, not `cond.input1`.
 - YAML tools default to profile `24.2`, below the 26.0 gate, so a bare `structured_like: input1`
   currently works even when mapped over.
-- None of these names are checked against the declared inputs, whether by the pydantic models or by
-  the linters (the output linters are XML-only). A typo shows up only when the job runs.
+- Apart from a load-time rejection of a bare legacy alias in `collection_type_source`, none of these
+  names are checked against the declared inputs, by the pydantic models or by the linters (the
+  output linters are XML-only). A typo shows up only when the job runs.
 
 #### Test Inputs
 
@@ -931,14 +937,14 @@ actions use a dotted path because `|` is already taken there, and gxformat2 keep
 
 **Execution and invocation**
 
-| Feature                       | Parameter syntax                           | Restrictions                                                                                |
-| ----------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `when` expression             | dotted path over nested state, or brackets | Extra inputs remain flat (`inputs.when`); pipe-path aliases for tool inputs removed in 26.2 |
-| Invocation `parameters`       | step key → nested dict or pipe paths       | Repeats require pipe paths; run form uses `parameters_normalized: true`                     |
-| Subworkflow `parameters`      | `"<inner order_index>\|<pipe path>"`       | Requires `parameters_normalized`; one subworkflow level deep                                |
-| Subworkflow connections       | inner input step **label**                 | unlabelled: `"<order_index>:<name>"`; no character checks on labels                         |
-| `replacement_params` / `${x}` | free name, not a path                      | server substitutes only into rename `newname`                                               |
-| Rename PJA `#{...}`           | dotted path, `.` → `\|`                    | Data inputs only; repeat syntax `#{queries_0.input2}`; bare names match by suffix           |
+| Feature                       | Parameter syntax                           | Restrictions                                                                                                  |
+| ----------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `when` expression             | dotted path over nested state, or brackets | Extra inputs remain flat (`inputs.when`); pipe-path aliases for tool inputs removed in Galaxy 26.2            |
+| Invocation `parameters`       | step key → nested dict or pipe paths       | Repeats require pipe paths; run form uses `parameters_normalized: true`                                       |
+| Subworkflow `parameters`      | `"<inner order_index>\|<pipe path>"`       | Requires `parameters_normalized`; one subworkflow level deep                                                  |
+| Subworkflow connections       | inner input step **label**                 | unlabelled: `"<order_index>:<name>"`; no character checks on labels                                           |
+| `replacement_params` / `${x}` | free name, not a path                      | server substitutes only into rename `newname`                                                                 |
+| Rename PJA `#{...}`           | dotted path, `.` → `\|`                    | Data inputs only; repeat syntax `#{queries_0.input2}`; a bare or partial name matches a trailing path segment |
 
 **Editor and refactor**
 
@@ -1045,12 +1051,12 @@ when: $(inputs.when && inputs.cond.input1 !== null && inputs.queries[0].input2 !
 - Connections that are not tool parameters go into `extra_step_state` under their **flat**
   connection name (`inputs.when`, or `inputs["cond|bogus"]` when a pipe path matches no active
   parameter).
-- Since 26.2, connected nested tool parameters are no longer _also_ exposed under their pipe path
+- Since Galaxy 26.2, connected nested tool parameters are no longer _also_ exposed under their pipe path
   (`!("cond|more_text" in inputs)`).
 - `${inputs.when}` is rewritten to `$(inputs.when)`, as a fallback for workflows defined on 23.0.
-- When the editor and the tool-upgrade refactor decide whether a non-tool connection is a `when`
-  input, they use a plain substring test on the expression text (`when.includes(name)` /
-  `"inputs.<name>" in when`).
+- The editor parses the `when` expression to find which `inputs.<name>` paths it reads, and lints
+  names nothing is connected to. The tool-upgrade refactor still decides whether a non-tool
+  connection is a `when` input with a substring test (`"inputs.<name>" in when`).
 
 ### Workflow Editor
 
@@ -1102,8 +1108,9 @@ dicts flattened on the way in:
 `#{name | op | op}` takes the name of a data input. Because `|` separates the filter operations
 (`basename`, `upper`, `lower`), nesting is written as a dotted path (`#{cond.input1}`,
 `#{queries_0.input2}`) and converted to a pipe path before matching job input names. If nothing
-matches exactly, the first pipe path whose text ends with the bare name is used (`#{input1}`). This
-is a raw string suffix match, so `#{input1}` can also match `cond|xinput1`.
+matches exactly, the first input whose pipe path ends in `|` plus the converted name is used, so
+`#{input1}` finds `cond|input1` (but not `cond|xinput1`) and `#{cond.input1}` finds
+`outer|cond|input1`. A reference that matches nothing renders as empty text.
 
 ### Refactor API
 
