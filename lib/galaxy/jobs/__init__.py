@@ -87,7 +87,10 @@ from galaxy.jobs.runners import (
     BaseJobRunner,
     JobState,
 )
-from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.metadata import (
+    get_metadata_compute_strategy,
+    job_metadata_directory,
+)
 from galaxy.model import (
     Dataset,
     Job,
@@ -2627,7 +2630,7 @@ class MinimalJobWrapper(HasResourceParameters):
             input_dbkey=input_dbkey,
             final_job_state=final_job_state,
             # Metadata set for legacy galaxy.json datasets writes its temp files here.
-            metadata_tmp_files_dir=os.path.join(self.working_directory, "metadata"),
+            metadata_tmp_files_dir=job_metadata_directory(self.working_directory),
         )
 
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):

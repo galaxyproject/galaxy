@@ -46,6 +46,7 @@ from galaxy.job_execution.output_collect import (
     validate_unnamed_outputs,
 )
 from galaxy.job_execution.setup import TOOL_PROVIDED_JOB_METADATA_KEYS
+from galaxy.metadata import job_metadata_directory
 from galaxy.model import (
     Dataset,
     DatasetInstance,
@@ -203,7 +204,7 @@ def set_metadata_portable(
 ):
     is_celery_task = tool_job_working_directory is not None
     tool_job_working_directory = Path(tool_job_working_directory or os.path.abspath(os.getcwd()))
-    metadata_tmp_files_dir = os.path.join(tool_job_working_directory, "metadata")
+    metadata_tmp_files_dir = job_metadata_directory(tool_job_working_directory)
     metadata_params = get_metadata_params(tool_job_working_directory)
     if not is_celery_task:
         if not extended_metadata_collection:

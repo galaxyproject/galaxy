@@ -45,6 +45,11 @@ except Exception:
 """
 
 
+def job_metadata_directory(working_directory) -> str:
+    """Directory in a job's working directory for external metadata files, temp files included."""
+    return os.path.join(working_directory, "metadata")
+
+
 def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=None, tool_id=None, tool_type=None):
     metadata_strategy = metadata_strategy_override or config.metadata_strategy
     if metadata_strategy == "legacy":
@@ -116,7 +121,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
             normalized_path = os.path.normpath(path)
             if remote_metadata_directory and normalized_path.startswith(normalized_remote_metadata_directory):
                 if self.portable:
-                    target_directory = os.path.join(working_directory, "metadata")
+                    target_directory = job_metadata_directory(working_directory)
                 else:
                     target_directory = working_directory
                 return normalized_path.replace(normalized_remote_metadata_directory, target_directory, 1)
@@ -125,7 +130,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
         dataset.metadata.from_JSON_dict(
             metadata_output_path,
             path_rewriter=path_rewriter,
-            metadata_tmp_files_dir=os.path.join(working_directory, "metadata"),
+            metadata_tmp_files_dir=job_metadata_directory(working_directory),
         )
 
     def _metadata_results_from_file(self, dataset, filename_results_code):
@@ -186,7 +191,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             assert job
         tmp_dir = _init_tmp_dir(tmp_dir)
 
-        metadata_dir = os.path.join(tmp_dir, "metadata")
+        metadata_dir = job_metadata_directory(tmp_dir)
         # may already exist (i.e. metadata collection in the job handler)
         safe_makedirs(metadata_dir)
 
