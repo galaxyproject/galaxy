@@ -49,6 +49,18 @@ configureCompat({
     PRIVATE_APIS: false,
     // <TransitionGroup> renders no wrapper unless given a `tag`; Galaxy's all set one.
     TRANSITION_GROUP_ROOT: false,
+    // Vue 2 APIs Galaxy code no longer uses at all: beforeDestroy/destroyed,
+    // `this` in prop defaults, numeric keyCode modifiers and Vue.config.keyCodes,
+    // filters, Vue 2 directive hook names, and a non-function `data`. Only
+    // bootstrap-vue still hits these, and legacy-libraries.js keeps them on there.
+    OPTIONS_BEFORE_DESTROY: false,
+    OPTIONS_DESTROYED: false,
+    PROPS_DEFAULT_THIS: false,
+    V_ON_KEYCODE_MODIFIER: false,
+    CONFIG_KEY_CODES: false,
+    FILTERS: false,
+    CUSTOM_DIR: false,
+    OPTIONS_DATA_FN: false,
 });
 
 // FontAwesomeIcon builds its <svg> from `attrs`. With MODE 2's
