@@ -92,6 +92,19 @@ export default defineConfig(({ command }) => ({
         __license__: JSON.stringify(packageJson.license),
     },
     plugins: [
+        // bootstrap-vue captures Vue.extend when its vue.js module is evaluated,
+        // and in the production bundle that module lands in a chunk the entry
+        // imports, i.e. before compat-config.js runs. Make it import the legacy
+        // marker first, so the hook is in place whatever the chunking.
+        {
+            name: "galaxy-legacy-libraries-first",
+            enforce: "pre",
+            transform(code, id) {
+                if (id.replace(/\\/g, "/").includes("/bootstrap-vue/esm/vue.js")) {
+                    return { code: `import "@/legacy-libraries.js";\n${code}`, map: null };
+                }
+            },
+        },
         vue({
             template: {
                 compilerOptions: {
