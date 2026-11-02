@@ -10,6 +10,7 @@ import { useServerMock } from "@/api/client/__mocks__";
 import type { JobRequest, JobResponse, ResponseVal } from "@/api/jobs";
 import jobInformationResponse from "@/components/JobInformation/testData/jobInformationResponse.json";
 import { useConfig } from "@/composables/config";
+import { useJobStore } from "@/stores/jobStore";
 
 import ToolSuccess from "./ToolSuccess.vue";
 import ToolSuccessOutputs from "./ToolSuccessOutputs.vue";
@@ -76,7 +77,8 @@ const TEST_JOB_RESPONSE = {
 
 // Selectors
 const SELECTORS = {
-    PAGINATION_ITEM: ".page-item .page-link",
+    PAGINATION_ITEM: "nav[aria-label='Pagination'] button[data-page]",
+    PAGINATION_CURRENT: "nav[aria-label='Pagination'] button[aria-current='page']",
 };
 
 async function mountToolSuccess(latestResponse: ResponseVal | null, currentUser: unknown = null) {
@@ -217,6 +219,30 @@ describe("ToolSuccess", () => {
 
             const jobState = wrapper.findComponent(JobState);
             expect(jobState.props("jobId")).toEqual(SECOND_JOB.id);
+            expect(wrapper.find(SELECTORS.PAGINATION_CURRENT).text()).toBe("2");
+        });
+
+        it("goes back to the first job when a new response has fewer jobs", async () => {
+            const jobs = [jobInformationResponse, SECOND_JOB, { ...jobInformationResponse, id: "test_id_3" }];
+            useJobStore().saveLatestResponse({
+                jobDef: TEST_JOB_DEF,
+                jobResponse: { ...TEST_JOB_RESPONSE, jobs: jobs as unknown as JobResponse["jobs"] },
+            });
+            await flushPromises();
+            await wrapper
+                .findAll(SELECTORS.PAGINATION_ITEM)
+                .find((link) => link.text() === "3")!
+                .trigger("click");
+            expect(wrapper.findComponent(JobState).props("jobId")).toEqual("test_id_3");
+
+            useJobStore().saveLatestResponse({
+                jobDef: TEST_JOB_DEF,
+                jobResponse: { ...TEST_JOB_RESPONSE, jobs: jobs.slice(0, 2) as unknown as JobResponse["jobs"] },
+            });
+            await flushPromises();
+
+            expect(wrapper.find(SELECTORS.PAGINATION_CURRENT).text()).toBe("1");
+            expect(wrapper.findComponent(JobState).props("jobId")).toEqual(jobInformationResponse.id);
         });
     });
 });
@@ -262,6 +288,8 @@ describe("ToolSuccess live job state", () => {
         expect(wrapper.text()).toContain("No Interactive Tool sessions are currently available");
         await advanceTimersAndFlush(3000);
         expect(calls).toEqual([firstId, secondId, secondId]);
+        // Polling the viewed job must not move the pager back to page 1
+        expect(wrapper.find(SELECTORS.PAGINATION_CURRENT).text()).toBe("2");
         wrapper.unmount();
     });
 });
