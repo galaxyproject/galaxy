@@ -482,14 +482,14 @@ describe("Index", () => {
                 await flushPromises();
 
                 // save button is disabled initially until a change is made
-                expect(wrapper.find("#workflow-save-button").attributes("disabled")).toBeTruthy();
+                expect(wrapper.findComponent<typeof GButton>("#workflow-save-button").props("disabled")).toBe(true);
 
                 // simulate WorkflowGraph making a change to enable the Save button
                 wrapper.findComponent(WorkflowGraph).vm.$emit("onChange");
                 await nextTick();
 
                 // save button is now enabled
-                expect(wrapper.find("#workflow-save-button").attributes("disabled")).toBeFalsy();
+                expect(wrapper.findComponent<typeof GButton>("#workflow-save-button").props("disabled")).toBe(false);
 
                 wrapper.findComponent<typeof GButton>("#workflow-save-button").vm.$emit("click");
                 await flushPromises();
