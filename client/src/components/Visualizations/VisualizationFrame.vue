@@ -3,6 +3,7 @@ import axios from "axios";
 import { debounce } from "lodash";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
+import { useEmbed } from "@/composables/embed";
 import { getAppRoot } from "@/onload/loadConfig";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -17,6 +18,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const embed = useEmbed();
 
 const emit = defineEmits<{
     (e: "change", payload: Record<string, any>): void;
@@ -59,6 +61,7 @@ async function render() {
             const pluginPath = plugin.href;
             const dataIncoming = {
                 root: window.location.origin + getAppRoot(),
+                visualization_embedded: embed.value,
                 visualization_config: props.config,
                 visualization_id: props.visualizationId,
                 visualization_plugin: plugin,
