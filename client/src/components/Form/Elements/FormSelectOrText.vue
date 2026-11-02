@@ -142,7 +142,12 @@ function onText(value: string | null) {
 
 <template>
     <div class="form-select-or-text">
-        <FormSelect :id="id" :value="selectValue" :options="selectOptions" optional @input="onSelect" />
+        <FormSelect
+            :id="id"
+            :model-value="selectValue"
+            :options="selectOptions"
+            optional
+            @update:model-value="onSelect" />
         <small v-if="selectedHelp" class="form-text text-muted">{{ selectedHelp }}</small>
         <div v-if="otherMode" class="mt-2">
             <GFormInput

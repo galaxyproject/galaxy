@@ -18,6 +18,11 @@ import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 // default text -- its .d.ts doesn't account for that.
 const noLabel = null as unknown as string;
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 type SelectValue = Record<string, unknown> | string | number | null;
 type ValueWithTags = SelectValue & { tags: string[] };
 
@@ -50,14 +55,14 @@ const props = defineProps({
         type: String,
         default: "Select Value",
     },
-    value: {
+    modelValue: {
         type: [String, Array] as PropType<SelectValue | SelectValue[]>,
         default: null,
     },
 });
 
 const emit = defineEmits<{
-    (e: "input", value: SelectValue | Array<SelectValue>): void;
+    (e: "update:modelValue", value: SelectValue | Array<SelectValue>): void;
     (e: "search-change", query: string): void;
 }>();
 
@@ -114,7 +119,7 @@ const hasOptions: ComputedRef<Boolean> = computed(() => {
  * Provides initial value if necessary
  */
 const initialValue: ComputedRef<SelectValue> = computed(() => {
-    if (props.value === null && !props.optional && hasOptions.value) {
+    if (props.modelValue === null && !props.optional && hasOptions.value) {
         const v = props.options[0];
         if (v) {
             return v.value;
@@ -133,7 +138,7 @@ const selectedLabel: ComputedRef<string> = computed(() => {
 /**
  * Tracks selected values
  */
-const selectedValues = computed(() => (Array.isArray(props.value) ? props.value : [props.value]));
+const selectedValues = computed(() => (Array.isArray(props.modelValue) ? props.modelValue : [props.modelValue]));
 
 /**
  * Tracks selected keys in case of form data options
@@ -156,8 +161,8 @@ const trackBy = computed(() => {
  */
 const currentValue = computed({
     get: () => {
-        // Preserve the order of props.value
-        const values = Array.isArray(props.value) ? props.value : [props.value];
+        // Preserve the order of props.modelValue
+        const values = Array.isArray(props.modelValue) ? props.modelValue : [props.modelValue];
         return values
             .map((val) => {
                 // Find the matching option in props.options
@@ -176,12 +181,12 @@ const currentValue = computed({
         if (Array.isArray(val)) {
             if (val.length > 0) {
                 const values: Array<SelectValue> = val.map((v: SelectOption) => v.value);
-                emit("input", values);
+                emit("update:modelValue", values);
             } else {
-                emit("input", null);
+                emit("update:modelValue", null);
             }
         } else {
-            emit("input", val ? val.value : null);
+            emit("update:modelValue", val ? val.value : null);
         }
     },
 });
@@ -217,7 +222,7 @@ const selectedValueIdentifier = computed(() => {
  */
 function setInitialValue(): void {
     if (initialValue.value) {
-        emit("input", initialValue.value);
+        emit("update:modelValue", initialValue.value);
     }
 }
 
