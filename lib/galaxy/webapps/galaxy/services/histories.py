@@ -867,6 +867,11 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             )
         # TODO: should we also ensure the export was requested to include files with `include_files`, `include_hidden`, etc.?
 
+    def resume_paused_jobs(self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField) -> None:
+        """Resumes the paused jobs of a mutable history owned by the user, or of their current one if they are anonymous."""
+        history = self.manager.get_mutable(history_id, trans.user, current_history=trans.history)
+        history.resume_paused_jobs()
+
     def restore_archived_history(
         self,
         trans: ProvidesHistoryContext,

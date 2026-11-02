@@ -3208,6 +3208,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/resume_paused_jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Resume the paused jobs of a history.
+         * @description Resumes the paused jobs of the history, for example the ones paused because the user was over their
+         *     quota, and the jobs waiting on their outputs. A job that still can't run is paused again.
+         */
+        put: operations["resume_paused_jobs_api_histories__history_id__resume_paused_jobs_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/share_with_users": {
         parameters: {
             query?: never;
@@ -11041,6 +11062,11 @@ export interface components {
              */
             nice_size?: string | null;
             /**
+             * Paused Jobs Count
+             * @description The number of paused jobs in this history, including those with only hidden outputs.
+             */
+            paused_jobs_count?: number | null;
+            /**
              * Preferred Object Store ID
              * @description The ID of the object store that should be used to store new datasets in this history.
              */
@@ -11284,6 +11310,11 @@ export interface components {
              * @description The total size of the contents of this history in a human-readable format.
              */
             nice_size?: string | null;
+            /**
+             * Paused Jobs Count
+             * @description The number of paused jobs in this history, including those with only hidden outputs.
+             */
+            paused_jobs_count?: number | null;
             /**
              * Preferred Object Store ID
              * @description The ID of the object store that should be used to store new datasets in this history.
@@ -43967,6 +43998,48 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    resume_paused_jobs_api_histories__history_id__resume_paused_jobs_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
