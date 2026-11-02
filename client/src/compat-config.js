@@ -1,3 +1,8 @@
+// Order matters: the Vue.extend hook has to be in place before bootstrap-vue
+// is evaluated, so these two side-effect imports stay first.
+import "./legacy-libraries";
+import "./legacy-bootstrap-vue";
+
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { configureCompat } from "vue";
 
