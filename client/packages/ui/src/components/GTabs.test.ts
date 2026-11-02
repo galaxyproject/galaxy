@@ -1,11 +1,40 @@
-import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
-import { h, nextTick } from "vue";
+import { flushPromises, mount } from "@vue/test-utils";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { configureCompat, defineComponent, h, nextTick } from "vue";
 
 import GTab from "./GTab.vue";
 import GTabs from "./GTabs.vue";
 
+// Vue 3 (and the Tool Shed, which runs it without compat) renders a bound `false` as attr="false"
+// instead of dropping it, so check the tab ARIA under that behavior.
+beforeAll(() => configureCompat({ ATTR_FALSE_VALUE: false }));
+afterAll(() => configureCompat({ ATTR_FALSE_VALUE: true }));
+
+async function mountTabs() {
+    const Parent = defineComponent({
+        components: { GTabs, GTab },
+        template: `<GTabs><GTab title="One">one</GTab><GTab title="Two">two</GTab><GTab title="Three" disabled>three</GTab></GTabs>`,
+    });
+    const wrapper = mount(Parent);
+    await flushPromises();
+    return wrapper.findAll(".nav-link");
+}
+
 describe("GTabs", () => {
+    it("marks only the active tab as selected", async () => {
+        const links = await mountTabs();
+
+        expect(links.map((link) => link.attributes("aria-selected"))).toEqual(["true", "false", "false"]);
+    });
+
+    it("sets aria-disabled only on disabled tabs", async () => {
+        const links = await mountTabs();
+
+        expect(links[0]!.attributes("aria-disabled")).toBeUndefined();
+        expect(links[1]!.attributes("aria-disabled")).toBeUndefined();
+        expect(links[2]!.attributes("aria-disabled")).toBe("true");
+    });
+
     it("keeps the managed tab attributes when titleLinkAttributes overlaps them", async () => {
         // One object for every slot render; GTab re-registers whenever this prop changes identity.
         const titleLinkAttributes = {
