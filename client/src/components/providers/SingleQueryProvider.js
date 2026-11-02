@@ -20,6 +20,8 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
         // Renders the slot as a fragment, and its attributes are lookup parameters, not DOM attributes.
         inheritAttrs: false,
         mixins: [HasAttributesMixin],
+        // Declared so the listeners stay out of $attrs, which become the lookup parameters.
+        emits: ["update:result", "error"],
         props: {
             useCache: {
                 type: Boolean,
@@ -49,7 +51,7 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
                 return this.result === null;
             },
             cacheKey() {
-                return hash(this.$attrs || {});
+                return hash(this.queryAttributes);
             },
         },
         mounted() {
@@ -85,7 +87,7 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
                 if (this.useCache) {
                     lookupPromise = promiseCache.get(this.cacheKey);
                     if (!lookupPromise) {
-                        lookupPromise = lookup(this.$attrs);
+                        lookupPromise = lookup(this.queryAttributes);
                         promiseCache.set(this.cacheKey, lookupPromise);
                     }
                 } else {

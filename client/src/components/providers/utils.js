@@ -8,8 +8,13 @@ export function stateIsTerminal(result) {
 
 export const HasAttributesMixin = {
     computed: {
+        // Vue 3 puts class and style in $attrs; they style the caller's markup and aren't query parameters.
+        queryAttributes() {
+            const { class: _class, style: _style, ...rest } = this.$attrs;
+            return rest;
+        },
         attributes() {
-            return this.toCamelCase(this.$attrs);
+            return this.toCamelCase(this.queryAttributes);
         },
     },
     methods: {
