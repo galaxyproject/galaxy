@@ -49,7 +49,7 @@ const elementAttributes = computed(() => {
     } else if (baseComponent.value === "a") {
         // Keeps a new tab from reaching window.opener; a rel passed by the caller falls through and wins.
         return { href: props.href, rel: attrs.target === "_blank" ? "noopener" : undefined };
-    } else if (baseComponent.value === RouterLink) {
+    } else if (props.to) {
         return { to: props.to };
     }
     return {};
