@@ -164,4 +164,15 @@ describe("ToolSection element ordering", () => {
         await wrapper.find(".name").trigger("click");
         expect(getRenderedToolIds(wrapper)).toEqual(["z_tool", "a_tool"]);
     });
+
+    // A collapsed section has to say aria-expanded="false", not drop the attribute
+    test("reports aria-expanded as an explicit true/false string", async () => {
+        const wrapper = mountSection(tools);
+        const titleLink = wrapper.find(".title-link");
+        expect(titleLink.attributes("aria-expanded")).toBe("false");
+        await wrapper.find(".name").trigger("click");
+        expect(titleLink.attributes("aria-expanded")).toBe("true");
+        await wrapper.find(".name").trigger("click");
+        expect(titleLink.attributes("aria-expanded")).toBe("false");
+    });
 });
