@@ -95,6 +95,8 @@ class DynamicToolManager(ModelManager[DynamicTool]):
     model_class = DynamicTool
 
     def ensure_can_use_unprivileged_tool(self, user: model.User | None):
+        if user is not None and self.app.config.allow_user_defined_tools_for_all_users:
+            return
         if user is None or not any(
             role.type == model.Role.types.USER_TOOL_EXECUTE and not role.deleted for role in user.all_roles()
         ):

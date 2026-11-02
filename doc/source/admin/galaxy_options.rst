@@ -6689,3 +6689,16 @@
     testing).
 :Default: ``true``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``allow_user_defined_tools_for_all_users``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow every logged-in user to create and run user defined tools,
+    instead of only users holding a role of type ``user_tool_execute``
+    (granted directly or through a group). Anonymous users are still
+    refused. ``enable_beta_tool_formats`` must also be enabled.
+:Default: ``false``
+:Type: bool
