@@ -1,4 +1,4 @@
-import { GButton, GCollapse, GDropdownItem, GLink, GTab, GTabs } from "@galaxyproject/galaxy-ui"
+import { GButton, GCollapse, GDropdownItem, GLink, GPagination, GTab, GTabs } from "@galaxyproject/galaxy-ui"
 import { flushPromises, mount } from "@vue/test-utils"
 import { describe, expect, it, vi } from "vitest"
 import { defineComponent, ref } from "vue"
@@ -113,5 +113,21 @@ describe("galaxy-ui v-model under Vue 3", () => {
         await flushPromises()
 
         expect(wrapper.classes()).toContain("g-collapse-open")
+    })
+
+    it("binds the current page both ways on GPagination", async () => {
+        const Parent = defineComponent({
+            components: { GPagination },
+            setup: () => ({ page: ref(2) }),
+            template: `<GPagination v-model="page" :total-rows="50" :per-page="10" />`,
+        })
+        const wrapper = mount(Parent)
+        await flushPromises()
+
+        expect(wrapper.get('[aria-current="page"]').text()).toBe("2")
+
+        await wrapper.get('[aria-label="Go to page 4"]').trigger("click")
+
+        expect((wrapper.vm as unknown as { page: number }).page).toBe(4)
     })
 })
