@@ -8,6 +8,10 @@ interface Props {
     offset: number;
 }
 const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "click"): void;
+}>();
 </script>
 
 <template>
@@ -20,7 +24,7 @@ const props = defineProps<Props>();
         :disabled="props.offset <= 100"
         :tabindex="props.offset <= 100 ? -1 : 0"
         color="blue"
-        @click="$emit('click')">
+        @click="emit('click')">
         <FontAwesomeIcon :icon="faChevronUp" />
     </GButton>
 </template>

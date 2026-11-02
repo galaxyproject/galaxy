@@ -53,6 +53,7 @@ export default {
             required: true,
         },
     },
+    emits: ["onToolshed"],
     computed: {
         showDropdown() {
             return this.toolshedUrls.length > 1;

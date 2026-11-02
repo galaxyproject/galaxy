@@ -69,6 +69,7 @@ export default {
             default: true,
         },
     },
+    emits: ["onChange"],
     data() {
         return {
             formData: {},

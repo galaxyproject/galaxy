@@ -17,6 +17,10 @@ defineProps({
     toggle: Boolean,
     url: String,
 });
+
+const emit = defineEmits<{
+    (e: "click"): void;
+}>();
 </script>
 
 <template>
@@ -27,7 +31,7 @@ defineProps({
         :target="target || '_parent'"
         :link-classes="{ 'nav-icon': !!icon, toggle: toggle }"
         :title="tooltip"
-        @click.prevent="$emit('click')">
+        @click.prevent="emit('click')">
         <template v-if="icon">
             <!-- If this is an icon-based tab, inject tooltip directly for screen readers -->
             <span class="sr-only">{{ tooltip || id }}</span>

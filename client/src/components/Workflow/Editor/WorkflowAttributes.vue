@@ -255,6 +255,19 @@ export default {
             default: null,
         },
     },
+    emits: [
+        "update:nameCurrent",
+        "update:annotationCurrent",
+        "update:readme-active",
+        "update:helpCurrent",
+        "update:logoUrlCurrent",
+        "update:highlight",
+        "tags",
+        "version",
+        "license",
+        "creator",
+        "doi",
+    ],
     data() {
         return {
             bestPracticeWarningCreator: bestPracticeWarningCreator,

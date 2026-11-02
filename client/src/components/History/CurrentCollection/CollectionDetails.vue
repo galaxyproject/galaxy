@@ -11,6 +11,10 @@ interface Props {
 }
 
 defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "update:dsc", changes: Partial<HDCASummary>): void;
+}>();
 </script>
 
 <template>
@@ -20,7 +24,7 @@ defineProps<Props>();
         :writeable="writeable"
         :renameable="writeable"
         :show-annotation="false"
-        @save="$emit('update:dsc', $event)">
+        @save="emit('update:dsc', $event)">
         <template v-slot:description>
             <CollectionDescription :hdca="dsc" />
             <ContentExpirationIndicator :item="dsc" />
