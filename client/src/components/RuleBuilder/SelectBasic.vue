@@ -22,31 +22,35 @@ import VueMultiselect from "vue-multiselect";
 
 import { uid } from "@/utils/utils";
 
+defineOptions({
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = defineProps({
-    value: { required: false },
+    modelValue: { required: false },
     multiple: { type: Boolean, default: false },
     options: { type: Array, default: () => [] },
     placeholder: { type: String, default: null },
 });
 
-const emit = defineEmits(["input"]);
+const emit = defineEmits(["update:modelValue"]);
 
 // The rule builder shows several of these at once, so each needs its own id.
 const selectId = `select-basic-${uid()}`;
 
 const selectedValue = computed(() => {
-    if (!props.value) {
+    if (!props.modelValue) {
         return props.multiple ? [] : null;
     }
     if (props.multiple) {
-        return props.options.filter((opt) => props.value.includes(opt.id));
+        return props.options.filter((opt) => props.modelValue.includes(opt.id));
     }
-    const singleValue = Array.isArray(props.value) ? props.value[0] : props.value;
+    const singleValue = Array.isArray(props.modelValue) ? props.modelValue[0] : props.modelValue;
     return props.options.find((opt) => opt.id === singleValue) || null;
 });
 
 const onInput = (selected) => {
     const outputValue = props.multiple ? selected.map((opt) => opt.id) : selected ? selected.id : null;
-    emit("input", outputValue);
+    emit("update:modelValue", outputValue);
 };
 </script>

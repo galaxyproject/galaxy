@@ -110,7 +110,11 @@ function moveUp(index: number) {
         <div class="d-flex justify-content-end align-items-center">
             <span v-g-tooltip.hover class="mr-auto help-text" :title="help">{{ label }}</span>
             <div v-g-tooltip.hover class="mr-1" :title="title">
-                <SelectBasic :value="target" :multiple="multiple" :options="columnOptions" @input="handleInput" />
+                <SelectBasic
+                    :model-value="target"
+                    :multiple="multiple"
+                    :options="columnOptions"
+                    @update:model-value="handleInput" />
             </div>
             <slot />
         </div>
@@ -137,7 +141,10 @@ function moveUp(index: number) {
                     <i @click="emit('update:orderedEdit', true)">... {{ localize("Assign Another Column") }}</i>
                 </span>
                 <span v-else class="rule-column-selector-target-select">
-                    <SelectBasic placeholder="Select a column" :options="remainingOptions" @input="handleAdd" />
+                    <SelectBasic
+                        placeholder="Select a column"
+                        :options="remainingOptions"
+                        @update:model-value="handleAdd" />
                 </span>
             </li>
         </ol>
