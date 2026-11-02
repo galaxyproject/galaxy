@@ -1694,14 +1694,38 @@ def _forge_new_dataset_in_user_object_store(directory, cat_job):
     _edit_dataset_attrs(directory, dataset={"object_store_id": "user_objects://another-users-store"})
 
 
+def _forge_new_dataset_in_other_object_store(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.output)
+    _rewrite_export_as_new_datasets(directory)
+    _edit_dataset_attrs(directory, dataset={"object_store_id": "other"})
+
+
 @pytest.mark.parametrize(
     "forge",
-    [_forge_external_filename, _forge_object_store_move, _forge_uuid_change, _forge_new_dataset_in_user_object_store],
+    [
+        _forge_external_filename,
+        _forge_object_store_move,
+        _forge_uuid_change,
+        _forge_new_dataset_in_user_object_store,
+        _forge_new_dataset_in_other_object_store,
+    ],
 )
 def test_user_defined_tool_import_refuses_dataset_file_edits(tmp_path, cat_job, forge):
     forge(tmp_path, cat_job)
     with pytest.raises(MalformedContents, match="may not (link|move|change)"):
         _import_job_outputs(tmp_path, cat_job, allow_dataset_file_edit=False)
+
+
+def test_user_defined_tool_import_accepts_new_dataset_in_job_object_store(tmp_path, cat_job):
+    object_store_id = "files1"
+    cat_job.output.dataset.object_store_id = object_store_id
+    cat_job.app.commit()
+    _export_for_edit(tmp_path, cat_job, cat_job.output)
+    _rewrite_export_as_new_datasets(tmp_path)
+    _edit_dataset_attrs(tmp_path, dataset={"object_store_id": object_store_id})
+    _import_job_outputs(tmp_path, cat_job, allow_dataset_file_edit=False)
+    new_datasets = [hda for hda in cat_job.history.datasets if hda.id not in (cat_job.input.id, cat_job.output.id)]
+    assert [hda.dataset.object_store_id for hda in new_datasets] == [object_store_id]
 
 
 def _setup_simple_export(export_kwds):

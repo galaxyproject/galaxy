@@ -2106,7 +2106,6 @@ class MinimalJobWrapper(HasResourceParameters):
         user = job.user
         object_store_id = self.get_destination_configuration("object_store_id", None)
         split_object_stores: Callable[[str], ObjectStorePopulator] | None = None
-        object_store_id_overrides: dict[str, str | None] | None = None
 
         if object_store_id is None:
             object_store_id = job.preferred_object_store_id
@@ -2136,11 +2135,6 @@ class MinimalJobWrapper(HasResourceParameters):
                     output_names = [
                         o for o in output_names if invocation_object_stores.is_output_name_an_effective_output(o)
                     ]
-
-                # we resolve the precreated datasets here with object store populators
-                # but for dynamically created datasets after the job we need to record
-                # the outputs and set them accordingly
-                object_store_id_overrides = dict.fromkeys(output_names, preferred_outputs_object_store_id)
 
                 def split_object_stores(output_name: str):  # noqa: F811 https://github.com/PyCQA/pyflakes/issues/783
                     if "|__part__|" in output_name:
@@ -2184,7 +2178,8 @@ class MinimalJobWrapper(HasResourceParameters):
                 dataset_object_store_populator = split_object_stores(dataset_assoc.name)
                 dataset_object_store_populator.set_object_store_id(dataset, require_shareable=require_shareable)
             job.object_store_id = object_store_populator.object_store_id
-            job.object_store_id_overrides = object_store_id_overrides
+            # Datasets discovered after the job go to the store the precreated outputs settled on.
+            job.object_store_id_overrides = dict.fromkeys(output_names, outputs_object_store_populator.object_store_id)
             self._setup_working_directory(job=job)
 
     def _set_unknown_output_extensions_to_data(self, job: Job) -> None:

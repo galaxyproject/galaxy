@@ -74,7 +74,6 @@ from galaxy.model.orm.util import (
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.objectstore import (
     BaseObjectStore,
-    is_user_object_store,
     ObjectStore,
     persist_extra_files,
 )
@@ -304,8 +303,8 @@ class EditableObjects:
                 raise MalformedContents("Model store may not change the uuid of an existing dataset.")
             changed = object_store_id is not None and object_store_id != dataset.object_store_id
         else:
-            # Without a preferred object store, the job's metadata step picks one for new datasets.
-            changed = is_user_object_store(object_store_id) and object_store_id not in self._object_store_ids
+            # Galaxy assigns the job its object stores before it runs, and new datasets use them.
+            changed = object_store_id is not None and object_store_id not in self._object_store_ids
         if changed:
             raise MalformedContents(f"Model store may not move a dataset to object store {object_store_id}.")
 
