@@ -21,7 +21,6 @@ from contextlib import nullcontext
 from datetime import (
     datetime,
     timedelta,
-    timezone,
 )
 from typing import (
     Any,
@@ -51,6 +50,7 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 
+from galaxy.util import now
 from .index import (
     INDEX_SCHEMA_HASH,
     ToolIndex,
@@ -140,10 +140,6 @@ class _PopulateLeaseRow(_Base):
 _LEASE_ROW_ID = 1
 
 
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc).replace(tzinfo=None)
-
-
 class _SqlAlchemyPopulateLease(PopulateLease):
     """Populate lease kept in a row of the store's own database.
 
@@ -162,7 +158,7 @@ class _SqlAlchemyPopulateLease(PopulateLease):
             ).scalar_one_or_none()
 
     def try_acquire(self, holder: str, ttl: timedelta) -> bool:
-        now = _utcnow()
+        current_time = now()
         with self._store._session() as session:
             # Read first so that waiters polling a held lease do not take the
             # write lock on every poll.
@@ -175,7 +171,7 @@ class _SqlAlchemyPopulateLease(PopulateLease):
             current is not None
             and current.holder not in (None, holder)
             and current.expires_at is not None
-            and current.expires_at >= now
+            and current.expires_at >= current_time
         ):
             return False
         with self._store._write_lock, self._store._session() as session:
@@ -186,17 +182,17 @@ class _SqlAlchemyPopulateLease(PopulateLease):
                     or_(
                         _PopulateLeaseRow.holder.is_(None),
                         _PopulateLeaseRow.holder == holder,
-                        _PopulateLeaseRow.expires_at < now,
+                        _PopulateLeaseRow.expires_at < current_time,
                     ),
                 )
-                .values(holder=holder, expires_at=now + ttl)
+                .values(holder=holder, expires_at=current_time + ttl)
             )
             if result.rowcount:  # type: ignore[attr-defined]
                 session.commit()
                 return True
             # Either another process holds the lease or the row does not
             # exist yet; inserting it fails on the primary key in the first case.
-            session.add(_PopulateLeaseRow(id=_LEASE_ROW_ID, holder=holder, expires_at=now + ttl))
+            session.add(_PopulateLeaseRow(id=_LEASE_ROW_ID, holder=holder, expires_at=current_time + ttl))
             try:
                 session.commit()
             except IntegrityError:
@@ -209,7 +205,7 @@ class _SqlAlchemyPopulateLease(PopulateLease):
             result = session.execute(
                 update(_PopulateLeaseRow)
                 .where(_PopulateLeaseRow.id == _LEASE_ROW_ID, _PopulateLeaseRow.holder == holder)
-                .values(expires_at=_utcnow() + ttl)
+                .values(expires_at=now() + ttl)
             )
             session.commit()
             return bool(result.rowcount)  # type: ignore[attr-defined]
@@ -217,7 +213,7 @@ class _SqlAlchemyPopulateLease(PopulateLease):
     def release(self, holder: str, populated: bool) -> None:
         values: dict[str, Any] = {"holder": None, "expires_at": None}
         if populated:
-            values["populated_at"] = _utcnow()
+            values["populated_at"] = now()
         with self._store._write_lock, self._store._session() as session:
             session.execute(
                 update(_PopulateLeaseRow)

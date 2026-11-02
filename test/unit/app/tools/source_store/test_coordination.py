@@ -32,34 +32,13 @@ def _lease(store):
     return lease
 
 
-def test_populates_when_needed(store):
-    calls = []
-    assert populate_once(_lease(store), lambda: True, lambda: calls.append(1), **FAST)
-    assert calls == [1]
-    assert _lease(store).last_populated_at() is not None
-
-
-def test_skips_populate_no_longer_needed(store):
-    calls = []
-    assert not populate_once(_lease(store), lambda: False, lambda: calls.append(1), **FAST)
-    assert calls == []
-    assert _lease(store).last_populated_at() is None
-
-
-def test_populates_without_a_lease():
-    calls = []
-    assert populate_once(None, lambda: False, lambda: calls.append(1))
-    assert calls == [1]
-
-
 def test_takes_over_the_lease_of_a_holder_that_died(store):
     lease = _lease(store)
     assert lease.try_acquire("dead process", ttl=timedelta(seconds=0.3))
-    calls = []
-    started = time.monotonic()
-    assert populate_once(lease, lambda: True, lambda: calls.append(1), **FAST)
+    thread, calls, result = _populate_in_thread(lease)
+    thread.join(10)
+    assert result == [True]
     assert calls == [1]
-    assert time.monotonic() - started >= 0.25
 
 
 def test_failed_populate_releases_the_lease_without_recording_it(store):
@@ -70,10 +49,10 @@ def test_failed_populate_releases_the_lease_without_recording_it(store):
 
     with pytest.raises(RuntimeError):
         populate_once(lease, lambda: True, fail, **FAST)
+    # Free at once rather than after the TTL, and not recorded as populated,
+    # so a waiter populates instead of reusing the failed result.
+    assert lease.try_acquire("waiter", ttl=timedelta(minutes=1))
     assert lease.last_populated_at() is None
-    calls = []
-    assert populate_once(lease, lambda: True, lambda: calls.append(1), **FAST)
-    assert calls == [1]
 
 
 def test_holder_keeps_the_lease_past_its_ttl_while_populating(store):

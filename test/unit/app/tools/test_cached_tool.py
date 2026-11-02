@@ -1,10 +1,12 @@
 import logging
 import threading
+import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import (
     datetime,
+    timedelta,
     timezone,
 )
 from typing import (
@@ -1386,3 +1388,29 @@ def test_toolbox_refuses_to_build_without_read_only_store_index(monkeypatch, rea
     with pytest.raises(ConfigurationError, match=message):
         box._init_tools_from_configs([])
     default.load_index.assert_not_called()
+
+
+def test_toolbox_waits_for_a_peer_populating_the_store(tmp_path, monkeypatch):
+    store = SqlAlchemyToolSourceStore(url=f"sqlite:///{tmp_path / 'store.sqlite'}", freshness_probe=lambda: "current")
+    peer_lease = store.populate_lease()
+    assert peer_lease is not None
+    assert peer_lease.try_acquire("peer", ttl=timedelta(minutes=1))
+    box = _seam_box()
+    box._store = store
+    populated = MagicMock()
+    monkeypatch.setattr(box, "_run_inline_populator", populated)
+    monkeypatch.setattr(box, "_init_tools_from_index", lambda config_filenames: True)
+
+    boot = threading.Thread(target=box._init_tools_from_configs, args=([],))
+    boot.start()
+    time.sleep(0.2)
+    # The peer finishes its populate while this process waits for the lease.
+    store.store(StoredToolSource(hash="abc", tool_source_class="XmlToolSource", raw_source="<tool/>"))
+    store.store_index(ToolIndex(entries={"bowtie2": _entry()}, freshness_token="current"))
+    peer_lease.release("peer", populated=True)
+    boot.join(10)
+
+    assert not boot.is_alive()
+    populated.assert_not_called()
+    assert box._tool_index is not None
+    assert "bowtie2" in box._tool_index.entries

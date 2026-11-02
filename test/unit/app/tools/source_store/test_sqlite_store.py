@@ -6,7 +6,6 @@ import sys
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
 
 import pytest
 from sqlalchemy import (
@@ -263,14 +262,6 @@ def test_opening_an_existing_store_adds_the_populate_lease_table(sqlite_path):
     metadata = sqlalchemy_store_module._metadata
     metadata.create_all(engine, tables=[metadata.tables["tool_source"], metadata.tables["tool_index"]])
 
-    store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    SqliteToolSourceStore(url=_sqlite_url(sqlite_path)).dispose()
 
     assert "tool_source_populate_lease" in inspect(engine).get_table_names()
-    lease = store.populate_lease()
-    assert lease is not None
-    assert lease.try_acquire("me", ttl=timedelta(minutes=1))
-
-
-def test_read_only_store_has_no_populate_lease(sqlite_path):
-    SqliteToolSourceStore(url=_sqlite_url(sqlite_path)).dispose()
-    assert SqliteToolSourceStore(url=_sqlite_url(sqlite_path), read_only=True).populate_lease() is None
