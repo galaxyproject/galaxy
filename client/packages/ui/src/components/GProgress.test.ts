@@ -269,6 +269,16 @@ describe("GProgress", () => {
         ).toBe(false);
     });
 
+    it("leaves a full bar unmarked, since its fill has no end to mark", () => {
+        for (const value of [100, 150]) {
+            const options = { props: { value, variant: "success" as const, showProgress: false } };
+
+            expect(mount(GProgressBar, options).classes("g-progress-bar-marked")).toBe(false);
+        }
+        const nearlyFull = { props: { value: 99, variant: "success" as const, showProgress: false } };
+        expect(mount(GProgressBar, nearlyFull).classes("g-progress-bar-marked")).toBe(true);
+    });
+
     it("drops the percentage below 5% of the maximum and marks the fill end instead", () => {
         const narrow = mount(GProgressBar, { props: { value: 49, max: 1000, variant: "success" } });
         expect(narrow.text()).toBe("");

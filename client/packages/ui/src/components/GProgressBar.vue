@@ -88,7 +88,11 @@ const text = computed(() => {
 });
 
 const needsMarker = computed(
-    () => VARIANTS_BELOW_TRACK_CONTRAST.includes(variant.value) && percent.value > 0 && !text.value,
+    () =>
+        VARIANTS_BELOW_TRACK_CONTRAST.includes(variant.value) &&
+        percent.value > 0 &&
+        percent.value < 100 &&
+        !text.value,
 );
 
 const classes = computed(() => ({
