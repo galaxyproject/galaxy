@@ -1,6 +1,6 @@
-import { useThrottleFn } from "@vueuse/core";
+import { useDocumentVisibility, useThrottleFn } from "@vueuse/core";
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, effectScope, ref, watch } from "vue";
 
 import { type AnyUser, isAdminUser, isAnonymousUser, isRegisteredUser, type RegisteredUser } from "@/api";
 import { getGalaxyInstance } from "@/app";
@@ -48,6 +48,8 @@ const RECENT_TOOLS_LIMIT = 10;
 
 /** Minimum time between storage usage refreshes triggered by frequent changes. */
 const STORAGE_REFRESH_THROTTLE_MS = 5000;
+/** Minimum time between storage usage refreshes when the user returns to the tab. */
+const FOCUS_REFRESH_THROTTLE_MS = 60_000;
 
 export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<AnyUser>(null);
@@ -152,6 +154,30 @@ export const useUserStore = defineStore("userStore", () => {
         true,
         true,
     );
+    const refreshOnFocus = useThrottleFn(refreshStorageUsageInBackground, FOCUS_REFRESH_THROTTLE_MS, false, true);
+
+    const documentVisibility = useDocumentVisibility();
+    let watchingStorageUsage = false;
+    // Owned by the store rather than by the component that starts the watching
+    const storageUsageScope = effectScope();
+
+    /**
+     * Keeps the storage usage current when it changes outside this tab, e.g. in another tab or
+     * by background jobs: refresh when the user returns to the tab.
+     */
+    function startWatchingStorageUsage() {
+        if (watchingStorageUsage) {
+            return;
+        }
+        watchingStorageUsage = true;
+        storageUsageScope.run(() => {
+            watch(documentVisibility, (visibility) => {
+                if (visibility === "visible") {
+                    void refreshOnFocus();
+                }
+            });
+        });
+    }
 
     function loadUser(includeHistories = true) {
         if (!loadPromise) {
@@ -385,6 +411,7 @@ export const useUserStore = defineStore("userStore", () => {
         refreshStorageUsage,
         refreshStorageUsageInBackground,
         refreshStorageUsageThrottled,
+        startWatchingStorageUsage,
         matchesCurrentUsername,
         matchesCurrentUserId,
         setCurrentUser,
