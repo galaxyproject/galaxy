@@ -3,25 +3,27 @@ import { BFormInput, BInputGroup } from "bootstrap-vue";
 import type { Tuple } from "types/utilityTypes";
 import { computed } from "vue";
 
+defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
+
 const props = defineProps<{
-    value: Date;
+    modelValue: Date;
 }>();
 
 const emit = defineEmits<{
-    (e: "input", value: Date): void;
+    (e: "update:modelValue", value: Date): void;
 }>();
 
 const date = computed(() => {
-    const year = props.value.getFullYear().toString().padStart(4, "0");
-    const month = (props.value.getMonth() + 1).toString().padStart(2, "0");
-    const day = props.value.getDate().toString().padStart(2, "0");
+    const year = props.modelValue.getFullYear().toString().padStart(4, "0");
+    const month = (props.modelValue.getMonth() + 1).toString().padStart(2, "0");
+    const day = props.modelValue.getDate().toString().padStart(2, "0");
 
     return `${year}-${month}-${day}`;
 });
 
 const time = computed(() => {
-    const hours = props.value.getHours().toString().padStart(2, "0");
-    const minutes = props.value.getMinutes().toString().padStart(2, "0");
+    const hours = props.modelValue.getHours().toString().padStart(2, "0");
+    const minutes = props.modelValue.getMinutes().toString().padStart(2, "0");
 
     return `${hours}:${minutes}`;
 });
@@ -32,7 +34,7 @@ function updateDate(newDate: string) {
     if (matches?.length && matches.length >= 4) {
         const [_v, year, month, day] = matches as Tuple<4, string>;
 
-        const date = new Date(props.value);
+        const date = new Date(props.modelValue);
 
         try {
             date.setFullYear(parseInt(year));
@@ -41,7 +43,7 @@ function updateDate(newDate: string) {
             date.setMonth(parseInt(month) - 1);
             date.setDate(parseInt(day));
         } finally {
-            emit("input", date);
+            emit("update:modelValue", date);
         }
     }
 }
@@ -52,12 +54,12 @@ function updateTime(newTime: string) {
     if (matches?.length && matches.length >= 3) {
         const [_v, hours, minutes] = matches as Tuple<3, string>;
 
-        const date = new Date(props.value);
+        const date = new Date(props.modelValue);
 
         try {
             date.setHours(parseInt(hours), parseInt(minutes));
         } finally {
-            emit("input", date);
+            emit("update:modelValue", date);
         }
     }
 }
