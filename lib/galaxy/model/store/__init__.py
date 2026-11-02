@@ -11,6 +11,7 @@ from collections.abc import (
     Callable,
     Iterable,
     Iterator,
+    Sequence,
 )
 from dataclasses import dataclass
 from enum import Enum
@@ -279,9 +280,8 @@ class EditableObjects:
                     return
         raise MalformedContents(f"Model store may not edit {model_class.__name__} {object_id}.")
 
-    def assert_metadata_file_editable(self, metadata_files: Iterable[model.MetadataFile]) -> None:
+    def assert_metadata_file_editable(self, metadata_files: Sequence[model.MetadataFile]) -> None:
         """Refuse a metadata file uuid that belongs to datasets other than these, which would share their file."""
-        metadata_files = list(metadata_files)
         if metadata_files and not any(
             instance.id in self._ids[type(instance)]
             for metadata_file in metadata_files
@@ -382,16 +382,15 @@ def replace_metadata_file(
         if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
             metadata_file = None
             if not isinstance(sa_session, SessionlessContext):
+                metadata_files = sa_session.scalars(
+                    select(model.MetadataFile).filter_by(uuid=obj["uuid"]).order_by(model.MetadataFile.id)
+                ).all()
                 if editable_objects:
-                    editable_objects.assert_metadata_file_editable(
-                        sa_session.scalars(select(model.MetadataFile).filter_by(uuid=obj["uuid"]))
-                    )
+                    editable_objects.assert_metadata_file_editable(metadata_files)
                 # Setting metadata on a dataset that already has metadata files (e.g. a set metadata job)
                 # updates those files in place and exports them with their existing uuid. Metadata files
                 # are looked up by uuid, so reuse the dataset's own row instead of inserting a duplicate.
-                metadata_file = sa_session.scalars(
-                    select(model.MetadataFile).filter_by(uuid=obj["uuid"]).order_by(model.MetadataFile.id).limit(1)
-                ).first()
+                metadata_file = metadata_files[0] if metadata_files else None
                 if metadata_file is not None and dataset_instance not in (
                     metadata_file.history_dataset,
                     metadata_file.library_dataset,
