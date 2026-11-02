@@ -44,6 +44,8 @@ const baseRules = {
             message: "Vue 3 render functions don't receive `h`; import { h } from 'vue' instead.",
         },
     ],
+    "vue/no-deprecated-data-object-declaration": "error",
+    "vue/no-deprecated-destroyed-lifecycle": "error",
     "vue/no-deprecated-filter": "error",
     "vue/no-deprecated-functional-template": "error",
     "vue/no-deprecated-inline-template": "error",
