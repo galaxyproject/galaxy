@@ -3,19 +3,24 @@ import { computed } from "vue";
 
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = defineProps<{
-    value?: string;
+    modelValue?: string;
     placeholder?: string;
 }>();
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
 }>();
 
-const valueArray = computed(() => props.value?.split(",").map((v) => v.trim()) ?? []);
+const valueArray = computed(() => props.modelValue?.split(",").map((v) => v.trim()) ?? []);
 
 function onInput(tags: string[]) {
-    emit("input", tags.join(","));
+    emit("update:modelValue", tags.join(","));
 }
 </script>
 
