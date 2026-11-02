@@ -360,9 +360,13 @@ class TestHistoriesPurge(SeleniumTestCase):
 
     @selenium_test
     def test_purge_all_histories(self):
-        history_ids = [self.dataset_populator.new_history(f"purge me {i}") for i in range(2)]
+        self.home()
+        history_ids = [self.current_history_id()]
+        history_ids += [self.dataset_populator.new_history(f"purge me {i}") for i in range(2)]
         self.navigate_to_histories_page()
-        assert {"purge me 0", "purge me 1"} <= set(self.get_history_titles(3))
+        titles = self.get_history_titles(True)
+        assert len(titles) == len(history_ids)
+        assert {"purge me 0", "purge me 1"} <= set(titles)
         self.screenshot("histories_before_bulk_purge")
         self.histories_purge_all()
 
