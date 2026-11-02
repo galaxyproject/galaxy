@@ -22,10 +22,7 @@ export function matchCollectionType(
     if (!mapOver) {
         return null;
     }
-    let mapOverType = mapOver.collectionType;
-    if (mapOverType === "paired_or_unpaired" && !collectionType.endsWith("paired_or_unpaired")) {
-        mapOverType = collectionType.endsWith("paired") ? "paired" : SINGLE_DATASETS;
-    }
+    const mapOverType = item.splitCollectionType(mapOver.collectionType);
     // the server splits a collection only into subcollections whose type is literally the map-over type
     if (mapOverType !== SINGLE_DATASETS && !collectionType.endsWith(`:${mapOverType}`)) {
         return null;
