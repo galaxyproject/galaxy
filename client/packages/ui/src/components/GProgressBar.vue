@@ -102,7 +102,7 @@ const classes = computed(() => ({
 
 <style scoped lang="scss">
 .g-progress-bar {
-    // Darkening stripes keep text and fill contrast; dark and info set light ones
+    // Darkening stripes keep text at 4.5:1 on every fill; dark sets light ones
     --g-progress-stripe: rgb(0% 0% 0% / 0.15);
 
     display: flex;
@@ -110,7 +110,7 @@ const classes = computed(() => ({
     justify-content: center;
     box-sizing: border-box;
     overflow: hidden;
-    // Page-colour text keeps 4.5:1 on every fill and stripe; info, the one light fill, sets dark text
+    // White text here, grey-900 on the light fills: whichever reaches 4.5:1 on the fill and its stripes
     color: var(--background-color);
     text-align: center;
     white-space: nowrap;
@@ -120,7 +120,6 @@ const classes = computed(() => ({
         transition: none;
     }
 
-    // Each fill and its stripes keep 3:1 against the grey-200 track, and the text 4.5:1 against both
     &.g-primary {
         background-color: var(--color-blue-600);
     }
@@ -130,7 +129,8 @@ const classes = computed(() => ({
     }
 
     &.g-success {
-        background-color: var(--color-green-700);
+        background-color: var(--color-green-500);
+        color: var(--color-grey-900);
     }
 
     &.g-danger {
@@ -138,14 +138,13 @@ const classes = computed(() => ({
     }
 
     &.g-warning {
-        background-color: var(--color-yellow-700);
+        background-color: var(--color-orange-600);
+        color: var(--color-grey-900);
     }
 
     &.g-info {
-        background-color: var(--color-blue-500);
-        color: var(--color-blue-900);
-        // blue-500 sits just inside both limits, so its stripes can only be faint
-        --g-progress-stripe: rgb(100% 100% 100% / 0.05);
+        background-color: var(--color-blue-400);
+        color: var(--color-grey-900);
     }
 
     &.g-dark {

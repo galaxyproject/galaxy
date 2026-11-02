@@ -2,7 +2,7 @@ import type { ComputedRef, InjectionKey } from "vue";
 
 import type { ColorVariant } from "./componentVariants";
 
-/** Bar colours. No `light`: a light bar cannot keep 3:1 contrast against the light track. */
+/** Bar colours. No `light`: its fill would disappear into the light track. */
 export type ProgressVariant = Exclude<ColorVariant, "light">;
 
 /** What a GProgress shares with its GProgressBar children; each bar's own props win. */
