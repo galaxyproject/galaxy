@@ -8,6 +8,8 @@ from galaxy.exceptions import (
     ObjectNotFound,
 )
 from galaxy.short_term_storage import (
+    DEFAULT_STORAGE_DURATION,
+    effective_storage_duration,
     ShortTermStorageConfiguration,
     ShortTermStorageManager,
     ShortTermStorageServeCancelledInformation,
@@ -93,6 +95,30 @@ def test_cancel_with_arbitrary_exception(tmpdir):
     assert exc.status_code == 500
     assert exc.err_code.code == 500001
     assert "Moo Cow..." in str(exc)
+
+
+@pytest.mark.parametrize(
+    "default_duration, maximum_duration, expected",
+    [
+        (None, None, DEFAULT_STORAGE_DURATION),
+        (0, 0, DEFAULT_STORAGE_DURATION),
+        (172800, 0, 172800),
+        (172800, None, 172800),
+        (604800, 86400, 86400),
+        (3600, 86400, 3600),
+        (None, 3600, 3600),
+        (0, 3600, 3600),
+    ],
+)
+def test_effective_duration_matches_new_targets(tmpdir, default_duration, maximum_duration, expected):
+    assert effective_storage_duration(default_duration, maximum_duration) == expected
+    config = ShortTermStorageConfiguration(
+        short_term_storage_directory=tmpdir,
+        default_storage_duration=default_duration,
+        maximum_storage_duration=maximum_duration,
+    )
+    target = ShortTermStorageManager(config=config).new_target(TEST_FILENAME, TEST_MIME_TYPE)
+    assert target.duration == expected
 
 
 def test_cleanup(tmpdir):
