@@ -527,17 +527,15 @@ class ExecutionTracker:
     def _copied_from_implicit_collections(self, trans) -> dict[str, model.HistoryDatasetCollectionAssociation]:
         """Return the implicit collections this map-over copied, by output name.
 
-        This is the case when every job of this map-over was copied from a
-        job of one earlier map-over, one job for each of its jobs. Otherwise
-        return an empty dict.
+        Each job must be copied from the same-order-index job of one earlier map-over.
         """
         implicit_collection_jobs = self.implicit_collection_jobs
         if implicit_collection_jobs is None or not self.mapping_params.param_template.get("__use_cached_job__"):
             return {}
-        copied_from_job_ids = list(implicit_collection_jobs.get_job_attributes(["copied_from_job_id"]).scalars())
-        if not copied_from_job_ids or None in copied_from_job_ids:
+        copied_from_job_ids = implicit_collection_jobs.job_attribute_by_order_index("copied_from_job_id")
+        if not copied_from_job_ids or None in copied_from_job_ids.values():
             return {}
-        source_job = trans.sa_session.get(model.Job, copied_from_job_ids[0])
+        source_job = trans.sa_session.get(model.Job, next(iter(copied_from_job_ids.values())))
         if source_job is None:
             return {}
         source_collections = {
@@ -549,8 +547,7 @@ class ExecutionTracker:
         source_icj = source_implicit_collection_jobs.pop()
         if source_icj is None:
             return {}
-        source_job_ids = list(source_icj.get_job_attributes(["id"]).scalars())
-        if len(source_job_ids) != len(copied_from_job_ids) or set(source_job_ids) != set(copied_from_job_ids):
+        if source_icj.job_attribute_by_order_index("id") != copied_from_job_ids:
             return {}
         return source_collections
 

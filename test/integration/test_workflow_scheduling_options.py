@@ -14,6 +14,19 @@ from galaxy_test.base.populators import (
 )
 from galaxy_test.driver import integration_util
 
+CAT_LIST_WORKFLOW = """
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list
+steps:
+  cat:
+    tool_id: cat1
+    in:
+      input1: input_collection
+"""
+
 
 class TestMaximumWorkflowInvocationDuration(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
@@ -218,6 +231,51 @@ steps:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
             assert len(jobs) == 3, jobs
+
+    def test_cached_mapped_step_reordered_input_not_marked_copied(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(CAT_LIST_WORKFLOW)
+        with self.dataset_populator.test_history() as history_id:
+            named_hdas = [
+                (name, self.dataset_populator.new_dataset(history_id, content=f"{name}\n", wait=True))
+                for name in ("a", "b", "c")
+            ]
+            first_invocation_id = self._invoke_cat_list(workflow_id, history_id, named_hdas)
+            first_jobs = self.workflow_populator.get_invocation_jobs(first_invocation_id)
+            assert len(first_jobs) == 3, first_jobs
+
+            cached_invocation_id = self._invoke_cat_list(
+                workflow_id, history_id, list(reversed(named_hdas)), use_cached_job=True
+            )
+            cached_jobs = self.workflow_populator.get_invocation_jobs(cached_invocation_id)
+            assert len(cached_jobs) == 3, cached_jobs
+            assert self._copied_from_job_ids(cached_jobs) == sorted(job["id"] for job in first_jobs)
+
+            # Every element hit the cache, but in a different order than the first run's collection.
+            cached_hdca = self._cat_step_output_collection(cached_invocation_id)
+            assert cached_hdca.copied_from_history_dataset_collection_association_id is None
+
+    def _invoke_cat_list(
+        self, workflow_id: str, history_id: str, named_hdas: list, use_cached_job: bool = False
+    ) -> str:
+        element_identifiers = [{"name": name, "src": "hda", "id": hda["id"]} for name, hda in named_hdas]
+        hdca = self.dataset_collection_populator.create_list_in_history(
+            history_id, element_identifiers=element_identifiers, direct_upload=False, copy_elements=False
+        ).json()
+        invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+            workflow_id,
+            history_id=history_id,
+            inputs={"0": {"src": "hdca", "id": hdca["id"]}},
+            request={"use_cached_job": True} if use_cached_job else None,
+        ).json()["id"]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return invocation_id
+
+    def _copied_from_job_ids(self, jobs: list) -> list[str]:
+        """Return the sorted ids of the jobs the given jobs were copied from."""
+        copied_from = (
+            self.dataset_populator.get_job_details(job["id"], full=True).json()["copied_from_job_id"] for job in jobs
+        )
+        return sorted(job_id for job_id in copied_from if job_id is not None)
 
     def _cat_step_output_collection(self, invocation_id: str) -> HistoryDatasetCollectionAssociation:
         invocation = self._app.model.session.get(WorkflowInvocation, self._app.security.decode_id(invocation_id))
