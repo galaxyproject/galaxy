@@ -63,7 +63,7 @@ class TestFolderContentsApi(ApiTestCase):
 
         sub_folder_id = self._create_subfolder_in(folder_id)
         ldda_id, _ = self._create_dataset_in_folder(history_id, folder_id)
-        self._delete_library_dataset(ldda_id)
+        self.library_populator.delete_library_dataset(ldda_id)
         self._delete_subfolder(sub_folder_id)
 
         response = self._get(f"folders/{folder_id}/contents")
@@ -227,7 +227,7 @@ class TestFolderContentsApi(ApiTestCase):
 
         for index, ldda_id in enumerate(ldda_ids):
             if index % 2 == 0:
-                self._delete_library_dataset(ldda_id)
+                self.library_populator.delete_library_dataset(ldda_id)
                 deleted_ldda_ids.append(ldda_id)
 
         num_total_contents = num_subfolders + num_datasets
@@ -375,7 +375,7 @@ class TestFolderContentsApi(ApiTestCase):
         self.dataset_populator.wait_for_history(history_id)
         assert self._get_readme(folder_id) is not None
 
-        self._delete_library_dataset(ld_id)
+        self.library_populator.delete_library_dataset(ld_id)
         assert self._get_readme(folder_id) is None
 
     @requires_new_library
@@ -524,10 +524,6 @@ class TestFolderContentsApi(ApiTestCase):
         ).json()["outputs"][0]
         hdca_id = hdca["id"]
         return hdca_id
-
-    def _delete_library_dataset(self, library_dataset_id: str) -> None:
-        delete_response = self._delete(f"libraries/datasets/{library_dataset_id}")
-        self._assert_status_code_is(delete_response, 200)
 
     def _delete_subfolder(self, folder_id: str) -> None:
         delete_response = self._delete(f"folders/{folder_id}")

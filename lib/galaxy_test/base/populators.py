@@ -3947,6 +3947,11 @@ class LibraryPopulator:
             return self.galaxy_interactor.post(url_rel, payload, json=True)
         return self.galaxy_interactor.post(url_rel, payload, files=files)
 
+    def delete_library_dataset(self, library_dataset_id: str) -> dict[str, Any]:
+        response = self.galaxy_interactor.delete(f"libraries/datasets/{library_dataset_id}")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
     def show_ld_raw(self, library_id: str, library_dataset_id: str) -> Response:
         response = self.galaxy_interactor.get(f"libraries/{library_id}/contents/{library_dataset_id}")
         return response
