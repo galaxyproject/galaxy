@@ -132,6 +132,9 @@ from galaxy.workflow.modules import module_factory
 
 log = logging.getLogger(__name__)
 
+# Update keys that only touch the current user's tool panel, allowed on accessible (not just owned) workflows.
+USER_MENU_UPDATE_KEYS = frozenset({"menu_entry", "show_in_tool_panel"})
+
 router = Router(tags=["workflows"])
 
 
@@ -165,26 +168,21 @@ class WorkflowsAPIController(
             workflow_ids = []
         elif not isinstance(workflow_ids, list):
             workflow_ids = [workflow_ids]
-        workflow_ids_decoded = []
-        # Decode the encoded workflow ids
-        for ids in workflow_ids:
-            workflow_ids_decoded.append(trans.security.decode_id(ids))
+        workflow_ids_decoded = [trans.security.decode_id(encoded_id) for encoded_id in workflow_ids]
+        # Unique ids in request order, all resolved before existing entries are cleared.
+        stored_workflows = [
+            self.workflow_manager.get_stored_accessible_workflow(trans, wf_id)
+            for wf_id in dict.fromkeys(workflow_ids_decoded)
+        ]
         session = trans.sa_session
         # This explicit remove seems like a hack, need to figure out
         # how to make the association do it automatically.
         for m in user.stored_workflow_menu_entries:
             session.delete(m)
         user.stored_workflow_menu_entries = []
-        # To ensure id list is unique
-        seen_workflow_ids = set()
-        for wf_id in workflow_ids_decoded:
-            if wf_id in seen_workflow_ids:
-                continue
-            else:
-                seen_workflow_ids.add(wf_id)
+        for stored_workflow in stored_workflows:
             m = model.StoredWorkflowMenuEntry()
-            m.stored_workflow = session.get(model.StoredWorkflow, wf_id)
-
+            m.stored_workflow = stored_workflow
             user.stored_workflow_menu_entries.append(m)
         session.commit()
         message = "Menu updated."
@@ -432,9 +430,13 @@ class WorkflowsAPIController(
         :rtype:     dict
         :returns:   serialized version of the workflow
         """
-        stored_workflow = self.__get_stored_workflow(trans, id, **kwds)
         workflow_dict = payload.get("workflow", {})
         workflow_dict.update({k: v for k, v in payload.items() if k not in workflow_dict})
+        # The merge above copies a wrapped payload's own "workflow" key in too.
+        if set(workflow_dict) - {"workflow"} <= USER_MENU_UPDATE_KEYS:
+            stored_workflow = self.__get_stored_accessible_workflow(trans, id, **kwds)
+        else:
+            stored_workflow = self.__get_stored_owned_workflow(trans, id, **kwds)
         if workflow_dict:
             require_flush = False
             raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
@@ -472,13 +474,12 @@ class WorkflowsAPIController(
                 self.add_item_annotation(trans.sa_session, trans.user, stored_workflow, newAnnotation)
                 require_flush = True
 
-            if "menu_entry" in workflow_dict or "show_in_tool_panel" in workflow_dict:
+            if USER_MENU_UPDATE_KEYS & workflow_dict.keys():
                 show_in_panel = workflow_dict.get("menu_entry") or workflow_dict.get("show_in_tool_panel")
                 stored_workflow_menu_entries = trans.user.stored_workflow_menu_entries
-                decoded_id = trans.security.decode_id(id)
                 if show_in_panel:
                     workflow_ids = [wf.stored_workflow_id for wf in stored_workflow_menu_entries]
-                    if decoded_id not in workflow_ids:
+                    if stored_workflow.id not in workflow_ids:
                         menu_entry = model.StoredWorkflowMenuEntry()
                         menu_entry.stored_workflow = stored_workflow
                         stored_workflow_menu_entries.append(menu_entry)
@@ -487,8 +488,8 @@ class WorkflowsAPIController(
                 else:
                     # remove if in list
                     entries = {x.stored_workflow_id: x for x in stored_workflow_menu_entries}
-                    if decoded_id in entries:
-                        stored_workflow_menu_entries.remove(entries[decoded_id])
+                    if stored_workflow.id in entries:
+                        stored_workflow_menu_entries.remove(entries[stored_workflow.id])
                         require_flush = True
             # set tags
             if "tags" in workflow_dict:
@@ -740,9 +741,9 @@ class WorkflowsAPIController(
         instance = util.string_as_bool(kwd.get("instance", "false"))
         return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
 
-    def __get_stored_workflow(self, trans, workflow_id, **kwd):
+    def __get_stored_owned_workflow(self, trans, workflow_id, **kwd):
         instance = util.string_as_bool(kwd.get("instance", "false"))
-        return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
+        return self.workflow_manager.get_stored_owned_workflow(trans, workflow_id, by_stored_id=not instance)
 
 
 StoredWorkflowIDPathParam = Annotated[
