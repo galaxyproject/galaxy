@@ -2,8 +2,8 @@ import { createTestingPinia } from "@pinia/testing";
 import { emittedArg, suppressErrorForCustomIcons } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { configureCompat, nextTick, reactive, ref } from "vue";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick, reactive, ref } from "vue";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import type { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";
@@ -225,12 +225,10 @@ describe("WorkflowComment", () => {
         });
     });
 
-    // Vue 3 renders enumerated attributes as given instead of coercing them, so check the
-    // editable title/text spans still get explicit "true"/"false" without compat.
+    // Vue 3 renders enumerated attributes as given instead of coercing them (compat-config.js
+    // turns ATTR_ENUMERATED_COERCION off), so check the editable title/text spans still get
+    // explicit "true"/"false".
     describe("contenteditable without enumerated coercion", () => {
-        beforeAll(() => configureCompat({ ATTR_ENUMERATED_COERCION: false }));
-        afterAll(() => configureCompat({ ATTR_ENUMERATED_COERCION: true }));
-
         function editable(type: string, data: object, readonly: boolean) {
             const wrapper = mount(WorkflowComment as any, {
                 propsData: { comment: { ...comment, type, data }, scale: 1, rootOffset: {}, readonly },
