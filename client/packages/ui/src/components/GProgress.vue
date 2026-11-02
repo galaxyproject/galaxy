@@ -90,6 +90,8 @@ provide(progressKey, {
     display: flex;
     box-sizing: border-box;
     overflow: hidden;
+    // The outline, not the grey-200 fill, gives the track 3:1 against the page
+    border: 1px solid var(--color-grey-400);
     border-radius: var(--spacing-1);
     background-color: var(--color-grey-200);
     font-size: var(--font-size-small);
