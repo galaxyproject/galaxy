@@ -1,8 +1,8 @@
 // Vue 2 libraries (bootstrap-vue, vue-json-pretty 1.x, @handsontable/vue 2.x)
-// keep compat's Vue 2 behavior for their own components, so compat-config.js
-// can turn flags off for Galaxy code without breaking them. The other two are
-// imported only through their marked wrappers in components/Common/legacy/,
-// which eslint enforces.
+// keep compat's Vue 2 behavior for their own components, while the global
+// config in compat-config.js runs everything else, Galaxy code included, in
+// MODE 3. The other two are imported only through their marked wrappers in
+// components/Common/legacy/, which eslint enforces.
 //
 // compat reads each key, MODE included, from `instance.type.compatConfig` when
 // it's there and from the global config otherwise. With MODE 2, a flag is on
