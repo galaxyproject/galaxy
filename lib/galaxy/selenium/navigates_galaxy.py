@@ -2548,12 +2548,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     @staticmethod
     def form_field_kind(field: WebElementProtocol) -> str:
-        """Widget kind of a ``.ui-form-field``: boolean, color, drill_down, checkboxes, select or text."""
+        """Widget kind of a ``.ui-form-field``: boolean, color, drill_down, checkboxes, radio, select or text."""
         field_type = field.get_attribute("data-type") or ""
         if field_type in ("boolean", "color", "drill_down"):
             return field_type
-        if field.get_attribute("data-display") == "checkboxes":
-            return "checkboxes"
+        display = field.get_attribute("data-display")
+        if display in ("checkboxes", "radio"):
+            return display
         if field.find_elements(By.CSS_SELECTOR, ".multiselect"):
             return "select"
         return "text"
@@ -2566,6 +2567,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         if kind == "checkboxes":
             boxes = field.find_elements(By.CSS_SELECTOR, '[role="group"] input[type=checkbox]')
             return ", ".join(box.get_attribute("value") or "" for box in boxes if box.is_selected())
+        if kind == "radio":
+            radios = field.find_elements(By.CSS_SELECTOR, "input[type=radio]")
+            return next((radio.get_attribute("value") or "" for radio in radios if radio.is_selected()), "")
         if kind == "drill_down":
             options = field.find_elements(By.CSS_SELECTOR, '[id^="drilldown-option-"]')
             return ", ".join(
@@ -2594,6 +2598,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 assert matched, f"No checkbox with value '{option_value}' in param {parameter}"
                 if not matched[0].is_selected():
                     self.execute_script_click(matched[0])
+        elif kind == "radio":
+            radios = self.form_field(parameter).find_elements(By.CSS_SELECTOR, "input[type=radio]")
+            matched = [radio for radio in radios if radio.get_attribute("value") == value]
+            assert matched, f"No radio with value '{value}' in param {parameter}"
+            self.execute_script_click(matched[0])
         elif kind == "drill_down":
             # option ids use option names, so this only works where name == value
             for option_value in value if isinstance(value, list) else [value]:

@@ -335,6 +335,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
             "booltest": "false",
             "inttest": "1",
             "floattest": "1.0",
+            "radio_select": "a_radio",
             "check_select": "a_check",
             "drop_select": "A Drop",
         }
@@ -342,12 +343,14 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         self.form_element_set_value("booltest", "true")
         self.form_element_set_value("inttest", "42")
         self.form_element_set_value("floattest", "2.5")
+        self.form_element_set_value("radio_select", "c_radio")
         self.form_element_set_value("check_select", ["b_check", "c_check"])
         self.form_element_set_value("drop_select", "B Drop")
         assert {name: self.form_element_value(name) for name in defaults} == {
             "booltest": "true",
             "inttest": "42",
             "floattest": "2.5",
+            "radio_select": "c_radio",
             "check_select": "a_check, b_check, c_check",
             "drop_select": "B Drop",
         }
@@ -356,6 +359,10 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         assert self.form_element_value("parameter") == "#aabbcc"
         self.form_element_set_value("parameter", "#112233")
         assert self.form_element_value("parameter") == "#112233"
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+        content = self.dataset_populator.get_history_dataset_content(self.current_history_id(), hid=1)
+        assert content.strip() == "#112233"
 
         self.tool_open("drill_down")
         self.form_element_set_value("dd", ["a", "b"])
