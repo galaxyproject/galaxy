@@ -71,6 +71,7 @@ export const useUserStore = defineStore("userStore", () => {
     const recentTools = useUserLocalStorageFromHashId<string[]>("user-store-recent-tools", [], hashedUserId);
 
     let loadPromise: Promise<void> | null = null;
+    let lastLoadRequest = 0;
 
     function $reset() {
         currentUser.value = null;
@@ -192,9 +193,13 @@ export const useUserStore = defineStore("userStore", () => {
 
     function loadUser(includeHistories = true) {
         if (!loadPromise) {
+            const request = ++lastLoadRequest;
             const promise = (async () => {
                 const user = await getCurrentUser();
-                setUserState(user);
+                // A later refresh replaced this request: its answer may be newer
+                if (request === lastLoadRequest) {
+                    setUserState(user);
+                }
                 if (includeHistories) {
                     await useHistoryStore().loadHistories();
                 }

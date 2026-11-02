@@ -1,5 +1,6 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import flushPromises from "flush-promises";
+import { delay } from "msw";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -196,6 +197,29 @@ describe("userStore", () => {
             await useUserStore().refreshStorageUsage();
 
             expect(useQuotaUsageStore().quotaUsages?.map((usage) => usage.totalDiskUsageInBytes)).toEqual([2048]);
+        });
+    });
+
+    describe("refreshUser", () => {
+        it("keeps the newest user when an older request answers last", async () => {
+            let requests = 0;
+            server.use(
+                http.get("/api/users/{user_id}", async ({ response }) => {
+                    requests++;
+                    if (requests === 1) {
+                        await delay(50);
+                        return response(200).json(getFakeRegisteredUser({ total_disk_usage: 1 }));
+                    }
+                    return response(200).json(getFakeRegisteredUser({ total_disk_usage: 2 }));
+                }),
+            );
+            const userStore = useUserStore();
+
+            const olderRefresh = userStore.refreshUser();
+            await userStore.refreshUser();
+            await olderRefresh;
+
+            expect(userStore.currentUser?.total_disk_usage).toBe(2);
         });
     });
 });
