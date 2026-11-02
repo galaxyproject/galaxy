@@ -11,8 +11,8 @@ export interface ProgressContext {
     variant: ComputedRef<ProgressVariant | undefined>;
     striped: ComputedRef<boolean>;
     animated: ComputedRef<boolean>;
-    showProgress: ComputedRef<boolean>;
-    showValue: ComputedRef<boolean>;
+    showProgress: ComputedRef<boolean | undefined>;
+    showValue: ComputedRef<boolean | undefined>;
     precision: ComputedRef<number>;
 }
 

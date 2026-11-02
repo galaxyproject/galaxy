@@ -5,8 +5,9 @@
  * track. Give each bar an `aria-label` (or `aria-labelledby`), since screen readers announce bars
  * one by one. Attributes such as `title`, `data-*` and tooltip directives land on the bar.
  *
- * Content, by priority: the default slot, `label`, the percentage (`showProgress`), the value
- * (`showValue`).
+ * Content, by priority: the default slot, `label`, the value (`showValue`), the percentage. Bars
+ * show their value by default because some fills fall below 3:1 against the track; set
+ * `:show-progress="false"` only where text has no room, or where the value is shown nearby.
  */
 
 import { computed, inject } from "vue";
@@ -27,9 +28,9 @@ interface Props {
     striped?: boolean;
     /** Moving stripes (implies striped); still under prefers-reduced-motion */
     animated?: boolean;
-    /** Show the percentage */
+    /** Show the percentage; on by default, false shows no text */
     showProgress?: boolean;
-    /** Show the value */
+    /** Show the value instead of the percentage */
     showValue?: boolean;
     /** Decimal places of the shown percentage or value */
     precision?: number | string;
@@ -69,11 +70,11 @@ const text = computed(() => {
     if (props.label !== undefined) {
         return props.label;
     }
-    if (props.showProgress ?? progress?.showProgress.value) {
-        return percent.value.toFixed(precision.value);
-    }
     if (props.showValue ?? progress?.showValue.value) {
         return value.value.toFixed(precision.value);
+    }
+    if ((props.showProgress ?? progress?.showProgress.value) !== false) {
+        return `${percent.value.toFixed(precision.value)}%`;
     }
     return "";
 });

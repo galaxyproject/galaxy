@@ -61,9 +61,24 @@ describe("GProgress", () => {
         expect(wrapper.get('[role="progressbar"]').attributes("aria-labelledby")).toBe("upload-heading");
     });
 
-    it("shows the percentage with showProgress, to the given precision", () => {
-        expect(mount(GProgress, { props: { value: 1, max: 3, showProgress: true } }).text()).toBe("33");
-        expect(mount(GProgress, { props: { value: 1, max: 3, showProgress: true, precision: 1 } }).text()).toBe("33.3");
+    it("shows the percentage by default, to the given precision", () => {
+        expect(mount(GProgress, { props: { value: 1, max: 3 } }).text()).toBe("33%");
+        expect(mount(GProgress, { props: { value: 1, max: 3, precision: 1 } }).text()).toBe("33.3%");
+    });
+
+    it("shows the percentage on stacked bars by default", () => {
+        const wrapper = mountStacked(`
+            <GProgress :max="10">
+                <GProgressBar :value="2" />
+                <GProgressBar :value="5" />
+            </GProgress>`);
+
+        expect(bars(wrapper).map((bar) => bar.text())).toEqual(["20%", "50%"]);
+    });
+
+    it("shows no text with showProgress set to false, on the progress or on a bar", () => {
+        expect(mount(GProgress, { props: { value: 50, showProgress: false } }).text()).toBe("");
+        expect(mount(GProgressBar, { props: { value: 50, showProgress: false } }).text()).toBe("");
     });
 
     it("shows the raw value with showValue", () => {
@@ -75,10 +90,6 @@ describe("GProgress", () => {
 
         expect(wrapper.text()).toBe("3 of 10 files");
         expect(wrapper.get('[role="progressbar"]').attributes("aria-valuetext")).toBe("3 of 10 files");
-    });
-
-    it("shows no text by default", () => {
-        expect(mount(GProgress, { props: { value: 50 } }).text()).toBe("");
     });
 
     it("stacks bars against the progress maximum", () => {
@@ -167,7 +178,7 @@ describe("GProgress", () => {
         const bar = wrapper.get('[role="progressbar"]');
         expect(bar.attributes("aria-valuemax")).toBe("4");
         expect(bar.attributes("style")).toContain("width: 50%");
-        expect(bar.text()).toBe("50");
+        expect(bar.text()).toBe("50%");
     });
 
     it("lets a bar override the progress maximum", () => {
@@ -188,7 +199,7 @@ describe("GProgress", () => {
             </GProgress>`);
         const [inherits, own] = bars(wrapper);
 
-        expect(inherits!.text()).toBe("25");
+        expect(inherits!.text()).toBe("25%");
         expect(own!.text()).toBe("");
     });
 

@@ -27,9 +27,9 @@ interface Props {
     striped?: boolean;
     /** Moving stripes (implies striped); still under prefers-reduced-motion */
     animated?: boolean;
-    /** Show the percentage on the bars */
+    /** Show the percentage on the bars; on by default, false shows no text */
     showProgress?: boolean;
-    /** Show the value on the bars */
+    /** Show the value on the bars instead of the percentage */
     showValue?: boolean;
     /** Decimal places of the shown percentage or value */
     precision?: number | string;
@@ -46,6 +46,8 @@ const props = withDefaults(defineProps<Props>(), {
     max: 100,
     variant: undefined,
     label: undefined,
+    showProgress: undefined,
+    showValue: undefined,
     precision: 0,
     height: undefined,
     ariaLabel: undefined,
