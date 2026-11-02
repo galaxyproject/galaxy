@@ -5,7 +5,6 @@ import { fetchCurrentUserQuotaSourceUsage, fetchCurrentUserQuotaUsages, type Quo
 import { errorMessageAsString } from "@/utils/simple-error";
 
 const DEFAULT_SOURCE_KEY = "__null__";
-const REFRESH_DEBOUNCE_MS = 5000;
 
 function sourceLabelToKey(sourceLabel?: string | null): string {
     return sourceLabel ?? DEFAULT_SOURCE_KEY;
@@ -23,8 +22,6 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
 
     let inFlightAllPromise: Promise<QuotaUsage[] | undefined> | null = null;
     const inFlightBySourcePromise = new Map<string, Promise<QuotaUsage | null>>();
-
-    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
     const isLoaded = computed(() => quotaUsages.value !== undefined);
 
@@ -144,30 +141,6 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
         sourceErrorByKey.value = {};
     }
 
-    async function refreshNow() {
-        if (refreshTimer) {
-            clearTimeout(refreshTimer);
-            refreshTimer = null;
-        }
-
-        await loadQuotaUsages(true);
-    }
-
-    function requestRefreshDebounced(delayMs = REFRESH_DEBOUNCE_MS) {
-        if (refreshTimer) {
-            clearTimeout(refreshTimer);
-        }
-
-        refreshTimer = setTimeout(() => {
-            refreshTimer = null;
-            void loadQuotaUsages(true);
-        }, delayMs);
-    }
-
-    async function applyRecalculationCompletedRefresh() {
-        await refreshNow();
-    }
-
     return {
         quotaUsages,
         sourceUsageByKey,
@@ -179,9 +152,6 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
         getQuotaUsageBySourceLabel,
         loadQuotaUsages,
         loadQuotaUsageForSource,
-        requestRefreshDebounced,
-        refreshNow,
-        applyRecalculationCompletedRefresh,
         invalidate,
     };
 });

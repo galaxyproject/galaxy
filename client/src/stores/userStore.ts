@@ -74,25 +74,6 @@ export const useUserStore = defineStore("userStore", () => {
 
     let loadPromise: Promise<void> | null = null;
 
-    function requestQuotaRefreshForLoadedQuotaStore() {
-        const quotaUsageStore = useQuotaUsageStore();
-        if (quotaUsageStore.isLoaded) {
-            quotaUsageStore.requestRefreshDebounced();
-        }
-    }
-
-    function shouldRefreshQuotaAfterUserUpdate(previousUser: AnyUser, nextUser: RegisteredUser) {
-        if (!isRegisteredUser(previousUser)) {
-            return true;
-        }
-
-        return (
-            previousUser.total_disk_usage !== nextUser.total_disk_usage ||
-            previousUser.quota_percent !== nextUser.quota_percent ||
-            previousUser.quota !== nextUser.quota
-        );
-    }
-
     function $reset() {
         currentUser.value = null;
         currentPreferences.value = null;
@@ -134,14 +115,9 @@ export const useUserStore = defineStore("userStore", () => {
     }
 
     function setUserState(user: AnyUser) {
-        const previousUser = currentUser.value;
-
         if (isRegisteredUser(user)) {
             currentUser.value = user;
             currentPreferences.value = processUserPreferences(user);
-            if (shouldRefreshQuotaAfterUserUpdate(previousUser, user)) {
-                requestQuotaRefreshForLoadedQuotaStore();
-            }
         } else if (isAnonymousUser(user)) {
             currentUser.value = user;
         } else if (user === null) {
@@ -171,6 +147,22 @@ export const useUserStore = defineStore("userStore", () => {
     function refreshUser(includeHistories = false) {
         loadPromise = null;
         return loadUser(includeHistories);
+    }
+
+    /**
+     * Reloads the user, which reports the usage and quota of the default storage, and the usage of
+     * every storage source if it was loaded. Call it after anything that changes the storage usage.
+     */
+    async function refreshStorageUsage() {
+        const quotaUsageStore = useQuotaUsageStore();
+        // Retry a failed load too
+        const reloadSourceUsages = quotaUsageStore.isLoaded || quotaUsageStore.errorMessage !== undefined;
+        await Promise.all([refreshUser(), reloadSourceUsages ? quotaUsageStore.loadQuotaUsages(true) : null]);
+    }
+
+    /** Like ``refreshStorageUsage``, without waiting for it; errors are logged. */
+    function refreshStorageUsageInBackground() {
+        refreshStorageUsage().catch((err) => console.error("Error refreshing the storage usage:", err));
     }
 
     function loadUser(includeHistories = true) {
@@ -402,6 +394,8 @@ export const useUserStore = defineStore("userStore", () => {
         recentTools,
         loadUser,
         refreshUser,
+        refreshStorageUsage,
+        refreshStorageUsageInBackground,
         syncLegacyAppUser,
         matchesCurrentUsername,
         matchesCurrentUserId,

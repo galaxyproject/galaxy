@@ -101,7 +101,7 @@ async function _fetchHistoryAndChangedItems(app, { force }) {
 
     if (sizeChanged) {
         const userStore = useUserStore();
-        await userStore.refreshUser(false);
+        await userStore.refreshStorageUsage();
         userStore.syncLegacyAppUser(app);
     }
 }

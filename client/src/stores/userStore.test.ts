@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { useUserStore } from "@/stores/userStore";
 
 const { server, http } = useServerMock();
@@ -143,6 +144,58 @@ describe("userStore", () => {
             userStore.$reset();
 
             expect(userStore.getDecodedId("abc")).toBeNull();
+        });
+    });
+
+    describe("refreshStorageUsage", () => {
+        let requested: string[];
+
+        beforeEach(() => {
+            requested = [];
+            server.use(
+                http.get("/api/users/{user_id}", ({ response }) => {
+                    requested.push("user");
+                    return response(200).json(getFakeRegisteredUser({ total_disk_usage: 2048 }));
+                }),
+                http.get("/api/users/{user_id}/usage", ({ response }) => {
+                    requested.push("usages");
+                    return response(200).json([{ quota_source_label: null, total_disk_usage: 2048 }]);
+                }),
+            );
+        });
+
+        it("reloads the user and the usage of every storage source once that was loaded", async () => {
+            await useQuotaUsageStore().loadQuotaUsages();
+            requested = [];
+
+            await useUserStore().refreshStorageUsage();
+
+            expect(requested.sort()).toEqual(["usages", "user"]);
+            expect(useUserStore().currentUser?.total_disk_usage).toBe(2048);
+        });
+
+        it("doesn't load the usage of every storage source when nothing shows it", async () => {
+            await useUserStore().refreshStorageUsage();
+
+            expect(requested).toEqual(["user"]);
+        });
+
+        it("retries loading the usage of every storage source after that failed", async () => {
+            let failing = true;
+            server.use(
+                http.get("/api/users/{user_id}/usage", ({ response }) => {
+                    if (failing) {
+                        return response("5XX").json({ err_msg: "Server error", err_code: 500 }, { status: 500 });
+                    }
+                    return response(200).json([{ quota_source_label: null, total_disk_usage: 2048 }]);
+                }),
+            );
+            await useQuotaUsageStore().loadQuotaUsages();
+            failing = false;
+
+            await useUserStore().refreshStorageUsage();
+
+            expect(useQuotaUsageStore().quotaUsages?.map((usage) => usage.totalDiskUsageInBytes)).toEqual([2048]);
         });
     });
 });
