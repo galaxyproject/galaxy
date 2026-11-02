@@ -228,14 +228,6 @@ export default defineConfig(
         rules: { "no-restricted-imports": "off" },
     },
     {
-        // Still waiting on Phase 3, which rewrites the Form/Elements emits.
-        // Drop each entry as it lands.
-        files: ["src/components/Form/Elements/FormNumber.vue", "src/components/Form/Elements/FormText.vue"],
-        rules: {
-            "vue/require-explicit-emits": "warn",
-        },
-    },
-    {
         files: ["**/*.test.js", "**/*.test.ts", "**/tests/vitest/**"],
         languageOptions: {
             globals: globals.vitest,
