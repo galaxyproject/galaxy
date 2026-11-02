@@ -399,6 +399,42 @@ class TestCalculateUsage(BaseModelTestCase):
         self._refresh_user_and_assert_disk_usage_is(25, "alt_source")
         self._refresh_user_and_assert_disk_usage_is(0, None)
 
+    def test_update_usage_skips_users_holding_only_purged_copies(self):
+        moved = self._add_dataset(10)
+        moved.purged = True
+        self._assert_moving_dataset_keeps_usage(moved.dataset)
+
+    def test_update_usage_skips_copies_in_purged_histories(self):
+        purged_history = model.History(name="Purged history", user=self.u)
+        purged_history.purged = True
+        self.persist(purged_history)
+        moved = self._add_dataset(10)
+        moved.history = purged_history
+        self._assert_moving_dataset_keeps_usage(moved.dataset)
+
+    def test_update_usage_skips_datasets_in_libraries(self):
+        moved = self._add_dataset(10)
+        self.persist(model.LibraryDatasetDatasetAssociation(dataset=moved.dataset))
+        self._assert_moving_dataset_keeps_usage(moved.dataset)
+
+    def _assert_moving_dataset_keeps_usage(self, moved_dataset):
+        """Moving a dataset the user's usage doesn't count, next to one of 15 bytes, leaves the usage unchanged."""
+        u = self.u
+        self._add_dataset(15)
+        self.model.session.flush()
+        quota_source_map = QuotaSourceMap(None, True)
+        quota_source_map.backends["alt_source_store"] = QuotaSourceMap("alt_source", True)
+        u.calculate_and_set_disk_usage(cast(BaseObjectStore, MockObjectStore(quota_source_map)))
+        expected_usage = {None: 15, "alt_source": 0}
+        assert self._usage_by_quota_source() == expected_usage
+
+        DatabaseQuotaAgent(self.model).relabel_quota_for_dataset(moved_dataset, None, "alt_source")
+        assert self._usage_by_quota_source() == expected_usage
+
+    def _usage_by_quota_source(self):
+        self.model.context.refresh(self.u)
+        return {usage.quota_source_label: int(usage.total_disk_usage) for usage in self.u.dictify_usage()}
+
     def _refresh_user_and_assert_disk_usage_is(self, usage, label=None):
         u = self.u
         self.model.context.refresh(u)
