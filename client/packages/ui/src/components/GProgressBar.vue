@@ -6,7 +6,7 @@
  * one by one. Attributes such as `title`, `data-*` and tooltip directives land on the bar.
  *
  * Content, by priority: the default slot, `label`, the value (`showValue`), the percentage. Bars
- * show their value by default because some fills fall below 3:1 against the track; set
+ * show their percentage by default because some fills fall below 3:1 against the track; set
  * `:show-progress="false"` only where text has no room or the value is shown nearby; those fills
  * then mark their end.
  */
@@ -29,7 +29,7 @@ interface Props {
     striped?: boolean;
     /** Moving stripes (implies striped); still under prefers-reduced-motion */
     animated?: boolean;
-    /** Show the percentage; on by default, false shows no text */
+    /** Show the percentage; on by default, false hides the percentage */
     showProgress?: boolean;
     /** Show the value instead of the percentage */
     showValue?: boolean;

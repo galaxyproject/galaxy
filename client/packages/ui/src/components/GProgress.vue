@@ -27,7 +27,7 @@ interface Props {
     striped?: boolean;
     /** Moving stripes (implies striped); still under prefers-reduced-motion */
     animated?: boolean;
-    /** Show the percentage on the bars; on by default, false shows no text */
+    /** Show the percentage on the bars; on by default, false hides the percentage */
     showProgress?: boolean;
     /** Show the value on the bars instead of the percentage */
     showValue?: boolean;
