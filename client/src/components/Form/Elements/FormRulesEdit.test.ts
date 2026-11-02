@@ -36,7 +36,7 @@ describe("FormRulesEdit", () => {
 
     it("renders RulesDisplay with the provided rules", () => {
         const value = { rules: [{ type: "add_column_value", value: "x" }], mapping: [] };
-        const wrapper = mountComponent({ value });
+        const wrapper = mountComponent({ modelValue: value });
         expect(wrapper.findComponent(RulesDisplay).props("inputRules")).toEqual(value);
     });
 

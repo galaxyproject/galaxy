@@ -4,22 +4,27 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormFile } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = defineProps({
-    value: {
+    modelValue: {
         required: true,
     },
 });
 const file = ref(null);
 const waiting = ref(false);
 
-const emit = defineEmits(["input"]);
+const emit = defineEmits(["update:modelValue"]);
 
 const currentValue = computed({
     get() {
-        return props.value;
+        return props.modelValue;
     },
     set(newValue) {
-        emit("input", newValue);
+        emit("update:modelValue", newValue);
     },
 });
 

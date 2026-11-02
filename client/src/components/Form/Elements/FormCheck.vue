@@ -11,28 +11,33 @@ interface CheckOption {
 }
 
 export interface FormCheckProps {
-    value?: string | string[];
+    modelValue?: string | string[];
     options: Array<CheckOption>;
     /** Id of the element that names the option group, e.g. the parameter title */
     ariaLabelledby?: string;
 }
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = defineProps<FormCheckProps>();
 
 const emit = defineEmits<{
-    (e: "input", value: string[] | null): void;
+    (e: "update:modelValue", value: string[] | null): void;
 }>();
 
 const currentValue = computed({
     get: () => {
-        const val = props.value ?? [];
+        const val = props.modelValue ?? [];
         return Array.isArray(val) ? val : [val];
     },
     set: (newValue) => {
         if (newValue.length > 0) {
-            emit("input", newValue);
+            emit("update:modelValue", newValue);
         } else {
-            emit("input", null);
+            emit("update:modelValue", null);
         }
     },
 });
@@ -44,9 +49,9 @@ const selectAll = computed(() => currentValue.value.length === props.options.len
 function onSelectAll(selected: boolean): void {
     if (selected) {
         const allValues = props.options.map((option) => option.value);
-        emit("input", allValues);
+        emit("update:modelValue", allValues);
     } else {
-        emit("input", null);
+        emit("update:modelValue", null);
     }
 }
 </script>
