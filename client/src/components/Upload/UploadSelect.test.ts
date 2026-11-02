@@ -47,7 +47,7 @@ describe("UploadSelect", () => {
     it("ignores a null selection", () => {
         const wrapper = mountComponent({ modelValue: "fasta" });
 
-        wrapper.findComponent(Multiselect).vm.$emit("input", null);
+        wrapper.findComponent(Multiselect).vm.$emit("update:modelValue", null);
 
         expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     });
