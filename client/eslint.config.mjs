@@ -230,12 +230,7 @@ export default defineConfig(
     {
         // Still waiting on Phase 3, which rewrites the Form/Elements emits.
         // Drop each entry as it lands.
-        files: [
-            "src/components/Form/Elements/FormDirectory.vue",
-            "src/components/Form/Elements/FormInput.vue",
-            "src/components/Form/Elements/FormNumber.vue",
-            "src/components/Form/Elements/FormText.vue",
-        ],
+        files: ["src/components/Form/Elements/FormNumber.vue", "src/components/Form/Elements/FormText.vue"],
         rules: {
             "vue/require-explicit-emits": "warn",
         },
