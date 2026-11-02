@@ -1,13 +1,10 @@
 import { mount } from "@vue/test-utils";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { configureCompat } from "vue";
+import { describe, expect, it } from "vitest";
 
 import TooltipOnHover from "./TooltipOnHover.vue";
 
 // Vue 3 renders a bound `false` as disabled="false", and v-g-tooltip treats any `disabled`
-// attribute on the host as "don't show".
-beforeAll(() => configureCompat({ ATTR_FALSE_VALUE: false }));
-afterAll(() => configureCompat({ ATTR_FALSE_VALUE: true }));
+// attribute on the host as "don't show". compat-config.js turns ATTR_FALSE_VALUE off.
 
 describe("TooltipOnHover", () => {
     it("leaves disabled off an enabled host", () => {

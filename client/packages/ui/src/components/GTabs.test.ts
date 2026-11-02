@@ -1,14 +1,13 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { configureCompat, defineComponent, h, nextTick } from "vue";
+import { describe, expect, it } from "vitest";
+import { defineComponent, h, nextTick } from "vue";
 
 import GTab from "./GTab.vue";
 import GTabs from "./GTabs.vue";
 
 // Vue 3 (and the Tool Shed, which runs it without compat) renders a bound `false` as attr="false"
-// instead of dropping it, so check the tab ARIA under that behavior.
-beforeAll(() => configureCompat({ ATTR_FALSE_VALUE: false }));
-afterAll(() => configureCompat({ ATTR_FALSE_VALUE: true }));
+// instead of dropping it (compat-config.js turns ATTR_FALSE_VALUE off), so check the tab ARIA
+// under that behavior.
 
 async function mountTabs() {
     const Parent = defineComponent({
