@@ -16,7 +16,9 @@ so it can run on Pulsar and other remote compute hosts.
 """
 
 import json
+import logging
 import os
+import traceback
 from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import cached_property
@@ -153,6 +155,35 @@ def insecure_destination_error(problems: list[str]) -> ProtectionError:
 def user_message(error: BaseException) -> str:
     """What users may see of an error: unexpected errors may show decrypted data, only their type is shown."""
     return str(error) if isinstance(error, ProtectionError) else f"Unexpected error ({type(error).__name__})"
+
+
+def user_traceback(error: BaseException, verbose_errors: bool = False) -> str:
+    """The traceback of an error for the logs of protected jobs, which users see.
+
+    It locates the error with its stack and ends with :func:`user_message`, without the errors it was
+    raised from. Administrators get the full traceback with verbose errors.
+    """
+    if verbose_errors:
+        return "".join(traceback.format_exception(type(error), error, error.__traceback__))
+    stack = traceback.format_tb(error.__traceback__)
+    return "".join(["Traceback (most recent call last):\n", *stack, f"{user_message(error)}\n"])
+
+
+class UserTracebackFilter(logging.Filter):
+    """Log records with the tracebacks of :func:`user_traceback`, for log handlers of protected jobs."""
+
+    def __init__(self, verbose_errors: bool = False):
+        super().__init__()
+        self.verbose_errors = verbose_errors
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        error = record.exc_info[1] if record.exc_info else None
+        if error is not None and not self.verbose_errors:
+            record.msg = f"{record.getMessage()}\n{user_traceback(error).rstrip()}"
+            record.args = None
+            record.exc_info = None
+            record.exc_text = None
+        return True
 
 
 @dataclass

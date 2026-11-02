@@ -9,12 +9,12 @@ import argparse
 import logging
 import os
 import sys
-import traceback
 
 from galaxy.job_execution.protection import (
     ProtectionError,
     ProtectionPlan,
     user_message,
+    user_traceback,
 )
 from galaxy.job_execution.protection.crypt4gh import Crypt4GHJobRuntime
 
@@ -59,12 +59,8 @@ def run(command: str, plan_path: str) -> int:
             _report(job_directory, CLEANUP_FAILURE_FILE, message)
         print(message, file=sys.stderr)
         if not isinstance(e, ProtectionError):
-            # Job stderr is shown to users: only unexpected errors, i.e. bugs, need their traceback, and
-            # their message may show decrypted data. Administrators opt into it with verbose errors.
-            if plan and plan.recryptor.verbose_errors:
-                traceback.print_exc()
-            else:
-                traceback.print_tb(e.__traceback__)
+            # Only unexpected errors, i.e. bugs, need their traceback.
+            print(user_traceback(e, bool(plan and plan.recryptor.verbose_errors)), file=sys.stderr, end="")
         return 1
     return 0
 

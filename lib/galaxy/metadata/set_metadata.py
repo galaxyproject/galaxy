@@ -45,7 +45,11 @@ from galaxy.job_execution.output_collect import (
     SessionlessJobContext,
     validate_unnamed_outputs,
 )
-from galaxy.job_execution.protection import ProtectionError
+from galaxy.job_execution.protection import (
+    ProtectionError,
+    user_traceback,
+    UserTracebackFilter,
+)
 from galaxy.job_execution.protection.outputs import OutputProtector
 from galaxy.job_execution.setup import TOOL_PROVIDED_JOB_METADATA_KEYS
 from galaxy.metadata import job_metadata_directory
@@ -118,6 +122,15 @@ def push_if_necessary(object_store: ObjectStore, dataset: DatasetInstance, exter
     assert dataset.dataset is not None
     if not dataset.dataset.purged and os.path.getsize(external_filename):
         object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
+
+
+def _format_exc(output_protector: OutputProtector | None) -> str:
+    """The traceback of the error being handled, as users may see it for protected jobs."""
+    if output_protector:
+        error = sys.exc_info()[1]
+        assert error
+        return user_traceback(error, output_protector.verbose_errors)
+    return traceback.format_exc()
 
 
 def set_validated_state(dataset_instance):
@@ -364,6 +377,11 @@ def set_metadata_portable(
     output_protector = OutputProtector.for_job(metadata_params, datatypes_registry)
     if output_protector and not extended_metadata_collection:
         raise ProtectionError("Outputs of protected jobs can only be protected with extended metadata collection.")
+    if output_protector:
+        # The job's stderr is shown to users, and error messages may quote decrypted data. Protected jobs
+        # collect metadata in a process of their own (the 'extended' strategy), the filter goes away with it.
+        for handler in logging.getLogger().handlers:
+            handler.addFilter(UserTracebackFilter(output_protector.verbose_errors))
     job_context.output_protector = output_protector
 
     output_collection_security_error = None
@@ -434,7 +452,7 @@ def set_metadata_portable(
             discovery_failed = True
             final_job_state = Job.states.ERROR
             if job:
-                job.traceback = unicodify(traceback.format_exc(), strip_null=True)
+                job.traceback = unicodify(_format_exc(output_protector), strip_null=True)
             job_messages.append(output_discovery_job_message())
 
         if job:
@@ -632,7 +650,7 @@ def set_metadata_portable(
                 json.dump((True, "Metadata has been set successfully"), tf)  # setting metadata has succeeded
         except Exception:
             with open(filename_results_code, "w+") as tf:
-                json.dump((False, traceback.format_exc()), tf)  # setting metadata has failed somehow
+                json.dump((False, _format_exc(output_protector)), tf)  # setting metadata has failed somehow
         finally:
             for action in object_store_update_actions:
                 action()

@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import io
 import json
 import logging
 import os
@@ -17,6 +18,7 @@ from galaxy.job_execution.protection import (
     ProtectionPlan,
     RecryptorSettings,
     STATE_FILENAME,
+    UserTracebackFilter,
 )
 from galaxy.job_execution.protection.crypt4gh import (
     _decrypt_workers,
@@ -219,6 +221,40 @@ def test_verbose_errors_show_the_cause(tmp_path, service, user, capsys):
     stderr = capsys.readouterr().err
     assert "Could not reach the key service (ConnectionError: " in stderr
     assert "127.0.0.1" in stderr
+
+
+DECRYPTED_DATA = "decrypted content"
+
+
+def _logged_protection_failure(verbose_errors: bool) -> str:
+    """What a log handler of a protected job's metadata step shows of an error caused by decrypted data."""
+    stream = io.StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.addFilter(UserTracebackFilter(verbose_errors))
+    logger = logging.getLogger("test_protected_job_logs")
+    logger.addHandler(handler)
+    try:
+        try:
+            raise ProtectionError("Failed to encrypt an output of this job") from OSError(DECRYPTED_DATA)
+        except ProtectionError:
+            logger.exception("Could not protect %s", "output1")
+    finally:
+        logger.removeHandler(handler)
+    return stream.getvalue()
+
+
+def test_logged_errors_of_protected_jobs_dont_reveal_their_cause():
+    logged = _logged_protection_failure(verbose_errors=False)
+
+    lines = logged.splitlines()
+    assert (lines[0], lines[-1]) == ("Could not protect output1", "Failed to encrypt an output of this job")
+    # The traceback locates the error, without the message of what caused it.
+    assert ", in _logged_protection_failure" in logged
+    assert DECRYPTED_DATA not in logged
+
+
+def test_verbose_errors_log_the_cause():
+    assert f"OSError: {DECRYPTED_DATA}" in _logged_protection_failure(verbose_errors=True)
 
 
 def test_unlisted_extra_files_are_refused(tmp_path, service, user):
