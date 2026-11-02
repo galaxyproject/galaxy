@@ -55,7 +55,6 @@ from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
-    ContainerNotAllowedError,
     JobState,
 )
 from galaxy.model.base import check_database_connection
@@ -598,9 +597,14 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
 
             try:
                 job_prepare_ret = job_wrapper.prepare(**prepare_kwds)
+            except InsufficientPermissionsException as e:
+                # The job may not run anywhere, so fail it without fail_job's resubmission rules.
+                log.info("job %d rejected while preparing: %s", job_wrapper.job_id, unicodify(e))
+                job_wrapper.fail(unicodify(e), exception=False)
+                return command_line, client, remote_job_config, compute_environment, remote_container
             except Exception as e:
-                if isinstance(e, (ParameterValueError, InsufficientPermissionsException)):
-                    log.info("job %d rejected while preparing: %s", job_wrapper.job_id, unicodify(e))
+                if isinstance(e, ParameterValueError):
+                    log.info("parameter validation error preparing job %d: %s", job_wrapper.job_id, unicodify(e))
                 else:
                     log.exception("failure preparing job %d", job_wrapper.job_id)
                 job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
@@ -660,11 +664,6 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 remote_job_directory=remote_job_directory,
                 metadata_container=metadata_container,
             )
-        except ContainerNotAllowedError as e:
-            # Fail without going through fail_job: resubmitting would fail the same way.
-            log.info("(%s) failure preparing job: %s", job_wrapper.job_id, unicodify(e))
-            job_wrapper.fail(unicodify(e))
-            return None, client, remote_job_config, compute_environment, remote_container
         except UnsupportedPulsarException:
             log.exception("failure running job %d, unsupported Pulsar target", job_wrapper.job_id)
             fail_or_resubmit = True
