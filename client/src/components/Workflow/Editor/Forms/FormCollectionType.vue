@@ -79,12 +79,12 @@ function onChooseFromHelp(collectionType: string) {
         <FormElement
             id="collection_type"
             :key="elementKey"
-            :value="currentValue"
+            :model-value="currentValue"
             :attributes="attributes"
             :warning="warning"
             title="Collection type"
             type="select_or_text"
-            @input="onInput" />
+            @update:model-value="onInput" />
         <div class="mb-3">
             <GLink data-description="collection type help" @click="showHelp = true">
                 Not sure which collection type to use?

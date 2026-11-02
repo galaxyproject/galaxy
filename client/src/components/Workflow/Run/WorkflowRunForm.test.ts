@@ -28,7 +28,10 @@ vi.mock("./WorkflowRunDefaultStep.vue", () =>
 );
 vi.mock("./WorkflowRunInputStep.vue", () => stub("WorkflowRunInputStep", ["model", "validationScrollTo", "historyId"]));
 vi.mock("@/components/Form/FormDisplay.vue", () => stub("FormDisplay", ["inputs"]));
-vi.mock("@/components/Form/FormElement.vue", () => stub("FormElement", ["value"]));
+// Mirror the real FormElement's v-model contract, or compat would remap the parent's v-model to value/input.
+vi.mock("@/components/Form/FormElement.vue", () => ({
+    default: { ...stub("FormElement", ["modelValue"]).default, compatConfig: { COMPONENT_V_MODEL: false } },
+}));
 vi.mock("@/components/Common/ButtonSpinner.vue", () => stub("ButtonSpinner", ["disabled", "wait", "tooltip"]));
 vi.mock("@/components/Workflow/Run/OnCompleteActions.vue", () => stub("OnCompleteActions", ["value"]));
 vi.mock("@/components/Workflow/Run/WorkflowCredentials.vue", () => stub("WorkflowCredentials", ["toolIdentifiers"]));
@@ -118,10 +121,10 @@ describe("WorkflowRunForm", () => {
         findStep(wrapper, "0").vm.$emit("onChange", "0", { input: { values: [{ id: "c1", src: "hdca" }] } });
         findStep(wrapper, "4").vm.$emit("onChange", "4", { input: "text" });
         findStep(wrapper, "3").vm.$emit("onChange", "3", { num_lines: "5", input: { values: [] } });
-        wrapper.findComponent({ name: "FormElement" }).vm.$emit("input", true);
+        wrapper.findComponent({ name: "FormElement" }).vm.$emit("update:modelValue", true);
         wrapper.findComponent({ name: "OnCompleteActions" }).vm.$emit("input", [{ send_notification: {} }]);
         await wrapper.vm.$nextTick();
-        expect(wrapper.findComponent({ name: "FormElement" }).props("value")).toBe(true);
+        expect(wrapper.findComponent({ name: "FormElement" }).props("modelValue")).toBe(true);
         await run(wrapper);
         expect(invokeWorkflow).toHaveBeenCalledWith("ebab00128497f9d7", {
             new_history_name: null,

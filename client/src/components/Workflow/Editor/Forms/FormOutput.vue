@@ -4,11 +4,11 @@
             <FormOutputLabel :name="outputName" :step="step" />
             <FormElement
                 :id="actionNames.RenameDatasetAction__newname"
-                :value="formData[actionNames.RenameDatasetAction__newname]"
+                :model-value="formData[actionNames.RenameDatasetAction__newname]"
                 :help="renameHelp"
                 title="Rename dataset"
                 type="text"
-                @input="onInput" />
+                @update:model-value="onInput" />
             <FormDatatype
                 :id="actionNames.ChangeDatatypeAction__newtype"
                 :value="formData[actionNames.ChangeDatatypeAction__newtype]"
@@ -18,57 +18,57 @@
                 @onChange="onDatatype" />
             <FormElement
                 :id="actionNames.TagDatasetAction__tags"
-                :value="formData[actionNames.TagDatasetAction__tags]"
+                :model-value="formData[actionNames.TagDatasetAction__tags]"
                 :attributes="{ placeholder: 'Enter Tags' }"
                 title="Add Tags"
                 type="tags"
                 help="This action will set tags for the dataset."
-                @input="onInput" />
+                @update:model-value="onInput" />
             <FormElement
                 :id="actionNames.RemoveTagDatasetAction__tags"
-                :value="formData[actionNames.RemoveTagDatasetAction__tags]"
+                :model-value="formData[actionNames.RemoveTagDatasetAction__tags]"
                 :attributes="{ placeholder: 'Enter Tags' }"
                 title="Remove Tags"
                 type="tags"
                 help="This action will remove tags for the dataset."
-                @input="onInput" />
+                @update:model-value="onInput" />
             <FormCard v-model:expanded="expandedColumn" title="Assign columns" collapsible>
                 <template v-slot:body>
                     <FormElement
                         :id="actionNames.ColumnSetAction__chromCol"
-                        :value="formData[actionNames.ColumnSetAction__chromCol]"
+                        :model-value="formData[actionNames.ColumnSetAction__chromCol]"
                         title="Chrom column"
                         type="integer"
                         help="This action will set the chromosome column."
-                        @input="onInput" />
+                        @update:model-value="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__startCol"
-                        :value="formData[actionNames.ColumnSetAction__startCol]"
+                        :model-value="formData[actionNames.ColumnSetAction__startCol]"
                         title="Start column"
                         type="integer"
                         help="This action will set the start column."
-                        @input="onInput" />
+                        @update:model-value="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__endCol"
-                        :value="formData[actionNames.ColumnSetAction__endCol]"
+                        :model-value="formData[actionNames.ColumnSetAction__endCol]"
                         title="End column"
                         type="integer"
                         help="This action will set the end column."
-                        @input="onInput" />
+                        @update:model-value="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__strandCol"
-                        :value="formData[actionNames.ColumnSetAction__strandCol]"
+                        :model-value="formData[actionNames.ColumnSetAction__strandCol]"
                         title="Strand column"
                         type="integer"
                         help="This action will set the strand column."
-                        @input="onInput" />
+                        @update:model-value="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__nameCol"
-                        :value="formData[actionNames.ColumnSetAction__nameCol]"
+                        :model-value="formData[actionNames.ColumnSetAction__nameCol]"
                         title="Name column"
                         type="integer"
                         help="This action will set the name column."
-                        @input="onInput" />
+                        @update:model-value="onInput" />
                 </template>
             </FormCard>
         </template>
