@@ -4,21 +4,26 @@ import { computed } from "vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
 export interface FormBooleanProps {
-    value?: boolean | string | null;
+    modelValue?: boolean | string | null;
     noLabel?: boolean;
 }
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = defineProps<FormBooleanProps>();
 const emit = defineEmits<{
-    (e: "input", value: boolean): void;
+    (e: "update:modelValue", value: boolean): void;
 }>();
 
 const currentValue = computed({
     get() {
-        return String(props.value).toLowerCase() === "true";
+        return String(props.modelValue).toLowerCase() === "true";
     },
     set(newValue) {
-        emit("input", newValue);
+        emit("update:modelValue", newValue);
     },
 });
 

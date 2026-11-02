@@ -5,24 +5,29 @@ import { computed } from "vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 export interface FormColorProps {
-    value?: string;
+    modelValue?: string;
     id: string;
 }
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = withDefaults(defineProps<FormColorProps>(), {
-    value: "",
+    modelValue: "",
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
 }>();
 
 const currentValue = computed({
     get() {
-        return props.value;
+        return props.modelValue;
     },
     set(newValue) {
-        emit("input", newValue);
+        emit("update:modelValue", newValue);
     },
 });
 </script>

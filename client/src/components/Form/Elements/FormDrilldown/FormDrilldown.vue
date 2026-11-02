@@ -10,22 +10,27 @@ import FormDrilldownList from "./FormDrilldownList.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = withDefaults(
     defineProps<{
         id: string;
-        value?: Value;
+        modelValue?: Value;
         options: Array<Option>;
         multiple: boolean;
         showIcons?: boolean;
     }>(),
     {
-        value: null,
+        modelValue: null,
         showIcons: false,
     },
 );
 
 const emit = defineEmits<{
-    (e: "input", value: Value): void;
+    (e: "update:modelValue", value: Value): void;
 }>();
 
 // Unique per instance: the workflow run form can render the same parameter id once per step
@@ -42,12 +47,12 @@ const allValues: ComputedRef<string[]> = computed(() => {
 
 // Determine current value
 const currentValue: ComputedRef<string[]> = computed(() => {
-    if (props.value === null || props.value === "") {
+    if (props.modelValue === null || props.modelValue === "") {
         return [];
-    } else if (Array.isArray(props.value)) {
-        return props.value;
+    } else if (Array.isArray(props.modelValue)) {
+        return props.modelValue;
     } else {
-        return [props.value];
+        return [props.modelValue];
     }
 });
 
@@ -67,18 +72,18 @@ function handleClick(clickedElement: string, value: boolean): void {
         // Only the chosen option is submitted; the server expands a recurse hierarchy.
         const selectedElements: string[] = setElementValues(currentValue.value, [clickedElement], value);
         if (selectedElements.length === 0) {
-            emit("input", null);
+            emit("update:modelValue", null);
         } else {
-            emit("input", selectedElements);
+            emit("update:modelValue", selectedElements);
         }
     } else {
-        emit("input", clickedElement);
+        emit("update:modelValue", clickedElement);
     }
 }
 
 // Handle click on select all checkbox to either select or unselect all values
 function onSelectAll(selected: boolean): void {
-    emit("input", selected ? allValues.value : null);
+    emit("update:modelValue", selected ? allValues.value : null);
 }
 
 function setElementValues(oldArray: string[], newArray: string[], value: boolean): string[] {

@@ -29,11 +29,11 @@ async function init(wrapper, data) {
 }
 
 async function validateLatestEmittedPath(wrapper, expectedPath) {
-    const latestPath = emittedArg(wrapper, "input", -1);
+    const latestPath = emittedArg(wrapper, "update:modelValue", -1);
     expect(latestPath).toBe(expectedPath);
 
     // also manually change prop value to be able to test the value being displayed
-    await wrapper.setProps({ value: latestPath });
+    await wrapper.setProps({ modelValue: latestPath });
     const fullPathDisplayed = wrapper.find("[data-description='directory full path']");
     expect(fullPathDisplayed.text()).toBe(`Directory Path:${expectedPath}`);
 }
@@ -86,7 +86,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
 
         wrapper = mount(FormDirectory, {
             props: {
-                value: null,
+                modelValue: null,
             },
             global: localVue,
             pinia,

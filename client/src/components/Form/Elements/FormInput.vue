@@ -4,12 +4,14 @@
 </template>
 <script>
 export default {
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
     props: {
         id: {
             type: String,
             required: true,
         },
-        value: {
+        modelValue: {
             type: String,
             default: "",
         },
@@ -18,13 +20,14 @@ export default {
             default: false,
         },
     },
+    emits: ["update:modelValue"],
     computed: {
         currentValue: {
             get() {
-                return this.value;
+                return this.modelValue;
             },
             set(val) {
-                this.$emit("input", val);
+                this.$emit("update:modelValue", val);
             },
         },
     },

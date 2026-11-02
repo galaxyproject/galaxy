@@ -21,12 +21,17 @@ interface Rules {
 
 interface Props {
     id: string;
-    value?: Rules;
+    modelValue?: Rules;
     target?: { id: string } | null;
 }
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = withDefaults(defineProps<Props>(), {
-    value: undefined,
+    modelValue: undefined,
     target: null,
 });
 
@@ -40,7 +45,7 @@ const initialRules: Rules = {
     mapping: [],
 };
 
-const displayRules = computed(() => props.value ?? initialRules);
+const displayRules = computed(() => props.modelValue ?? initialRules);
 
 async function onEdit() {
     if (props.target) {
@@ -63,11 +68,11 @@ async function onEdit() {
     }
 }
 
-const emit = defineEmits(["input"]);
+const emit = defineEmits(["update:modelValue"]);
 
 function onSaveRules(rules: Rules) {
     showModal.value = false;
-    emit("input", rules);
+    emit("update:modelValue", rules);
 }
 
 function onCancel() {
@@ -87,14 +92,14 @@ function onCancel() {
             {{ loadError }}
         </GAlert>
         <GModal v-model:show="showModal" title="Build Rules for Applying to Existing Collection" size="medium">
-            <!-- Note: We need the v-if="showModal" here because the rules do not appear inline with 
+            <!-- Note: We need the v-if="showModal" here because the rules do not appear inline with
             the table otherwise. -->
             <RuleCollectionBuilder
                 v-if="showModal"
                 elements-type="collection_contents"
                 import-type="collections"
                 :initial-elements="elements"
-                :initial-rules="props.value"
+                :initial-rules="props.modelValue"
                 :save-rules-fn="onSaveRules"
                 :oncancel="onCancel"
                 :oncreate="() => {}" />
