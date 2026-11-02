@@ -144,6 +144,7 @@ def _dataset(file_name, extra_files_path=None, metadata_file_name=None):
         get_file_name=lambda sync_cache=True: file_name,
         extra_files_path=extra_files_path,
         metadata=metadata,
+        purged=not file_name,
         dataset=SimpleNamespace(purged=not file_name),
     )
 
