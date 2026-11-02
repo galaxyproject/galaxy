@@ -1,3 +1,5 @@
+import re
+
 from .framework import (
     managed_history,
     retry_assertion_during_transitions,
@@ -39,7 +41,10 @@ class TestHistoryOptions(SeleniumTestCase, UsesUploadActivity):
         self.dataset_populator.wait_for_history(history_id)
         tool_citation_count = len(self.api_get(f"histories/{history_id}/citations"))
         # Galaxy's own citation is listed ahead of the tools'.
-        galaxy_citation_key = self.dataset_populator.get_configuration()["citation_bibtex"].split(",")[0]
+        citation_bibtex = self.dataset_populator.get_configuration()["citation_bibtex"]
+        match = re.match(r"@\w+\{\s*([^,\s]+)", citation_bibtex)
+        assert match, citation_bibtex
+        galaxy_citation_key = match.group(1)
         self.home()
         self.click_history_option_tool_references()
         citations = self.components.citations
