@@ -532,7 +532,7 @@ class ExecutionTracker:
         return an empty dict.
         """
         implicit_collection_jobs = self.implicit_collection_jobs
-        if implicit_collection_jobs is None:
+        if implicit_collection_jobs is None or not self.mapping_params.param_template.get("__use_cached_job__"):
             return {}
         copied_from_job_ids = list(implicit_collection_jobs.get_job_attributes(["copied_from_job_id"]).scalars())
         if not copied_from_job_ids or None in copied_from_job_ids:
