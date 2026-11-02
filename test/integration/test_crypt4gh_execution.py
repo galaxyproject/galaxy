@@ -476,6 +476,43 @@ steps:
             assert "ACGT" not in (job[stream] or ""), stream
         assert self._decrypted_content(history_id, output) == PLAINTEXT_1
 
+    def test_outputs_are_not_validated(self, history_id):
+        # Validating intervals fails on this start, and the error would quote it.
+        plaintext = b"chr1\tsecret\t200\t+\n"
+        dataset = self._upload_authorized(history_id, plaintext, name="regions.txt.c4gh")
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  regions:
+    type: data
+outputs:
+  result:
+    outputSource: copied/output1
+steps:
+  copied:
+    tool_id: crypt4gh_copy_as_interval
+    in:
+      input1: regions
+    post_job_actions:
+      ValidateOutputsAction:
+        action_type: ValidateOutputsAction
+""")
+        invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+            workflow_id,
+            history_id=history_id,
+            inputs={"regions": {"src": "hda", "id": dataset["id"]}},
+            inputs_by="name",
+        )
+        invocation = self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
+
+        output = self.dataset_populator.get_history_dataset_details(
+            history_id, dataset_id=invocation["outputs"]["result"]["id"]
+        )
+        assert output["extension"] == "interval.c4gh"
+        # Validation would read the decrypted data, encrypted outputs can't be validated.
+        assert (output["validated_state"], output["validated_state_message"]) == ("unknown", None)
+        assert self._decrypted_content(history_id, output) == plaintext
+
     def test_unauthorized_input_is_refused_before_any_service_call(self, history_id):
         dataset, _ = self._upload_encrypted(history_id, PLAINTEXT_1)
         response = self._run_cat(history_id, dataset)
