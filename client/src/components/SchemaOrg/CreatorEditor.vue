@@ -77,6 +77,8 @@ export default {
         };
     },
     watch: {
+        // Not deep: creatorsCurrent is the same array as the prop, so an in-place change
+        // is already visible here and only a new array needs picking up.
         creators: {
             handler(newCreators) {
                 this.creatorsCurrent = newCreators;
