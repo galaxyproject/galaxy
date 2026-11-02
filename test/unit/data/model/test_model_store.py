@@ -14,6 +14,7 @@ from typing import (
     Any,
     NamedTuple,
 )
+from uuid import uuid4
 
 import pytest
 from rocrate.rocrate import ROCrate
@@ -1681,6 +1682,12 @@ def _forge_object_store_move(directory, cat_job):
     _edit_dataset_attrs(directory, dataset={**dataset_attrs, "object_store_id": "other"})
 
 
+def _forge_uuid_change(directory, cat_job):
+    _export_for_edit(directory, cat_job, cat_job.output)
+    dataset_attrs = json.loads((directory / store.ATTRS_FILENAME_DATASETS).read_text())[0]["dataset"]
+    _edit_dataset_attrs(directory, dataset={**dataset_attrs, "uuid": str(uuid4())})
+
+
 def _forge_new_dataset_in_user_object_store(directory, cat_job):
     _export_for_edit(directory, cat_job, cat_job.output)
     _rewrite_export_as_new_datasets(directory)
@@ -1688,11 +1695,12 @@ def _forge_new_dataset_in_user_object_store(directory, cat_job):
 
 
 @pytest.mark.parametrize(
-    "forge", [_forge_external_filename, _forge_object_store_move, _forge_new_dataset_in_user_object_store]
+    "forge",
+    [_forge_external_filename, _forge_object_store_move, _forge_uuid_change, _forge_new_dataset_in_user_object_store],
 )
 def test_user_defined_tool_import_refuses_dataset_file_edits(tmp_path, cat_job, forge):
     forge(tmp_path, cat_job)
-    with pytest.raises(MalformedContents, match="may not (link|move)"):
+    with pytest.raises(MalformedContents, match="may not (link|move|change)"):
         _import_job_outputs(tmp_path, cat_job, allow_dataset_file_edit=False)
 
 

@@ -538,9 +538,13 @@ class TestExtendedMetadataSecurityIntegration(integration_util.IntegrationTestCa
         ):
             dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
             hda = self.dataset_populator.new_dataset(history_id, content="abc", wait=True)
-            response = self._run_tampered_job(
-                history_id, None, {"input": {"src": "hda", "id": hda["id"]}}, tamper, tool_uuid=dynamic_tool["uuid"]
-            )
+            inputs = {"input": {"src": "hda", "id": hda["id"]}}
+            # The restrictions on user-defined tools leave their untampered outputs alone.
+            untampered = self.dataset_populator.run_tool_raw(
+                None, inputs, history_id, tool_uuid=dynamic_tool["uuid"]
+            ).json()
+            self.dataset_populator.wait_for_job(untampered["jobs"][0]["id"], assert_ok=True)
+            response = self._run_tampered_job(history_id, None, inputs, tamper, tool_uuid=dynamic_tool["uuid"])
             output_content = self.dataset_populator.get_history_dataset_content_raw(
                 history_id, content_id=response["outputs"][0]["id"], assert_ok=False
             ).text

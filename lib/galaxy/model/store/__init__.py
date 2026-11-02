@@ -30,6 +30,7 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
+from uuid import UUID
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
@@ -297,6 +298,10 @@ class EditableObjects:
             raise MalformedContents("Model store may not link a dataset to an external file.")
         object_store_id = attributes.get("object_store_id")
         if dataset.id is not None:
+            # With ``object_store_store_by = uuid`` the uuid picks the dataset's file too.
+            new_uuid = attributes.get("uuid")
+            if new_uuid is not None and (dataset.uuid is None or UUID(str(new_uuid)) != UUID(str(dataset.uuid))):
+                raise MalformedContents("Model store may not change the uuid of an existing dataset.")
             changed = object_store_id is not None and object_store_id != dataset.object_store_id
         else:
             # Without a preferred object store, the job's metadata step picks one for new datasets.
