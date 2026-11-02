@@ -20,17 +20,17 @@ describe("FormNumber", () => {
     // The native input event bubbling from the field is recorded under "input" too.
     const lastEmittedValue = (wrapper) =>
         wrapper
-            .emitted()
-            .input.filter(([value]) => !(value instanceof Event))
+            .emitted("update:modelValue")
+            .filter(([value]) => !(value instanceof Event))
             .at(-1);
 
     it("renders a number input with appropriate type", async () => {
-        const wrapperFloat = await mountFormNumber({ value: 1, type: "float" });
+        const wrapperFloat = await mountFormNumber({ modelValue: 1, type: "float" });
         const inputFloat = await getInput(wrapperFloat);
         expect(inputFloat.exists()).toBe(true);
         wrapperFloat.unmount();
 
-        const wrapperInteger = await mountFormNumber({ value: 1, type: "integer" });
+        const wrapperInteger = await mountFormNumber({ modelValue: 1, type: "integer" });
         const inputInteger = await getInput(wrapperInteger);
         expect(inputInteger.exists()).toBe(true);
         wrapperInteger.unmount();
@@ -45,7 +45,7 @@ describe("FormNumber", () => {
             wrapper.unmount();
         };
 
-        const props = { value: 50, type: "float" };
+        const props = { modelValue: 50, type: "float" };
         // if min or max is not defined, range shouldn't be rendered
         await assertRange(props, false);
         props.min = 1;
@@ -62,7 +62,7 @@ describe("FormNumber", () => {
 
     it("shows an alert when the entered value is outside the defined min/max range", async () => {
         const checkOutOfRangeAlert = async (number) => {
-            const props = { value: 50, type: "float", min: 10, max: 100 };
+            const props = { modelValue: 50, type: "float", min: 10, max: 100 };
             const wrapper = await mountFormNumber(props);
             const input = await getInput(wrapper);
             await input.setValue(number);
@@ -87,7 +87,7 @@ describe("FormNumber", () => {
 
     it("warns about and corrects values beyond a single defined bound", async () => {
         const checkSingleBound = async (props, number, expectedAlert, expectedValue) => {
-            const wrapper = await mountFormNumber({ value: "", type: "integer", ...props });
+            const wrapper = await mountFormNumber({ modelValue: "", type: "integer", ...props });
             const input = await getInput(wrapper);
             await input.setValue(number);
             await input.trigger("change");
@@ -105,7 +105,7 @@ describe("FormNumber", () => {
     it("lets a bounded field be cleared without snapping to a bound", async () => {
         // Required fields are left empty too; the form's required-value check reports them instead.
         for (const optional of [true, false]) {
-            const wrapper = await mountFormNumber({ value: 3, type: "integer", optional, min: 1, max: 5 });
+            const wrapper = await mountFormNumber({ modelValue: 3, type: "integer", optional, min: 1, max: 5 });
             const input = await getInput(wrapper);
             await input.setValue("");
             await input.trigger("change");
@@ -131,7 +131,7 @@ describe("FormNumber", () => {
             wrapper.unmount();
         };
 
-        const props = { value: 50, type: "integer", min: 10, max: 100 };
+        const props = { modelValue: 50, type: "integer", min: 10, max: 100 };
         const keys = ["."];
 
         for (const key of keys) {
@@ -140,7 +140,7 @@ describe("FormNumber", () => {
     });
 
     it("blocks '.' for integer type", async () => {
-        const integerWrapper = await mountFormNumber({ value: "", type: "integer" });
+        const integerWrapper = await mountFormNumber({ modelValue: "", type: "integer" });
         const integerInput = await getInput(integerWrapper);
 
         const preventDefaultInteger = vi.fn();
@@ -154,7 +154,7 @@ describe("FormNumber", () => {
     });
 
     it("allows '.' for float type", async () => {
-        const floatWrapper = await mountFormNumber({ value: "", type: "float" });
+        const floatWrapper = await mountFormNumber({ modelValue: "", type: "float" });
         const floatInput = await getInput(floatWrapper);
 
         const preventDefaultFloat = vi.fn();
@@ -168,7 +168,7 @@ describe("FormNumber", () => {
     });
 
     it("allows typing '-' when negative numbers are permitted", async () => {
-        const props = { value: "", type: "float" };
+        const props = { modelValue: "", type: "float" };
         const wrapper = await mountFormNumber(props);
         const input = await getInput(wrapper);
 
@@ -183,7 +183,7 @@ describe("FormNumber", () => {
     });
 
     it("blocks typing '-' when min is non-negative", async () => {
-        const props = { value: "", type: "float", min: 0, max: 100 };
+        const props = { modelValue: "", type: "float", min: 0, max: 100 };
         const wrapper = await mountFormNumber(props);
         const input = await getInput(wrapper);
 
@@ -199,7 +199,7 @@ describe("FormNumber", () => {
 
     it("computes the correct step value based on float precision", async () => {
         const expectStep = async (value, expectedStep) => {
-            const props = { value: value, type: "float", min: 0, max: 1 };
+            const props = { modelValue: value, type: "float", min: 0, max: 1 };
             const wrapper = await mountFormNumber(props);
             expect(wrapper.vm.step).toBe(expectedStep);
         };

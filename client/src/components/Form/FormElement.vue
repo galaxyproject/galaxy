@@ -389,7 +389,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                 <FormValueList
                     v-else-if="valueListType"
                     :id="props.id"
-                    :value="currentValue"
+                    :model-value="currentValue"
                     :max="attrs.max"
                     :min="attrs.min"
                     :placeholder="computedPlaceholder"
@@ -397,11 +397,11 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     :show-state="props.workflowRun"
                     :type="valueListType"
                     :datalist="attrs.datalist"
-                    @input="(v: FormParameterValue) => (currentValue = v)" />
+                    @update:model-value="(v: FormParameterValue) => (currentValue = v)" />
                 <FormNumber
                     v-else-if="props.type === 'integer' || props.type === 'float'"
                     :id="props.id"
-                    :value="currentValue"
+                    :model-value="currentValue"
                     :max="attrs.max"
                     :min="attrs.min"
                     :placeholder="computedPlaceholder"
@@ -409,7 +409,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     :show-state="props.workflowRun"
                     :type="props.type ?? 'float'"
                     :workflow-building-mode="workflowBuildingMode"
-                    @input="(v: FormParameterValue) => (currentValue = v)" />
+                    @update:model-value="(v: FormParameterValue) => (currentValue = v)" />
                 <FormOptionalText
                     v-else-if="props.type === 'select' && attrs.is_workflow && attrs.optional"
                     :id="props.id"

@@ -51,8 +51,9 @@ export default {
         BRow,
         GAlert,
     },
+    compatConfig: { COMPONENT_V_MODEL: false },
     props: {
-        value: {
+        modelValue: {
             required: true,
         },
         type: {
@@ -89,6 +90,7 @@ export default {
             default: false,
         },
     },
+    emits: ["update:modelValue"],
     data() {
         return {
             defaultInputSizeWithSlider: 4,
@@ -97,17 +99,17 @@ export default {
             errorMessage: "",
             fractionWarning: "This input doesn't allow fractions!",
             negativeWarning: "This input doesn't allow negative numbers!",
-            decimalPlaces: this.type.toLowerCase() === "integer" ? 0 : this.getNumberOfDecimals(this.value),
+            decimalPlaces: this.type.toLowerCase() === "integer" ? 0 : this.getNumberOfDecimals(this.modelValue),
         };
     },
     computed: {
         currentValue: {
             get() {
-                return this.value;
+                return this.modelValue;
             },
             set(newVal, oldVal) {
                 if (newVal !== oldVal) {
-                    this.$emit("input", newVal);
+                    this.$emit("update:modelValue", newVal);
                 }
             },
         },

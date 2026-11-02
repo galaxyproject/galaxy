@@ -36,8 +36,9 @@ import { BCol, BFormInput, BFormTextarea, BRow } from "bootstrap-vue";
 
 export default {
     components: { BCol, BFormInput, BFormTextarea, BRow },
+    compatConfig: { COMPONENT_V_MODEL: false },
     props: {
-        value: {
+        modelValue: {
             // String; Array for multiple
             default: "",
         },
@@ -90,6 +91,7 @@ export default {
             default: null,
         },
     },
+    emits: ["update:modelValue"],
     data() {
         return {
             isFocused: false,
@@ -106,13 +108,13 @@ export default {
                 if (this.isFocused) {
                     return this.localValue;
                 }
-                return this.valueToString(this.value);
+                return this.valueToString(this.modelValue);
             },
             set(newVal, oldVal) {
                 if (newVal !== oldVal) {
                     // Store the local value while editing
                     this.localValue = newVal;
-                    this.$emit("input", newVal);
+                    this.$emit("update:modelValue", newVal);
                 }
             },
         },
@@ -129,7 +131,7 @@ export default {
         },
     },
     watch: {
-        value: {
+        modelValue: {
             // Deep, so an array value changed in place still refreshes localValue.
             deep: true,
             handler(newValue) {
@@ -142,7 +144,7 @@ export default {
     },
     mounted() {
         // Initialize localValue with the initial prop value
-        this.localValue = this.valueToString(this.value);
+        this.localValue = this.valueToString(this.modelValue);
     },
     methods: {
         /**
@@ -166,7 +168,7 @@ export default {
         onBlur() {
             // When field loses focus, sync with the latest prop value
             this.isFocused = false;
-            this.localValue = this.valueToString(this.value);
+            this.localValue = this.valueToString(this.modelValue);
         },
     },
 };

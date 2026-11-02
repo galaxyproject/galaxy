@@ -19,10 +19,12 @@ interface Row {
     value: FieldValue;
 }
 
+defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
+
 const props = withDefaults(
     defineProps<{
         id?: string;
-        value?: FieldValue | FieldValue[] | null;
+        modelValue?: FieldValue | FieldValue[] | null;
         type: "integer" | "float" | "text";
         min?: number | null;
         max?: number | null;
@@ -33,7 +35,7 @@ const props = withDefaults(
     }>(),
     {
         id: "",
-        value: null,
+        modelValue: null,
         min: undefined,
         max: undefined,
         placeholder: "",
@@ -44,7 +46,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-    (e: "input", value: FieldValue[] | null): void;
+    (e: "update:modelValue", value: FieldValue[] | null): void;
 }>();
 
 const isText = computed(() => props.type === "text");
@@ -81,11 +83,11 @@ function toEmitted(values: FieldValue[]): FieldValue[] {
     return isText.value ? entered.map((v) => String(v)) : entered.map((v) => Number(v));
 }
 
-const rows = ref<Row[]>(toRows(toValues(props.value)));
+const rows = ref<Row[]>(toRows(toValues(props.modelValue)));
 
 function emitValue() {
     const values = toEmitted(rows.value.map((row) => row.value));
-    emit("input", values.length ? values : null);
+    emit("update:modelValue", values.length ? values : null);
 }
 
 function onRowInput(index: number, value: FieldValue) {
@@ -103,7 +105,7 @@ function removeRow(index: number) {
 }
 
 watch(
-    () => props.value,
+    () => props.modelValue,
     (newValue) => {
         const incoming = toEmitted(toValues(newValue));
         const current = toEmitted(rows.value.map((row) => row.value));
@@ -125,23 +127,23 @@ watch(
                 v-if="isText"
                 :id="`${props.id}-${row.key}`"
                 class="flex-grow-1"
-                :value="String(row.value)"
+                :model-value="String(row.value)"
                 :placeholder="props.placeholder"
                 :optional="props.optional"
                 :show-state="props.showState"
                 :datalist="props.datalist"
-                @input="onRowInput(index, $event)" />
+                @update:model-value="onRowInput(index, $event)" />
             <FormNumber
                 v-else
                 class="flex-grow-1"
-                :value="row.value"
+                :model-value="row.value"
                 :type="props.type"
                 :min="props.min ?? undefined"
                 :max="props.max ?? undefined"
                 :placeholder="props.placeholder"
                 :optional="props.optional"
                 :show-state="props.showState"
-                @input="onRowInput(index, $event)" />
+                @update:model-value="onRowInput(index, $event)" />
             <GButton
                 class="ml-2"
                 tooltip
