@@ -129,6 +129,10 @@ class OutputProtector:
             raise ProtectionError("The protection plan of this job is missing, its outputs can't be protected.")
         return cls(Crypt4GHJobRuntime(ProtectionPlan.read(plan_path)), datatypes_registry)
 
+    @property
+    def verbose_errors(self) -> bool:
+        return self.runtime.plan.recryptor.verbose_errors
+
     def protect(
         self,
         dataset_instance: "DatasetInstance",

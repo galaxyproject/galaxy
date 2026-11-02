@@ -388,7 +388,9 @@ Limitations:
   Inputs of parameters accepting Crypt4GH formats are passed encrypted to any tool.
 - The standard output and error of tools decrypting data may contain decrypted
   data, so they are not stored with the job or the outputs, and messages about
-  error patterns (`<stdio>` regexes) they matched don't quote them.
+  error patterns (`<stdio>` regexes) they matched don't quote them. The job's
+  own output, from decrypting the inputs and collecting the outputs, is stored
+  without the messages of unexpected errors (see below).
 - Outputs of jobs decrypting data aren't validated, for example by the workflow
   action validating outputs: validation reads the decrypted data, and its errors
   may quote it. Their validation state stays unknown.
@@ -450,8 +452,9 @@ Protected jobs fail closed:
 
 Job errors are shown to users, so they name the setting or error involved but
 never include the compute service's address. Unexpected errors only show their type,
-since their message may contain decrypted data, and their traceback in the job's
-stderr leaves out that message. To see the underlying error while
+since their message may contain decrypted data. Their tracebacks in the job's
+stderr, from decrypting the inputs or collecting the outputs, leave out that
+message and the errors they were raised from. To see the underlying error while
 setting up a destination, for example a TLS problem, set
 `crypt4gh_recryptor_verbose_errors: true` on that destination; turn it off again
 afterwards, since users of that destination see these details too. Alternatively,
