@@ -34,8 +34,8 @@ const mockRefreshHistoryFromPush = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/watch/watchHistory", () => ({
     ACTIVE_POLLING_INTERVAL: 3000,
     INACTIVE_POLLING_INTERVAL: 60_000,
-    watchHistory: (app: unknown) => mockWatchHistory(app),
-    refreshHistoryFromPush: (app: unknown) => mockRefreshHistoryFromPush(app),
+    watchHistory: () => mockWatchHistory(),
+    refreshHistoryFromPush: () => mockRefreshHistoryFromPush(),
 }));
 
 vi.mock("@/app", () => ({

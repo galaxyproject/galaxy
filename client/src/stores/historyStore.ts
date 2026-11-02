@@ -19,7 +19,6 @@ import {
     type UpdateHistoryPayload,
 } from "@/api/histories";
 import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
-import { getGalaxyInstance } from "@/app";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useRetryGate } from "@/composables/retryGate";
@@ -41,8 +40,8 @@ import { sortByObjectProp } from "@/utils/sorting";
 import {
     ACTIVE_POLLING_INTERVAL,
     INACTIVE_POLLING_INTERVAL,
-    refreshHistoryFromPush as refreshHistoryFromPushSuppliedApp,
-    watchHistory as watchHistorySuppliedApp,
+    refreshHistoryFromPush,
+    watchHistory,
 } from "@/watch/watchHistory";
 
 const PAGINATION_LIMIT = 10;
@@ -743,11 +742,6 @@ export const useHistoryStore = defineStore("historyStore", () => {
         listedHistoriesTotal.value[variant] = 0;
     }
 
-    function watchHistory() {
-        const app = getGalaxyInstance();
-        return watchHistorySuppliedApp(app);
-    }
-
     // SSE-driven history updates: when we receive a history_update event,
     // immediately trigger a refresh of the current history
     const SSE_HISTORY_EVENT_TYPES = ["history_update"] as const;
@@ -770,8 +764,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
                 // SSE is itself the signal that the history changed — force the
                 // refresh so the update_time short-circuit in watchHistoryOnce
                 // can't suppress the contents fetch.
-                const app = getGalaxyInstance();
-                refreshHistoryFromPushSuppliedApp(app).catch((err) =>
+                refreshHistoryFromPush().catch((err) =>
                     console.error("Error refreshing current history from SSE push:", err),
                 );
             }

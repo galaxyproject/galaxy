@@ -43,14 +43,6 @@ export type ListViewMode = "grid" | "list";
 
 type UserListViewPreferences = Record<string, ListViewMode>;
 
-interface LegacyGalaxyAppUserLike {
-    attributes: Record<string, unknown>;
-}
-
-interface LegacyGalaxyAppLike {
-    user?: LegacyGalaxyAppUserLike;
-}
-
 const RECENT_TOOLS_LIMIT = 10;
 
 export const useUserStore = defineStore("userStore", () => {
@@ -123,25 +115,6 @@ export const useUserStore = defineStore("userStore", () => {
         } else if (user === null) {
             currentUser.value = null;
         }
-    }
-
-    /**
-     * @deprecated
-     * This function bridges the Pinia user store with the legacy
-     * jQuery-based Galaxy app's `app.user.attributes` object. Once the legacy
-     * app and all its consumers are fully migrated to Vue/Pinia, this sync
-     * will no longer be needed and should be removed along with the
-     * `LegacyGalaxyAppLike` interface.
-     */
-    function syncLegacyAppUser(app?: LegacyGalaxyAppLike | null) {
-        if (!app?.user || !currentUser.value) {
-            return;
-        }
-
-        app.user.attributes = {
-            ...app.user.attributes,
-            ...currentUser.value,
-        };
     }
 
     function refreshUser(includeHistories = false) {
@@ -396,7 +369,6 @@ export const useUserStore = defineStore("userStore", () => {
         refreshUser,
         refreshStorageUsage,
         refreshStorageUsageInBackground,
-        syncLegacyAppUser,
         matchesCurrentUsername,
         matchesCurrentUserId,
         setCurrentUser,
