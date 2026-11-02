@@ -1,0 +1,17 @@
+- doc: |
+    Test to verify a subworkflow text parameter connected to an expression tool output can be used as a replacement parameter.
+  job:
+    replacemeouter: moocow
+  outputs:
+    out1:
+      class: File
+      metadata:
+        name: 'moocow name'
+    out2:
+      class: File
+      metadata:
+        name: 'moocow name 2'
+    out3:
+      class: File
+      metadata:
+        name: 'moocow picked'

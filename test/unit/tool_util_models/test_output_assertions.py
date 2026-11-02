@@ -87,6 +87,24 @@ def test_nested_collection_element_size_assertions_validate():
     assert inner.max == 4
 
 
+def test_collection_output_metadata_name_validates():
+    tests = Tests.model_validate(_one_test({"out": {"class": "Collection", "metadata": {"name": "renamed"}}}))
+    out = tests.root[0].outputs["out"]
+    assert isinstance(out, TestCollectionOutputAssertions)
+    assert out.metadata is not None
+    assert out.metadata.name == "renamed"
+
+
+def test_collection_output_metadata_unknown_key_rejected():
+    with pytest.raises(ValidationError) as exc:
+        Tests.model_validate(_one_test({"out": {"class": "Collection", "metadata": {"dbkey": "hg19"}}}))
+    errs = exc.value.errors()
+    assert len(errs) == 1
+    err = errs[0]
+    assert err["loc"] == (0, "outputs", "out", "Collection", "metadata", "dbkey")
+    assert err["type"] == "extra_forbidden"
+
+
 def test_unknown_field_on_file_output_yields_single_error():
     with pytest.raises(ValidationError) as exc:
         Tests.model_validate(_one_test({"out": {"asserts": [], "garbage_key": 1}}))

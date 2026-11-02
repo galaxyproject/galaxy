@@ -1,12 +1,16 @@
 from typing import cast
 
+import pytest
+
 from galaxy import model
 from galaxy.util.unittest import TestCase
+from galaxy.workflow import modules
 from galaxy.workflow.run import (
     ModuleInjector,
     WorkflowProgress,
 )
 from .workflow_support import (
+    expression_json_hda,
     MockApp,
     MockTrans,
     yaml_to_model,
@@ -63,6 +67,24 @@ steps:
         connections:
         - "@output_step": 0
           output_name: "output"
+          "@input_subworkflow_step": 0
+"""
+
+TEST_SUBWORKFLOW_PARAMETER_YAML = """
+steps:
+  - type: "tool"
+    tool_id: "pick_value"
+  - type: "subworkflow"
+    subworkflow:
+       steps:
+          - type: "parameter_input"
+            label: "inner_text"
+            tool_inputs: {"parameter_type": "text", "optional": false}
+    inputs:
+      inner_text:
+        connections:
+        - "@output_step": 0
+          output_name: "text_param"
           "@input_subworkflow_step": 0
 """
 
@@ -227,6 +249,34 @@ class TestWorkflowProgress(TestCase):
             subworkflow_cat_step,
             step_dict,
         )
+
+    def test_subworkflow_unreadable_expression_json_parameter_delays_subworkflow(self, tmp_path):
+        hda = expression_json_hda(tmp_path / "expression.json", None)
+        subworkflow_invocation, subworkflow_step = self._setup_subworkflow_parameter(hda)
+        with pytest.raises(modules.DelayedWorkflowEvaluation) as exc_info:
+            self._recovered_workflow_progress().subworkflow_progress(subworkflow_invocation, subworkflow_step, {})
+        assert "could not be read" in exc_info.value.why
+
+    def _recovered_workflow_progress(self):
+        progress = self._new_workflow_progress()
+        progress.remaining_steps()
+        return progress
+
+    def _setup_subworkflow_parameter(self, hda):
+        self._setup_workflow(TEST_SUBWORKFLOW_PARAMETER_YAML)
+        self._set_previous_progress(
+            [
+                (100, {"text_param": hda}),
+                (101, UNSCHEDULED_STEP),
+            ]
+        )
+        subworkflow_step = self.invocation.workflow.step_by_index(1)
+        subworkflow_invocation = self.invocation.create_subworkflow_invocation_for_step(subworkflow_step)
+        session = self.app.model.session
+        session.add(self.invocation)
+        session.add(subworkflow_invocation)
+        session.commit()
+        return subworkflow_invocation, subworkflow_step
 
 
 class MockModuleInjector:
