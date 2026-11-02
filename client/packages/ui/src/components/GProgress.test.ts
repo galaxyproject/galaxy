@@ -222,6 +222,42 @@ describe("GProgress", () => {
         expect(wrapper.get('[role="progressbar"] strong').text()).toBe("one");
     });
 
+    it("marks the fill end of a bar without a value only when its fill is below 3:1 against the track", () => {
+        const marked = (props: object) =>
+            mount(GProgressBar, { props: { value: 40, showProgress: false, ...props } }).classes(
+                "g-progress-bar-marked",
+            );
+
+        for (const variant of ["success", "warning", "info"] as const) {
+            expect(marked({ variant })).toBe(true);
+        }
+        for (const variant of ["primary", "secondary", "danger", "dark"] as const) {
+            expect(marked({ variant })).toBe(false);
+        }
+    });
+
+    it("leaves the fill end unmarked when the bar has content or no fill", () => {
+        const options = { props: { value: 40, variant: "success" as const } };
+
+        expect(mount(GProgressBar, options).classes("g-progress-bar-marked")).toBe(false);
+        expect(
+            mount(GProgressBar, { props: { ...options.props, showProgress: false, label: "Four" } }).classes(
+                "g-progress-bar-marked",
+            ),
+        ).toBe(false);
+        expect(
+            mount(GProgressBar, {
+                props: { ...options.props, showProgress: false },
+                slots: { default: "Four" },
+            }).classes("g-progress-bar-marked"),
+        ).toBe(false);
+        expect(
+            mount(GProgressBar, { props: { variant: "success", value: 0, showProgress: false } }).classes(
+                "g-progress-bar-marked",
+            ),
+        ).toBe(false);
+    });
+
     it("works as a standalone bar with a maximum of 100", () => {
         const wrapper = mount(GProgressBar, { props: { value: 40 } });
 

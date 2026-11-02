@@ -7,7 +7,8 @@
  *
  * Content, by priority: the default slot, `label`, the value (`showValue`), the percentage. Bars
  * show their value by default because some fills fall below 3:1 against the track; set
- * `:show-progress="false"` only where text has no room, or where the value is shown nearby.
+ * `:show-progress="false"` only where text has no room or the value is shown nearby; those fills
+ * then mark their end.
  */
 
 import { computed, inject } from "vue";
@@ -35,6 +36,9 @@ interface Props {
     /** Decimal places of the shown percentage or value */
     precision?: number | string;
 }
+
+// These fills fall below 3:1 against the grey-200 track, so a bar without text marks its fill end
+const VARIANTS_BELOW_TRACK_CONTRAST: ProgressVariant[] = ["success", "warning", "info"];
 
 const props = withDefaults(defineProps<Props>(), {
     value: 0,
@@ -79,6 +83,10 @@ const text = computed(() => {
     return "";
 });
 
+const needsMarker = computed(
+    () => VARIANTS_BELOW_TRACK_CONTRAST.includes(variant.value) && percent.value > 0 && !text.value,
+);
+
 const classes = computed(() => ({
     [prefix(variant.value)]: true,
     "g-progress-bar-striped": striped.value,
@@ -90,7 +98,7 @@ const classes = computed(() => ({
 <template>
     <div
         class="g-progress-bar"
-        :class="classes"
+        :class="[classes, { 'g-progress-bar-marked': needsMarker && !$slots.default }]"
         :style="{ width }"
         role="progressbar"
         aria-valuemin="0"
@@ -151,6 +159,10 @@ const classes = computed(() => ({
     &.g-dark {
         background-color: var(--color-grey-800);
         --g-progress-stripe: rgb(100% 100% 100% / 0.15);
+    }
+
+    &.g-progress-bar-marked {
+        box-shadow: inset -2px 0 0 var(--color-grey-800);
     }
 
     &.g-progress-bar-striped {
