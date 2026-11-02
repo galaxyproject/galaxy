@@ -67,6 +67,7 @@ export default {
             default: () => [],
         },
     },
+    emits: ["onCreators"],
     data() {
         return {
             faEdit,

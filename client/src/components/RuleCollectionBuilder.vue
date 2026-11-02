@@ -747,6 +747,7 @@ export default {
             default: "modal", // set to wizard to use embedded formatting
         },
     },
+    emits: ["validInput", "onCreate", "onAttemptCreate"],
     data: function () {
         let orientation = "vertical";
         let mapping;
