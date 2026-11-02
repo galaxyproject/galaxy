@@ -34,6 +34,10 @@ configureCompat({
     // Enumerated attributes (contenteditable, draggable, spellcheck) render as
     // given; Galaxy binds them to booleans or "true"/"false" already.
     ATTR_ENUMERATED_COERCION: false,
+    // A bound `false` renders as attr="false" instead of removing the attribute.
+    // Galaxy binds ARIA state as "true"/"false" strings and leaves boolean
+    // attributes like `disabled` to props or `null`.
+    ATTR_FALSE_VALUE: false,
 });
 
 // FontAwesomeIcon builds its <svg> from `attrs`. With MODE 2's

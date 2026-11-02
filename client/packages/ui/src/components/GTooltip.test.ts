@@ -1,13 +1,10 @@
 import { mount } from "@vue/test-utils";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { configureCompat } from "vue";
+import { describe, expect, it } from "vitest";
 
 import GTooltip from "./GTooltip.vue";
 
 // Vue 3 renders a bound `false` as attr="false" instead of dropping it, which would leave
-// `[data-show]` matching a hidden tooltip.
-beforeAll(() => configureCompat({ ATTR_FALSE_VALUE: false }));
-afterAll(() => configureCompat({ ATTR_FALSE_VALUE: true }));
+// `[data-show]` matching a hidden tooltip. compat-config.js turns ATTR_FALSE_VALUE off.
 
 describe("GTooltip", () => {
     it("sets data-show only while showing", async () => {
