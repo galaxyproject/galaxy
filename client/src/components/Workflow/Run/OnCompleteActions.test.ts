@@ -19,15 +19,15 @@ const EXPORT_CONFIG = {
     include_deleted: false,
 };
 
-function mountActions(value: object[] = []) {
+function mountActions(modelValue: object[] = []) {
     return mount(OnCompleteActions as object, {
-        props: { value },
+        props: { modelValue },
         global: { stubs: { ExportOnCompleteWizard: true, FileSourceNameSpan: true, GModal: true } },
     });
 }
 
 function lastActions(wrapper: ReturnType<typeof mountActions>) {
-    return nth(wrapper.emitted<[object[]]>("input"), -1)[0];
+    return nth(wrapper.emitted<[object[]]>("update:modelValue"), -1)[0];
 }
 
 describe("OnCompleteActions", () => {

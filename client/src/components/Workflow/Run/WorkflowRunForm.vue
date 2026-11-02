@@ -66,7 +66,7 @@
                     type="boolean" />
             </template>
         </FormCard>
-        <OnCompleteActions :value="onCompleteActions" @input="onCompleteActions = $event" />
+        <OnCompleteActions :model-value="onCompleteActions" @update:model-value="onCompleteActions = $event" />
         <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
             <template v-slot:body>
                 <FormDisplay :inputs="resourceInputs" @onChange="onResourceInputs" />

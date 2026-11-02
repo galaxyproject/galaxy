@@ -33,7 +33,7 @@ vi.mock("@/components/Form/FormElement.vue", () => ({
     default: { ...stub("FormElement", ["modelValue"]).default, compatConfig: { COMPONENT_V_MODEL: false } },
 }));
 vi.mock("@/components/Common/ButtonSpinner.vue", () => stub("ButtonSpinner", ["disabled", "wait", "tooltip"]));
-vi.mock("@/components/Workflow/Run/OnCompleteActions.vue", () => stub("OnCompleteActions", ["value"]));
+vi.mock("@/components/Workflow/Run/OnCompleteActions.vue", () => stub("OnCompleteActions", ["modelValue"]));
 vi.mock("@/components/Workflow/Run/WorkflowCredentials.vue", () => stub("WorkflowCredentials", ["toolIdentifiers"]));
 
 const globalConfig = getLocalVue();
@@ -122,7 +122,7 @@ describe("WorkflowRunForm", () => {
         findStep(wrapper, "4").vm.$emit("onChange", "4", { input: "text" });
         findStep(wrapper, "3").vm.$emit("onChange", "3", { num_lines: "5", input: { values: [] } });
         wrapper.findComponent({ name: "FormElement" }).vm.$emit("update:modelValue", true);
-        wrapper.findComponent({ name: "OnCompleteActions" }).vm.$emit("input", [{ send_notification: {} }]);
+        wrapper.findComponent({ name: "OnCompleteActions" }).vm.$emit("update:modelValue", [{ send_notification: {} }]);
         await wrapper.vm.$nextTick();
         expect(wrapper.findComponent({ name: "FormElement" }).props("modelValue")).toBe(true);
         await run(wrapper);
