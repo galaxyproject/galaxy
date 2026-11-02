@@ -121,10 +121,10 @@
             <p v-localize>Apply the following tags to {{ numSelected }} items:</p>
             <StatelessTags
                 :key="showAddTagsModal"
-                :value="selectedTags"
+                :model-value="selectedTags"
                 class="tags"
                 list-in-flow
-                @input="(tags) => (selectedTags = tags)" />
+                @update:model-value="(tags) => (selectedTags = tags)" />
             <GTip class="mt-2" :tips="['Press Enter after typing each tag.']" />
         </GModal>
         <GModal
@@ -138,10 +138,10 @@
             <p v-localize>Remove the following tags from {{ numSelected }} items:</p>
             <StatelessTags
                 :key="showRemoveTagsModal"
-                :value="selectedTags"
+                :model-value="selectedTags"
                 class="tags"
                 list-in-flow
-                @input="(tags) => (selectedTags = tags)" />
+                @update:model-value="(tags) => (selectedTags = tags)" />
             <GTip class="mt-2" :tips="['Press Enter after typing each tag.']" />
         </GModal>
         <StorageOperationWizardModal

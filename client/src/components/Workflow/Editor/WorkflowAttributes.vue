@@ -99,7 +99,7 @@
 
         <div class="mt-2">
             <b>Tags</b>
-            <StatelessTags :value="tags" @input="onTags" />
+            <StatelessTags :model-value="tags" @update:model-value="onTags" />
             <div class="form-text text-muted">
                 Apply tags to make it easy to search for and find items with the same tag.
             </div>

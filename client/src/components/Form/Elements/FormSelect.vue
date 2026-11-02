@@ -300,7 +300,7 @@ function isSelected(item: SelectValue): boolean {
                         <StatelessTags
                             v-if="isValueWithTags(option.value)"
                             class="tags mt-2"
-                            :value="option.value.tags"
+                            :model-value="option.value.tags"
                             disabled />
                     </div>
                     <FontAwesomeIcon v-if="isSelected(option.value)" :icon="faCheckSquare" />

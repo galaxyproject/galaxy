@@ -14,8 +14,13 @@ import Tag from "./Tag.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTooltip from "@/components/BaseComponents/GTooltip.vue";
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 interface StatelessTagsProps {
-    value?: string[];
+    modelValue?: string[];
     disabled?: boolean;
     clickable?: boolean;
     useToggleLink?: boolean;
@@ -26,7 +31,7 @@ interface StatelessTagsProps {
 }
 
 const props = withDefaults(defineProps<StatelessTagsProps>(), {
-    value: () => [],
+    modelValue: () => [],
     disabled: false,
     clickable: false,
     useToggleLink: true,
@@ -36,7 +41,7 @@ const props = withDefaults(defineProps<StatelessTagsProps>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", tags: string[]): void;
+    (e: "update:modelValue", tags: string[]): void;
     (e: "tag-click", tag: string): void;
 }>();
 
@@ -44,7 +49,7 @@ const userTagsStore = useUserTagsStore();
 const { warning } = useToast();
 
 onMounted(() => {
-    userTagsStore.onMultipleNewTagsSeen(props.value);
+    userTagsStore.onMultipleNewTagsSeen(props.modelValue);
 });
 
 function onAddTag(tag: string) {
@@ -52,24 +57,24 @@ function onAddTag(tag: string) {
 
     if (isValid(newTag)) {
         userTagsStore.onNewTagSeen(newTag);
-        emit("input", [...props.value, newTag]);
+        emit("update:modelValue", [...props.modelValue, newTag]);
     } else {
         warning(`"${newTag}" is not a valid tag.`, "Invalid Tag");
     }
 }
 
 function onInput(val: string[]) {
-    emit("input", val);
+    emit("update:modelValue", val);
 }
 
 function onDelete(tag: string) {
     const val = [...tags.value];
     const index = tags.value.indexOf(tag);
     val.splice(index, 1);
-    emit("input", val);
+    emit("update:modelValue", val);
 }
 
-const tags = computed(() => props.value.map((tag) => tag.replace(/^name:/, "#")));
+const tags = computed(() => props.modelValue.map((tag) => tag.replace(/^name:/, "#")));
 
 const toggledOpen = ref(false);
 const toggleButtonId = useUid("toggle-link-");
@@ -139,7 +144,7 @@ function onTagClicked(tag: string) {
 
             <HeadlessMultiselect
                 :options="userTagsStore.userTags"
-                :selected="props.value"
+                :selected="props.modelValue"
                 :placeholder="props.placeholder"
                 :validator="(x) => !!isValid(x)"
                 :list-in-flow="props.listInFlow"

@@ -208,7 +208,7 @@ function selectText() {
                     tags: ['both', 'tags'].includes(summarized || ''),
                     hidden: summarized === 'hidden',
                 }"
-                :value="tags"
+                :model-value="tags"
                 disabled
                 :max-visible-tags="summarized ? 1 : 5" />
             <slot v-if="summarized" name="update-time" />
