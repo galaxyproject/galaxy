@@ -23,7 +23,7 @@ const { mockGet, mockPost, mockPut, ChatMessageCellStub, ChatInputStub } = vi.ho
     },
     ChatInputStub: {
         name: "ChatInputStub",
-        props: ["value", "busy"],
+        props: ["modelValue", "busy"],
         render() {
             return h("input", { class: "chat-input-stub" });
         },
@@ -105,7 +105,7 @@ function messageTexts(wrapper: VueWrapper) {
 
 async function sendMessage(wrapper: VueWrapper, text: string) {
     const input = wrapper.findComponent(ChatInputStub);
-    input.vm.$emit("input", text);
+    input.vm.$emit("update:modelValue", text);
     await wrapper.vm.$nextTick();
     input.vm.$emit("submit");
     await flushPromises();
