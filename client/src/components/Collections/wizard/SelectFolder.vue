@@ -29,10 +29,10 @@ watch(remoteUri, (newValue: string) => {
             class="mt-3">
             <FilesInput
                 id="directory"
-                :value="remoteUri"
+                :model-value="remoteUri"
                 mode="directory"
                 :require-writable="false"
-                @input="(v: string) => (remoteUri = v)" />
+                @update:model-value="(v: string) => (remoteUri = v)" />
         </BFormGroup>
         <div v-if="ftpUploadSite">
             Alternatively, <GLink @click="emit('onFtp')">click here to load your Galaxy FTP directory contents</GLink>.

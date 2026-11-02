@@ -18,7 +18,7 @@ describe("FilesInput", () => {
     it("exposes selectFile to open the files dialog", () => {
         const wrapper = mount(FilesInput as object, {
             global: getLocalVue(),
-            props: { value: "" },
+            props: { modelValue: "" },
         });
         (wrapper.vm as unknown as { selectFile: () => void }).selectFile();
         expect(filesDialog).toHaveBeenCalledOnce();
@@ -27,7 +27,7 @@ describe("FilesInput", () => {
     it("opens the files dialog when the input is clicked", async () => {
         const wrapper = mount(FilesInput as object, {
             global: getLocalVue(),
-            props: { value: "" },
+            props: { modelValue: "" },
         });
         await wrapper.get("input").trigger("click");
         expect(filesDialog).toHaveBeenCalledOnce();
@@ -36,11 +36,11 @@ describe("FilesInput", () => {
     it("emits the typed path as input", async () => {
         const wrapper = mount(FilesInput as object, {
             global: getLocalVue(),
-            props: { value: "" },
+            props: { modelValue: "" },
         });
         const input = wrapper.get("input.directory-form-input");
         expect(input.classes()).toContain("g-form-input");
         await input.setValue("gxftp://data");
-        expect(wrapper.emitted("input")?.at(-1)).toEqual(["gxftp://data"]);
+        expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual(["gxftp://data"]);
     });
 });

@@ -55,11 +55,11 @@ const doExport = () => {
             class="mt-3">
             <FilesInput
                 id="directory"
-                :value="directory"
+                :model-value="directory"
                 mode="directory"
                 :require-writable="true"
                 :filter-options="defaultExportFilterOptions"
-                @input="(v: string) => (directory = v)" />
+                @update:model-value="(v: string) => (directory = v)" />
         </BFormGroup>
 
         <BFormGroup id="fieldset-name" label="File name" label-for="name" :description="nameDescription" class="mt-3">
