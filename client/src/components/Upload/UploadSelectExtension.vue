@@ -9,10 +9,6 @@ import UploadExtension from "./UploadExtension.vue";
 import UploadSelect from "./UploadSelect.vue";
 import Popper from "@/components/Popper/Popper.vue";
 
-defineOptions({
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 const props = defineProps({
     disabled: {
         type: Boolean,

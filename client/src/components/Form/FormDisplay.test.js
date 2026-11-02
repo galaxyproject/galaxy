@@ -14,8 +14,6 @@ vi.mock("./Elements/FormData/FormData.vue", () => ({
     default: {
         name: "FormData",
         props: ["name"],
-        // mirror the real FormData's v-model contract
-        compatConfig: { COMPONENT_V_MODEL: false },
         render: () => h("div"),
     },
 }));

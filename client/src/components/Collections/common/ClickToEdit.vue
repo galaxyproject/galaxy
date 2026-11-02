@@ -5,10 +5,6 @@ import { computed, ref, useId, watch } from "vue";
 
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
-defineOptions({
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 interface Props {
     modelValue: string;
     title?: string;

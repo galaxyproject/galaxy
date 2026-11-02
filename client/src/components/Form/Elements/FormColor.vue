@@ -9,11 +9,6 @@ export interface FormColorProps {
     id: string;
 }
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 const props = withDefaults(defineProps<FormColorProps>(), {
     modelValue: "",
 });

@@ -6,10 +6,6 @@ import { computed } from "vue";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 
-defineOptions({
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 interface Props {
     modelValue: string;
     title?: string;

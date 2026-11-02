@@ -14,11 +14,6 @@ import Tag from "./Tag.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTooltip from "@/components/BaseComponents/GTooltip.vue";
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 interface StatelessTagsProps {
     modelValue?: string[];
     disabled?: boolean;

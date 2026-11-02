@@ -16,8 +16,6 @@ interface LabelSelectorProps {
     labelTitle: string;
 }
 
-defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
-
 const props = withDefaults(defineProps<LabelSelectorProps>(), {
     modelValue: undefined,
 });

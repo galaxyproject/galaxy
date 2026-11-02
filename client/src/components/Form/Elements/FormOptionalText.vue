@@ -29,7 +29,6 @@ export default {
         FormText,
         GCheckbox,
     },
-    compatConfig: { COMPONENT_V_MODEL: false },
     props: {
         modelValue: {
             default: "",

@@ -28,8 +28,6 @@ interface Props {
     modelValue: OnCompleteAction[];
 }
 
-defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
-
 const props = defineProps<Props>();
 const emit = defineEmits<{
     (e: "update:modelValue", value: OnCompleteAction[]): void;

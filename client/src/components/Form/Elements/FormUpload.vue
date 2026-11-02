@@ -4,11 +4,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormFile } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 const props = defineProps({
     modelValue: {
         required: true,

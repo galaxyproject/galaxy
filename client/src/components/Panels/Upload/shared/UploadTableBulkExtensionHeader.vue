@@ -7,10 +7,6 @@ import type { ExtensionDetails } from "@/composables/uploadConfigurations";
 
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
-defineOptions({
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 interface Props {
     /** Selected bulk extension value */
     modelValue: string;

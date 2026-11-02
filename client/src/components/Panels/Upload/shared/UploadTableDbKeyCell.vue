@@ -3,10 +3,6 @@ import type { DbKey } from "@/composables/uploadConfigurations";
 
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
-defineOptions({
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 interface Props {
     /** Currently selected database key for this item */
     modelValue: string;

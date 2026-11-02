@@ -9,10 +9,6 @@ import type { SelectionItem } from "../SelectionDialog/selectionTypes";
 
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
-defineOptions({
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 interface Props {
     modelValue: string;
     mode?: FileSourceBrowsingMode;

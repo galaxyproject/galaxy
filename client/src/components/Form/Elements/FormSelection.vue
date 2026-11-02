@@ -11,11 +11,6 @@ import FormSelect from "./FormSelect.vue";
 import FormSelectionPreference from "./FormSelectionPreference.vue";
 import FormSelectMany from "./FormSelectMany/FormSelectMany.vue";
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 export interface SelectOption {
     label: string;
     value: any;
