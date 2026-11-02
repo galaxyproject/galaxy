@@ -107,7 +107,7 @@ function hasDoi() {
         <div v-if="workflowInfo?.tags" class="workflow-info-box">
             <Heading v-localize h3 size="md" class="mb-0">Tags</Heading>
 
-            <StatelessTags class="tags mt-2" :value="workflowInfo.tags" disabled />
+            <StatelessTags class="tags mt-2" :model-value="workflowInfo.tags" disabled />
         </div>
 
         <div v-if="hasDoi()" class="workflow-info-box">

@@ -57,7 +57,7 @@ function mountOwnHistoryCard() {
 /** Adds a tag the way the tag editor does: to the tags the card currently shows. */
 async function addTag(wrapper: ReturnType<typeof mount>, tag: string) {
     const editor = wrapper.findComponent(StatelessTags);
-    editor.vm.$emit("input", [...(editor.props("value") as string[]), tag]);
+    editor.vm.$emit("update:modelValue", [...(editor.props("modelValue") as string[]), tag]);
     await wrapper.vm.$nextTick();
 }
 
@@ -97,14 +97,14 @@ describe("HistoryCard", () => {
         // the list was reloaded before the save reached the server
         const reloadedHistory = reactive({ ...history, tags: [] as string[] }) as unknown as AnyHistoryEntry;
         await wrapper.setProps({ history: reloadedHistory } as object);
-        expect(wrapper.findComponent(StatelessTags).props("value")).toEqual([]);
+        expect(wrapper.findComponent(StatelessTags).props("modelValue")).toEqual([]);
 
         save.resolve({ id: "history_id", tags: ["first"] });
         await flushPromises();
 
         expect(mockedUpdateHistoryFields).toHaveBeenCalledWith("history_id", { tags: ["first"] });
         expect(reloadedHistory.tags).toEqual(["first"]);
-        expect(wrapper.findComponent(StatelessTags).props("value")).toEqual(["first"]);
+        expect(wrapper.findComponent(StatelessTags).props("modelValue")).toEqual(["first"]);
         expect(wrapper.emitted("refreshList")).toBeUndefined();
     });
 
@@ -117,7 +117,7 @@ describe("HistoryCard", () => {
 
         expect(mockedUpdateHistoryFields).toHaveBeenCalledWith("history_id", { tags: ["group=liver"] });
         expect(history.tags).toEqual(["group:liver"]);
-        expect(wrapper.findComponent(StatelessTags).props("value")).toEqual(["group:liver"]);
+        expect(wrapper.findComponent(StatelessTags).props("modelValue")).toEqual(["group:liver"]);
         expect(wrapper.emitted("refreshList")).toBeUndefined();
     });
 });
