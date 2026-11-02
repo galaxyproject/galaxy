@@ -350,3 +350,24 @@ describe("GButton.vue pressed", () => {
         expect(wrapper.emitted("update:pressed")).toEqual([[true]]);
     });
 });
+
+describe("GButton.vue attributes", () => {
+    it("puts a consumer's class and style on the button once", () => {
+        // As Vue 3 does, put class and style in $attrs.
+        const component = {
+            ...(GButton as object),
+            compatConfig: { ...(GButton as { compatConfig?: object }).compatConfig, INSTANCE_ATTRS_CLASS_STYLE: false },
+        };
+        const wrapper = mount(component, {
+            props: { color: "blue" },
+            attrs: { class: "consumer-class", style: "margin: 1px;" },
+            global: localVue,
+        });
+        const button = wrapper.get("button");
+        const classes = button.attributes("class")!.split(" ");
+
+        expect(classes).toEqual(expect.arrayContaining(["g-button", "g-blue", "consumer-class"]));
+        expect(new Set(classes).size).toBe(classes.length);
+        expect(button.attributes("style")).toBe("margin: 1px;");
+    });
+});
