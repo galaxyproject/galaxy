@@ -1469,6 +1469,7 @@ class TestAgentUnitMocked:
             '{"task": "Analyze the failed HISAT2 job and provide troubleshooting guidance."}',
             '```json\n{"name": "hand_off_to_error_analysis", "arguments": {"task": "Analyze it."}}\n```',
             '{"type": "function", "function": {"name": "hand_off_to_error_analysis", "arguments": {"task": "x"}}}',
+            '{"function": "hand_off_to_error_analysis", "arguments": {"task": "x"}}',
         ],
     )
     async def test_router_retries_a_handoff_written_out_as_text(self, written_out):
