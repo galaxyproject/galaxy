@@ -75,7 +75,7 @@ class AbstractTestCases:
         @contextmanager
         def _prepared_wrapper(self, requires_galaxy_python_environment=False):
             wrapper = self._wrapper()
-            wrapper.tool.requires_galaxy_python_environment = requires_galaxy_python_environment
+            cast(MockTool, wrapper.tool).requires_galaxy_python_environment = requires_galaxy_python_environment
             wrapper._get_tool_evaluator = lambda *args, **kwargs: MockEvaluator(  # type: ignore[method-assign]
                 wrapper.app, wrapper.tool, wrapper.get_job(), wrapper.working_directory
             )

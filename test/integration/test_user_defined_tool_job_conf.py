@@ -134,6 +134,7 @@ class TestUserDefinedToolLocalDocker(integration_util.IntegrationTestCase, UserD
     """User defined tools in Docker on the local runner, where Galaxy's job directory layout applies."""
 
     framework_tool_and_types = True
+    dataset_populator: DatasetPopulator
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
