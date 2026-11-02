@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
+
+import GBadge from "@/components/BaseComponents/GBadge.vue";
 
 interface Props {
     itemName: string;
@@ -17,9 +18,9 @@ const variant = computed(() => {
 </script>
 
 <template>
-    <BBadge :variant="variant">
+    <GBadge :variant="variant">
         <FontAwesomeIcon v-if="props.included" :icon="faCheck" />
         <FontAwesomeIcon v-else :icon="faTimes" />
         {{ props.itemName }}
-    </BBadge>
+    </GBadge>
 </template>
