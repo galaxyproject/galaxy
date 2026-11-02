@@ -1,0 +1,16 @@
+<tool id="gx_conditional_boolean_implicit" name="gx_conditional_boolean_implicit" version="1.0.0" profile="21.09">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="common_conditional_tags" />
+    <inputs>
+        <param name="input" type="data" format="txt" />
+        <conditional name="conditional_parameter">
+            <param name="test_parameter" type="boolean" checked="false" />
+            <when value="true">
+                <param name="integer_parameter" type="integer" value="1" />
+            </when>
+            <!-- The runtime loader supplies an empty false branch. -->
+        </conditional>
+    </inputs>
+</tool>

@@ -125,6 +125,26 @@ def test_decode_conditional():
     assert decoded_state.input_state["outer_cond"]["input1"]["id"] == EXAMPLE_ID_1
 
 
+def test_boolean_conditional_implicit_false():
+    bundle = input_models_for_tool_source(tool_source_for("parameters/gx_conditional_boolean_implicit"))
+    state = RequestToolState(
+        {
+            "input": {"src": "hda", "id": EXAMPLE_ID_1_ENCODED},
+            "conditional_parameter": {"test_parameter": False},
+        }
+    )
+    decoded = decode(state, bundle, _fake_decode)
+    assert decoded.input_state == {
+        "input": {"src": "hda", "id": EXAMPLE_ID_1},
+        "conditional_parameter": {"test_parameter": False},
+    }
+    # The omitted branch must also be available as the boolean's default.
+    assert (
+        fill_static_defaults({"input": {"src": "hda", "id": EXAMPLE_ID_1}}, bundle, "21.09", partial=False)
+        == decoded.input_state
+    )
+
+
 def test_multi_data():
     tool_source = tool_source_for("parameters/gx_data_multiple")
     bundle = input_models_for_tool_source(tool_source)
