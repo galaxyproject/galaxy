@@ -52,6 +52,13 @@ class TestConfigurationApi(ApiTestCase):
         assert_has_keys(config, *TEST_KEYS_FOR_ALL_USERS)
         assert_has_keys(config, *TEST_KEYS_FOR_ADMIN_ONLY)
 
+    def test_short_term_storage_effective_duration(self):
+        config = self._get_configuration()
+        assert config["short_term_storage_effective_duration"] == 86400
+        with self._different_user(anon=True):
+            config = self._get_configuration()
+        assert config["short_term_storage_effective_duration"] == 86400
+
     def test_normal_user_decode_id(self):
         decode_response = self._get("configuration/decode/badhombre", admin=False)
         self._assert_status_code_is(decode_response, 403)
