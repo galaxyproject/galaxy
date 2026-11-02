@@ -106,4 +106,36 @@ describe("NodeOutput", () => {
         await nextTick();
         expect(wrapper.find(".mapped-over").exists()).toBe(false);
     });
+
+    function mountWithOutputLabels(firstLabel: string, secondLabel: string) {
+        const simpleDataStep = stepForLabel("simple data", stepStore.steps);
+        const listInputStep = stepForLabel("list input", stepStore.steps);
+        const workflowOutputs = [{ output_name: simpleDataStep.outputs[0]!.name, label: firstLabel }];
+        stepStore.updateStep({ ...simpleDataStep, workflow_outputs: workflowOutputs });
+        stepStore.updateStep({
+            ...listInputStep,
+            workflow_outputs: [{ output_name: listInputStep.outputs[0]!.name, label: secondLabel }],
+        });
+        return shallowMount(NodeOutput as any, {
+            props: { ...propsForStep(simpleDataStep), workflowOutputs },
+            global: { ...localVue, provide: { transform, workflowId: "mock-workflow" } },
+            pinia,
+        });
+    }
+
+    // v-g-tooltip refuses to show on any element with a disabled attribute, so a duplicate
+    // label must drop the attribute entirely rather than render disabled="false".
+    it("leaves the label tooltip enabled when the output label is a duplicate", async () => {
+        const wrapper = mountWithOutputLabels("same label", "same label");
+        const labelSpan = wrapper.find("span.alert-danger");
+        expect(labelSpan.exists()).toBe(true);
+        expect(labelSpan.attributes("disabled")).toBeUndefined();
+    });
+
+    it("disables the label tooltip when the output label is unique", async () => {
+        const wrapper = mountWithOutputLabels("first label", "second label");
+        const labelSpan = wrapper.find("span[title]");
+        expect(labelSpan.text()).toBe("first label");
+        expect(labelSpan.attributes("disabled")).toBeDefined();
+    });
 });
