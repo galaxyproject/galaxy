@@ -35,7 +35,7 @@ const emit = defineEmits(["update:modelValue"]);
 const selectId = `select-basic-${uid()}`;
 
 const selectedValue = computed(() => {
-    if (!props.modelValue) {
+    if (props.modelValue === null || props.modelValue === undefined) {
         return props.multiple ? [] : null;
     }
     if (props.multiple) {
