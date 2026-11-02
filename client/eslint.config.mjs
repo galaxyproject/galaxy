@@ -222,19 +222,13 @@ export default defineConfig(
         rules: { "no-restricted-imports": "off" },
     },
     {
-        // Still waiting on their own chunks: Phase 3 rewrites the Form/Elements
-        // emits, and the WATCH_ARRAY group declares the rest. Drop each entry
-        // as it lands.
+        // Still waiting on Phase 3, which rewrites the Form/Elements emits.
+        // Drop each entry as it lands.
         files: [
             "src/components/Form/Elements/FormDirectory.vue",
             "src/components/Form/Elements/FormInput.vue",
             "src/components/Form/Elements/FormNumber.vue",
             "src/components/Form/Elements/FormText.vue",
-            "src/components/Libraries/LibraryFolder/SearchField.vue",
-            "src/components/RuleCollectionBuilder.vue",
-            "src/components/SchemaOrg/CreatorEditor.vue",
-            "src/components/Toolshed/SearchList/Categories.vue",
-            "src/components/Toolshed/SearchList/Repositories.vue",
         ],
         rules: {
             "vue/require-explicit-emits": "warn",
