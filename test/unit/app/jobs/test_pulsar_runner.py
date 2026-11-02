@@ -424,11 +424,14 @@ def _staging_job_wrapper(dataset_id=5):
     return SimpleNamespace(job_id=7, job_io=_RecordingJobIO([input_path]))
 
 
-def _staging_compute_environment(staging, metadata_file_ids=None, extra_files_datasets=None):
+def _staging_compute_environment(
+    staging, metadata_file_ids=None, extra_files_datasets=None, default_file_action="remote_transfer"
+):
     metadata_file_ids = metadata_file_ids or {}
     extra_files_datasets = extra_files_datasets or {}
     return SimpleNamespace(
         object_store_staging=staging,
+        default_file_action=default_file_action,
         materialized_objects={},
         path_rewrites_input_extra={path: f"/pulsar/inputs/{os.path.basename(path)}" for path in extra_files_datasets},
         path_rewrites_input_metadata={path: f"/pulsar/inputs/{os.path.basename(path)}" for path in metadata_file_ids},
@@ -447,9 +450,11 @@ def _assert_signed_input_url(url, kind, object_id, redirect, path=""):
     assert (query.get("redirect") == ["1"]) is redirect
 
 
-def test_inputs_are_staged_from_signed_urls_without_pulling_them():
+@pytest.mark.parametrize("default_file_action", ["remote_transfer", "remote_transfer_tus"])
+def test_inputs_are_staged_from_signed_urls_without_pulling_them(default_file_action):
     runner, job_wrapper = _staging_runner(), _staging_job_wrapper()
-    client_inputs = runner._client_inputs(job_wrapper, _staging_compute_environment("stream"), {})
+    compute_environment = _staging_compute_environment("stream", default_file_action=default_file_action)
+    client_inputs = runner._client_inputs(job_wrapper, compute_environment, {})
     (client_input,) = list(client_inputs)
     assert client_input.path == INPUT_CACHE_PATH
     _assert_signed_input_url(client_input.url, "dataset", 5, redirect=False)
@@ -518,7 +523,8 @@ def test_materialized_inputs_keep_path_staging():
 
 def test_inputs_keep_path_staging_without_object_store_staging():
     runner, job_wrapper = _staging_runner(), _staging_job_wrapper()
-    compute_environment = _staging_compute_environment(None, {METADATA_CACHE_PATH: 9})
+    # Any file action reads inputs staged by path, so none is refused.
+    compute_environment = _staging_compute_environment(None, {METADATA_CACHE_PATH: 9}, default_file_action="transfer")
     client_inputs = runner._client_inputs(job_wrapper, compute_environment, {})
     assert [client_input.url for client_input in client_inputs] == [None, None]
     assert job_wrapper.job_io.sync_cache is True
@@ -567,6 +573,18 @@ def test_unknown_object_store_staging_mode_is_a_configuration_error():
     runner = _staging_runner()
     with pytest.raises(ConfigurationError):
         runner._client_inputs(_staging_job_wrapper(), _staging_compute_environment("true"), {})
+
+
+# 'transfer' is the REST runner's default; these actions read the input's path on Galaxy, which
+# object store staging leaves unpulled.
+@pytest.mark.parametrize("default_file_action", ["transfer", "copy", "remote_object_store_copy"])
+def test_object_store_staging_with_a_default_file_action_that_cannot_fetch_urls_is_a_configuration_error(
+    default_file_action,
+):
+    runner = _staging_runner()
+    compute_environment = _staging_compute_environment("stream", default_file_action=default_file_action)
+    with pytest.raises(ConfigurationError, match=f"default_file_action.*not '{default_file_action}'"):
+        runner._client_inputs(_staging_job_wrapper(), compute_environment, {})
 
 
 def test_input_path_rewrite_keeps_the_local_path_without_object_store_staging():

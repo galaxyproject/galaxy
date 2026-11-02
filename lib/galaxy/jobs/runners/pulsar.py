@@ -107,6 +107,8 @@ MINIMUM_PULSAR_VERSIONS = {
     "object_store_staging_redirect": Version("0.15.16"),  # curl transport follows redirects
 }
 OBJECT_STORE_STAGING_MODES = ("stream", "redirect")
+# The file actions with which Pulsar fetches an input from its URL; the others read its path on Galaxy.
+URL_FILE_ACTIONS = ("remote_transfer", "remote_transfer_tus")
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
 NO_REMOTE_DATATYPES_CONFIG = "Pulsar client is configured to use remote datatypes configuration when setting metadata externally, but Pulsar is not configured with this information. Defaulting to datatypes_conf.xml."
@@ -757,6 +759,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 f"object_store_staging must be one of {OBJECT_STORE_STAGING_MODES}, not {staging!r}"
             )
         if staging in OBJECT_STORE_STAGING_MODES:
+            # Galaxy no longer pulls these inputs into its cache, so an action reading their path finds nothing.
+            if compute_environment.default_file_action not in URL_FILE_ACTIONS:
+                raise ConfigurationError(
+                    f"object_store_staging needs a default_file_action of {' or '.join(URL_FILE_ACTIONS)}, "
+                    f"not {compute_environment.default_file_action!r}"
+                )
             redirect = (
                 staging == "redirect"
                 and self.pulsar_version(remote_job_config) >= MINIMUM_PULSAR_VERSIONS["object_store_staging_redirect"]
@@ -1477,6 +1485,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         # Inputs are staged by object store identity; metadata file ids and the datasets owning extra
         # files directories are keyed by local path.
         self.object_store_staging = pulsar_client.destination_params.get("object_store_staging")
+        self.default_file_action = pulsar_client.default_file_action
         self.input_metadata_file_ids: dict[str, int] = {}
         self.input_extra_files_datasets: dict[str, model.Dataset] = {}
 
