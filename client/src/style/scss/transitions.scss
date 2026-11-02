@@ -1,14 +1,14 @@
 // Vue Transitions
 // ex: <transition name="shutterfade">
 
-.shutterfade-enter,
+.shutterfade-enter-from,
 .shutterfade-leave-to {
     opacity: 0;
     max-height: 0%;
 }
 
 .shutterfade-enter-to,
-.shutterfade-leave {
+.shutterfade-leave-from {
     opacity: 1;
     max-height: 100%;
 }
@@ -19,13 +19,13 @@
     transition-duration: 0.35s;
 }
 
-.fade-enter,
+.fade-enter-from,
 .fade-leave-to {
     opacity: 0;
 }
 
 .fade-enter-to,
-.fade-leave {
+.fade-leave-from {
     opacity: 1;
 }
 
