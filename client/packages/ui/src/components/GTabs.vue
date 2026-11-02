@@ -183,6 +183,7 @@ const TabTitleContent = defineComponent({
                     :title="tab.title"
                     role="presentation">
                     <a
+                        v-bind="tab.titleLinkAttributes"
                         :id="tab.buttonId"
                         class="nav-link"
                         :class="[tab.titleLinkClass, { active: index === activeIndex, disabled: tab.disabled }]"
@@ -192,7 +193,6 @@ const TabTitleContent = defineComponent({
                         :aria-controls="tab.id"
                         :aria-disabled="tab.disabled"
                         :data-tab-title="tab.title"
-                        v-bind="tab.titleLinkAttributes"
                         @click.prevent="!tab.disabled && setActive(index)">
                         <TabTitleContent v-if="tab.titleRenderer" :tab="tab" />
                         <template v-else>{{ tab.title }}</template>
@@ -211,6 +211,7 @@ const TabTitleContent = defineComponent({
                 :title="tab.title"
                 role="presentation">
                 <a
+                    v-bind="tab.titleLinkAttributes"
                     :id="tab.buttonId"
                     class="nav-link"
                     :class="[tab.titleLinkClass, { active: index === activeIndex, disabled: tab.disabled }]"
@@ -220,7 +221,6 @@ const TabTitleContent = defineComponent({
                     :aria-controls="tab.id"
                     :aria-disabled="tab.disabled"
                     :data-tab-title="tab.title"
-                    v-bind="tab.titleLinkAttributes"
                     @click.prevent="!tab.disabled && setActive(index)">
                     <TabTitleContent v-if="tab.titleRenderer" :tab="tab" />
                     <template v-else>{{ tab.title }}</template>
