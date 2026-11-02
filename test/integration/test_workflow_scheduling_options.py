@@ -259,6 +259,26 @@ steps:
             cached_hdca = self._cat_step_output_collection(cached_invocation_id)
             assert cached_hdca.copied_from_history_dataset_collection_association_id is None
 
+    def test_cached_mapped_step_partial_cache_hits(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(CAT_LIST_WORKFLOW)
+        with self.dataset_populator.test_history() as history_id:
+            named_hdas = [
+                (name, self.dataset_populator.new_dataset(history_id, content=f"{name}\n", wait=True))
+                for name in ("a", "b", "c")
+            ]
+            first_invocation_id = self._invoke_cat_list(workflow_id, history_id, named_hdas[1:])
+            first_jobs = self.workflow_populator.get_invocation_jobs(first_invocation_id)
+            assert len(first_jobs) == 2, first_jobs
+
+            # The uncached element comes first, so loop position and job index differ on later iterations.
+            cached_invocation_id = self._invoke_cat_list(workflow_id, history_id, named_hdas, use_cached_job=True)
+            cached_jobs = self.workflow_populator.get_invocation_jobs(cached_invocation_id)
+            assert len(cached_jobs) == 3, cached_jobs
+            assert self._copied_from_job_ids(cached_jobs) == sorted(job["id"] for job in first_jobs)
+
+            cached_hdca = self._cat_step_output_collection(cached_invocation_id)
+            assert cached_hdca.copied_from_history_dataset_collection_association_id is None
+
     def _invoke_cat_list(
         self, workflow_id: str, history_id: str, named_hdas: list, use_cached_job: bool = False
     ) -> str:
