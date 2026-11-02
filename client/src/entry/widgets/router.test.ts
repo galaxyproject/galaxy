@@ -22,6 +22,7 @@ function stub(className: string) {
 vi.mock("./HistoryGraph.vue", () => stub("history-graph"));
 vi.mock("@/components/Page/PageView.vue", () => stub("page"));
 vi.mock("@/components/Workflow/Published/WorkflowPublished.vue", () => stub("workflow"));
+vi.mock("@/components/Visualizations/SavedVisualization.vue", () => stub("visualization"));
 
 async function render(path: string) {
     const router = getRouter(createMemoryHistory("/galaxy/"));
@@ -104,6 +105,11 @@ describe("widget routes", () => {
     it("ignores repeated and empty workflow values", async () => {
         const { wrapper } = await render("/widgets/workflows/b2?zoom=1&zoom=2&version=&initialX=");
         expect(propsOf(wrapper, "workflow")).toEqual({ id: "b2", embed: true });
+    });
+
+    it("renders a saved visualization", async () => {
+        const { wrapper } = await render("/widgets/visualizations/c3");
+        expect(propsOf(wrapper, "visualization")).toEqual({ visualizationId: "c3" });
     });
 
     it("shows the missing view message for an unknown widget", async () => {

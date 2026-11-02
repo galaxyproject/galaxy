@@ -72,6 +72,12 @@ class WorkflowParameters(BaseModel):
     initialY: int | None = Field(None, title="Initial y", description="Initial vertical offset of the graph.")
 
 
+class VisualizationParameters(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    visualization_id: EncodedId = Field(title="Visualization", description="Encoded id of the saved visualization.")
+
+
 class Widget(BaseModel):
     id: str = Field(title="Identifier", description="Identifier of the widget.")
     name: str = Field(title="Name", description="Display name of the widget.")
