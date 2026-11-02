@@ -203,6 +203,17 @@ describe("GProgress", () => {
         expect(own!.text()).toBe("");
     });
 
+    it("lets a bar's own showProgress win over the progress's showValue", () => {
+        const wrapper = mountStacked(`
+            <GProgress :max="4" show-value>
+                <GProgressBar :value="1" />
+                <GProgressBar :value="2" show-progress />
+                <GProgressBar :value="3" show-progress show-value />
+            </GProgress>`);
+
+        expect(bars(wrapper).map((bar) => bar.text())).toEqual(["1", "50%", "3"]);
+    });
+
     it("passes attributes such as data-* and title to the bar element", () => {
         const wrapper = mountStacked(`
             <GProgress :max="4">

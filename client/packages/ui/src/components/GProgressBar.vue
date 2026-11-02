@@ -74,7 +74,8 @@ const text = computed(() => {
     if (props.label !== undefined) {
         return props.label;
     }
-    if (props.showValue ?? progress?.showValue.value) {
+    // A bar's own showProgress outranks the showValue it would inherit
+    if (props.showValue ?? (props.showProgress ? false : progress?.showValue.value)) {
         return value.value.toFixed(precision.value);
     }
     if ((props.showProgress ?? progress?.showProgress.value) !== false) {
