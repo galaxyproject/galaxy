@@ -2,8 +2,8 @@ import { createTestingPinia } from "@pinia/testing";
 import { emittedArg, suppressErrorForCustomIcons } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { nextTick, reactive, ref } from "vue";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { configureCompat, nextTick, reactive, ref } from "vue";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import type { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";
@@ -222,6 +222,29 @@ describe("WorkflowComment", () => {
             // markdown-it escapes raw HTML in the source before it reaches the sanitizer
             expect(html).toContain("&lt;b&gt;raw&lt;/b&gt;");
             expect(wrapper.find(".rendered-markdown .sanitized").exists()).toBe(true);
+        });
+    });
+
+    // Vue 3 renders enumerated attributes as given instead of coercing them, so check the
+    // editable title/text spans still get explicit "true"/"false" without compat.
+    describe("contenteditable without enumerated coercion", () => {
+        beforeAll(() => configureCompat({ ATTR_ENUMERATED_COERCION: false }));
+        afterAll(() => configureCompat({ ATTR_ENUMERATED_COERCION: true }));
+
+        function editable(type: string, data: object, readonly: boolean) {
+            const wrapper = mount(WorkflowComment as any, {
+                propsData: { comment: { ...comment, type, data }, scale: 1, rootOffset: {}, readonly },
+                provide: { transform: mockTransform },
+            });
+            return wrapper.find("[contenteditable]").attributes("contenteditable");
+        }
+
+        it.each([
+            ["text", { size: 1, text: "text" }],
+            ["frame", { title: "title" }],
+        ])("renders %s comments editable only when not readonly", (type, data) => {
+            expect(editable(type, data, false)).toBe("true");
+            expect(editable(type, data, true)).toBe("false");
         });
     });
 });
