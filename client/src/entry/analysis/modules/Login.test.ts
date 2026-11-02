@@ -67,6 +67,13 @@ describe("Login", () => {
         expect(attributes.welcomeurl).toBe("welcome_url");
     });
 
+    // LoginIndex has no preferCustosLogin prop, so binding it only leaks an attribute onto its root
+    it.each([true, false])("does not leak prefer-custos-login=%s onto login index", async (preferCustosLogin) => {
+        setMockConfig({ prefer_custos_login: preferCustosLogin });
+        const wrapper = shallowMountLogin();
+        expect(wrapper.find("#login-index").attributes("prefer-custos-login")).toBeUndefined();
+    });
+
     it("change password attribute matching", async () => {
         const wrapper = shallowMountLogin({
             token: "test_token",
