@@ -63,7 +63,9 @@ def _is_written_out_handoff(text: str) -> bool:
     if set(parsed) == {"task"}:
         return True
     function = parsed.get("function")
-    called = parsed.get("tool") or parsed.get("name") or (function.get("name") if isinstance(function, dict) else "")
+    if isinstance(function, dict):
+        function = function.get("name")
+    called = parsed.get("tool") or parsed.get("name") or function or ""
     return isinstance(called, str) and ("hand_off_to_" in called or called.startswith("final_result"))
 
 
