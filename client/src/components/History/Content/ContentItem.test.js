@@ -194,4 +194,20 @@ describe("ContentItem", () => {
         expect(emittedArg(wrapper, "update:selected", 1)).toBe(false);
         expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-info"]));
     });
+
+    // A native <button> already turns Enter/Space into a click, so a keypress listener on
+    // top of @click toggles twice per key press, and the two toggles cancel each other out.
+    it("toggles the active highlight once per click", async () => {
+        await wrapper.setProps({ highlight: "active" });
+        const button = wrapper.get("button[title='Inputs/Outputs highlighted for this item']");
+        await button.trigger("click");
+        expect(wrapper.emitted("toggleHighlights")).toHaveLength(1);
+    });
+
+    it("leaves keyboard activation to the button's own click", async () => {
+        await wrapper.setProps({ highlight: "active" });
+        const button = wrapper.get("button[title='Inputs/Outputs highlighted for this item']");
+        await button.trigger("keypress", { key: "Enter" });
+        expect(wrapper.emitted("toggleHighlights")).toBeUndefined();
+    });
 });
