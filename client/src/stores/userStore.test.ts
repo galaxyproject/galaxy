@@ -1,8 +1,9 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import flushPromises from "flush-promises";
 import { delay } from "msw";
-import { createPinia, setActivePinia } from "pinia";
+import { createPinia, setActivePinia, storeToRefs } from "pinia";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { watch } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
@@ -220,6 +221,25 @@ describe("userStore", () => {
             await olderRefresh;
 
             expect(userStore.currentUser?.total_disk_usage).toBe(2);
+        });
+
+        it("doesn't notify the preferences' watchers when a refresh returns the same preferences", async () => {
+            const preferences = { favorites: JSON.stringify({ tools: ["cat1"] }) };
+            server.use(
+                http.get("/api/users/{user_id}", ({ response }) =>
+                    response(200).json(getFakeRegisteredUser({ preferences })),
+                ),
+            );
+            const userStore = useUserStore();
+            await userStore.refreshUser();
+            const { currentFavorites } = storeToRefs(userStore);
+            let notifications = 0;
+            watch(currentFavorites, () => notifications++);
+
+            await userStore.refreshUser();
+            await flushPromises();
+
+            expect(notifications).toBe(0);
         });
     });
 });

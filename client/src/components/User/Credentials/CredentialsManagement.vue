@@ -210,10 +210,10 @@ async function fetchData(): Promise<void> {
 }
 
 /**
- * Watches for user changes and fetches data when user becomes available
+ * Fetches the data once the user is available, and again if another user logs in
  */
 watch(
-    () => currentUser.value,
+    () => (isRegisteredUser(currentUser.value) ? currentUser.value.id : null),
     async () => {
         await fetchData();
     },

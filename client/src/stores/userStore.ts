@@ -116,7 +116,11 @@ export const useUserStore = defineStore("userStore", () => {
     function setUserState(user: AnyUser) {
         if (isRegisteredUser(user)) {
             currentUser.value = user;
-            currentPreferences.value = processUserPreferences(user);
+            const preferences = processUserPreferences(user);
+            // Refreshes return the same preferences most of the time: don't wake their watchers for nothing
+            if (JSON.stringify(preferences) !== JSON.stringify(currentPreferences.value)) {
+                currentPreferences.value = preferences;
+            }
         } else if (isAnonymousUser(user)) {
             currentUser.value = user;
         } else if (user === null) {
