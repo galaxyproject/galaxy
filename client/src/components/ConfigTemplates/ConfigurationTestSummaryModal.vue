@@ -6,20 +6,26 @@ import ConfigurationTestSummary from "./ConfigurationTestSummary.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface Props {
-    value: boolean;
+    modelValue: boolean;
     testResults?: PluginStatus;
     error?: string;
 }
 
+defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
+
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "input", value: boolean): void;
+    (e: "update:modelValue", value: boolean): void;
 }>();
 </script>
 
 <template>
-    <GModal :show="props.value" title="Configuration Test Summary" size="medium" @close="emit('input', false)">
+    <GModal
+        :show="props.modelValue"
+        title="Configuration Test Summary"
+        size="medium"
+        @close="emit('update:modelValue', false)">
         <GAlert v-if="error" variant="danger" show dismissible>
             {{ error || "" }}
         </GAlert>
