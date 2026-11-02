@@ -38,6 +38,17 @@ configureCompat({
     // Galaxy binds ARIA state as "true"/"false" strings and leaves boolean
     // attributes like `disabled` to props or `null`.
     ATTR_FALSE_VALUE: false,
+    // A render function gets the instance proxy as its first argument, not
+    // Vue 2's `h`; import `h` from "vue" instead. Galaxy's SFCs compile to
+    // Vue 3 render functions and never hit this, so only hand-written renders
+    // (mostly test stubs) care. vue-json-pretty is marked in
+    // DataFetchRequestParameter.vue, since its compiled template reads `_self._c`.
+    RENDER_FUNCTION: false,
+    // No Vue 2 vnode fields (`data`, `tag`, `componentOptions`, ...) or private
+    // instance properties on Galaxy components.
+    PRIVATE_APIS: false,
+    // <TransitionGroup> renders no wrapper unless given a `tag`; Galaxy's all set one.
+    TRANSITION_GROUP_ROOT: false,
 });
 
 // FontAwesomeIcon builds its <svg> from `attrs`. With MODE 2's

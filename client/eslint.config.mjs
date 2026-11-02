@@ -34,6 +34,16 @@ const baseRules = {
             message: `${property} is Vue 2 instance API; compat has it turned off for Galaxy code.`,
         })),
     ],
+    // RENDER_FUNCTION is off, so a render function's first argument is the
+    // instance proxy, not `h`.
+    "no-restricted-syntax": [
+        "error",
+        {
+            selector:
+                "Property[key.name='render'] > :matches(FunctionExpression, ArrowFunctionExpression)[params.0.name=/^(h|createElement)$/]",
+            message: "Vue 3 render functions don't receive `h`; import { h } from 'vue' instead.",
+        },
+    ],
     "vue/no-deprecated-filter": "error",
     "vue/no-deprecated-functional-template": "error",
     "vue/no-deprecated-inline-template": "error",
