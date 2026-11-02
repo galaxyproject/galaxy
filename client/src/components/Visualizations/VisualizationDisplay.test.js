@@ -262,6 +262,16 @@ describe("opening a saved visualization before the viewer is known", () => {
         expect(wrapper.text()).not.toContain("Network down");
     });
 
+    it("names nothing when the app's Retry loads a viewer who does not own it", async () => {
+        await openSaved("someone-else");
+        viewerReturns(viewerFails("Network down"));
+        await vi.waitFor(() => expect(wrapper.text()).toContain("Network down"));
+        viewerResponse = undefined;
+        await useUserStore().loadUser(false);
+        expect((await frameShown()).props("visualizationId")).toBeUndefined();
+        expect(wrapper.text()).not.toContain("Network down");
+    });
+
     it("shows the frame without an error when the viewer loaded but the app's shared load failed later", async () => {
         server.use(
             http.get("/api/histories/count", () => viewerFails("Histories unavailable")),
