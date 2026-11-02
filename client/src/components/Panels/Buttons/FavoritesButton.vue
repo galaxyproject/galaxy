@@ -17,8 +17,6 @@ interface Props {
     tooltip?: string;
 }
 
-defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
-
 const props = withDefaults(defineProps<Props>(), {
     modelValue: false,
     query: undefined,

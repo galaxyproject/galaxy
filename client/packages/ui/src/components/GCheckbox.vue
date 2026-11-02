@@ -22,8 +22,8 @@ import { type ComponentSize, prefix } from "./componentVariants";
 
 defineOptions({
     inheritAttrs: false,
-    // Under @vue/compat: keep v-model on modelValue, and keep class/style/listeners in $attrs so they can be split below
-    compatConfig: { COMPONENT_V_MODEL: false, INSTANCE_ATTRS_CLASS_STYLE: false, INSTANCE_LISTENERS: false },
+    // Under @vue/compat: keep class/style/listeners in $attrs so they can be split below
+    compatConfig: { INSTANCE_ATTRS_CLASS_STYLE: false, INSTANCE_LISTENERS: false },
 });
 
 interface Props {

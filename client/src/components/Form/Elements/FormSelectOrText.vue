@@ -6,11 +6,6 @@ import { uid } from "@/utils/utils";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 // The select holds generated values rather than the options' own, so no option value can collide with
 // "Other..." and a null-valued option stays distinct from the null FormSelect emits on deselect.
 const OTHER_VALUE = "other";

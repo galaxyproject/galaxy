@@ -10,10 +10,6 @@ import localize from "@/utils/localization";
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GButton from "../BaseComponents/GButton.vue";
 
-defineOptions({
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 interface Props {
     modelValue?: string;
     delay?: number;

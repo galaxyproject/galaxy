@@ -8,11 +8,6 @@ export interface FormBooleanProps {
     noLabel?: boolean;
 }
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 const props = defineProps<FormBooleanProps>();
 const emit = defineEmits<{
     (e: "update:modelValue", value: boolean): void;

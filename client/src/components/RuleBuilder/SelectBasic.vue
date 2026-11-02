@@ -22,10 +22,6 @@ import VueMultiselect from "vue-multiselect";
 
 import { uid } from "@/utils/utils";
 
-defineOptions({
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 const props = defineProps({
     modelValue: { required: false },
     multiple: { type: Boolean, default: false },

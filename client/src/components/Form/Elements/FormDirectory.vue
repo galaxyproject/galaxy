@@ -67,8 +67,6 @@ const getDefaultValues = () => ({
 });
 
 export default {
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
     components: {
         BBreadcrumb,
         BBreadcrumbItem,

@@ -12,8 +12,6 @@ interface JobSelectionProps {
     modelValue?: string;
 }
 
-defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
-
 const emit = defineEmits<{
     (e: "update:modelValue", id: string | undefined): void;
 }>();

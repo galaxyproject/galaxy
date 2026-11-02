@@ -5,10 +5,6 @@ import Multiselect from "vue-multiselect";
 import { useRankedSearch } from "@/composables/useRankedSearch";
 import { uid } from "@/utils/utils";
 
-defineOptions({
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 const props = defineProps({
     id: {
         type: String,

@@ -5,11 +5,6 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GRadio from "@/components/BaseComponents/GRadio.vue";
 import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 const emit = defineEmits(["update:modelValue"]);
 const props = defineProps({
     modelValue: {

@@ -13,11 +13,6 @@ import { useSelectMany } from "./worker/selectMany";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 type SelectValue = Record<string, unknown> | string | number | null;
 
 interface SelectOption {

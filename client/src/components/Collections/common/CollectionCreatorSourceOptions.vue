@@ -7,10 +7,6 @@ import localize from "@/utils/localization";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
-defineOptions({
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 interface Props {
     modelValue: boolean;
     extensionsToggle?: boolean;

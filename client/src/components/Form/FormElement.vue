@@ -66,8 +66,6 @@ interface FormElementProps {
     workflowRun?: boolean;
 }
 
-defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
-
 const props = withDefaults(defineProps<FormElementProps>(), {
     id: "identifier",
     refreshOnChange: false,

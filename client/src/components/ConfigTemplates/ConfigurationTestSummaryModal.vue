@@ -11,8 +11,6 @@ interface Props {
     error?: string;
 }
 
-defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
-
 const props = defineProps<Props>();
 
 const emit = defineEmits<{

@@ -19,8 +19,6 @@ interface Row {
     value: FieldValue;
 }
 
-defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
-
 const props = withDefaults(
     defineProps<{
         id?: string;

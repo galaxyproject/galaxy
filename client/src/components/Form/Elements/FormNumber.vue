@@ -51,7 +51,6 @@ export default {
         BRow,
         GAlert,
     },
-    compatConfig: { COMPONENT_V_MODEL: false },
     props: {
         modelValue: {
             required: true,

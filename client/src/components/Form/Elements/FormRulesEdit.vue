@@ -25,11 +25,6 @@ interface Props {
     target?: { id: string } | null;
 }
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 const props = withDefaults(defineProps<Props>(), {
     modelValue: undefined,
     target: null,

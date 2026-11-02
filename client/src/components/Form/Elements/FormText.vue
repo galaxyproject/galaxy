@@ -36,7 +36,6 @@ import { BCol, BFormInput, BFormTextarea, BRow } from "bootstrap-vue";
 
 export default {
     components: { BCol, BFormInput, BFormTextarea, BRow },
-    compatConfig: { COMPONENT_V_MODEL: false },
     props: {
         modelValue: {
             // String; Array for multiple

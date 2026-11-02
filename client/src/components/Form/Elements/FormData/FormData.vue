@@ -66,8 +66,6 @@ type OptionsMetaEntry = {
     has_more: boolean;
 };
 
-defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
-
 const props = withDefaults(
     defineProps<{
         loading?: boolean;

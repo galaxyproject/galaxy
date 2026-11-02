@@ -18,11 +18,6 @@ import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 // default text -- its .d.ts doesn't account for that.
 const noLabel = null as unknown as string;
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 type SelectValue = Record<string, unknown> | string | number | null;
 type ValueWithTags = SelectValue & { tags: string[] };
 

@@ -8,8 +8,6 @@ import { detectMentionTrigger, type EntityType, type MentionTrigger } from "@/co
 import GButton from "../BaseComponents/GButton.vue";
 import MentionDropdown from "./MentionDropdown.vue";
 
-defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
-
 const props = withDefaults(
     defineProps<{
         modelValue: string;

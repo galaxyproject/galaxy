@@ -28,10 +28,7 @@ vi.mock("./WorkflowRunDefaultStep.vue", () =>
 );
 vi.mock("./WorkflowRunInputStep.vue", () => stub("WorkflowRunInputStep", ["model", "validationScrollTo", "historyId"]));
 vi.mock("@/components/Form/FormDisplay.vue", () => stub("FormDisplay", ["inputs"]));
-// Mirror the real FormElement's v-model contract, or compat would remap the parent's v-model to value/input.
-vi.mock("@/components/Form/FormElement.vue", () => ({
-    default: { ...stub("FormElement", ["modelValue"]).default, compatConfig: { COMPONENT_V_MODEL: false } },
-}));
+vi.mock("@/components/Form/FormElement.vue", () => stub("FormElement", ["modelValue"]));
 vi.mock("@/components/Common/ButtonSpinner.vue", () => stub("ButtonSpinner", ["disabled", "wait", "tooltip"]));
 vi.mock("@/components/Workflow/Run/OnCompleteActions.vue", () => stub("OnCompleteActions", ["modelValue"]));
 vi.mock("@/components/Workflow/Run/WorkflowCredentials.vue", () => stub("WorkflowCredentials", ["toolIdentifiers"]));

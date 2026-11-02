@@ -5,10 +5,6 @@ import type { DbKey } from "@/composables/uploadConfigurations";
 
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
-defineOptions({
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 interface Props {
     /** Selected bulk dbKey value */
     modelValue: string;

@@ -3,8 +3,6 @@ import { BFormInput, BInputGroup } from "bootstrap-vue";
 import type { Tuple } from "types/utilityTypes";
 import { computed } from "vue";
 
-defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
-
 const props = defineProps<{
     modelValue: Date;
 }>();
