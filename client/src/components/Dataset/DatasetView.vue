@@ -263,7 +263,12 @@ watch(
             <VisualizationsList :dataset-id="datasetId" />
         </div>
         <div v-else-if="tab === 'explore'" class="tab-content-panel">
-            <DatasetExplore v-if="showExplore" :dataset-id="datasetId" :dataset-extension="dataset.file_ext" />
+            <!-- Keyed so the search text and expanded group do not carry over to another dataset. -->
+            <DatasetExplore
+                v-if="showExplore"
+                :key="datasetId"
+                :dataset-id="datasetId"
+                :dataset-extension="dataset.file_ext" />
             <!-- Direct links reach this tab without the nav item; wait for config so enabled servers never flash it. -->
             <GAlert v-else-if="isConfigLoaded" v-localize variant="info" class="m-2" show>
                 Interactive tools are not available for this dataset.

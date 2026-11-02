@@ -368,6 +368,21 @@ describe("DatasetView", () => {
             expect(explore.props("datasetExtension")).toBe("txt");
         });
 
+        it("remounts DatasetExplore when the dataset changes", async () => {
+            mockConfig.value = { interactivetools_enable: true };
+            const wrapper = await mountDatasetView("explore");
+            const firstUid = wrapper.findComponent(DatasetExplore).vm.$.uid;
+
+            const otherId = "other_dataset_id";
+            wrapper.vm.$pinia.state.value.datasetStore.storedDatasets[otherId] = { ...mockDataset, id: otherId };
+            await wrapper.setProps({ datasetId: otherId });
+            await flushPromises();
+
+            const explore = wrapper.findComponent(DatasetExplore);
+            expect(explore.props("datasetId")).toBe(otherId);
+            expect(explore.vm.$.uid).not.toBe(firstUid);
+        });
+
         it("does not render DatasetExplore on the explore tab when interactive tools are disabled", async () => {
             mockConfig.value = { interactivetools_enable: false };
             const wrapper = await mountDatasetView("explore");
