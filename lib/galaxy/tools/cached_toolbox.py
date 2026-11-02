@@ -1569,7 +1569,7 @@ class CachedToolBox(ToolBox):
             # ``installed_tool_dependencies`` readers get ``[]`` — same
             # shape the eager pre-install code path produces.
             if entry and not entry.is_local and entry.tool_shed:
-                kwds["tool_shed_repository"] = ToolConfRepository(
+                repository = ToolConfRepository(
                     tool_shed=entry.tool_shed,
                     name=entry.repository_name,
                     owner=entry.repository_owner,
@@ -1579,7 +1579,33 @@ class CachedToolBox(ToolBox):
                     repository_path=None,
                     tool_path=stored.tool_dir,
                 )
+                self._register_conf_repository(repository)
+                kwds["tool_shed_repository"] = repository
         return create_tool_from_source(self.app, tool_source, **kwds)
+
+    def _register_conf_repository(self, repository: ToolConfRepository) -> None:
+        """Make a conf-provided repository resolvable through the repository cache.
+
+        ``Tool.tool_shed_repository`` (help image URLs, installed tool
+        dependencies) resolves through ``app.tool_shed_repository_cache``,
+        not the stub handed to the constructor. Published shed confs (a CVMFS
+        store) load repositories the install database never recorded, so
+        register the stub the way the eager
+        ``AbstractToolBox.get_tool_repository_from_xml_item`` does. A
+        repository the install database already holds is left alone.
+        """
+        tsr_cache = getattr(self.app, "tool_shed_repository_cache", None)
+        if not tsr_cache:
+            return
+        with self._cache_lock:
+            existing = tsr_cache.get_installed_repository(
+                tool_shed=repository.tool_shed,
+                name=repository.name,
+                owner=repository.owner,
+                installed_changeset_revision=repository.installed_changeset_revision,
+            )
+            if existing is None:
+                tsr_cache.add_local_repository(repository)
 
     def invalidate_index_cache(self) -> None:
         """Drop cached tool index so the next read picks up out-of-band updates.
