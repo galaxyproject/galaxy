@@ -159,7 +159,9 @@ const isActiveHost = computed(() => props.host === activeToastHost.value);
         opacity 0.3s ease;
 }
 
+// -enter is Vue 2.7's name (the tool shed), -enter-from is Vue 3's.
 .g-toast-enter,
+.g-toast-enter-from,
 .g-toast-leave-to {
     opacity: 0;
     transform: translateX(110%);
@@ -180,6 +182,7 @@ const isActiveHost = computed(() => props.host === activeToastHost.value);
     }
 
     .g-toast-enter,
+    .g-toast-enter-from,
     .g-toast-leave-to {
         transform: none;
     }

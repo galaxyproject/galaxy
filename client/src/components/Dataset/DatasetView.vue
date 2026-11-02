@@ -288,7 +288,7 @@ watch(
     }
 }
 
-.header-enter, /* change to header-enter-from with Vue 3 */
+.header-enter-from,
 .header-leave-to {
     max-height: 0;
     margin-top: 0;
