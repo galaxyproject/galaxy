@@ -327,19 +327,23 @@ Acceptable format:
                 this.$emit("update:highlight", null);
             }
         },
-        creator() {
-            let creator = this.creator;
-            if (!creator) {
-                creator = [];
-            } else if (!(creator instanceof Array)) {
-                creator = [creator];
-            }
-            this.creatorCurrent = creator;
+        creator: {
+            // Deep, because CreatorEditor pushes a draft creator into this array in place.
+            deep: true,
+            handler() {
+                let creator = this.creator;
+                if (!creator) {
+                    creator = [];
+                } else if (!(creator instanceof Array)) {
+                    creator = [creator];
+                }
+                this.creatorCurrent = creator;
 
-            // Remove highlight if it exists for creator
-            if (this.highlight === "creator") {
-                this.$emit("update:highlight", null);
-            }
+                // Remove highlight if it exists for creator
+                if (this.highlight === "creator") {
+                    this.$emit("update:highlight", null);
+                }
+            },
         },
         annotation() {
             this.annotationCurrent = this.annotation;
