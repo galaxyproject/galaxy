@@ -35,6 +35,15 @@ describe("StorageOperationOutcomeProgress", () => {
         expect(bars.map((bar) => bar.attributes("aria-valuenow"))).toEqual(["0", "0", "0"]);
     });
 
+    it("shows percentages only on the track tall enough for text", async () => {
+        const wrapper = mountProgress({ totalCount: 10, succeededCount: 5, failedCount: 2, skippedCount: 1 });
+        const barTexts = () => wrapper.findAll('[role="progressbar"]').map((bar) => bar.text());
+        expect(barTexts()).toEqual(["", "", ""]);
+
+        await wrapper.setProps({ heightClass: "storage-operation-progress-md" });
+        expect(barTexts()).toEqual(["50%", "20%", "10%"]);
+    });
+
     it("sets the track's height class", async () => {
         const wrapper = mountProgress({ totalCount: 1, succeededCount: 1, failedCount: 0, skippedCount: 0 });
         expect(wrapper.get('[role="group"]').classes()).toContain("storage-operation-progress-sm");

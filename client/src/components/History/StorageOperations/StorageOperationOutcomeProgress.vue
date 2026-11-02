@@ -63,7 +63,11 @@ const popoverTargetId = `storage-operation-progress-${Math.random().toString(36)
 <template>
     <div>
         <div :id="popoverTargetId" class="storage-operation-progress-target">
-            <GProgress :max="props.totalCount || 1" :class="props.heightClass" :aria-label="progressLabel">
+            <GProgress
+                :max="props.totalCount || 1"
+                :class="props.heightClass"
+                :aria-label="progressLabel"
+                :show-progress="props.heightClass !== 'storage-operation-progress-sm'">
                 <GProgressBar variant="success" :value="props.succeededCount" :aria-label="localize('Success')" />
                 <GProgressBar variant="danger" :value="props.failedCount" :aria-label="localize('Failed')" />
                 <GProgressBar variant="warning" :value="props.skippedCount" :aria-label="localize('Skipped')" />
