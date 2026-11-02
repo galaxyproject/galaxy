@@ -195,7 +195,6 @@ interface Roothistory_panel extends Component {
     options_menu_item: SelectorTemplate;
     options_show_export_history_to_file: SelectorTemplate;
     collection_menu_button: SelectorTemplate;
-    collection_menu_edit_attributes: SelectorTemplate;
     new_history_button: SelectorTemplate;
     histories_operation_menu: SelectorTemplate;
     multi_view_button: SelectorTemplate;
@@ -218,6 +217,9 @@ interface Rootedit_collection_attributes extends Component {
     alert_info: SelectorTemplate;
     database_genome_tab: SelectorTemplate;
     datatypes_tab: SelectorTemplate;
+    convert_tab: SelectorTemplate;
+    converter_select: SelectorTemplate;
+    convert_btn: SelectorTemplate;
     data_value: SelectorTemplate;
     save_dbkey_btn: SelectorTemplate;
     save_datatype_btn: SelectorTemplate;
