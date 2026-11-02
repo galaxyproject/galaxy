@@ -6,29 +6,33 @@ import localize from "@/utils/localization";
 
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
+defineOptions({
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 interface Props {
-    value: string;
+    modelValue: string;
     shortWhatIsBeingCreated: string;
 }
 
 const props = defineProps<Props>();
 
-const name = ref(props.value);
+const name = ref(props.modelValue);
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
 }>();
 
-// Watch for external updates to value and sync with innerValue
+// Watch for external updates to modelValue and sync with innerValue
 watch(
-    () => props.value,
+    () => props.modelValue,
     (newValue) => {
         name.value = newValue;
     },
 );
 
 watch(name, (newValue) => {
-    emit("input", newValue);
+    emit("update:modelValue", newValue);
 });
 
 function updateName(v: string | null) {

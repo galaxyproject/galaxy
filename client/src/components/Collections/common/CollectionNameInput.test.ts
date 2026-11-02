@@ -6,7 +6,7 @@ import CollectionNameInput from "./CollectionNameInput.vue";
 
 function mountInput(value = "my list") {
     return mount(CollectionNameInput as object, {
-        props: { value, shortWhatIsBeingCreated: "list" },
+        props: { modelValue: value, shortWhatIsBeingCreated: "list" },
         global: getLocalVue(),
     });
 }
@@ -27,23 +27,23 @@ describe("CollectionNameInput", () => {
         expect(input.classes()).not.toContain("g-invalid");
     });
 
-    it("emits input with the typed name", async () => {
+    it("emits update:modelValue with the typed name", async () => {
         const wrapper = mountInput();
         await nameInput(wrapper).setValue("renamed list");
-        expect(wrapper.emitted("input")?.at(-1)).toEqual(["renamed list"]);
+        expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual(["renamed list"]);
     });
 
     it("marks an empty name invalid", async () => {
         const wrapper = mountInput();
         await nameInput(wrapper).setValue("");
-        expect(wrapper.emitted("input")?.at(-1)).toEqual([""]);
+        expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([""]);
         expect(nameInput(wrapper).classes()).toContain("g-invalid");
         expect(nameInput(wrapper).attributes("aria-invalid")).toBe("true");
     });
 
     it("shows a name the parent sets", async () => {
         const wrapper = mountInput();
-        await wrapper.setProps({ value: "from parent" } as never);
+        await wrapper.setProps({ modelValue: "from parent" } as never);
         expect((nameInput(wrapper).element as HTMLInputElement).value).toBe("from parent");
     });
 });
