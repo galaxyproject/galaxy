@@ -35,11 +35,18 @@ export interface ActionSuggestion {
     priority: number;
 }
 
+export interface SourceCitation {
+    title: string;
+    url: string;
+    source_type: string;
+}
+
 export interface AgentResponse {
     content: string;
     agent_type: string;
     confidence: "low" | "medium" | "high";
     suggestions: ActionSuggestion[];
+    sources?: SourceCitation[];
     metadata: Record<string, any>;
     reasoning?: string;
 }

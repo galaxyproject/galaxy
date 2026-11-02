@@ -72,6 +72,7 @@ class AgentService:
                 agent_type=response.agent_type,
                 confidence=response.confidence,
                 suggestions=response.suggestions,
+                sources=response.sources,
                 metadata=response.metadata,
                 reasoning=response.reasoning,
             )
@@ -88,6 +89,7 @@ class AgentService:
                 agent_type=response.agent_type,
                 confidence=response.confidence,
                 suggestions=response.suggestions,
+                sources=response.sources,
                 metadata=metadata,
                 reasoning=response.reasoning,
             )

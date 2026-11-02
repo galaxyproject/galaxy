@@ -6,10 +6,12 @@ from enum import Enum
 from typing import (
     Any,
 )
+from urllib.parse import urlparse
 
 from pydantic import (
     BaseModel,
     Field,
+    field_validator,
     model_validator,
 )
 
@@ -60,6 +62,22 @@ class ActionSuggestion(BaseModel):
         return self
 
 
+class SourceCitation(BaseModel):
+    """A source an agent drew on, taken from what its tools returned rather than model-written text."""
+
+    title: str = Field(description="Title of the source")
+    url: str = Field(description="URL of the source")
+    source_type: str = Field(description="Kind of source, e.g. 'gtn_tutorial' or 'gtn_faq'")
+
+    @field_validator("url")
+    @classmethod
+    def url_must_be_http(cls, url: str) -> str:
+        # The client binds this straight into an href, and a forged router handoff can supply it.
+        if urlparse(url).scheme.lower() not in ("http", "https"):
+            raise ValueError("source url must be http(s)")
+        return url
+
+
 class AgentResponse(BaseModel):
     """Structured response from an AI agent."""
 
@@ -67,6 +85,7 @@ class AgentResponse(BaseModel):
     confidence: ConfidenceLevel = Field(description="Confidence in the response")
     agent_type: str = Field(description="Type of agent that generated this response")
     suggestions: list[ActionSuggestion] = Field(default_factory=list, description="Actionable suggestions")
+    sources: list[SourceCitation] = Field(default_factory=list, description="Verified sources behind the response")
     metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
     reasoning: str | None = Field(default=None, description="Explanation of the agent's reasoning")
 
