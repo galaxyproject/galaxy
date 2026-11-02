@@ -12,18 +12,20 @@ import localize from "@/utils/localization";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
-    value?: boolean;
+    modelValue?: boolean;
     query?: string;
     tooltip?: string;
 }
 
+defineOptions({ compatConfig: { COMPONENT_V_MODEL: false } });
+
 const props = withDefaults(defineProps<Props>(), {
-    value: false,
+    modelValue: false,
     query: undefined,
     tooltip: "Show favorites",
 });
 
-const currentValue = computed(() => props.value ?? false);
+const currentValue = computed(() => props.modelValue ?? false);
 const toggle = ref(false);
 
 watchImmediate(
@@ -33,7 +35,7 @@ watchImmediate(
 
 const emit = defineEmits<{
     (e: "change", toggled: boolean): void;
-    (e: "input", toggled: boolean): void;
+    (e: "update:modelValue", toggled: boolean): void;
 }>();
 
 const { isAnonymous } = storeToRefs(useUserStore());
@@ -61,7 +63,7 @@ watch(
 
 function toggleFavorites() {
     toggle.value = !toggle.value;
-    emit("input", toggle.value);
+    emit("update:modelValue", toggle.value);
     emit("change", toggle.value);
 }
 </script>
