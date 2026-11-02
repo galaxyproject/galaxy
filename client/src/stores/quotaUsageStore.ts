@@ -25,6 +25,8 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
     const inFlightBySourcePromise = new Map<string, Promise<QuotaUsage | null>>();
 
     const isLoaded = computed(() => quotaUsages.value !== undefined);
+    /** Whether anything asked for the usage, whether or not it loaded: it then needs reloading after changes. */
+    const wasRequested = ref(false);
 
     const getQuotaUsageBySourceLabel = computed(() => {
         return (sourceLabel?: string | null): QuotaUsage | null | undefined => {
@@ -66,6 +68,7 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
     }
 
     async function loadQuotaUsages(reload = false): Promise<QuotaUsage[] | undefined> {
+        wasRequested.value = true;
         if (inFlightAllPromise && reload) {
             // The request in flight may predate the change that asks for a reload: reload once it's done
             queuedReloadPromise ??= inFlightAllPromise.then(() => {
@@ -104,6 +107,7 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
     }
 
     async function loadQuotaUsageForSource(sourceLabel?: string | null, reload = false): Promise<QuotaUsage | null> {
+        wasRequested.value = true;
         const key = sourceLabelToKey(sourceLabel);
 
         if (!reload && sourceUsageByKey.value[key] !== undefined) {
@@ -148,6 +152,7 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
         sourceUsageByKey.value = {};
         errorMessage.value = undefined;
         sourceErrorByKey.value = {};
+        wasRequested.value = false;
     }
 
     return {
@@ -158,6 +163,7 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
         errorMessage,
         sourceErrorByKey,
         isLoaded,
+        wasRequested,
         getQuotaUsageBySourceLabel,
         loadQuotaUsages,
         loadQuotaUsageForSource,

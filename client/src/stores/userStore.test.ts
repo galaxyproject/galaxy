@@ -199,6 +199,29 @@ describe("userStore", () => {
 
             expect(useQuotaUsageStore().quotaUsages?.map((usage) => usage.totalDiskUsageInBytes)).toEqual([2048]);
         });
+
+        it("reloads the usage of every storage source after the usage of one was loaded", async () => {
+            server.use(
+                http.get("/api/users/{user_id}/usage/{label}", ({ response }) =>
+                    response(200).json({ quota_source_label: "scratch", total_disk_usage: 1024 }),
+                ),
+            );
+            await useQuotaUsageStore().loadQuotaUsageForSource("scratch");
+            requested = [];
+
+            await useUserStore().refreshStorageUsage();
+
+            expect(requested.sort()).toEqual(["usages", "user"]);
+        });
+
+        it("reloads the usage of every storage source when its first load is still running", async () => {
+            const firstLoad = useQuotaUsageStore().loadQuotaUsages();
+
+            await Promise.all([firstLoad, useUserStore().refreshStorageUsage()]);
+            await flushPromises();
+
+            expect(requested.filter((request) => request === "usages")).toEqual(["usages", "usages"]);
+        });
     });
 
     describe("refreshUser", () => {

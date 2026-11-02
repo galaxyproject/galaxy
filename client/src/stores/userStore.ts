@@ -135,13 +135,11 @@ export const useUserStore = defineStore("userStore", () => {
 
     /**
      * Reloads the user, which reports the usage and quota of the default storage, and the usage of
-     * every storage source if it was loaded. Call it after anything that changes the storage usage.
+     * every storage source if anything asked for it. Call it after anything that changes the storage usage.
      */
     async function refreshStorageUsage() {
         const quotaUsageStore = useQuotaUsageStore();
-        // Retry a failed load too
-        const reloadSourceUsages = quotaUsageStore.isLoaded || quotaUsageStore.errorMessage !== undefined;
-        await Promise.all([refreshUser(), reloadSourceUsages ? quotaUsageStore.loadQuotaUsages(true) : null]);
+        await Promise.all([refreshUser(), quotaUsageStore.wasRequested ? quotaUsageStore.loadQuotaUsages(true) : null]);
     }
 
     /** Like ``refreshStorageUsage``, without waiting for it; errors are logged. */
