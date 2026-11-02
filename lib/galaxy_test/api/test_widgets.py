@@ -27,7 +27,7 @@ class TestWidgetsApi(ApiTestCase):
     def test_index(self):
         response = self._get("widgets", anon=True)
         self._assert_status_code_is(response, 200)
-        assert {"history_graph", "page", "workflow"} <= {widget["id"] for widget in response.json()}
+        assert {"history_graph", "page", "workflow", "visualization"} <= {widget["id"] for widget in response.json()}
 
     @pytest.mark.parametrize(
         "path, frame_ancestors",
@@ -35,6 +35,7 @@ class TestWidgetsApi(ApiTestCase):
             ("widgets/histories/1a/graph", ONLY_GALAXY),
             ("widgets/pages/1a", ONLY_GALAXY),
             ("widgets/workflows/1a", ONLY_GALAXY),
+            ("widgets/visualizations/1a", ONLY_GALAXY),
         ],
     )
     def test_widgets_app(self, path, frame_ancestors):

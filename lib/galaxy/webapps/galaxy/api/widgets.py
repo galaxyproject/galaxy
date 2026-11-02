@@ -9,6 +9,7 @@ from galaxy.managers.workflows import WorkflowsManager
 from galaxy.schema.widgets import (
     HistoryGraphParameters,
     PageParameters,
+    VisualizationParameters,
     Widget,
     WorkflowParameters,
 )
@@ -37,6 +38,13 @@ WIDGETS = [
         description="Graph of one workflow, with its information panel.",
         path="workflows/{workflow_id}",
         parameters_schema=WorkflowParameters.model_json_schema(),
+    ),
+    Widget(
+        id="visualization",
+        name="Visualization",
+        description="Saved visualization, rendered by its plugin.",
+        path="visualizations/{visualization_id}",
+        parameters_schema=VisualizationParameters.model_json_schema(),
     ),
 ]
 

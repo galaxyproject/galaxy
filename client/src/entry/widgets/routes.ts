@@ -51,6 +51,12 @@ export const widgetRoutes: RouteRecordRaw[] = [
         props: (route) => ({ ...workflowProps(route.params.workflow_id, singleValues(route.query)), embed: true }),
     },
     {
+        name: "visualization",
+        path: `/widgets/visualizations/:visualization_id(${ID})`,
+        component: () => import("@/components/Visualizations/SavedVisualization.vue"),
+        props: (route) => ({ visualizationId: route.params.visualization_id, embed: true }),
+    },
+    {
         path: "/:pathMatch(.*)*",
         component: { render: () => h(GAlert, { variant: "danger", show: true }, () => "This view does not exist.") },
     },
