@@ -55,3 +55,37 @@ describe("renderless providers", () => {
         expect(extraneousAttrsWarnings(warn)).toEqual([]);
     });
 });
+
+describe("renderless providers with Vue 3 slots", () => {
+    // compat reads compatConfig off the mounted component itself, so this copy runs without $scopedSlots.
+    function withoutScopedSlots(component) {
+        return { ...component, compatConfig: { ...component.compatConfig, INSTANCE_SCOPED_SLOTS: false } };
+    }
+
+    const scopedSlot = { default: ({ loading, result }) => h("span", loading ? "loading" : result.name) };
+
+    it("SingleQueryProvider hands its result to the default slot", async () => {
+        const Provider = withoutScopedSlots(SingleQueryProvider(vi.fn().mockResolvedValue({ name: "dataset" })));
+
+        const wrapper = mount(Provider, { attrs: { id: "dataset_id" }, slots: scopedSlot, global: localVue });
+        await flushPromises();
+
+        expect(wrapper.find("span").text()).toBe("dataset");
+    });
+
+    it("SimpleProviderMixin hands its item to the default slot", async () => {
+        const Provider = withoutScopedSlots({
+            mixins: [SimpleProviderMixin],
+            methods: {
+                async load() {
+                    this.item = { name: "item" };
+                },
+            },
+        });
+
+        const wrapper = mount(Provider, { props: { id: "item_id" }, slots: scopedSlot, global: localVue });
+        await flushPromises();
+
+        expect(wrapper.find("span").text()).toBe("item");
+    });
+});
