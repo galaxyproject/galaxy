@@ -80,7 +80,7 @@ async function openMultiselect(wrapper: ReturnType<typeof createTarget>) {
 describe("FormData", () => {
     it("regular data", async () => {
         const wrapper = createTarget({
-            value: null,
+            modelValue: null,
             options: defaultOptions,
         });
         const value_0 = {
@@ -102,34 +102,34 @@ describe("FormData", () => {
         expect(options.length).toBe(4);
         expect(nth(options, 0).classes()).toContain("g-pressed");
         expect(nth(options, 0).attributes("title")).toBe("Single dataset");
-        expect(emittedArg(wrapper, "input")).toEqual(value_0);
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual(value_0);
         await openMultiselect(wrapper);
         expect(wrapper.find(SELECTED_VALUE).text()).toContain("dceName4 (as dataset)");
-        await wrapper.setProps({ value: value_0 });
-        expect(wrapper.emitted("input")).toHaveLength(1);
-        await wrapper.setProps({ value: { values: [{ id: "hda2", src: "hda" }] } });
+        await wrapper.setProps({ modelValue: value_0 });
+        expect(wrapper.emitted("update:modelValue")).toHaveLength(1);
+        await wrapper.setProps({ modelValue: { values: [{ id: "hda2", src: "hda" }] } });
         await openMultiselect(wrapper);
         expect(wrapper.find(SELECTED_VALUE).text()).toContain("2: hdaName2");
-        expect(wrapper.emitted("input")).toHaveLength(1);
+        expect(wrapper.emitted("update:modelValue")).toHaveLength(1);
         await openMultiselect(wrapper);
         const elements_0 = wrapper.findAll(SELECT_OPTIONS);
         expect(elements_0.length).toEqual(6);
         await nth(elements_0, 2).find("span").trigger("click");
-        expect(wrapper.emitted("input")).toHaveLength(2);
-        expect(emittedArg(wrapper, "input", 1)).toEqual(value_1);
-        await wrapper.setProps({ value: value_2 });
+        expect(wrapper.emitted("update:modelValue")).toHaveLength(2);
+        expect(emittedArg(wrapper, "update:modelValue", 1)).toEqual(value_1);
+        await wrapper.setProps({ modelValue: value_2 });
         await openMultiselect(wrapper);
         expect(wrapper.find(SELECTED_VALUE).text()).toContain("4: hdaName4");
     });
 
     it("optional dataset", async () => {
         const wrapper = createTarget({
-            value: null,
+            modelValue: null,
             optional: true,
             options: defaultOptions,
         });
-        expect(emittedArg(wrapper, "input")).toEqual(null);
-        expect(wrapper.emitted("input")).toHaveLength(1);
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual(null);
+        expect(wrapper.emitted("update:modelValue")).toHaveLength(1);
         await openMultiselect(wrapper);
         expect(wrapper.find(SELECTED_VALUE).text()).toEqual("Nothing selected");
         expect(wrapper.findAll(SELECT_OPTIONS).length).toBe(7);
@@ -138,7 +138,7 @@ describe("FormData", () => {
     it("names the collection type in the no-options alert", () => {
         const wrapper = createTarget({
             type: "data_collection",
-            value: null,
+            modelValue: null,
             options: {},
             collectionTypes: ["sample_sheet:paired"],
         });
@@ -150,7 +150,7 @@ describe("FormData", () => {
     it("styles the no-options alert to match the control height in both run and tool forms", async () => {
         const wrapper = createTarget({
             type: "data",
-            value: null,
+            modelValue: null,
             options: {},
             workflowRun: true,
         });
@@ -165,7 +165,7 @@ describe("FormData", () => {
 
     it("multiple datasets", async () => {
         const wrapper = createTarget({
-            value: {
+            modelValue: {
                 values: [
                     { id: "hda2", src: "hda" },
                     { id: "hda3", src: "hda" },
@@ -179,7 +179,7 @@ describe("FormData", () => {
         expect(options.length).toBe(3);
         expect(nth(options, 0).classes()).toContain("g-pressed");
         expect(nth(options, 0).attributes("title")).toBe("Multiple datasets");
-        expect(emittedArg(wrapper, "input")).toEqual({
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual({
             batch: false,
             product: false,
             values: [
@@ -187,7 +187,7 @@ describe("FormData", () => {
                 { id: "hda3", map_over_type: null, src: "hda" },
             ],
         });
-        expect(wrapper.emitted("input")).toHaveLength(1);
+        expect(wrapper.emitted("update:modelValue")).toHaveLength(1);
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(2);
@@ -201,30 +201,30 @@ describe("FormData", () => {
                 { id: "hda3", map_over_type: null, src: "hda" },
             ],
         };
-        expect(emittedArg(wrapper, "input")).toEqual(value_0);
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual(value_0);
         await nth(selectedValues, 0).trigger("click");
         const value_1 = {
             batch: false,
             product: false,
             values: [{ id: "hda3", map_over_type: null, src: "hda" }],
         };
-        expect(emittedArg(wrapper, "input", 1)).toEqual(value_1);
-        await wrapper.setProps({ value: value_1 });
+        expect(emittedArg(wrapper, "update:modelValue", 1)).toEqual(value_1);
+        await wrapper.setProps({ modelValue: value_1 });
         await nth(selectedValues, 1).trigger("click");
         const value_2 = {
             batch: false,
             product: false,
             values: [{ id: "hda3", map_over_type: null, src: "hda" }],
         };
-        expect(emittedArg(wrapper, "input", 1)).toEqual(value_2);
-        await wrapper.setProps({ value: value_2 });
-        expect(wrapper.emitted("input")).toHaveLength(3);
-        expect(emittedArg(wrapper, "input", 2)).toEqual(null);
+        expect(emittedArg(wrapper, "update:modelValue", 1)).toEqual(value_2);
+        await wrapper.setProps({ modelValue: value_2 });
+        expect(wrapper.emitted("update:modelValue")).toHaveLength(3);
+        expect(emittedArg(wrapper, "update:modelValue", 2)).toEqual(null);
     });
 
     it("properly sorts multiple datasets", async () => {
         const wrapper = createTarget({
-            value: {
+            modelValue: {
                 // the order of values does matter here
                 values: [
                     { id: "hda2", src: "hda" },
@@ -253,7 +253,7 @@ describe("FormData", () => {
                 { id: "hda3", map_over_type: null, src: "hda" },
             ],
         };
-        expect(emittedArg(wrapper, "input", 1)).toEqual(value_sorted);
+        expect(emittedArg(wrapper, "update:modelValue", 1)).toEqual(value_sorted);
     });
 
     it("sorts mixed dces and hdas", async () => {
@@ -273,7 +273,7 @@ describe("FormData", () => {
         };
         const wrapper = createTarget({
             //intermix hdas and dces in the selected options
-            value: {
+            modelValue: {
                 values: [
                     { id: "hda1", src: "hda" },
                     { id: "dce4", src: "dce" },
@@ -305,12 +305,12 @@ describe("FormData", () => {
                 { id: "dce3", map_over_type: null, src: "dce" },
             ],
         };
-        expect(emittedArg(wrapper, "input", 1)).toEqual(value_sorted);
+        expect(emittedArg(wrapper, "update:modelValue", 1)).toEqual(value_sorted);
     });
 
     it("dataset collection as hda", async () => {
         const wrapper = createTarget({
-            value: { values: [{ id: "dce1", src: "dce" }] },
+            modelValue: { values: [{ id: "dce1", src: "dce" }] },
             options: defaultOptions,
         });
         const value_0 = {
@@ -318,8 +318,8 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "dce1", map_over_type: null, src: "dce" }],
         };
-        expect(emittedArg(wrapper, "input")).toEqual(value_0);
-        expect(wrapper.emitted("input")).toHaveLength(1);
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual(value_0);
+        expect(wrapper.emitted("update:modelValue")).toHaveLength(1);
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
@@ -328,11 +328,11 @@ describe("FormData", () => {
 
     it("dataset collection element as hdca without map_over_type", async () => {
         const wrapper = createTarget({
-            value: { values: [{ id: "dce2", src: "dce" }] },
+            modelValue: { values: [{ id: "dce2", src: "dce" }] },
             options: defaultOptions,
         });
         const value_0 = { batch: true, product: false, values: [{ id: "dce2", map_over_type: null, src: "dce" }] };
-        expect(emittedArg(wrapper, "input")).toEqual(value_0);
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual(value_0);
         await wrapper.vm.$nextTick();
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
@@ -342,7 +342,7 @@ describe("FormData", () => {
 
     it("dataset collection element as hdca mapped to batch field", async () => {
         const wrapper = createTarget({
-            value: { values: [{ id: "dce3", src: "dce" }] },
+            modelValue: { values: [{ id: "dce3", src: "dce" }] },
             options: defaultOptions,
         });
         const value_0 = {
@@ -350,7 +350,7 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "dce3", map_over_type: "mapOverType", src: "dce" }],
         };
-        expect(emittedArg(wrapper, "input")).toEqual(value_0);
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual(value_0);
         await wrapper.vm.$nextTick();
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
@@ -361,7 +361,7 @@ describe("FormData", () => {
     it("dataset collection element as hdca mapped to non-batch field", async () => {
         const wrapper = createTarget({
             type: "data_collection",
-            value: { values: [{ id: "dce3", src: "dce" }] },
+            modelValue: { values: [{ id: "dce3", src: "dce" }] },
             options: defaultOptions,
         });
         const value_0 = {
@@ -369,7 +369,7 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "dce3", map_over_type: "mapOverType", src: "dce" }],
         };
-        expect(emittedArg(wrapper, "input")).toEqual(value_0);
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual(value_0);
         await wrapper.vm.$nextTick();
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
@@ -380,7 +380,7 @@ describe("FormData", () => {
     it("dataset collection mapped to non-batch field", async () => {
         const wrapper = createTarget({
             type: "data_collection",
-            value: { values: [{ id: "hdca5", src: "hdca" }] },
+            modelValue: { values: [{ id: "hdca5", src: "hdca" }] },
             options: defaultOptions,
         });
         const value_0 = {
@@ -388,7 +388,7 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "hdca5", map_over_type: null, src: "hdca" }],
         };
-        expect(emittedArg(wrapper, "input")).toEqual(value_0);
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual(value_0);
         await wrapper.vm.$nextTick();
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
@@ -398,7 +398,7 @@ describe("FormData", () => {
 
     it("multiple dataset collection elements (as hdas)", async () => {
         const wrapper = createTarget({
-            value: {
+            modelValue: {
                 values: [
                     { id: "dce1", src: "dce" },
                     { id: "dce4", src: "dce" },
@@ -414,18 +414,18 @@ describe("FormData", () => {
                 { id: "dce4", map_over_type: null, src: "dce" },
             ],
         };
-        expect(emittedArg(wrapper, "input")).toEqual(value_0);
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual(value_0);
     });
 
     it("dropping values", async () => {
         const wrapper = createTarget({
-            value: null,
+            modelValue: null,
             options: defaultOptions,
         });
         eventStore.setDragData({ id: "hdca4", history_content_type: "dataset_collection" });
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
-        expect(emittedArg(wrapper, "input", 1)).toEqual({
+        expect(emittedArg(wrapper, "update:modelValue", 1)).toEqual({
             batch: true,
             product: false,
             values: [{ id: "hdca4", map_over_type: null, src: "hdca" }],
@@ -433,7 +433,7 @@ describe("FormData", () => {
         eventStore.setDragData({ id: "hda2", history_content_type: "dataset" });
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
-        expect(emittedArg(wrapper, "input", 2)).toEqual({
+        expect(emittedArg(wrapper, "update:modelValue", 2)).toEqual({
             batch: false,
             product: false,
             values: [{ id: "hda2", map_over_type: null, src: "hda" }],
@@ -442,7 +442,7 @@ describe("FormData", () => {
 
     it("rejects hda on collection input", async () => {
         const wrapper = createTarget({
-            value: null,
+            modelValue: null,
             options: defaultOptions,
             type: "data_collection",
         });
@@ -454,7 +454,7 @@ describe("FormData", () => {
 
     it("rejects paired collection on list collection input", async () => {
         const wrapper = createTarget({
-            value: null,
+            modelValue: null,
             options: defaultOptions,
             type: "data_collection",
             collectionTypes: ["list"],
@@ -473,7 +473,7 @@ describe("FormData", () => {
 
     it("accepts list:list collection on list collection input", async () => {
         const wrapper = createTarget({
-            value: null,
+            modelValue: null,
             options: defaultOptions,
             type: "data_collection",
             collectionTypes: ["list"],
@@ -490,11 +490,11 @@ describe("FormData", () => {
 
     it("linked and unlinked batch mode handling", async () => {
         const wrapper = createTarget({
-            value: null,
+            modelValue: null,
             flavor: "module",
             options: defaultOptions,
         });
-        expect(emittedArg(wrapper, "input")).toEqual({
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual({
             batch: false,
             product: false,
             values: [{ id: "dce4", map_over_type: null, src: "dce" }],
@@ -502,7 +502,7 @@ describe("FormData", () => {
         const noCheckLinked = wrapper.find("input[type='checkbox']");
         expect(noCheckLinked.exists()).toBeFalsy();
         await wrapper.find("[title='Multiple datasets']").trigger("click");
-        expect(emittedArg(wrapper, "input", 1)).toEqual(null);
+        expect(emittedArg(wrapper, "update:modelValue", 1)).toEqual(null);
         await openMultiselect(wrapper);
         const elements_0 = wrapper.findAll(SELECT_OPTIONS);
         expect(elements_0.length).toEqual(6);
@@ -512,8 +512,8 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "hda2", map_over_type: null, src: "hda" }],
         };
-        expect(emittedArg(wrapper, "input", 2)).toEqual(value_0);
-        await wrapper.setProps({ value: value_0 });
+        expect(emittedArg(wrapper, "update:modelValue", 2)).toEqual(value_0);
+        await wrapper.setProps({ modelValue: value_0 });
         await nth(elements_0, 0).find("span").trigger("click");
         const value_1 = {
             batch: true,
@@ -523,8 +523,8 @@ describe("FormData", () => {
                 { id: "dce4", map_over_type: null, src: "dce" },
             ],
         };
-        expect(emittedArg(wrapper, "input", 3)).toEqual(value_1);
-        await wrapper.setProps({ value: value_1 });
+        expect(emittedArg(wrapper, "update:modelValue", 3)).toEqual(value_1);
+        await wrapper.setProps({ modelValue: value_1 });
         const checkLinked = wrapper.find("input[type='checkbox']");
         expect(wrapper.find(".g-switch .g-checkbox-label").text()).toBe(
             "Linked:Datasets will be run in matched order with other datasets.",
@@ -534,7 +534,7 @@ describe("FormData", () => {
         expect(wrapper.find(".g-switch .g-checkbox-label").text()).toBe(
             "Unlinked:Dataset will be run against *all* other datasets.",
         );
-        expect(emittedArg(wrapper, "input", 4)).toEqual({
+        expect(emittedArg(wrapper, "update:modelValue", 4)).toEqual({
             batch: true,
             product: true,
             values: [
@@ -546,7 +546,7 @@ describe("FormData", () => {
 
     it("match dataset collection on initial value", async () => {
         const wrapper = createTarget({
-            value: {
+            modelValue: {
                 values: [{ id: "hdca5", src: "hdca" }],
             },
             multiple: true,
@@ -558,20 +558,20 @@ describe("FormData", () => {
         expect(nth(options, 1).classes()).toContain("g-pressed");
         expect(nth(options, 1).attributes("title")).toBe("Dataset collection");
         for (const i of [0, 1]) {
-            expect(emittedArg(wrapper, "input", i)).toEqual({
+            expect(emittedArg(wrapper, "update:modelValue", i)).toEqual({
                 batch: false,
                 product: false,
                 values: [{ id: "hdca5", map_over_type: null, src: "hdca" }],
             });
         }
-        expect(wrapper.emitted("input")).toHaveLength(2);
+        expect(wrapper.emitted("update:modelValue")).toHaveLength(2);
         await openMultiselect(wrapper);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
         expect(nth(selectedValues, 0).text()).toBe("5: hdcaName5");
         await wrapper.find("[title='Multiple datasets']").trigger("click");
         expect(nth(options, 0).classes()).toContain("g-pressed");
-        expect(emittedArg(wrapper, "input", 2)).toEqual(null);
+        expect(emittedArg(wrapper, "update:modelValue", 2)).toEqual(null);
     });
 
     it("renders pinned entries alongside paged options", async () => {
@@ -579,7 +579,7 @@ describe("FormData", () => {
         // they're selected but landed outside the current page window. The
         // dropdown must show them so the user can see what's pre-selected.
         const wrapper = createTarget({
-            value: { values: [{ id: "hdaPinned", src: "hda" }] },
+            modelValue: { values: [{ id: "hdaPinned", src: "hda" }] },
             options: { hda: defaultOptions.hda },
             pinned: {
                 hda: [{ id: "hdaPinned", hid: 999, name: "OldDataset", src: "hda", keep: true, tags: [] }],
@@ -636,7 +636,7 @@ describe("FormData batch hint", () => {
 
     it("shows mapped over info for a collection selected on a data input", async () => {
         const wrapper = createTarget({
-            value: { values: [{ id: "hdca5", src: "hdca" }] },
+            modelValue: { values: [{ id: "hdca5", src: "hdca" }] },
             options: defaultOptions,
         });
         await wrapper.vm.$nextTick();
@@ -645,7 +645,7 @@ describe("FormData batch hint", () => {
 
     it("shows no batch info for a single dataset on a data input", async () => {
         const wrapper = createTarget({
-            value: { values: [{ id: "hda1", src: "hda" }] },
+            modelValue: { values: [{ id: "hda1", src: "hda" }] },
             options: defaultOptions,
         });
         await wrapper.vm.$nextTick();
@@ -654,7 +654,7 @@ describe("FormData batch hint", () => {
 
     it("shows batch mode info for multiple datasets on a data input", async () => {
         const wrapper = createTarget({
-            value: null,
+            modelValue: null,
             options: defaultOptions,
         });
         await wrapper.find("[title='Multiple datasets']").trigger("click");
@@ -666,7 +666,7 @@ describe("FormData batch hint", () => {
     it("shows no batch info for a collection directly selected on a collection input", async () => {
         const wrapper = createTarget({
             type: "data_collection",
-            value: { values: [{ id: "hdca5", src: "hdca" }] },
+            modelValue: { values: [{ id: "hdca5", src: "hdca" }] },
             options: defaultOptions,
         });
         await wrapper.vm.$nextTick();
@@ -690,7 +690,7 @@ describe("FormData batch hint", () => {
     it("shows no batch info for multiple directly selected collections", async () => {
         const wrapper = createTarget({
             multiple: true,
-            value: { values: [{ id: "hdca8", src: "hdca" }] },
+            modelValue: { values: [{ id: "hdca8", src: "hdca" }] },
             options: pairedOptions,
         });
         await wrapper.vm.$nextTick();
@@ -702,11 +702,11 @@ describe("FormData batch hint", () => {
         const wrapper = createTarget({
             type: "data_collection",
             collectionTypes: ["paired"],
-            value: { values: [{ id: "hdca7", src: "hdca" }] },
+            modelValue: { values: [{ id: "hdca7", src: "hdca" }] },
             options: pairedOptions,
         });
         await wrapper.vm.$nextTick();
-        expect((emittedArg(wrapper, "input") as { batch: boolean }).batch).toBe(true);
+        expect((emittedArg(wrapper, "update:modelValue") as { batch: boolean }).batch).toBe(true);
         expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIR);
         expect(wrapper.find("input[type='checkbox']").exists()).toBeFalsy();
     });
@@ -716,11 +716,11 @@ describe("FormData batch hint", () => {
             type: "data_collection",
             flavor: "module",
             collectionTypes: ["paired"],
-            value: { values: [{ id: "hdca7", src: "hdca" }] },
+            modelValue: { values: [{ id: "hdca7", src: "hdca" }] },
             options: pairedOptions,
         });
         await wrapper.vm.$nextTick();
-        expect((emittedArg(wrapper, "input") as { batch: boolean }).batch).toBe(true);
+        expect((emittedArg(wrapper, "update:modelValue") as { batch: boolean }).batch).toBe(true);
         expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
     });
 
@@ -728,14 +728,14 @@ describe("FormData batch hint", () => {
         const wrapper = createTarget({
             type: "data_collection",
             collectionTypes: ["paired"],
-            value: { values: [{ id: "hdca8", src: "hdca" }] },
+            modelValue: { values: [{ id: "hdca8", src: "hdca" }] },
             options: pairedOptions,
         });
         await wrapper.vm.$nextTick();
         expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
-        await wrapper.setProps({ value: { values: [{ id: "hdca7", src: "hdca" }] } });
+        await wrapper.setProps({ modelValue: { values: [{ id: "hdca7", src: "hdca" }] } });
         expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIR);
-        await wrapper.setProps({ value: { values: [{ id: "hdca8", src: "hdca" }] } });
+        await wrapper.setProps({ modelValue: { values: [{ id: "hdca8", src: "hdca" }] } });
         expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
     });
 
@@ -743,7 +743,7 @@ describe("FormData batch hint", () => {
         const wrapper = createTarget({
             type: "data_collection",
             collectionTypes: ["paired"],
-            value: null,
+            modelValue: null,
             optional: true,
             options: pairedOptions,
         });
@@ -756,20 +756,20 @@ describe("FormData batch hint", () => {
         });
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
-        const emitted = emittedArg(wrapper, "input", -1);
+        const emitted = emittedArg(wrapper, "update:modelValue", -1);
         expect(emitted).toEqual({
             batch: true,
             product: false,
             values: [{ id: "hdca9", map_over_type: "paired", src: "hdca" }],
         });
-        await wrapper.setProps({ value: emitted });
+        await wrapper.setProps({ modelValue: emitted });
         expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIR);
     });
 
     it("shows mapped over info when any of multiple selected collections maps over", async () => {
         const wrapper = createTarget({
             multiple: true,
-            value: {
+            modelValue: {
                 values: [
                     { id: "hdca8", src: "hdca" },
                     { id: "hdca7", src: "hdca" },
@@ -786,7 +786,7 @@ describe("FormData batch hint", () => {
         const wrapper = createTarget({
             type: "data_collection",
             collectionTypes: ["paired_or_unpaired"],
-            value: { values: [{ id: "hdca10", src: "hdca" }] },
+            modelValue: { values: [{ id: "hdca10", src: "hdca" }] },
             options: {
                 hdca: [
                     {
@@ -808,7 +808,7 @@ describe("FormData batch hint", () => {
         const wrapper = createTarget({
             type: "data_collection",
             collectionTypes: ["paired_or_unpaired"],
-            value: { values: [{ id: "hdca12", src: "hdca" }] },
+            modelValue: { values: [{ id: "hdca12", src: "hdca" }] },
             options: {
                 hdca: [
                     {
@@ -832,7 +832,7 @@ describe("FormData batch hint", () => {
     it("names no job unit when several selected collections map over", async () => {
         const wrapper = createTarget({
             multiple: true,
-            value: {
+            modelValue: {
                 values: [
                     { id: "hdca7", src: "hdca" },
                     { id: "hdca11", src: "hdca" },
