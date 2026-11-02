@@ -128,13 +128,13 @@ describe("WorkflowList", () => {
         }
     });
 
-    it("leaves shared workflows to the server default on the shared with me tab", async () => {
+    it("asks for shared workflows explicitly on the shared with me tab", async () => {
         mockedLoadWorkflows.mockResolvedValue({ data: [], totalMatches: 0 });
         await mountWorkflowList("shared_with_me");
 
         expect(mockedLoadWorkflows).toHaveBeenCalled();
         for (const [options] of mockedLoadWorkflows.mock.calls) {
-            expect(options.showShared).toBeUndefined();
+            expect(options.showShared).toBe(true);
         }
     });
 
