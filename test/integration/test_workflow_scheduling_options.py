@@ -254,6 +254,7 @@ steps:
             cached_jobs = self.workflow_populator.get_invocation_jobs(cached_invocation_id)
             assert len(cached_jobs) == 3, cached_jobs
             assert self._copied_from_job_ids(cached_jobs) == sorted(job["id"] for job in first_jobs)
+            self._assert_cat_outputs_match_identifiers(history_id, cached_invocation_id)
 
             # Every element hit the cache, but in a different order than the first run's collection.
             cached_hdca = self._cat_step_output_collection(cached_invocation_id)
@@ -275,9 +276,23 @@ steps:
             cached_jobs = self.workflow_populator.get_invocation_jobs(cached_invocation_id)
             assert len(cached_jobs) == 3, cached_jobs
             assert self._copied_from_job_ids(cached_jobs) == sorted(job["id"] for job in first_jobs)
+            # A slice looking up its cached job by loop position rather than
+            # job index would copy another element's job and its output.
+            self._assert_cat_outputs_match_identifiers(history_id, cached_invocation_id)
 
             cached_hdca = self._cat_step_output_collection(cached_invocation_id)
             assert cached_hdca.copied_from_history_dataset_collection_association_id is None
+
+    def _assert_cat_outputs_match_identifiers(self, history_id: str, invocation_id: str) -> None:
+        """Each element of the cat step's output holds the content of the input element with its identifier."""
+        hdca = self._cat_step_output_collection(invocation_id)
+        contents = {}
+        for element in hdca.collection.elements:
+            assert element.hda
+            contents[element.element_identifier] = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset_id=self._app.security.encode_id(element.hda.id)
+            )
+        assert contents == {name: f"{name}\n" for name in ("a", "b", "c")}, contents
 
     def _invoke_cat_list(
         self, workflow_id: str, history_id: str, named_hdas: list, use_cached_job: bool = False

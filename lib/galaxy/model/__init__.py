@@ -2874,7 +2874,7 @@ class ImplicitCollectionJobs(Base, Serializable):
             .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
             .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
         )
-        return {order_index: value for order_index, value in required_object_session(self).execute(stmt)}
+        return dict(required_object_session(self).execute(stmt).tuples().all())
 
     def recorded_order_indexes(self) -> set[int]:
         """Return the order indexes of the jobs already recorded for this map-over."""
