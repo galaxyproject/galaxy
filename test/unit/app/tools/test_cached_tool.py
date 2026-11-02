@@ -1,5 +1,7 @@
 import logging
+import os
 import threading
+import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -1344,6 +1346,9 @@ def test_edited_tool_files_sees_edit_made_while_populating(tmp_path, monkeypatch
     def hash_then_edit(file_path):
         file_hash = md5_hash_file(file_path)
         tool_file.write_text(_shed_tool_xml("echo after"))
+        # Linux may stamp the write from its coarse clock, at or before the hash time.
+        now = time.time_ns()
+        os.utime(file_path, ns=(now, now))
         return file_hash
 
     monkeypatch.setattr(populator, "md5_hash_file", hash_then_edit)
