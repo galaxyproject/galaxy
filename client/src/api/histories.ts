@@ -355,6 +355,21 @@ export async function getHistoryCounts(historyId: string): Promise<HistoryCounts
     return data as HistoryCounts;
 }
 
+/** Resumes the paused jobs of a history, and the jobs waiting on their outputs. */
+export async function resumePausedJobs(historyId: string): Promise<void> {
+    const { error } = await GalaxyApi().PUT("/api/histories/{history_id}/resume_paused_jobs", {
+        params: {
+            path: {
+                history_id: historyId,
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+}
+
 /** Removes the current user's own share of a history shared with them. */
 export async function unshareHistoryWithMe(historyId: string): Promise<void> {
     const { error } = await GalaxyApi().PUT("/api/histories/{history_id}/unshare_with_me", {

@@ -31,6 +31,7 @@ import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import PausedJobsButton from "@/components/History/CurrentHistory/PausedJobsButton.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -103,6 +104,11 @@ function setFilter(filter: string) {
     }
     const newFilterText = HistoryFilters.applyFiltersToText(settings, props.filterText);
     emit("update:filter-text", newFilterText);
+}
+
+// The count includes jobs whose outputs are all hidden, so show hidden items too
+function onShowPaused() {
+    emit("update:filter-text", HistoryFilters.applyFiltersToText({ state: "paused", visible: "any" }, ""));
 }
 
 function getCurrentFilterVal(filter: string) {
@@ -219,6 +225,8 @@ onMounted(() => {
 
         <GButtonGroup v-if="currentUser">
             <GButtonGroup>
+                <PausedJobsButton :history="history" :current-user="currentUser" @show-paused="onShowPaused" />
+
                 <GButton
                     v-g-tooltip.hover
                     :title="localize('Show active')"
