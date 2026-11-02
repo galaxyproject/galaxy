@@ -13,7 +13,7 @@
         <import>model_operation_macros.xml</import>
     </macros>
     <inputs>
-        <param type="data_collection" collection_type="sample_sheet,sample_sheet:paired,sample_sheet:paired_or_unpaired,sample_sheet" name="input" label="Sample sheet to convert" />
+        <param type="data_collection" collection_type="sample_sheet,sample_sheet:paired,sample_sheet:paired_or_unpaired" name="input" label="Sample sheet to convert" />
     </inputs>
     <outputs>
         <!-- type_source is a lie, we don't have a way to encode the transform that is actually happening -->

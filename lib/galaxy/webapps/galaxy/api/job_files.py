@@ -74,7 +74,11 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             match = re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path))
             if match:
                 # This looks like a galaxy dataset, check if any job input has been deleted.
-                if any(jtid.dataset.dataset.purged for jtid in job.input_datasets):
+                # Purging an input commits the HDA as purged before it removes the file and
+                # commits the dataset as purged, so check both to cover the window in between.
+                if any(
+                    jtid.dataset and (jtid.dataset.purged or jtid.dataset.dataset.purged) for jtid in job.input_datasets
+                ):
                     raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
             else:
                 raise
