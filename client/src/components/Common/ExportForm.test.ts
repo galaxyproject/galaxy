@@ -95,6 +95,6 @@ describe("ExportForm.vue", () => {
     }
 
     async function setDirectoryInput(newValue: string) {
-        await wrapper.findComponent(FilesInput).vm.$emit("input", newValue);
+        await wrapper.findComponent(FilesInput).vm.$emit("update:modelValue", newValue);
     }
 });
