@@ -554,7 +554,8 @@ def set_metadata_portable(
                 if MetadataTempFile.is_JSONified_value(metadata_file_override):
                     metadata_file_override = MetadataTempFile.from_JSON(metadata_file_override)
                 setattr(dataset.metadata, metadata_name, metadata_file_override)
-            if output_dict.get("validate", False):
+            # Validating protected outputs reads the decrypted data, and errors may quote it.
+            if output_dict.get("validate", False) and not output_protector:
                 set_validated_state(dataset)
             # Outputs assigned a discovered file (assign_primary_output) are stored already, the declared file
             # isn't their content and may hold plaintext.
