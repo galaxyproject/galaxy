@@ -21,6 +21,7 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
     const sourceErrorByKey = ref<Record<string, string | undefined>>({});
 
     let inFlightAllPromise: Promise<QuotaUsage[] | undefined> | null = null;
+    let queuedReloadPromise: Promise<QuotaUsage[] | undefined> | null = null;
     const inFlightBySourcePromise = new Map<string, Promise<QuotaUsage | null>>();
 
     const isLoaded = computed(() => quotaUsages.value !== undefined);
@@ -65,6 +66,14 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
     }
 
     async function loadQuotaUsages(reload = false): Promise<QuotaUsage[] | undefined> {
+        if (inFlightAllPromise && reload) {
+            // The request in flight may predate the change that asks for a reload: reload once it's done
+            queuedReloadPromise ??= inFlightAllPromise.then(() => {
+                queuedReloadPromise = null;
+                return loadQuotaUsages(true);
+            });
+            return queuedReloadPromise;
+        }
         if (inFlightAllPromise) {
             return inFlightAllPromise;
         }
