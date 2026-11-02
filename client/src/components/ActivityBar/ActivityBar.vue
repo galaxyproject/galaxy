@@ -6,8 +6,8 @@ import { BNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import draggable from "vuedraggable";
 
-import draggable from "@/components/Common/SortableList";
 import { useConfig } from "@/composables/config";
 import { useActiveContext } from "@/composables/useActiveContext";
 import { convertDropData, isActivityAvailable } from "@/stores/activitySetup";
