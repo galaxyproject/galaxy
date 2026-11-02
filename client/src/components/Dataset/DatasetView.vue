@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { faBug, faChartBar, faEye, faFileAlt, faInfoCircle, faPen } from "@fortawesome/free-solid-svg-icons";
+import { faBug, faChartBar, faEye, faFileAlt, faInfoCircle, faLaptop, faPen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink, BNav, BNavItem } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import { useConfig } from "@/composables/config";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
@@ -16,6 +17,7 @@ import DatasetError from "../DatasetInformation/DatasetError.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import DatasetAsImage from "./DatasetAsImage/DatasetAsImage.vue";
 import DatasetDisplay from "./DatasetDisplay.vue";
+import DatasetExplore from "./DatasetExplore.vue";
 import DatasetState from "./DatasetState.vue";
 import Heading from "@/components/Common/Heading.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
@@ -26,11 +28,12 @@ import VisualizationDisplay from "@/components/Visualizations/VisualizationDispl
 const datasetStore = useDatasetStore();
 const datatypeStore = useDatatypeStore();
 const datatypesMapperStore = useDatatypesMapperStore();
+const { config } = useConfig();
 const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("dataset-header-collapsed");
 
 interface Props {
     datasetId: string;
-    tab?: "details" | "edit" | "error" | "preview" | "raw" | "visualize";
+    tab?: "details" | "edit" | "error" | "explore" | "preview" | "raw" | "visualize";
     displayOnly?: boolean;
 }
 
@@ -89,6 +92,7 @@ const preferredVisualization = computed(
 // Match dataset state
 const showError = computed(() => dataset.value && STATES.ERROR === dataset.value.state);
 const showOk = computed(() => dataset.value && STATES.OK_STATES.includes(dataset.value.state));
+const showExplore = computed(() => showOk.value && config.value?.interactivetools_enable);
 
 // Watch for changes to the dataset to fetch datatype info
 watch(
@@ -188,6 +192,13 @@ watch(
                 <FontAwesomeIcon :icon="faChartBar" class="mr-1" /> Visualize
             </BNavItem>
             <BNavItem
+                v-if="showExplore"
+                title="Launch interactive tools that accept this dataset"
+                :active="tab === 'explore'"
+                :to="`/datasets/${datasetId}/explore`">
+                <FontAwesomeIcon :icon="faLaptop" class="mr-1" /> Explore
+            </BNavItem>
+            <BNavItem
                 title="View detailed information about this dataset"
                 :active="tab === 'details'"
                 :to="`/datasets/${datasetId}/details`">
@@ -249,6 +260,9 @@ watch(
         </div>
         <div v-else-if="tab === 'visualize'" class="tab-content-panel">
             <VisualizationsList :dataset-id="datasetId" />
+        </div>
+        <div v-else-if="tab === 'explore' && showExplore" class="tab-content-panel">
+            <DatasetExplore :dataset-id="datasetId" :dataset-extension="dataset.file_ext" />
         </div>
         <div v-else-if="tab === 'edit'" class="tab-content-panel mt-2">
             <DatasetAttributes :dataset-id="datasetId" />
