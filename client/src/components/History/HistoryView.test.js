@@ -361,7 +361,7 @@ describe("History center panel View", () => {
 
         expectCorrectLayout(wrapper);
         // There is no message about the history status
-        expect(wrapper.find("[data-description='history messages']").text()).toBe("");
+        expect(wrapper.find("[data-description='history messages']").exists()).toBe(false);
     });
 
     it("should display archived message and should not be importable when user is owner and history is archived", async () => {
