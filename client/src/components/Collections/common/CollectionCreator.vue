@@ -147,15 +147,15 @@ watch(
 
                         <div class="d-flex align-items-center justify-content-between">
                             <CollectionCreatorSourceOptions
-                                :value="localHideSourceItems"
+                                :model-value="localHideSourceItems"
                                 :render-extensions-toggle="renderExtensionsToggle"
                                 :extensions-toggle="extensionsToggle"
-                                @input="(v: boolean) => (localHideSourceItems = v)"
+                                @update:model-value="(v: boolean) => (localHideSourceItems = v)"
                                 @remove-extensions-toggle="removeExtensionsToggle" />
                             <CollectionNameInput
-                                :value="name"
+                                :model-value="name"
                                 :short-what-is-being-created="shortWhatIsBeingCreated"
-                                @input="updateName" />
+                                @update:model-value="updateName" />
                         </div>
                     </div>
 
@@ -191,14 +191,14 @@ watch(
 
                             <div class="d-flex align-items-center justify-content-between">
                                 <CollectionCreatorSourceOptions
-                                    :value="localHideSourceItems"
+                                    :model-value="localHideSourceItems"
                                     :render-extensions-toggle="renderExtensionsToggle"
                                     :extensions-toggle="extensionsToggle"
-                                    @input="(v: boolean) => (localHideSourceItems = v)" />
+                                    @update:model-value="(v: boolean) => (localHideSourceItems = v)" />
                                 <CollectionNameInput
-                                    :value="collectionName"
+                                    :model-value="collectionName"
                                     :short-what-is-being-created="shortWhatIsBeingCreated"
-                                    @input="updateName" />
+                                    @update:model-value="updateName" />
                             </div>
                         </div>
 

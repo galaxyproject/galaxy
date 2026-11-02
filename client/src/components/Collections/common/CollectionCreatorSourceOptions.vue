@@ -7,31 +7,35 @@ import localize from "@/utils/localization";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
+defineOptions({
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 interface Props {
-    value: boolean;
+    modelValue: boolean;
     extensionsToggle?: boolean;
     renderExtensionsToggle?: boolean;
 }
 
 const props = defineProps<Props>();
 
-const localHideSourceItems = ref(props.value);
+const localHideSourceItems = ref(props.modelValue);
 
 const emit = defineEmits<{
-    (e: "input", value: boolean): void;
+    (e: "update:modelValue", value: boolean): void;
     (e: "remove-extensions-toggle"): void;
 }>();
 
-// Watch for external updates to value and sync with innerValue
+// Watch for external updates to modelValue and sync with innerValue
 watch(
-    () => props.value,
+    () => props.modelValue,
     (newValue) => {
         localHideSourceItems.value = newValue;
     },
 );
 
 watch(localHideSourceItems, (newValue) => {
-    emit("input", newValue);
+    emit("update:modelValue", newValue);
 });
 </script>
 
