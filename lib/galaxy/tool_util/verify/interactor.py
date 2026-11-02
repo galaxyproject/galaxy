@@ -935,8 +935,8 @@ class GalaxyInteractorApi:
             submit_with_legacy_api = True
         if submit_with_legacy_api:
             inputs_tree = testdef.inputs.copy()
-            for key, value in inputs_tree.items():
-                values = [value] if not isinstance(value, list) else value
+            for key, values in inputs_tree.items():
+                values = [values] if not isinstance(values, list) else values
                 new_values = []
                 for value in values:
                     if isinstance(value, TestCollectionDef):

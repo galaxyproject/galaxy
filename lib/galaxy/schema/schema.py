@@ -1226,6 +1226,11 @@ class DCObject(Model, WithModelClass):
         title="Datasets deleted",
         description="The number of elements in the collection that are marked as deleted.",
     )
+    elements_purged: int = Field(
+        ...,
+        title="Datasets purged",
+        description="The number of elements in the collection that are purged. Purged elements are also counted as deleted.",
+    )
     elements_datatypes: set[str] = Field(
         ..., description="A set containing all the different element datatypes in the collection."
     )
@@ -1402,6 +1407,11 @@ class HDCASummary(HDCACommon, WithModelClass):
         ...,
         title="Datasets deleted",
         description="The number of elements in the collection that are marked as deleted.",
+    )
+    elements_purged: int = Field(
+        ...,
+        title="Datasets purged",
+        description="The number of elements in the collection that are purged. Purged elements are also counted as deleted.",
     )
     job_source_id: EncodedDatabaseIdField | None = Field(
         None,

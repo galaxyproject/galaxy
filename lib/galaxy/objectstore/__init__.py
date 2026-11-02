@@ -73,6 +73,7 @@ NO_SESSION_ERROR_MESSAGE = (
     "Attempted to 'create' object store entity in configuration with no database session present."
 )
 DEFAULT_PRIVATE = False
+DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN = 3600  # seconds
 DEFAULT_QUOTA_SOURCE = None  # Just track quota right on user object in Galaxy.
 DEFAULT_QUOTA_ENABLED = True  # enable quota tracking in object stores by default
 DEFAULT_DEVICE_ID = None
@@ -432,6 +433,20 @@ class ObjectStore(metaclass=abc.ABCMeta):
         for the cache can be served at all. Returns None when the store cannot stream the object (it
         is local, already cached, or the backend has no streaming read), in which case the caller
         falls back to pulling the object into the cache and serving it from there.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_data_head(self, obj, size: int) -> bytes:
+        """Return the first `size` bytes of `obj` (fewer if it is smaller) as stored in the backing store.
+
+        Unlike `get_data`, caching stores read these bytes from their backend instead of their cache: the
+        cached copy of an object written from another host (e.g. by a remote job) can be stale. Backends
+        that can't read part of an object read their cached copy instead, pulled again only when it is empty.
+        An object missing from their backend, as after a failed push, is read from a non-empty cached copy.
+
+        If the object does not exist raises `ObjectNotFound`; a `size` of 0 or less returns `b""` without
+        checking.
         """
         raise NotImplementedError()
 
@@ -822,6 +837,11 @@ class BaseObjectStore(ObjectStore):
         # Stores that cannot stream their objects remotely (e.g. disk) get this no-op default.
         return None
 
+    def get_data_head(self, obj, size: int) -> bytes:
+        if size <= 0:
+            return b""
+        return self._invoke("get_data_head", obj, size=size)
+
     def get_concrete_store_backends(self) -> list[ConcreteObjectStore]:
         return self._invoke("get_concrete_store_backends")
 
@@ -861,6 +881,18 @@ class BaseObjectStore(ObjectStore):
         return enable_direct_download
 
     @classmethod
+    def parse_direct_download_config_from_config_xml(clazz, config_xml: Any) -> dict[str, Any]:
+        expires_in = DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN
+        if config_xml is not None:
+            expires_in = _parse_direct_download_expires_in(
+                config_xml.attrib.get("direct_download_expires_in", DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN)
+            )
+        return {
+            "enable_direct_download": clazz.parse_enable_direct_download_from_config_xml(config_xml),
+            "direct_download_expires_in": expires_in,
+        }
+
+    @classmethod
     def parse_badges_from_config_xml(clazz, badges_xml):
         badges = []
         for e in badges_xml:
@@ -875,6 +907,16 @@ class BaseObjectStore(ObjectStore):
 
     def get_device_source_map(self):
         return DeviceSourceMap()
+
+
+def _parse_direct_download_expires_in(value: Any) -> int:
+    try:
+        expires_in = int(value)
+    except (TypeError, ValueError):
+        expires_in = 0
+    if expires_in <= 0:
+        raise ValueError(f"direct_download_expires_in must be a positive number of seconds, got {value!r}")
+    return expires_in
 
 
 @dataclass
@@ -928,6 +970,9 @@ class ConcreteObjectStore(BaseObjectStore):
         # presigned URL) instead of streaming through Galaxy. Opt-in; only meaningful for stores whose
         # _get_object_url returns a usable URL.
         self.enable_direct_download = asbool(config_dict.get("enable_direct_download", False))
+        self.direct_download_expires_in = _parse_direct_download_expires_in(
+            config_dict.get("direct_download_expires_in", DEFAULT_DIRECT_DOWNLOAD_EXPIRES_IN)
+        )
         self.badges = read_badges(config_dict)
 
     def get_concrete_store_backends(self):
@@ -949,6 +994,7 @@ class ConcreteObjectStore(BaseObjectStore):
         rval["badges"] = self._get_concrete_store_badges(None)
         rval["device"] = self.device_id
         rval["enable_direct_download"] = self.enable_direct_download
+        rval["direct_download_expires_in"] = self.direct_download_expires_in
         rval["object_expires_after_days"] = self.object_expires_after_days
         return rval
 
@@ -1292,6 +1338,10 @@ class DiskObjectStore(ConcreteObjectStore):
         data_file.close()
         return content
 
+    def _get_data_head(self, obj, size: int, **kwargs) -> bytes:
+        with open(self._get_filename(obj, **kwargs), "rb") as f:
+            return f.read(size)
+
     def _get_filename(self, obj, sync_cache: bool = True, **kwargs) -> str:
         """
         Override `ObjectStore`'s stub.
@@ -1460,6 +1510,10 @@ class NestedObjectStore(BaseObjectStore):
     def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
         """For the first backend that has this `obj`, stream it from that backend."""
         return self._call_method("_get_data_stream", obj, None, False, **kwargs)
+
+    def _get_data_head(self, obj, size: int, **kwargs) -> bytes:
+        """For the first backend that has this `obj`, read the start of it from that backend."""
+        return self._call_method("_get_data_head", obj, ObjectNotFound, True, size=size, **kwargs)
 
     def _get_concrete_store_backends(self, **kwargs):
         backends = []

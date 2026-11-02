@@ -1431,7 +1431,8 @@ class Cleanup:
         for name in self.args.actions:
             cls = self.actions[name]
             log.info("Running action '%s':", name)
-            map(log.info, cls.doc_iter())
+            for doc_line in cls.doc_iter():
+                log.info(doc_line)
             self.__current_action = name
             with cls(self) as action:
                 self._run_action(action)

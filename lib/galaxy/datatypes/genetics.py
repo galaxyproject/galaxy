@@ -1150,14 +1150,17 @@ class DataIn(LinkageStudies):
             try:
                 if lcount == 0:
                     num_markers = int(tokens[0])
-                    map(int, tokens[1:])
+                    for token in tokens[1:]:
+                        int(token)
                 elif lcount == 1:
-                    map(float, tokens)
+                    for token in tokens:
+                        float(token)
 
                     if len(tokens) != 4:
                         return False
                 elif lcount == 2:
-                    map(int, tokens)
+                    for token in tokens:
+                        int(token)
                     last_token = int(tokens[-1])
 
                     if num_markers is None:

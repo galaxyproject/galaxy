@@ -9,14 +9,6 @@ galaxy.tool\_util.deps.resolvers package
 Submodules
 ----------
 
-galaxy.tool\_util.deps.resolvers.brewed\_tool\_shed\_packages module
---------------------------------------------------------------------
-
-.. automodule:: galaxy.tool_util.deps.resolvers.brewed_tool_shed_packages
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.tool\_util.deps.resolvers.conda module
 ---------------------------------------------
 
@@ -29,14 +21,6 @@ galaxy.tool\_util.deps.resolvers.galaxy\_packages module
 --------------------------------------------------------
 
 .. automodule:: galaxy.tool_util.deps.resolvers.galaxy_packages
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy.tool\_util.deps.resolvers.homebrew module
-------------------------------------------------
-
-.. automodule:: galaxy.tool_util.deps.resolvers.homebrew
    :members:
    :undoc-members:
    :show-inheritance:

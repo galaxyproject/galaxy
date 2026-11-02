@@ -1,11 +1,11 @@
-from unittest.mock import Mock
-
 import pytest
 
 from galaxy.jobs import (
+    DestinationTagRegistry,
     JobConfigurationLimits,
     MinimalJobWrapper,
 )
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.model import (
     GalaxySession,
     Job,
@@ -17,9 +17,11 @@ from galaxy.model.unittest_utils.data_app import GalaxyDataTestConfig
 class MockJobConfig:
     def __init__(self) -> None:
         self.limits = JobConfigurationLimits()
+        self.destination_tags = DestinationTagRegistry()
+        self.destination_tags.register(None, {"one": {"one"}, "two": {"one"}})
 
-    def get_destinations(self, tag):
-        return [create_mock_destination()]
+    def get_destination_ids_for_tag(self, tag):
+        return self.destination_tags.ids_for_tag(tag)
 
 
 class GalaxyJobConfigApp(GalaxyDataTestApp):
@@ -55,13 +57,7 @@ def create_mock_job(app: GalaxyJobConfigApp, user_id=None, session_id=None, stat
 
 
 def create_mock_destination():
-    """Creates a mock job destination."""
-    job_destination_mock = Mock()
-    job_destination_mock.id = "one"
-    job_destination_mock.params = {}
-    job_destination_mock.runner = "test_runner"
-    job_destination_mock.tags = ["one", "two"]
-    return job_destination_mock
+    return JobDestination(id="one", runner="test_runner", tags=["one", "two"])
 
 
 def test_registered_user_limit():
@@ -140,6 +136,58 @@ def test_destination_tag_limit():
     other_job_wrapper = create_job_wrapper(app, user_id=1)
     result = other_job_wrapper.queue_with_limit(other_job_wrapper.get_job(), job_destination_mock)
     assert result is False
+
+
+def test_destination_tag_limit_counts_dynamic_destinations():
+    app = create_mock_app()
+    app.job_config.destination_tags.register("dynamic_rule", {"two": {"dynamic"}})
+    app.job_config.limits.destination_total_concurrent_jobs["two"] = 2
+    create_mock_job(app, user_id=2, state="running", destination_id="dynamic")
+    job_destination_mock = create_mock_destination()
+
+    # Test below limit
+    job_wrapper = create_job_wrapper(app, user_id=1)
+    assert job_wrapper.queue_with_limit(job_wrapper.get_job(), job_destination_mock) is True
+
+    # Test at limit
+    job_wrapper = create_job_wrapper(app, user_id=1)
+    assert job_wrapper.queue_with_limit(job_wrapper.get_job(), job_destination_mock) is False
+
+
+def test_destination_user_tag_limit():
+    app = create_mock_app()
+    app.job_config.destination_tags.register("dynamic_rule", {"two": {"dynamic"}})
+    app.job_config.limits.destination_user_concurrent_jobs["two"] = 3
+    for user_id in (1, 2):
+        for destination_id in ("one", "dynamic"):
+            create_mock_job(app, user_id=user_id, state="running", destination_id=destination_id)
+    job_destination_mock = create_mock_destination()
+
+    # Test below limit, other users' jobs in the tagged destinations are not counted
+    job_wrapper = create_job_wrapper(app, user_id=1)
+    assert job_wrapper.queue_with_limit(job_wrapper.get_job(), job_destination_mock) is True
+
+    # Test at limit
+    job_wrapper = create_job_wrapper(app, user_id=1)
+    assert job_wrapper.queue_with_limit(job_wrapper.get_job(), job_destination_mock) is False
+
+    job_wrapper = create_job_wrapper(app, user_id=2)
+    assert job_wrapper.queue_with_limit(job_wrapper.get_job(), job_destination_mock) is True
+
+
+@pytest.mark.parametrize("limit", ["destination_total_concurrent_jobs", "destination_user_concurrent_jobs"])
+def test_destination_tag_limit_counts_unregistered_destination(limit):
+    app = create_mock_app()
+    getattr(app.job_config.limits, limit)["three"] = 1
+    job_destination = JobDestination(id="unregistered", runner="test_runner", tags=["three"])
+
+    # Test below limit
+    job_wrapper = create_job_wrapper(app, user_id=1)
+    assert job_wrapper.queue_with_limit(job_wrapper.get_job(), job_destination) is True
+
+    # Test at limit, counting the job queued to the destination being checked
+    job_wrapper = create_job_wrapper(app, user_id=1)
+    assert job_wrapper.queue_with_limit(job_wrapper.get_job(), job_destination) is False
 
 
 def set_registered_user_limit(limits):

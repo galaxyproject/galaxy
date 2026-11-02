@@ -80,6 +80,15 @@ def __plugin_classes_in_module(plugin_module: ModuleType) -> Generator[type, Non
         yield clazz
 
 
+def __plugin_class(plugins_dict: dict[str, type[T]], plugin_type: str) -> type[T]:
+    try:
+        return plugins_dict[plugin_type]
+    except KeyError:
+        template = "Failed to find plugin of type [%s] in available plugin types %s"
+        message = template % (plugin_type, str(plugins_dict.keys()))
+        raise Exception(message)
+
+
 def __load_plugins_from_element(
     plugins_dict: dict[str, type[T]], plugins_element, extra_kwds: dict[str, Any]
 ) -> list[T]:
@@ -89,12 +98,7 @@ def __load_plugins_from_element(
         plugin_type = plugin_element.tag
         plugin_kwds = dict(plugin_element.items())
         plugin_kwds.update(extra_kwds)
-        try:
-            plugin_klazz = plugins_dict[plugin_type]
-        except KeyError:
-            template = "Failed to find plugin of type [%s] in available plugin types %s"
-            message = template % (plugin_type, str(plugins_dict.keys()))
-            raise Exception(message)
+        plugin_klazz = __plugin_class(plugins_dict, plugin_type)
         plugin = __create_plugin_instance(plugin_klazz, plugin_kwds)
         plugins.append(plugin)
 
@@ -150,7 +154,7 @@ def __load_plugins_from_dicts(
         if extra_kwds:
             plugin_kwds = plugin_kwds.copy()
             plugin_kwds.update(extra_kwds)
-        plugin_class = plugins_dict[plugin_type]
+        plugin_class = __plugin_class(plugins_dict, plugin_type)
         plugin = __create_plugin_instance(plugin_class, plugin_kwds)
         plugins.append(plugin)
 

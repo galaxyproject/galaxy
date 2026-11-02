@@ -23,6 +23,7 @@ const defaultTestHDCA: HDCASummary = {
     visible: true,
     elements_datatypes: [],
     elements_deleted: 0,
+    elements_purged: 0,
     elements_states: {},
     history_id: "fake_history_id",
     model_class: "HistoryDatasetCollectionAssociation",
@@ -199,6 +200,33 @@ describe("CollectionDescription", () => {
         expect(await describeType("sample_sheet:record", 3)).toBe("a sample sheet with 3 records");
         expect(await describeType("list:list:paired", 3)).toBe("a nested list with 3 lists of pairs");
         expect(await describeType("list:list:paired", 1)).toBe("a nested list with 1 list of pairs");
+    });
+
+    async function setElementCounts(states: Record<string, number>, deleted: number, purged: number) {
+        await wrapper.setProps({
+            hdca: { ...defaultTestHDCA, elements_states: states, elements_deleted: deleted, elements_purged: purged },
+        });
+    }
+
+    it("counts purged elements separately from deleted ones", async () => {
+        await setElementCounts({ ok: 4 }, 3, 1);
+        expect(wrapper.find(".deleted-elements").text()).toBe("2 deleted");
+        expect(wrapper.find(".purged-elements").text()).toBe("1 purged");
+    });
+
+    it("shows only the purged count when all elements are purged", async () => {
+        await setElementCounts({ ok: 2 }, 2, 2);
+        expect(wrapper.find(".deleted-elements").exists()).toBe(false);
+        expect(wrapper.find(".purged-elements").text()).toBe("2 purged");
+    });
+
+    it("can leave out the purged count of an all-purged collection", async () => {
+        await wrapper.setProps({ hideAllPurgedCount: true });
+        await setElementCounts({ ok: 2 }, 2, 2);
+        expect(wrapper.find(".purged-elements").exists()).toBe(false);
+
+        await setElementCounts({ ok: 2 }, 1, 1);
+        expect(wrapper.find(".purged-elements").text()).toBe("1 purged");
     });
 
     it("names the collection type on hover", async () => {

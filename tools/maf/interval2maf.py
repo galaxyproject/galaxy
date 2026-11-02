@@ -142,15 +142,15 @@ def __main__():
                 ]
             else:
                 blocks = [block]
-            for block in blocks:
-                block = maf_utilities.chop_block_by_region(block, src, region)
-                if block is not None:
+            for sub_block in blocks:
+                chopped_block = maf_utilities.chop_block_by_region(sub_block, src, region)
+                if chopped_block is not None:
                     if species is not None:
-                        block = block.limit_to_species(species)
-                    block = maf_utilities.orient_block_by_region(block, src, region)
+                        chopped_block = chopped_block.limit_to_species(species)
+                    chopped_block = maf_utilities.orient_block_by_region(chopped_block, src, region)
                     if remove_all_gap_columns:
-                        block.remove_all_gap_columns()
-                    out.write(block)
+                        chopped_block.remove_all_gap_columns()
+                    out.write(chopped_block)
                     num_blocks += 1
 
     # Close output MAF

@@ -207,7 +207,7 @@ export async function savePage(
  * The producing subgraph is flagged `seeded` and referenced outputs `exposed`.
  */
 export async function fetchWorkflowExtractionSummary(pageId: string): Promise<WorkflowExtractionSummary> {
-    const { data, error } = await GalaxyApi().GET("/api/pages/{id}/workflow_extraction_summary", {
+    const { data, error } = await GalaxyApi().GET("/api/pages/{id}/extraction_summary", {
         params: { path: { id: pageId } },
     });
     if (error) {

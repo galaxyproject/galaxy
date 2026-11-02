@@ -29,7 +29,10 @@ from sqlalchemy.sql.expression import (
 )
 
 from galaxy import model
-from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import (
+    ObjectNotFound,
+    ToolMissingException,
+)
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.jobs import (
     JobQueueI,
@@ -328,9 +331,15 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         tool_uuid = None
         if job.dynamic_tool and (uuid := job.dynamic_tool.uuid):
             tool_uuid = uuid
-        if not self.app.toolbox.has_tool(
-            tool_id=job.tool_id, tool_version=job.tool_version, tool_uuid=tool_uuid, exact=True, user=job.user
-        ):
+        try:
+            tool_available = self.app.toolbox.has_tool(
+                tool_id=job.tool_id, tool_version=job.tool_version, tool_uuid=tool_uuid, exact=True, user=job.user
+            )
+        except (ObjectNotFound, ToolMissingException):
+            # A tool looked up by uuid raises instead of returning False, e.g. a user-defined
+            # tool whose owner lost the execution role or whose definition no longer loads.
+            tool_available = False
+        if not tool_available:
             log.warning(f"({job.id}) Tool '{job.tool_id}' removed from tool config, unable to recover job")
             self.job_wrapper(job).fail(
                 "This tool was disabled before the job completed.  Please contact your Galaxy administrator."
@@ -1067,11 +1076,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 for tag in job_wrapper.job_destination.tags:
                     # Check each tag for this job's destination
                     if tag in self.app.job_config.limits.destination_user_concurrent_jobs:
-                        # Only if there's a limit defined for this tag
-                        count = 0
-                        for id in [d.id for d in self.app.job_config.get_destinations(tag)]:
-                            # Add up the aggregate job total for this tag
-                            count += count_per_id.get(id, 0)
+                        # Only if there's a limit defined for this tag, add up the aggregate job total for this tag,
+                        # including this destination, which may not be registered under its tags
+                        tag_ids = self.app.job_config.get_destination_ids_for_tag(tag) | {id}
+                        count = sum(count_per_id.get(tag_id, 0) for tag_id in tag_ids)
                         if count >= self.app.job_config.limits.destination_user_concurrent_jobs[tag]:
                             return JOB_WAIT
         elif job.galaxy_session:
@@ -1132,11 +1140,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 for tag in job_wrapper.job_destination.tags:
                     # Check each tag for this job's destination
                     if tag in self.app.job_config.limits.destination_total_concurrent_jobs:
-                        # Only if there's a limit defined for this tag
-                        count = 0
-                        for id in [d.id for d in self.app.job_config.get_destinations(tag)]:
-                            # Add up the aggregate job total for this tag
-                            count += count_per_id.get(id, 0)
+                        # Only if there's a limit defined for this tag, add up the aggregate job total for this tag,
+                        # including this destination, which may not be registered under its tags
+                        tag_ids = self.app.job_config.get_destination_ids_for_tag(tag) | {id}
+                        count = sum(count_per_id.get(tag_id, 0) for tag_id in tag_ids)
                         if count >= self.app.job_config.limits.destination_total_concurrent_jobs[tag]:
                             return JOB_WAIT
         return JOB_READY

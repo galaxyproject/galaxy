@@ -3,9 +3,20 @@ from typing import cast
 import pytest
 
 from galaxy.exceptions import RequestParameterInvalidException
+from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.managers import repositories as repositories_manager
-from tool_shed.managers.repositories import guid_to_repository
+from tool_shed.managers.repositories import (
+    guid_to_repository,
+    repository_categories,
+)
 from tool_shed.structured_app import ToolShedApp
+from tool_shed.webapp.model import Repository
+from tool_shed_client.schema import CategorySummary
+from ._util import (
+    attach_category,
+    create_category,
+    random_name,
+)
 
 
 def test_guid_to_repository_rejects_malformed_guid():
@@ -47,3 +58,20 @@ def test_guid_to_repository_parses_owner_and_name(monkeypatch):
     assert captured["owner"] == "owner"
     assert captured["name"] == "name"
     assert captured["context"] is sentinel_context
+
+
+def test_repository_categories_leave_out_deleted_categories(
+    provides_repositories: ProvidesRepositoriesContext, new_repository: Repository
+):
+    # No API deletes a category, so this can't be set up through the API tests
+    live = create_category(provides_repositories, {"name": random_name()})
+    deleted = create_category(provides_repositories, {"name": random_name()})
+    attach_category(provides_repositories, new_repository, live)
+    attach_category(provides_repositories, new_repository, deleted)
+    deleted.deleted = True
+    provides_repositories.sa_session.flush()
+
+    app = provides_repositories.app
+    categories = repository_categories(app, new_repository)
+
+    assert categories == [CategorySummary(id=app.security.encode_id(live.id), name=live.name)]

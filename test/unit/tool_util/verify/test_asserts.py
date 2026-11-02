@@ -1093,7 +1093,10 @@ def test_has_archive_member_zip_all_matching_with_failing_content_assertion():
         ),
         ZIPBYTES,
     )
-    assert "Expected text matching expression 'file1\\.txt' in output ('testdir/file2.txt')"
+    assert (
+        "Archive member '.*file.\\.txt': Expected text matching expression 'file1\\.txt' in output ('testdir/file2.txt')"
+        in a
+    )
     assert len(a) == 1
 
 

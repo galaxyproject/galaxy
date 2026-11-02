@@ -3,6 +3,7 @@ import re
 from collections.abc import Callable
 from datetime import datetime
 from functools import wraps
+from shutil import which
 from typing import (
     TypeVar,
 )
@@ -12,7 +13,6 @@ import pytest
 from typing_extensions import ParamSpec
 
 from galaxy.util import requests
-from galaxy.util.commands import which
 from galaxy.util.tool_shed.tool_shed_registry import DEFAULT_TOOL_SHED_URL
 
 

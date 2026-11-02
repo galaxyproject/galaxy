@@ -252,6 +252,50 @@ class TestHistoryPanelCollections(SeleniumTestCase):
         self.history_panel_expand_collection(collection_hid)
         self.screenshot("history_panel_collection_view_list_list")
 
+    @selenium_test
+    def test_purged_collection_badges(self):
+        history_id = self.current_history_id()
+        all_purged = self._create_list_with_dataset_ids(history_id, ["0", "1"])
+        mixed = self._create_list_with_dataset_ids(history_id, ["0", "1", "2"])
+        for dataset_id in all_purged["dataset_ids"]:
+            self.dataset_populator.delete_dataset(history_id, dataset_id, purge=True, wait_for_purge=True)
+        self.dataset_populator.delete_dataset(history_id, mixed["dataset_ids"][0], purge=True, wait_for_purge=True)
+        self.dataset_populator.delete_dataset(history_id, mixed["dataset_ids"][1])
+
+        self.home()
+        all_purged_item = self.history_panel_item_component(hid=all_purged["hid"])
+        mixed_item = self.history_panel_item_component(hid=mixed["hid"])
+        self.history_panel_wait_for_hid_visible(all_purged["hid"])
+        all_purged_item.purged_badge.wait_for_visible()
+        all_purged_item.purged_elements_badge.assert_absent()
+        assert mixed_item.deleted_elements_badge.wait_for_text().strip() == "1 deleted"
+        assert mixed_item.purged_elements_badge.wait_for_text().strip() == "1 purged"
+        mixed_item.purged_badge.assert_absent()
+        self.screenshot("history_panel_collection_purged_badges")
+
+        # a non-deleted all-purged collection keeps its options, a deleted one loses them
+        all_purged_item.delete_button.wait_for_visible()
+        delete_response = self.dataset_populator._delete(
+            f"histories/{history_id}/contents/dataset_collections/{all_purged['id']}"
+        )
+        delete_response.raise_for_status()
+        self.history_panel_wait_for_hid_hidden(all_purged["hid"])
+        self.history_panel_include_deleted()
+        self.history_panel_wait_for_hid_visible(all_purged["hid"])
+        all_purged_item.purged_badge.wait_for_visible()
+        all_purged_item.undelete_button.assert_absent()
+
+    def _create_list_with_dataset_ids(self, history_id, contents):
+        fetch_response = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=contents, wait=True
+        )
+        hdca = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        return {
+            "id": hdca["id"],
+            "hid": hdca["hid"],
+            "dataset_ids": [element["object"]["id"] for element in hdca["elements"]],
+        }
+
     def _generate_partially_failed_collection_with_input(self):
         history_id = self.current_history_id()
         input_collection = self.dataset_collection_populator.create_list_in_history(

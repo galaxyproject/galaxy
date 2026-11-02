@@ -4,6 +4,7 @@ import json
 import subprocess
 import wave
 from functools import lru_cache
+from shutil import which
 from typing import (
     cast,
 )
@@ -14,7 +15,6 @@ from galaxy.datatypes.metadata import (
     MetadataElement,
 )
 from galaxy.datatypes.protocols import DatasetProtocol
-from galaxy.util import which
 
 
 @lru_cache(maxsize=128)

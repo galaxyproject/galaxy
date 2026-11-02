@@ -25,6 +25,11 @@ class Locators:
     push_access_username = ".push-access-username"
     push_access_remove = ".push-access-remove"
     push_access_add = ".push-access-add"
+    repository_category = ".repository-category"
+    repository_link_command = ".repository-link-command"
+    config_file_contents = ".config-file-contents"
+    config_file_contents_name = ".config-file-contents-name"
+    config_file_contents_body = ".config-file-contents-body"
 
 
 class PlaywrightShedBrowser(ShedBrowser):

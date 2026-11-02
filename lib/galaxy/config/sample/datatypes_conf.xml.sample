@@ -580,6 +580,7 @@
         <converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
     <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'scf' format with a '.scf' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Scf"/>
+    <datatype extension="sel" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="sequences" type="galaxy.datatypes.assembly:Sequences" display_in_upload="false"/>
     <datatype extension="snpeffdb" type="galaxy.datatypes.text:SnpEffDb" display_in_upload="true"/>
     <datatype extension="snpsiftdbnsfp" type="galaxy.datatypes.text:SnpSiftDbNSFP" display_in_upload="true"/>

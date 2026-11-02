@@ -14,6 +14,7 @@ from collections.abc import (
     Callable,
     Container as TypingContainer,
 )
+from shutil import which
 from typing import (
     Any,
     Literal,
@@ -27,7 +28,6 @@ from galaxy.util import (
     safe_makedirs,
     string_as_bool,
     unicodify,
-    which,
 )
 from galaxy.util.commands import shell
 from . import (

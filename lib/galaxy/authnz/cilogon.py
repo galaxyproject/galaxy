@@ -21,7 +21,7 @@ class CILogonOpenIdConnect(GalaxyOpenIdConnect):
     name = "cilogon"
 
     # CILogon-specific scopes
-    DEFAULT_SCOPE = ["openid", "email", "profile", "org.cilogon.userinfo"]
+    DEFAULT_SCOPE = ["openid", "email", "org.cilogon.userinfo"]
 
     def auth_params(self, state=None):
         """

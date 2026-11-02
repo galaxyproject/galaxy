@@ -1481,7 +1481,7 @@ test_data:
         downloaded = self._extract_and_download_workflow_by_ids(
             hda_ids=[d1["id"], d2["id"]],
             job_ids=[run["jobs"][0]["id"]],
-            output_labels=[{"kind": "hda", "id": output["id"], "label": "merged lines"}],
+            output_labels=[{"src": "hda", "id": output["id"], "label": "merged lines"}],
         )
 
         tool_step = self.assert_steps_of_type(downloaded, "tool", expected_len=1)[0]
@@ -1501,7 +1501,7 @@ test_data:
         downloaded = self._extract_and_download_workflow_by_ids(
             hda_ids=[d1["id"], d2["id"]],
             job_ids=[cat1_job_id],
-            output_labels=[{"kind": "hda", "id": copied_output["id"], "label": "copied merged lines"}],
+            output_labels=[{"src": "hda", "id": copied_output["id"], "label": "copied merged lines"}],
         )
 
         tool_step = self.assert_steps_of_type(downloaded, "tool", expected_len=1)[0]
@@ -1522,8 +1522,8 @@ test_data:
                 "hda_ids": [d1["id"], d2["id"]],
                 "job_ids": [cat1_job_id],
                 "output_labels": [
-                    {"kind": "hda", "id": output["id"], "label": "duplicate"},
-                    {"kind": "hda", "id": output["id"], "label": "duplicate"},
+                    {"src": "hda", "id": output["id"], "label": "duplicate"},
+                    {"src": "hda", "id": output["id"], "label": "duplicate"},
                 ],
             },
             (400,),
@@ -1551,8 +1551,8 @@ test_data:
                 "hda_ids": [d1["id"]],
                 "job_ids": [cat1_job_id_a, cat1_job_id_b],
                 "output_labels": [
-                    {"kind": "hda", "id": out_a["id"], "label": "shared"},
-                    {"kind": "hda", "id": out_b["id"], "label": "shared"},
+                    {"src": "hda", "id": out_a["id"], "label": "shared"},
+                    {"src": "hda", "id": out_b["id"], "label": "shared"},
                 ],
             },
             (400,),
@@ -1582,7 +1582,7 @@ test_data:
         downloaded = self._extract_and_download_workflow_by_ids(
             hdca_ids=[hdca["id"]],
             implicit_collection_jobs_ids=[icj_id1, icj_id2],
-            output_labels=[{"kind": "hdca", "id": implicit_hdca1_id, "label": "mapped lines"}],
+            output_labels=[{"src": "hdca", "id": implicit_hdca1_id, "label": "mapped lines"}],
         )
         tool_steps = self.assert_steps_of_type(downloaded, "tool", expected_len=2)
         labelled = [s for s in tool_steps if s["workflow_outputs"]]
@@ -1613,7 +1613,7 @@ test_data:
                 "workflow_name": "orphan label",
                 "hda_ids": [d1["id"], d2["id"]],
                 "job_ids": [cat1_job_id],
-                "output_labels": [{"kind": "hda", "id": unrelated["id"], "label": "orphan"}],
+                "output_labels": [{"src": "hda", "id": unrelated["id"], "label": "orphan"}],
             },
             (400,),
         )
@@ -1626,7 +1626,7 @@ test_data:
         downloaded = self._extract_and_download_workflow_by_ids(
             hda_ids=[d1["id"], d2["id"]],
             job_ids=[cat1_job_id],
-            output_labels=[{"kind": "hda", "id": output["id"], "label": "merged   lines\tfoo"}],
+            output_labels=[{"src": "hda", "id": output["id"], "label": "merged   lines\tfoo"}],
         )
         tool_step = self.assert_steps_of_type(downloaded, "tool", expected_len=1)[0]
         outputs = tool_step["workflow_outputs"]
@@ -1644,7 +1644,7 @@ test_data:
         downloaded = self._extract_and_download_workflow_by_ids(
             hda_ids=[d1["id"], d2["id"]],
             job_ids=[cat1_job_id],
-            output_labels=[{"kind": "hda", "id": output["id"], "label": long_label}],
+            output_labels=[{"src": "hda", "id": output["id"], "label": long_label}],
         )
         tool_step = self.assert_steps_of_type(downloaded, "tool", expected_len=1)[0]
         workflow_outputs = tool_step["workflow_outputs"]
@@ -1663,7 +1663,7 @@ test_data:
                 "workflow_name": "empty after strip",
                 "hda_ids": [d1["id"], d2["id"]],
                 "job_ids": [cat1_job_id],
-                "output_labels": [{"kind": "hda", "id": output["id"], "label": "   "}],
+                "output_labels": [{"src": "hda", "id": output["id"], "label": "   "}],
             },
             (400,),
         )
@@ -1689,8 +1689,8 @@ test_data:
                 "hda_ids": [d1["id"]],
                 "job_ids": [cat1_job_id_a, cat1_job_id_b],
                 "output_labels": [
-                    {"kind": "hda", "id": out_a["id"], "label": "x" * 255 + "A"},
-                    {"kind": "hda", "id": out_b["id"], "label": "x" * 255 + "B"},
+                    {"src": "hda", "id": out_a["id"], "label": "x" * 255 + "A"},
+                    {"src": "hda", "id": out_b["id"], "label": "x" * 255 + "B"},
                 ],
             },
             (400,),
@@ -1779,7 +1779,7 @@ test_data:
         downloaded = self._extract_and_download_workflow_by_ids(
             hda_ids=[d1["id"], d2["id"]],
             job_ids=[cat1_job_id],
-            step_labels=[{"kind": "job", "id": cat1_job_id, "label": "concatenate"}],
+            step_labels=[{"src": "job", "id": cat1_job_id, "label": "concatenate"}],
         )
         tool_step = self.assert_steps_of_type(downloaded, "tool", expected_len=1)[0]
         assert tool_step["label"] == "concatenate", tool_step
@@ -1795,7 +1795,7 @@ test_data:
         downloaded = self._extract_and_download_workflow_by_ids(
             hdca_ids=[hdca["id"]],
             implicit_collection_jobs_ids=[icj_id1, icj_id2],
-            step_labels=[{"kind": "implicit_collection_jobs", "id": icj_id1, "label": "first map"}],
+            step_labels=[{"src": "implicit_collection_jobs", "id": icj_id1, "label": "first map"}],
         )
         tool_steps = self.assert_steps_of_type(downloaded, "tool", expected_len=2)
         labelled = [s for s in tool_steps if s["label"] == "first map"]
@@ -1829,8 +1829,8 @@ test_data:
                 "hda_ids": [d1["id"]],
                 "job_ids": [cat1_job_id_a, cat1_job_id_b],
                 "step_labels": [
-                    {"kind": "job", "id": cat1_job_id_a, "label": "dup"},
-                    {"kind": "job", "id": cat1_job_id_b, "label": "dup"},
+                    {"src": "job", "id": cat1_job_id_a, "label": "dup"},
+                    {"src": "job", "id": cat1_job_id_b, "label": "dup"},
                 ],
             },
             (400,),
@@ -1848,7 +1848,7 @@ test_data:
                 "hda_ids": [d1["id"], d2["id"]],
                 "job_ids": [cat1_job_id],
                 "dataset_names": ["shared", "other"],
-                "step_labels": [{"kind": "job", "id": cat1_job_id, "label": "shared"}],
+                "step_labels": [{"src": "job", "id": cat1_job_id, "label": "shared"}],
             },
             (400,),
         )
@@ -1866,7 +1866,7 @@ test_data:
                 "workflow_name": "step label vs default input name",
                 "hda_ids": [d1["id"], d2["id"]],
                 "job_ids": [cat1_job_id],
-                "step_labels": [{"kind": "job", "id": cat1_job_id, "label": "Input Dataset"}],
+                "step_labels": [{"src": "job", "id": cat1_job_id, "label": "Input Dataset"}],
             },
             (400,),
         )
@@ -1888,7 +1888,7 @@ test_data:
                 "workflow_name": "unselected step label",
                 "hda_ids": [d1["id"], d2["id"]],
                 "job_ids": [cat1_job_id],
-                "step_labels": [{"kind": "job", "id": unselected_job_id, "label": "ghost"}],
+                "step_labels": [{"src": "job", "id": unselected_job_id, "label": "ghost"}],
             },
             (400,),
         )
@@ -1902,7 +1902,7 @@ test_data:
                 "workflow_name": "empty step label",
                 "hda_ids": [d1["id"], d2["id"]],
                 "job_ids": [cat1_job_id],
-                "step_labels": [{"kind": "job", "id": cat1_job_id, "label": "   "}],
+                "step_labels": [{"src": "job", "id": cat1_job_id, "label": "   "}],
             },
             (400,),
         )
@@ -1917,7 +1917,7 @@ test_data:
                 "workflow_name": "overlong step label",
                 "hda_ids": [d1["id"], d2["id"]],
                 "job_ids": [cat1_job_id],
-                "step_labels": [{"kind": "job", "id": cat1_job_id, "label": "x" * 256}],
+                "step_labels": [{"src": "job", "id": cat1_job_id, "label": "x" * 256}],
             },
             (400,),
         )
@@ -1933,7 +1933,7 @@ test_data:
                 "workflow_name": "quoted step label",
                 "hda_ids": [d1["id"], d2["id"]],
                 "job_ids": [cat1_job_id],
-                "step_labels": [{"kind": "job", "id": cat1_job_id, "label": 'say "hi"'}],
+                "step_labels": [{"src": "job", "id": cat1_job_id, "label": 'say "hi"'}],
             },
             (400,),
         )

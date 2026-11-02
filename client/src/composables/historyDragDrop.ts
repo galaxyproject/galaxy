@@ -163,7 +163,7 @@ export function useHistoryDragDrop(targetHistoryId?: Ref<string> | string, creat
             }
 
             // if items were copied
-            if (datasetCount > 0 && collectionCount > 0) {
+            if (datasetCount > 0 || collectionCount > 0) {
                 if (pinHistories && historyStore.pinnedHistories.length > 0) {
                     // pin the target history
                     historyStore.pinHistory(historyId);

@@ -187,6 +187,7 @@ def dictify_element_reference(
             dataset_summary = element_object.dataset_states_and_extensions_summary
             object_details["elements_states"] = dataset_summary.states
             object_details["elements_deleted"] = dataset_summary.deleted
+            object_details["elements_purged"] = dataset_summary.purged
             object_details["elements_datatypes"] = dataset_summary.extensions
 
             # Recursively yield elements for each nested collection...

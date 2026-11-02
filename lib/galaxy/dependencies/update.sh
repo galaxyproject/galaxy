@@ -1,7 +1,8 @@
 #!/bin/sh
 
-# Upgrade dependencies by default, export the existing lock with --export-only,
-# or verify the lock and its requirements exports without changes with --check.
+# Upgrade dependencies (and the uv pin in .tool-versions, unless -p is used) by
+# default, export the existing lock with --export-only, or verify the lock and
+# its requirements exports without changes with --check.
 set -e
 
 this_directory="$(cd "$(dirname "$0")" > /dev/null && pwd)"
@@ -19,7 +20,7 @@ pkg=
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --check) mode=check ;;
-        --export-only) mode=export ;;
+        --export-only) mode='export' ;;
         -p)
             [ "$#" -ge 2 ] || { usage; exit 2; }
             pkg="$2"
@@ -39,20 +40,34 @@ temp_dir="$(mktemp -d "${TMPDIR:-/tmp}/galaxy_requirements.XXXXXXXXXX")"
 trap 'rm -rf "$temp_dir"' 0
 trap 'exit 1' HUP INT TERM
 
-# Match CI's toolchain, including when the caller has another uv installed.
-uv_version="$(awk '$1 == "uv" { print $2 }' .tool-versions)"
-[ -n "$uv_version" ] || { echo 'Missing uv pin in .tool-versions' >&2; exit 1; }
-if command -v uv >/dev/null && [ "$(uv --version | awk '{ print $2 }')" = "$uv_version" ]; then
-    uv="$(command -v uv)"
-else
+install_uv() {
     if command -v uv >/dev/null; then
         uv venv "$temp_dir/uv"
-        uv pip install --python "$temp_dir/uv/bin/python" "uv==$uv_version"
+        uv pip install --python "$temp_dir/uv/bin/python" "$1"
     else
         python3 -m venv "$temp_dir/uv"
-        "$temp_dir/uv/bin/python" -m pip install "uv==$uv_version"
+        "$temp_dir/uv/bin/python" -m pip install "$1"
     fi
     uv="$temp_dir/uv/bin/uv"
+}
+
+# Run the uv version pinned in .tool-versions (also used by CI), so that the
+# lock and exports don't depend on which uv the caller has installed.
+pinned_uv_version="$(awk '$1 == "uv" { print $2 }' .tool-versions)"
+[ -n "$pinned_uv_version" ] || { echo 'Missing uv pin in .tool-versions' >&2; exit 1; }
+if [ "$mode" = upgrade ] && [ -z "$pkg" ]; then
+    # A full upgrade also moves the uv pin to the latest release, so that it
+    # doesn't become stale.
+    install_uv uv
+    latest_uv_version="$("$uv" --version | awk '{ print $2 }')"
+    awk -v v="$latest_uv_version" '$1 == "uv" { $2 = v } { print }' .tool-versions > "$temp_dir/tool-versions"
+else
+    # Use the caller's uv if it's the pinned version, otherwise install that.
+    if command -v uv >/dev/null && [ "$(uv --version | awk '{ print $2 }')" = "$pinned_uv_version" ]; then
+        uv="$(command -v uv)"
+    else
+        install_uv "uv==$pinned_uv_version"
+    fi
 fi
 
 if [ "$mode" = upgrade ]; then
@@ -89,4 +104,7 @@ if [ "$mode" != check ]; then
     for file in pinned-test-requirements.txt dev-requirements.txt pinned-typecheck-requirements.txt; do
         cp "$temp_dir/$file" "$requirements_dir/$file"
     done
+fi
+if [ -f "$temp_dir/tool-versions" ]; then
+    cp "$temp_dir/tool-versions" .tool-versions
 fi

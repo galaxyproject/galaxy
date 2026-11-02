@@ -6,6 +6,7 @@ import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
 
 import SelectionOperations from "./SelectionOperations.vue";
 
@@ -44,7 +45,7 @@ const getHiddenSelection = () => new Map([["FAKE_ID", { visible: false }]]);
 const getDeletedSelection = () => new Map([["FAKE_ID", { deleted: true }]]);
 const getActiveSelection = () => new Map([["FAKE_ID", { deleted: false }]]);
 
-async function mountSelectionOperationsWrapper(config, { stubs = {}, attachTo } = {}) {
+async function mountSelectionOperationsWrapper(config, { stubs = {}, attachTo, props = {} } = {}) {
     setupMockConfig(config);
 
     const pinia = createPinia();
@@ -57,6 +58,7 @@ async function mountSelectionOperationsWrapper(config, { stubs = {}, attachTo } 
             isQuerySelection: false,
             totalItemsInQuery: 5,
             isMultiViewItem: false,
+            ...props,
         },
         global: { ...localVue, stubs: { ...localVue.stubs, ...stubs } },
         pinia,
@@ -346,6 +348,42 @@ describe("History Selection Operations", () => {
                 expect(wrapper.emitted("update:show-selection")).toBeTruthy();
                 expect(wrapper.emitted("update:show-selection").at(-1)).toEqual([false]);
             });
+        });
+    });
+
+    describe("Collection Building", () => {
+        const selection = new Map([
+            ["dataset-1", { id: "1", history_content_type: "dataset" }],
+            ["dataset-2", { id: "2", history_content_type: "dataset" }],
+        ]);
+
+        beforeEach(async () => {
+            wrapper = await mountSelectionOperationsWrapper(TASKS_CONFIG, { props: { contentSelection: selection } });
+        });
+
+        it("should hand the selection to the list wizard and keep selection mode", async () => {
+            const push = vi.spyOn(wrapper.vm.$router, "push").mockResolvedValue();
+            wrapper.findComponent('[data-description="auto build list"]').vm.$emit("click");
+            await flushPromises();
+            expect(useCollectionBuilderItemSelection().selectedItems).toEqual(Array.from(selection.values()));
+            expect(push).toHaveBeenCalledWith("/collection/new_list?advanced=false");
+            expect(wrapper.emitted("update:show-selection")).toBeUndefined();
+        });
+
+        it("should leave selection mode when the list wizard creates a collection", async () => {
+            wrapper.findComponent('[data-description="auto build list"]').vm.$emit("click");
+            await flushPromises();
+            useCollectionBuilderItemSelection().markCollectionCreated();
+            await flushPromises();
+            expect(wrapper.emitted("update:show-selection")).toEqual([[false]]);
+        });
+
+        it("should leave selection mode when the creator modal creates a collection", async () => {
+            await wrapper.setProps({ isQuerySelection: true, selectionSize: 5 });
+            wrapper.findComponent('[data-description="build list all"]').vm.$emit("click");
+            await flushPromises();
+            wrapper.findComponent({ name: "CollectionCreatorIndex" }).vm.$emit("created-collection", { id: "c1" });
+            expect(wrapper.emitted("update:show-selection")).toEqual([[false]]);
         });
     });
 

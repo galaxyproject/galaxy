@@ -1,10 +1,10 @@
 import multiprocessing
 import os
 import subprocess
+from shutil import which
 
 from galaxy.util import (
     umask_fix_perms,
-    which,
 )
 
 

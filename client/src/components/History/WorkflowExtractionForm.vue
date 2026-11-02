@@ -215,7 +215,7 @@ const selectedOutputLabels = computed<OutputLabelHint[]>(() => {
             }
             outputLabels.push({
                 id: output.id,
-                kind: output.history_content_type === "dataset" ? "hda" : "hdca",
+                src: output.history_content_type === "dataset" ? "hda" : "hdca",
                 label,
             });
         }
@@ -237,9 +237,9 @@ const selectedStepLabels = computed<StepLabelHint[]>(() => {
             continue;
         }
         if (isMappedTool(job)) {
-            hints.push({ kind: "implicit_collection_jobs", id: job.implicit_collection_jobs_id, label });
+            hints.push({ src: "implicit_collection_jobs", id: job.implicit_collection_jobs_id, label });
         } else if (job.id) {
-            hints.push({ kind: "job", id: job.id, label });
+            hints.push({ src: "job", id: job.id, label });
         }
     }
     return hints;

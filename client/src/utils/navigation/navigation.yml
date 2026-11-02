@@ -294,6 +294,9 @@ history_panel:
       delete_button: '${_} .delete-btn'
       undelete_button: '${_} .undelete-btn'
       unhide_button: '${_} .unhide-btn'
+      purged_badge: '${_} .content-purged'
+      deleted_elements_badge: '${_} .deleted-elements'
+      purged_elements_badge: '${_} .purged-elements'
       rerun_button: '${_} .rerun-btn'
       collection_job_details_button: '${_} .collection-job-details-btn'
 
@@ -336,6 +339,8 @@ history_panel:
       show_button: '.show-history-content-selectors-btn'
       action_button: '.history-contents-list-action-menu-btn'
       action_menu: '.list-action-menu .dropdown-menu'
+      selected_content_menu: '[data-description="selected content menu"]'
+      item_selector: '.content-item .selector'
 
     labels:
       build_pair: "Build Dataset Pair"
@@ -530,11 +535,11 @@ multi_history_panel:
     _: '.multi-history-panel .content-item${suffix}'
     item: '.multi-history-panel #${history_content_type}-${id}'
     histories: '.multi-history-panel .history-layout'
-    current_label: '.details .name'
-    switch_history: '.switch-to'
-    current_history_check: '#history-column-${history_id} .details .name'
+    history_column_item: '.multi-history-panel .history-column[data-history-id="${history_id}"] .content-item[data-hid="${hid}"]'
+    history_column_drop_zone: '.multi-history-panel .history-column[data-history-id="${history_id}"] .history-layout'
+    current_history_check: '.multi-history-panel .history-column[data-history-id="${history_id}"] [data-description="name display"]'
     empty_message_check: '#empty-history-message'
-    switch_button: '#history-column-${history_id} .switch-to'
+    switch_button: '.multi-history-panel .history-column[data-history-id="${history_id}"] [data-description="switch to history button"]'
   history_dropdown_menu:
     selectors:
       _: '[history-dropdown-menu="${history_id}"]'
@@ -654,6 +659,7 @@ histories:
       share_with_input: '.share_with_view input'
       make_accessible: '.make-accessible input'
       make_publishable: '.make-publishable input'
+      published_items_link: '.make-publishable a'
       tab_make_private: '[aria-controls="history-make-private-tab"]'
       make_private: '[data-description="history make private"]'
       permissions_change_required: '[data-description="sharing permissions change required"]'
@@ -1217,6 +1223,8 @@ workflow_editor:
 
   best_practices:
     selectors:
+      section_formal_inputs: '[data-description="linting formal inputs"]'
+      item_formal_input: '[data-description="linting formal inputs"] [data-item-index="${index}"]'
       section_input_metadata: '[data-description="linting input metadata"]'
       item_input_metadata: '[data-description="linting input metadata"] [data-item-index="${index}"]'
       section_conditional_gates: '[data-description="linting conditional gates"]'
@@ -1547,6 +1555,11 @@ admin:
       filter_link_by_handler: '.job-filter-link-handler[data-handler="${handler}"]'
       filter_link_by_runner: '.job-filter-link-runner[data-runner="${runner}"]'
       filter_query: '#job-search .search-query'
+      select_all: '.jobs-table thead .g-checkbox'
+      row_select: '.jobs-table tbody .g-checkbox'
+      stop_message: '#stop-message'
+      stop_submit: '[data-description="stop selected jobs"]'
+      status_alert: '[data-description="jobs status alert"]'
 
   toolshed:
     selectors:

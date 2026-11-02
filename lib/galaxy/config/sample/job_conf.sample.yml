@@ -1283,6 +1283,10 @@ limits:
   # The number of jobs a user can have active in the specified
   # environment, or across all environments identified by the
   # specified tag. (formerly: concurrent_jobs)
+  # For environments created at runtime by dynamic rules, jobs in
+  # other runtime environments with the same tag count toward a tag
+  # limit only if the rules register their tags with Galaxy, as TPV
+  # does.
   type: environment_user_concurrent_jobs
   id: local
   value: 1

@@ -258,11 +258,11 @@ class FastAPIPages:
         return self.service.show(trans, id)
 
     @router.get(
-        "/api/pages/{id}/workflow_extraction_summary",
+        "/api/pages/{id}/extraction_summary",
         summary="Summarize the page's history for workflow extraction, seeded from referenced outputs.",
         response_description="The history's extraction summary with seeded rows and exposed outputs.",
     )
-    def workflow_extraction_summary(
+    def extraction_summary(
         self,
         id: PageIdPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,

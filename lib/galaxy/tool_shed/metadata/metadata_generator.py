@@ -838,7 +838,7 @@ class BaseMetadataGenerator:
             repository_dependencies_dict = metadata.get("repository_dependencies", None)
         else:
             repository_dependencies_dict = metadata.get("invalid_repository_dependencies", None)
-        for repository_dependency_tup in repository_dependency_tups:
+        if repository_dependency_tups:
             if repository_dependencies_dict:
                 repository_dependencies = repository_dependencies_dict.get("repository_dependencies", [])
                 for repository_dependency_tup in repository_dependency_tups:

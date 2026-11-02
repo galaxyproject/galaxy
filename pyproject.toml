@@ -278,16 +278,20 @@ extra-index-url = ["https://wheels.galaxyproject.org/simple"]
 index-strategy = "unsafe-best-match"
 package = false
 
-# Galaxy's index carries isal 1.8.0 wheels for Python 3.15 only. Select PyPI
-# explicitly on earlier Python versions so those wheels do not shadow PyPI's
-# wheels for the same release.
+# Galaxy's index carries wheels for some releases that only cover a subset of
+# Python versions (isal 1.8.0 for Python 3.15 only, lxml 6.1.3 for Python 3.8
+# only). With `unsafe-best-match`, uv doesn't combine files from different
+# indexes for the same release, so select PyPI explicitly where these wheels
+# would otherwise shadow PyPI's wheels for the same release (for isal on
+# Python versions before 3.15, for lxml always).
 [[tool.uv.index]]
-name = "isal-pypi"
+name = "pypi-only"
 url = "https://pypi.org/simple"
 explicit = true
 
 [tool.uv.sources]
-isal = { index = "isal-pypi", marker = "python_version < '3.15'" }
+isal = { index = "pypi-only", marker = "python_version < '3.15'" }
+lxml = { index = "pypi-only" }
 galaxy-auth = { workspace = true }
 galaxy-config = { workspace = true }
 galaxy-data = { workspace = true }

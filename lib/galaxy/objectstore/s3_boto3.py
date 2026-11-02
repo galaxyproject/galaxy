@@ -30,6 +30,7 @@ except ImportError:
     TransferConfig = None  # type: ignore[assignment,unused-ignore,misc]
     Config = None  # type: ignore[assignment,unused-ignore,misc]
 
+from galaxy.exceptions import ObjectNotFound
 from galaxy.util import (
     asbool,
     chunk_iterable,
@@ -140,9 +141,7 @@ def parse_config_xml(config_xml):
             "cache": cache_dict,
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
-            "enable_direct_download": CachingConcreteObjectStore.parse_enable_direct_download_from_config_xml(
-                config_xml
-            ),
+            **CachingConcreteObjectStore.parse_direct_download_config_from_config_xml(config_xml),
         }
         name = config_xml.attrib.get("name", None)
         if name is not None:
@@ -354,6 +353,24 @@ class S3ObjectStore(CachingConcreteObjectStore):
         body = self._client.get_object(Bucket=self.bucket, Key=rel_path)["Body"]
         return RemoteDataStream(body.iter_chunks(chunk_size=STREAM_CHUNK_SIZE), body.close)
 
+    def _read_remote_head(self, rel_path: str, size: int) -> bytes | None:
+        try:
+            response = self._client.get_object(Bucket=self.bucket, Key=rel_path, Range=f"bytes=0-{size - 1}")
+        except ClientError as e:
+            code = e.response["Error"]["Code"]
+            # No byte range can be satisfied in an empty object.
+            if code == "InvalidRange":
+                return b""
+            if code in ("NoSuchKey", "404"):
+                raise ObjectNotFound(f"objectstore.get_data_head, object does not exist: {rel_path}")
+            raise
+        body = response["Body"]
+        try:
+            # Bounded in case an S3-compatible endpoint ignores the range and sends the whole object.
+            return body.read(size)
+        finally:
+            body.close()
+
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:
             self._client.put_object(Body=from_string.encode("utf-8"), Bucket=self.bucket, Key=rel_path)
@@ -470,7 +487,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 url = self._client.generate_presigned_url(
                     ClientMethod="get_object",
                     Params=params,
-                    ExpiresIn=3600,
+                    ExpiresIn=self.direct_download_expires_in,
                     HttpMethod="GET",
                 )
                 return url

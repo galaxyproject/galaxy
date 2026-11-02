@@ -90,6 +90,8 @@ export default defineConfig({
         environmentOptions: {
             happyDOM: {
                 url: "http://localhost/",
+                // happy-dom 21 disables iframe loading by default; visualization tests read iframe documents.
+                settings: { enableIframePageLoading: true },
             },
         },
         coverage: {

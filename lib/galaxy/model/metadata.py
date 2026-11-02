@@ -461,6 +461,9 @@ MetadataParameter sub-classes.
 class IntParameter(MetadataParameter):
     @classmethod
     def marshal(cls, value):
+        # Output metadata actions supply comma-split defaults, including scalar values.
+        if isinstance(value, list) and len(value) == 1:
+            value = value[0]
         if isinstance(value, bool) or (isinstance(value, float) and not value.is_integer()):
             raise RequestParameterInvalidException(f"Expected an integer, got {value!r}")
         if value is None or isinstance(value, int):

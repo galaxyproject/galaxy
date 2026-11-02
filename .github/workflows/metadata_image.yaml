@@ -64,7 +64,7 @@ jobs:
           # Defaults deliberately exercise the latest stable release build.
       - name: Login to Quay
         if: github.event_name != 'pull_request' && github.repository == 'galaxyproject/galaxy'
-        uses: docker/login-action@v4.6.0
+        uses: docker/login-action@v4.7.0
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}

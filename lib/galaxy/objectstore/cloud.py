@@ -381,7 +381,7 @@ class Cloud(CachingConcreteObjectStore):
             try:
                 key = self.bucket.objects.get(rel_path)
                 return key.generate_url(
-                    expires_in=86400,  # 24hrs
+                    expires_in=self.direct_download_expires_in,
                     content_disposition=content_disposition,
                     content_type=content_type,
                 )

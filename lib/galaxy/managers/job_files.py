@@ -52,8 +52,12 @@ class JobFilesManager:
             raise exceptions.RequestParameterInvalidException("Path does not refer to a file.")
         # Inputs may be purged while the job is queued or running; pulsar handles that error.
         if re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path)):
-            input_datasets = [jtid.dataset.dataset for jtid in job.input_datasets if jtid.dataset]
-            if any(dataset and dataset.purged for dataset in input_datasets):
+            # Purging an input commits the HDA as purged before it removes the file and
+            # commits the dataset as purged, so check both to cover the window in between.
+            if any(
+                jtid.dataset and (jtid.dataset.purged or (jtid.dataset.dataset and jtid.dataset.dataset.purged))
+                for jtid in job.input_datasets
+            ):
                 raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
         raise exceptions.ObjectNotFound("File not found.")
 
@@ -62,6 +66,8 @@ class JobFilesManager:
         job, path = self._authorize(encoded_job_id, path, job_key)
         if not path:
             raise exceptions.RequestParameterInvalidException("'path' parameter not provided or empty.")
+        if not os.path.isabs(path):
+            raise exceptions.RequestParameterInvalidException("'path' parameter must be an absolute path.")
         working_directory = JobWorkingDirectory(job, self._object_store).resolve()
         if util.in_directory(path, working_directory):
             return working_directory

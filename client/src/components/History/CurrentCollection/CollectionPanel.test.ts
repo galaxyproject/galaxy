@@ -43,6 +43,7 @@ function mockCollection(): HDCASummary {
         element_count: NUM_ELEMENTS,
         elements_datatypes: ["txt"],
         elements_deleted: 0,
+        elements_purged: 0,
         elements_states: { running: NUM_ELEMENTS },
         collection_type: "list",
         populated_state: "ok",

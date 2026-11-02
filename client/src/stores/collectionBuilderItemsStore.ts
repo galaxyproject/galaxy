@@ -10,13 +10,19 @@ import type { ShowElementExtensionFunction } from "@/components/Collections/comm
 export const useCollectionBuilderItemSelection = defineStore("collectionBuilderItemSelection", () => {
     const selectedItems = ref<HistoryItemSummary[]>([]);
     const historyId = ref<string | null>(null);
+    /** Bumped each time a builder creates a collection from `selectedItems`. */
+    const collectionsCreated = ref(0);
 
     function setSelectedItems(selectionHistoryId: string, newSelectedItems: HistoryItemSummary[]) {
         historyId.value = selectionHistoryId;
         selectedItems.value = newSelectedItems;
     }
 
-    return { selectedItems, historyId, setSelectedItems };
+    function markCollectionCreated() {
+        collectionsCreated.value++;
+    }
+
+    return { selectedItems, historyId, collectionsCreated, setSelectedItems, markCollectionCreated };
 });
 
 export const usePairingDatasetTargetsStore = defineStore("pairingDatasetTargets", {

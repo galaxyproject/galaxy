@@ -14,6 +14,7 @@ from collections.abc import (
     Iterable,
     Iterator,
 )
+from shutil import which
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -27,7 +28,6 @@ from galaxy.util import (
     download_to_file,
     listify,
     smart_str,
-    which,
 )
 from . import installable
 

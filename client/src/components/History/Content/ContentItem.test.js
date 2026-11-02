@@ -9,6 +9,7 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { updateContentFields } from "@/components/History/model/queries";
 
 import ContentItem from "./ContentItem.vue";
+import ContentOptions from "./ContentOptions.vue";
 
 vi.mock("@/components/History/model/queries");
 
@@ -32,6 +33,18 @@ const item = {
     tags: ["tag1", "tag2", "tag3"],
     deleted: false,
     visible: true,
+};
+
+const deletedCollection = {
+    ...item,
+    collection_type: "list",
+    history_content_type: "dataset_collection",
+    element_count: 2,
+    elements_datatypes: [],
+    elements_states: { ok: 2 },
+    elements_deleted: 2,
+    elements_purged: 2,
+    deleted: true,
 };
 
 describe("ContentItem", () => {
@@ -87,6 +100,31 @@ describe("ContentItem", () => {
         await button.trigger("click");
         await wrapper.setProps({ item: { ...item, sub_items: [{ id: "converted-1" }] } });
         expect(wrapper.get("button.display-btn").attributes("aria-label")).toBe("Show converted items (1)");
+    });
+
+    it("shows a collection as purged only when all its elements are purged", async () => {
+        await wrapper.setProps({ isDataset: false, item: { ...deletedCollection, elements_purged: 1 } });
+        expect(wrapper.find(".content-purged").exists()).toBe(false);
+
+        const emptyCounts = { element_count: 0, elements_states: {}, elements_deleted: 0, elements_purged: 0 };
+        await wrapper.setProps({ item: { ...deletedCollection, ...emptyCounts } });
+        expect(wrapper.find(".content-purged").exists()).toBe(false);
+
+        await wrapper.setProps({ item: deletedCollection });
+        expect(wrapper.find(".content-purged").exists()).toBe(true);
+        expect(wrapper.findComponent(ContentOptions).exists()).toBe(false);
+    });
+
+    it("keeps the options of a non-deleted collection whose elements are all purged", async () => {
+        await wrapper.setProps({ isDataset: false, item: { ...deletedCollection, deleted: false } });
+        expect(wrapper.find(".content-purged").exists()).toBe(true);
+        expect(wrapper.findComponent(ContentOptions).exists()).toBe(true);
+    });
+
+    it("hides the options of a purged collection element dataset", async () => {
+        await wrapper.setProps({ isHistoryItem: false, item: { id: "item_id", purged: true } });
+        expect(wrapper.find(".content-purged").exists()).toBe(true);
+        expect(wrapper.findComponent(ContentOptions).exists()).toBe(false);
     });
 
     it("check basics", async () => {

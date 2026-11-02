@@ -378,10 +378,10 @@ def rebuild_toolbox_search_index(app, **kwargs):
         log.debug("App is not the config watcher, not building a search index")
 
 
-def reload_job_rules(app: "MinimalManagerApp", **kwargs):
+def reload_job_rules(app: "MinimalManagerApp", **kwargs) -> None:
     reload_timer = util.ExecutionTimer()
-    for module in job_rule_modules(app):
-        rules_module_name = module.__name__
+    for job_rule_module in job_rule_modules(app):
+        rules_module_name = job_rule_module.__name__
         for name, module in sys.modules.items():
             if (name == rules_module_name or name.startswith(f"{rules_module_name}.")) and ismodule(module):
                 log.debug("Reloading job rules module: %s", name)

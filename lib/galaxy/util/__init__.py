@@ -39,6 +39,7 @@ from email.message import EmailMessage
 from hashlib import md5
 from os.path import relpath
 from pathlib import Path
+from shutil import which as which  # noqa: F401  # re-exported for galaxy-util users
 from typing import (
     Any,
     cast,
@@ -871,15 +872,6 @@ def ready_name_for_url(raw_name: str) -> str:
     if slug_base.endswith("-"):
         slug_base = slug_base[:-1]
     return slug_base
-
-
-def which(file: str) -> str | None:
-    # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
-    for path in os.environ["PATH"].split(":"):
-        if os.path.exists(path + "/" + file):
-            return path + "/" + file
-
-    return None
 
 
 def in_directory(file, directory, local_path_module=os.path):
