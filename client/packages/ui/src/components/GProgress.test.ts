@@ -269,6 +269,47 @@ describe("GProgress", () => {
         ).toBe(false);
     });
 
+    it("drops the percentage below 5% of the maximum and marks the fill end instead", () => {
+        const narrow = mount(GProgressBar, { props: { value: 49, max: 1000, variant: "success" } });
+        expect(narrow.text()).toBe("");
+        expect(narrow.classes("g-progress-bar-marked")).toBe(true);
+        expect(narrow.attributes("aria-valuenow")).toBe("49");
+        expect(narrow.attributes("aria-valuemax")).toBe("1000");
+
+        const atLimit = mount(GProgressBar, { props: { value: 5, variant: "success" } });
+        expect(atLimit.text()).toBe("5%");
+        expect(atLimit.classes("g-progress-bar-marked")).toBe(false);
+
+        const stacked = mountStacked(`
+            <GProgress :max="100" show-progress>
+                <GProgressBar :value="3" variant="warning" />
+                <GProgressBar :value="20" variant="warning" />
+            </GProgress>`);
+        expect(bars(stacked).map((bar) => bar.text())).toEqual(["", "20%"]);
+    });
+
+    it("keeps explicit content on a narrow fill", () => {
+        const options = { value: 1, variant: "success" as const };
+
+        const labelled = mount(GProgressBar, { props: { ...options, label: "One" } });
+        expect(labelled.text()).toBe("One");
+        expect(labelled.classes("g-progress-bar-marked")).toBe(false);
+
+        const slotted = mount(GProgressBar, { props: options, slots: { default: "One" } });
+        expect(slotted.text()).toBe("One");
+        expect(slotted.classes("g-progress-bar-marked")).toBe(false);
+
+        expect(mount(GProgressBar, { props: { ...options, showValue: true } }).text()).toBe("1");
+    });
+
+    it("renders no content in a bar with no fill", () => {
+        for (const props of [{}, { showValue: true }, { label: "None" }]) {
+            expect(mount(GProgressBar, { props: { value: 0, ...props } }).text()).toBe("");
+        }
+        expect(mount(GProgressBar, { props: { value: 0 }, slots: { default: "None" } }).text()).toBe("");
+        expect(mount(GProgressBar, { props: { value: 0, label: "None" } }).attributes("aria-valuetext")).toBe("None");
+    });
+
     it("works as a standalone bar with a maximum of 100", () => {
         const wrapper = mount(GProgressBar, { props: { value: 40 } });
 

@@ -8,7 +8,8 @@
  * Content, by priority: the default slot, `label`, the value (`showValue`), the percentage. Bars
  * show their percentage by default because some fills fall below 3:1 against the track; set
  * `:show-progress="false"` only where text has no room or the value is shown nearby; those fills
- * then mark their end.
+ * then mark their end. Below 5% of `max` the percentage is dropped the same way, since it would be
+ * clipped; `aria-valuenow` still carries the value. A bar with no fill renders no content.
  */
 
 import { computed, inject } from "vue";
@@ -39,6 +40,8 @@ interface Props {
 
 // These fills fall below 3:1 against the grey-200 track, so a bar without text marks its fill end
 const VARIANTS_BELOW_TRACK_CONTRAST: ProgressVariant[] = ["success", "warning", "info"];
+// Narrower fills clip the percentage into unreadable fragments
+const MIN_PERCENT_FOR_TEXT = 5;
 
 const props = withDefaults(defineProps<Props>(), {
     value: 0,
@@ -78,7 +81,7 @@ const text = computed(() => {
     if (props.showValue ?? (props.showProgress ? false : progress?.showValue.value)) {
         return value.value.toFixed(precision.value);
     }
-    if ((props.showProgress ?? progress?.showProgress.value) !== false) {
+    if ((props.showProgress ?? progress?.showProgress.value) !== false && percent.value >= MIN_PERCENT_FOR_TEXT) {
         return `${percent.value.toFixed(precision.value)}%`;
     }
     return "";
@@ -106,7 +109,7 @@ const classes = computed(() => ({
         :aria-valuemax="max"
         :aria-valuenow="valueNow"
         :aria-valuetext="props.label">
-        <slot>{{ text }}</slot>
+        <slot v-if="percent > 0">{{ text }}</slot>
     </div>
 </template>
 
