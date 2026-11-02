@@ -229,7 +229,7 @@ pre {
     box-shadow: var(--shed-shadow-sm);
 }
 
-/* Form fields: a little taller and softer than the package default, with a brand focus ring */
+/* Form fields: a little taller and softer than the package default, with a brand focus border */
 .shed-main input.g-form-input,
 .shed-main textarea.g-form-input {
     min-height: 2.5rem;
@@ -248,10 +248,9 @@ pre {
     border-color: var(--color-ebony-clay-400, #8992b2);
 }
 
-/* A solid primary ring: a tinted halo falls under the 3:1 a focus indicator needs on white */
+/* The focus ring comes from GFormInput's outline; a box-shadow ring here would draw a second one */
 .shed-main input.g-form-input:focus {
     border-color: var(--color-galaxy-primary, #25537b);
-    box-shadow: 0 0 0 1px var(--color-galaxy-primary, #25537b);
 }
 
 .shed-main .g-form-label .label-text {
