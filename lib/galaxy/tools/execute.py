@@ -85,6 +85,7 @@ def execute(
     max_num_jobs: Optional[int] = None,
     job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
     completed_jobs: Optional[CompletedJobsT] = None,
+    recorded_job_indexes: Optional[set[int]] = None,
     workflow_resource_parameters: Optional[WorkflowResourceParametersT] = None,
     validate_outputs: bool = False,
 ):
@@ -108,7 +109,13 @@ def execute(
         )
     else:
         execution_tracker = WorkflowStepExecutionTracker(
-            trans, tool, mapping_params, collection_info, invocation_step, completed_jobs=completed_jobs
+            trans,
+            tool,
+            mapping_params,
+            collection_info,
+            invocation_step,
+            completed_jobs=completed_jobs,
+            recorded_job_indexes=recorded_job_indexes,
         )
     execution_cache = ToolExecutionCache(trans)
 
@@ -690,9 +697,11 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         collection_info: Optional[MatchingCollections],
         invocation_step: model.WorkflowInvocationStep,
         completed_jobs: Optional[CompletedJobsT] = None,
+        recorded_job_indexes: Optional[set[int]] = None,
     ):
         super().__init__(trans, tool, mapping_params, collection_info, completed_jobs=completed_jobs)
         self.invocation_step = invocation_step
+        self.recorded_job_indexes = recorded_job_indexes or set()
 
     def record_success(self, execution_slice, job, outputs):
         super().record_success(execution_slice, job, outputs)
@@ -707,14 +716,10 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         # already turned into jobs. Their output elements are populated, but a
         # job cache hit would otherwise yield them again, so a capped
         # iteration would never get past the first batch.
-        implicit_collection_jobs = self.implicit_collection_jobs
-        recorded_job_indexes = (
-            implicit_collection_jobs.recorded_order_indexes() if implicit_collection_jobs is not None else set()
-        )
         for job_index, (param_combination, (dataset_collection_elements, _when_value)) in enumerate(
             zip(self.param_combinations, self.walk_implicit_collections())
         ):
-            if job_index in recorded_job_indexes:
+            if job_index in self.recorded_job_indexes:
                 continue
             completed_job = self.completed_jobs and self.completed_jobs[job_index]
             if not completed_job:
