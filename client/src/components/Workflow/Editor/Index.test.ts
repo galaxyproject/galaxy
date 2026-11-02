@@ -639,6 +639,64 @@ describe("Index", () => {
         });
     });
 
+    describe("while the workflow loads", () => {
+        let stateStore: ReturnType<typeof useWorkflowStateStore>;
+        let resolveVersions: (versions: never[]) => void;
+
+        /** Mounts the editor and lets loading run up to the (held) versions request. */
+        async function mountWithPendingVersions() {
+            mockLoadWorkflow.mockResolvedValue({
+                name: "loaded name",
+                annotation: "loaded annotation",
+                steps: {},
+                comments: [],
+                tags: [],
+            });
+            mockGetVersions.mockReturnValue(new Promise((resolve) => (resolveVersions = resolve)));
+
+            const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+            setActivePinia(testingPinia);
+            useDatatypesMapperStore().datatypesMapper = testDatatypesMapper;
+            stateStore = useWorkflowStateStore("workflow_id");
+            const wrapper = shallowMount(Index as object, {
+                propsData: { workflowId: "workflow_id", initialVersion: 1, workflows: [], toolbox: [] },
+                global: localVue,
+                pinia: testingPinia,
+                stubs: editorStubs(),
+            });
+            await flushPromises();
+            expect(wrapper.findComponent(WorkflowAttributes).props("name")).toBe("loaded name");
+            return wrapper;
+        }
+
+        it("does not mark loaded attributes as unsaved changes", async () => {
+            const wrapper = await mountWithPendingVersions();
+
+            expect(stateStore.hasChanges).toBe(false);
+            wrapper.findComponent(activityBarStub).vm.$emit("activityClicked", "exit");
+            await flushPromises();
+            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
+            expect(mockPush).toHaveBeenCalledWith("/workflows/list");
+
+            resolveVersions([]);
+            await flushPromises();
+            expect(stateStore.hasChanges).toBe(false);
+        });
+
+        it("keeps a workflow upgraded on load marked as changed", async () => {
+            mockGetStateUpgradeMessages.mockImplementation(() => [
+                { stepIndex: "0", name: "cat1", details: ["upgraded"], iconType: "tool", label: "" },
+            ]);
+            await mountWithPendingVersions();
+
+            expect(stateStore.hasChanges).toBe(true);
+
+            resolveVersions([]);
+            await flushPromises();
+            expect(stateStore.hasChanges).toBe(true);
+        });
+    });
+
     describe("onNavigate", () => {
         let stateStore: ReturnType<typeof useWorkflowStateStore>;
 
