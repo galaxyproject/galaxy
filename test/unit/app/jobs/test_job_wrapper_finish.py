@@ -12,6 +12,7 @@ from galaxy import (
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.model import store
+from galaxy.model.metadata import MetadataTempFilePathError
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.unittest import TestCase
 
@@ -111,6 +112,18 @@ class TestJobWrapperFinish(TestCase, UsesTools):
 
         assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
         assert self.job.state == model.Job.states.OK
+
+    def test_metadata_temp_file_outside_metadata_directory_fails_metadata_only(self):
+        wrapper = MinimalJobWrapper(self.job, self.app, tool=self.tool)
+        metadata = wrapper.external_output_metadata
+        with (
+            patch.object(metadata, "external_metadata_set_successfully", return_value=True),
+            patch.object(metadata, "load_metadata", side_effect=MetadataTempFilePathError("/etc/passwd")),
+        ):
+            self._finish_and_record_commits(wrapper)
+
+        assert self.job.state == model.Job.states.OK
+        assert self.job.output_datasets[0].dataset.state == model.HistoryDatasetAssociation.states.FAILED_METADATA
 
     def test_extended_metadata_outputs_and_final_job_state_are_committed_together(self):
         self.app.config.metadata_strategy = "extended"

@@ -425,6 +425,22 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         object_store = cast("MockObjectStore", self.app.object_store)
         assert object_store.created_datasets == {}
 
+    def test_tool_provided_metadata_sets_metadata_temp_file_from_metadata_directory(self):
+        index_path = self._setup_extra_file(filename="index", subdir="metadata", contents="bam index")
+
+        with self._disk_object_store():
+            dataset = self._collect_bam_index_metadata(index_path)
+
+            with open(dataset.metadata.bam_index.get_file_name()) as f:
+                assert f.read() == "bam index"
+
+    def test_tool_provided_metadata_cannot_set_metadata_temp_file_outside_metadata_directory(self):
+        with self._external_file() as outside_path, self._disk_object_store():
+            dataset = self._collect_bam_index_metadata(outside_path)
+
+        assert dataset.state == model.HistoryDatasetAssociation.states.FAILED_METADATA
+        assert not self.app.model.context.scalars(select(model.MetadataFile)).all()
+
     def test_tool_provided_metadata_allows_nested_filename(self):
         filename = os.path.join("nested", "dataset.txt")
         path = self._setup_extra_file(filename="dataset.txt", subdir="nested")
@@ -558,6 +574,19 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert DEFAULT_EXTRA_NAME in output_files, f"No such key [{DEFAULT_EXTRA_NAME}]"
         return output_files[DEFAULT_EXTRA_NAME]
 
+    def _collect_bam_index_metadata(self, index_path):
+        filename = "dataset.bam"
+        self._setup_extra_file(filename=filename)
+        metadata = self._tool_provided_metadata(
+            filename,
+            ext="bam",
+            metadata={"bam_index": {"__class__": "MetadataTempFile", "filename": index_path, "kwds": {}}},
+        )
+        collected = self._collect(
+            tool_provided_metadata=metadata, metadata_tmp_files_dir=os.path.join(self.test_directory, "metadata")
+        )
+        return collected[DEFAULT_TOOL_OUTPUT]["discovered"]
+
     def _collect_tool_provided_dataset(self, filename):
         metadata = self._tool_provided_metadata(filename)
         collected = self._collect(tool_provided_metadata=metadata)
@@ -599,7 +628,7 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
             self._setup_extra_file(path=outside_path)
             yield outside_path
 
-    def _collect(self, job_working_directory=None, tool_provided_metadata=None):
+    def _collect(self, job_working_directory=None, tool_provided_metadata=None, metadata_tmp_files_dir=None):
         if not job_working_directory:
             job_working_directory = self.test_directory
         if tool_provided_metadata is None:
@@ -618,6 +647,7 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
             input_ext="txt",
             input_dbkey="btau",
             inp_data={},
+            metadata_tmp_files_dir=metadata_tmp_files_dir,
         )
 
     def _replace_output_collectors(self, xml_str):

@@ -1,15 +1,21 @@
 import json
 import os
+import shutil
 import subprocess
 from types import SimpleNamespace
 
 import pytest
+from sqlalchemy import select
 
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.metadata.set_metadata import load_job_metadata
+from galaxy.model.metadata import (
+    MetadataTempFile,
+    MetadataTempFilePathError,
+)
 from galaxy.model.store.discover import InvalidDiscoveredFilePathError
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.objectstore._caching_base import CachingConcreteObjectStore
@@ -26,6 +32,8 @@ from galaxy.util import (
     safe_makedirs,
 )
 from galaxy.util.unittest import TestCase
+
+REMOTE_METADATA_DIRECTORY = "/remote/job/metadata"
 
 
 class MissingRemoteCachingObjectStore(CachingConcreteObjectStore):
@@ -276,6 +284,87 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         )
         assert output_dataset.metadata.sequences == 1
 
+    def test_directory_metadata_regenerates_existing_metadata_file(self):
+        self.app.config.metadata_strategy = "directory"
+        source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
+        self._init_tool_for_path(source_file_name)
+        output_dataset = self._create_output_dataset(extension="bam")
+        shutil.copy(os.path.join(galaxy_directory(), "test-data/1.bam"), output_dataset.dataset.get_file_name())
+        stale_index = os.path.join(self.test_directory, "stale.bai")
+        with open(stale_index, "w") as f:
+            f.write("stale index")
+        output_dataset.metadata.from_JSON_dict(
+            json_dict={"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": stale_index})}
+        )
+        self.app.model.session.commit()
+        command = self.metadata_command({"out_file1": output_dataset})
+        self._write_job_files()
+        self.exec_metadata_command(command)
+        assert self.metadata_compute_strategy
+        assert self.metadata_compute_strategy.external_metadata_set_successfully(
+            output_dataset,
+            "out_file1",
+            self.app.model.session,
+            working_directory=self.job_working_directory,
+        )
+
+        self.metadata_compute_strategy.load_metadata(
+            output_dataset,
+            "out_file1",
+            self.app.model.session,
+            working_directory=self.job_working_directory,
+        )
+
+        with open(output_dataset.metadata.bam_index.get_file_name(), "rb") as f:
+            assert f.read(4) == b"BAI\x01"
+
+    @pytest.mark.parametrize(
+        "filename,remote_metadata_directory",
+        [
+            ("{job}/metadata/metadata_temp_file_index", None),
+            ("/remote/job/metadata/metadata_temp_file_index", REMOTE_METADATA_DIRECTORY),
+        ],
+    )
+    def test_load_metadata_copies_temp_file_from_metadata_directory(self, filename, remote_metadata_directory):
+        self._write_file(os.path.join(self.job_working_directory, "metadata", "metadata_temp_file_index"), "bam index")
+        output_dataset = self._create_output_dataset(extension="bam")
+
+        self._load_bam_index_metadata(
+            output_dataset, filename.format(job=self.job_working_directory), remote_metadata_directory
+        )
+
+        with open(output_dataset.metadata.bam_index.get_file_name()) as f:
+            assert f.read() == "bam index"
+
+    @pytest.mark.parametrize(
+        "filename,remote_metadata_directory",
+        [
+            ("{secret}", None),
+            ("{secret}", REMOTE_METADATA_DIRECTORY),
+            ("{job}/tool_script.sh", None),
+            ("/remote/job/metadata_sibling/secret", REMOTE_METADATA_DIRECTORY),
+            ("{job}/metadata/symlink_to_secret", None),
+        ],
+    )
+    def test_load_metadata_rejects_temp_file_outside_metadata_directory(self, filename, remote_metadata_directory):
+        secret = os.path.join(self.test_directory, "secret")
+        self._write_file(secret, "secret")
+        self._write_file(os.path.join(self.job_working_directory, "tool_script.sh"), "secret")
+        self._write_file(os.path.join(self.job_working_directory, "metadata_sibling", "secret"), "secret")
+        safe_makedirs(os.path.join(self.job_working_directory, "metadata"))
+        os.symlink(secret, os.path.join(self.job_working_directory, "metadata", "symlink_to_secret"))
+        output_dataset = self._create_output_dataset(extension="bam")
+
+        with pytest.raises(MetadataTempFilePathError):
+            self._load_bam_index_metadata(
+                output_dataset,
+                filename.format(secret=secret, job=self.job_working_directory),
+                remote_metadata_directory,
+            )
+
+        session = self.app.model.session
+        assert not session.scalars(select(model.MetadataFile).filter_by(history_dataset=output_dataset)).all()
+
     def test_list_discovery_extended(self):
         self.app.config.metadata_strategy = "extended"
         source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_split_on_column.xml")
@@ -519,6 +608,26 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         session.add(output_dataset_collection)
         session.commit()
         return output_dataset_collection
+
+    def _load_bam_index_metadata(self, output_dataset, filename, remote_metadata_directory):
+        self.app.config.metadata_strategy = "directory"
+        self.app.model.session.commit()
+        metadata_out = {"bam_index": {"__class__": "MetadataTempFile", "filename": filename, "kwds": {}}}
+        self._write_file(
+            os.path.join(self.job_working_directory, "metadata", "metadata_out_output"), json.dumps(metadata_out)
+        )
+        get_metadata_compute_strategy(self.app.config, self.job.id).load_metadata(
+            output_dataset,
+            "output",
+            self.app.model.session,
+            working_directory=self.job_working_directory,
+            remote_metadata_directory=remote_metadata_directory,
+        )
+
+    def _write_file(self, path, contents):
+        safe_makedirs(os.path.dirname(path))
+        with open(path, "w") as f:
+            f.write(contents)
 
     def _create_output_dataset(self, **kwd):
         output_dataset = model.HistoryDatasetAssociation(
