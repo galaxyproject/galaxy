@@ -2500,10 +2500,18 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         complete = False
+        # A step resumed after a capped scheduling iteration skips the jobs it
+        # already created, so don't search the job cache for them again.
+        recorded_job_indexes: set[int] = set()
+        if use_cached_job and collection_info and not invocation_step.is_new:
+            implicit_collection_jobs = invocation_step.implicit_collection_jobs
+            if implicit_collection_jobs is not None:
+                recorded_job_indexes = implicit_collection_jobs.recorded_order_indexes()
         completed_jobs: dict[int, Optional[Job]] = tool.completed_jobs(
             trans,
             use_cached_job,
             param_combinations,
+            skip_job_indexes=recorded_job_indexes,
         )
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)

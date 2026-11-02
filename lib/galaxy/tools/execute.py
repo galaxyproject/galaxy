@@ -297,6 +297,9 @@ class ExecutionTracker:
         self.output_collections = []
 
         self.implicit_collections = {}
+        # Tracked separately from the implicit collections, a step whose
+        # outputs are all filtered out has none but still records its jobs.
+        self._implicit_collection_jobs: Optional[model.ImplicitCollectionJobs] = None
 
     @property
     def param_combinations(self):
@@ -499,18 +502,50 @@ class ExecutionTracker:
             collection_instance.implicit_collection_jobs = implicit_collection_jobs
             collection_instances[output_name] = collection_instance
             trans.sa_session.add(collection_instance)
+        trans.sa_session.add(implicit_collection_jobs)
         # Needed to flush the association created just above with
         # job.add_output_dataset_collection.
         trans.sa_session.commit()
         self.implicit_collections = collection_instances
+        self._implicit_collection_jobs = implicit_collection_jobs
 
     @property
-    def implicit_collection_jobs(self):
-        # TODO: refactor to track this properly maybe?
+    def implicit_collection_jobs(self) -> Optional[model.ImplicitCollectionJobs]:
+        if self._implicit_collection_jobs is not None:
+            return self._implicit_collection_jobs
         if self.implicit_collections:
             return next(iter(self.implicit_collections.values())).implicit_collection_jobs
-        else:
-            return None
+        return None
+
+    def _copied_from_implicit_collections(self, trans) -> dict[str, model.HistoryDatasetCollectionAssociation]:
+        """Return the implicit collections this map-over copied, by output name.
+
+        This is the case when every job of this map-over was copied from a
+        job of one earlier map-over, one job for each of its jobs. Otherwise
+        return an empty dict.
+        """
+        implicit_collection_jobs = self.implicit_collection_jobs
+        if implicit_collection_jobs is None:
+            return {}
+        copied_from_job_ids = list(implicit_collection_jobs.get_job_attributes(["copied_from_job_id"]).scalars())
+        if not copied_from_job_ids or None in copied_from_job_ids:
+            return {}
+        source_job = trans.sa_session.get(model.Job, copied_from_job_ids[0])
+        if source_job is None:
+            return {}
+        source_collections = {
+            assoc.name: assoc.dataset_collection_instance for assoc in source_job.output_dataset_collection_instances
+        }
+        source_implicit_collection_jobs = {hdca.implicit_collection_jobs for hdca in source_collections.values()}
+        if len(source_implicit_collection_jobs) != 1:
+            return {}
+        source_icj = source_implicit_collection_jobs.pop()
+        if source_icj is None:
+            return {}
+        source_job_ids = list(source_icj.get_job_attributes(["id"]).scalars())
+        if len(source_job_ids) != len(copied_from_job_ids) or set(source_job_ids) != set(copied_from_job_ids):
+            return {}
+        return source_collections
 
     def finalize_dataset_collections(self, trans):
         # TODO: this probably needs to be reworked some, we should have the collection methods
@@ -518,44 +553,26 @@ class ExecutionTracker:
         # be finalizing collections to a depth of self.collection_info.structure. So for instance
         # if you are mapping a list over a tool that dynamically generates lists - we won't actually
         # know the structure of the inner list until after its job is complete.
+        implicit_collection_jobs = self.implicit_collection_jobs
         if self.failed_jobs > 0:
-            for i, implicit_collection in enumerate(self.implicit_collections.values()):
-                if i == 0:
-                    implicit_collection_jobs = implicit_collection.implicit_collection_jobs
-                    implicit_collection_jobs.populated_state = "failed"
-                    trans.sa_session.add(implicit_collection_jobs)
+            if implicit_collection_jobs is not None:
+                implicit_collection_jobs.populated_state = "failed"
+                trans.sa_session.add(implicit_collection_jobs)
+            for implicit_collection in self.implicit_collections.values():
                 implicit_collection.collection.handle_population_failed(
                     "One or more jobs failed during dataset initialization."
                 )
                 trans.sa_session.add(implicit_collection.collection)
         else:
-            completed_collections = {}
-            if (
-                self.completed_jobs
-                and self.completed_jobs[0]
-                and self.implicit_collection_jobs
-                and len(self.completed_jobs) == len(self.successful_jobs)
-            ):
-                # If the same number of implicit collection jobs went into
-                # creating the collection and those jobs are all cached
-                # the HDCA has effectively been copied.
-                # We mark this here so that the job cache query in subsequent
-                # jobs considers this to be a valid cached input.
-                completed_job_ids = {job.id for job in self.completed_jobs.values() if job}
-                completed_implicit_jobs_copied_from = set(
-                    self.implicit_collection_jobs.get_job_attributes(["copied_from_job_id"]).all()
-                )
-                if completed_implicit_jobs_copied_from <= completed_job_ids:
-                    completed_collections = {
-                        jtodca.name: jtodca.dataset_collection_instance
-                        for jtodca in self.completed_jobs[0].output_dataset_collection_instances
-                    }
-            implicit_collection = None
-            for i, implicit_collection in enumerate(self.implicit_collections.values()):
-                if i == 0:
-                    implicit_collection_jobs = implicit_collection.implicit_collection_jobs
-                    implicit_collection_jobs.populated_state = "ok"
-                    trans.sa_session.add(implicit_collection_jobs)
+            if implicit_collection_jobs is not None:
+                implicit_collection_jobs.populated_state = "ok"
+                trans.sa_session.add(implicit_collection_jobs)
+            # If every job of this map-over was copied from the jobs of an
+            # earlier map-over, the HDCA has effectively been copied. The jobs
+            # may have been created over several scheduling iterations, so this
+            # looks at all recorded jobs rather than the ones created here.
+            completed_collections = self._copied_from_implicit_collections(trans)
+            for implicit_collection in self.implicit_collections.values():
                 collection_info = self.collection_info
                 assert collection_info
                 implicit_collection.collection.finalize(
@@ -606,13 +623,10 @@ class ExecutionTracker:
         self.output_datasets.extend(outputs)
         for job_output in job.output_dataset_collection_instances:
             self.output_collections.append((job_output.name, job_output.dataset_collection_instance))
-        if self.implicit_collections:
-            implicit_collection_jobs = None
-            for output_name, collection_instance in self.implicit_collections.items():
-                job.add_output_dataset_collection(output_name, collection_instance)
-                if implicit_collection_jobs is None:
-                    implicit_collection_jobs = collection_instance.implicit_collection_jobs
-
+        for output_name, collection_instance in self.implicit_collections.items():
+            job.add_output_dataset_collection(output_name, collection_instance)
+        implicit_collection_jobs = self.implicit_collection_jobs
+        if implicit_collection_jobs is not None:
             job_assoc = model.ImplicitCollectionJobsJobAssociation()
             job_assoc.order_index = execution_slice.job_index
             job_assoc.implicit_collection_jobs = implicit_collection_jobs
@@ -730,6 +744,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
                 assert hasattr(implicit_collection, "history_content_type")  # make sure it is an HDCA and not a DC
                 collections[output_assoc.output_name] = output_assoc.dataset_collection
             self.implicit_collections = collections
+            self._implicit_collection_jobs = self.invocation_step.implicit_collection_jobs
         self.invocation_step.implicit_collection_jobs = self.implicit_collection_jobs
 
 

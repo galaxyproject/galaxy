@@ -1,0 +1,17 @@
+<tool id="output_filter_all_by_param" name="output_filter_all_by_param" version="1.0.0" profile="24.0">
+    <!-- With the default parameters the only output is filtered out, so mapping over a collection creates no output collections. -->
+    <command><![CDATA[
+cat '$input1' > out.txt
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" format="txt" />
+        <param name="produce_output" type="boolean" checked="false" label="Produce output" />
+    </inputs>
+    <outputs>
+        <data name="out_1" format="txt" from_work_dir="out.txt">
+            <filter>produce_output</filter>
+        </data>
+    </outputs>
+    <tests>
+    </tests>
+</tool>

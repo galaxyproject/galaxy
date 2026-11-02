@@ -3,6 +3,10 @@
 import time
 from json import dumps
 
+from galaxy.model import (
+    HistoryDatasetCollectionAssociation,
+    WorkflowInvocation,
+)
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -177,3 +181,47 @@ steps:
                 for job in cached_jobs
             }
             assert copied_from == {job["id"] for job in first_jobs}
+
+            # Every job was copied from the first run's map-over, so the output
+            # collection counts as a copy of the first run's collection.
+            first_hdca = self._cat_step_output_collection(first_invocation_id)
+            cached_hdca = self._cat_step_output_collection(cached_invocation_id)
+            assert cached_hdca.copied_from_history_dataset_collection_association_id == first_hdca.id
+
+    def test_mapped_step_without_outputs_scheduled_once_per_element(self):
+        # With its default parameters output_filter_all_by_param filters out
+        # its only output, so the step has no implicit collections. Its jobs
+        # must still be recorded so that a capped scheduling iteration doesn't
+        # re-run them.
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list
+steps:
+  filtered:
+    tool_id: output_filter_all_by_param
+    in:
+      input1: input_collection
+"""
+        )
+        with self.dataset_populator.test_history() as history_id:
+            hdca = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["a\n", "b\n", "c\n"], wait=True
+            ).json()["output_collections"][0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, history_id=history_id, inputs={"0": {"src": "hdca", "id": hdca["id"]}}
+            ).json()["id"]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
+            assert len(jobs) == 3, jobs
+
+    def _cat_step_output_collection(self, invocation_id: str) -> HistoryDatasetCollectionAssociation:
+        invocation = self._app.model.session.get(WorkflowInvocation, self._app.security.decode_id(invocation_id))
+        assert invocation
+        (step,) = (step for step in invocation.steps if step.workflow_step.label == "cat")
+        (hdca,) = {output.dataset_collection for output in step.output_dataset_collections}
+        return hdca
