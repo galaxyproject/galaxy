@@ -1,6 +1,5 @@
 import subprocess
 import threading
-import time
 
 
 class LazyProcess:
@@ -26,19 +25,23 @@ class LazyProcess:
         with self.thread_lock:
             self.process = subprocess.Popen(self.command_and_args, close_fds=True)
 
-    def shutdown(self):
+    def shutdown(self, timeout: float = 5):
+        """Terminate the process and reap it; kill it if it outlives ``timeout`` seconds."""
         with self.thread_lock:
             self.allow_process_request = False
-        if self.running:
-            assert self.process  # tell type checker it can not be None if self.running
-            self.process.terminate()
-            time.sleep(0.01)
-            if self.running:
-                self.process.kill()
+            process = self.process
+        if process is None or process.poll() is not None:
+            return
+        process.terminate()
+        try:
+            process.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
 
     @property
-    def running(self):
-        return self.process and not self.process.poll()
+    def running(self) -> bool:
+        return self.process is not None and self.process.poll() is None
 
 
 class NoOpLazyProcess:
