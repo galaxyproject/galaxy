@@ -6,8 +6,12 @@ import { computed } from "vue";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 
+defineOptions({
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 interface Props {
-    value: string;
+    modelValue: string;
     title?: string;
 }
 
@@ -16,15 +20,15 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
 }>();
 
 const filter = computed({
     get: () => {
-        return props.value;
+        return props.modelValue;
     },
     set: (newValue: string) => {
-        emit("input", newValue);
+        emit("update:modelValue", newValue);
     },
 });
 

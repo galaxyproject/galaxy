@@ -198,9 +198,9 @@ defineExpose({
         <!-- Search bar -->
         <div class="search-bar-container mb-2">
             <DataDialogSearch
-                :value="searchQuery"
+                :model-value="searchQuery"
                 :title="urlTracker.isAtRoot.value ? 'file sources' : 'files and folders'"
-                @input="updateSearchQuery" />
+                @update:model-value="updateSearchQuery" />
         </div>
 
         <!-- Error message -->

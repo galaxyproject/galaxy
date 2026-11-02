@@ -3,9 +3,13 @@ import type { DbKey } from "@/composables/uploadConfigurations";
 
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
+defineOptions({
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 interface Props {
     /** Currently selected database key for this item */
-    value: string;
+    modelValue: string;
     /** Available database keys to display in dropdown */
     dbKeys: DbKey[];
     /** Whether the dropdown should be disabled */
@@ -20,11 +24,11 @@ withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
 }>();
 
 function onItemSelection(item: DbKey) {
-    emit("input", item.id);
+    emit("update:modelValue", item.id);
 }
 </script>
 
@@ -34,7 +38,7 @@ function onItemSelection(item: DbKey) {
         collection-name="References"
         :title="tooltip"
         :items="dbKeys"
-        :current-item="dbKeys.find((dbKey) => dbKey.id === value)"
+        :current-item="dbKeys.find((dbKey) => dbKey.id === modelValue)"
         :disabled="disabled"
         @update:selected-item="onItemSelection" />
 </template>

@@ -296,7 +296,7 @@ describe("SelectionDialog.vue with a provider", () => {
         const wrapper = mountWith(provider);
         await flushPromises();
 
-        wrapper.findComponent(DataDialogSearch).vm.$emit("input", "file 3");
+        wrapper.findComponent(DataDialogSearch).vm.$emit("update:modelValue", "file 3");
         await flushPromises();
         expect(load).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, filter: "file 3" }));
         expect(rowLabels(wrapper)).toEqual(["file 3", "file 30"]);

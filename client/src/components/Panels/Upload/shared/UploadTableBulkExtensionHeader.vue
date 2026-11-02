@@ -7,9 +7,13 @@ import type { ExtensionDetails } from "@/composables/uploadConfigurations";
 
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
+defineOptions({
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 interface Props {
     /** Selected bulk extension value */
-    value: string;
+    modelValue: string;
     /** Available extensions to display in dropdown */
     extensions: ExtensionDetails[];
     /** Warning message for current bulk selection */
@@ -27,13 +31,13 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
 }>();
 
 const optionsWithDefault = computed(() => [{ id: "", text: "Set all..." }, ...(props.extensions || [])]);
 
 function onItemSelection(item: ExtensionDetails) {
-    emit("input", item.id);
+    emit("update:modelValue", item.id);
 }
 </script>
 
@@ -45,7 +49,7 @@ function onItemSelection(item: ExtensionDetails) {
             collection-name="Data Types"
             :title="tooltip"
             :items="optionsWithDefault"
-            :current-item="props.extensions.find((e) => e.id === props.value) || optionsWithDefault[0]"
+            :current-item="props.extensions.find((e) => e.id === props.modelValue) || optionsWithDefault[0]"
             :disabled="disabled"
             @update:selected-item="onItemSelection" />
         <FontAwesomeIcon

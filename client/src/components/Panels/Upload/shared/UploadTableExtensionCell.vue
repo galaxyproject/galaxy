@@ -6,9 +6,13 @@ import type { ExtensionDetails } from "@/composables/uploadConfigurations";
 
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
+defineOptions({
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 interface Props {
     /** Currently selected extension for this item */
-    value: string;
+    modelValue: string;
     /** Available extensions to display in dropdown */
     extensions: ExtensionDetails[];
     /** Warning message for the current extension (if any) */
@@ -26,11 +30,11 @@ withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
 }>();
 
 function onItemSelection(value: ExtensionDetails) {
-    emit("input", value.id);
+    emit("update:modelValue", value.id);
 }
 </script>
 
@@ -42,7 +46,7 @@ function onItemSelection(value: ExtensionDetails) {
             collection-name="Data Types"
             :title="tooltip"
             :items="extensions"
-            :current-item="extensions.find((ext) => ext.id === value)"
+            :current-item="extensions.find((ext) => ext.id === modelValue)"
             :disabled="disabled"
             @update:selected-item="onItemSelection">
         </SingleItemSelector>

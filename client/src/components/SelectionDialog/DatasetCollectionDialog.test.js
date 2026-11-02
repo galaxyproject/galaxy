@@ -108,7 +108,7 @@ describe("DatasetCollectionDialog.vue", () => {
             wrapper = mount(DatasetCollectionDialog, { props: mockOptions, global: localVue });
             await flushPromises();
 
-            wrapper.findComponent(DataDialogSearch).vm.$emit("input", "collection 1");
+            wrapper.findComponent(DataDialogSearch).vm.$emit("update:modelValue", "collection 1");
             await flushPromises();
             expect(rowLabels()).toEqual([
                 "collection 19",

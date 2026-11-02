@@ -195,7 +195,7 @@ describe("HistoryDatasetPicker", () => {
         expect(nth(datasetQueries, -1).get("history_id")).toBe("h2");
         expect(rowLabels(wrapper)).toEqual(["reads.fastq", "genome.fasta"]);
 
-        wrapper.findComponent(DataDialogSearch).vm.$emit("input", "genome");
+        wrapper.findComponent(DataDialogSearch).vm.$emit("update:modelValue", "genome");
         await flushPromises();
         expect(nth(datasetQueries, -1).get("qv")).toBe("genome");
         expect(rowLabels(wrapper)).toEqual(["genome.fasta"]);
