@@ -8,6 +8,8 @@ from galaxy_test.driver.integration_util import IntegrationTestCase
 TABULAR_INPUT_TOOL = "interactivetool_tabular_input"
 ANY_INPUT_TOOL = "interactivetool_any_input"
 REPEAT_INPUT_TOOL = "interactivetool_repeat_input"
+HIDDEN_INPUT_TOOL = "interactivetool_hidden_input"
+LOGIN_INPUT_TOOL = "interactivetool_login_input"
 
 
 class TestInteractiveToolsForDataset(IntegrationTestCase):
@@ -62,6 +64,19 @@ class TestInteractiveToolsForDataset(IntegrationTestCase):
         user_inputs = next(i for i in inputs if i["name"] == "user_inputs")
         infile = next(i for i in user_inputs["cache"][0] if i["name"] == "infile")
         assert infile["value"]["values"][0]["id"] == dataset_id
+
+    def test_visibility_filters(self):
+        dataset_id = self._new_dataset("chr1\t1\t100\n", "bed")
+        self.dataset_populator.make_dataset_public(self.dataset_history_id, dataset_id)
+        tool_ids = {tool["id"] for tool in self._interactive_tools(dataset_id)}
+        assert LOGIN_INPUT_TOOL in tool_ids
+        assert HIDDEN_INPUT_TOOL not in tool_ids
+        with self._different_user(anon=True):
+            anonymous_tool_ids = {tool["id"] for tool in self._interactive_tools(dataset_id)}
+        # The unrestricted tool guards against passing on an empty list.
+        assert TABULAR_INPUT_TOOL in anonymous_tool_ids
+        assert LOGIN_INPUT_TOOL not in anonymous_tool_ids
+        assert HIDDEN_INPUT_TOOL not in anonymous_tool_ids
 
     def test_inaccessible_dataset(self):
         dataset_id = self._new_dataset("1\t2\n", "tabular")
