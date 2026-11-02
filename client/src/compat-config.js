@@ -19,6 +19,15 @@ configureCompat({
     // component factory and calls it that way. Galaxy has none of those left,
     // and Vue 3 functional components (lucide icons) are plain functions.
     COMPONENT_ASYNC: false,
+    // Vue 3 instance API for Galaxy code. legacy-libraries.js keeps these on
+    // for the Vue 2 libraries' own components.
+    INSTANCE_SCOPED_SLOTS: false,
+    INSTANCE_ATTRS_CLASS_STYLE: false,
+    INSTANCE_CHILDREN: false,
+    INSTANCE_SET: false,
+    INSTANCE_DELETE: false,
+    INSTANCE_DESTROY: false,
+    INSTANCE_EVENT_HOOKS: false,
 });
 
 // FontAwesomeIcon builds its <svg> from `attrs`. With MODE 2's

@@ -23,7 +23,17 @@ const baseRules = {
     // Vue 3 specific rules
     "vue/no-deprecated-dollar-listeners-api": "error",
     "vue/no-deprecated-dollar-scopedslots-api": "error",
+    "vue/no-deprecated-delete-set": "error",
     "vue/no-deprecated-events-api": "error",
+    // The vue/no-deprecated-* rules only see components in .vue files, so the
+    // render-function providers in .js files need a plain property check.
+    "no-restricted-properties": [
+        "error",
+        ...["$scopedSlots", "$children", "$set", "$delete", "$destroy"].map((property) => ({
+            property,
+            message: `${property} is Vue 2 instance API; compat has it turned off for Galaxy code.`,
+        })),
+    ],
     "vue/no-deprecated-filter": "error",
     "vue/no-deprecated-functional-template": "error",
     "vue/no-deprecated-inline-template": "error",
