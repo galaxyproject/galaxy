@@ -28,6 +28,9 @@ configureCompat({
     INSTANCE_DELETE: false,
     INSTANCE_DESTROY: false,
     INSTANCE_EVENT_HOOKS: false,
+    // Array watchers in Galaxy code that need to see in-place changes say
+    // `deep: true` themselves.
+    WATCH_ARRAY: false,
 });
 
 // FontAwesomeIcon builds its <svg> from `attrs`. With MODE 2's
