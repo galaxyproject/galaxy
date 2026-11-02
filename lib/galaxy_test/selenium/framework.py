@@ -1109,11 +1109,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
             self._set_text_value(key, str(value))
 
     def _set_boolean_value(self, expanded_id: str, value):
-        checkbox = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).wait_for_present()
-        is_checked = checkbox.is_selected()
-        want_checked = str(value).lower() in ("true", "1", "yes")
-        if is_checked != want_checked:
-            self.execute_script("arguments[0].click();", checkbox)
+        self.tool_form_set_switch(expanded_id, str(value).lower() in ("true", "1", "yes"))
 
     def _set_checkbox_select_value(self, expanded_id: str, values: list):
         all_checkboxes = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).all()
