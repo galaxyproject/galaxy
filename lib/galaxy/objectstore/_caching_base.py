@@ -515,6 +515,9 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 # Copy into cache
                 try:
                     if source_file != cache_path and self.cache_updated_data:
+                        # Objects created on another host, e.g. outputs of remote metadata jobs, have no
+                        # directory in this host's cache yet.
+                        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
                         # FIXME? Should this be a `move`?
                         shutil.copy(source_file, cache_path)
                     fix_permissions(self.config, cache_path)
