@@ -49,6 +49,10 @@ configureCompat({
     PRIVATE_APIS: false,
     // <TransitionGroup> renders no wrapper unless given a `tag`; Galaxy's all set one.
     TRANSITION_GROUP_ROOT: false,
+    // v-model on a component binds `modelValue` / `update:modelValue`. Every
+    // Galaxy v-model component uses that contract; bootstrap-vue keeps
+    // value/input through legacy-libraries.js.
+    COMPONENT_V_MODEL: false,
     // Vue 2 APIs Galaxy code no longer uses at all: beforeDestroy/destroyed,
     // `this` in prop defaults, numeric keyCode modifiers and Vue.config.keyCodes,
     // filters, Vue 2 directive hook names, and a non-function `data`. Only
