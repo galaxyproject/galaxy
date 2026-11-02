@@ -4,6 +4,7 @@ import { isDate } from "date-fns";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
+import { nextTick, reactive } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useUserTagsStore } from "@/stores/userTagsStore";
@@ -98,5 +99,42 @@ describe("WorkflowAttributes", () => {
         expect(parameters[0]!.text()).toBe("1: workflow_parameter_0");
         expect(parameters[1]!.text()).toBe("2: workflow_parameter_1");
         expect((wrapper.find("#workflow-annotation").element as HTMLInputElement).value).toBe(TEST_ANNOTATION);
+    });
+
+    it("clears the creator highlight when the creator list changes in place", async () => {
+        suppressBootstrapVueWarnings();
+        vi.useFakeTimers();
+        try {
+            const pinia = createPinia();
+            const localVue = getLocalVue(true);
+            setActivePinia(pinia);
+            // CreatorEditor pushes a draft creator straight into this array.
+            const creator = reactive([{ class: "Person", name: "Someone" }]);
+            const wrapper = mount(WorkflowAttributes, {
+                props: {
+                    id: "workflow_id",
+                    tags: [],
+                    parameters: new UntypedParameters(),
+                    version: 0,
+                    versions: TEST_VERSIONS,
+                    creator,
+                    highlight: "creator",
+                },
+                global: {
+                    ...withPlugins(localVue, pinia),
+                    stubs: { ...localVue.stubs, LicenseSelector: true },
+                },
+            });
+            await flushPromises();
+            expect(wrapper.emitted("update:highlight")).toBeUndefined();
+
+            const addPerson = wrapper.findAll("#workflow-creator-area a").find((link) => link.text() === "a person");
+            await addPerson!.trigger("click");
+            await nextTick();
+            expect(creator).toHaveLength(2);
+            expect(wrapper.emitted("update:highlight")).toEqual([[null]]);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });
