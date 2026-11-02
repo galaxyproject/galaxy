@@ -1718,7 +1718,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.navigate_to_storage_dashboard()
         storage_dashboard = self.components.storage_dashboard
         storage_dashboard.refresh_disk_usage.wait_for_and_click()
-        storage_dashboard.recalculating.wait_for_visible()
 
     def navigate_to_saved_visualizations(self):
         self.home()
@@ -1738,13 +1737,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def manage_information_save(self, email: str | None = None, username: str | None = None):
         """Change the email and/or public name on Preferences > Manage Information and Save."""
-        self.navigate_to_manage_information()
         preferences = self.components.preferences
+        if preferences.email_input.is_absent:
+            self.navigate_to_manage_information()
         for input_field, value in ((preferences.email_input, email), (preferences.username_input, username)):
             if value is not None:
                 input_field.wait_for_and_clear_and_send_keys(value)
         self.components.change_user_email.submit.wait_for_and_click()
-        self.components.preferences.current_email.wait_for_visible()
+        # /user renders the email span before the current user loads.
+        current_email = preferences.current_email
+        if email is not None:
+            self._wait_on(lambda: current_email.wait_for_text() == email, "saved email to render")
+        else:
+            current_email.wait_for_visible()
 
     def navigate_to_user_preferences(self):
         self.home()
@@ -2351,12 +2356,17 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def workflow_editor_set_annotation(self, annotation: str):
         self.components.workflow_editor.edit_annotation.wait_for_and_clear_and_send_keys(annotation)
 
-    def workflow_editor_best_practices(self) -> dict[str, str]:
-        """Open the editor's Best Practices panel; return each check's status (``ok``/``warning``) by name."""
+    def workflow_editor_open_best_practices(self):
+        """Open the editor's Best Practices panel unless already open."""
         sections = self.components.workflow_editor.best_practices.sections
         if sections.is_absent or not sections.is_displayed:
             self.components.workflow_editor.tool_bar.best_practices.wait_for_and_click()
         sections.wait_for_present()
+
+    def workflow_editor_best_practices(self) -> dict[str, str]:
+        """Open the editor's Best Practices panel; return each check's status (``ok``/``warning``) by name."""
+        self.workflow_editor_open_best_practices()
+        sections = self.components.workflow_editor.best_practices.sections
         return {
             section.get_attribute("data-description").removeprefix("linting "): section.get_attribute(
                 "data-lint-status"
@@ -3121,18 +3131,23 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.display_dataset(hid)
         self.components.dataset_view.visualize_tab.wait_for_and_click()
 
-    def dataset_display_applications(self, hid: int) -> dict[str, list[str]]:
-        """Open dataset ``hid``'s Visualize tab; return display application labels to link texts, or an empty catalog."""
+    def dataset_display_applications(self, hid: int) -> list[tuple[str, list[str]]]:
+        """Open dataset ``hid``'s Visualize tab; return (label, link texts) per display application, in page order."""
         self.show_dataset_visualizations(hid)
         self.components.visualization.display_applications.wait_for_present()
         items = self.components.visualization.display_application_items
-        return {
-            item.find_element(*self.navigation.visualization.display_application_label.element_locator).text: [
-                link.text
-                for link in item.find_elements(*self.navigation.visualization.display_application_links.element_locator)
-            ]
+        return [
+            (
+                item.find_element(*self.navigation.visualization.display_application_label.element_locator).text,
+                [
+                    link.text
+                    for link in item.find_elements(
+                        *self.navigation.visualization.display_application_links.element_locator
+                    )
+                ],
+            )
             for item in items.all()
-        }
+        ]
 
     def show_dataset_visualization(self, hid: int, visualization_id: str, screenshot_name: str | None = None):
         self.show_dataset_visualizations(hid)

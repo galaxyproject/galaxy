@@ -69,11 +69,11 @@ class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
             self.current_history_id(), content="chr1\t100\t200\ta\n", file_type="bed", dbkey="hg38", wait=True
         )
         details = self.dataset_populator.get_history_dataset_details(self.current_history_id(), hid=1)
-        expected = {
-            app["label"]: [link["text"] for link in app["links"]]
+        expected = [
+            (app["label"], [link["text"] for link in app["links"]])
             for app in details["display_apps"] + details["display_types"]
-        }
-        assert expected["display at UCSC"] == ["main"]
+        ]
+        assert ("display at UCSC", ["main"]) in expected
         assert self.dataset_display_applications(1) == expected
         self.screenshot("dataset_display_application_links")
 
@@ -83,7 +83,7 @@ class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
         self.dataset_populator.new_dataset(
             self.current_history_id(), content="No display applications.\n", file_type="txt", wait=True
         )
-        assert self.dataset_display_applications(1) == {}
+        assert self.dataset_display_applications(1) == []
         self.screenshot("dataset_display_application_links_empty")
 
     @selenium_test

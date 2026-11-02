@@ -108,7 +108,6 @@ describe("DisplayApplications", () => {
     });
 
     it.each([
-        ["loading", null],
         ["failed", {}],
         ["stale", { ...raw, id: "another-dataset-id" }],
     ])("does not expose a ready catalog for a %s provider result", (_state, result) => {

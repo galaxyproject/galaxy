@@ -25,8 +25,8 @@ function getUrl(link: LinkType) {
             <div v-if="dataset && dataset.id === props.datasetId" data-description="dataset display applications">
                 <GAlert
                     v-if="
-                        (dataset && dataset.display_apps && dataset.display_apps.length > 0) ||
-                        (dataset && dataset.display_types && dataset.display_types.length > 0)
+                        (dataset.display_apps && dataset.display_apps.length > 0) ||
+                        (dataset.display_types && dataset.display_types.length > 0)
                     "
                     variant="info"
                     show>
