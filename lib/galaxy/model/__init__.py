@@ -2868,8 +2868,6 @@ class ImplicitCollectionJobs(Base, Serializable):
 
     def recorded_order_indexes(self) -> set[int]:
         """Return the order indexes of the jobs already recorded for this map-over."""
-        if self.id is None:
-            return set()
         stmt = select(ImplicitCollectionJobsJobAssociation.order_index).where(
             ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id
         )
