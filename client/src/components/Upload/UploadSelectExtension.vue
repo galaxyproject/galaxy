@@ -9,6 +9,10 @@ import UploadExtension from "./UploadExtension.vue";
 import UploadSelect from "./UploadSelect.vue";
 import Popper from "@/components/Popper/Popper.vue";
 
+defineOptions({
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = defineProps({
     disabled: {
         type: Boolean,
@@ -18,28 +22,28 @@ const props = defineProps({
         type: Array,
         required: true,
     },
-    value: {
+    modelValue: {
         type: String,
         default: null,
     },
 });
 
-const emit = defineEmits(["input"]);
+const emit = defineEmits(["update:modelValue"]);
 
-const details = computed(() => findExtension(props.listExtensions, props.value));
+const details = computed(() => findExtension(props.listExtensions, props.modelValue));
 const warnText = computed(() => details.value.upload_warning);
 </script>
 
 <template>
     <span title="">
         <UploadSelect
-            :value="value"
+            :model-value="modelValue"
             :disabled="disabled"
             :options="listExtensions"
             what="file type"
             placeholder="Select Type"
             :warn="warnText ? true : false"
-            @input="(newValue) => emit('input', newValue)" />
+            @update:model-value="(newValue) => emit('update:modelValue', newValue)" />
         <Popper v-if="warnText" placement="bottom" mode="light">
             <template v-slot:reference>
                 <FontAwesomeIcon :icon="faExclamationCircle" class="selection-warning" />
@@ -48,7 +52,7 @@ const warnText = computed(() => details.value.upload_warning);
                 {{ warnText }}
             </div>
         </Popper>
-        <UploadExtension :extension="value" :list-extensions="listExtensions" />
+        <UploadExtension :extension="modelValue" :list-extensions="listExtensions" />
     </span>
 </template>
 

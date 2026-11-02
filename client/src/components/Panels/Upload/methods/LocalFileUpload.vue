@@ -290,10 +290,10 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                         <template v-slot:cell(name)="{ item, index }">
                             <UploadTableNameCell
                                 :data-test-id="`upload-row-${index + 1}-name`"
-                                :value="item.name"
+                                :model-value="item.name"
                                 :state="isNameValid(item.name)"
                                 tooltip="Dataset name in your history (required)"
-                                @input="item.name = $event"
+                                @update:model-value="item.name = $event"
                                 @blur="restoreOriginalName(item, item.file.name)" />
                         </template>
 
@@ -303,40 +303,40 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 
                         <template v-slot:head(extension)>
                             <UploadTableBulkExtensionHeader
-                                :value="bulk.bulkExtension.value"
+                                :model-value="bulk.bulkExtension.value"
                                 :extensions="effectiveExtensions"
                                 :warning="bulk.bulkExtensionWarning.value"
                                 :disabled="!configurationsReady"
                                 tooltip="Set file format for all files"
-                                @input="bulk.setAllExtensions" />
+                                @update:model-value="bulk.setAllExtensions" />
                         </template>
 
                         <template v-slot:cell(extension)="{ item, index }">
                             <UploadTableExtensionCell
                                 :data-test-id="`upload-row-${index + 1}-extension`"
-                                :value="item.extension"
+                                :model-value="item.extension"
                                 :extensions="effectiveExtensions"
                                 :warning="bulk.getExtensionWarning(item.extension)"
                                 :disabled="!configurationsReady"
-                                @input="item.extension = $event" />
+                                @update:model-value="item.extension = $event" />
                         </template>
 
                         <template v-slot:head(dbKey)>
                             <UploadTableBulkDbKeyHeader
-                                :value="bulk.bulkDbKey.value"
+                                :model-value="bulk.bulkDbKey.value"
                                 :db-keys="listDbKeys"
                                 :disabled="!configurationsReady"
                                 tooltip="Set database key for all files"
-                                @input="bulk.setAllDbKeys" />
+                                @update:model-value="bulk.setAllDbKeys" />
                         </template>
 
                         <template v-slot:cell(dbKey)="{ item, index }">
                             <UploadTableDbKeyCell
                                 :data-test-id="`upload-row-${index + 1}-dbkey`"
-                                :value="item.dbkey"
+                                :model-value="item.dbkey"
                                 :db-keys="listDbKeys"
                                 :disabled="!configurationsReady"
-                                @input="item.dbkey = $event" />
+                                @update:model-value="item.dbkey = $event" />
                         </template>
 
                         <template v-slot:head(options)>

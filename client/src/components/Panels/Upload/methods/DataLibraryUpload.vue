@@ -738,7 +738,10 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 
             <!-- Search bar -->
             <div class="search-bar-container mb-2">
-                <DataDialogSearch :value="searchQuery" :title="searchTitle" @input="updateSearchQuery" />
+                <DataDialogSearch
+                    :model-value="searchQuery"
+                    :title="searchTitle"
+                    @update:model-value="updateSearchQuery" />
             </div>
 
             <!-- Error message -->

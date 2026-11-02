@@ -5,9 +5,13 @@ import type { DbKey } from "@/composables/uploadConfigurations";
 
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
+defineOptions({
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 interface Props {
     /** Selected bulk dbKey value */
-    value: string;
+    modelValue: string;
     /** Available database keys to display in dropdown */
     dbKeys: DbKey[];
     /** Whether the dropdown should be disabled */
@@ -22,13 +26,13 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
 }>();
 
 const optionsWithDefault = computed(() => [{ id: "", text: "Set all..." }, ...(props.dbKeys || [])]);
 
 function onItemSelection(item: DbKey) {
-    emit("input", item.id);
+    emit("update:modelValue", item.id);
 }
 </script>
 
@@ -41,7 +45,7 @@ function onItemSelection(item: DbKey) {
             collection-name="References"
             :title="tooltip"
             :items="optionsWithDefault"
-            :current-item="props.dbKeys.find((dbKey) => dbKey.id === props.value) || optionsWithDefault[0]"
+            :current-item="props.dbKeys.find((dbKey) => dbKey.id === props.modelValue) || optionsWithDefault[0]"
             :disabled="disabled"
             @update:selected-item="onItemSelection" />
     </div>
