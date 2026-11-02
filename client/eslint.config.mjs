@@ -53,7 +53,9 @@ const baseRules = {
     "vue/no-lifecycle-after-await": "error",
     "vue/no-ref-as-operand": "error",
     "vue/no-v-for-template-key-on-child": "error",
-    "vue/require-explicit-emits": "warn",
+    // Undeclared emits fall through to the root element as native listeners
+    // once INSTANCE_LISTENERS is off.
+    "vue/require-explicit-emits": "error",
     // Bootstrap-vue isn't registered globally, so its components have to be
     // imported where they're used. Only checks bootstrap-vue names.
     "vue/no-undef-components": ["error", { ignorePatterns: ["^(?!b-|B[A-Z])"] }],
@@ -218,6 +220,25 @@ export default defineConfig(
     {
         files: ["src/components/Common/legacy/**"],
         rules: { "no-restricted-imports": "off" },
+    },
+    {
+        // Still waiting on their own chunks: Phase 3 rewrites the Form/Elements
+        // emits, and the WATCH_ARRAY group declares the rest. Drop each entry
+        // as it lands.
+        files: [
+            "src/components/Form/Elements/FormDirectory.vue",
+            "src/components/Form/Elements/FormInput.vue",
+            "src/components/Form/Elements/FormNumber.vue",
+            "src/components/Form/Elements/FormText.vue",
+            "src/components/Libraries/LibraryFolder/SearchField.vue",
+            "src/components/RuleCollectionBuilder.vue",
+            "src/components/SchemaOrg/CreatorEditor.vue",
+            "src/components/Toolshed/SearchList/Categories.vue",
+            "src/components/Toolshed/SearchList/Repositories.vue",
+        ],
+        rules: {
+            "vue/require-explicit-emits": "warn",
+        },
     },
     {
         files: ["**/*.test.js", "**/*.test.ts", "**/tests/vitest/**"],
