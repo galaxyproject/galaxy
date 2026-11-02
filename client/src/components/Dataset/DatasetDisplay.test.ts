@@ -5,6 +5,7 @@ import flushPromises from "flush-promises";
 import { http as mswHttp } from "msw";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { h } from "vue";
 
 import type { HDADetailed } from "@/api";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -16,7 +17,7 @@ vi.mock("@/components/Dataset/Tabular/TabularChunkedView.vue", () => ({
     default: {
         name: "TabularChunkedView",
         props: ["options"],
-        render: (h: (tag: string, data: object) => unknown) => h("div", { class: "tabular-chunked-view" }),
+        render: () => h("div", { class: "tabular-chunked-view" }),
     },
 }));
 
