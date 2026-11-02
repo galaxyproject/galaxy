@@ -31,6 +31,9 @@ configureCompat({
     // Array watchers in Galaxy code that need to see in-place changes say
     // `deep: true` themselves.
     WATCH_ARRAY: false,
+    // Enumerated attributes (contenteditable, draggable, spellcheck) render as
+    // given; Galaxy binds them to booleans or "true"/"false" already.
+    ATTR_ENUMERATED_COERCION: false,
 });
 
 // FontAwesomeIcon builds its <svg> from `attrs`. With MODE 2's
