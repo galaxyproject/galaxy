@@ -174,8 +174,7 @@ watch(
 watch(
     () => [safePerPage.value, numberOfPages.value, props.totalRows] as const,
     ([perPage, pages, rows], [oldPerPage, oldPages, oldRows]) => {
-        // As in BootstrapVue, a page size that changes along with the row count (new results at a new
-        // size) keeps the page unless the pages shrink past it.
+        // A page size changing along with the row count means new results: the page stays unless it is gone
         const pageSizeChanged = perPage !== oldPerPage && rows === oldRows;
         const pagesShrankPastCurrent = pages !== oldPages && requestedPage.value > pages;
         if ((pageSizeChanged || pagesShrankPastCurrent) && requestedPage.value !== 1) {
