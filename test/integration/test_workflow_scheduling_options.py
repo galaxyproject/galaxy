@@ -231,6 +231,11 @@ steps:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
             assert len(jobs) == 3, jobs
+            for job in jobs:
+                self.dataset_populator.wait_for_job(job["id"], assert_ok=True)
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            (step,) = (step for step in invocation["steps"] if step["workflow_step_label"] == "filtered")
+            assert step["state"] == "scheduled", step
 
     def test_cached_mapped_step_reordered_input_not_marked_copied(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(CAT_LIST_WORKFLOW)
