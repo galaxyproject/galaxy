@@ -929,6 +929,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
         const history = data as ArchivedHistoryDetailed;
         setHistory(history);
+        if (purgeHistory) {
+            useUserStore().refreshStorageUsageInBackground();
+        }
         if (!history.archived) {
             return;
         }

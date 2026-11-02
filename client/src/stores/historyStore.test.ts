@@ -256,12 +256,16 @@ describe("historyStore — deleting histories", () => {
             http.get("/api/histories/count", ({ response }) => response(200).json(0)),
             rawHttp.delete("/api/histories/:historyId", ({ params }) => HttpResponse.json({ id: params.historyId })),
             rawHttp.put("/api/histories/batch/delete", () => HttpResponse.json([{ id: "hist-2" }])),
+            rawHttp.post("/api/histories/:historyId/archive", ({ params }) =>
+                HttpResponse.json({ id: params.historyId, archived: false }),
+            ),
         );
     });
 
     const deletions = {
         deleteHistory: (purge: boolean) => useHistoryStore().deleteHistory("hist-2", purge),
         deleteHistories: (purge: boolean) => useHistoryStore().deleteHistories(["hist-2"], purge),
+        archiveHistoryById: (purge: boolean) => useHistoryStore().archiveHistoryById("hist-2", undefined, purge),
     };
 
     it.each([
@@ -269,6 +273,8 @@ describe("historyStore — deleting histories", () => {
         ["deleteHistory", false],
         ["deleteHistories", true],
         ["deleteHistories", false],
+        ["archiveHistoryById", true],
+        ["archiveHistoryById", false],
     ] as const)("%s with purge=%s refreshes the user only when purging", async (operation, purge) => {
         const userRequests = countCurrentUserRequests();
 
