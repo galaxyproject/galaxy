@@ -19,6 +19,7 @@ import DatasetAsImage from "./DatasetAsImage/DatasetAsImage.vue";
 import DatasetDisplay from "./DatasetDisplay.vue";
 import DatasetExplore from "./DatasetExplore.vue";
 import DatasetState from "./DatasetState.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Heading from "@/components/Common/Heading.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
@@ -28,7 +29,7 @@ import VisualizationDisplay from "@/components/Visualizations/VisualizationDispl
 const datasetStore = useDatasetStore();
 const datatypeStore = useDatatypeStore();
 const datatypesMapperStore = useDatatypesMapperStore();
-const { config } = useConfig();
+const { config, isConfigLoaded } = useConfig();
 const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("dataset-header-collapsed");
 
 interface Props {
@@ -261,8 +262,12 @@ watch(
         <div v-else-if="tab === 'visualize'" class="tab-content-panel">
             <VisualizationsList :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'explore' && showExplore" class="tab-content-panel">
-            <DatasetExplore :dataset-id="datasetId" :dataset-extension="dataset.file_ext" />
+        <div v-else-if="tab === 'explore'" class="tab-content-panel">
+            <DatasetExplore v-if="showExplore" :dataset-id="datasetId" :dataset-extension="dataset.file_ext" />
+            <!-- Direct links reach this tab without the nav item; wait for config so enabled servers never flash it. -->
+            <GAlert v-else-if="isConfigLoaded" v-localize variant="info" class="m-2" show>
+                Interactive tools are not available for this dataset.
+            </GAlert>
         </div>
         <div v-else-if="tab === 'edit'" class="tab-content-panel mt-2">
             <DatasetAttributes :dataset-id="datasetId" />

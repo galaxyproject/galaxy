@@ -18,11 +18,12 @@ import DatasetView from "./DatasetView.vue";
 const { server, http } = useServerMock();
 
 const mockConfig = ref({});
+const mockConfigLoaded = ref(true);
 
 vi.mock("@/composables/config", () => ({
     useConfig: vi.fn(() => ({
         config: mockConfig,
-        isConfigLoaded: true,
+        isConfigLoaded: mockConfigLoaded,
     })),
 }));
 
@@ -205,6 +206,7 @@ async function mountLoadingDatasetView({ pendingFetch = true } = {}) {
 describe("DatasetView", () => {
     beforeEach(() => {
         mockConfig.value = {};
+        mockConfigLoaded.value = true;
         class IO {
             constructor() {}
             observe() {}
@@ -335,6 +337,7 @@ describe("DatasetView", () => {
 
     describe("Explore tab", () => {
         const exploreTabSelector = ".nav-item[title='Launch interactive tools that accept this dataset']";
+        const EXPLORE_UNAVAILABLE = "Interactive tools are not available for this dataset.";
 
         it("shows the Explore tab when interactive tools are enabled", async () => {
             mockConfig.value = { interactivetools_enable: true };
@@ -369,6 +372,26 @@ describe("DatasetView", () => {
             mockConfig.value = { interactivetools_enable: false };
             const wrapper = await mountDatasetView("explore");
             expect(wrapper.findComponent(DatasetExplore).exists()).toBe(false);
+            expect(wrapper.find(".tab-content-panel").text()).toContain(EXPLORE_UNAVAILABLE);
+        });
+
+        it("shows the not available message on the explore tab for a dataset that is not ok", async () => {
+            mockConfig.value = { interactivetools_enable: true };
+            const wrapper = await mountDatasetView("explore", { dataset: errorDataset });
+            expect(wrapper.findComponent(DatasetExplore).exists()).toBe(false);
+            expect(wrapper.find(".tab-content-panel").text()).toContain(EXPLORE_UNAVAILABLE);
+        });
+
+        it("does not show the not available message while the config is loading", async () => {
+            mockConfigLoaded.value = false;
+            const wrapper = await mountDatasetView("explore");
+            expect(wrapper.find(".tab-content-panel").text()).not.toContain(EXPLORE_UNAVAILABLE);
+        });
+
+        it("does not show the not available message when the explore tab is available", async () => {
+            mockConfig.value = { interactivetools_enable: true };
+            const wrapper = await mountDatasetView("explore");
+            expect(wrapper.find(".tab-content-panel").text()).not.toContain(EXPLORE_UNAVAILABLE);
         });
     });
 
