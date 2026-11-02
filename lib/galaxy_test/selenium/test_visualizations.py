@@ -111,7 +111,8 @@ class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
             igv.save_button.wait_for_and_click()
             self.sleep_for(self.wait_types.UX_TRANSITION)
 
-        saved = [v for v in self.api_get("visualizations") if v["title"] == "igv with hg18"]
+        # Clearing the name input can leave its default title in front, so match part of the title.
+        saved = [v for v in self.api_get("visualizations") if "igv with hg18" in v["title"]]
         assert len(saved) == 1, saved
 
     def _wait_for_igv_container(self):
