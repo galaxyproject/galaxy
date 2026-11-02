@@ -20,8 +20,6 @@ import { radioGroupKey } from "./radioGroupContext";
 
 defineOptions({
     inheritAttrs: false,
-    // Under @vue/compat: keep class/style/listeners in $attrs so they can be split below
-    compatConfig: { INSTANCE_ATTRS_CLASS_STYLE: false, INSTANCE_LISTENERS: false },
 });
 
 const props = defineProps<{
