@@ -779,7 +779,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
             }
             if (changedHistoryIds.some((id) => id !== currentId)) {
                 // Jobs, copies and purges in other histories change the user's storage usage too
-                void useUserStore().refreshStorageUsageThrottled();
+                useUserStore().refreshStorageUsageThrottled();
             }
             // Also refresh other tracked histories (e.g. visible in the
             // multi-history view). Skip ids not in storedHistories — there's

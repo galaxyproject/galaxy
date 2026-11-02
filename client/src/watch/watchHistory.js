@@ -99,7 +99,7 @@ async function _fetchHistoryAndChangedItems({ force }) {
     datasetCollectionStore.saveCollections(payload);
 
     if (sizeChanged) {
-        void useUserStore().refreshStorageUsageThrottled();
+        useUserStore().refreshStorageUsageThrottled();
     }
 }
 

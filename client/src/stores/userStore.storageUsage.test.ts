@@ -53,4 +53,21 @@ describe("userStore — watching the storage usage", () => {
         await returnToTab();
         expect(userRequests).toBe(2);
     });
+
+    it("holds changes back while the tab is hidden and refreshes as soon as the user returns", async () => {
+        useUserStore().startWatchingStorageUsage();
+        await returnToTab();
+        expect(userRequests).toBe(1);
+
+        visibility.set("hidden");
+        await flushPromises();
+        useUserStore().refreshStorageUsageThrottled();
+        await flushPromises();
+        expect(userRequests).toBe(1);
+
+        // Within a minute of the last refresh on return, which would otherwise skip this one
+        visibility.set("visible");
+        await flushPromises();
+        expect(userRequests).toBe(2);
+    });
 });

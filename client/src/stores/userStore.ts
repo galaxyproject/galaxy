@@ -144,20 +144,24 @@ export const useUserStore = defineStore("userStore", () => {
         refreshStorageUsage().catch((err) => console.error("Error refreshing the storage usage:", err));
     }
 
-    /**
-     * Like ``refreshStorageUsageInBackground``, at most once per window: a workflow finishing many
-     * jobs changes the usage for each.
-     */
-    const refreshStorageUsageThrottled = useThrottleFn(
-        refreshStorageUsageInBackground,
-        STORAGE_REFRESH_THROTTLE_MS,
-        true,
-        true,
-    );
+    const throttledRefresh = useThrottleFn(refreshStorageUsageInBackground, STORAGE_REFRESH_THROTTLE_MS, true, true);
     const refreshOnFocus = useThrottleFn(refreshStorageUsageInBackground, FOCUS_REFRESH_THROTTLE_MS, false, true);
 
     const documentVisibility = useDocumentVisibility();
     let watchingStorageUsage = false;
+    let refreshSkippedWhileHidden = false;
+
+    /**
+     * Like ``refreshStorageUsageInBackground``, at most once per window: a workflow finishing many
+     * jobs changes the usage for each. While the tab is hidden, it refreshes once the user returns.
+     */
+    function refreshStorageUsageThrottled() {
+        if (watchingStorageUsage && documentVisibility.value === "hidden") {
+            refreshSkippedWhileHidden = true;
+            return;
+        }
+        void throttledRefresh();
+    }
     // Owned by the store rather than by the component that starts the watching
     const storageUsageScope = effectScope();
 
@@ -172,7 +176,14 @@ export const useUserStore = defineStore("userStore", () => {
         watchingStorageUsage = true;
         storageUsageScope.run(() => {
             watch(documentVisibility, (visibility) => {
-                if (visibility === "visible") {
+                if (visibility !== "visible") {
+                    return;
+                }
+                if (refreshSkippedWhileHidden) {
+                    // A change is known to be missing: don't wait for the next focus refresh
+                    refreshSkippedWhileHidden = false;
+                    void throttledRefresh();
+                } else {
                     void refreshOnFocus();
                 }
             });
