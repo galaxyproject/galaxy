@@ -19,7 +19,7 @@ describe("FormElement", () => {
         wrapper = mount(FormElement, {
             props: {
                 id: "input",
-                value: "initial_value",
+                modelValue: "initial_value",
                 help: "help_text",
                 error: "error_text",
                 title: "title_text",
@@ -57,8 +57,8 @@ describe("FormElement", () => {
         expect(wrapper.findAll("button[data-title='Disable']").length).toEqual(1);
 
         await wrapper.find("[data-collapsible]").trigger("click");
-        expect(emittedArg(wrapper, "input")).toEqual("collapsible_value");
-        expect(wrapper.emitted("input")[0][1]).toEqual("input");
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual("collapsible_value");
+        expect(wrapper.emitted("update:modelValue")[0][1]).toEqual("input");
 
         await wrapper.setProps({
             collapsedEnableText: "Enable Collapsible",
@@ -68,7 +68,7 @@ describe("FormElement", () => {
         expect(wrapper.findAll("button[data-title='Disable Collapsible']").length).toEqual(0);
 
         await wrapper.find("[data-collapsible]").trigger("click");
-        expect(emittedArg(wrapper, "input", 1)).toEqual("default_value");
+        expect(emittedArg(wrapper, "update:modelValue", 1)).toEqual("default_value");
         expect(wrapper.findAll("button[data-title='Disable Collapsible']").length).toEqual(1);
         expect(wrapper.findAll("button[data-title='Enable Collapsible']").length).toEqual(0);
     });
@@ -89,17 +89,22 @@ describe("FormElement", () => {
     });
 
     it.each(["integer", "float"])("displays a multiple %s as a list of number fields", async (type) => {
-        await wrapper.setProps({ type, value: [1, 2], workflowRun: true, attributes: { multiple: true } });
+        await wrapper.setProps({ type, modelValue: [1, 2], workflowRun: true, attributes: { multiple: true } });
         expect(wrapper.findComponent(FormValueList).exists()).toBe(true);
         expect(wrapper.findAllComponents(FormNumber).length).toBe(2);
 
-        await wrapper.setProps({ value: 1, attributes: { multiple: false } });
+        await wrapper.setProps({ modelValue: 1, attributes: { multiple: false } });
         expect(wrapper.findComponent(FormValueList).exists()).toBe(false);
         expect(wrapper.findAllComponents(FormNumber).length).toBe(1);
     });
 
     it("displays a multiple text as a list of text fields", async () => {
-        await wrapper.setProps({ type: "text", value: ["a", "b"], workflowRun: true, attributes: { multiple: true } });
+        await wrapper.setProps({
+            type: "text",
+            modelValue: ["a", "b"],
+            workflowRun: true,
+            attributes: { multiple: true },
+        });
         expect(wrapper.findComponent(FormValueList).exists()).toBe(true);
         expect(wrapper.findAllComponents(FormText).length).toBe(2);
 
@@ -107,7 +112,7 @@ describe("FormElement", () => {
         await wrapper.setProps({ attributes: { multiple: true, datalist } });
         expect(wrapper.findComponent(FormValueList).props("datalist")).toEqual(datalist);
 
-        await wrapper.setProps({ value: "a", attributes: { multiple: false } });
+        await wrapper.setProps({ modelValue: "a", attributes: { multiple: false } });
         expect(wrapper.findComponent(FormValueList).exists()).toBe(false);
         expect(wrapper.findAllComponents(FormText).length).toBe(1);
     });
@@ -115,7 +120,7 @@ describe("FormElement", () => {
     it("names a checkbox select group by the parameter title", async () => {
         await wrapper.setProps({
             type: "select",
-            value: null,
+            modelValue: null,
             attributes: {
                 display: "checkboxes",
                 options: [
@@ -135,7 +140,7 @@ describe("FormElement", () => {
     it("names a radio select group by the parameter title", async () => {
         await wrapper.setProps({
             type: "select",
-            value: null,
+            modelValue: null,
             attributes: {
                 display: "radio",
                 options: [
@@ -165,7 +170,7 @@ describe("FormElement", () => {
     });
 
     it("warns about empty required values", async () => {
-        await wrapper.setProps({ type: "text", value: "", attributes: { optional: false } });
+        await wrapper.setProps({ type: "text", modelValue: "", attributes: { optional: false } });
         expect(wrapper.find(".ui-form-title-star").exists()).toBe(true);
         expect(wrapper.find(".ui-form-title-message").text()).toContain("required");
     });

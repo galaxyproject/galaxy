@@ -63,10 +63,10 @@ function onInput(newDatatype: string) {
 <template>
     <FormElement
         :id="id"
-        :value="currentValue"
+        :model-value="currentValue"
         :attributes="{ options: datatypeExtensions, multiple: multiple, display: 'simple', optional: true }"
         :title="title"
         type="select"
         :help="help"
-        @input="onInput" />
+        @update:model-value="onInput" />
 </template>

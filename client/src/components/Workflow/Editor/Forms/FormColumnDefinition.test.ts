@@ -12,7 +12,17 @@ describe("FormColumnDefinition", () => {
                 index: 2,
                 prefix: "column_2",
             },
-            global: { stubs: { FormElement: true, FormColumnDefinitionType: true } },
+            // FormElement opts out of COMPONENT_V_MODEL, so `true` no longer stubs it (see tests/vitest/setup.ts).
+            global: {
+                stubs: {
+                    FormElement: {
+                        name: "FormElement",
+                        compatConfig: { COMPONENT_V_MODEL: false },
+                        render: () => null,
+                    },
+                    FormColumnDefinitionType: true,
+                },
+            },
         });
 
         await wrapper.find("#column_2_optional").setValue(true);
