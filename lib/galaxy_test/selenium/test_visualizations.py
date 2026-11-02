@@ -102,6 +102,8 @@ class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
 
         self.navigate_to_saved_visualizations()
         self.select_grid_operation("igv with hg18", "Open")
+        # A saved visualization only mounts its frame once it has loaded; Playwright can't enter a missing frame.
+        self.wait_for_selector_visible("iframe#galaxy_visualization")
 
         # Saving one's own visualization again updates it rather than making a copy.
         with self.visualization_panel():
