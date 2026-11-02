@@ -389,6 +389,9 @@ Limitations:
 - The standard output and error of tools decrypting data may contain decrypted
   data, so they are not stored with the job or the outputs, and messages about
   error patterns (`<stdio>` regexes) they matched don't quote them.
+- Outputs of jobs decrypting data aren't validated, for example by the workflow
+  action validating outputs: validation reads the decrypted data, and its errors
+  may quote it. Their validation state stays unknown.
 - Tools see the wrapper datatype in `$input.ext` (for example
   `fastqsanger.c4gh`). The decrypted file name carries the inner extension.
 - Encrypted datasets only have metadata about their encryption, never metadata
