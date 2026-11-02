@@ -1,3 +1,4 @@
+import { useThrottleFn } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
@@ -44,6 +45,9 @@ export type ListViewMode = "grid" | "list";
 type UserListViewPreferences = Record<string, ListViewMode>;
 
 const RECENT_TOOLS_LIMIT = 10;
+
+/** Minimum time between storage usage refreshes triggered by frequent changes. */
+const STORAGE_REFRESH_THROTTLE_MS = 5000;
 
 export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<AnyUser>(null);
@@ -137,6 +141,17 @@ export const useUserStore = defineStore("userStore", () => {
     function refreshStorageUsageInBackground() {
         refreshStorageUsage().catch((err) => console.error("Error refreshing the storage usage:", err));
     }
+
+    /**
+     * Like ``refreshStorageUsageInBackground``, at most once per window: a workflow finishing many
+     * jobs changes the usage for each.
+     */
+    const refreshStorageUsageThrottled = useThrottleFn(
+        refreshStorageUsageInBackground,
+        STORAGE_REFRESH_THROTTLE_MS,
+        true,
+        true,
+    );
 
     function loadUser(includeHistories = true) {
         if (!loadPromise) {
@@ -369,6 +384,7 @@ export const useUserStore = defineStore("userStore", () => {
         refreshUser,
         refreshStorageUsage,
         refreshStorageUsageInBackground,
+        refreshStorageUsageThrottled,
         matchesCurrentUsername,
         matchesCurrentUserId,
         setCurrentUser,

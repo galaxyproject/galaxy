@@ -35,6 +35,7 @@ import {
     setCurrentHistoryOnServer,
     updateHistoryFields,
 } from "@/stores/services/history.services";
+import { useUserStore } from "@/stores/userStore";
 import { ApiError, isRetryableApiError, rethrowSimple } from "@/utils/simple-error";
 import { sortByObjectProp } from "@/utils/sorting";
 import {
@@ -417,6 +418,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
         await setNextAvailableHistoryId([deletedHistory.id]);
         delete storedHistories.value[deletedHistory.id];
         await handleTotalCountChange(1, true);
+        if (purge) {
+            // Purging frees the space of the histories' datasets
+            useUserStore().refreshStorageUsageInBackground();
+        }
     }
 
     async function deleteHistories(ids: string[], purge = false) {
@@ -435,6 +440,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
             delete storedHistories.value[history.id];
         });
         await handleTotalCountChange(deletedHistories.length, true);
+        if (purge) {
+            // Purging frees the space of the histories' datasets
+            useUserStore().refreshStorageUsageInBackground();
+        }
     }
 
     async function restoreHistory(historyId: string) {
@@ -767,6 +776,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
                 refreshHistoryFromPush().catch((err) =>
                     console.error("Error refreshing current history from SSE push:", err),
                 );
+            }
+            if (changedHistoryIds.some((id) => id !== currentId)) {
+                // Jobs, copies and purges in other histories change the user's storage usage too
+                void useUserStore().refreshStorageUsageThrottled();
             }
             // Also refresh other tracked histories (e.g. visible in the
             // multi-history view). Skip ids not in storedHistories — there's
