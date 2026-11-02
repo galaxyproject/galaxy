@@ -134,3 +134,46 @@ text_input: foo
             )
             invocation = self._get(f"invocations/{invocation_response.invocation_id}").json()
             assert "wf_output_1" in invocation["output_collections"]
+
+    def test_cached_mapped_step_scheduled_once_per_element(self):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/24665:
+        # with the job cache on and a per-iteration job cap, each iteration
+        # re-ran the slices that earlier iterations had already scheduled, so
+        # the step never progressed and kept creating jobs.
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: "list:list"
+steps:
+  cat:
+    tool_id: cat1
+    in:
+      input1: input_collection
+"""
+        )
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True)
+            hdca = response.json()
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            inputs = {"0": {"src": "hdca", "id": hdca["id"]}}
+            first_invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, history_id=history_id, inputs=inputs
+            ).json()["id"]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            first_jobs = self.workflow_populator.get_invocation_jobs(first_invocation_id)
+            assert len(first_jobs) == 3
+
+            cached_invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, history_id=history_id, inputs=inputs, request={"use_cached_job": True}
+            ).json()["id"]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            cached_jobs = self.workflow_populator.get_invocation_jobs(cached_invocation_id)
+            assert len(cached_jobs) == 3, cached_jobs
+            copied_from = {
+                self.dataset_populator.get_job_details(job["id"], full=True).json()["copied_from_job_id"]
+                for job in cached_jobs
+            }
+            assert copied_from == {job["id"] for job in first_jobs}

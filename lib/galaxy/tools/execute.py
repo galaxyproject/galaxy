@@ -185,13 +185,14 @@ def execute(
     execution_slice = None
     job_datasets: dict[str, list[model.DatasetInstance]] = {}  # job: list of dataset instances created by job
 
-    for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
+    for execution_slice in execution_tracker.new_execution_slices():
         if max_num_jobs is not None and jobs_executed >= max_num_jobs:
             has_remaining_jobs = True
             break
         else:
             skip = execution_slice.param_combination.pop("__when_value__", None) is False
-            execute_single_job(execution_slice, completed_jobs[i], skip=skip)
+            # Slices skipped by the tracker make the loop position differ from job_index.
+            execute_single_job(execution_slice, completed_jobs.get(execution_slice.job_index), skip=skip)
             history = execution_slice.history or history
             jobs_executed += 1
 
@@ -687,9 +688,20 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
             self.invocation_step.job = job
 
     def new_collection_execution_slices(self):
+        # A scheduling iteration capped by max_num_jobs leaves the remaining
+        # slices for later iterations. Skip the slices that earlier iterations
+        # already turned into jobs. Their output elements are populated, but a
+        # job cache hit would otherwise yield them again, so a capped
+        # iteration would never get past the first batch.
+        implicit_collection_jobs = self.implicit_collection_jobs
+        recorded_job_indexes = (
+            implicit_collection_jobs.recorded_order_indexes() if implicit_collection_jobs is not None else set()
+        )
         for job_index, (param_combination, (dataset_collection_elements, _when_value)) in enumerate(
             zip(self.param_combinations, self.walk_implicit_collections())
         ):
+            if job_index in recorded_job_indexes:
+                continue
             completed_job = self.completed_jobs and self.completed_jobs[job_index]
             if not completed_job:
                 found_result = False
