@@ -203,6 +203,8 @@ async function load(overlayLoading = false, silent = false) {
             offset: offset.value,
             filterText: search?.trim(),
             showPublished: published.value,
+            // The backend defaults show_shared to true, so the my tab must opt out to keep its total accurate
+            showShared: published.value ? undefined : sharedWithMe.value,
             skipStepCounts: true,
         });
 
