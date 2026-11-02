@@ -13,6 +13,11 @@ import { useSelectMany } from "./worker/selectMany";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 type SelectValue = Record<string, unknown> | string | number | null;
 
 interface SelectOption {
@@ -34,7 +39,7 @@ const props = defineProps({
         type: String,
         default: "Search for options",
     },
-    value: {
+    modelValue: {
         type: Array as PropType<SelectValue | SelectValue[]>,
         default: null,
     },
@@ -55,7 +60,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-    (e: "input", value: Array<SelectValue>): void;
+    (e: "update:modelValue", value: Array<SelectValue>): void;
     (e: "search-change", query: string): void;
 }>();
 
@@ -84,19 +89,19 @@ const searchRegex = computed(() => {
     }
 });
 
-/** Wraps value prop so it can be set, and always returns an array */
+/** Wraps modelValue prop so it can be set, and always returns an array */
 const selected = computed({
     get() {
-        if (props.value === null) {
+        if (props.modelValue === null) {
             return [];
-        } else if (Array.isArray(props.value)) {
-            return props.value;
+        } else if (Array.isArray(props.modelValue)) {
+            return props.modelValue;
         } else {
-            return [props.value];
+            return [props.modelValue];
         }
     },
     set(value) {
-        emit("input", value);
+        emit("update:modelValue", value);
     },
 });
 
