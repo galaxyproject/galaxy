@@ -235,7 +235,8 @@ function finish() {
         return;
     }
     finished.value = true;
-    if (!opener || !nonce.value || readyItems.value.length === 0) {
+    // A result with no items still reports the failures; otherwise Close would tell the target nothing was chosen.
+    if (!opener || !nonce.value || (readyItems.value.length === 0 && failedItems.value.length === 0)) {
         return;
     }
     post({

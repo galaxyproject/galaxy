@@ -263,6 +263,23 @@ describe("AnotherGalaxyPicker", () => {
         expect(closeSpy).not.toHaveBeenCalled();
     });
 
+    it("reports the failures to the target when no item exported, so Close does not read as a cancel", async () => {
+        serveItems([row("d1"), row("d2")], ["task-d1", "task-d2"]);
+        const wrapper = await mountPicker();
+        await tick(wrapper, "dataset:d1");
+        await tick(wrapper, "dataset:d2");
+        await wrapper.find('[data-description="picker send"]').trigger("click");
+        await vi.waitFor(() => expect(wrapper.find('[data-description="picker none sent"]').exists()).toBe(true), {
+            timeout: 5000,
+        });
+        const expected = [{ type: "galaxy-picker/result", protocol: 1, nonce: NONCE, items: [], failed: 2 }, TARGET];
+        expect(messages().at(-1)).toEqual(expected);
+        expect(closeSpy).not.toHaveBeenCalled();
+        await wrapper.find('[data-description="picker close"]').trigger("click");
+        expect(messages().at(-1)).toEqual(expected);
+        expect(closeSpy).toHaveBeenCalled();
+    });
+
     it("shows the links to copy when no window opened it", async () => {
         opener = null;
         serveItems([row("d1")]);

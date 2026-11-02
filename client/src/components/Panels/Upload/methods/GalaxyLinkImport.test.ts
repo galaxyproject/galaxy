@@ -315,6 +315,21 @@ describe("GalaxyLinkImport, choosing from another Galaxy", () => {
         expect(notice.text()).toContain("usegalaxy.eu");
     });
 
+    it("says the items failed, not that nothing was chosen, when none of them arrived", async () => {
+        const opened = mockPopup();
+        const wrapper = await mountChooser();
+        await wrapper.find('[data-description="galaxy picker open"]').trigger("click");
+        const nonce = nonceOf(opened);
+        send(hello(nonce));
+        send(result(nonce, [], 2));
+        await flushPromises();
+        expect(wrapper.findAll('[data-description="galaxy picker import item"]')).toHaveLength(0);
+        expect(wrapper.find('[data-description="galaxy picker some failed"]').text()).toContain(
+            "2 items could not be exported",
+        );
+        expect(wrapper.find('[data-description="galaxy picker cancelled"]').exists()).toBe(false);
+    });
+
     it("ignores a result with another nonce, or before the picker said hello", async () => {
         const bodies = importEndsIn("SUCCESS");
         const opened = mockPopup();
