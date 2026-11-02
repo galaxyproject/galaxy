@@ -11,7 +11,7 @@ function mountDelayedInput(props = {}) {
     return mount(DelayedInput as object, {
         localVue,
         propsData: {
-            value: "test query",
+            modelValue: "test query",
             ...props,
         },
     });

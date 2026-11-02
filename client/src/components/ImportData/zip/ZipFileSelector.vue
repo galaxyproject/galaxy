@@ -140,7 +140,7 @@ function onSearch(value: string) {
     <div class="zip-file-selector w-100">
         <div class="zip-file-selector-search mb-3">
             <DelayedInput
-                :value="searchQuery"
+                :model-value="searchQuery"
                 :delay="200"
                 placeholder="Search files by name or path"
                 @change="onSearch" />
