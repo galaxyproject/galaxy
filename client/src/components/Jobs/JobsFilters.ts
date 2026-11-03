@@ -13,12 +13,12 @@ export type JobTimeRangeKey = "30m" | "1h" | "24h" | "7d" | "custom";
  * Each job state belongs to exactly one group. Named so a group key never collides with an actual
  * job state value (e.g. not `running`, which is itself a state).
  */
-export const STATE_GROUPS: Record<string, JobState[]> = {
+export const STATE_GROUPS = {
     active: ["new", "queued", "running", "finishing", "waiting", "resubmitted", "upload"],
     finished: ["ok", "skipped"],
     problem: ["error", "failed"],
     inactive: ["paused", "stop", "stopped", "deleting", "deleted"],
-};
+} as const satisfies Record<string, JobState[]>;
 
 /** Quick-pick time ranges' durations, used to compute an `update_time_gt` cutoff from "now". */
 const TIME_RANGE_DURATIONS_MS: Record<Exclude<JobTimeRangeKey, "custom">, number> = {
@@ -221,10 +221,11 @@ export function jobsFilterParams(
     }
 
     const status = JobsFilters.getFilterValue(filterText, "status") as string | undefined;
-    const groupStates = status ? STATE_GROUPS[status] : undefined;
+    const groupStates =
+        status && status in STATE_GROUPS ? STATE_GROUPS[status as keyof typeof STATE_GROUPS] : undefined;
     if (groupStates) {
-        params.state = groupStates;
-        matchers.push((job) => groupStates.includes(job.state));
+        params.state = [...groupStates];
+        matchers.push((job) => groupStates.some((state) => state === job.state));
     } else {
         const state = JobsFilters.getFilterValue(filterText, "state") as string | undefined;
         if (state) {
