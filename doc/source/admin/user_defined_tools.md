@@ -34,6 +34,8 @@ To enable this feature:
 2. Create a role of type `Custom Tool Execution` in the admin user interface.
 3. Assign users or groups to this role.
 
+Alternatively, set `allow_user_defined_tools_for_all_users: true` to let every logged-in user create and run user-defined tools without the role. Anonymous users are still refused. With `allow_user_creation` on, that means anyone who can register an account, so only do this once the job environment is isolated as described under [Security considerations](#security-considerations).
+
 Galaxy checks the role again when a job is prepared, so removing a user from the role, or deleting the role, also fails that user's queued user-defined tool jobs.
 
 ## Sharing User-Defined Tools

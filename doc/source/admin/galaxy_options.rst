@@ -6699,6 +6699,9 @@
     Allow every logged-in user to create and run user defined tools,
     instead of only users holding a role of type ``user_tool_execute``
     (granted directly or through a group). Anonymous users are still
-    refused. ``enable_beta_tool_formats`` must also be enabled.
+    refused. ``enable_beta_tool_formats`` must also be enabled. With
+    ``allow_user_creation`` on, this lets anyone who registers run
+    their own command lines as jobs, so make sure user defined tools
+    are sent to a suitably sandboxed (e.g. containerized) destination.
 :Default: ``false``
 :Type: bool
