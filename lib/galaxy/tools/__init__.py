@@ -2470,10 +2470,11 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         trans,
         use_cached_job: bool,
         all_params: list[ToolStateJobInstancePopulatedT],
+        recorded_job_indexes: Optional[set[int]] = None,
     ) -> dict[int, Optional[Job]]:
         completed_jobs: dict[int, Optional[Job]] = {}
         for i, param in enumerate(all_params):
-            if use_cached_job and trans.user:
+            if use_cached_job and trans.user and not (recorded_job_indexes and i in recorded_job_indexes):
                 tool_id = self.id
                 assert tool_id
                 param_dump: ToolStateDumpedToJsonInternalT = params_to_json_internal(self.inputs, param, self.app)
