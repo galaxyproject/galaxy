@@ -78,7 +78,8 @@ class RemoteZipFilesSource(DefaultBaseFilesSource):
             context.user_data.is_admin,
             self._allowlist or [],
         )
-        stream_and_decompress(file_extract_params, native_path)
+        with requests.Session() as session:
+            stream_and_decompress(file_extract_params, native_path, session)
 
     def _write_from(
         self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[BaseFileSourceConfiguration]
@@ -129,38 +130,37 @@ def validate_params(params: dict[str, str]) -> FileExtractParameters:
     )
 
 
-def get_final_url(url: str):
+def get_final_url(url: str, session: requests.Session):
     """Follow redirects and return the final URL."""
-    session = requests.Session()
     response = session.head(url, allow_redirects=True)
     return response.url
 
 
-def get_range(url: str, start: int, length: int):
+def get_range(url: str, start: int, length: int, session: requests.Session):
     """Fetch a specific byte range from a remote file."""
     headers = {"Range": f"bytes={start}-{start + length - 1}"}
-    response = requests.get(url, headers=headers, stream=True)
+    response = session.get(url, headers=headers, stream=True)
     response.raise_for_status()
     return response
 
 
-def calculate_file_data_offset(url, header_offset: int):
+def calculate_file_data_offset(url, header_offset: int, session: requests.Session):
     """Determine the offset of the file data inside the ZIP archive."""
-    stream_response = get_range(url, header_offset, 30)
+    stream_response = get_range(url, header_offset, 30, session)
     local_header_data = stream_response.content
     file_name_length, extra_field_length = unpack("<HH", local_header_data[26:30])
     return header_offset + 30 + file_name_length + extra_field_length
 
 
-def stream_and_decompress(file_extract_params: FileExtractParameters, output_file: str):
+def stream_and_decompress(file_extract_params: FileExtractParameters, output_file: str, session: requests.Session):
     """Stream a file from a ZIP archive hosted remotely using byte-range requests."""
-    final_url = get_final_url(file_extract_params.source)
+    final_url = get_final_url(file_extract_params.source, session)
 
     # Calculate actual start of file data
-    file_data_offset = calculate_file_data_offset(final_url, file_extract_params.header_offset)
+    file_data_offset = calculate_file_data_offset(final_url, file_extract_params.header_offset, session)
 
     # Stream and decompress file
-    with get_range(final_url, file_data_offset, file_extract_params.compress_size) as response_stream:
+    with get_range(final_url, file_data_offset, file_extract_params.compress_size, session) as response_stream:
         if file_extract_params.compression_method == 0:  # Stored (no compression)
             with open(output_file, "wb") as f:
                 for chunk in response_stream.iter_content(chunk_size=8192):
