@@ -1109,11 +1109,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
             self._set_text_value(key, str(value))
 
     def _set_boolean_value(self, expanded_id: str, value):
-        checkbox = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).wait_for_present()
-        is_checked = checkbox.is_selected()
-        want_checked = str(value).lower() in ("true", "1", "yes")
-        if is_checked != want_checked:
-            self.execute_script("arguments[0].click();", checkbox)
+        self.tool_form_set_switch(expanded_id, str(value).lower() in ("true", "1", "yes"))
 
     def _set_checkbox_select_value(self, expanded_id: str, values: list):
         all_checkboxes = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).all()
@@ -1418,25 +1414,26 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
                 test_data = yaml_content["test_data"]
             else:
                 test_data = yaml_content
-            inputs, _, _ = load_data_dict(
+            # label_map covers every data input (type: File / Directory too); inputs omits those.
+            _, label_map, _ = load_data_dict(
                 history_id, test_data, self.dataset_populator, self.dataset_collection_populator
             )
-            for input_value in inputs.values():
-                if (
-                    isinstance(input_value, dict)
-                    and (src := input_value.get("src"))
-                    and (content_id := input_value.get("id"))
-                ):
-                    if src == "hda":
-                        content_item = self.dataset_populator.get_history_dataset_details(
-                            history_id, content_id=content_id
-                        )
-                        input_value["hid"] = content_item["hid"]
-                    elif src == "hdca":
-                        content_item = self.dataset_populator.get_history_collection_details(
-                            history_id=history_id, content_id=content_id
-                        )
-                        input_value["hid"] = content_item["hid"]
+            inputs: dict[str, dict[str, Any]] = {}
+            for label, input_value in label_map.items():
+                src = input_value.get("src") if isinstance(input_value, dict) else None
+                if src == "hda":
+                    content_item = self.dataset_populator.get_history_dataset_details(
+                        history_id, content_id=input_value["id"]
+                    )
+                elif src == "hdca":
+                    content_item = self.dataset_populator.get_history_collection_details(
+                        history_id=history_id, content_id=input_value["id"]
+                    )
+                else:
+                    raise ValueError(
+                        f"workflow_run_setup_inputs supports only data inputs, got {label}: {input_value!r}"
+                    )
+                inputs[label] = {"src": src, "id": input_value["id"], "hid": content_item["hid"]}
             self.dataset_populator.wait_for_history(history_id)
         else:
             inputs = {}

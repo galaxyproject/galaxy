@@ -3109,6 +3109,23 @@ class ImplicitCollectionJobs(Base, Serializable):
             )
         )
 
+    def job_attribute_by_order_index(self, attribute: str) -> dict[int, Any]:
+        """Return a job column's value for each recorded job, keyed by order index."""
+        stmt = (
+            select(ImplicitCollectionJobsJobAssociation.order_index, getattr(Job.table.columns, attribute))
+            .select_from(Job)
+            .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+            .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
+        )
+        return dict(required_object_session(self).execute(stmt).tuples().all())
+
+    def recorded_order_indexes(self) -> set[int]:
+        """Return the order indexes of the jobs already recorded for this map-over."""
+        stmt = select(ImplicitCollectionJobsJobAssociation.order_index).where(
+            ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id
+        )
+        return set(required_object_session(self).scalars(stmt))
+
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
             self,
@@ -9965,15 +9982,12 @@ class StoredWorkflowMenuEntry(Base, RepresentById):
     order_index: Mapped[int | None]
 
     stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship()
+    # Only the User side filters out deleted workflows. Repeating that filter
+    # here makes the lazy load (e.g. when flushing a removed entry) select from
+    # galaxy_user and stored_workflow without a join between them.
     user: Mapped[Optional["User"]] = relationship(
         back_populates="stored_workflow_menu_entries",
-        primaryjoin=(
-            lambda: (
-                (StoredWorkflowMenuEntry.user_id == User.id)
-                & (StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)
-                & not_(StoredWorkflow.deleted)
-            )
-        ),
+        primaryjoin=lambda: StoredWorkflowMenuEntry.user_id == User.id,
     )
 
 

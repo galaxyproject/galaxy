@@ -22,7 +22,7 @@ class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
         dataNew = "hg17"
         self.change_dbkey_value_and_click_submit(dataValue, dataNew)
         self.history_panel_wait_for_hid_ok(5)
-        self.open_collection_edit_view()
+        self.open_collection_edit_view(5)
         self.navigate_to_database_tab()
         self.check_current_data_value(dataNew)
 
@@ -40,7 +40,7 @@ class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
         dataValue = "txt"
         self.check_current_data_value(dataValue)
         dataNew = "tabular"
-        self.change_datatype_value_and_click_submit(dataValue, dataNew)
+        self.collection_edit_change_datatype(dataValue, dataNew)
         self.check_current_data_value(dataNew)
         self.wait_for_history()
         self.history_panel_expand_collection(3)
@@ -48,6 +48,35 @@ class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
         item = self.history_panel_item_component(hid=1)
         item.datatype.wait_for_visible()
         self._wait_on(lambda *_: item.datatype.wait_for_text() == dataNew)
+
+    @selenium_test
+    @managed_history
+    def test_convert_datatype_simple_list(self):
+        self._create_simple_list_collection("1.fasta", "fasta")
+        self.open_collection_edit_view()
+        self._edit_attributes.convert_tab.wait_for_and_click()
+        alert_element = self._edit_attributes.alert_info.wait_for_visible()
+        assert "This will create a new collection in your History." in alert_element.text
+        self.screenshot("collection_edit_convert_tab")
+        self._edit_attributes.convert_btn.wait_for_visible()
+        self._edit_attributes.convert_btn.assert_disabled()
+        self.collection_edit_convert("Convert FASTA to Tabular")
+        history_id = self.current_history_id()
+        converted = self.history_wait_for_new_collection(3)
+        self.history_panel_wait_for_hid_ok(converted["hid"])
+        # the selection resets after converting, so a second click can't rerun the converter
+        self._edit_attributes.convert_btn.assert_disabled()
+        original = self.dataset_populator.get_history_collection_details(history_id, hid=3)
+        details = self.dataset_populator.get_history_collection_details(history_id, hid=converted["hid"])
+        assert [e["object"]["file_ext"] for e in original["elements"]] == ["fasta"]
+        assert [e["object"]["file_ext"] for e in details["elements"]] == ["tabular"]
+        assert [e["element_identifier"] for e in details["elements"]] == [
+            e["element_identifier"] for e in original["elements"]
+        ]
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id, dataset_id=details["elements"][0]["object"]["id"]
+        )
+        assert content.startswith("hg17\tgtttgccatc")
 
     def _create_simple_list_collection(self, filename, ext):
         self.upload_context("local-file").stage_local_file(self.get_filename(filename), {"extension": ext}).start()
@@ -59,8 +88,8 @@ class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
         self.collection_builder_create()
         self._wait_for_hid_visible(3)
 
-    def open_collection_edit_view(self):
-        self.components.history_panel.collection_menu_edit_attributes.wait_for_and_click()
+    def open_collection_edit_view(self, hid=3):
+        self.history_panel_collection_edit(hid)
 
     def navigate_to_database_tab(self):
         self._edit_attributes.database_genome_tab.wait_for_and_click()
@@ -76,12 +105,6 @@ class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
         self._edit_attributes.genome_select_search.wait_for_and_send_keys(dataNew)
         self._edit_attributes.genome_select_search.wait_for_and_send_enter()
         self._edit_attributes.save_dbkey_btn.wait_for_and_click()
-
-    def change_datatype_value_and_click_submit(self, dataValue, dataNew):
-        self._edit_attributes.data_value(data_change=dataValue).wait_for_and_click()
-        self._edit_attributes.datatype_select_search.wait_for_and_send_keys(dataNew)
-        self._edit_attributes.datatype_select_search.wait_for_and_send_enter()
-        self._edit_attributes.save_datatype_btn.wait_for_and_click()
 
     @property
     def _edit_attributes(self):

@@ -373,7 +373,8 @@ history_panel:
 
   selectors:
     _: '#current-history-panel'
-    search: '#current-history-panel input.search-query'
+    search: '#current-history-panel .content-operations-filters [data-description="filter text input"]'
+    search_reset: '#current-history-panel .content-operations-filters [data-description="reset query"]'
     refresh_button: '.history-refresh-button'
     include_deleted_button: '[data-description="include deleted items button"]'
     include_hidden_button: '[data-description="include hidden items button"]'
@@ -414,7 +415,6 @@ history_panel:
     page_button: '[data-description="history page button"]'
 
     collection_menu_button: '.collection-menu'
-    collection_menu_edit_attributes: '.edit-btn'
 
     new_history_button: '[data-description="create new history"]'
     switch_history_button: '[data-description="switch to another history"]'
@@ -487,8 +487,12 @@ edit_dataset_attributes:
 edit_collection_attributes:
   selectors:
     alert_info: 'div.alert-info'
+    attributes_tab: '.collection-edit-attributes-nav'
     database_genome_tab: '.collection-edit-change-genome-nav'
     datatypes_tab: '.collection-edit-change-datatype-nav'
+    convert_tab: '.collection-edit-convert-datatype-nav'
+    converter_select: '.multiselect:has(#converter-tool)'
+    convert_btn: '.run-tool-collection-edit'
     data_value:
       type: xpath
       selector: '//span[text()[contains(., "${data_change}")]]'
@@ -604,8 +608,12 @@ collection_builders:
       auto_pairing: '[data-description="auto pairing"]'
       dismiss_unmatched: '[data-description="dismiss unmatched datasets"]'
       created_alert: '[data-description="list wizard created alert"]'
+      # the switch's input is hidden, so click its label text
+      remove_extensions: 'input[name="remove-extensions"] + .g-checkbox-label'
       cell: '[aria-rowindex="${row_index}"] [col-id="${column_identifier}"]'
       cell_input: '[aria-rowindex="${row_index}"] [col-id="${column_identifier}"] input'
+      element_name: '[data-description="list dataset collection element"][data-hid="${hid}"] .click-to-edit-label'
+      element_name_input: '[data-description="list dataset collection element"][data-hid="${hid}"] input'
     row:
       selectors:
         _: '[row-index="${index}"]'
@@ -635,6 +643,8 @@ histories:
     bulk_delete_button: 'button[id="history-list-footer-bulk-delete-button"]'
     bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
     bulk_open_multiview_button: 'button[id="history-list-footer-bulk-open-multiview-button"]'
+    sort_button: '[data-title="Sort by ${field} ${direction}"]'
+    list_loading: '#history-list-overlay .g-overlay'
   history_card:
     selectors:
       _: '.history-card-list #g-card-history-${history_id}'
@@ -931,6 +941,7 @@ tool_form:
     parameter_error: 'div.ui-form-element[id="form-element-${parameter}"] .ui-form-error-text'
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
     parameter_checkbox_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="checkbox"]'
+    parameter_switch: 'div.ui-form-element[id="form-element-${parameter}"] .g-checkbox'
     parameter_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
@@ -939,6 +950,7 @@ tool_form:
     parameter_data_input_collection_pressed: 'div.ui-form-element[id="form-element-${parameter}"] button.g-pressed[title="Dataset collection"]'
     parameter_data_label: 'div.ui-form-element[id="form-element-${parameter}"] [data-description="form data label"]'
     parameter_data_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
+    parameter_data_select_value: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect__single'
     parameter_color_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="color"]'
     parameter_text_input: 'div.ui-form-element[id="form-element-${parameter}"] input'
     parameter_form_selection: 'div.ui-form-element[id="form-element-${parameter}"] .form-selection'
@@ -1217,6 +1229,7 @@ workflow_editor:
       delete_selection: "[title='delete selected']"
       auto_layout: "#auto-layout-button"
       attributes: "#activity-workflow-editor-attributes"
+      run: "#activity-workflow-run"
       changes: "#activity-workflow-undo-redo"
       upgrade_all: "#activity-workflow-upgrade"
       best_practices: "#activity-workflow-best-practices"
@@ -1419,6 +1432,7 @@ invocations:
     progress_steps_note: '[data-description="workflow invocation state"] .steps-progress .progress-note'
     progress_jobs_note: '[data-description="workflow invocation state"] .jobs-progress .progress-note'
     workflow_rerun_button: '[data-button-rerun][data-title="Rerun Workflow with same inputs"]'
+    cancel_button: '[data-description="header cancel invocation button"]'
     invocation_tab: '.nav-item[title="${label}"] > a.nav-link'
     invocation_details_tab:
       type: xpath
@@ -1874,10 +1888,20 @@ upload_activity:
     # Remote-files selectors
     remote_files_browser_label: '[data-test-id="remote-files-browser-label"][data-label="${label}"]'
     remote_files_select_all: '[data-test-id="remote-files-select-all"]'
+    remote_files_browser_labels: '[data-test-id="remote-files-browser-label"]'
     remote_files_item_checkbox:
       type: xpath
       selector: '//span[contains(@data-test-id, "remote-files-browser-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'
     remote_files_add_selected: '[data-test-id="remote-files-add-selected"]'
+    remote_files_ftp_help: '.remote-files-upload [data-description="ftp upload help"]'
+    remote_files_search: '.remote-files-upload .search-bar-container input'
+    remote_files_search_settled: '.remote-files-upload .search-bar-container[data-search-query="${query}"]:not([data-busy])'
+    remote_files_current_folder:
+      type: xpath
+      selector: '//*[contains(@class, "remote-files-upload")]//*[contains(@class, "breadcrumb-current-label") and normalize-space()="${folder}"]'
+    remote_files_breadcrumb_link:
+      type: xpath
+      selector: '//*[contains(@class, "remote-files-upload")]//button[contains(@class, "breadcrumb-link") and normalize-space()="${title}"]'
     # Data-library selectors
     data_library_library_label: '[data-test-id="data-library-browser-library-label"][data-label="${label}"]'
     data_library_item_label: '[data-test-id="data-library-browser-item-label"][data-label="${label}"]'
