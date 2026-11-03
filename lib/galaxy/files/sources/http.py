@@ -26,6 +26,8 @@ from . import (
 
 log = logging.getLogger(__name__)
 
+FETCH_SCHEMES = ("http", "https", "ftp")
+
 
 class HTTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     # `url_regex` is not templated because it needs to be set at initialization with no RuntimeContext available.
@@ -68,9 +70,9 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
     ):
         config = context.config
         allowlist = self._allowlist or config.fetch_url_allowlist
-        validate_non_local(source_path, allowlist)
+        validate_non_local(source_path, allowlist, schemes=FETCH_SCHEMES)
         req = urllib.request.Request(source_path, headers=config.http_headers)
-        opener = urllib.request.build_opener(ValidatingRedirectHandler(allowlist))
+        opener = urllib.request.build_opener(ValidatingRedirectHandler(allowlist, schemes=FETCH_SCHEMES))
         try:
             page = opener.open(req, timeout=DEFAULT_SOCKET_TIMEOUT)
         except Exception as e:
@@ -83,7 +85,7 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
 
         with page:
             # Verify url post-redirects is still allowlisted
-            validate_non_local(page.geturl(), allowlist)
+            validate_non_local(page.geturl(), allowlist, schemes=FETCH_SCHEMES)
             return stream_to_path(page, native_path, source_encoding=get_charset_from_http_headers(page.headers))
 
     def _write_from(

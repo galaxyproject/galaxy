@@ -158,8 +158,8 @@ def validate_non_local(
             # was caught by earlier cases, and it cannot be due to credentials.
             parsed_url, port = split_port(parsed_url=parsed_url, url=url)
 
-    # urllib percent-decodes hosts before resolving them; requests may read some URLs differently.
-    if unquote(parsed_url) != parsed_url or not _host_matches_requests(parsed_url, url):
+    # urllib percent-decodes hosts before resolving them; requests (http(s) only) may read some URLs differently.
+    if unquote(parsed_url) != parsed_url or (scheme in HTTP_SCHEMES and not _host_matches_requests(parsed_url, url)):
         raise RequestParameterInvalidException(f"Could not verify url '{url}'.")
 
     # safe to log out, no credentials/request path, just an IP + port
@@ -210,11 +210,14 @@ def validate_non_local(
 class ValidatingRedirectHandler(urllib.request.HTTPRedirectHandler):
     """A urllib redirect handler that runs validate_non_local on each redirect target before following it."""
 
-    def __init__(self, ip_allowlist: list[IpAllowedListEntryT]):
+    def __init__(self, ip_allowlist: list[IpAllowedListEntryT], schemes: tuple[str, ...] = HTTP_SCHEMES):
         self.ip_allowlist = ip_allowlist
+        self.schemes = schemes
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        validate_non_local(newurl, self.ip_allowlist)
+        if urlparse(newurl).scheme.lower() not in self.schemes:
+            raise RequestParameterInvalidException(f"Refusing to follow redirect to unchecked URL scheme '{newurl}'.")
+        validate_non_local(newurl, self.ip_allowlist, schemes=self.schemes)
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
