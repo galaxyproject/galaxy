@@ -1100,12 +1100,13 @@ class SelectToolParameter(ToolParameter):
     """
     Parameter that takes on one (or many) or a specific set of values.
 
-    For ``multiple="true"`` parameters the value is always a list of the
-    selected option values, even if only a single option was provided as a
-    scalar (e.g. by legacy API clients or test cases), so that output filters
-    and other consumers of the parameter dict can rely on a single
-    representation. With a comma separated string ``"A" in value`` would be a
-    substring check, which is true for a selection of ``"AA"``.
+    For ``multiple="true"`` parameters a single option provided as a scalar
+    (e.g. by legacy API clients, test cases or stored workflow step state) is
+    wrapped in a list, so that output filters and other consumers of the
+    parameter dict see the same type for one or several selected options. On a
+    plain string ``"A" in value`` would be a substring check, which is true for
+    a selection of ``"AA"``. An optional multiple select with nothing selected
+    is ``None``.
 
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.util import XML
