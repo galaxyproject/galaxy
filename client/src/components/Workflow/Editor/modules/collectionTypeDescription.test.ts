@@ -54,6 +54,11 @@ describe("splitCollectionType", () => {
         ["list:paired_or_unpaired", "paired_or_unpaired", "paired_or_unpaired"],
         ["list:paired", "paired", "paired"],
         ["list:list", "list", "list"],
+        ["list:list", "list:paired_or_unpaired", "list"],
+        ["list:list:paired", "list:paired_or_unpaired", "list:paired"],
+        ["list:list:list", "list:paired_or_unpaired", "list"],
+        ["list:list:paired_or_unpaired", "list:paired_or_unpaired", "list:paired_or_unpaired"],
+        ["list:list:list:paired", "list:list:paired_or_unpaired", "list:list:paired"],
     ])("splits %s mapped over %s into %s", (collectionType, subcollectionType, splitType) => {
         expect(ct(collectionType).splitCollectionType(subcollectionType)).toBe(splitType);
     });

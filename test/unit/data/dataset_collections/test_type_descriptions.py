@@ -189,6 +189,11 @@ def test_effective_collection_type_paired_or_unpaired_non_paired():
         ("list:paired_or_unpaired", "paired_or_unpaired", "paired_or_unpaired"),
         ("list:paired", "paired", "paired"),
         ("list:list", "list", "list"),
+        ("list:list", "list:paired_or_unpaired", "list"),
+        ("list:list:paired", "list:paired_or_unpaired", "list:paired"),
+        ("list:list:list", "list:paired_or_unpaired", "list"),
+        ("list:list:paired_or_unpaired", "list:paired_or_unpaired", "list:paired_or_unpaired"),
+        ("list:list:list:paired", "list:list:paired_or_unpaired", "list:list:paired"),
     ],
 )
 def test_split_collection_type(collection_type, subcollection_type, split_type):

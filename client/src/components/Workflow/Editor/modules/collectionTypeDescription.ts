@@ -202,8 +202,16 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
     /** Literal type this collection is split into when mapped over an input of `subcollectionType`, like the server */
     splitCollectionType(subcollectionType: string): string {
         const collectionType = this.collectionType;
-        if (subcollectionType === "paired_or_unpaired" && !collectionType.endsWith("paired_or_unpaired")) {
+        if (collectionType.endsWith(`:${subcollectionType}`)) {
+            return subcollectionType;
+        }
+        if (subcollectionType === "paired_or_unpaired") {
             return collectionType.endsWith("paired") ? "paired" : "single_datasets";
+        }
+        if (subcollectionType.endsWith(":paired_or_unpaired")) {
+            // X:paired_or_unpaired consumes X and X:paired
+            const asPlain = subcollectionType.slice(0, -":paired_or_unpaired".length);
+            return collectionType.endsWith(`:${asPlain}:paired`) ? `${asPlain}:paired` : asPlain;
         }
         return subcollectionType;
     }

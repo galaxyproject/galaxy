@@ -494,6 +494,11 @@ describe("FormData", () => {
             ["list:list:list", ["list", "list:list"], "list:list"],
             ["list:list", ["paired_or_unpaired"], "single_datasets"],
             ["list:list:paired", ["paired_or_unpaired"], "paired"],
+            ["list:list", ["list:paired_or_unpaired"], "list"],
+            ["list:list:paired", ["list:paired_or_unpaired"], "list:paired"],
+            ["list:list:list", ["list:paired_or_unpaired"], "list"],
+            ["list:list:paired_or_unpaired", ["list:paired_or_unpaired"], "list:paired_or_unpaired"],
+            ["list:list", ["list:paired_or_unpaired", "paired_or_unpaired"], "list"],
         ])(
             "uses a dropped %s on a %j input with map_over_type %s",
             async (collectionType, collectionTypes, mapOverType) => {
@@ -510,8 +515,6 @@ describe("FormData", () => {
             ["paired", ["list:paired_or_unpaired"]],
             ["list:paired_or_unpaired", ["paired"]],
             ["paired_or_unpaired", ["paired"]],
-            ["list:list", ["list:paired_or_unpaired"]],
-            ["list:list:paired", ["list:paired_or_unpaired"]],
             ["list:list", ["sample_sheet"]],
             ["list:list", ["sample_sheet", "sample_sheet:paired_or_unpaired"]],
         ])("refuses a dropped %s on a %j input", async (collectionType, collectionTypes) => {
@@ -526,6 +529,7 @@ describe("FormData", () => {
             ["list:list", ["list", "list:list"], null],
             ["list:list", ["list"], "list"],
             ["list", ["paired_or_unpaired"], "single_datasets"],
+            ["list:list", ["list:paired_or_unpaired"], "list"],
         ])(
             "uses a dropped element holding a %s on a %j input with map_over_type %s",
             async (collectionType, collectionTypes, mapOverType) => {
@@ -541,7 +545,6 @@ describe("FormData", () => {
         it.each([
             ["paired", ["list"]],
             ["paired_or_unpaired", ["paired"]],
-            ["list:list", ["list:paired_or_unpaired"]],
         ])("refuses a dropped element holding a %s on a %j input", async (collectionType, collectionTypes) => {
             const value = await dropOnCollectionInput(collectionTypes, droppedCollectionElement(collectionType));
             expect(value).toEqual({

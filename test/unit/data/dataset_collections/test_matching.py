@@ -102,6 +102,11 @@ def test_query_map_over_type_of_list_of_paireds_over_paired_or_unpaired():
     assert q.map_over_type(example_list_of_lists()) == "single_datasets"
 
 
+def test_query_map_over_type_of_list_of_lists_over_list_paired_or_unpaired():
+    q = query.HistoryQuery.from_collection_types(["list:paired_or_unpaired"], TYPE_DESCRIPTION_FACTORY)
+    assert q.map_over_type(example_list_of_lists()) == "list"
+
+
 def test_query_map_over_type_none_without_map_over():
     q = query.HistoryQuery.from_collection_types(["list:list"], TYPE_DESCRIPTION_FACTORY)
     assert q.map_over_type(example_list_of_lists()) is None
