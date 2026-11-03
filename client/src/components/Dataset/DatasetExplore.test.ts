@@ -4,6 +4,7 @@ import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type DatatypeConverter, fetchDatatypeConverters } from "@/api/datatypes";
+import { getDatatypesMapper } from "@/components/Datatypes";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { type Tool, type ToolDataInput, useToolStore } from "@/stores/toolStore";
@@ -21,7 +22,12 @@ vi.mock("@/api/datatypes", () => ({
     fetchDatatypeConverters: vi.fn(),
 }));
 
+vi.mock("@/components/Datatypes", () => ({
+    getDatatypesMapper: vi.fn(),
+}));
+
 const mockFetchConverters = vi.mocked(fetchDatatypeConverters);
+const mockGetDatatypesMapper = vi.mocked(getDatatypesMapper);
 
 enableAutoUnmount(afterEach);
 
@@ -256,5 +262,22 @@ describe("DatasetExplore", () => {
         await flushPromises();
         expect(wrapper.find(".alert-danger").text()).toBe("Converters unavailable");
         expect(wrapper.find("[data-tool-id]").exists()).toBe(false);
+    });
+
+    it("shows an error when a datatypes load started elsewhere fails", async () => {
+        const localVue = setupStores(TOOLS);
+        mockFetchConverters.mockResolvedValue(CONVERTERS);
+        mockGetDatatypesMapper.mockRejectedValue(new Error("Datatypes unavailable"));
+        const datatypesMapperStore = useDatatypesMapperStore();
+        datatypesMapperStore.datatypesMapper = null;
+        const otherLoad = datatypesMapperStore.createMapper().catch(() => undefined);
+        const wrapper = mount(DatasetExplore as object, {
+            props: { datasetId: DATASET_ID, datasetExtension: "tabular" },
+            global: { ...localVue, stubs: { DelayedInput: true, FontAwesomeIcon: true } },
+        });
+        await otherLoad;
+        await flushPromises();
+        expect(wrapper.find(".loading-message").exists()).toBe(false);
+        expect(wrapper.find(".alert-danger").text()).toBe("Datatypes unavailable");
     });
 });
