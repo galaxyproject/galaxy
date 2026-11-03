@@ -6,7 +6,10 @@ import zipfile
 import pytest
 import responses
 
-from galaxy.exceptions import AdminRequiredException
+from galaxy.exceptions import (
+    AdminRequiredException,
+    ConfigDoesNotAllowException,
+)
 from galaxy.files.models import FileSourcePluginsConfig
 from ._util import (
     assert_realizes_contains,
@@ -108,3 +111,25 @@ def test_file_source_follows_redirect_to_public_host():
     responses.head(MOVED_ZIP_URL)
     _serve_ranges(MOVED_ZIP_URL)
     assert _realize(_zip_url()) == MEMBER_CONTENTS
+
+
+@responses.activate
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_refuses_head_redirect_to_private_address():
+    responses.head(ZIP_URL, status=302, headers={"Location": "http://127.0.0.1/archive.zip"})
+    redirect_target = responses.head("http://127.0.0.1/archive.zip")
+    _serve_ranges("http://127.0.0.1/archive.zip")
+    with pytest.raises(ConfigDoesNotAllowException):
+        _realize(_zip_url())
+    assert redirect_target.call_count == 0
+
+
+@responses.activate
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_refuses_range_redirect_to_private_address():
+    responses.head(ZIP_URL)
+    responses.get(ZIP_URL, status=302, headers={"Location": "http://127.0.0.1/archive.zip"})
+    _serve_ranges("http://127.0.0.1/archive.zip")
+    with pytest.raises(ConfigDoesNotAllowException):
+        _realize(_zip_url())
+    assert len(responses.calls) == 2
