@@ -440,6 +440,27 @@ describe("JobPanel", () => {
         expect(alert.text()).toContain("Clear your search or click the button at the bottom of the list to retry.");
     });
 
+    it("doesn't re-warn on every periodic re-check tick while the filter stays invalid", async () => {
+        vi.useFakeTimers();
+        try {
+            const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+            const wrapper = mountJobPanel();
+            await flushPromises();
+            wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "xx:ss");
+            await flushPromises();
+            warnSpy.mockClear(); // only care about warnings from the periodic re-check below, not the initial load
+
+            await vi.advanceTimersByTimeAsync(3000);
+            await flushPromises();
+            await vi.advanceTimersByTimeAsync(3000);
+            await flushPromises();
+
+            expect(warnSpy).not.toHaveBeenCalled();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it("drops a page that resolves after the filter changed", async () => {
         let releaseStalePage: () => void = () => {};
         const stalePage = new Promise<void>((resolve) => {

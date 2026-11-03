@@ -273,7 +273,14 @@ async function checkForNewMatchingJobs() {
     if (!currentUser.value || currentUser.value.isAnonymous) {
         return;
     }
-    const extraProps = buildFetchExtraProps(currentUser.value.id, false);
+    let extraProps: JobFetchExtraParams;
+    try {
+        extraProps = buildFetchExtraProps(currentUser.value.id, false);
+    } catch {
+        // Invalid filter text (e.g. mid-edit); loadJobs's own in-flight attempt already reports
+        // this, so skip this tick silently instead of re-warning on every poll until it's valid again.
+        return;
+    }
     const [data] = await fetchJobs(0, FETCH_LIMIT, extraProps, "create_time");
     for (const item of data) {
         addCurrentJob(item.id);

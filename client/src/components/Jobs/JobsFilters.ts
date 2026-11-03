@@ -67,9 +67,12 @@ export function setActiveTimeRange(
  * value `setActiveTimeRange` wrote into the filter text at pick time. Used to keep a periodic
  * re-check's own query live without rewriting the filter text itself (which would also disturb
  * `getActiveTimeRange`'s stored `lastApplied` comparison and anything else keyed on filter text).
+ *
+ * Lowercased to match what `setActiveTimeRange`'s own cutoff looks like once it's round-tripped
+ * through `Filtering`'s own value normalization (see `date_range_min` in `jobsFilterParams` below).
  */
 export function currentTimeRangeCutoff(range: Exclude<JobTimeRangeKey, "custom">): string {
-    return new Date(Date.now() - TIME_RANGE_DURATIONS_MS[range]).toISOString();
+    return new Date(Date.now() - TIME_RANGE_DURATIONS_MS[range]).toISOString().toLowerCase();
 }
 
 /**
