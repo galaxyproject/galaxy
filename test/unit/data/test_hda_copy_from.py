@@ -117,6 +117,22 @@ def _assert_copy_on_cached_dataset(engine: Engine, copy_id: int, cached_id: int)
         assert copy.state == model.Dataset.states.OK
 
 
+def test_copy_from_keeps_visibility_of_copies(engine, queued_and_cached):
+    queued_id, cached_id = queued_and_cached
+    with Session(engine) as session:
+        output = session.get(model.HistoryDatasetAssociation, queued_id)
+        cached = session.get(model.HistoryDatasetAssociation, cached_id)
+        assert output and cached
+        element = output.copy(flush=False)
+        element.visible = False
+        session.commit()
+        output.copy_from(cached, include_metadata=True)
+        session.commit()
+        assert output.visible
+        assert not element.visible
+        assert element.dataset_id == cached.dataset_id
+
+
 @skip_unless_postgres
 def test_copy_committed_after_swap_starts_follows_swap(engine, queued_and_cached):
     queued_id, cached_id = queued_and_cached
