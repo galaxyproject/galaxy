@@ -7735,6 +7735,8 @@ steps: []
                 assert_error_message_contains(response, "Cannot specify both legacy ds_map and input attributes")
             else:
                 self._assert_status_code_is(response, 200)
+                invocation = self.workflow_populator.get_invocation(response.json()["id"])
+                assert invocation["inputs"]["0"]["id"] == hda["id"]
 
     def test_run_with_int_parameter_nested(self):
         with self.dataset_populator.test_history() as history_id:
