@@ -4681,58 +4681,6 @@ class ToolReportForDataset(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
-DatasetInteractiveToolMatch = Literal["direct", "converted", "generic"]
-
-
-class DatasetInteractiveTool(Model):
-    id: str = Field(
-        ...,
-        title="ID",
-        description="Identifier of the interactive tool.",
-    )
-    name: str = Field(
-        ...,
-        title="Name",
-        description="Name of the interactive tool.",
-    )
-    description: str | None = Field(
-        None,
-        title="Description",
-        description="Short description of the interactive tool.",
-    )
-    version: str = Field(
-        ...,
-        title="Version",
-        description="Version of the interactive tool.",
-    )
-    icon: bool = Field(
-        ...,
-        title="Icon",
-        description="Whether the tool has an icon, servable from `api/tools/<id>/icon`.",
-    )
-    input_name: str | None = Field(
-        None,
-        title="Input name",
-        description="The `|`-joined path of the data input parameter to prefill with the dataset, "
-        "or null when the tool form cannot preselect it (an input in a non-default conditional case). "
-        "An input inside a repeat is addressed through the repeat's first element, e.g. `queries_0|input`.",
-    )
-    match: DatasetInteractiveToolMatch = Field(
-        ...,
-        title="Match",
-        description="How the dataset matches the tool's input: a direct format match, "
-        "a match via datatype conversion, or a generic input that accepts any datatype.",
-    )
-
-
-class DatasetInteractiveToolList(RootModel):
-    root: list[DatasetInteractiveTool] = Field(
-        default=[],
-        title="Interactive tools for a dataset",
-        description="List of interactive tools that accept a given dataset as input.",
-    )
-
-
 class PageSummaryList(RootModel):
     root: list[PageSummary] = Field(
         default=[],

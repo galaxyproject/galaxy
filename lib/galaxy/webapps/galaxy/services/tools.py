@@ -2,10 +2,6 @@ import logging
 import os
 import shutil
 import tempfile
-from collections.abc import (
-    Iterable,
-    Iterator,
-)
 from json import dumps
 from typing import (
     Any,
@@ -37,7 +33,6 @@ from galaxy.managers.tools import (
     ToolRunReference,
 )
 from galaxy.model import (
-    HistoryDatasetAssociation,
     LibraryDatasetDatasetAssociation,
     User,
 )
@@ -56,20 +51,13 @@ from galaxy.schema.fetch_data import (
     TargetsAdapter,
     UrlDataElement,
 )
-from galaxy.schema.schema import (
-    CreateToolLandingRequestPayload,
-    DatasetInteractiveTool,
-    DatasetInteractiveToolList,
-    DatasetInteractiveToolMatch,
-)
+from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_util.parameters import ToolParameterT
 from galaxy.tool_util.toolbox.base import (
     MaterializationReasonName,
     ToolLike,
 )
-from galaxy.tool_util.toolbox.panel import panel_item_types
-from galaxy.tool_util.version import parse_tool_version
 from galaxy.tool_util_models.parameters import (
     CollectionElementCollectionRequestUri,
     CollectionElementDataRequestUri,
@@ -79,25 +67,13 @@ from galaxy.tool_util_models.parameters import (
 )
 from galaxy.tools import Tool
 from galaxy.tools._types import InputFormatT
-from galaxy.tools.cached_toolbox import (
-    CachedToolBox,
-    ToolMaterializationError,
-)
-from galaxy.tools.parameters import ToolInputsT
-from galaxy.tools.parameters.basic import DataToolParameter
-from galaxy.tools.parameters.grouping import (
-    Conditional,
-    Repeat,
-    Section,
-)
+from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
-from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 if TYPE_CHECKING:
-    from galaxy.datatypes.registry import Registry
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
     from galaxy.work.context import SessionRequestContext
 
@@ -230,66 +206,6 @@ def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandin
     return [target.model_dump(mode="json", exclude_unset=True) for target in TargetsAdapter.validate_python(targets)]
 
 
-DATASET_MATCH_RANK: dict[DatasetInteractiveToolMatch, int] = {"direct": 0, "converted": 1, "generic": 2}
-
-
-def iter_data_inputs(inputs: ToolInputsT, prefix: str | None = "") -> Iterator[tuple[str | None, DataToolParameter]]:
-    """Yield ``(|-joined name, param)`` per data param; the name is ``None`` when a URL parameter cannot prefill it."""
-    for tool_input in inputs.values():
-        name = None if prefix is None else f"{prefix}{tool_input.name}"
-        child_prefix = None if name is None else f"{name}|"
-        if isinstance(tool_input, DataToolParameter):
-            yield name, tool_input
-        elif isinstance(tool_input, Section):
-            yield from iter_data_inputs(tool_input.inputs, child_prefix)
-        elif isinstance(tool_input, Repeat):
-            # The build API creates repeat element N for incoming ``<name>_N|...`` keys.
-            yield from iter_data_inputs(tool_input.inputs, None if name is None else f"{name}_0|")
-        elif isinstance(tool_input, Conditional):
-            # The build API only fills the default case when the test param is absent.
-            default_case = None
-            if tool_input.test_param is not None:
-                try:
-                    default_case = tool_input.get_current_case(tool_input.test_param.get_initial_value(None, {}))
-                except ValueError:
-                    pass
-            for index, case in enumerate(tool_input.cases):
-                yield from iter_data_inputs(case.inputs or {}, child_prefix if index == default_case else None)
-
-
-def dataset_input_match(
-    registry: "Registry", ext: str, inputs: ToolInputsT
-) -> tuple[str | None, DatasetInteractiveToolMatch] | None:
-    """Return the ``(input name, match)`` of the data input that best accepts ``ext``, if any."""
-    candidates: list[tuple[str | None, DatasetInteractiveToolMatch]] = []
-    for input_name, param in iter_data_inputs(inputs):
-        match: DatasetInteractiveToolMatch
-        if "data" in param.extensions:
-            match = "generic"
-        else:
-            direct, converted_ext, _ = registry.find_conversion_destination_for_dataset_by_extensions(
-                ext, param.formats
-            )
-            if direct:
-                match = "direct"
-            elif converted_ext:
-                match = "converted"
-            else:
-                continue
-        candidates.append((input_name, match))
-    # Best rank wins; on a tie prefer an input the form can preselect.
-    return min(candidates, key=lambda c: (DATASET_MATCH_RANK[c[1]], c[0] is None), default=None)
-
-
-def latest_tool_versions(tools: Iterable[ToolLike]) -> list[ToolLike]:
-    """Keep the newest version of each tool lineage."""
-    lineages: dict[str, list[ToolLike]] = {}
-    for tool in tools:
-        tool_id = tool.id or ""
-        lineages.setdefault(remove_version_from_guid(tool_id) or tool_id, []).append(tool)
-    return [max(versions, key=lambda tool: parse_tool_version(tool.version or "")) for versions in lineages.values()]
-
-
 class ToolsService(ServiceBase):
     def __init__(
         self,
@@ -314,47 +230,6 @@ class ToolsService(ServiceBase):
             if tool.tool_tags:
                 mapping[tool.id] = list(tool.tool_tags)
         return mapping
-
-    def interactive_tools_for_dataset(
-        self, trans: ProvidesUserContext, hda: HistoryDatasetAssociation
-    ) -> DatasetInteractiveToolList:
-        """List interactive tools with a data input that accepts ``hda``, best match first."""
-        if not self.config.interactivetools_enable:
-            return DatasetInteractiveToolList(root=[])
-        toolbox = trans.app.toolbox
-        registry = trans.app.datatypes_registry
-        # Same hidden/access/user filters as ``GET /api/tools?in_panel=false``.
-        filter_method = toolbox._build_filter_method(trans)
-        interactive_tools = [
-            tool_like
-            for _, tool_like in toolbox.tools()
-            if tool_like.tool_type == "interactive" and filter_method(tool_like, panel_item_types.TOOL)
-        ]
-        results: list[DatasetInteractiveTool] = []
-        # Shed tool ids embed the version, so ``tools()`` yields every installed version of a shed tool.
-        for tool_like in latest_tool_versions(interactive_tools):
-            try:
-                tool = toolbox.materialize_tool(tool_like, reason="detail")
-            except ToolMaterializationError:
-                log.exception("Skipping interactive tool %s", tool_like.id)
-                continue
-            best = dataset_input_match(registry, hda.ext, tool.inputs)
-            if best is None:
-                continue
-            input_name, match = best
-            results.append(
-                DatasetInteractiveTool(
-                    id=tool.id,
-                    name=tool.name,
-                    description=tool.description,
-                    version=tool.version,
-                    icon=bool(tool.icon),
-                    input_name=input_name,
-                    match=match,
-                )
-            )
-        results.sort(key=lambda item: (DATASET_MATCH_RANK[item.match], item.name.lower()))
-        return DatasetInteractiveToolList(root=results)
 
     def file_landing_to_tool_landing(
         self,

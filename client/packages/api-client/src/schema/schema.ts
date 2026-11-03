@@ -890,23 +890,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/datasets/{dataset_id}/interactive_tools": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Return the interactive tools with a data input that accepts this dataset. */
-        get: operations["datasets__interactive_tools"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/datasets/{dataset_id}/metrics": {
         parameters: {
             query?: never;
@@ -12086,51 +12069,6 @@ export interface components {
              */
             user_id: string | null;
         };
-        /** DatasetInteractiveTool */
-        DatasetInteractiveTool: {
-            /**
-             * Description
-             * @description Short description of the interactive tool.
-             */
-            description?: string | null;
-            /**
-             * Icon
-             * @description Whether the tool has an icon, servable from `api/tools/<id>/icon`.
-             */
-            icon: boolean;
-            /**
-             * ID
-             * @description Identifier of the interactive tool.
-             */
-            id: string;
-            /**
-             * Input name
-             * @description The `|`-joined path of the data input parameter to prefill with the dataset, or null when the tool form cannot preselect it (an input in a non-default conditional case). An input inside a repeat is addressed through the repeat's first element, e.g. `queries_0|input`.
-             */
-            input_name?: string | null;
-            /**
-             * Match
-             * @description How the dataset matches the tool's input: a direct format match, a match via datatype conversion, or a generic input that accepts any datatype.
-             * @enum {string}
-             */
-            match: "direct" | "converted" | "generic";
-            /**
-             * Name
-             * @description Name of the interactive tool.
-             */
-            name: string;
-            /**
-             * Version
-             * @description Version of the interactive tool.
-             */
-            version: string;
-        };
-        /**
-         * Interactive tools for a dataset
-         * @description List of interactive tools that accept a given dataset as input.
-         * @default []
-         */
-        DatasetInteractiveToolList: components["schemas"]["DatasetInteractiveTool"][];
         /**
          * DatasetPermissionAction
          * @enum {string}
@@ -36273,50 +36211,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetInheritanceChain"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    datasets__interactive_tools: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path: {
-                /** @description The ID of the History Dataset. */
-                dataset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DatasetInteractiveToolList"];
                 };
             };
             /** @description Request Error */

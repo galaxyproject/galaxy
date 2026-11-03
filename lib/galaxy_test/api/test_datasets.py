@@ -2,7 +2,6 @@ import textwrap
 import zipfile
 from io import BytesIO
 from typing import Any
-from unittest import SkipTest
 from urllib.parse import quote
 
 import pytest
@@ -322,14 +321,6 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(show_response, 200)
         # New users get private data by default, so the access role is the private role as well.
         assert show_response.json()["permissions"] == {"manage": [role_id], "access": [role_id]}
-
-    def test_interactive_tools_empty_when_disabled(self, history_id):
-        if self.dataset_populator.get_configuration()["interactivetools_enable"]:
-            raise SkipTest("Skipping test because server has interactive tools enabled")
-        hda = self.dataset_populator.new_dataset(history_id, content="1\t2\n", file_type="tabular", wait=True)
-        response = self._get(f"datasets/{hda['id']}/interactive_tools")
-        self._assert_status_code_is(response, 200)
-        assert response.json() == []
 
     @requires_admin
     def test_admin_can_update_permissions(self, history_id):
