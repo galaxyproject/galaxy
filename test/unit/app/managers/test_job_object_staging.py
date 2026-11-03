@@ -151,9 +151,33 @@ def test_input_missing_from_the_object_store_is_not_found(app, manager, redirect
     hda = HistoryDatasetAssociation(sa_session=app.model.session, create_dataset=True)
     app.model.session.add(hda)
     job = _running_job(app, hda)
-    with mock.patch.object(app.object_store, "get_direct_download_url", return_value="https://s3/signed"):
+    with (
+        mock.patch.object(app.object_store, "get_direct_download_url", return_value="https://s3/signed"),
+        # As a cloud store streams a missing object: as if it were empty.
+        mock.patch.object(app.object_store, "get_data_stream", return_value=iter([])),
+    ):
         with pytest.raises(exceptions.ObjectNotFound):
             manager.staged_input(**_signed(app, job, "dataset", _dataset(hda).id, redirect=redirect), head=head)
+
+
+def test_empty_input_is_served_empty(app, manager):
+    hda = _stored_hda(app, content=b"")
+    job = _running_job(app, hda)
+    staged = manager.staged_input(**_signed(app, job, "dataset", _dataset(hda).id))
+    assert staged.size == 0
+    assert staged.path is not None
+    with open(staged.path, "rb") as f:
+        assert f.read() == b""
+
+
+def test_input_with_content_is_staged_without_a_separate_existence_check(app, manager):
+    # Each is a remote call on a cloud store, and a size above 0 shows the object exists.
+    hda = _stored_hda(app)
+    job = _running_job(app, hda)
+    with mock.patch.object(app.object_store, "exists", wraps=app.object_store.exists) as exists:
+        staged = manager.staged_input(**_signed(app, job, "dataset", _dataset(hda).id), head=True)
+    assert staged.size == len(CONTENT)
+    exists.assert_not_called()
 
 
 def _stage_in_a_fresh_session(app, manager, request) -> tuple[int, set[int]]:
