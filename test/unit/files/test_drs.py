@@ -106,6 +106,7 @@ def test_drs_oidc_token_no_tokens_raises():
         file_sources.to_dict(for_serialization=True, user_context=user_context)
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_file_source_drs_http():
     def drs_repo_handler(request):
@@ -174,6 +175,7 @@ def test_file_source_drs_http():
         assert metadata_out["name"] == "hello-314159"
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_file_source_drs_omits_unusable_name_from_metadata():
     """A DRS object with no usable name leaves metadata_out empty so callers keep their own fallback."""
@@ -315,6 +317,7 @@ def test_file_source_drs_s3():
     )
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_file_source_drs_attach_oidc_token():
     """When http_headers is configured with a template referencing the user's OIDC token, it is sent as a Bearer header."""

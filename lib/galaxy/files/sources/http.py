@@ -93,6 +93,7 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
                     "The URL source should properly percent-encode the path."
                 )
             request_url = _requote_http_url(source_path)
+        validate_non_local(request_url, allowlist)
         req = urllib.request.Request(request_url, headers=config.http_headers)
         opener = urllib.request.build_opener(ValidatingRedirectHandler(allowlist))
 
