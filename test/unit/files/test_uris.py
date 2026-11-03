@@ -95,6 +95,18 @@ def test_validate_non_local_private_address_outside_allowlist_rejected(url, allo
         "http://[::1]/",
         "http://[::1]:8080/",
         "http://example.org:abc/",
+        "http://[::1/",
+        # urlparse reads example.org as the host here, requests connects to 127.0.0.1.
+        "https://127.0.0.1\\@example.org/",
+        "http://127.0.0.1:80\\@example.org/",
+        "http://exa\nmple.org/",
+        # DNS lookup (IDNA 2003) reads strasse.example, requests (IDNA 2008) xn--strae-oqa.example.
+        "https://straße.example/",
+        # requests decodes unreserved percent-escapes in hosts, DNS lookup does not.
+        "http://ex%61mple.org/",
+        # urllib decodes every percent-escape in hosts, requests keeps reserved ones.
+        "http://ex%40mple.org/",
+        "http://127.0.0.1%3A8080/",
     ],
 )
 def test_validate_non_local_unverifiable(url):
