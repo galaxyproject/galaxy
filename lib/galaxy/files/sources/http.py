@@ -31,6 +31,8 @@ from . import (
 
 log = logging.getLogger(__name__)
 
+FETCH_SCHEMES = ("http", "https", "ftp")
+
 # ASCII control characters, space, and DEL must be percent-encoded in a URL;
 # same character set http.client refuses in a request line.
 _DISALLOWED_URL_CHARACTERS = re.compile(r"[\x00-\x20\x7f]")
@@ -93,13 +95,13 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
                     "The URL source should properly percent-encode the path."
                 )
             request_url = _requote_http_url(source_path)
-        validate_non_local(request_url, allowlist)
+        validate_non_local(request_url, allowlist, schemes=FETCH_SCHEMES)
         req = urllib.request.Request(request_url, headers=config.http_headers)
-        opener = urllib.request.build_opener(ValidatingRedirectHandler(allowlist))
+        opener = urllib.request.build_opener(ValidatingRedirectHandler(allowlist, schemes=FETCH_SCHEMES))
 
         with opener.open(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
             # Verify url post-redirects is still allowlisted
-            validate_non_local(page.geturl(), allowlist)
+            validate_non_local(page.geturl(), allowlist, schemes=FETCH_SCHEMES)
             return stream_to_path(page, native_path, source_encoding=get_charset_from_http_headers(page.headers))
 
     def _write_from(
