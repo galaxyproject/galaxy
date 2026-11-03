@@ -17,10 +17,21 @@ from typing import (
 )
 from urllib.parse import quote
 
+from sqlalchemy import (
+    or_,
+    Select,
+    select,
+)
+
 from galaxy import exceptions
 from galaxy.model import (
     Dataset,
+    DatasetInstance,
+    HistoryDatasetAssociation,
     Job,
+    JobToInputDatasetAssociation,
+    JobToInputLibraryDatasetAssociation,
+    LibraryDatasetDatasetAssociation,
     MetadataFile,
 )
 from galaxy.model.metadata import FileParameter
@@ -133,28 +144,68 @@ class JobObjectStagingManager:
     def _input_object(
         self, job: Job, kind: StagedInputKind, object_id: int, path: str
     ) -> tuple[Dataset | MetadataFile, Dataset, dict[str, Any]]:
-        """The object to read, the dataset it belongs to, and where it sits in that dataset's store."""
-        input_associations = [
-            *(assoc.dataset for assoc in job.input_datasets),
-            *(assoc.dataset for assoc in job.input_library_datasets),
-        ]
+        """The object to read, the input dataset it belongs to, and where it sits in that dataset's store.
+
+        Only the inputs the request is for are loaded: a job's inputs can number thousands, and each of
+        their files is staged with its own request.
+        """
         if kind in ("dataset", "extra_file"):
-            for association in input_associations:
-                dataset = association.dataset if association is not None else None
-                if dataset is not None and dataset.id == object_id:
-                    path_kwargs = dataset.extra_file_object_store_path_kwargs(path) if kind == "extra_file" else {}
-                    return dataset, dataset, path_kwargs
-        elif kind == "metadata_file":
-            # Not the file's owner: an input's metadata may name a metadata file of another dataset by uuid.
-            for association in input_associations:
-                if association is not None and association.dataset is not None:
-                    for metadata_file in _metadata_files(association):
-                        if metadata_file.id == object_id:
-                            return metadata_file, association.dataset, metadata_file.object_store_path_kwargs()
+            history_datasets = select(HistoryDatasetAssociation.dataset_id).where(
+                HistoryDatasetAssociation.id.in_(_history_input_ids(job.id))
+            )
+            library_datasets = select(LibraryDatasetDatasetAssociation.dataset_id).where(
+                LibraryDatasetDatasetAssociation.id.in_(_library_input_ids(job.id))
+            )
+            stmt = select(Dataset).where(
+                Dataset.id == object_id, or_(Dataset.id.in_(history_datasets), Dataset.id.in_(library_datasets))
+            )
+            if (dataset := self._sa_session.scalars(stmt).first()) is not None:
+                path_kwargs = dataset.extra_file_object_store_path_kwargs(path) if kind == "extra_file" else {}
+                return dataset, dataset, path_kwargs
+        elif kind == "metadata_file" and (metadata_file := self._sa_session.get(MetadataFile, object_id)):
+            for instance in self._inputs_with_metadata_file(job.id, metadata_file):
+                if instance.dataset is not None and any(named.id == object_id for named in _metadata_files(instance)):
+                    return metadata_file, instance.dataset, metadata_file.object_store_path_kwargs()
         raise exceptions.ItemAccessibilityException(f"Requested {kind} is not an input of this job.")
 
+    def _inputs_with_metadata_file(
+        self, job_id: int, metadata_file: MetadataFile
+    ) -> list[HistoryDatasetAssociation | LibraryDatasetDatasetAssociation]:
+        """The job's inputs that own ``metadata_file``, or a metadata file with its uuid.
 
-def _metadata_files(dataset_instance) -> Iterator[MetadataFile]:
+        Metadata file uuids are not unique in existing databases (importing a history twice repeats them),
+        and an input naming its file by uuid resolves to the oldest row with it, which may be another
+        dataset's.
+        """
+        same_file = MetadataFile.id == metadata_file.id
+        if metadata_file.uuid is not None:
+            same_file = or_(same_file, MetadataFile.uuid == metadata_file.uuid)
+        owners = select(MetadataFile.hda_id).where(same_file)
+        library_owners = select(MetadataFile.lda_id).where(same_file)
+        history_inputs = select(HistoryDatasetAssociation).where(
+            HistoryDatasetAssociation.id.in_(owners),
+            HistoryDatasetAssociation.id.in_(_history_input_ids(job_id)),
+        )
+        library_inputs = select(LibraryDatasetDatasetAssociation).where(
+            LibraryDatasetDatasetAssociation.id.in_(library_owners),
+            LibraryDatasetDatasetAssociation.id.in_(_library_input_ids(job_id)),
+        )
+        return [*self._sa_session.scalars(history_inputs), *self._sa_session.scalars(library_inputs)]
+
+
+def _history_input_ids(job_id: int) -> Select[tuple[int | None]]:
+    """Ids of the job's history dataset inputs."""
+    return select(JobToInputDatasetAssociation.dataset_id).where(JobToInputDatasetAssociation.job_id == job_id)
+
+
+def _library_input_ids(job_id: int) -> Select[tuple[int]]:
+    """Ids of the job's library dataset inputs."""
+    return select(JobToInputLibraryDatasetAssociation.ldda_id).where(
+        JobToInputLibraryDatasetAssociation.job_id == job_id
+    )
+
+
+def _metadata_files(dataset_instance: DatasetInstance) -> Iterator[MetadataFile]:
     """The metadata files a dataset's metadata names, resolved as for a tool's command line."""
     for name, spec in dataset_instance.metadata.spec.items():
         if isinstance(spec.param, FileParameter):
