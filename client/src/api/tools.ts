@@ -3,7 +3,7 @@ import { ERROR_STATES, type ShowFullJobResponse } from "@/api/jobs";
 import type { ServiceCredentialsContext } from "@/api/userCredentials";
 import type { FormInputNode } from "@/components/Form/composables/useFormState";
 import type { Tool, ToolPanelItem, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
-import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 export type HdcaUploadTarget = components["schemas"]["HdcaDataItemsTarget"];
 export type HdasUploadTarget = components["schemas"]["DataElementsTarget"];
@@ -19,7 +19,6 @@ export type NestedElementItem = NestedElementItems[number];
 export type FetchTargets = FetchDataPayload["targets"];
 export type AnyFetchTarget = FetchTargets[number];
 export type ToolRequestDetailedModel = components["schemas"]["ToolRequestDetailedModel"];
-export type DatasetInteractiveTool = components["schemas"]["DatasetInteractiveTool"];
 
 export type ApiDataElement = FileDataElement | PastedDataElement | UrlDataElement;
 
@@ -186,19 +185,6 @@ export function fetchJobErrorMessage(jobDetails: ShowFullJobResponse): string | 
             "Unknown error encountered while running your data import job, this could be a server issue or a problem with the upload definition.";
     }
     return errorMessage;
-}
-
-/**
- * Fetches the interactive tools with a data input that accepts the given dataset.
- */
-export async function fetchDatasetInteractiveTools(datasetId: string): Promise<DatasetInteractiveTool[]> {
-    const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}/interactive_tools", {
-        params: { path: { dataset_id: datasetId } },
-    });
-    if (error) {
-        rethrowSimple(error);
-    }
-    return data;
 }
 
 // TODO: Once the backend models are typed, make sure these type guards are correct.
