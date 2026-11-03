@@ -1,10 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
-import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
+import type { ChatMessage } from "@/components/GalaxyAI/chatTypes";
 import { djb2Hash } from "@/components/PageEditor/sectionDiffUtils";
+import type { AgentResponse, EditProposal } from "@/composables/agentActions";
 import type { ActiveContext } from "@/composables/useActiveContext";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
@@ -25,34 +26,39 @@ function makeNotebookContext(pageId = PAGE_ID): ActiveContext {
     return { contextType: "notebook", pageId, historyId: "hist-1" };
 }
 
-function makeMsg(overrides: Record<string, unknown> = {}) {
+function makeMsg(overrides: Partial<ChatMessage> = {}): ChatMessage {
     return {
         id: "msg-1",
         role: "assistant" as const,
         content: "Here is my suggestion.",
-        timestamp: new Date(),
+        timestamp: new Date("2026-01-01T00:00:00Z"),
         feedback: null,
         ...overrides,
     };
 }
 
+function makeAgentResponse(metadata: Record<string, unknown>): AgentResponse {
+    return {
+        content: "Here is my suggestion.",
+        agent_type: "page_assistant",
+        confidence: "high",
+        suggestions: [],
+        metadata,
+    };
+}
+
 function makeProposalMsg(
-    mode: "full_replacement" | "section_patch",
+    mode: EditProposal["mode"],
     content: string,
     extras: Record<string, unknown> = {},
-) {
+): ChatMessage {
     return makeMsg({
-        agentResponse: {
-            agent_type: "page_assistant",
-            confidence: "high",
-            suggestions: [],
-            metadata: {
-                edit_mode: mode,
-                content,
-                original_content_hash: PAGE_CONTENT_HASH,
-                ...extras,
-            },
-        },
+        agentResponse: makeAgentResponse({
+            edit_mode: mode,
+            content,
+            original_content_hash: PAGE_CONTENT_HASH,
+            ...extras,
+        }),
     });
 }
 
@@ -122,7 +128,7 @@ describe("usePageProposals", () => {
 
         it("returns null when edit_mode is absent", () => {
             const { getEditProposal } = setup();
-            const msg = makeMsg({ agentResponse: { metadata: {} } });
+            const msg = makeMsg({ agentResponse: makeAgentResponse({}) });
             expect(getEditProposal(msg)).toBeNull();
         });
 
@@ -150,7 +156,7 @@ describe("usePageProposals", () => {
         it("returns false when no original_content_hash in metadata", () => {
             const { isProposalStale } = setup();
             const msg = makeMsg({
-                agentResponse: { metadata: { edit_mode: "full_replacement", content: "x" } },
+                agentResponse: makeAgentResponse({ edit_mode: "full_replacement", content: "x" }),
             });
             expect(isProposalStale(msg)).toBe(false);
         });
@@ -164,7 +170,7 @@ describe("usePageProposals", () => {
         it("returns true when hash does not match current content", () => {
             const { store, isProposalStale } = setup();
             store.currentContent = "# Changed content";
-            const msg = makeProposalMsg("full_replacement", "x"); // hash is for original PAGE_CONTENT
+            const msg = makeProposalMsg("full_replacement", "x");
             expect(isProposalStale(msg)).toBe(true);
         });
     });
@@ -222,7 +228,7 @@ describe("usePageProposals", () => {
             expect(buildProposedContent(msg)).toBe("completely new doc");
         });
 
-        it("applies section patch to produce full document", () => {
+        it("appends a section patch when its target heading does not match", () => {
             const { buildProposedContent } = setup();
             const msg = makeProposalMsg("section_patch", "", {
                 target_section_heading: "Methods",
@@ -231,6 +237,8 @@ describe("usePageProposals", () => {
             const result = buildProposedContent(msg);
             expect(result).toContain("Replaced methods");
             expect(result).toContain("Intro");
+            expect(result).toContain("# Intro\nSome intro text");
+            expect(result).toBe(`${PAGE_CONTENT}\n# Methods\nReplaced methods`);
         });
     });
 
@@ -271,7 +279,6 @@ describe("usePageProposals", () => {
             const { store, applyFullReplacement } = setup();
             const msg = makeProposalMsg("full_replacement", "new page content");
             await applyFullReplacement(msg);
-            await flushPromises();
 
             expect(store.updateContent).toHaveBeenCalledWith("new page content");
             expect(store.savePage).toHaveBeenCalledWith("agent");
@@ -296,7 +303,6 @@ describe("usePageProposals", () => {
             const { store, applySectionPatched } = setup();
             const msg = makeProposalMsg("section_patch", "");
             await applySectionPatched("# Patched doc", msg);
-            await flushPromises();
 
             expect(store.updateContent).toHaveBeenCalledWith("# Patched doc");
             expect(store.savePage).toHaveBeenCalledWith("agent");

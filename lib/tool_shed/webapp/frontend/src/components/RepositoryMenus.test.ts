@@ -1,18 +1,24 @@
-import { mount } from "@vue/test-utils"
-import { describe, expect, it } from "vitest"
-import { createMemoryHistory, createRouter } from "vue-router"
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils"
+import { afterEach, describe, expect, it } from "vitest"
+import { createMemoryRouter } from "@/test-utils"
 import RepositoryActions from "./RepositoryActions.vue"
 import RepositoryExplore from "./RepositoryExplore.vue"
 import RepositoryHealth from "./RepositoryHealth.vue"
 
 const repository = { id: "abc", name: "bismark", owner: "devteam" }
 
+enableAutoUnmount(afterEach)
+
 function withRouter() {
-    const router = createRouter({
-        history: createMemoryHistory(),
-        routes: [{ path: "/:any(.*)*", component: { template: "<div />" } }],
-    })
-    return { global: { plugins: [router] }, attachTo: document.body }
+    return { global: { plugins: [createMemoryRouter()] }, attachTo: document.body }
+}
+
+function menuItem(wrapper: VueWrapper, text: string) {
+    const item = wrapper.findAll(".dropdown-item").find((candidate) => candidate.text() === text)
+    if (!item) {
+        throw new Error(`no "${text}" menu item`)
+    }
+    return item
 }
 
 describe("RepositoryHealth", () => {
@@ -20,12 +26,14 @@ describe("RepositoryHealth", () => {
         const wrapper = mount(RepositoryHealth, {
             props: { downloadable: true, installs: 12, lastUpdated: new Date().toISOString().replace("Z", "") },
         })
-        const pills = wrapper.findAll(".health-pill").map((pill) => pill.text())
+        const pills = wrapper.findAll(".health-pill")
 
-        expect(pills[0]).toBe("Downloadable")
-        expect(pills[1]).toBe("12 installs")
-        expect(pills[2]).toMatch(/^Updated .+ ago$/)
-        expect(wrapper.get(".health-pill").classes()).toContain("health-ok")
+        expect(pills.map((pill) => pill.text())).toEqual([
+            "Downloadable",
+            "12 installs",
+            expect.stringMatching(/^Updated .+ ago$/),
+        ])
+        expect(pills[0].classes()).toContain("health-ok")
     })
 
     it("flags a repository that cannot be downloaded and counts a single install", () => {
@@ -45,19 +53,17 @@ describe("RepositoryActions", () => {
         const wrapper = mount(RepositoryActions, { props: { repositoryId: "abc", deprecated: false }, ...withRouter() })
 
         expect(wrapper.get(".action-menu-toggle").attributes("aria-label")).toBe("Repository settings")
-        const deprecate = wrapper.findAll(".dropdown-item").find((item) => item.text() === "Mark as Deprecated")
-        await deprecate?.trigger("click")
+        await menuItem(wrapper, "Mark as Deprecated").trigger("click")
 
-        expect(wrapper.emitted("deprecate")).toHaveLength(1)
+        expect(wrapper.emitted("deprecate")).toEqual([[]])
     })
 
     it("offers to un-deprecate a deprecated repository", async () => {
         const wrapper = mount(RepositoryActions, { props: { repositoryId: "abc", deprecated: true }, ...withRouter() })
 
-        const undeprecate = wrapper.findAll(".dropdown-item").find((item) => item.text() === "Un-mark as Deprecated")
-        await undeprecate?.trigger("click")
+        await menuItem(wrapper, "Un-mark as Deprecated").trigger("click")
 
-        expect(wrapper.emitted("undeprecate")).toHaveLength(1)
+        expect(wrapper.emitted("undeprecate")).toEqual([[]])
         expect(wrapper.findAll(".dropdown-item").map((item) => item.text())).not.toContain("Mark as Deprecated")
     })
 })

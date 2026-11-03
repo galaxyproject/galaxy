@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
@@ -6,41 +6,25 @@ import { pagesProvider } from "./PageProvider";
 
 const { server, http } = useServerMock();
 
-describe("PageProvider", () => {
-    describe("fetching pages without an error", () => {
-        it("should make an API call and fire callback", async () => {
-            server.use(
-                http.untyped.get("/prefix/api/pages", ({ request }) => {
-                    const url = new URL(request.url);
-                    if (
-                        url.searchParams.get("limit") === "50" &&
-                        url.searchParams.get("offset") === "0" &&
-                        url.searchParams.get("search") === "rna tutorial"
-                    ) {
-                        return HttpResponse.json([{ model_class: "Page" }], {
-                            headers: { total_matches: "1" },
-                        });
-                    }
-                    return HttpResponse.json([]);
-                }),
-            );
+describe("pagesProvider", () => {
+    it("fetches the requested page and search under the configured root and passes the response to its callback", async () => {
+        let requestParams;
+        server.use(
+            http.untyped.get("/prefix/api/pages", ({ request }) => {
+                requestParams = Object.fromEntries(new URL(request.url).searchParams);
+                return HttpResponse.json([{ model_class: "Page" }], { headers: { total_matches: "1" } });
+            }),
+        );
+        const callback = vi.fn();
 
-            const ctx = {
-                root: "/prefix/",
-                perPage: 50,
-                currentPage: 1,
-            };
-            const extras = {
-                search: "rna tutorial",
-            };
-
-            let called = false;
-            const callback = function () {
-                called = true;
-            };
-            const promise = pagesProvider(ctx, callback, extras);
-            await promise;
-            expect(called).toBeTruthy();
+        const items = await pagesProvider({ root: "/prefix/", perPage: 50, currentPage: 1 }, callback, {
+            search: "rna tutorial",
         });
+
+        expect(requestParams).toEqual({ limit: "50", offset: "0", search: "rna tutorial" });
+        expect(items).toEqual([{ model_class: "Page" }]);
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callback.mock.calls[0][0].data).toEqual([{ model_class: "Page" }]);
+        expect(callback.mock.calls[0][0].headers.total_matches).toBe("1");
     });
 });

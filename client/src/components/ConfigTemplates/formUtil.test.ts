@@ -1,6 +1,8 @@
+import { nth } from "@tests/vitest/helpers";
 import { describe, expect, it } from "vitest";
 
 import type { TemplateSecret, TemplateSummary, TemplateVariable } from "@/api/configTemplates";
+import { ensureDefined } from "@/utils/assertions";
 
 import {
     createTemplateForm,
@@ -16,36 +18,36 @@ import {
     STANDARD_OBJECT_STORE_TEMPLATE,
 } from "./test_fixtures";
 
-const FTP_VARIABLES = GENERIC_FTP_FILE_SOURCE_TEMPLATE.variables as TemplateVariable[];
-const PROJECT_VARIABLE = {
+const FTP_VARIABLES = ensureDefined(GENERIC_FTP_FILE_SOURCE_TEMPLATE.variables);
+const PROJECT_VARIABLE: TemplateVariable = {
     name: "Project",
     type: "path_component",
-} as TemplateVariable;
+};
 
 describe("formUtils", () => {
     describe("createTemplateForm", () => {
         it("should create a form from an object store templates", () => {
             const form = createTemplateForm(STANDARD_OBJECT_STORE_TEMPLATE, "storage location");
             expect(form.length).toBe(6);
-            const formEl0 = form[0];
-            expect(formEl0?.name).toEqual("_meta_name");
-            expect(formEl0?.help).toEqual("Label this new storage location with a name.");
-            const formEl1 = form[1];
-            expect(formEl1?.name).toEqual("_meta_description");
+            const nameEntry = nth(form, 0);
+            expect(nameEntry.name).toEqual("_meta_name");
+            expect(nameEntry.help).toEqual("Label this new storage location with a name.");
+            const descriptionEntry = nth(form, 1);
+            expect(descriptionEntry.name).toEqual("_meta_description");
         });
 
         it("should create a form from a file source templates", () => {
             const form = createTemplateForm(STANDARD_FILE_SOURCE_TEMPLATE, "file source");
             expect(form.length).toBe(6);
-            const formEl0 = form[0];
-            expect(formEl0?.name).toEqual("_meta_name");
-            expect(formEl0?.help).toEqual("Label this new file source with a name.");
-            const formEl1 = form[1];
-            expect(formEl1?.name).toEqual("_meta_description");
+            const nameEntry = nth(form, 0);
+            expect(nameEntry.name).toEqual("_meta_name");
+            expect(nameEntry.help).toEqual("Label this new file source with a name.");
+            const descriptionEntry = nth(form, 1);
+            expect(descriptionEntry.name).toEqual("_meta_description");
         });
 
         it("should thread dynamic options through to select variables", () => {
-            const template = {
+            const template: Pick<TemplateSummary, "id" | "version" | "variables" | "secrets"> = {
                 id: "github",
                 version: 0,
                 variables: [
@@ -56,16 +58,17 @@ describe("formUtils", () => {
                     },
                 ],
                 secrets: [],
-            } as unknown as TemplateSummary;
-            const form = createTemplateForm(template, "file source", {
+            };
+            // Keep the original partial template, which omits name and description metadata.
+            const form = createTemplateForm(template as TemplateSummary, "file source", {
                 org: [
                     ["galaxyproject", "galaxyproject"],
                     ["me", "me"],
                 ],
             });
-            const orgEntry = form.find((entry) => entry.name === "org");
-            expect(orgEntry?.type).toBe("select");
-            expect(orgEntry?.options).toEqual([
+            const orgEntry = ensureDefined(form.find((entry) => entry.name === "org"));
+            expect(orgEntry.type).toBe("select");
+            expect(orgEntry.options).toEqual([
                 ["galaxyproject", "galaxyproject"],
                 ["me", "me"],
             ]);
@@ -76,24 +79,24 @@ describe("formUtils", () => {
         it("should create a form from an object store templates", () => {
             const form = upgradeForm(STANDARD_OBJECT_STORE_TEMPLATE, OBJECT_STORE_INSTANCE);
             expect(form.length).toBe(3);
-            const formEl0 = form[0];
-            expect(formEl0?.name).toEqual("oldvar");
-            const formEl1 = form[1];
-            expect(formEl1?.name).toEqual("newvar");
+            const oldVariableEntry = nth(form, 0);
+            expect(oldVariableEntry.name).toEqual("oldvar");
+            const newVariableEntry = nth(form, 1);
+            expect(newVariableEntry.name).toEqual("newvar");
         });
 
         it("should only ask for new secrets during upgrade", () => {
             const form = upgradeForm(STANDARD_OBJECT_STORE_TEMPLATE, OBJECT_STORE_INSTANCE);
             expect(form.length).toBe(3);
-            const formEl0 = form[2];
-            expect(formEl0?.name).toEqual("newsecret");
-            expect(formEl0?.type).toEqual("password");
+            const secretEntry = nth(form, 2);
+            expect(secretEntry.name).toEqual("newsecret");
+            expect(secretEntry.type).toEqual("password");
         });
     });
 
     describe("templateVariableFormEntry", () => {
         it("should render string types as Galaxy text form inputs", () => {
-            const hostVariable = FTP_VARIABLES[0] as TemplateVariable;
+            const hostVariable = nth(FTP_VARIABLES, 0);
             const formEntry = templateVariableFormEntry(hostVariable, undefined);
             expect(formEntry.name).toBe("host");
             expect(formEntry.label).toBe("FTP Host");
@@ -101,7 +104,7 @@ describe("formUtils", () => {
             expect(formEntry.help).toBe("<p>Host of FTP Server to connect to.</p>\n");
         });
         it("should render integer types as Galaxy integer inputs", () => {
-            const portVariable = FTP_VARIABLES[3] as TemplateVariable;
+            const portVariable = nth(FTP_VARIABLES, 3);
             const formEntry = templateVariableFormEntry(portVariable, undefined);
             expect(formEntry.name).toBe("port");
             expect(formEntry.label).toBe("FTP Port");
@@ -109,7 +112,7 @@ describe("formUtils", () => {
             expect(formEntry.value).toBe(21);
         });
         it("should render boolean types as Galaxy boolean inputs", () => {
-            const writableVariable = FTP_VARIABLES[2] as TemplateVariable;
+            const writableVariable = nth(FTP_VARIABLES, 2);
             const formEntry = templateVariableFormEntry(writableVariable, undefined);
             expect(formEntry.name).toBe("writable");
             expect(formEntry.label).toBe("Writable?");
@@ -127,7 +130,7 @@ describe("formUtils", () => {
             expect(formEntry.value).toBe("foobar");
         });
         it("should render string types with updated default values if supplied", () => {
-            const hostVariable = FTP_VARIABLES[0] as TemplateVariable;
+            const hostVariable = nth(FTP_VARIABLES, 0);
             const formEntry = templateVariableFormEntry(hostVariable, "mycoolhost.org");
             expect(formEntry.value).toBe("mycoolhost.org");
         });

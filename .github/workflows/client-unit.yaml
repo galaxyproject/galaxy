@@ -43,3 +43,9 @@ jobs:
       - name: Run Vitest Unit Tests
         run: pnpm test
         working-directory: client
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+        working-directory: client
+      - name: Run Storybook browser tests
+        run: pnpm test:browser
+        working-directory: client

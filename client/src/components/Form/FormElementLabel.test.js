@@ -1,36 +1,30 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
-import Target from "./FormElementLabel.vue";
+import FormElementLabel from "./FormElementLabel.vue";
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
 
-function mountTarget(props = {}, slots = {}) {
-    return mount(Target, {
-        global: localVue,
-        props: props,
+function mountLabel(props = {}, slots = {}) {
+    return mount(FormElementLabel, {
+        global: getLocalVue(),
+        props,
         slots,
-        stubs: {
-            FontAwesomeIcon: true,
-        },
-        directives: {
-            localize: () => {},
-        },
     });
 }
 
 describe("FormElementLabel.vue", () => {
-    it("should render title", () => {
-        const wrapper = mountTarget({
+    it("renders the title", () => {
+        const wrapper = mountLabel({
             title: "Form Label",
             required: false,
         });
         expect(wrapper.text()).toContain("Form Label");
     });
 
-    it("should render help text", () => {
-        const wrapper = mountTarget({
+    it("renders help text", () => {
+        const wrapper = mountLabel({
             title: "Test",
             help: "Helpful info",
             required: false,
@@ -38,8 +32,8 @@ describe("FormElementLabel.vue", () => {
         expect(wrapper.text()).toContain("Helpful info");
     });
 
-    it("should render check icon if condition and required are true", () => {
-        const wrapper = mountTarget({
+    it("renders an asterisk when required and condition are true", () => {
+        const wrapper = mountLabel({
             title: "Check Label",
             required: true,
             condition: true,
@@ -49,8 +43,8 @@ describe("FormElementLabel.vue", () => {
         expect(asterisk.text()).toBe("*");
     });
 
-    it("should render asterisk if required is true and condition is false", () => {
-        const wrapper = mountTarget({
+    it("renders a danger asterisk and required label when condition is false", () => {
+        const wrapper = mountLabel({
             title: "Asterisk Label",
             required: true,
             condition: false,
@@ -61,17 +55,19 @@ describe("FormElementLabel.vue", () => {
         expect(asterisk.text()).toContain("required");
     });
 
-    it("should render nothing extra if required is false", () => {
-        const wrapper = mountTarget({
+    it("omits requirement indicators when not required", () => {
+        const wrapper = mountLabel({
             title: "No Symbol",
             required: false,
         });
         expect(wrapper.findComponent({ name: "FontAwesomeIcon" }).exists()).toBe(false);
-        expect(wrapper.find("span.text-danger").exists()).toBe(false);
+        expect(wrapper.text()).toContain("No Symbol");
+        expect(wrapper.find("small.align-top").exists()).toBe(false);
+        expect(wrapper.find("small.text-danger").exists()).toBe(false);
     });
 
-    it("should render slot content", () => {
-        const wrapper = mountTarget(
+    it("renders default slot content", () => {
+        const wrapper = mountLabel(
             {
                 title: "Slot Test",
                 required: false,

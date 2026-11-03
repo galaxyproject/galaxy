@@ -1,3 +1,5 @@
+import "@/composables/__mocks__/filter";
+
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -19,14 +21,6 @@ vi.mock("vue-router", () => ({
         push: (...args: unknown[]) => mockPush(...args),
     }),
 }));
-
-// FormSelection filters its options in a web worker, which the test environment does not provide.
-vi.mock("@/composables/filter/filter.js", async () => {
-    const { ref } = await import("vue");
-    return {
-        useFilterObjectArray: () => ({ filtered: ref([]), pending: ref(false) }),
-    };
-});
 
 function useGroups(groups = [{ id: "g1", name: "Group 1", url: "/api/groups/g1", model_class: "Group" as const }]) {
     server.use(http.get("/api/groups", ({ response }) => response(200).json(groups)));

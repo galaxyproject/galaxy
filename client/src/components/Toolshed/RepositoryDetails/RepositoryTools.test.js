@@ -1,13 +1,15 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import RepositoryTools from "./RepositoryTools.vue";
 
 const localVue = getLocalVue();
 
 describe("RepositoryTools", () => {
-    it("test tool version list in repository details", () => {
+    enableAutoUnmount(afterEach);
+
+    it("shows the tool ID and version in repository details", () => {
         const wrapper = mount(RepositoryTools, {
             props: {
                 tools: [
@@ -20,14 +22,14 @@ describe("RepositoryTools", () => {
             },
             global: localVue,
         });
-        const $el = wrapper.findAll("td");
-        const $first = $el.at(0);
-        expect($first.text()).toBe("id");
-        const $second = $el.at(1);
-        expect($second.text()).toBe("version");
+        const cells = wrapper.findAll("td");
+        const idCell = nth(cells, 0);
+        expect(idCell.text()).toBe("id");
+        const versionCell = nth(cells, 1);
+        expect(versionCell.text()).toBe("version");
     });
 
-    it("test collapsing tool version list in repository details", async () => {
+    it("expands and collapses the repository tool versions", async () => {
         const wrapper = mount(RepositoryTools, {
             props: {
                 tools: [
@@ -49,35 +51,35 @@ describe("RepositoryTools", () => {
                 ],
             },
         });
-        const $el = wrapper.findAll("tr");
-        expect($el.length).toBe(3);
-        const $first = $el.at(0);
-        expect($first.find("td:first-child").text()).toBe("id_1");
-        expect($first.find("td:last-child").text()).toBe("version_1");
-        const $second = $el.at(1);
-        expect($second.find("td:first-child").text()).toBe("id_2");
-        expect($second.find("td:last-child").text()).toBe("version_2");
-        const $third = $el.at(2);
-        expect($third.find("td:first-child").text()).toBe("Show more");
-        expect($third.find("td:last-child").text()).toBe("");
-        const $link = wrapper.find("a");
-        await $link.trigger("click");
+        const rows = wrapper.findAll("tr");
+        expect(rows.length).toBe(3);
+        const firstRow = nth(rows, 0);
+        expect(firstRow.get("td:first-child").text()).toBe("id_1");
+        expect(firstRow.get("td:last-child").text()).toBe("version_1");
+        const secondRow = nth(rows, 1);
+        expect(secondRow.get("td:first-child").text()).toBe("id_2");
+        expect(secondRow.get("td:last-child").text()).toBe("version_2");
+        const expandRow = nth(rows, 2);
+        expect(expandRow.get("td:first-child").text()).toBe("Show more");
+        expect(expandRow.get("td:last-child").text()).toBe("");
+        const expandLink = wrapper.get("a");
+        await expandLink.trigger("click");
 
-        const $elExpanded = wrapper.findAll("tr");
-        expect($elExpanded.length).toBe(4);
-        const $thirdExpanded = $elExpanded.at(3);
-        expect($thirdExpanded.find("td:first-child").text()).toBe("id_3");
-        expect($thirdExpanded.find("td:last-child").text()).toBe("version_3");
-        const $forthExpanded = $elExpanded.at(0);
-        expect($forthExpanded.find("td:first-child").text()).toBe("Show less");
-        expect($forthExpanded.find("td:last-child").text()).toBe("");
-        const $linkExpanded = wrapper.find("a");
-        await $linkExpanded.trigger("click");
+        const expandedRows = wrapper.findAll("tr");
+        expect(expandedRows.length).toBe(4);
+        const thirdToolRow = nth(expandedRows, 3);
+        expect(thirdToolRow.get("td:first-child").text()).toBe("id_3");
+        expect(thirdToolRow.get("td:last-child").text()).toBe("version_3");
+        const collapseRow = nth(expandedRows, 0);
+        expect(collapseRow.get("td:first-child").text()).toBe("Show less");
+        expect(collapseRow.get("td:last-child").text()).toBe("");
+        const collapseLink = wrapper.get("a");
+        await collapseLink.trigger("click");
 
-        const $elCollapsed = wrapper.findAll("tr");
-        expect($elCollapsed.length).toBe(3);
-        const $thirdCollapsed = $elCollapsed.at(2);
-        expect($thirdCollapsed.find("td:first-child").text()).toBe("Show more");
-        expect($thirdCollapsed.find("td:last-child").text()).toBe("");
+        const collapsedRows = wrapper.findAll("tr");
+        expect(collapsedRows.length).toBe(3);
+        const expandRowAfterCollapse = nth(collapsedRows, 2);
+        expect(expandRowAfterCollapse.get("td:first-child").text()).toBe("Show more");
+        expect(expandRowAfterCollapse.get("td:last-child").text()).toBe("");
     });
 });

@@ -13,15 +13,15 @@ server.use(
     }),
 );
 
-describe("Datatypes/index.js", () => {
+describe("Datatypes API", () => {
     describe("getDatatypesMapper", () => {
-        it("should fetch logic from API for comparing datatypes in a hierarchy", async () => {
-            await getDatatypesMapper().then((mapper) => {
-                expect(mapper.isSubType("txt", "data")).toBe(true);
-                expect(mapper.isSubType("txt", "txt")).toBe(true);
-                expect(mapper.isSubType("data", "txt")).toBe(false);
-                expect(mapper.isSubTypeOfAny("data", ["txt", "data"])).toBe(true);
-            });
+        it("compares datatypes using the hierarchy fetched from the API", async () => {
+            const mapper = await getDatatypesMapper();
+
+            expect(mapper.isSubType("txt", "data")).toBe(true);
+            expect(mapper.isSubType("txt", "txt")).toBe(true);
+            expect(mapper.isSubType("data", "txt")).toBe(false);
+            expect(mapper.isSubTypeOfAny("data", ["txt", "data"])).toBe(true);
         });
     });
 });

@@ -1,6 +1,7 @@
-import { createTestingPinia } from "@pinia/testing";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { ref } from "vue";
+
+import { setupTestPinia } from "@/stores/testUtils";
 
 import { useSidebarSelection } from "./useSidebarSelection";
 
@@ -13,18 +14,18 @@ function makeItems(...ids: string[]): TestItem[] {
     return ids.map((id) => ({ id, name: `Item ${id}` }));
 }
 
-function mouseEvent(opts: Partial<MouseEvent> = {}): MouseEvent {
-    return { shiftKey: false, ...opts } as MouseEvent;
+function createSelection(...ids: string[]) {
+    const items = ref(makeItems(...ids));
+    return { items, ...useSidebarSelection(items, (item) => item.id) };
 }
 
 describe("useSidebarSelection", () => {
     beforeEach(() => {
-        createTestingPinia({ createSpy: vi.fn, stubActions: false });
+        setupTestPinia();
     });
 
     it("starts in non-selection mode with empty selection", () => {
-        const items = ref(makeItems("a", "b", "c"));
-        const { selectionMode, selectedIds, allSelected } = useSidebarSelection(items, (i) => i.id);
+        const { selectionMode, selectedIds, allSelected } = createSelection("a", "b", "c");
 
         expect(selectionMode.value).toBe(false);
         expect(selectedIds.value.size).toBe(0);
@@ -33,19 +34,14 @@ describe("useSidebarSelection", () => {
 
     describe("toggleSelectionMode", () => {
         it("toggles selection mode on", () => {
-            const items = ref(makeItems("a", "b"));
-            const { selectionMode, toggleSelectionMode } = useSidebarSelection(items, (i) => i.id);
+            const { selectionMode, toggleSelectionMode } = createSelection("a", "b");
 
             toggleSelectionMode();
             expect(selectionMode.value).toBe(true);
         });
 
         it("clears selections when toggling off", () => {
-            const items = ref(makeItems("a", "b"));
-            const { selectionMode, selectedIds, toggleSelectionMode, toggleSelection } = useSidebarSelection(
-                items,
-                (i) => i.id,
-            );
+            const { selectionMode, selectedIds, toggleSelectionMode, toggleSelection } = createSelection("a", "b");
 
             toggleSelectionMode();
             toggleSelection("a");
@@ -59,8 +55,7 @@ describe("useSidebarSelection", () => {
 
     describe("toggleSelection", () => {
         it("adds then removes an id", () => {
-            const items = ref(makeItems("a", "b"));
-            const { selectedIds, toggleSelection } = useSidebarSelection(items, (i) => i.id);
+            const { selectedIds, toggleSelection } = createSelection("a", "b");
 
             toggleSelection("a");
             expect(selectedIds.value.has("a")).toBe(true);
@@ -70,8 +65,7 @@ describe("useSidebarSelection", () => {
         });
 
         it("can select multiple ids", () => {
-            const items = ref(makeItems("a", "b", "c"));
-            const { selectedIds, toggleSelection } = useSidebarSelection(items, (i) => i.id);
+            const { selectedIds, toggleSelection } = createSelection("a", "b", "c");
 
             toggleSelection("a");
             toggleSelection("c");
@@ -83,8 +77,7 @@ describe("useSidebarSelection", () => {
 
     describe("toggleSelectAll", () => {
         it("selects all items", () => {
-            const items = ref(makeItems("a", "b", "c"));
-            const { selectedIds, allSelected, toggleSelectAll } = useSidebarSelection(items, (i) => i.id);
+            const { selectedIds, allSelected, toggleSelectAll } = createSelection("a", "b", "c");
 
             toggleSelectAll();
             expect(selectedIds.value.size).toBe(3);
@@ -92,8 +85,7 @@ describe("useSidebarSelection", () => {
         });
 
         it("deselects all when all are selected", () => {
-            const items = ref(makeItems("a", "b"));
-            const { selectedIds, allSelected, toggleSelectAll } = useSidebarSelection(items, (i) => i.id);
+            const { selectedIds, allSelected, toggleSelectAll } = createSelection("a", "b");
 
             toggleSelectAll();
             expect(allSelected.value).toBe(true);
@@ -106,14 +98,12 @@ describe("useSidebarSelection", () => {
 
     describe("allSelected", () => {
         it("is false for empty items list", () => {
-            const items = ref<TestItem[]>([]);
-            const { allSelected } = useSidebarSelection(items, (i) => i.id);
+            const { allSelected } = createSelection();
             expect(allSelected.value).toBe(false);
         });
 
         it("reacts to items changes", () => {
-            const items = ref(makeItems("a", "b"));
-            const { allSelected, toggleSelectAll } = useSidebarSelection(items, (i) => i.id);
+            const { items, allSelected, toggleSelectAll } = createSelection("a", "b");
 
             toggleSelectAll();
             expect(allSelected.value).toBe(true);
@@ -125,34 +115,37 @@ describe("useSidebarSelection", () => {
 
     describe("handleSelectionClick", () => {
         it("returns false and does not mutate state when not in selection mode", () => {
-            const items = ref(makeItems("a", "b"));
-            const { selectedIds, handleSelectionClick } = useSidebarSelection(items, (i) => i.id);
+            const { items, selectedIds, handleSelectionClick } = createSelection("a", "b");
 
-            const consumed = handleSelectionClick(items.value[0]!, 0, mouseEvent());
+            const consumed = handleSelectionClick(items.value[0]!, 0, new MouseEvent("click"));
             expect(consumed).toBe(false);
             expect(selectedIds.value.size).toBe(0);
         });
 
         it("toggles item and returns true in selection mode", () => {
-            const items = ref(makeItems("a", "b"));
-            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(items, (i) => i.id);
+            const { items, selectedIds, toggleSelectionMode, handleSelectionClick } = createSelection("a", "b");
 
             toggleSelectionMode();
-            const consumed = handleSelectionClick(items.value[0]!, 0, mouseEvent());
+            const consumed = handleSelectionClick(items.value[0]!, 0, new MouseEvent("click"));
             expect(consumed).toBe(true);
             expect(selectedIds.value.has("a")).toBe(true);
 
-            handleSelectionClick(items.value[0]!, 0, mouseEvent());
+            handleSelectionClick(items.value[0]!, 0, new MouseEvent("click"));
             expect(selectedIds.value.has("a")).toBe(false);
         });
 
         it("shift-click selects range", () => {
-            const items = ref(makeItems("a", "b", "c", "d", "e"));
-            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(items, (i) => i.id);
+            const { items, selectedIds, toggleSelectionMode, handleSelectionClick } = createSelection(
+                "a",
+                "b",
+                "c",
+                "d",
+                "e",
+            );
 
             toggleSelectionMode();
-            handleSelectionClick(items.value[1]!, 1, mouseEvent());
-            handleSelectionClick(items.value[3]!, 3, mouseEvent({ shiftKey: true }));
+            handleSelectionClick(items.value[1]!, 1, new MouseEvent("click"));
+            handleSelectionClick(items.value[3]!, 3, new MouseEvent("click", { shiftKey: true }));
 
             expect(selectedIds.value.size).toBe(3);
             expect(selectedIds.value.has("b")).toBe(true);
@@ -161,35 +154,42 @@ describe("useSidebarSelection", () => {
         });
 
         it("shift-click backwards selects range", () => {
-            const items = ref(makeItems("a", "b", "c", "d"));
-            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(items, (i) => i.id);
+            const { items, selectedIds, toggleSelectionMode, handleSelectionClick } = createSelection(
+                "a",
+                "b",
+                "c",
+                "d",
+            );
 
             toggleSelectionMode();
-            handleSelectionClick(items.value[3]!, 3, mouseEvent());
-            handleSelectionClick(items.value[0]!, 0, mouseEvent({ shiftKey: true }));
+            handleSelectionClick(items.value[3]!, 3, new MouseEvent("click"));
+            handleSelectionClick(items.value[0]!, 0, new MouseEvent("click", { shiftKey: true }));
 
             expect(selectedIds.value.size).toBe(4);
         });
 
         it("shift-click without prior click acts as normal click", () => {
-            const items = ref(makeItems("a", "b"));
-            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(items, (i) => i.id);
+            const { items, selectedIds, toggleSelectionMode, handleSelectionClick } = createSelection("a", "b");
 
             toggleSelectionMode();
-            handleSelectionClick(items.value[1]!, 1, mouseEvent({ shiftKey: true }));
+            handleSelectionClick(items.value[1]!, 1, new MouseEvent("click", { shiftKey: true }));
             expect(selectedIds.value.size).toBe(1);
             expect(selectedIds.value.has("b")).toBe(true);
         });
 
         it("resets shift-click anchor when toggling mode off and back on", () => {
-            const items = ref(makeItems("a", "b", "c", "d"));
-            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(items, (i) => i.id);
+            const { items, selectedIds, toggleSelectionMode, handleSelectionClick } = createSelection(
+                "a",
+                "b",
+                "c",
+                "d",
+            );
 
             toggleSelectionMode();
-            handleSelectionClick(items.value[0]!, 0, mouseEvent());
+            handleSelectionClick(items.value[0]!, 0, new MouseEvent("click"));
             toggleSelectionMode();
             toggleSelectionMode();
-            handleSelectionClick(items.value[3]!, 3, mouseEvent({ shiftKey: true }));
+            handleSelectionClick(items.value[3]!, 3, new MouseEvent("click", { shiftKey: true }));
             expect(selectedIds.value.size).toBe(1);
             expect(selectedIds.value.has("d")).toBe(true);
         });
@@ -197,8 +197,7 @@ describe("useSidebarSelection", () => {
 
     describe("pruneAfterDelete", () => {
         it("removes stale IDs after items are removed", () => {
-            const items = ref(makeItems("a", "b", "c"));
-            const { selectedIds, toggleSelection, pruneAfterDelete } = useSidebarSelection(items, (i) => i.id);
+            const { items, selectedIds, toggleSelection, pruneAfterDelete } = createSelection("a", "b", "c");
 
             toggleSelection("a");
             toggleSelection("b");
@@ -212,11 +211,8 @@ describe("useSidebarSelection", () => {
         });
 
         it("exits selection mode when list is empty", () => {
-            const items = ref(makeItems("a"));
-            const { selectionMode, toggleSelectionMode, toggleSelection, pruneAfterDelete } = useSidebarSelection(
-                items,
-                (i) => i.id,
-            );
+            const { items, selectionMode, toggleSelectionMode, toggleSelection, pruneAfterDelete } =
+                createSelection("a");
 
             toggleSelectionMode();
             toggleSelection("a");
@@ -228,10 +224,9 @@ describe("useSidebarSelection", () => {
         });
 
         it("stays in selection mode when items remain", () => {
-            const items = ref(makeItems("a", "b"));
-            const { selectionMode, toggleSelectionMode, toggleSelection, pruneAfterDelete } = useSidebarSelection(
-                items,
-                (i) => i.id,
+            const { items, selectionMode, toggleSelectionMode, toggleSelection, pruneAfterDelete } = createSelection(
+                "a",
+                "b",
             );
 
             toggleSelectionMode();

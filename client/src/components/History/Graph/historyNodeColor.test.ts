@@ -1,9 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { HistoryGraphNode, HistoryGraphNodeData } from "./historyGraphMapper";
 import { historyNodeColor } from "./historyNodeColor";
 
-function node(data: Partial<HistoryGraphNodeData>): HistoryGraphNode {
+/** The `--state-color-*` custom properties as `getComputedStyle` reports them, whitespace included. */
+const STATE_COLOR_PROPERTIES: Record<string, string> = {
+    "--state-color-ok": " #00ff00 ",
+    "--state-color-error": "#ff0000",
+    "--state-color-running": "#0000ff",
+    "--state-color-failed-metadata": "#ff00ff",
+};
+
+function graphNode(data: Partial<HistoryGraphNodeData>): HistoryGraphNode {
     return {
         id: "x",
         x: 0,
@@ -30,42 +38,38 @@ function node(data: Partial<HistoryGraphNodeData>): HistoryGraphNode {
 }
 
 describe("historyNodeColor", () => {
-    beforeEach(() => {
-        // jsdom's getComputedStyle returns "" by default, but the lazy cache
-        // would store it; reset via dynamic re-import would be heavy. Spy in
-        // each test instead so the state→color map is controllable.
-        vi.spyOn(window, "getComputedStyle").mockImplementation(
-            () =>
-                ({
-                    getPropertyValue: (name: string) =>
-                        name === "--state-color-ok"
-                            ? " #00ff00 "
-                            : name === "--state-color-error"
-                              ? "#ff0000"
-                              : name === "--state-color-running"
-                                ? "#0000ff"
-                                : "",
-                }) as CSSStyleDeclaration,
-        );
+    // Each state's color is cached for the module's lifetime, so every test shares one set of properties.
+    beforeAll(() => {
+        vi.spyOn(window, "getComputedStyle").mockReturnValue({
+            getPropertyValue: (name: string) => STATE_COLOR_PROPERTIES[name] ?? "",
+        } as CSSStyleDeclaration);
     });
 
-    it("returns null for tool_request nodes regardless of state", () => {
-        expect(historyNodeColor(node({ src: "tool_request", state: "ok" }))).toBeNull();
-        expect(historyNodeColor(node({ src: "tool_request", state: undefined }))).toBeNull();
+    afterAll(() => {
+        vi.restoreAllMocks();
     });
 
-    it("returns the trimmed state color for dataset/collection nodes with a known state", () => {
-        expect(historyNodeColor(node({ src: "hda", state: "ok" }))).toBe("#00ff00");
-        expect(historyNodeColor(node({ src: "hdca", state: "error" }))).toBe("#ff0000");
-        expect(historyNodeColor(node({ src: "hda", state: "running" }))).toBe("#0000ff");
+    it.each([
+        { src: "hda", state: "ok", expected: "#00ff00" },
+        { src: "hdca", state: "error", expected: "#ff0000" },
+        { src: "hda", state: "running", expected: "#0000ff" },
+    ] as const)("colors a $src node in state $state with its trimmed state color", ({ src, state, expected }) => {
+        expect(historyNodeColor(graphNode({ src, state }))).toBe(expected);
     });
 
-    it("returns null when the state is missing", () => {
-        expect(historyNodeColor(node({ src: "hda", state: null }))).toBeNull();
-        expect(historyNodeColor(node({ src: "hda", state: undefined }))).toBeNull();
+    it("reads underscored states from dashed custom properties", () => {
+        expect(historyNodeColor(graphNode({ src: "hda", state: "failed_metadata" }))).toBe("#ff00ff");
     });
 
-    it("returns null when the CSS variable is not defined", () => {
-        expect(historyNodeColor(node({ src: "hda", state: "unknown_state" }))).toBeNull();
+    it.each(["ok", undefined])("leaves tool_request nodes uncolored in state %s", (state) => {
+        expect(historyNodeColor(graphNode({ src: "tool_request", state }))).toBeNull();
+    });
+
+    it.each([null, undefined])("leaves nodes uncolored when the state is %s", (state) => {
+        expect(historyNodeColor(graphNode({ src: "hda", state }))).toBeNull();
+    });
+
+    it("leaves nodes uncolored when their state has no custom property", () => {
+        expect(historyNodeColor(graphNode({ src: "hda", state: "unknown_state" }))).toBeNull();
     });
 });

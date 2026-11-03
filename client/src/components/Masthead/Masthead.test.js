@@ -1,14 +1,12 @@
 import { faTh } from "@fortawesome/free-solid-svg-icons";
 import { createTestingPinia } from "@pinia/testing";
-import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { setupMockConfig } from "@tests/vitest/mockConfig";
-import { mount } from "@vue/test-utils";
+import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useConfigStore } from "@/stores/configurationStore";
-import { useUserStore } from "@/stores/userStore";
+import { useCommandPalette } from "@/composables/useCommandPalette";
 
 import { loadMastheadWebhooks } from "./_webhooks";
 
@@ -21,120 +19,117 @@ vi.mock("vue-router", () => ({
     useRouter: vi.fn(),
 }));
 
-const currentUser = getFakeRegisteredUser();
+const SEARCH_BUTTON = "[data-description='masthead search button']";
+const LOGIN_BUTTON = "[data-description='login masthead button']";
+const USER_MENU_ITEMS = "#user.loggedin-only a.dropdown-item";
 
-setupMockConfig({});
+const EXTENSION_TAB = { id: "extension", title: "Extension Point", url: "extension_url" };
+
+function createWindowTab() {
+    return {
+        id: "enable-window-manager",
+        icon: faTh,
+        tooltip: "Enable/Disable Window Manager",
+        visible: true,
+        onclick: vi.fn(),
+    };
+}
+
+/** `useConfig()` and the command palette both read the configuration store, so seeding it configures the masthead. */
+async function mountMasthead({ config = {}, user = getFakeRegisteredUser(), windowTab = createWindowTab() } = {}) {
+    const pinia = createTestingPinia({
+        createSpy: vi.fn,
+        initialState: {
+            configurationStore: { config },
+            userStore: { currentUser: user },
+        },
+    });
+    const wrapper = mount(Masthead, {
+        props: { windowTab },
+        global: withPlugins(getLocalVue(), pinia),
+    });
+    await flushPromises();
+    return wrapper;
+}
+
+function switcherConfig(...destinations) {
+    return { subdomain_switcher: destinations };
+}
 
 describe("Masthead.vue", () => {
-    let wrapper;
-    let localVue;
-    let windowTab;
-    let testPinia;
-    let originalUrl;
+    enableAutoUnmount(afterEach);
 
-    function stubLoadWebhooks(items) {
-        items.push({
-            id: "extension",
-            title: "Extension Point",
-            url: "extension_url",
+    beforeEach(() => {
+        vi.mocked(loadMastheadWebhooks).mockImplementation((items) => {
+            items.push({ ...EXTENSION_TAB });
         });
-    }
-
-    loadMastheadWebhooks.mockImplementation(stubLoadWebhooks);
-
-    beforeEach(async () => {
-        setupMockConfig({});
-        originalUrl = window.location.href;
-        localVue = getLocalVue();
-        testPinia = createTestingPinia({ createSpy: vi.fn, initialState: { configurationStore: { config: {} } } });
-
-        windowTab = {
-            id: "enable-window-manager",
-            icon: faTh,
-            tooltip: "Enable/Disable Window Manager",
-            visible: true,
-            _active: false,
-            onclick: function () {
-                this._active = !this._active;
-            },
-        };
-
-        const userStore = useUserStore();
-        userStore.currentUser = currentUser;
-
-        wrapper = mount(Masthead, {
-            props: {
-                windowTab,
-            },
-            global: localVue,
-            pinia: testPinia,
-        });
-        await flushPromises();
     });
 
     afterEach(() => {
-        wrapper.unmount();
-        window.location.href = originalUrl;
+        // The palette's open state is module-level, so it outlives each test's pinia.
+        useCommandPalette().closePalette();
     });
 
-    async function remount(config, user = currentUser) {
-        wrapper.unmount();
-        setupMockConfig(config);
-        useConfigStore().config = config;
-        const userStore = useUserStore();
-        userStore.currentUser = user;
-        wrapper = mount(Masthead, {
-            propsData: { windowTab },
-            localVue,
-            pinia: testPinia,
-        });
-        await flushPromises();
-    }
+    it("renders the simple tab item links", async () => {
+        const wrapper = await mountMasthead();
 
-    it("should render simple tab item links", () => {
         // window manager, extension tab, command palette search, help, user
         expect(wrapper.findAll("li.nav-item").length).toBe(5);
-        // Ensure specified link title respected.
         expect(wrapper.find("#help").text()).toBe("Support, Contact, and Community");
         expect(wrapper.find("#help a").attributes("href")).toBe("/about");
     });
 
-    it("should open the command palette from the search button", async () => {
-        const { useCommandPalette } = await import("@/composables/useCommandPalette");
-        useCommandPalette().closePalette();
-        await wrapper.find("[data-description='masthead search button']").trigger("click");
-        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
-        useCommandPalette().closePalette();
+    it("opens the command palette from the search button", async () => {
+        const wrapper = await mountMasthead();
+        const { isPaletteOpen } = useCommandPalette();
+        expect(isPaletteOpen.value).toBe(false);
+
+        await wrapper.find(SEARCH_BUTTON).trigger("click");
+
+        expect(isPaletteOpen.value).toBe(true);
     });
 
-    it("labels the search button with the localized search phrase", () => {
-        const button = wrapper.find("[data-description='masthead search button']");
+    it("labels the search button with the localized search phrase", async () => {
+        const wrapper = await mountMasthead();
+
+        const button = wrapper.find(SEARCH_BUTTON);
         expect(button.find(".search-placeholder").text()).toBe("Search Galaxy");
         expect(button.attributes("title")).toBe("Search Galaxy (Ctrl+K)");
     });
 
     it("hides the search button when the palette is disabled", async () => {
-        await remount({ enable_command_palette: false });
+        const wrapper = await mountMasthead({ config: { enable_command_palette: false } });
 
-        expect(wrapper.find("[data-description='masthead search button']").exists()).toBe(false);
+        expect(wrapper.find(SEARCH_BUTTON).exists()).toBe(false);
     });
 
-    it("should display window manager button", async () => {
+    it("toggles the window manager from its button", async () => {
+        const windowTab = createWindowTab();
+        const wrapper = await mountMasthead({ windowTab });
         expect(wrapper.find("#enable-window-manager a svg").exists()).toBe(true);
-        expect(windowTab._active).toBe(false);
+        expect(wrapper.find("#enable-window-manager .nav-note").exists()).toBe(false);
+
         await wrapper.find("#enable-window-manager a").trigger("click");
-        expect(windowTab._active).toBe(true);
+
+        expect(windowTab.onclick).toHaveBeenCalledOnce();
+        expect(wrapper.find("#enable-window-manager .nav-note").exists()).toBe(true);
     });
 
-    it("should load webhooks on creation", async () => {
+    it("renders the tabs loaded from masthead webhooks", async () => {
+        const wrapper = await mountMasthead();
+
         expect(wrapper.find("#extension a").text()).toBe("Extension Point");
     });
 
-    it("does not render the site switcher without destinations", async () => {
-        expect(wrapper.find("#subdomain_switcher").exists()).toBe(false);
+    it("does not render the site switcher without configured destinations", async () => {
+        const wrapper = await mountMasthead();
 
-        await remount({
-            subdomain_switcher: [{ label: "Current site", url: `${window.location.origin}/` }],
+        expect(wrapper.find("#subdomain_switcher").exists()).toBe(false);
+    });
+
+    it("does not render the site switcher when the only destination is the current site", async () => {
+        const wrapper = await mountMasthead({
+            config: switcherConfig({ label: "Current site", url: `${window.location.origin}/` }),
         });
 
         expect(wrapper.find("#subdomain_switcher").exists()).toBe(false);
@@ -142,13 +137,13 @@ describe("Masthead.vue", () => {
 
     it("renders exact destination URLs in configured order and omits the current origin", async () => {
         window.location.href = "http://galaxy.example.org:80/current/path?query=kept-out";
-        await remount({
-            subdomain_switcher: [
+        const wrapper = await mountMasthead({
+            config: switcherConfig(
                 { label: "Current site", url: "http://galaxy.example.org/" },
                 { label: "Invalid site", url: "http://[" },
                 { label: "Single Cell <Omics>", url: "https://singlecell.example.org/root/?exact=true#destination" },
                 { label: "Climate", url: "https://climate.example.org" },
-            ],
+            ),
         });
 
         const switcher = wrapper.find("#subdomain_switcher");
@@ -163,30 +158,44 @@ describe("Masthead.vue", () => {
         expect(switcher.find("em").exists()).toBe(false);
     });
 
-    it.each([
-        ["registered", currentUser, {}],
-        ["anonymous", { id: "anonymous", isAnonymous: true }, {}],
-        ["single-user", currentUser, { single_user: true }],
-    ])("renders the optional switcher for the %s masthead", async (_variant, user, variantConfig) => {
-        await remount(
-            {
-                ...variantConfig,
-                subdomain_switcher: [{ label: "Another site", url: "https://another.example.org" }],
-            },
-            user,
-        );
+    it("renders the switcher beside a registered user's menu", async () => {
+        const wrapper = await mountMasthead({
+            config: switcherConfig({ label: "Another site", url: "https://another.example.org" }),
+            user: getFakeRegisteredUser(),
+        });
 
         expect(wrapper.find("#subdomain_switcher").exists()).toBe(true);
+        expect(wrapper.findAll(USER_MENU_ITEMS).map((item) => item.text())).toEqual(["Preferences", "Sign Out"]);
+    });
+
+    it("renders the switcher beside an anonymous user's login button", async () => {
+        const wrapper = await mountMasthead({
+            config: switcherConfig({ label: "Another site", url: "https://another.example.org" }),
+            user: getFakeAnonymousUser(),
+        });
+
+        expect(wrapper.find("#subdomain_switcher").exists()).toBe(true);
+        expect(wrapper.find(LOGIN_BUTTON).exists()).toBe(true);
+    });
+
+    it("renders the switcher beside a single-user instance's menu, which has no sign out", async () => {
+        const wrapper = await mountMasthead({
+            config: {
+                single_user: true,
+                ...switcherConfig({ label: "Another site", url: "https://another.example.org" }),
+            },
+            user: getFakeRegisteredUser(),
+        });
+
+        expect(wrapper.find("#subdomain_switcher").exists()).toBe(true);
+        expect(wrapper.findAll(USER_MENU_ITEMS).map((item) => item.text())).toEqual(["Preferences"]);
     });
 
     it.each([["javascript:alert(1)"], ["data:text/html,<script>alert(1)</script>"], ["vbscript:msgbox(1)"]])(
         "drops destinations using the unsafe scheme %s",
         async (url) => {
-            await remount({
-                subdomain_switcher: [
-                    { label: "Unsafe", url },
-                    { label: "Safe", url: "https://safe.example.org" },
-                ],
+            const wrapper = await mountMasthead({
+                config: switcherConfig({ label: "Unsafe", url }, { label: "Safe", url: "https://safe.example.org" }),
             });
 
             const links = wrapper.findAll("#subdomain_switcher a.dropdown-item");
@@ -195,12 +204,12 @@ describe("Masthead.vue", () => {
     );
 
     it("drops destinations without a usable label instead of failing to render", async () => {
-        await remount({
-            subdomain_switcher: [
+        const wrapper = await mountMasthead({
+            config: switcherConfig(
                 { url: "https://unlabelled.example.org" },
                 { label: "   ", url: "https://blank.example.org" },
                 { label: "Safe", url: "https://safe.example.org" },
-            ],
+            ),
         });
 
         const links = wrapper.findAll("#subdomain_switcher a.dropdown-item");

@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakePageRevisionDetails, getFakePageRevisionSummary } from "@tests/test-data/pages";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -6,7 +7,7 @@ import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick, ref } from "vue";
 
-import type { HistoryPageDetails, PageRevisionDetails, PageRevisionSummary } from "@/api/pages";
+import type { HistoryPageDetails } from "@/api/pages";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import GModal from "../BaseComponents/GModal.vue";
@@ -325,7 +326,7 @@ describe("PageEditorView", () => {
         it("shows revision list in a modal when store.showRevisions is true", async () => {
             const store = setupLoadedPage(HISTORY_ID);
             store.showRevisions = true;
-            store.revisions = [] as PageRevisionSummary[];
+            store.revisions = [];
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
@@ -342,15 +343,11 @@ describe("PageEditorView", () => {
 
         it("shows PageRevisionView when selectedRevision is set", async () => {
             const store = setupLoadedPage(HISTORY_ID);
-            store.selectedRevision = {
+            store.selectedRevision = getFakePageRevisionDetails({
                 id: "rev-1",
                 page_id: PAGE_ID,
                 content: "# Old content",
-                content_format: "markdown",
-                edit_source: "user",
-                create_time: "2024-01-01T00:00:00",
-                update_time: "2024-01-01T00:00:00",
-            } as PageRevisionDetails;
+            });
             store.previousRevisionContent = "";
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
@@ -361,15 +358,7 @@ describe("PageEditorView", () => {
 
         it("PageRevisionView back emits clearSelectedRevision", async () => {
             const store = setupLoadedPage(HISTORY_ID);
-            store.selectedRevision = {
-                id: "rev-1",
-                page_id: PAGE_ID,
-                content: "# Old",
-                content_format: "markdown",
-                edit_source: "user",
-                create_time: "2024-01-01T00:00:00",
-                update_time: "2024-01-01T00:00:00",
-            } as PageRevisionDetails;
+            store.selectedRevision = getFakePageRevisionDetails({ id: "rev-1", page_id: PAGE_ID, content: "# Old" });
             store.previousRevisionContent = "";
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
@@ -383,15 +372,7 @@ describe("PageEditorView", () => {
 
         it("PageRevisionView restore calls store.restoreRevision", async () => {
             const store = setupLoadedPage(HISTORY_ID);
-            store.selectedRevision = {
-                id: "rev-1",
-                page_id: PAGE_ID,
-                content: "# Old",
-                content_format: "markdown",
-                edit_source: "user",
-                create_time: "2024-01-01T00:00:00",
-                update_time: "2024-01-01T00:00:00",
-            } as PageRevisionDetails;
+            store.selectedRevision = getFakePageRevisionDetails({ id: "rev-1", page_id: PAGE_ID, content: "# Old" });
             store.previousRevisionContent = "";
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
@@ -406,9 +387,7 @@ describe("PageEditorView", () => {
         it("revision list select calls store.loadRevision", async () => {
             const store = setupLoadedPage(HISTORY_ID);
             store.showRevisions = true;
-            store.revisions = [
-                { id: "rev-1", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
-            ] as PageRevisionSummary[];
+            store.revisions = [getFakePageRevisionSummary({ id: "rev-1", page_id: PAGE_ID })];
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
@@ -424,9 +403,7 @@ describe("PageEditorView", () => {
         it("revision list restore calls store.restoreRevision in standalone mode", async () => {
             const store = setupLoadedPage();
             store.showRevisions = true;
-            store.revisions = [
-                { id: "rev-1", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
-            ] as PageRevisionSummary[];
+            store.revisions = [getFakePageRevisionSummary({ id: "rev-1", page_id: PAGE_ID })];
             const wrapper = mountComponent({ pageId: PAGE_ID });
             await flushPromises();
 

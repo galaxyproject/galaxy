@@ -6,143 +6,147 @@ import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
 import FormSelect from "./FormSelect.vue";
-import MountTarget from "./FormSelection.vue";
+import FormSelection from "./FormSelection.vue";
 
 const localVue = getLocalVue(true);
 
-function createTarget(propsData) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
-
-    return mount(MountTarget, {
-        global: localVue,
-        propsData,
-        pinia,
-    });
-}
-
-const defaultOptions = [
+const options = [
     ["label_1", "value_1"],
     ["label_2", "value_2"],
     ["label_3", ""],
     ["label_4", 99],
 ];
+const optionLabels = ["label_1", "label_2", "label_3", "label_4"];
 
-// vue-multiselect only renders its option list (and thus the SELECTED_VALUE /
-// option-list queries below) while its dropdown is open, so tests need to
-// open it before reading those.
+function mountFormSelection(propsData) {
+    const pinia = createTestingPinia({ createSpy: vi.fn });
+
+    return mount(FormSelection, {
+        global: localVue,
+        propsData: { options, ...propsData },
+        pinia,
+    });
+}
+
+/** vue-multiselect renders its option list only while open, and picking a single option closes it. */
 async function openMultiselect(wrapper) {
     if (!wrapper.find(".multiselect__content-wrapper").exists()) {
         await wrapper.find(".multiselect__select").trigger("mousedown");
     }
 }
 
-async function testDefaultOptions(wrapper) {
+async function listedLabels(wrapper) {
     await openMultiselect(wrapper);
-    const target = wrapper.findComponent(MountTarget);
-    const options = target.findAll("li > span > div");
-    expect(options.length).toBe(4);
-    for (let i = 0; i < options.length; i++) {
-        expect(options.at(i).text()).toBe(`label_${i + 1}`);
+    return wrapper.findAll("[data-option-value]").map((option) => option.text());
+}
+
+async function selectedLabels(wrapper) {
+    await openMultiselect(wrapper);
+    return wrapper.findAll(".multiselect__option--selected").map((option) => option.text());
+}
+
+async function clickOption(wrapper, label) {
+    await openMultiselect(wrapper);
+    const option = wrapper.findAll(".multiselect__option").find((candidate) => candidate.text() === label);
+    if (!option) {
+        throw new Error(`No option labelled "${label}".`);
     }
+    await option.trigger("click");
 }
 
 describe("FormSelect", () => {
-    it("basics", async () => {
-        const wrapper = createTarget({
-            options: defaultOptions,
+    describe("single select", () => {
+        it("lists the options in order", async () => {
+            const wrapper = mountFormSelection();
+
+            expect(await listedLabels(wrapper)).toEqual(optionLabels);
         });
-        await testDefaultOptions(wrapper);
-        const noValue = wrapper.find(".multiselect__option--selected");
-        expect(noValue.exists()).toBe(false);
-        expect(emittedArg(wrapper, "input")).toBe("value_1");
-        await wrapper.setProps({ value: "value_1" });
-        const selectedValue = wrapper.find(".multiselect__option--selected");
-        expect(selectedValue.text()).toBe("label_1");
+
+        it("selects the first option when a required select has no value", async () => {
+            const wrapper = mountFormSelection();
+
+            expect(emittedArg(wrapper, "input")).toBe("value_1");
+            expect(await selectedLabels(wrapper)).toEqual([]);
+
+            await wrapper.setProps({ value: "value_1" });
+
+            expect(await selectedLabels(wrapper)).toEqual(["label_1"]);
+        });
+
+        it("offers and selects 'Nothing selected' while an optional select has no value", async () => {
+            const wrapper = mountFormSelection({ optional: true });
+
+            expect(await listedLabels(wrapper)).toEqual(["Nothing selected", ...optionLabels]);
+            expect(await selectedLabels(wrapper)).toEqual(["Nothing selected"]);
+            expect(wrapper.emitted("input")).toBeUndefined();
+        });
+
+        it("clears an optional select by picking 'Nothing selected'", async () => {
+            const wrapper = mountFormSelection({ optional: true });
+            await wrapper.setProps({ value: "value_1" });
+            expect(await selectedLabels(wrapper)).toEqual(["label_1"]);
+
+            await clickOption(wrapper, "Nothing selected");
+
+            expect(emittedArg(wrapper, "input")).toBe(null);
+            await wrapper.setProps({ value: null });
+            expect(await selectedLabels(wrapper)).toEqual(["Nothing selected"]);
+        });
     });
 
-    it("optional values", async () => {
-        const wrapper = createTarget({
-            options: defaultOptions,
-            optional: true,
-        });
-        await openMultiselect(wrapper);
-        const target = wrapper.findComponent(MountTarget);
-        const options = target.findAll("li > span > div");
-        expect(options.length).toBe(5);
-        expect(options.at(0).text()).toBe("Nothing selected");
-        const selectedDefault = wrapper.find(".multiselect__option--selected");
-        expect(selectedDefault.text()).toBe("Nothing selected");
-        await wrapper.setProps({ value: "value_1" });
-        const selectedValue = wrapper.find(".multiselect__option--selected");
-        expect(selectedValue.text()).toBe("label_1");
-        options.at(0).trigger("click");
-        const nullValue = emittedArg(wrapper, "input");
-        expect(nullValue).toBe(null);
-        await wrapper.setProps({ value: null });
-        // Picking an option closes the dropdown, which removes the option list.
-        await openMultiselect(wrapper);
-        const unselectDefault = wrapper.find(".multiselect__option--selected");
-        expect(unselectDefault.text()).toBe("Nothing selected");
-    });
+    describe("multi-select", () => {
+        it("emits null when a required multi-select is fully cleared", async () => {
+            const wrapper = mountFormSelection({ optional: false, multiple: true, value: ["value_1"] });
+            expect(await selectedLabels(wrapper)).toEqual(["label_1"]);
 
-    it("required multi-select emits null when fully cleared", async () => {
-        const wrapper = createTarget({
-            optional: false,
-            multiple: true,
-            options: defaultOptions,
-            value: ["value_1"],
-        });
-        await openMultiselect(wrapper);
-        const selected = wrapper.findAll(".multiselect__option--selected");
-        expect(selected.length).toBe(1);
-        selected.at(0).trigger("click");
-        const emitted = emittedArg(wrapper, "input");
-        expect(emitted).toBe(null);
-    });
+            await clickOption(wrapper, "label_1");
 
-    it("multiple values", async () => {
-        const wrapper = createTarget({
-            optional: true,
-            multiple: true,
-            options: defaultOptions,
-            value: ["value_1", "", 99],
+            expect(emittedArg(wrapper, "input")).toBe(null);
         });
-        await testDefaultOptions(wrapper);
-        const selectedValue = wrapper.findAll(".multiselect__option--selected");
-        expect(selectedValue.length).toBe(3);
-        expect(selectedValue.at(0).text()).toBe("label_1");
-        expect(selectedValue.at(1).text()).toBe("label_3");
-        expect(selectedValue.at(2).text()).toBe("label_4");
-        selectedValue.at(0).trigger("click");
-        const newValue = emittedArg(wrapper, "input");
-        expect(newValue).toEqual(["", 99]);
-        await wrapper.setProps({ value: newValue });
-        selectedValue.at(1).trigger("click");
-        const numericValue = emittedArg(wrapper, "input", 1);
-        expect(numericValue).toEqual([99]);
-        await wrapper.setProps({ value: numericValue });
-        selectedValue.at(2).trigger("click");
-        const nullValue = emittedArg(wrapper, "input", 2);
-        expect(nullValue).toBe(null);
-        await wrapper.setProps({ value: nullValue });
-        selectedValue.at(0).trigger("click");
-        const finalValue = emittedArg(wrapper, "input", 3);
-        expect(finalValue).toEqual(["value_1"]);
+
+        it("does not offer 'Nothing selected' in an optional multi-select", async () => {
+            const wrapper = mountFormSelection({ optional: true, multiple: true, value: ["value_1", "", 99] });
+
+            expect(await listedLabels(wrapper)).toEqual(optionLabels);
+        });
+
+        it("emits the remaining values as options are deselected, null once none are left, and reselects", async () => {
+            const wrapper = mountFormSelection({ optional: true, multiple: true, value: ["value_1", "", 99] });
+            expect(await selectedLabels(wrapper)).toEqual(["label_1", "label_3", "label_4"]);
+
+            await clickOption(wrapper, "label_1");
+            const withoutFirst = emittedArg(wrapper, "input");
+            expect(withoutFirst).toEqual(["", 99]);
+            await wrapper.setProps({ value: withoutFirst });
+
+            await clickOption(wrapper, "label_3");
+            const onlyNumeric = emittedArg(wrapper, "input", 1);
+            expect(onlyNumeric).toEqual([99]);
+            await wrapper.setProps({ value: onlyNumeric });
+
+            await clickOption(wrapper, "label_4");
+            const cleared = emittedArg(wrapper, "input", 2);
+            expect(cleared).toBe(null);
+            await wrapper.setProps({ value: cleared });
+
+            await clickOption(wrapper, "label_1");
+            expect(emittedArg(wrapper, "input", 3)).toEqual(["value_1"]);
+        });
     });
 });
 
 describe("FormSelect accessible names", () => {
     it("does not name the search input after its id", () => {
-        const wrapper = createTarget({ options: defaultOptions });
+        const wrapper = mountFormSelection();
         const input = wrapper.find("input.multiselect__input");
         expect(input.exists()).toBe(true);
         expect(input.attributes("aria-label")).toBeUndefined();
     });
 
     it("gives each instance its own default id", () => {
-        const options = [{ label: "label_1", value: "value_1" }];
+        const formSelectOptions = [{ label: "label_1", value: "value_1" }];
         const ids = [0, 1].map(() => {
-            const wrapper = mount(FormSelect, { global: localVue, props: { options } });
+            const wrapper = mount(FormSelect, { global: localVue, props: { options: formSelectOptions } });
             return wrapper.find("input.multiselect__input").attributes("id");
         });
         expect(ids[0]).toMatch(/^form-select-/);

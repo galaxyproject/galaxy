@@ -1,8 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
-import { setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { disposePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { nextTick } from "vue";
 
 import { useChatStore } from "@/stores/chatStore";
@@ -28,24 +28,20 @@ const localVue = getLocalVue();
 
 function mountComponent() {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    setActivePinia(pinia);
-    const wrapper = mount(ChatModeSelector as object, {
-        localVue,
-        pinia,
-        stubs: { FontAwesomeIcon: true },
+    onTestFinished(() => disposePinia(pinia));
+    const globalConfig = withPlugins(localVue, pinia);
+    const wrapper = mount(ChatModeSelector, {
+        global: { ...globalConfig, stubs: { ...globalConfig.stubs, FontAwesomeIcon: true } },
     });
-    const store = useChatStore();
-    // chatStore is a setup-syntax store, so @pinia/testing's automatic action
-    // spying (which relies on the options-API `actions` map) doesn't apply --
-    // spy on the actions these tests assert against explicitly.
+    const store = useChatStore(pinia);
     vi.spyOn(store, "dockChat");
     vi.spyOn(store, "hideChat");
     vi.spyOn(store, "setLocation");
     return { wrapper, store };
 }
 
-/** Returns the three GButton wrappers in template order: [fullView, sidePanel, bottomPanel] */
-function getButtons(wrapper: VueWrapper) {
+/** Returns available buttons in template order: full view (outside notebooks), side panel, bottom panel. */
+function getButtons(wrapper: ReturnType<typeof mountComponent>["wrapper"]) {
     return wrapper.findAllComponents(GButton);
 }
 
@@ -58,6 +54,7 @@ describe("ChatModeSelector", () => {
     afterEach(() => {
         vi.restoreAllMocks();
     });
+    enableAutoUnmount(afterEach);
 
     // ── button active states ───────────────────────────────────────────────────
 

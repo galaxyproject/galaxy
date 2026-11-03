@@ -33,7 +33,3 @@ export function generateRandomWorkflow(owner: string): Workflow {
         latest_workflow_uuid: generateRandomString(),
     };
 }
-
-export function generateRandomWorkflowList(owner: string, count: number): Workflow[] {
-    return Array.from({ length: count }, () => generateRandomWorkflow(owner));
-}

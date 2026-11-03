@@ -1,23 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { getFakeHistorySummary } from "@tests/test-data";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import type { HistoryDetailed, HistorySummary, MessageException } from "@/api";
+import type { HistoryDetailed, MessageException } from "@/api";
 import { GalaxyApi } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 
-const TEST_HISTORY_SUMMARY: HistorySummary = {
-    model_class: "History",
+const TEST_HISTORY_SUMMARY = getFakeHistorySummary({
     id: "test",
     name: "Test History",
-    archived: false,
-    deleted: false,
-    purged: false,
-    published: false,
     update_time: "2021-09-01T00:00:00",
-    count: 0,
     annotation: "Test History Annotation",
-    tags: [],
     url: "/api/histories/test",
-};
+});
 
 const TEST_HISTORY_DETAILED: HistoryDetailed = {
     ...TEST_HISTORY_SUMMARY,
@@ -38,72 +32,69 @@ const TEST_HISTORY_DETAILED: HistoryDetailed = {
 
 const EXPECTED_500_ERROR: MessageException = { err_code: 500, err_msg: "Internal Server Error" };
 
-// Mock the server responses
 const { server, http } = useServerMock();
-server.use(
-    http.get("/api/histories/{history_id}", ({ params, query, response }) => {
-        if (query.get("view") === "detailed") {
-            return response(200).json(TEST_HISTORY_DETAILED);
-        }
-        if (params.history_id === "must-fail") {
-            return response("5XX").json(EXPECTED_500_ERROR, { status: 500 });
-        }
-        return response(200).json(TEST_HISTORY_SUMMARY);
-    }),
-);
+
+// useServerMock resets handlers after each test, so install the shared route for every scenario.
+beforeEach(() => {
+    server.use(
+        http.get("/api/histories/{history_id}", ({ params, query, response }) => {
+            if (query.get("view") === "detailed") {
+                return response(200).json(TEST_HISTORY_DETAILED);
+            }
+            if (params.history_id === "must-fail") {
+                return response("5XX").json(EXPECTED_500_ERROR, { status: 500 });
+            }
+            return response(200).json(TEST_HISTORY_SUMMARY);
+        }),
+    );
+});
 
 describe("useServerMock", () => {
-    it("mocks the Galaxy Server", async () => {
-        {
-            const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
-                params: {
-                    path: { history_id: "test" },
-                    query: { view: "summary" },
-                },
-            });
+    it("returns the summary response when the view query parameter is summary", async () => {
+        const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
+            params: {
+                path: { history_id: "test" },
+                query: { view: "summary" },
+            },
+        });
 
-            expect(error).toBeUndefined();
+        expect(error).toBeUndefined();
+        expect(data).toBeDefined();
+        expect(data).toEqual(TEST_HISTORY_SUMMARY);
+    });
 
-            expect(data).toBeDefined();
-            expect(data).toEqual(TEST_HISTORY_SUMMARY);
-        }
+    it("returns the detailed response when the view query parameter is detailed", async () => {
+        const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
+            params: {
+                path: { history_id: "test" },
+                query: { view: "detailed" },
+            },
+        });
 
-        {
-            const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
-                params: {
-                    path: { history_id: "test" },
-                    query: { view: "detailed" },
-                },
-            });
+        expect(error).toBeUndefined();
+        expect(data).toBeDefined();
+        expect(data).toEqual(TEST_HISTORY_DETAILED);
+    });
 
-            expect(error).toBeUndefined();
+    it("returns an error without data when the history path parameter selects a 500 response", async () => {
+        const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
+            params: {
+                path: { history_id: "must-fail" },
+            },
+        });
 
-            expect(data).toBeDefined();
-            expect(data).toEqual(TEST_HISTORY_DETAILED);
-        }
+        expect(error).toBeDefined();
+        expect(error).toEqual(EXPECTED_500_ERROR);
+        expect(data).toBeUndefined();
+    });
 
-        {
-            const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
-                params: {
-                    path: { history_id: "must-fail" },
-                },
-            });
+    it("returns handler setup guidance without data when no route handles the request", async () => {
+        const { data, error } = await GalaxyApi().GET("/api/configuration");
 
-            expect(error).toBeDefined();
-            expect(error).toEqual(EXPECTED_500_ERROR);
-
-            expect(data).toBeUndefined();
-        }
-
-        {
-            const { data, error } = await GalaxyApi().GET("/api/configuration");
-
-            expect(data).toBeUndefined();
-
-            expect(error).toBeDefined();
-            expect(`${JSON.stringify(error)}`).toContain(
-                "Make sure you have added a request handler for this request in your tests.",
-            );
-        }
+        expect(data).toBeUndefined();
+        expect(error).toBeDefined();
+        expect(JSON.stringify(error)).toContain(
+            "Make sure you have added a request handler for this request in your tests.",
+        );
     });
 });

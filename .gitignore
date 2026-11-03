@@ -161,6 +161,7 @@ doc/source/admin/config_logging_default_yaml.rst
 doc/source/dev/schema.md
 doc/source/dev/user_defined_tools_authoring.md
 client/docs/dist
+client/storybook-static
 
 # Webpack stats
 client/webpack-stats.json

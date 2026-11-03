@@ -1,6 +1,4 @@
-import { createTestingPinia } from "@pinia/testing";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref, watch } from "vue";
 
@@ -22,18 +20,61 @@ vi.mock("./workflowStores", () => ({ provideScopedWorkflowStores: vi.fn() }));
 
 const { server, http } = useServerMock();
 
-/** Sets up the invocation graph composable for testing.
- * Initializes the composable and then loads it via its `loadInvocationGraph` function.
- */
-function setupComposable(invStep?: object, summaries: object[] = [], loadOntoEditor = false, invocationFields = {}) {
-    const invocation = ref({
+// The graph also accepts scheduling states omitted from the generated job-summary enum.
+type PopulatedState = StepJobSummary["populated_state"] | "scheduled" | "ready";
+
+function jobSummary(states: StepJobSummary["states"], populatedState: PopulatedState = "ok"): StepJobSummary {
+    return { id: "j1", model: "Job", states, populated_state: populatedState as StepJobSummary["populated_state"] };
+}
+
+function setupGraph({
+    hasInvocationStep = true,
+    invocationStep: invocationStepOverrides = {},
+    states,
+    populatedState = "ok",
+    inputStepParameters = {},
+    invocationFields = {},
+    loadOntoEditor = false,
+}: {
+    hasInvocationStep?: boolean;
+    invocationStep?: Partial<InvocationStep>;
+    states?: StepJobSummary["states"];
+    populatedState?: PopulatedState;
+    inputStepParameters?: WorkflowInvocationElementView["input_step_parameters"];
+    invocationFields?: Partial<WorkflowInvocationElementView>;
+    loadOntoEditor?: boolean;
+} = {}) {
+    const invocationStep: InvocationStep = {
+        id: "step-1",
+        job_id: "j1",
+        action: null,
+        jobs: [],
+        model_class: "WorkflowInvocationStep",
+        order_index: 0,
+        output_collections: {},
+        outputs: {},
+        update_time: null,
+        workflow_step_id: "workflow-step-1",
+        ...invocationStepOverrides,
+    };
+    const invocation = ref<WorkflowInvocationElementView>({
         id: "inv1",
-        steps: invStep ? { 0: invStep } : {},
+        create_time: "2026-01-01T00:00:00",
+        update_time: "2026-01-01T00:00:00",
+        history_id: "history-1",
+        workflow_id: "wf1",
+        model_class: "WorkflowInvocation",
+        state: "scheduled",
+        steps: hasInvocationStep ? [invocationStep] : [],
         inputs: {},
-        input_step_parameters: {},
+        input_step_parameters: inputStepParameters,
+        messages: [],
+        output_collections: {},
+        output_values: {},
+        outputs: {},
         ...invocationFields,
-    } as WorkflowInvocationElementView);
-    const stepsJobsSummary = ref(summaries as StepJobSummary[]);
+    });
+    const stepsJobsSummary = ref<StepJobSummary[]>(states ? [jobSummary(states, populatedState)] : []);
     const { steps, loadInvocationGraph } = useInvocationGraph(invocation, stepsJobsSummary, ref("wf1"), ref(0));
     return { steps, invocation, stepsJobsSummary, load: () => loadInvocationGraph(loadOntoEditor) };
 }
@@ -49,135 +90,74 @@ const scheduledInputAndTool = {
         { id: "is1", job_id: "j1" },
     ],
     inputs: { 0: { id: "d1", src: "hda" } },
-};
+} as unknown as Partial<WorkflowInvocationElementView>;
 const inputDataset = { id: "d1", hid: 1, name: "input", state: "ok", history_content_type: "dataset" };
 
-function jobSummary(states: Record<string, number>, populated_state = "ok", id = "j1") {
-    return { id, model: "Job", states, populated_state } as StepJobSummary;
-}
-
-/** Helper function to set up a a version of the composable with provided job states */
-function withJobStates(states: Record<string, number>, populated_state = "ok") {
-    return setupComposable({ job_id: "j1" }, [jobSummary(states, populated_state)]);
-}
-
 beforeEach(() => {
-    setActivePinia(createTestingPinia({ createSpy: vi.fn }));
     workflowSteps.value = { 0: toolStep };
 });
 
 describe("useInvocationGraph — step state", () => {
-    it("is queued — no invocation step for this workflow step", async () => {
-        const { steps, load } = setupComposable();
+    it("is queued when this workflow step has no invocation step", async () => {
+        const { steps, load } = setupGraph({ hasInvocationStep: false });
         await load();
         expect(steps.value[0]?.state).toBe("queued");
     });
 
-    it("is waiting — invocation step present but no matching job summary", async () => {
-        const { steps, load } = setupComposable({ job_id: "j1" });
+    it("is waiting when the invocation step has no matching job summary", async () => {
+        const { steps, load } = setupGraph();
         await load();
         expect(steps.value[0]?.state).toBe("waiting");
     });
 
-    describe("from job states (single-instance: any one job triggers it)", () => {
-        it("is error", async () => {
-            const { steps, load } = withJobStates({ error: 1 });
+    describe("when any job has a decisive state", () => {
+        it.each([
+            { jobState: "error", expectedState: "error" },
+            { jobState: "running", expectedState: "running" },
+            { jobState: "paused", expectedState: "paused" },
+            { jobState: "deleting", expectedState: "deleted" },
+        ])("maps $jobState to $expectedState", async ({ jobState, expectedState }) => {
+            const { steps, load } = setupGraph({ states: { [jobState]: 1 } });
             await load();
-            expect(steps.value[0]?.state).toBe("error");
-        });
-
-        it("is running", async () => {
-            const { steps, load } = withJobStates({ running: 1 });
-            await load();
-            expect(steps.value[0]?.state).toBe("running");
-        });
-
-        it("is paused", async () => {
-            const { steps, load } = withJobStates({ paused: 1 });
-            await load();
-            expect(steps.value[0]?.state).toBe("paused");
-        });
-
-        it("is deleted — from deleting job state", async () => {
-            const { steps, load } = withJobStates({ deleting: 1 });
-            await load();
-            expect(steps.value[0]?.state).toBe("deleted");
+            expect(steps.value[0]?.state).toBe(expectedState);
         });
     });
 
-    describe("from job states (all-instances: all jobs must be in that state)", () => {
-        it("is deleted", async () => {
-            const { steps, load } = withJobStates({ deleted: 1 });
+    describe("when all jobs are in the same state", () => {
+        it.each(["deleted", "skipped", "new", "queued"])("preserves %s", async (jobState) => {
+            const { steps, load } = setupGraph({ states: { [jobState]: 1 } });
             await load();
-            expect(steps.value[0]?.state).toBe("deleted");
-        });
-
-        it("is skipped", async () => {
-            const { steps, load } = withJobStates({ skipped: 1 });
-            await load();
-            expect(steps.value[0]?.state).toBe("skipped");
-        });
-
-        it("is new", async () => {
-            const { steps, load } = withJobStates({ new: 1 });
-            await load();
-            expect(steps.value[0]?.state).toBe("new");
-        });
-
-        it("is queued", async () => {
-            const { steps, load } = withJobStates({ queued: 1 });
-            await load();
-            expect(steps.value[0]?.state).toBe("queued");
+            expect(steps.value[0]?.state).toBe(jobState);
         });
     });
 
-    describe("uninitialized state", () => {
-        it("headerClass is set on a fresh step before state is determined", async () => {
-            const { steps, load } = setupComposable();
-            await load();
-            expect(steps.value[0]?.headerClass).toBeDefined();
-        });
-
-        it("stays uninitialized when job states are inconclusive and populated_state is excluded", async () => {
-            // "ok" not in SINGLE/ALL lists → getStepStateFromJobStates returns undefined
-            // "stop" is explicitly excluded from the populated_state fallback
-            // → newState stays undefined → preserves previous "uninitialized" state
-            const { steps, load } = withJobStates({ ok: 1 }, "stop");
-            await load();
-            expect(steps.value[0]?.state).toBe("uninitialized");
-        });
+    it("assigns a header class to a fresh step", async () => {
+        const { steps, load } = setupGraph({ hasInvocationStep: false });
+        await load();
+        expect(steps.value[0]?.headerClass).toBeDefined();
     });
 
-    describe("from populated_state fallback (when job states are inconclusive)", () => {
-        // use { ok: 1 } — not in any SINGLE or ALL_INSTANCES list, so falls through to populated_state
-        it("is queued — from scheduled populated_state", async () => {
-            const { steps, load } = withJobStates({ ok: 1 }, "scheduled");
-            await load();
-            expect(steps.value[0]?.state).toBe("queued");
-        });
+    it("preserves uninitialized when job states are inconclusive and populated state is excluded", async () => {
+        const { steps, load } = setupGraph({ states: { ok: 1 }, populatedState: "stop" });
+        await load();
+        expect(steps.value[0]?.state).toBe("uninitialized");
+    });
 
-        it("is queued — from ready populated_state", async () => {
-            const { steps, load } = withJobStates({ ok: 1 }, "ready");
+    describe("populated state fallback when job states are inconclusive", () => {
+        it.each<{
+            populatedState: PopulatedState;
+            expectedState: string;
+        }>([
+            { populatedState: "scheduled", expectedState: "queued" },
+            { populatedState: "ready", expectedState: "queued" },
+            { populatedState: "resubmitted", expectedState: "new" },
+            { populatedState: "failed", expectedState: "error" },
+            { populatedState: "deleting", expectedState: "deleted" },
+        ])("maps $populatedState to $expectedState", async ({ populatedState, expectedState }) => {
+            // An ok job state does not resolve the graph state, so populated_state decides it.
+            const { steps, load } = setupGraph({ states: { ok: 1 }, populatedState });
             await load();
-            expect(steps.value[0]?.state).toBe("queued");
-        });
-
-        it("is new — from resubmitted populated_state", async () => {
-            const { steps, load } = withJobStates({ ok: 1 }, "resubmitted");
-            await load();
-            expect(steps.value[0]?.state).toBe("new");
-        });
-
-        it("is error — from failed populated_state", async () => {
-            const { steps, load } = withJobStates({ ok: 1 }, "failed");
-            await load();
-            expect(steps.value[0]?.state).toBe("error");
-        });
-
-        it("is deleted — from deleting populated_state", async () => {
-            const { steps, load } = withJobStates({ ok: 1 }, "deleting");
-            await load();
-            expect(steps.value[0]?.state).toBe("deleted");
+            expect(steps.value[0]?.state).toBe(expectedState);
         });
     });
 });
@@ -188,11 +168,11 @@ describe.each([
     ["Overview graph", true],
 ])("useInvocationGraph — following polled data (%s)", (_name, loadOntoEditor) => {
     it("updates step states when a new jobs summary arrives", async () => {
-        const { steps, stepsJobsSummary, load } = setupComposable(
-            { job_id: "j1" },
-            [jobSummary({ queued: 1 }, "scheduled")],
+        const { steps, stepsJobsSummary, load } = setupGraph({
+            states: { queued: 1 },
+            populatedState: "scheduled",
             loadOntoEditor,
-        );
+        });
         await load();
         expect(steps.value[0]?.state).toBe("queued");
 
@@ -209,20 +189,23 @@ describe.each([
 
     it("updates step states when only the invocation changes", async () => {
         workflowSteps.value = { 0: { id: 0, type: "subworkflow", position: { left: 0, top: 0 } } };
-        const { steps, invocation, load } = setupComposable({ id: "is0", state: "new" }, [], loadOntoEditor);
+        const { steps, invocation, load } = setupGraph({
+            invocationStep: { id: "is0", job_id: null, state: "new" },
+            loadOntoEditor,
+        });
         await load();
         expect(steps.value[0]?.state).toBe("new");
 
         invocation.value = {
             ...invocation.value,
-            steps: [{ id: "is0", state: "failed" }],
-        } as WorkflowInvocationElementView;
+            steps: [{ ...invocation.value.steps[0]!, state: "failed" }],
+        };
         await flushPromises();
         expect(steps.value[0]?.state).toBe("error");
     });
 
     it("updates a step once it is scheduled", async () => {
-        const { steps, invocation, stepsJobsSummary, load } = setupComposable(undefined, [], loadOntoEditor);
+        const { steps, invocation, stepsJobsSummary, load } = setupGraph({ hasInvocationStep: false, loadOntoEditor });
         await load();
         expect(steps.value[0]?.state).toBe("queued");
 
@@ -236,27 +219,27 @@ describe.each([
     });
 
     it("writes nothing to the steps when the polled data is unchanged", async () => {
-        const { steps, invocation, stepsJobsSummary, load } = setupComposable(
-            { job_id: "j1" },
-            [jobSummary({ running: 1 }, "scheduled")],
+        const { steps, invocation, stepsJobsSummary, load } = setupGraph({
+            states: { running: 1 },
+            populatedState: "scheduled",
             loadOntoEditor,
-        );
+        });
         await load();
         let writes = 0;
         watch(steps, () => writes++, { deep: true, flush: "sync" });
 
-        // a re-fetch with nothing changed: equal copies, as the store produces on every poll
+        // A re-fetch with nothing changed yields equal copies, as the store produces on every poll.
         invocation.value = JSON.parse(JSON.stringify(invocation.value));
         stepsJobsSummary.value = JSON.parse(JSON.stringify(stepsJobsSummary.value));
         await flushPromises();
-        // an explicit reload of unchanged data writes nothing either
+        // An explicit reload of unchanged data writes nothing either.
         await load();
         expect(writes).toBe(0);
     });
 
     it("keeps updating later steps when an input fetch fails, and retries the input", async () => {
         workflowSteps.value = inputAndToolSteps;
-        const { steps, invocation, stepsJobsSummary, load } = setupComposable(undefined, [], loadOntoEditor);
+        const { steps, invocation, stepsJobsSummary, load } = setupGraph({ hasInvocationStep: false, loadOntoEditor });
         await load();
         server.use(
             http.get("/api/datasets/{dataset_id}", ({ response }) =>
@@ -265,11 +248,8 @@ describe.each([
         );
         const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-        // the invocation is scheduled: both steps appear, but the input's dataset can't be fetched
-        invocation.value = {
-            ...invocation.value,
-            ...scheduledInputAndTool,
-        } as unknown as WorkflowInvocationElementView;
+        // Both steps appear once scheduled, but the input's dataset can't be fetched.
+        invocation.value = { ...invocation.value, ...scheduledInputAndTool };
         stepsJobsSummary.value = [jobSummary({ running: 1 }, "scheduled")];
         await vi.waitFor(() =>
             expect(consoleError).toHaveBeenCalledWith("Failed to update invocation graph steps", expect.any(Error)),
@@ -288,7 +268,7 @@ describe.each([
 
     it("applies a jobs summary that arrives while an input fetch is failing", async () => {
         workflowSteps.value = inputAndToolSteps;
-        const { steps, invocation, stepsJobsSummary, load } = setupComposable(undefined, [], loadOntoEditor);
+        const { steps, invocation, stepsJobsSummary, load } = setupGraph({ hasInvocationStep: false, loadOntoEditor });
         await load();
         let datasetRequested = () => {};
         const requested = new Promise<void>((resolve) => (datasetRequested = resolve));
@@ -306,13 +286,10 @@ describe.each([
         );
         const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-        invocation.value = {
-            ...invocation.value,
-            ...scheduledInputAndTool,
-        } as unknown as WorkflowInvocationElementView;
+        invocation.value = { ...invocation.value, ...scheduledInputAndTool };
         stepsJobsSummary.value = [jobSummary({ running: 1 }, "scheduled")];
         await requested;
-        // the last poll lands while the input fetch is still on its way to failing; no poll follows it
+        // The last poll lands while the input fetch is still failing; no poll follows it.
         stepsJobsSummary.value = [jobSummary({ ok: 1 })];
         await flushPromises();
         releaseDataset();
@@ -324,11 +301,10 @@ describe.each([
 
     it("writes nothing to an input step without a value when the polled data is unchanged", async () => {
         workflowSteps.value = { 0: { id: 0, type: "data_input", position: { left: 0, top: 0 } } };
-        const { steps, invocation, stepsJobsSummary, load } = setupComposable(
-            { id: "is0", workflow_step_id: 0 },
-            [],
+        const { steps, invocation, stepsJobsSummary, load } = setupGraph({
+            invocationStep: { id: "is0", job_id: null, workflow_step_id: 0 } as unknown as Partial<InvocationStep>,
             loadOntoEditor,
-        );
+        });
         await load();
         let writes = 0;
         watch(steps, () => writes++, { deep: true, flush: "sync" });
@@ -352,14 +328,14 @@ describe.each([
                 return response.untyped(HttpResponse.json(inputDataset));
             }),
         );
-        const { steps, stepsJobsSummary, load } = setupComposable(
-            undefined,
-            [jobSummary({ queued: 1 }, "scheduled")],
+        const { steps, stepsJobsSummary, load } = setupGraph({
+            states: { queued: 1 },
+            populatedState: "scheduled",
+            invocationFields: scheduledInputAndTool,
             loadOntoEditor,
-            scheduledInputAndTool,
-        );
+        });
 
-        // the first load waits on the input dataset while new polls land
+        // The first load waits on the input dataset while new polls land.
         const loaded = load();
         await requested;
         stepsJobsSummary.value = [jobSummary({ running: 1 }, "scheduled")];
@@ -398,18 +374,14 @@ describe("stepJobSummaryLookup", () => {
 });
 
 describe("useInvocationGraph — parameter input text", () => {
-    beforeEach(() => {
-        setActivePinia(createTestingPinia({ createSpy: vi.fn }));
-    });
-
     async function loadParameterInput(parameterType: string, parameterValue: string) {
         const output = { name: "output", type: parameterType, optional: false, multiple: false, parameter: true };
         workflowSteps.value = {
             0: { id: 0, type: "parameter_input", position: { left: 0, top: 0 }, outputs: [output] },
         };
-        const { steps, load } = setupComposable({ workflow_step_id: 10 }, [], false, {
-            input_step_parameters: {
-                param: { label: "param", parameter_value: parameterValue, workflow_step_id: 10 },
+        const { steps, load } = setupGraph({
+            inputStepParameters: {
+                param: { label: "param", parameter_value: parameterValue, workflow_step_id: "workflow-step-1" },
             },
         });
         await load();

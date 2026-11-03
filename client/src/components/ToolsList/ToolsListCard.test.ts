@@ -1,10 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
+import type { AnyUser } from "@/api";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -25,12 +27,24 @@ vi.mock("./useToolsListCardActions", () => ({
 }));
 
 const localVue = getLocalVue();
+const mountPoints: HTMLElement[] = [];
+
+afterEach(() => {
+    // Unmounting removes the card's relocated popovers; remove only our own host elements.
+    mountPoints.splice(0).forEach((mountPoint) => mountPoint.remove());
+    vi.restoreAllMocks();
+});
+// Vitest runs afterEach hooks in reverse registration order.
+enableAutoUnmount(afterEach);
+
+type CardProps = InstanceType<typeof ToolsListCard>["$props"];
+type Favorites = NonNullable<ReturnType<typeof useUserStore>["currentPreferences"]>["favorites"];
 
 function mountCard(options?: {
     attachTo?: HTMLElement;
-    currentUser?: any;
-    favorites?: { tools: string[]; tags: string[]; edam_operations: string[]; edam_topics: string[] };
-    propsData?: Record<string, unknown>;
+    currentUser?: AnyUser;
+    favorites?: Favorites;
+    props?: Partial<CardProps>;
 }) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
@@ -59,23 +73,17 @@ function mountCard(options?: {
             },
         },
     };
-    userStore.currentUser =
-        options?.currentUser ??
-        ({
-            id: "anonymous",
-            isAnonymous: true,
-        } as any);
+    userStore.currentUser = options?.currentUser ?? getFakeAnonymousUser();
     userStore.currentPreferences = {
         favorites: options?.favorites ?? { tools: [], tags: [], edam_operations: [], edam_topics: [] },
     };
 
     return {
-        pinia,
-        wrapper: mount(ToolsListCard as object, {
+        userStore,
+        wrapper: mount(ToolsListCard, {
             attachTo: options?.attachTo,
-            localVue,
-            pinia,
-            propsData: {
+            global: withPlugins(localVue, pinia),
+            props: {
                 id: "__FILTER_FAILED_DATASETS__",
                 name: "Filter failed",
                 edamOperations: ["operation_2409"],
@@ -84,7 +92,7 @@ function mountCard(options?: {
                 workflowCompatible: true,
                 local: true,
                 fetching: false,
-                ...options?.propsData,
+                ...options?.props,
             },
         }),
     };
@@ -93,35 +101,39 @@ function mountCard(options?: {
 describe("ToolsListCard", () => {
     it("renders Markdown tool help", async () => {
         const { wrapper } = mountCard({
-            propsData: {
+            props: {
                 help: "**Important** tool help",
                 helpFormat: "markdown",
             },
         });
 
-        await wrapper.find('[data-description="tools list toggle tool help"]').trigger("click");
+        await wrapper.get('[data-description="tools list toggle tool help"]').trigger("click");
 
-        const help = wrapper.find('[data-description="tools list tool help"]');
-        expect(help.find("strong").text()).toBe("Important");
+        const help = wrapper.get('[data-description="tools list tool help"]');
+        expect(help.get("strong").text()).toBe("Important");
         expect(help.text()).not.toContain("**Important**");
     });
 
     it("names the icon-only button that opens the version popover", () => {
-        const { wrapper } = mountCard({ propsData: { version: "1.0.0" } });
+        const { wrapper } = mountCard({ props: { version: "1.0.0" } });
 
-        expect(wrapper.find("#tools-list-__FILTER_FAILED_DATASETS__").attributes("aria-label")).toBe("Tool info");
+        expect(wrapper.get("#tools-list-__FILTER_FAILED_DATASETS__").attributes("aria-label")).toBe("Tool info");
     });
 
     it("keeps the version popover open when its keyboard-focused button is activated", async () => {
         const mountPoint = document.createElement("div");
         document.body.appendChild(mountPoint);
-        const { wrapper } = mountCard({ attachTo: mountPoint, propsData: { version: "1.0.0" } });
+        mountPoints.push(mountPoint);
+        const { wrapper } = mountCard({ attachTo: mountPoint, props: { version: "1.0.0" } });
         await nextTick();
         await nextTick();
-        const button = wrapper.find("#tools-list-__FILTER_FAILED_DATASETS__");
-        // Other tests leave relocated popovers in the body, so find this card's one through its trigger.
-        const popover = document.getElementById(button.attributes("aria-describedby")!)!;
-        const isShown = () => popover.style.display !== "none";
+        const button = wrapper.get("#tools-list-__FILTER_FAILED_DATASETS__");
+        // The card relocates its popover to the body; its trigger identifies the owned popover.
+        const popoverId = button.attributes("aria-describedby");
+        expect(popoverId).toBeTruthy();
+        const popover = document.getElementById(popoverId!);
+        expect(popover).not.toBeNull();
+        const isShown = () => popover!.style.display !== "none";
 
         (button.element as HTMLElement).focus();
         await nextTick();
@@ -129,9 +141,6 @@ describe("ToolsListCard", () => {
 
         await button.trigger("click");
         expect(isShown()).toBe(true);
-
-        wrapper.unmount();
-        document.body.innerHTML = "";
     });
 
     it("renders tool tags and emits an exact tag filter when a tag is clicked", async () => {
@@ -139,31 +148,29 @@ describe("ToolsListCard", () => {
 
         const tags = wrapper.findAll(".curated-tag");
         expect(tags).toHaveLength(2);
-        expect(tags.at(0)?.text()).toContain("collection_ops");
-        expect(tags.at(1)?.text()).toContain("data_cleanup");
+        expect(tags[0]!.text()).toContain("collection_ops");
+        expect(tags[1]!.text()).toContain("data_cleanup");
 
-        await tags.at(0)?.find(".g-link").trigger("click");
+        await tags[0]!.get(".g-link").trigger("click");
 
         expect(wrapper.emitted("apply-filter")).toEqual([["tag", "collection_ops"]]);
     });
 
-    const SIGNED_IN_USER = {
+    const SIGNED_IN_USER = getFakeRegisteredUser({
         id: "user-id",
         username: "test-user",
         email: "test@example.org",
-        isAnonymous: false,
-    } as any;
+    });
 
     it("adds and removes favorite tags for signed-in users", async () => {
-        const { wrapper } = mountCard({
+        const { wrapper, userStore } = mountCard({
             currentUser: SIGNED_IN_USER,
             favorites: { tools: [], tags: ["collection_ops"], edam_operations: ["operation_2409"], edam_topics: [] },
         });
-        const userStore = useUserStore();
-
         const favoriteButtons = wrapper.findAll(".inline-tag-button");
-        await favoriteButtons.at(0)?.trigger("click");
-        await favoriteButtons.at(1)?.trigger("click");
+        expect(favoriteButtons).toHaveLength(2);
+        await favoriteButtons[0]!.trigger("click");
+        await favoriteButtons[1]!.trigger("click");
 
         expect(userStore.removeFavoriteTag).toHaveBeenCalledWith("collection_ops");
         expect(userStore.addFavoriteTag).toHaveBeenCalledWith("data_cleanup");
@@ -192,67 +199,50 @@ describe("ToolsListCard", () => {
     ])(
         "removes a favorite $label entry for signed-in users",
         async ({ favorites, selector, visibleSectionLabel, action, actionArg }) => {
-            const { wrapper } = mountCard({ currentUser: SIGNED_IN_USER, favorites });
-            const userStore = useUserStore() as any;
+            const { wrapper, userStore } = mountCard({ currentUser: SIGNED_IN_USER, favorites });
             expect(wrapper.text()).toContain(visibleSectionLabel);
-            await wrapper.find(selector).trigger("click");
+            await wrapper.get(selector).trigger("click");
             expect(userStore[action]).toHaveBeenCalledWith(actionArg);
         },
     );
 
-    it("shows a login affordance for anonymous users", async () => {
+    it("shows a login affordance for anonymous users", () => {
         const { wrapper } = mountCard();
 
-        const favoriteButton = wrapper.find(".inline-tag-button");
+        const favoriteButton = wrapper.get(".inline-tag-button");
         expect(favoriteButton.attributes("aria-disabled")).toBe("true");
         expect(favoriteButton.attributes("title")).toBe("Login or Register to Favorite Tags");
 
-        const ontologyButton = wrapper.find(".inline-ontology-button");
+        const ontologyButton = wrapper.get(".inline-ontology-button");
         expect(ontologyButton.attributes("aria-disabled")).toBe("true");
         expect(ontologyButton.attributes("title")).toBe("Login or Register to Favorite EDAM Operations");
 
-        const topicButton = wrapper.find('[data-description="favorite-edam-topic-button"]');
+        const topicButton = wrapper.get('[data-description="favorite-edam-topic-button"]');
         expect(topicButton.attributes("aria-disabled")).toBe("true");
         expect(topicButton.attributes("title")).toBe("Login or Register to Favorite EDAM Topics");
     });
 
-    it("renders multi-word curated tags for tools with spaced ids", async () => {
-        const pinia = createTestingPinia({ createSpy: vi.fn });
-        setActivePinia(pinia);
-        const userStore = useUserStore();
-        userStore.currentUser = {
-            id: "anonymous",
-            isAnonymous: true,
-        } as any;
-        userStore.currentPreferences = {
-            favorites: { tools: [], tags: [], edam_operations: [], edam_topics: [] },
-        };
-
-        const wrapper = mount(ToolsListCard as object, {
-            localVue,
-            pinia,
-            propsData: {
+    it("renders multi-word curated tags for tools with spaced ids", () => {
+        const { wrapper } = mountCard({
+            props: {
                 id: "Remove beginning1",
                 name: "Remove beginning",
                 edamOperations: [],
                 edamTopics: [],
                 toolTags: ["Text Manipulation"],
-                workflowCompatible: true,
-                local: true,
-                fetching: false,
             },
         });
 
         const tags = wrapper.findAll(".curated-tag");
         expect(tags).toHaveLength(1);
-        expect(tags.at(0)?.text()).toContain("Text Manipulation");
+        expect(tags[0]!.text()).toContain("Text Manipulation");
     });
 
     it("renders the help summary through v-sanitize-html", () => {
         vi.mocked(sanitizeHtml).mockClear();
         const summary = "Filters <em>failed</em> datasets";
-        const { wrapper } = mountCard({ propsData: { summary } });
+        const { wrapper } = mountCard({ props: { summary } });
         expect(sanitizeHtml).toHaveBeenCalledWith(summary, "default");
-        expect(wrapper.find("em").text()).toBe("failed");
+        expect(wrapper.get("em").text()).toBe("failed");
     });
 });

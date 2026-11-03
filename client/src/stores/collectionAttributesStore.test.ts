@@ -1,15 +1,15 @@
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DatasetCollectionAttributes } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 
 import { useCollectionAttributesStore } from "./collectionAttributesStore";
+import { setupTestPinia } from "./testUtils";
 
-const FAKE_HDCA_ID = "123";
+const COLLECTION_ID = "123";
 
-const FAKE_ATTRIBUTES: DatasetCollectionAttributes = {
+const ATTRIBUTES: DatasetCollectionAttributes = {
     dbkey: "hg19",
     extension: "bed",
     model_class: "HistoryDatasetCollectionAssociation",
@@ -18,45 +18,48 @@ const FAKE_ATTRIBUTES: DatasetCollectionAttributes = {
     tags: ["tag1", "tag2"],
 };
 
-const fetchCollectionAttributesMock = vi.fn().mockReturnValue(FAKE_ATTRIBUTES);
+const attributesRequest = vi.fn();
 
 const { server, http } = useServerMock();
 
 describe("collectionAttributesStore", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
-        fetchCollectionAttributesMock.mockClear();
+        setupTestPinia();
+        attributesRequest.mockClear();
 
         server.use(
-            http.get("/api/dataset_collections/{hdca_id}/attributes", ({ response }) => {
-                return response(200).json(fetchCollectionAttributesMock());
+            http.get("/api/dataset_collections/{hdca_id}/attributes", ({ params, response }) => {
+                attributesRequest(params.hdca_id);
+                return response(200).json(ATTRIBUTES);
             }),
         );
     });
 
-    it("should fetch attributes and store them", async () => {
+    it("fetches missing attributes and clears loading after caching them", async () => {
         const store = useCollectionAttributesStore();
-        expect(store.storedAttributes[FAKE_HDCA_ID]).toBeUndefined();
-        expect(store.isLoadingAttributes(FAKE_HDCA_ID)).toBeFalsy();
+        expect(store.storedAttributes[COLLECTION_ID]).toBeUndefined();
+        expect(store.isLoadingAttributes(COLLECTION_ID)).toBe(false);
 
-        store.getAttributes(FAKE_HDCA_ID);
-        // getAttributes will trigger a fetch if the attributes are not stored
-        expect(store.isLoadingAttributes(FAKE_HDCA_ID)).toBeTruthy();
+        const result = store.getAttributes(COLLECTION_ID);
+
+        expect(result).toBeNull();
+        expect(store.isLoadingAttributes(COLLECTION_ID)).toBe(true);
         await flushPromises();
-        expect(store.isLoadingAttributes(FAKE_HDCA_ID)).toBeFalsy();
+        expect(store.isLoadingAttributes(COLLECTION_ID)).toBe(false);
 
-        expect(store.storedAttributes[FAKE_HDCA_ID]).toEqual(FAKE_ATTRIBUTES);
-        expect(fetchCollectionAttributesMock).toHaveBeenCalled();
+        expect(store.storedAttributes[COLLECTION_ID]).toEqual(ATTRIBUTES);
+        expect(attributesRequest).toHaveBeenCalledExactlyOnceWith(COLLECTION_ID);
     });
 
-    it("should not fetch attributes if already stored", async () => {
+    it("returns cached attributes without requesting them again", async () => {
         const store = useCollectionAttributesStore();
 
-        store.storedAttributes[FAKE_HDCA_ID] = FAKE_ATTRIBUTES;
+        store.storedAttributes[COLLECTION_ID] = ATTRIBUTES;
 
-        const result = store.getAttributes(FAKE_HDCA_ID);
+        const result = store.getAttributes(COLLECTION_ID);
+        await flushPromises();
 
-        expect(result).toEqual(FAKE_ATTRIBUTES);
-        expect(fetchCollectionAttributesMock).not.toHaveBeenCalled();
+        expect(result).toEqual(ATTRIBUTES);
+        expect(attributesRequest).not.toHaveBeenCalled();
     });
 });

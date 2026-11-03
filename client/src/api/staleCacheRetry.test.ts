@@ -1,4 +1,10 @@
-import axios, { type AxiosAdapter, type InternalAxiosRequestConfig } from "axios";
+import { nth } from "@tests/vitest/helpers";
+import axios, {
+    type AxiosAdapter,
+    type AxiosInstance,
+    type AxiosResponse,
+    type InternalAxiosRequestConfig,
+} from "axios";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { installStaleCacheRetryInterceptor, isForeignHtmlResponse } from "./staleCacheRetry";
@@ -8,12 +14,17 @@ const JSON_BODY = { stats: { total_matches: 1 }, contents: [] };
 const GALAXY_HEADERS = { "x-request-id": "3f2c0d1e9a8b4c7d8e6f5a4b3c2d1e0f" };
 const MAX_REQUESTS_PER_CALL = 3;
 
-function answer(config: InternalAxiosRequestConfig, data: unknown, contentType: string, extraHeaders = {}) {
+function answer(
+    config: InternalAxiosRequestConfig,
+    data: unknown,
+    contentType: string,
+    extraHeaders: Record<string, string> = {},
+): AxiosResponse<unknown> {
     return { data, status: 200, statusText: "OK", headers: { "content-type": contentType, ...extraHeaders }, config };
 }
 
 /** Answers foreign HTML for the first `htmlCount` calls and Galaxy JSON afterwards. */
-function createClient(htmlCount: number, htmlHeaders = {}) {
+function createClient(htmlCount: number, htmlHeaders: Record<string, string> = {}) {
     const requests: InternalAxiosRequestConfig[] = [];
     const adapter: AxiosAdapter = async (config) => {
         requests.push(config);
@@ -35,7 +46,7 @@ describe("isForeignHtmlResponse", () => {
         status: 200,
         contentType: "text/html; charset=utf-8",
         requestId: null,
-    };
+    } satisfies Parameters<typeof isForeignHtmlResponse>[0];
 
     it.each(["get", "GET", "head", "HEAD", undefined])(
         "matches a successful HTML %s without a request id",
@@ -52,9 +63,12 @@ describe("isForeignHtmlResponse", () => {
         ["a JSON body", { contentType: "application/json" }],
         ["a missing content type", { contentType: null }],
         ["HTML produced by Galaxy", { requestId: GALAXY_HEADERS["x-request-id"] }],
-    ])("ignores %s", (_label, override) => {
-        expect(isForeignHtmlResponse({ ...poisoned, ...override })).toBe(false);
-    });
+    ] satisfies Array<[string, Partial<Parameters<typeof isForeignHtmlResponse>[0]>]>)(
+        "ignores %s",
+        (_label, override) => {
+            expect(isForeignHtmlResponse({ ...poisoned, ...override })).toBe(false);
+        },
+    );
 });
 
 describe("installStaleCacheRetryInterceptor", () => {
@@ -74,9 +88,9 @@ describe("installStaleCacheRetryInterceptor", () => {
             const { data } = await client[method]("/api/histories/abc/contents?v=dev&offset=0");
             expect(data).toEqual(JSON_BODY);
             expect(requests).toHaveLength(2);
-            expect(requests[0]!.headers.get("Cache-Control")).toBeUndefined();
-            expect(requests[1]!.headers.get("Cache-Control")).toBe("no-cache");
-            expect(requests[1]!.headers.get("Pragma")).toBe("no-cache");
+            expect(nth(requests, 0).headers.get("Cache-Control")).toBeUndefined();
+            expect(nth(requests, 1).headers.get("Cache-Control")).toBe("no-cache");
+            expect(nth(requests, 1).headers.get("Pragma")).toBe("no-cache");
             expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
         },
     );
@@ -107,7 +121,7 @@ describe("installStaleCacheRetryInterceptor", () => {
     it.each([
         ["a POST", (client) => client.post("/api/histories", {})],
         ["a non-JSON responseType", (client) => client.get("/api/histories/abc/contents", { responseType: "text" })],
-    ] as [string, (client: ReturnType<typeof createClient>["client"]) => Promise<unknown>][])(
+    ] satisfies Array<[string, (client: AxiosInstance) => Promise<unknown>]>)(
         "does not retry %s",
         async (_label, call) => {
             const { client, requests } = createClient(Infinity);

@@ -1,9 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { disposePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import type { components } from "@/api/schema";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
@@ -54,9 +54,9 @@ const FAKE_BROADCASTS: BroadcastNotification[] = [
 
 async function mountBroadcastsOverlayWith(broadcasts: BroadcastNotification[] = []) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
-    setActivePinia(pinia);
+    onTestFinished(() => disposePinia(pinia));
 
-    const broadcastsStore = useBroadcastsStore();
+    const broadcastsStore = useBroadcastsStore(pinia);
     broadcastsStore.broadcasts = broadcasts;
 
     const spyOnDismissBroadcast = vi.spyOn(broadcastsStore, "dismissBroadcast");
@@ -64,9 +64,8 @@ async function mountBroadcastsOverlayWith(broadcasts: BroadcastNotification[] = 
         broadcastsStore.broadcasts = broadcastsStore.broadcasts.filter((b) => b.id !== broadcast.id);
     });
 
-    const wrapper = mount(BroadcastsOverlay as object, {
-        global: localVue,
-        pinia,
+    const wrapper = mount(BroadcastsOverlay, {
+        global: withPlugins(localVue, pinia),
     });
 
     await flushPromises();
@@ -85,7 +84,13 @@ const actionLinkSelector = ".action-links a";
 describe("BroadcastsOverlay.vue", () => {
     beforeEach(() => {
         vi.mocked(getAppRoot).mockReturnValue("/");
+        vi.mocked(sanitizeHtml).mockClear();
     });
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.mocked(sanitizeHtml).mockClear();
+    });
+    enableAutoUnmount(afterEach);
 
     it("opens a relative action link in a new tab under the app root", async () => {
         vi.mocked(getAppRoot).mockReturnValue("/galaxy/");
@@ -131,19 +136,19 @@ describe("BroadcastsOverlay.vue", () => {
     it("should render only one broadcast at a time", async () => {
         const wrapper = await mountBroadcastsOverlayWith(FAKE_BROADCASTS);
         expect(wrapper.findAll(messageCssSelector)).toHaveLength(1);
-        expect(wrapper.find(messageCssSelector).text()).toContain("Test message 1");
+        expect(wrapper.get(messageCssSelector).text()).toContain("Test message 1");
     });
 
     it("should render the next broadcast when the current one is dismissed", async () => {
         const wrapper = await mountBroadcastsOverlayWith(FAKE_BROADCASTS);
         expect(wrapper.findAll(messageCssSelector)).toHaveLength(1);
-        expect(wrapper.find(messageCssSelector).text()).toContain("Test message 1");
+        expect(wrapper.get(messageCssSelector).text()).toContain("Test message 1");
 
-        const dismissButton = wrapper.find(".dismiss-button");
+        const dismissButton = wrapper.get(".dismiss-button");
         await dismissButton.trigger("click");
 
         expect(wrapper.findAll(messageCssSelector)).toHaveLength(1);
-        expect(wrapper.find(messageCssSelector).text()).toContain("Test message 2");
+        expect(wrapper.get(messageCssSelector).text()).toContain("Test message 2");
     });
 
     it("should show more important broadcasts first", async () => {
@@ -154,14 +159,14 @@ describe("BroadcastsOverlay.vue", () => {
         ];
 
         const wrapper = await mountBroadcastsOverlayWith(broadcasts);
-        expect(wrapper.find(messageCssSelector).text()).toContain("Test message urgent");
+        expect(wrapper.get(messageCssSelector).text()).toContain("Test message urgent");
 
-        const dismissButton = wrapper.find(".dismiss-button");
+        const dismissButton = wrapper.get(".dismiss-button");
         await dismissButton.trigger("click");
-        expect(wrapper.find(messageCssSelector).text()).toContain("Test message warning");
+        expect(wrapper.get(messageCssSelector).text()).toContain("Test message warning");
 
         await dismissButton.trigger("click");
-        expect(wrapper.find(messageCssSelector).text()).toContain("Test message info");
+        expect(wrapper.get(messageCssSelector).text()).toContain("Test message info");
     });
 
     it("should allow cycling through broadcasts", async () => {
@@ -173,24 +178,24 @@ describe("BroadcastsOverlay.vue", () => {
 
         const wrapper = await mountBroadcastsOverlayWith(broadcasts);
         expect(wrapper.findAll(messageCssSelector)).toHaveLength(1);
-        expect(wrapper.find(messageCssSelector).text()).toContain("Test message 1");
+        expect(wrapper.get(messageCssSelector).text()).toContain("Test message 1");
 
-        const rightButton = wrapper.find("button.right");
+        const rightButton = wrapper.get("button.right");
         await rightButton.trigger("click");
-        expect(wrapper.find(messageCssSelector).text()).toContain("Test message 2");
-
-        await rightButton.trigger("click");
-        expect(wrapper.find(messageCssSelector).text()).toContain("Test message 3");
+        expect(wrapper.get(messageCssSelector).text()).toContain("Test message 2");
 
         await rightButton.trigger("click");
-        expect(wrapper.find(messageCssSelector).text()).toContain("Test message 1");
+        expect(wrapper.get(messageCssSelector).text()).toContain("Test message 3");
 
-        const leftButton = wrapper.find("button.left");
+        await rightButton.trigger("click");
+        expect(wrapper.get(messageCssSelector).text()).toContain("Test message 1");
+
+        const leftButton = wrapper.get("button.left");
         await leftButton.trigger("click");
-        expect(wrapper.find(messageCssSelector).text()).toContain("Test message 3");
+        expect(wrapper.get(messageCssSelector).text()).toContain("Test message 3");
 
         await leftButton.trigger("click");
-        expect(wrapper.find(messageCssSelector).text()).toContain("Test message 2");
+        expect(wrapper.get(messageCssSelector).text()).toContain("Test message 2");
     });
 
     it("should not render the broadcast when it has expired", async () => {
@@ -213,7 +218,6 @@ describe("BroadcastsOverlay.vue", () => {
     });
 
     it("renders the broadcast message through v-sanitize-html with the links profile", async () => {
-        vi.mocked(sanitizeHtml).mockClear();
         await mountBroadcastsOverlayWith([
             generateBroadcastNotification({
                 id: "links",

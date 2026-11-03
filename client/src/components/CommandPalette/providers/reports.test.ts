@@ -1,52 +1,45 @@
+import { getFakePageSummary } from "@tests/test-data/pages";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loadPages, type LoadPagesOptions, type PageSummary } from "@/api/pages";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { usePageStore } from "@/stores/pageStore";
-import { useUserStore } from "@/stores/userStore";
 
-import { makeCtx } from "../test-utils";
+import { makeCtx, signIn } from "../test-utils";
+import type { PaletteContext, ScopedSection } from "../types";
 import { PaletteFetchError } from "./errors";
 import { resetListRefreshTracking } from "./refresh";
 import { reportsProvider } from "./reports";
-import { findScope, type ScopeDefinition } from "./scopes";
+import { findScope } from "./scopes";
 
 vi.mock("@/api/pages", () => ({
     loadPages: vi.fn(),
 }));
 
+/** A page owned by "owner", so only the `r:` listing or an explicit `username` makes it the signed-in user's */
 function mockPage(id: string, overrides: Partial<PageSummary> = {}): PageSummary {
-    return {
+    return getFakePageSummary({
         id,
         title: `Page ${id}`,
         slug: `page-${id}`,
         update_time: "2026-08-30T10:00:00",
         username: "owner",
         ...overrides,
-    } as PageSummary;
+    });
 }
 
 function mockPages(pages: PageSummary[]) {
     vi.mocked(loadPages).mockResolvedValue({ data: pages, totalMatches: pages.length });
 }
 
-/** Signed in as "me"; `mockPage` hands its pages to "owner" unless told otherwise */
-function signIn(username = "me") {
-    useUserStore().currentUser = {
-        id: "user-1",
-        email: "me@example.org",
-        username,
-        isAnonymous: false,
-    } as never;
-}
-
-function scope(key: string): ScopeDefinition {
-    const found = findScope(key);
-    if (!found) {
+/** The sections the `key:` scope answers `query` with */
+async function searchScope(key: string, query = "", ctx: PaletteContext = makeCtx()): Promise<ScopedSection[]> {
+    const scope = findScope(key);
+    if (!scope) {
         throw new Error(`unknown scope ${key}`);
     }
-    return found;
+    return (await reportsProvider.searchScoped?.(scope, query, ctx)) ?? [];
 }
 
 describe("reportsProvider", () => {
@@ -63,7 +56,7 @@ describe("reportsProvider", () => {
         it("fetches own pages once and maps them to items", async () => {
             mockPages([mockPage("a")]);
 
-            const sections = (await reportsProvider.searchScoped?.(scope("r"), "", makeCtx())) ?? [];
+            const sections = await searchScope("r");
 
             expect(loadPages).toHaveBeenCalledWith(
                 expect.objectContaining({ showOwn: true, showShared: false, showPublished: false }),
@@ -80,7 +73,7 @@ describe("reportsProvider", () => {
         it("requests published pages for the rp scope and offers no edit action", async () => {
             mockPages([mockPage("p1")]);
 
-            const sections = (await reportsProvider.searchScoped?.(scope("rp"), "", makeCtx())) ?? [];
+            const sections = await searchScope("rp");
 
             expect(loadPages).toHaveBeenCalledWith(
                 expect.objectContaining({ showOwn: false, showShared: true, showPublished: true }),
@@ -93,10 +86,10 @@ describe("reportsProvider", () => {
         it("renders from the store cache without a request when it can answer", async () => {
             mockPages([mockPage("a", { title: "Notes" }), mockPage("b", { title: "Other" })]);
             // hydrate through the palette, the way opening the scope does
-            await reportsProvider.searchScoped?.(scope("r"), "", makeCtx());
+            await searchScope("r");
             vi.mocked(loadPages).mockClear();
 
-            const sections = (await reportsProvider.searchScoped?.(scope("r"), "Notes", makeCtx())) ?? [];
+            const sections = await searchScope("r", "Notes");
 
             expect(loadPages).not.toHaveBeenCalled();
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:a"]);
@@ -111,7 +104,7 @@ describe("reportsProvider", () => {
                     : { data: [mockPage("a", { title: "Notes" })], totalMatches: 30 },
             );
 
-            const sections = (await reportsProvider.searchScoped?.(scope("r"), "Notes", makeCtx())) ?? [];
+            const sections = await searchScope("r", "Notes");
 
             expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "Notes" }));
             expect(sections[0]?.items.map((item) => item.id)).toEqual(expect.arrayContaining(["pages:a", "pages:z"]));
@@ -121,7 +114,7 @@ describe("reportsProvider", () => {
             useRecentPaletteItems().addRecentItem({ type: "page", id: "a", name: "Page a" });
             mockPages([mockPage("a"), mockPage("b")]);
 
-            const sections = (await reportsProvider.searchScoped?.(scope("r"), "", makeCtx())) ?? [];
+            const sections = await searchScope("r");
 
             expect(sections.map((section) => section.title)).toEqual(["Recent", "Latest"]);
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:a"]);
@@ -134,7 +127,7 @@ describe("reportsProvider", () => {
             useRecentPaletteItems().addRecentItem({ type: "page", id: "a", name: "Page a" });
             mockPages([mockPage("b")]);
 
-            const sections = (await reportsProvider.searchScoped?.(scope("rp"), "", makeCtx())) ?? [];
+            const sections = await searchScope("rp");
 
             expect(sections.map((section) => section.id)).toEqual(["published"]);
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:b"]);
@@ -146,7 +139,7 @@ describe("reportsProvider", () => {
                 mockPage("new", { update_time: "2026-08-30T10:00:00" }),
             ]);
 
-            const sections = (await reportsProvider.searchScoped?.(scope("r"), "", makeCtx())) ?? [];
+            const sections = await searchScope("r");
 
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:new", "pages:old"]);
         });
@@ -154,8 +147,7 @@ describe("reportsProvider", () => {
         it("serves the published scope to anonymous users", async () => {
             mockPages([mockPage("p1")]);
 
-            const sections =
-                (await reportsProvider.searchScoped?.(scope("rp"), "", makeCtx({ isAnonymous: true }))) ?? [];
+            const sections = await searchScope("rp", "", makeCtx({ isAnonymous: true }));
 
             expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ showOwn: false, showPublished: true }));
             expect(sections.map((section) => section.id)).toEqual(["published"]);
@@ -172,7 +164,7 @@ describe("reportsProvider", () => {
             // the listing itself is longer than what it cached
             vi.mocked(loadPages).mockResolvedValue({ data: [mockPage("a", { title: "Notes" })], totalMatches: 30 });
 
-            const sections = (await reportsProvider.searchScoped?.(scope("r"), "Notes", makeCtx())) ?? [];
+            const sections = await searchScope("r", "Notes");
 
             expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "Notes" }));
             expect(sections.at(-1)?.items.map((item) => item.id)).toEqual(["pages:a"]);
@@ -181,19 +173,19 @@ describe("reportsProvider", () => {
         it("hydrates the listing before searching it", async () => {
             mockPages([mockPage("a", { title: "Notes" })]);
 
-            await reportsProvider.searchScoped?.(scope("r"), "Notes", makeCtx());
+            await searchScope("r", "Notes");
 
             expect(loadPages).toHaveBeenNthCalledWith(1, expect.objectContaining({ search: "" }));
         });
 
         it("refreshes a stale listing although the keystroke also searched it", async () => {
             vi.mocked(loadPages).mockResolvedValue({ data: [mockPage("a")], totalMatches: 30 });
-            await reportsProvider.searchScoped?.(scope("r"), "", makeCtx());
+            await searchScope("r");
             // a later palette session, past the refresh interval
             resetListRefreshTracking();
             vi.mocked(loadPages).mockClear();
 
-            await reportsProvider.searchScoped?.(scope("r"), "Notes", makeCtx());
+            await searchScope("r", "Notes");
 
             expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "" }));
             expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "Notes" }));
@@ -203,7 +195,7 @@ describe("reportsProvider", () => {
             // the total says there is more, so only the length holds the query back
             vi.mocked(loadPages).mockResolvedValue({ data: [mockPage("a", { title: "Notes" })], totalMatches: 5 });
 
-            const sections = (await reportsProvider.searchScoped?.(scope("r"), "n", makeCtx())) ?? [];
+            const sections = await searchScope("r", "n");
 
             expect(loadPages).not.toHaveBeenCalledWith(expect.objectContaining({ search: "n" }));
             expect(sections.at(-1)?.items.map((item) => item.id)).toEqual(["pages:a"]);
@@ -211,12 +203,12 @@ describe("reportsProvider", () => {
 
         it("refreshes a complete cache in the background once it goes stale", async () => {
             mockPages([mockPage("a")]);
-            await reportsProvider.searchScoped?.(scope("r"), "", makeCtx());
+            await searchScope("r");
             expect(loadPages).toHaveBeenCalledTimes(1);
 
             // a later palette session, past the refresh interval
             resetListRefreshTracking();
-            const sections = (await reportsProvider.searchScoped?.(scope("r"), "", makeCtx())) ?? [];
+            const sections = await searchScope("r");
 
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:a"]);
             expect(loadPages).toHaveBeenCalledTimes(2);
@@ -226,9 +218,7 @@ describe("reportsProvider", () => {
             vi.mocked(loadPages).mockRejectedValue(new Error("boom"));
 
             // nothing is cached, so "no results" would be a lie
-            await expect(reportsProvider.searchScoped?.(scope("r"), "", makeCtx())).rejects.toBeInstanceOf(
-                PaletteFetchError,
-            );
+            await expect(searchScope("r")).rejects.toBeInstanceOf(PaletteFetchError);
         });
 
         it("keeps serving the cache when the request fails", async () => {
@@ -236,7 +226,7 @@ describe("reportsProvider", () => {
             pageStore.savePages("my", [mockPage("a")]);
             vi.mocked(loadPages).mockRejectedValue(new Error("boom"));
 
-            const sections = (await reportsProvider.searchScoped?.(scope("r"), "", makeCtx())) ?? [];
+            const sections = await searchScope("r");
 
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:a"]);
         });
@@ -307,7 +297,7 @@ describe("reportsProvider", () => {
 
             vi.mocked(loadPages).mockClear();
             mockPages([mockPage("p1", { title: "Public notes" })]);
-            const sections = (await reportsProvider.searchScoped?.(scope("rp"), "", makeCtx())) ?? [];
+            const sections = await searchScope("rp");
 
             // …and `rp:` fetches a full, unfiltered listing of its own
             expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "", showPublished: true }));

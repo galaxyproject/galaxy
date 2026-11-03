@@ -1,9 +1,10 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import Multiselect from "vue-multiselect";
 
+import type { components } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 
 import UserRolesGroupsForm from "./UserRolesGroupsForm.vue";
@@ -18,11 +19,11 @@ vi.mock("vue-router", () => ({
     }),
 }));
 
-function detailedUser(id: string, email: string) {
+function detailedUser(id: string, email: string): components["schemas"]["DetailedUserModel"] {
     return {
         id,
         email,
-        username: email.split("@")[0]!,
+        username: nth(email.split("@"), 0),
         deleted: false,
         purged: false,
         is_admin: false,
@@ -66,7 +67,10 @@ function useRoleSearch() {
 }
 
 function captureSaves() {
-    const bodies: { roles?: unknown; groups?: unknown } = {};
+    const bodies: {
+        roles?: components["schemas"]["UserRolesUpdatePayload"];
+        groups?: components["schemas"]["UserGroupsUpdatePayload"];
+    } = {};
     server.use(
         http.put("/api/users/{user_id}/roles", async ({ request, response }) => {
             bodies.roles = await request.json();
@@ -80,24 +84,28 @@ function captureSaves() {
     return bodies;
 }
 
+enableAutoUnmount(afterEach);
+
 async function mountTarget() {
-    const wrapper = mount(UserRolesGroupsForm as object, {
-        localVue,
-        propsData: { userId: "u1" },
-        stubs: { FontAwesomeIcon: true },
-        attachTo: document.body,
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    onTestFinished(() => target.remove());
+    const wrapper = mount(UserRolesGroupsForm, {
+        global: { ...localVue, stubs: { ...localVue.stubs, FontAwesomeIcon: true } },
+        props: { userId: "u1" },
+        attachTo: target,
     });
     await flushPromises();
     return wrapper;
 }
 
 function multiselect(wrapper: VueWrapper, id: string) {
-    return wrapper.find(`#${id}`).findComponent(Multiselect);
+    return wrapper.get(`#${id}`).getComponent(Multiselect);
 }
 
 // vue-multiselect only renders its option list once the dropdown is open.
 async function openDropdown(wrapper: VueWrapper, id: string) {
-    await wrapper.find(`#${id}-select`).trigger("focus");
+    await wrapper.get(`#${id}-select`).trigger("focus");
 }
 
 function selectedTags(wrapper: VueWrapper, id: string) {
@@ -105,7 +113,7 @@ function selectedTags(wrapper: VueWrapper, id: string) {
 }
 
 async function submit(wrapper: VueWrapper) {
-    await wrapper.find("#admin-user-roles-groups-submit").trigger("click");
+    await wrapper.get("#admin-user-roles-groups-submit").trigger("click");
     await flushPromises();
 }
 
@@ -128,10 +136,10 @@ describe("UserRolesGroupsForm.vue", () => {
         const searches = useRoleSearch();
         const wrapper = await mountTarget();
         expect(searches).toHaveLength(1);
-        expect(searches[0]!.get("search")).toBeNull();
-        expect(searches[0]!.get("exclude_private")).toBe("true");
+        expect(nth(searches, 0).get("search")).toBeNull();
+        expect(nth(searches, 0).get("exclude_private")).toBe("true");
         await openDropdown(wrapper, "admin-user-roles");
-        expect(wrapper.find("#admin-user-roles").text()).toContain("QA");
+        expect(wrapper.get("#admin-user-roles").text()).toContain("QA");
     });
 
     it("searches roles from the first character", async () => {
@@ -140,8 +148,8 @@ describe("UserRolesGroupsForm.vue", () => {
         const wrapper = await mountTarget();
         multiselect(wrapper, "admin-user-roles").vm.$emit("search-change", "Q");
         await flushPromises();
-        expect(searches.at(-1)!.get("search")).toBe("Q");
-        expect(searches.at(-1)!.get("exclude_private")).toBe("true");
+        expect(nth(searches, -1).get("search")).toBe("Q");
+        expect(nth(searches, -1).get("exclude_private")).toBe("true");
     });
 
     it("saves the loaded roles and groups without sending the private role back", async () => {

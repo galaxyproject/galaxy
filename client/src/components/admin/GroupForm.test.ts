@@ -1,7 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -18,17 +18,22 @@ vi.mock("vue-router", () => ({
     }),
 }));
 
-function useGroupHandlers() {
+enableAutoUnmount(afterEach);
+
+const GROUP = { id: "g1", name: "Group 1", url: "/api/groups/g1", model_class: "Group" as const };
+const GROUP_USER = { id: "u1", email: "user1@example.org", url: "/api/groups/g1/users/u1" };
+const GROUP_ROLE = { id: "r1", name: "Role 1", url: "/api/groups/g1/roles/r1" };
+
+const SELECTORS = {
+    NAME_INPUT: "#admin-group-name-input",
+    SUBMIT: "#admin-group-submit",
+};
+
+function serveGroup() {
     server.use(
-        http.get("/api/groups/{group_id}", ({ response }) =>
-            response(200).json({ id: "g1", name: "Group 1", url: "/api/groups/g1", model_class: "Group" }),
-        ),
-        http.get("/api/groups/{group_id}/users", ({ response }) =>
-            response(200).json([{ id: "u1", email: "user1@example.org", url: "/api/groups/g1/users/u1" }]),
-        ),
-        http.get("/api/groups/{group_id}/roles", ({ response }) =>
-            response(200).json([{ id: "r1", name: "Role 1", url: "/api/groups/g1/roles/r1" }]),
-        ),
+        http.get("/api/groups/{group_id}", ({ response }) => response(200).json(GROUP)),
+        http.get("/api/groups/{group_id}/users", ({ response }) => response(200).json([GROUP_USER])),
+        http.get("/api/groups/{group_id}/roles", ({ response }) => response(200).json([GROUP_ROLE])),
     );
 }
 
@@ -37,65 +42,79 @@ function captureUpdate() {
     server.use(
         http.put("/api/groups/{group_id}", async ({ request, response }) => {
             requests.push(await request.json());
-            return response(200).json({ id: "g1", name: "Renamed", url: "/api/groups/g1", model_class: "Group" });
+            return response(200).json({ ...GROUP, name: "Renamed" });
         }),
     );
     return requests;
 }
 
-async function mountTarget() {
-    const wrapper = mount(GroupForm as object, {
-        localVue,
-        propsData: { groupId: "g1" },
-        stubs: { FontAwesomeIcon: true },
+async function mountGroupForm() {
+    const wrapper = mount(GroupForm, {
+        props: { groupId: GROUP.id },
+        global: { ...localVue, stubs: { ...localVue.stubs, FontAwesomeIcon: true } },
     });
     await flushPromises();
     return wrapper;
 }
 
 async function submit(wrapper: VueWrapper) {
-    await wrapper.find("#admin-group-submit").trigger("click");
+    await wrapper.find(SELECTORS.SUBMIT).trigger("click");
     await flushPromises();
 }
 
-describe("GroupForm.vue edit mode", () => {
+describe("GroupForm edit mode", () => {
     beforeEach(() => {
         mockPush.mockClear();
+        serveGroup();
+    });
+
+    it("keeps the saved group name in the title while the name is edited", async () => {
+        const wrapper = await mountGroupForm();
+        expect(wrapper.text()).toContain("Group 'Group 1'");
+
+        await wrapper.find(SELECTORS.NAME_INPUT).setValue("Renamed");
+
+        expect(wrapper.text()).toContain("Group 'Group 1'");
     });
 
     it("renames a group together with its associations", async () => {
-        useGroupHandlers();
         const requests = captureUpdate();
-        const wrapper = await mountTarget();
-        expect(wrapper.text()).toContain("Group 'Group 1'");
-        await wrapper.find("#admin-group-name-input").setValue("Renamed");
-        expect(wrapper.text()).toContain("Group 'Group 1'");
+        const wrapper = await mountGroupForm();
+
+        await wrapper.find(SELECTORS.NAME_INPUT).setValue("Renamed");
         await submit(wrapper);
+
         expect(requests).toEqual([{ name: "Renamed", user_ids: ["u1"], role_ids: ["r1"] }]);
         expect(mockPush).toHaveBeenCalledWith("/admin/groups");
     });
 
     it("does not save an empty name", async () => {
-        useGroupHandlers();
         const requests = captureUpdate();
-        const wrapper = await mountTarget();
-        await wrapper.find("#admin-group-name-input").setValue("");
+        const wrapper = await mountGroupForm();
+
+        await wrapper.find(SELECTORS.NAME_INPUT).setValue("");
         await submit(wrapper);
+
         expect(wrapper.text()).toContain("Please enter a group name.");
         expect(requests).toEqual([]);
         expect(mockPush).not.toHaveBeenCalled();
     });
 
-    it("cannot be saved when the group's users fail to load", async () => {
-        useGroupHandlers();
+    it.each([
+        { path: "/api/groups/{group_id}", message: "Group failed" },
+        { path: "/api/groups/{group_id}/users", message: "Users failed" },
+        { path: "/api/groups/{group_id}/roles", message: "Roles failed" },
+    ] as const)("cannot be saved when $path fails to load", async ({ path, message }) => {
         server.use(
-            http.get("/api/groups/{group_id}/users", ({ response }) =>
-                response("5XX").json({ err_msg: "Users failed", err_code: 500 }, { status: 500 }),
+            http.get(path, ({ response }) =>
+                response("5XX").json({ err_msg: message, err_code: 500 }, { status: 500 }),
             ),
         );
-        const wrapper = await mountTarget();
-        expect(wrapper.text()).toContain("Users failed");
-        expect(wrapper.find("#admin-group-submit").exists()).toBe(false);
+
+        const wrapper = await mountGroupForm();
+
+        expect(wrapper.text()).toContain(message);
+        expect(wrapper.find(SELECTORS.SUBMIT).exists()).toBe(false);
     });
 });
 

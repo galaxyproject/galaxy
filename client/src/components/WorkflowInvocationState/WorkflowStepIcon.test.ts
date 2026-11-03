@@ -5,16 +5,19 @@ import WorkflowStepIcon from "./WorkflowStepIcon.vue";
 
 describe("WorkflowStepIcon", () => {
     it.each([
-        ["tool", "wrench"],
-        ["data_input", "file"],
-        ["data_collection_input", "folder-open"],
-        ["subworkflow", "sitemap"],
-        ["parameter_input", "pencil-alt"],
-        ["pause", "pause"],
-        ["pick_value", "code-branch"],
-    ])("draws the %s icon", (stepType, iconName) => {
-        const wrapper = mount(WorkflowStepIcon as object, { propsData: { stepType } });
+        // [stepType, iconName, rotated]
+        ["tool", "wrench", false],
+        ["data_input", "file", false],
+        ["data_collection_input", "folder-open", false],
+        ["subworkflow", "sitemap", true],
+        ["parameter_input", "pencil-alt", false],
+        ["pause", "pause", false],
+        ["pick_value", "code-branch", false],
+    ] as const)("draws the %s icon", (stepType, iconName, rotated) => {
+        const wrapper = mount(WorkflowStepIcon, { props: { stepType } });
 
-        expect(wrapper.find("svg").attributes("data-icon")).toBe(iconName);
+        const icon = wrapper.find("svg");
+        expect(icon.attributes("data-icon")).toBe(iconName);
+        expect(icon.classes("fa-rotate-270")).toBe(rotated);
     });
 });

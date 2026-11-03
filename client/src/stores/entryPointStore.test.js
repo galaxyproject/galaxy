@@ -1,5 +1,3 @@
-import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -7,11 +5,9 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import testInteractiveToolsResponse from "../components/InteractiveTools/testData/testInteractiveToolsResponse";
 import { sseMockFactory } from "./_testing/sseStoreSupport";
 import { useEntryPointStore } from "./entryPointStore";
+import { setupTestPinia } from "./testUtils";
 
-// ``vi.mock`` is hoisted above module-level declarations, so the capture-state
-// has to be built via ``vi.hoisted`` to be visible to the factory. Prevents
-// these tests from opening a real EventSource against ``/api/events/stream``
-// when ``useEntryPointStore()`` is invoked.
+// Data-method tests do not open an EventSource; reuse the stores’ SSE mock.
 const sseState = vi.hoisted(() => ({
     onEvent: null,
     connect: vi.fn(),
@@ -22,26 +18,33 @@ vi.mock("@/composables/useNotificationSSE", () => sseMockFactory(sseState));
 
 const { server, http } = useServerMock();
 
+const newlyStartedEntryPoint = {
+    model_class: "InteractiveToolEntryPoint",
+    id: "a1b2c3d4e5f60718",
+    job_id: "0f1e2d3c4b5a6978",
+    name: "RStudio",
+    active: true,
+    created_time: "2020-03-24T15:59:22.406480",
+    modified_time: "2020-03-24T15:59:24.757453",
+    output_datasets_ids: ["9a8b7c6d5e4f3021"],
+};
+
 describe("stores/EntryPointStore", () => {
     let store;
 
     beforeEach(async () => {
         server.use(
             http.untyped.get("/api/entry_points", ({ request }) => {
-                const url = new URL(request.url);
-                if (url.searchParams.get("running") === "true") {
-                    return HttpResponse.json(testInteractiveToolsResponse);
-                }
-                return HttpResponse.json([]);
+                expect(new URL(request.url).searchParams.get("running")).toBe("true");
+                return HttpResponse.json(testInteractiveToolsResponse);
             }),
         );
-        setActivePinia(createPinia());
+        setupTestPinia();
         store = useEntryPointStore();
         await store.fetchEntryPoints();
-        await flushPromises();
     });
 
-    it("performs a partial update", async () => {
+    it("merges a partial update and removes entry points omitted from the response", () => {
         const updateData = [
             {
                 model_class: "InteractiveToolEntryPoint",
@@ -55,58 +58,40 @@ describe("stores/EntryPointStore", () => {
             },
         ];
         store.updateEntryPoints(updateData);
-        expect(store.entryPoints.length).toBe(1);
+        expect(store.entryPoints).toHaveLength(1);
         expect(store.entryPoints[0].name).toBe("Oh there you go, bringing class into it again.");
-        expect(store.entryPoints[0].active).toBeTruthy();
+        expect(store.entryPoints[0].active).toBe(true);
     });
 
-    it("adds a newly started entry point to a non-empty list", async () => {
-        const newEntryPoint = {
-            model_class: "InteractiveToolEntryPoint",
-            id: "a1b2c3d4e5f60718",
-            job_id: "0f1e2d3c4b5a6978",
-            name: "RStudio",
-            active: true,
-            created_time: "2020-03-24T15:59:22.406480",
-            modified_time: "2020-03-24T15:59:24.757453",
-            output_datasets_ids: ["9a8b7c6d5e4f3021"],
-        };
-        store.updateEntryPoints([...store.entryPoints, newEntryPoint]);
-        expect(store.entryPoints.length).toBe(3);
-        expect(store.entryPoints.map((ep) => ep.id)).toContain("a1b2c3d4e5f60718");
+    it("adds a newly started entry point to a non-empty list", () => {
+        store.updateEntryPoints([...store.entryPoints, newlyStartedEntryPoint]);
+        expect(store.entryPoints.map(({ id }) => id)).toEqual([
+            "52e496b945151ee8",
+            "b887d74393f85b6d",
+            "a1b2c3d4e5f60718",
+        ]);
     });
 
-    it("replaces a finished entry point with a newly started one", async () => {
-        const newEntryPoint = {
-            model_class: "InteractiveToolEntryPoint",
-            id: "a1b2c3d4e5f60718",
-            job_id: "0f1e2d3c4b5a6978",
-            name: "RStudio",
-            active: true,
-            created_time: "2020-03-24T15:59:22.406480",
-            modified_time: "2020-03-24T15:59:24.757453",
-            output_datasets_ids: ["9a8b7c6d5e4f3021"],
-        };
-        store.updateEntryPoints([store.entryPoints[0], newEntryPoint]);
-        expect(store.entryPoints.map((ep) => ep.id)).toEqual(["52e496b945151ee8", "a1b2c3d4e5f60718"]);
+    it("replaces a finished entry point with a newly started one", () => {
+        store.updateEntryPoints([store.entryPoints[0], newlyStartedEntryPoint]);
+        expect(store.entryPoints.map(({ id }) => id)).toEqual(["52e496b945151ee8", "a1b2c3d4e5f60718"]);
     });
-    it("removes an entry point of given id", async () => {
-        let entryPointForId = store.entryPoints.filter((item) => item.id === "52e496b945151ee8");
-        expect(entryPointForId.length).toBe(1);
+
+    it("removes the matching entry point while retaining the other entry point", () => {
+        expect(store.entryPoints.map(({ id }) => id)).toEqual(["52e496b945151ee8", "b887d74393f85b6d"]);
         store.removeEntryPoint("52e496b945151ee8");
-        entryPointForId = store.entryPoints.filter((item) => item.id === "52e496b945151ee8");
-        expect(entryPointForId.length).toBe(0);
+        expect(store.entryPoints.map(({ id }) => id)).toEqual(["b887d74393f85b6d"]);
     });
-    it("retrieves entry point for a given job", async () => {
+    it("filters entry points by job ID", () => {
         const entryPointForJob = store.entryPointsForJob("6fc9fbb81c497f69");
-        expect(entryPointForJob.length).toBe(1);
+        expect(entryPointForJob).toHaveLength(1);
         expect(entryPointForJob[0].id).toBe("52e496b945151ee8");
-        expect(entryPointForJob[0].active).toBeTruthy();
+        expect(entryPointForJob[0].active).toBe(true);
     });
-    it("retrieves entry points for a given hda", async () => {
+    it("filters entry points by output dataset ID", () => {
         const entryPointForHda = store.entryPointsForHda("4e9e0c7225b0bb81");
-        expect(entryPointForHda.length).toBe(1);
+        expect(entryPointForHda).toHaveLength(1);
         expect(entryPointForHda[0].id).toBe("52e496b945151ee8");
-        expect(entryPointForHda[0].active).toBeTruthy();
+        expect(entryPointForHda[0].active).toBe(true);
     });
 });
