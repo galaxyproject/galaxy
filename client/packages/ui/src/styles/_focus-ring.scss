@@ -1,0 +1,19 @@
+// Keyboard focus ring shared by galaxy-ui controls. Mixins only: `@use` emits no CSS.
+// The ring is an outline because forced-colors mode keeps outlines and drops box-shadows.
+
+$focus-ring-width: 2px;
+$focus-ring-offset: 2px;
+$focus-ring-color: var(--color-blue-600, #25537b);
+
+// $halo fills the offset gap with the page colour, keeping the ring clear of the control's fill and its neighbours.
+// $important lets the halo beat consumer button styles that put their own focus shadow on the element.
+@mixin focus-ring($color: $focus-ring-color, $halo: true, $important: false) {
+    outline: $focus-ring-width solid $color;
+    outline-offset: $focus-ring-offset;
+
+    @if $halo and $important {
+        box-shadow: 0 0 0 $focus-ring-offset var(--background-color, #ffffff) !important;
+    } @else if $halo {
+        box-shadow: 0 0 0 $focus-ring-offset var(--background-color, #ffffff);
+    }
+}
