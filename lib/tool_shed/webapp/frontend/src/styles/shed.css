@@ -236,15 +236,11 @@ pre {
     font-size: 0.95rem;
     color: var(--shed-heading);
     background: #fff;
-    border: 1px solid var(--color-ebony-clay-200, #bbc0d2);
+    /* No border colour here: GFormInput's grey-500 keeps the 3:1 a field border needs on white */
     border-radius: var(--shed-radius-sm);
     transition:
         border-color var(--shed-transition),
         box-shadow var(--shed-transition);
-}
-
-.shed-main input.g-form-input:hover {
-    border-color: var(--color-ebony-clay-400, #8992b2);
 }
 
 /* The focus ring comes from GFormInput's outline; a box-shadow ring here would draw a second one */
@@ -272,7 +268,8 @@ pre {
 
 .shed-main .q-field--filled .q-field__control::before,
 .shed-main .q-field--outlined .q-field__control::before {
-    border: 1px solid var(--color-ebony-clay-200, #bbc0d2);
+    /* grey-500, as on the inputs above: the field border needs 3:1 on white (WCAG 1.4.11) */
+    border: 1px solid var(--color-grey-500, #63656d);
     border-radius: var(--shed-radius-sm);
     background: none;
     /* Quasar fades this layer in only on hover */
