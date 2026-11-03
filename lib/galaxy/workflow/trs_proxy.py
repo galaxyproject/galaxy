@@ -7,13 +7,13 @@ import yaml
 
 from galaxy.config import Configuration
 from galaxy.exceptions import (
+    InternalServerError,
     MessageException,
     RequestParameterInvalidException,
 )
 from galaxy.files.uris import validate_non_local
 from galaxy.util import (
     asbool,
-    DEFAULT_SOCKET_TIMEOUT,
     requests,
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
@@ -32,6 +32,9 @@ DEFAULT_TRS_SERVERS = [
     },
 ]
 GA4GH_GALAXY_DESCRIPTOR = "GALAXY"
+# (connect, read) timeout in seconds for requests to TRS servers. Galaxy proxies these requests while
+# the user waits in the import form, so give up on an unresponsive server and report the failure.
+TRS_REQUEST_TIMEOUT = (10, 30)
 TRS_URL_REGEX = (
     r"(?P<trs_base_url>https?:\/\/.+)\/ga4gh\/trs\/v2\/tools\/(?P<tool_id>.+)\/versions\/(?P<version_id>[^\/]+).*"
 )
@@ -151,7 +154,12 @@ class TrsServer:
         return tool_id
 
     def _get(self, url, params=None):
-        response = requests.get(url, params=params, timeout=DEFAULT_SOCKET_TIMEOUT)
+        try:
+            response = requests.get(url, params=params, timeout=TRS_REQUEST_TIMEOUT)
+        except requests.exceptions.Timeout as e:
+            raise InternalServerError(f"TRS server {self._trs_url} did not respond in time.") from e
+        except requests.exceptions.ConnectionError as e:
+            raise InternalServerError(f"TRS server {self._trs_url} could not be reached.") from e
         if response.ok:
             return response.json()
         else:
