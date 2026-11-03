@@ -81,7 +81,7 @@ class TestAdminApp(SeleniumTestCase):
         ok_button = self.find_element_by_selector("#repo-install-settings .g-modal-confirm-buttons button:last-child")
         ok_button.click()
         self.sleep_for(self.wait_types.REPO_INSTALL)
-        installed_only = self.find_element_by_xpath("//span[contains(. ,'Installed Only')]/../../input")
+        installed_only = admin_component.toolshed.installed_only.wait_for_visible()
         self.move_to_and_click(installed_only)
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # This serves as a check for the presence of the upgrade notification.
@@ -147,6 +147,46 @@ class TestAdminApp(SeleniumTestCase):
         self.screenshot("admin_jobs_unlocked")
         # And confirm that it has toggled back to what it was.
         assert lock_label.wait_for_text() == original_label
+
+    @selenium_test
+    @requires_admin
+    def test_admin_jobs_stop_selected(self):
+        self.admin_login()
+        # Own history, so a retry doesn't wait on the previous attempt's sleeping job.
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id, content="1", wait=True)
+        run = self.dataset_populator.run_tool(
+            "cat_data_and_sleep",
+            {"input1": {"src": "hda", "id": hda["id"]}, "sleep_time": 600},
+            history_id,
+        )
+        job_id = run["jobs"][0]["id"]
+        try:
+            self.admin_open()
+            self.components.admin.index.jobs.wait_for_and_click()
+            manage_jobs = self.components.admin.manage_jobs
+            manage_jobs.filter_query.wait_for_and_send_keys(f"user:'{self.get_user_email()}' tool:'cat_data_and_sleep'")
+            # Select all only once this job is the sole unfinished one listed.
+            self._wait_on(lambda *_: len(manage_jobs.row_select.all()) == 1, "only the test job to be listed")
+            manage_jobs.select_all.wait_for_and_click()
+            manage_jobs.stop_message.wait_for_and_send_keys("selenium maintenance")
+            manage_jobs.stop_submit.wait_for_and_click()
+            self._wait_on(
+                lambda *_: manage_jobs.status_alert.wait_for_text() == "Stopped 1 of 1 job.",
+                "stop summary",
+            )
+            self.screenshot("admin_jobs_stopped")
+
+            output_id = run["outputs"][0]["id"]
+
+            def output_stopped_with_message(*_):
+                output = self.dataset_populator.get_history_dataset_details_raw(history_id, output_id).json()
+                return output["deleted"] and output["misc_info"] == "selenium maintenance"
+
+            self._wait_on(output_stopped_with_message, "output deleted with the stop message")
+        finally:
+            # Don't leave a 10 minute job running if the UI failed to stop it.
+            self.dataset_populator.cancel_job(job_id)
 
     @selenium_test
     @requires_admin

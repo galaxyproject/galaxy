@@ -60,7 +60,13 @@ describe("useUploadBatchOperations", () => {
 
     it("retries collection creation after an earlier two-step failure", async () => {
         suppressExpectedErrorMessages(["Temporary error"]);
-        server.use(http.post("/api/dataset_collections", () => HttpResponse.json({ id: "col_retried" })));
+        let requestBody: unknown;
+        server.use(
+            http.post("/api/dataset_collections", async ({ request }) => {
+                requestBody = await request.json();
+                return HttpResponse.json({ id: "col_retried" });
+            }),
+        );
 
         const state = useUploadState();
         const operations = useUploadBatchOperations({ autoRecover: false });
@@ -78,6 +84,8 @@ describe("useUploadBatchOperations", () => {
 
         await operations.retryCollectionCreation(batchId);
 
+        // the batch's own uploads become the elements, without extra copies
+        expect(requestBody).toMatchObject({ element_identifiers: [{ src: "hda", id: "ds_1" }], copy_elements: false });
         expect(state.getBatch(batchId)?.status).toBe("processing");
         expect(state.getBatch(batchId)?.collectionId).toBe("col_retried");
         expect(state.activeItems.value.find((entry) => entry.id === uploadId)?.error).toBeUndefined();

@@ -1,4 +1,4 @@
-from galaxy.util.commands import which
+from shutil import which
 
 
 def find_engine(config):

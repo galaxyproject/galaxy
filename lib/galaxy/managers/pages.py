@@ -140,6 +140,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         """ """
         super().__init__(app)
         self.workflow_manager = app.workflow_manager
+        self.history_manager = app.history_manager
 
     def index_query(
         self, trans: ProvidesUserContext, payload: PageIndexQueryPayload, include_total_count: bool = False
@@ -420,6 +421,19 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         session = trans.sa_session
         session.commit()
         return page_revision
+
+    def get_accessible_notebook(self, trans: ProvidesHistoryContext, page_id: int) -> tuple[Page, History]:
+        """Return a history-attached page and its history, requiring access to both.
+
+        Page access alone (shared/published) must not expose the history's contents.
+        """
+        page = base.get_object(trans, page_id, "Page", check_ownership=False, check_accessible=True)
+        if page.history_id is None:
+            raise exceptions.RequestParameterInvalidException(
+                "Workflow extraction is only available for history-backed pages (notebooks)."
+            )
+        history = self.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
+        return page, history
 
     def list_revisions(self, trans: ProvidesUserContext, page, sort_desc: bool = False):
         page = base.security_check(trans, page, check_ownership=False, check_accessible=True)

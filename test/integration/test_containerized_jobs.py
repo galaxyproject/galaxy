@@ -4,11 +4,11 @@ import json
 import os
 import subprocess
 import unittest
+from shutil import which
 from typing import Any
 
 from galaxy.tool_util.deps.container_resolvers.mulled import list_docker_cached_mulled_images
 from galaxy.util import galaxy_directory
-from galaxy.util.commands import which
 from galaxy.version import VERSION
 from galaxy_test.base.populators import (
     CredentialsPopulator,

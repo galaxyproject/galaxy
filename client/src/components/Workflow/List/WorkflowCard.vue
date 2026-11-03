@@ -7,6 +7,7 @@ import { useWorkflowCardActions } from "@/components/Workflow/List/useWorkflowCa
 import { useWorkflowCardBadges } from "@/components/Workflow/List/useWorkflowCardBadges";
 import { useWorkflowCardIndicators } from "@/components/Workflow/List/useWorkflowCardIndicators";
 import { updateWorkflow } from "@/components/Workflow/workflows.services";
+import { useSerialTagSaves } from "@/composables/serialTagSaves";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
@@ -18,6 +19,7 @@ interface Props {
     hideRuns?: boolean;
     filterable?: boolean;
     publishedView?: boolean;
+    sharedWithMeView?: boolean;
     editorView?: boolean;
     current?: boolean;
     selected?: boolean;
@@ -29,6 +31,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     gridView: false,
     publishedView: false,
+    sharedWithMeView: false,
     hideRuns: false,
     filterable: true,
     editorView: false,
@@ -70,10 +73,15 @@ const description = computed(() => {
     }
 });
 
-async function onTagsUpdate(tags: string[]) {
-    workflow.value.tags = tags;
-    await updateWorkflow(workflow.value.id, { tags });
-    emit("refreshList", true, true);
+const { saveTags } = useSerialTagSaves({
+    // updated in place: a list reload re-sorts the list and moves the card away from the open tag editor
+    setTags: (tags) => (workflow.value.tags = tags),
+    onFailed: () => emit("refreshList", true, true),
+});
+
+function onTagsUpdate(tags: string[]) {
+    const workflowId = workflow.value.id;
+    saveTags(tags, async () => (await updateWorkflow(workflowId, { tags })).tags);
 }
 
 async function onTagClick(tag: string) {
@@ -88,6 +96,7 @@ const { workflowCardExtraActions, workflowCardSecondaryActions, workflowCardPrim
         () => emit("refreshList", true),
         () => emit("insertSteps"),
         () => emit("insert"),
+        props.sharedWithMeView,
     );
 
 const { workflowCardIndicators } = useWorkflowCardIndicators(
@@ -142,7 +151,7 @@ function onKeyDown(event: KeyboardEvent) {
         :primary-actions="workflowCardPrimaryActions"
         :secondary-actions="workflowCardSecondaryActions"
         :published="workflow.published"
-        :selectable="props.selectable && !shared"
+        :selectable="props.selectable && (!shared || props.sharedWithMeView)"
         :selected="props.selected"
         :show-bookmark="!props.workflow.deleted"
         :tags="workflow.tags"

@@ -7,7 +7,7 @@
 import type { Placement } from "@floating-ui/dom";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, ref } from "vue";
+import { computed, ref, useAttrs } from "vue";
 import type { RouterLink } from "vue-router";
 
 import { useClickableElement } from "../composables/clickableElement";
@@ -17,40 +17,46 @@ import { type ComponentColor, type ComponentSize, type ComponentVariantClassList
 
 import GTooltip from "./GTooltip.vue";
 
-const props = defineProps<{
-    /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
-    href?: string;
-    /** Router link "to" prop. Using this will turn the element into a router-link, not affecting the styling  */
-    to?: string;
-    /** Which color scheme to use for the component. Not setting this will make the button appear grey */
-    color?: ComponentColor;
-    /** Outline variant of the button. Can be used together with the `pressed` state */
-    outline?: boolean;
-    /** Disabled state. Changes appearance, and will no longer accept or forward clicks */
-    disabled?: boolean;
-    /** Title attribute, or tooltip text */
-    title?: string;
-    /** Alternative title to be displayed in a disabled state */
-    disabledTitle?: string;
-    /** Displayed size of the component */
-    size?: ComponentSize;
-    /** When set, uses a tooltip for the "title" prop, instead of the native title attribute */
-    tooltip?: boolean;
-    /** Controls the positioning of the tooltip, if a tooltip is active */
-    tooltipPlacement?: Placement;
-    /** Inline variant of the button. Affects buttons size, and positioning */
-    inline?: boolean;
-    /** Small, icon-only variant of the button */
-    iconOnly?: boolean;
-    /** Variant of the button without background or outline. Can be used together with the `pressed` state */
-    transparent?: boolean;
-    /** Variant of the button with more rounded corners */
-    pill?: boolean;
-    /** Pressed state allows for a toggle-like behavior of the button. For use with the outline and transparent variants */
-    pressed?: boolean;
-    /** Busy state. Shows a spinner and ignores clicks while keeping the button's color, so it reads as working rather than unavailable */
-    loading?: boolean;
-}>();
+const props = withDefaults(
+    defineProps<{
+        /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
+        href?: string;
+        /** Router link "to" prop. Using this will turn the element into a router-link, not affecting the styling  */
+        to?: string;
+        /** Which color scheme to use for the component. Not setting this will make the button appear grey */
+        color?: ComponentColor;
+        /** Outline variant of the button. Can be used together with the `pressed` state */
+        outline?: boolean;
+        /** Disabled state. Changes appearance, and will no longer accept or forward clicks */
+        disabled?: boolean;
+        /** Title attribute, or tooltip text */
+        title?: string;
+        /** Alternative title to be displayed in a disabled state */
+        disabledTitle?: string;
+        /** Displayed size of the component */
+        size?: ComponentSize;
+        /** When set, uses a tooltip for the "title" prop, instead of the native title attribute */
+        tooltip?: boolean;
+        /** Controls the positioning of the tooltip, if a tooltip is active */
+        tooltipPlacement?: Placement;
+        /** Inline variant of the button. Affects buttons size, and positioning */
+        inline?: boolean;
+        /** Small, icon-only variant of the button */
+        iconOnly?: boolean;
+        /** Variant of the button without background or outline. Can be used together with the `pressed` state */
+        transparent?: boolean;
+        /** Variant of the button with more rounded corners */
+        pill?: boolean;
+        /** Pressed state of a toggle button, exposed as aria-pressed. Omit it on a button that is not a toggle: no aria-pressed is set. For use with the outline and transparent variants */
+        pressed?: boolean;
+        /** Busy state. Shows a spinner and ignores clicks while keeping the button's color, so it reads as working rather than unavailable */
+        loading?: boolean;
+    }>(),
+    {
+        // An absent Boolean prop would cast to false; undefined marks a button that is not a toggle.
+        pressed: undefined,
+    },
+);
 
 const emit = defineEmits<{
     (e: "click", event: PointerEvent): void;
@@ -110,6 +116,17 @@ const baseComponent = useClickableElement({
 const anchorAttributes = computed(() => (baseComponent.value === "a" ? { href: props.href } : {}));
 const currentTitle = useCurrentTitle(props);
 
+const attrs = useAttrs();
+
+// String: compat drops a `false` attribute. Skipped on links (not allowed) and on disclosures, whose state is aria-expanded.
+const ariaPressed = computed(() => {
+    const isDisclosure = attrs["aria-expanded"] !== undefined || attrs["aria-haspopup"] !== undefined;
+    if (baseComponent.value !== "button" || props.pressed === undefined || isDisclosure) {
+        return undefined;
+    }
+    return String(props.pressed);
+});
+
 const showTooltip = computed(() => props.tooltip && currentTitle.value);
 
 const buttonRef = ref<HTMLElement | InstanceType<typeof RouterLink> | null>(null);
@@ -128,6 +145,7 @@ const buttonElementRef = useResolveElement(buttonRef);
         :title="props.tooltip ? undefined : currentTitle"
         :aria-disabled="props.disabled || undefined"
         :aria-busy="props.loading || undefined"
+        :aria-pressed="ariaPressed"
         v-bind="{ ...anchorAttributes, ...$attrs }"
         @click="onClick">
         <FontAwesomeIcon v-if="props.loading" :icon="faSpinner" spin aria-hidden="true" />
@@ -147,9 +165,7 @@ const buttonElementRef = useResolveElement(buttonRef);
     display: inline-flex;
     gap: var(--spacing-1);
     align-items: center;
-    // Bootstrap's `.btn` centred its content with `text-align: center`; an inline-flex
-    // box needs `justify-content` for the same effect, otherwise a full-width or
-    // fixed-size button leaves its label or glyph at flex-start.
+    // Centres the label or glyph when the button is wider than its content (full width or fixed size)
     justify-content: center;
     margin: 0;
     border: 1px solid;
@@ -174,9 +190,11 @@ const buttonElementRef = useResolveElement(buttonRef);
         z-index: 999;
     }
 
+    // Page-background gap keeps the ring clear of the fill and of grouped neighbours; outline survives forced colors.
     &:focus-visible {
-        outline: none;
-        box-shadow: 0 0 0 0.2rem var(--color-blue-400);
+        outline: 2px solid var(--color-blue-600);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 2px var(--background-color);
         z-index: 999;
     }
 
@@ -202,30 +220,25 @@ const buttonElementRef = useResolveElement(buttonRef);
         border-color: var(--color-grey-300);
         color: var(--color-grey-800);
 
-        &:hover,
-        &:focus-visible {
+        // No focus fill or border: a darker focused button would read as pressed, and the ring shows focus
+        &:hover {
             background-color: var(--color-grey-300);
             border-color: var(--color-grey-400);
-
-            &:active {
-                background-color: var(--color-grey-400);
-                border-color: var(--color-grey-600);
-            }
         }
 
-        &:focus-visible {
-            border-color: var(--color-grey-600);
-        }
-
-        // This block out-ranks the `&:hover, &:focus-visible` rule above, so the
-        // feedback has to be restated here or a pressed solid button looks inert.
-        &.g-pressed:not(.g-outline):not(.g-transparent) {
+        &:hover:active,
+        &:focus-visible:active {
             background-color: var(--color-grey-400);
             border-color: var(--color-grey-600);
+        }
 
-            &:hover,
-            &:focus-visible {
-                background-color: var(--color-grey-500);
+        // Out-ranks the hover rule above, so hover is restated here; focus keeps the light fill and the ring shows it
+        &.g-pressed:not(.g-outline):not(.g-transparent) {
+            background-color: var(--color-grey-250);
+            border-color: var(--color-grey-600);
+
+            &:hover {
+                background-color: var(--color-grey-300);
             }
         }
 
@@ -257,8 +270,8 @@ const buttonElementRef = useResolveElement(buttonRef);
                 border-color: var(--color-#{$color}-900);
             }
 
-            // See the grey block above: restate the hover / focus-visible feedback
-            // that this higher-specificity selector would otherwise swallow.
+            // Out-ranks the hover / focus-visible rule above, so both are restated here.
+            // Unlike grey, focus still darkens the fill: -900 stays darker than a focused unpressed -700.
             &.g-pressed:not(.g-outline):not(.g-transparent) {
                 background-color: var(--color-#{$color}-700);
                 border-color: var(--color-#{$color}-900);
@@ -381,16 +394,14 @@ const buttonElementRef = useResolveElement(buttonRef);
 </style>
 
 <style lang="scss">
-// Fixes for GButton inside a Bootstrap input group. These must be unscoped to target
-// Bootstrap's `.input-group-append` / `.input-group-prepend` wrappers, whose own rules
-// only ever matched `.btn`.
+// Layout for a GButton inside an input group's append or prepend wrapper
 .input-group-append .g-button,
 .input-group-prepend .g-button {
     // Prevents horizontal scrolling issues caused by flex layout conflicts
     flex-shrink: 0;
     overflow: hidden;
 
-    // Lifts the focus ring above the adjacent input, like Bootstrap's `.input-group > .btn`
+    // Lifts the focus ring above the adjacent input
     position: relative;
     z-index: 2;
 }

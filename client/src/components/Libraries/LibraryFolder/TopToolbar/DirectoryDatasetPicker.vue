@@ -361,7 +361,6 @@ watch(
     .directory-dataset-picker-options :deep(.g-checkbox-group-options) {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        row-gap: 0;
     }
 
     .directory-dataset-picker-list {

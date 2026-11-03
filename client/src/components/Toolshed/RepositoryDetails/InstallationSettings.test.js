@@ -1,6 +1,6 @@
 import "@/composables/__mocks__/filter";
 
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -15,7 +15,7 @@ vi.mock("@/composables/config", () => ({
         config: {
             install_tool_dependencies: true,
             install_repository_dependencies: true,
-            install_resolver_dependencies: true,
+            install_resolver_dependencies: false,
         },
         isConfigLoaded: true,
     }),
@@ -32,6 +32,63 @@ describe("InstallationSettings", () => {
                 return response(200).json([]);
             }),
         );
+    });
+
+    it("installs with the tool configuration picked from a named radio group", async () => {
+        server.use(
+            http.get("/api/configuration/dynamic_tool_confs", ({ response }) => {
+                return response(200).json([
+                    { config_filename: "first_conf.xml" },
+                    { config_filename: "second_conf.xml" },
+                ]);
+            }),
+        );
+        const wrapper = mount(InstallationSettings, {
+            props: {
+                repo: { name: "name", owner: "owner" },
+                changesetRevision: "changesetRevision",
+                requiresPanel: false,
+                toolshedUrl: "toolshedUrl",
+            },
+            global: localVue,
+        });
+        await vi.waitFor(() => expect(wrapper.findAll("input[type=radio]").length).toBe(2));
+        const group = wrapper.find("[role=radiogroup]");
+        expect(wrapper.get(`#${group.attributes("aria-labelledby")}`).text()).toBe("Tool Configuration:");
+        expect(group.element.parentElement.closest("fieldset")).toBeNull();
+        expect(wrapper.get(`#${group.attributes("aria-describedby")}`).text()).toBe("Choose a tool configuration.");
+        const radios = group.findAll("input[type=radio]");
+        expect(radios.map((radio) => radio.attributes("value"))).toEqual(["first_conf.xml", "second_conf.xml"]);
+        expect(radios[0].element.checked).toBe(true);
+        expect(new Set(radios.map((radio) => radio.attributes("name"))).size).toBe(1);
+        await radios[1].setValue(true);
+        await wrapper.find(".g-modal-confirm-buttons button:last-child").trigger("click");
+        expect(wrapper.emitted("ok")[0][0].shed_tool_conf).toBe("second_conf.xml");
+    });
+
+    it("installs with the dependency choices made in the labelled checkboxes", async () => {
+        const wrapper = mount(InstallationSettings, {
+            props: {
+                repo: { name: "name", owner: "owner" },
+                changesetRevision: "changesetRevision",
+                requiresPanel: false,
+                toolshedUrl: "toolshedUrl",
+            },
+            global: localVue,
+        });
+        const checkboxes = wrapper.findAll("input[type=checkbox]");
+        expect(checkboxes.map((checkbox) => checkbox.element.closest("label")?.textContent.trim())).toEqual([
+            "Install resolvable dependencies",
+            "Install repository dependencies",
+            "Install tool dependencies",
+        ]);
+        expect(checkboxes.map((checkbox) => checkbox.element.checked)).toEqual([false, true, true]);
+        await nth(checkboxes, 2).setValue(false);
+        await wrapper.find(".g-modal-confirm-buttons button:last-child").trigger("click");
+        const request = emittedArg(wrapper, "ok");
+        expect(request.install_resolver_dependencies).toBe(false);
+        expect(request.install_repository_dependencies).toBe(true);
+        expect(request.install_tool_dependencies).toBe(false);
     });
 
     it("test tool repository installer interface", () => {
@@ -57,10 +114,6 @@ describe("InstallationSettings", () => {
         const sectionInput = wrapper.get("#install-tool-section");
         expect(wrapper.get('label[for="install-tool-section"]').text()).toBe("Target Section:");
         expect(sectionInput.element.closest('[role="combobox"]')).not.toBeNull();
-
-        expect(wrapper.vm.installToolDependencies).toBe(true);
-        expect(wrapper.vm.installRepositoryDependencies).toBe(true);
-        expect(wrapper.vm.installResolverDependencies).toBe(true);
     });
 
     describe("target section", () => {

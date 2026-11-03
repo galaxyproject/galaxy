@@ -1,7 +1,7 @@
 <template>
     <div aria-labelledby="jobs-title">
         <h1 id="jobs-title" class="h-lg">Jobs</h1>
-        <GAlert v-if="message" :variant="status" show>
+        <GAlert v-if="message" :variant="status" show data-description="jobs status alert">
             {{ message }}
         </GAlert>
         <Heading h2 size="md" separator>Job Lock</Heading>
@@ -108,7 +108,9 @@
                         <BFormInput id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
                         </BFormInput>
                         <BInputGroupAppend>
-                            <BButton type="submit">Submit</BButton>
+                            <BButton type="submit" :disabled="stopping" data-description="stop selected jobs"
+                                >Submit</BButton
+                            >
                         </BInputGroupAppend>
                     </BInputGroup>
                 </BFormGroup>
@@ -136,7 +138,7 @@
                 <GCheckbox
                     :model-value="allSelected"
                     aria-label="Select all jobs"
-                    :disabled="!unfinishedJobs.length"
+                    :disabled="!unfinishedJobs.length || stopping"
                     :indeterminate="indeterminate"
                     @update:model-value="toggleAll" />
             </template>
@@ -144,6 +146,7 @@
                 <GCheckbox
                     :aria-label="`Select job ${data.item.id}`"
                     :model-value="selectedStopJobIds.includes(data.item.id)"
+                    :disabled="stopping"
                     @click.stop
                     @update:model-value="(checked) => setJobSelected(data.item.id, checked)" />
             </template>
@@ -172,7 +175,7 @@ import { BButton, BCol, BForm, BFormGroup, BFormInput, BInputGroup, BInputGroupA
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { deleteJob, NON_TERMINAL_STATES } from "@/api/jobs";
+import { NON_TERMINAL_STATES, stopJobs } from "@/api/jobs";
 import { jobsProvider } from "@/components/providers/JobProvider";
 import { getAppRoot } from "@/onload/loadConfig";
 import Filtering, { contains } from "@/utils/filtering";
@@ -256,6 +259,7 @@ export default {
             showAllRunning: false,
             titleSearch: `search jobs`,
             sendNotification: false,
+            stopping: false,
         };
     },
     computed: {
@@ -338,18 +342,21 @@ export default {
                 this.loading = false;
                 this.busy = false;
                 this.status = "info";
+                return true;
             } catch (error) {
                 console.log(error);
                 this.message = errorMessageAsString(error);
                 this.status = "danger";
+                return false;
             }
         },
         onRefresh() {
             this.update();
         },
-        async sendNotificationToUsers() {
+        async sendNotificationToUsers(jobIds) {
             const cancelReason = this.stopMessage || "No reason provided";
-            const jobsToCancel = this.unfinishedJobs.filter((job) => this.selectedStopJobIds.includes(job.id));
+            const ids = new Set(jobIds);
+            const jobsToCancel = this.unfinishedJobs.filter((job) => ids.has(job.id));
             // Group jobs by user
             const userJobsMap = jobsToCancel.reduce((acc, job) => {
                 if (job.user_id) {
@@ -395,24 +402,54 @@ export default {
             }
 
             if (errors.length) {
-                this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users. ${errors.length} errors occurred.`;
-                this.status = "warning";
-            } else {
-                this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users.`;
-                this.status = "success";
+                return {
+                    ok: false,
+                    message: `Notification sent to ${numSuccess} out of ${totalUsers} users. ${errors.length} errors occurred.`,
+                };
             }
+            return { ok: true, message: `Notification sent to ${numSuccess} out of ${totalUsers} users.` };
         },
         getJobViewLink(jobId) {
             return `${getAppRoot()}jobs/${jobId}/view`;
         },
         async onStopJobs() {
-            await Promise.all(this.selectedStopJobIds.map((jobId) => deleteJob(jobId, this.stopMessage)));
-            if (this.sendNotification) {
-                this.sendNotificationToUsers();
+            const jobIds = [...this.selectedStopJobIds];
+            const total = jobIds.length;
+            const jobsNoun = total === 1 ? "job" : "jobs";
+            this.stopping = true;
+            this.status = "info";
+            this.message = `Stopping ${total} ${jobsNoun}...`;
+            const { stopped, failed } = await stopJobs(jobIds, this.stopMessage, (done) => {
+                this.message = `Stopping jobs (${done}/${total})...`;
+            });
+            let message = `Stopped ${stopped.length} of ${total} ${jobsNoun}.`;
+            if (failed.length) {
+                message += ` ${failed.length} could not be stopped and remain selected: ${failed[0].error.message}`;
             }
-            this.update();
-            this.selectedStopJobIds = [];
-            this.stopMessage = "";
+            let notificationFailed = false;
+            if (this.sendNotification && stopped.length) {
+                try {
+                    const notification = await this.sendNotificationToUsers(stopped);
+                    message += ` ${notification.message}`;
+                    notificationFailed = !notification.ok;
+                } catch (error) {
+                    message += ` Notifications could not be sent: ${errorMessageAsString(error)}`;
+                    notificationFailed = true;
+                }
+            }
+            // Keep failed jobs selected (and the stop message) so the admin can resubmit.
+            this.selectedStopJobIds = failed.map(({ jobId }) => jobId);
+            if (!failed.length) {
+                this.stopMessage = "";
+            }
+            this.stopping = false;
+            if (await this.update()) {
+                this.message = message;
+                this.status = failed.length ? "danger" : notificationFailed ? "warning" : "success";
+            } else {
+                // Keep the refresh error visible next to the stop summary.
+                this.message = `${message} Refreshing the job list failed: ${this.message}`;
+            }
         },
         setJobSelected(jobId, checked) {
             this.selectedStopJobIds = checked

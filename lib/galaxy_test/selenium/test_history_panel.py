@@ -104,6 +104,20 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
         self.history_panel_wait_for_hid_hidden(3)
         self.history_panel_wait_for_hid_hidden(4)
 
+        self.history_panel_filter("deleted:true")
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_wait_for_and_select([2])
+        self.history_panel_undelete_selected()
+        # an undeleted item no longer matches deleted:true
+        self.history_panel_wait_for_hid_hidden(2)
+        self.history_panel_wait_for_hid_visible(4)
+        self._wait_for_history_item_states(
+            history_id,
+            ("deleted", "purged"),
+            {1: (False, False), 2: (False, False), 3: (True, True), 4: (True, False)},
+            "hid 2 to be undeleted",
+        )
+
     @selenium_test
     @managed_history
     def test_unhide_item_with_include_hidden(self):
@@ -129,6 +143,40 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
             ("deleted", "visible"),
             {1: (True, True), 2: (False, True)},
             "hid 1 to be deleted and hid 2 unhidden",
+        )
+
+    @selenium_test
+    @managed_history
+    def test_hide_and_unhide_items(self) -> None:
+        history_id = self.current_history_id()
+        for content in ("1\n", "2\n", "3\n"):
+            self.dataset_populator.new_dataset(history_id, content=content, wait=True)
+        self.home()
+        self.history_panel_wait_for_hid_ok(3)
+
+        self.history_panel_wait_for_and_select([1, 2])
+        self.history_panel_hide_selected()
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_wait_for_hid_hidden(2)
+        self._wait_for_history_item_states(
+            history_id, ("visible",), {1: (False,), 2: (False,), 3: (True,)}, "hids 1 and 2 to be hidden"
+        )
+
+        self.history_panel_include_hidden()
+        self.history_panel_wait_for_and_select([1])
+        self.history_panel_hide_selected(unhide=True)
+        self._wait_for_history_item_states(
+            history_id, ("visible",), {1: (True,), 2: (False,), 3: (True,)}, "hid 1 to be unhidden"
+        )
+        self.screenshot("history_panel_hidden_items_shown")
+
+        self.history_panel_filter("visible:false")
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_item_unhide(2)
+        # an unhidden item no longer matches visible:false
+        self.history_panel_wait_for_hid_hidden(2)
+        self._wait_for_history_item_states(
+            history_id, ("visible",), {1: (True,), 2: (True,), 3: (True,)}, "hid 2 to be unhidden"
         )
 
     def _wait_for_history_item_states(self, history_id, keys, expected, description):
@@ -281,6 +329,35 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.wait_for_selector_clickable(self.history_panel_item_selector(hid=1))
         assert not self.history_panel_item_showing_details(hid=1)
+
+    @selenium_test
+    def test_resume_paused_job(self):
+        history_id = self.current_history_id()
+        hda1 = self.dataset_populator.new_dataset(history_id, content="1\n", wait=True)
+        hda2 = self.dataset_populator.new_dataset(history_id, content="2\n", wait=True)
+        sleep_run = self.dataset_populator.run_tool(
+            "cat_data_and_sleep",
+            {"sleep_time": 15, "input1": {"src": "hda", "id": hda2["id"]}},
+            history_id,
+        )
+        cat_inputs = {
+            "input1": {"src": "hda", "id": hda1["id"]},
+            "queries_0|input2": {"src": "hda", "id": sleep_run["outputs"][0]["id"]},
+        }
+        cat_hid = self.dataset_populator.run_tool("cat1", cat_inputs, history_id)["outputs"][0]["hid"]
+        # deleting an input while the job waits pauses it
+        self.dataset_populator.delete_dataset(history_id, hda1["id"])
+        self.home()
+        self.history_panel_wait_for_hid_state(cat_hid, "paused", allowed_force_refreshes=1)
+        self.screenshot("history_panel_paused_job")
+
+        self.dataset_populator.update_dataset(hda1["id"], {"deleted": False})
+        # undeleting alone doesn't resume it
+        details = self.dataset_populator.get_history_dataset_details(history_id, hid=cat_hid, wait=False)
+        assert details["state"] == "paused"
+        self.click_history_option_resume_paused_jobs()
+        self.history_panel_wait_for_hid_ok(cat_hid)
+        self.screenshot("history_panel_resumed_job")
 
     @retry_assertion_during_transitions
     def assert_name_changed(self):

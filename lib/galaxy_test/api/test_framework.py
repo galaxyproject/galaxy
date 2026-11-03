@@ -66,6 +66,20 @@ class TestApiFramework(ApiTestCase):
         )
         self._assert_status_code_is(create_response, 403)
 
+    def test_run_as_without_credentials(self):
+        # Anonymous requests never run as anyone, so the header is ignored rather than rejected.
+        run_as_user = self._setup_user("for_run_as@bx.psu.edu")
+        response = self._get("users/current", headers={"run-as": run_as_user["id"]}, anon=True)
+        self._assert_status_code_is(response, 200)
+        assert "email" not in response.json()
+
+    def test_api_key_wins_over_bearer_token(self):
+        # The API key is looked up first, so the Bearer token is never consulted.
+        expected_email = self._get("users/current").json()["email"]
+        response = self._get("users/current", headers={"Authorization": "Bearer not-a-real-token"})
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == expected_email
+
     @requires_admin
     def test_run_as_invalid_user(self):
         post_data = dict(name="TestHistory1")

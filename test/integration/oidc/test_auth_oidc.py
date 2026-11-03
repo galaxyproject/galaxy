@@ -1,6 +1,8 @@
 """Integration tests for OIDC login and account confirmation using Keycloak."""
 
+import asyncio
 import html
+import json
 import os
 import re
 import subprocess
@@ -12,6 +14,8 @@ from typing import (
     ClassVar,
 )
 from urllib import parse
+
+from fastmcp import Client
 
 from galaxy import model
 from galaxy.util import requests
@@ -294,6 +298,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
     def handle_galaxy_oidc_config_kwds(cls, config):
         super().handle_galaxy_oidc_config_kwds(config)
         config["allowed_login_redirect_hosts"] = "tools.example.org"
+        config["enable_mcp_server"] = True
 
     def _get_keycloak_access_token(
         self, client_id="gxyclient", username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD, scopes=None
@@ -532,6 +537,17 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         response = self._get("whoami", headers={"Authorization": f"Bearer {access_token}"})
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser_logged_in_once@galaxy.org"
+
+    def test_mcp_auth_by_access_token(self):
+        self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)
+        access_token = self._get_keycloak_access_token()
+
+        async def get_user():
+            async with Client(f"{self.url}api/mcp", auth=access_token) as client:
+                return await client.call_tool("get_user", {})
+
+        result = asyncio.run(get_user())
+        assert json.loads(result.content[0].text)["email"] == "gxyuser@galaxy.org"
 
     def test_auth_by_access_token_never_logged_in(self):
         # If the user has not previously logged in via OIDC at least once, OIDC API calls are not allowed

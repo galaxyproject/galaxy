@@ -10,6 +10,7 @@ import { getWorkflowFilters } from "@/components/Workflow/List/workflowFilters";
 import Filtering, { compare, contains, equals, toBool, toDate } from "@/utils/filtering";
 
 import FilterMenu from "./FilterMenu.vue";
+import GRadio from "@/components/BaseComponents/GRadio.vue";
 
 // Mock object stores API before imports
 vi.mock("@/api/objectStores");
@@ -195,21 +196,31 @@ describe("FilterMenu", () => {
         indexGtInput.setValue("1234");
         indexLtInput.setValue("5678");
         // default bool filter
-        const radioBtnGrp = wrapper.find("[data-description='filter bool_def']").findAllComponents(".btn-secondary");
+        const radioGroup = wrapper.find("[data-description='filter bool_def']");
+        expect(radioGroup.attributes("role")).toBe("radiogroup");
+        // named by the visible label, so the accessible name follows it
+        expect(radioGroup.attributes("aria-label")).toBeUndefined();
+        expect(wrapper.get(`#${radioGroup.attributes("aria-labelledby")}`).text()).toBe(
+            "Filter by option (any/yes/no):",
+        );
+        const radioBtnGrp = radioGroup.findAllComponents(GRadio);
         expect(radioBtnGrp.length).toBe(options.length);
         for (let i = 0; i < options.length; i++) {
             expect(radioBtnGrp[i]?.text()).toBe(options[i]?.text);
-            expect(radioBtnGrp[i]?.props().value).toBe(options[i]?.value);
-            expect(radioBtnGrp[i]?.props().checked).toBe(null);
+            expect(radioBtnGrp[i]?.props("value")).toBe(options[i]?.value);
         }
+        // unset filter shows "Any"; all radios share one name for arrow-key navigation
+        expect(radioGroup.find(".g-checked").text()).toBe("Any");
+        const radioNames = new Set(radioGroup.findAll("input").map((input) => input.attributes("name")));
+        expect(radioNames.size).toBe(1);
         await radioBtnGrp[1]?.find("input").setValue(true); // click "Yes"
         // boolean filter
-        const boolBtnGrp = wrapper.find("[data-description='filter bool_is']").findAllComponents(".btn-secondary");
+        const boolBtnGrp = wrapper.find("[data-description='filter bool_is']").findAllComponents(GRadio);
         expect(boolBtnGrp.length).toBe(2);
         expect(boolBtnGrp[0]?.text()).toBe("Yes");
-        expect(boolBtnGrp[0]?.props().value).toBe(true);
+        expect(boolBtnGrp[0]?.props("value")).toBe(true);
         expect(boolBtnGrp[1]?.text()).toBe("No");
-        expect(boolBtnGrp[1]?.props().value).toBe("any");
+        expect(boolBtnGrp[1]?.props("value")).toBe("any");
         await boolBtnGrp[1]?.find("input").setValue(true); // click "No"
 
         // perform search
@@ -233,17 +244,17 @@ describe("FilterMenu", () => {
 
         await wrapper.setProps({ showAdvanced: true });
         const deletedFilterBtnGrp = wrapper.find("[data-description='filter deleted']");
-        const deletedFilterAnyBtn = deletedFilterBtnGrp.find(".btn-secondary");
+        const deletedFilterAnyBtn = deletedFilterBtnGrp.find(".g-radio-button");
         expect(deletedFilterAnyBtn.text()).toBe("Any");
 
         // current active button for deleted filter should be "No"
-        let deletedFilterActiveBtn = deletedFilterBtnGrp.find(".btn-secondary.active");
+        let deletedFilterActiveBtn = deletedFilterBtnGrp.find(".g-radio-button.g-checked");
         expect(deletedFilterActiveBtn.text()).toBe("No");
 
         await deletedFilterAnyBtn.find("input").setValue(true);
 
         // now active button for deleted filter should be "Any"
-        deletedFilterActiveBtn = deletedFilterBtnGrp.find(".btn-secondary.active");
+        deletedFilterActiveBtn = deletedFilterBtnGrp.find(".g-radio-button.g-checked");
         expect(deletedFilterActiveBtn.text()).toBe("Any");
 
         // expect "deleted = any" filter to be applied
@@ -256,17 +267,17 @@ describe("FilterMenu", () => {
         await toggleButton.trigger("click");
         await expectCorrectEmits("visible:true", HistoryFilters, true);
         const visibleFilterBtnGrp = wrapper.find("[data-description='filter visible']");
-        const visibleFilterAnyBtn = visibleFilterBtnGrp.find(".btn-secondary");
+        const visibleFilterAnyBtn = visibleFilterBtnGrp.find(".g-radio-button");
         expect(visibleFilterAnyBtn.text()).toBe("Any");
 
         // current active button for visible filter should be "Yes"
-        let visibleFilterActiveBtn = visibleFilterBtnGrp.find(".btn-secondary.active");
+        let visibleFilterActiveBtn = visibleFilterBtnGrp.find(".g-radio-button.g-checked");
         expect(visibleFilterActiveBtn.text()).toBe("Yes");
 
         await visibleFilterAnyBtn.find("input").setValue(true);
 
         // now active button for visible filter should be "Any"
-        visibleFilterActiveBtn = visibleFilterBtnGrp.find(".btn-secondary.active");
+        visibleFilterActiveBtn = visibleFilterBtnGrp.find(".g-radio-button.g-checked");
         expect(visibleFilterActiveBtn.text()).toBe("Any");
 
         // expect "visible = any" filter to be applied
@@ -298,7 +309,8 @@ describe("FilterMenu", () => {
 
         // -------- Testing deleted filter first:  ---------
         const deletedFilterCheckbox = wrapper.find<HTMLInputElement>("[data-description='filter deleted'] input");
-        expect(deletedFilterCheckbox.attributes("aria-label")).toBe("Deleted");
+        expect(deletedFilterCheckbox.attributes("aria-label")).toBeUndefined();
+        expect(wrapper.get(`#${deletedFilterCheckbox.attributes("aria-labelledby")}`).text()).toBe("Deleted:");
         expect(deletedFilterCheckbox.element.checked).toBe(false);
         await deletedFilterCheckbox.setValue(true);
         await expectCorrectEmits("name:myworkflow is:deleted", myWorkflowFilters);

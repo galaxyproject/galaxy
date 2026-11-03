@@ -13,6 +13,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from boltons.iterutils import remap
 from packaging.version import Version
 
 from galaxy import model
@@ -126,6 +127,14 @@ class ToolTemplatingException(Exception):
         self.is_latest = is_latest
 
 
+_GROUP_STATE_KEYS = frozenset(("__index__", "__current_case__"))
+
+
+def _is_not_group_state_key(path, key, value) -> bool:
+    """``remap`` visitor dropping repeat ``__index__`` and conditional ``__current_case__`` keys."""
+    return key not in _GROUP_STATE_KEYS
+
+
 def global_tool_logs(func, config_file: StrPath | None, action_str: str, tool: "Tool"):
     try:
         return func()
@@ -173,6 +182,7 @@ class ToolEvaluator:
         self.command_line: str | None = None
         self.interactivetools: list[dict[str, Any]] = []
         self.consumes_names = False
+        self.consumes_identifiers = False
         self.use_cached_job = False
         self.out_data: OutDataDictT = {}
         self.output_parameter_json_copy: tuple[str, str] | None = None
@@ -597,6 +607,7 @@ class ToolEvaluator:
                     tool=self.tool,
                     name=name,
                     compute_environment=self.compute_environment,
+                    tool_evaluator=self,
                 )
 
     def __populate_output_collection_wrappers(self, param_dict, output_collections, job_working_directory):
@@ -1138,6 +1149,8 @@ class UserToolEvaluator(ToolEvaluator):
         job_working_directory = compute_environment.working_directory()
         # shell_command pastes values in unescaped, unlike base_command arguments, which take precedence.
         shell_quotable = not self.tool.base_command and bool(self.tool.shell_command)
+        # Map-over hands each job an HDA; its element identifier is only kept in the job parameters.
+        element_identifiers = ElementIdentifierMapper(input_datasets).identifiers_by_dataset(incoming)
         hda_references: list[model.HistoryDatasetAssociation]
         if validated_tool_state is not None:
             from galaxy.tool_util.parameters.convert import runtimeify
@@ -1152,18 +1165,22 @@ class UserToolEvaluator(ToolEvaluator):
                 input_dataset_collections[assoc.name] = assoc.dataset_collection_element
 
             hda_references, adapt_datasets, adapt_collections = setup_for_runtimeify(
-                self.app, compute_environment, input_datasets, input_dataset_collections, shell_quotable=shell_quotable
+                self.app,
+                compute_environment,
+                input_datasets,
+                input_dataset_collections,
+                shell_quotable=shell_quotable,
+                element_identifiers=element_identifiers,
             )
             if self.tool.parameters is None:
                 raise RequestParameterInvalidException(f"Tool {self.tool.id} has no parameters defined")
             parameter_bundle = ToolParameterBundleModel(parameters=self.tool.parameters)
-            yaml_origin = self.tool.tool_source.parse_class() in ("GalaxyUserTool", "GalaxyTool")
             job_runtime_state = runtimeify(
                 validated_tool_state,
                 parameter_bundle,
                 adapt_datasets,
                 adapt_collections,
-                yaml_origin=yaml_origin,
+                yaml_origin=self.tool.yaml_origin,
             )
             cwl_style_inputs = job_runtime_state.input_state
         else:
@@ -1174,10 +1191,11 @@ class UserToolEvaluator(ToolEvaluator):
             )
             hda_references = []
             cwl_style_inputs = to_cwl(
-                incoming,
+                remap(incoming, visit=_is_not_group_state_key),
                 hda_references=hda_references,
                 compute_environment=compute_environment,
                 shell_quotable=shell_quotable,
+                element_identifiers=element_identifiers,
             )
         return {"inputs": cwl_style_inputs, "outdir": job_working_directory}
 

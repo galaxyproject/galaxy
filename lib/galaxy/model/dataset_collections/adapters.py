@@ -94,7 +94,10 @@ class DCECollectionAdapter(CollectionAdapter):
             extensions = [hda.extension] if hda.extension else []
             states = {hda.dataset.state: 1} if hda.dataset.state else {}
             deleted = 1 if hda.deleted or (hda.dataset and hda.dataset.deleted) else 0
-            return CollectionStateSummary(dbkeys=dbkeys, extensions=extensions, states=states, deleted=deleted)
+            purged = 1 if hda.purged else 0
+            return CollectionStateSummary(
+                dbkeys=dbkeys, extensions=extensions, states=states, deleted=deleted, purged=purged
+            )
 
     @property
     def dataset_instances(self):
@@ -168,7 +171,10 @@ class PromoteDatasetToCollection(CollectionAdapter):
         assert hda.dataset is not None
         states = {hda.dataset.state: 1} if hda.dataset.state else {}
         deleted = 1 if hda.deleted or (hda.dataset and hda.dataset.deleted) else 0
-        return CollectionStateSummary(dbkeys=dbkeys, extensions=extensions, states=states, deleted=deleted)
+        purged = 1 if hda.purged else 0
+        return CollectionStateSummary(
+            dbkeys=dbkeys, extensions=extensions, states=states, deleted=deleted, purged=purged
+        )
 
     @property
     def dataset_instances(self):
@@ -241,6 +247,7 @@ class PromoteDatasetsToCollection(CollectionAdapter):
         extensions = set()
         states: dict[str, int] = defaultdict(int)
         deleted = 0
+        purged = 0
         for hda in self.dataset_instances:
             if hda.dbkey:
                 dbkeys.add(hda.dbkey)
@@ -250,8 +257,10 @@ class PromoteDatasetsToCollection(CollectionAdapter):
                 states[hda.dataset.state] += 1
             if hda.deleted or (hda.dataset and hda.dataset.deleted):
                 deleted += 1
+            if hda.purged:
+                purged += 1
         return CollectionStateSummary(
-            dbkeys=sorted(dbkeys), extensions=sorted(extensions), states=states, deleted=deleted
+            dbkeys=sorted(dbkeys), extensions=sorted(extensions), states=states, deleted=deleted, purged=purged
         )
 
     @property

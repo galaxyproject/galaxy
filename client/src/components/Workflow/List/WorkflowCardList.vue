@@ -18,6 +18,7 @@ interface Props {
     hideRuns?: boolean;
     filterable?: boolean;
     publishedView?: boolean;
+    sharedWithMeView?: boolean;
     editorView?: boolean;
     currentWorkflowId?: string;
     selectedWorkflowIds?: SelectedWorkflow[];
@@ -31,6 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
     hideRuns: false,
     filterable: true,
     publishedView: false,
+    sharedWithMeView: false,
     editorView: false,
     currentWorkflowId: "",
     selectedWorkflowIds: () => [],
@@ -44,7 +46,7 @@ const emit = defineEmits<{
     (e: "refreshList", overlayLoading?: boolean, silent?: boolean): void;
     (e: "updateFilter", key: string, value: any): void;
     (e: "insertWorkflow", id: string, name: string): void;
-    (e: "insertWorkflowSteps", id: string, stepCount: number): void;
+    (e: "insertWorkflowSteps", id: string, stepCount?: number): void;
     (e: "on-key-down", workflow: WorkflowSummary, event: KeyboardEvent): void;
     (e: "on-workflow-card-click", workflow: WorkflowSummary, event: Event): void;
 }>();
@@ -84,7 +86,7 @@ function onInsert(workflow: WorkflowSummary) {
 }
 
 function onInsertSteps(workflow: WorkflowSummary) {
-    emit("insertWorkflowSteps", workflow.id, workflow.number_of_steps as any);
+    emit("insertWorkflowSteps", workflow.id, workflow.number_of_steps);
 }
 
 const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
@@ -104,6 +106,7 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             :hide-runs="props.hideRuns"
             :filterable="props.filterable"
             :published-view="props.publishedView"
+            :shared-with-me-view="props.sharedWithMeView"
             :editor-view="props.editorView"
             :current="workflow.id === props.currentWorkflowId"
             :clickable="props.clickable"

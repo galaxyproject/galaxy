@@ -22,8 +22,7 @@ document aims to describe these and answer frequently asked questions.
 Conda is a package manager like ``apt-get``, ``yum``, ``pip``, ``brew`` or
 ``guix``. We don't want to argue about the relative merits of various package
 managers here, in fact Galaxy supports multiple package managers and we welcome
-community contributions (such as implementing a Guix package manager or
-enhancing the existing brew support to bring it on par with Conda).
+community contributions (such as implementing a Guix package manager).
 
 As a community, we have decided that Conda is the one that best fulfills
 the community's current needs. The following are some of the crucial Conda

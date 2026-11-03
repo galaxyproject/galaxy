@@ -3366,7 +3366,7 @@ inputs:
   type: boolean
   truevalue: booltrue
   falsevalue: boolfalse
-  checked: false
+  value: false
 outputs:
   out_file1:
     format: txt

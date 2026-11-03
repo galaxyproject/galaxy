@@ -4,6 +4,13 @@
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
 version: 2
+registries:
+  # Dependabot's proxy only allows egress to known registries, so without this
+  # every request to the extra index in pyproject.toml gets a 403 and uv
+  # silently resolves those packages from PyPI instead.
+  galaxy-wheels:
+    type: python-index
+    url: https://wheels.galaxyproject.org/simple
 updates:
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -16,3 +23,11 @@ updates:
           - "*"
     cooldown:
       default-days: 7
+  # Security updates only, configured so that they can use the registry above
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    registries:
+      - galaxy-wheels

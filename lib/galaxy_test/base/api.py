@@ -11,6 +11,7 @@ from urllib.parse import (
     urlencode,
     urljoin,
 )
+from uuid import uuid4
 
 import pytest
 import requests
@@ -32,6 +33,7 @@ from .api_util import (
     OTHER_USER,
     TEST_USER,
 )
+from .decorators import using_requirement
 from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 
 if TYPE_CHECKING:
@@ -146,6 +148,7 @@ class UsesApiTestCaseMixin:
             return ApiTestInteractor(self, api_key=api_key)
 
     def _setup_user(self, email, password=None):
+        using_requirement("admin")
         return self.galaxy_interactor.ensure_user_with_email(email, password=password)
 
     def _setup_user_get_key(self, email, password=None):
@@ -183,15 +186,25 @@ class UsesApiTestCaseMixin:
 
     def _login_browser_session(self, session: requests.Session, email: str, password: str) -> None:
         """Log ``session`` in through the login form, for routes that need a browser session rather than an API key."""
+        login_response = session.post(
+            urljoin(self.url, "user/login"),
+            data={"login": email, "password": password, "session_csrf_token": self._browser_csrf_token(session)},
+        )
+        assert_status_code_is(login_response, 200)
+
+    def _logout_browser_session(self, session: requests.Session, **params: str) -> None:
+        """Sign ``session`` out through ``user/logout``, as the client's Sign Out does."""
+        params["session_csrf_token"] = self._browser_csrf_token(session)
+        logout_response = session.get(urljoin(self.url, "user/logout"), params=params)
+        assert_status_code_is(logout_response, 200)
+        assert logout_response.json() == {"message": "Success."}
+
+    def _browser_csrf_token(self, session: requests.Session) -> str:
         login_page = session.get(urljoin(self.url, "login/start"))
         assert_status_code_is(login_page, 200)
         csrf_token_match = re.search(r'session_csrf_token = "(.*)"', login_page.text)
         assert csrf_token_match
-        login_response = session.post(
-            urljoin(self.url, "user/login"),
-            data={"login": email, "password": password, "session_csrf_token": csrf_token_match.group(1)},
-        )
-        assert_status_code_is(login_response, 200)
+        return csrf_token_match.group(1)
 
     @contextmanager
     def _different_user_history(self, email: str | None = None) -> Iterator[str]:
@@ -204,6 +217,33 @@ class UsesApiTestCaseMixin:
     def _get_current_history_id(self) -> str:
         """Return the current session's history ID (works for anonymous users)."""
         return self._get(urljoin(self.url, "history/current_history_json")).json()["id"]
+
+    @contextmanager
+    def _browser_session(self, email: str, password: str = "testpass"):
+        """Yield a ``requests.Session`` logged in as ``email`` via the web login form.
+
+        For legacy controller routes outside /api that reject API keys.
+        """
+        self._setup_user(email, password)
+        with requests.Session() as session:
+            login_page = session.get(urljoin(self.url, "login/start"))
+            csrf_token_match = re.search(r'session_csrf_token = "(.*?)"', login_page.text)
+            assert csrf_token_match, "session_csrf_token not found on login page"
+            login_response = session.post(
+                urljoin(self.url, "user/login"),
+                data={"login": email, "password": password, "session_csrf_token": csrf_token_match.group(1)},
+            )
+            assert_status_code_is(login_response, 200)
+            yield session
+
+    @contextmanager
+    def _different_user_with_address(self, desc: str):
+        """Act as a new user with one address, as tools reading ``$__user__.addresses`` need."""
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            user_id = self._get("users/current").json()["id"]
+            response = self._put(f"users/{user_id}/information/inputs", data={"address_0|desc": desc}, json=True)
+            assert_status_code_is_ok(response)
+            yield
 
     def _get(self, *args, **kwds):
         return self.galaxy_interactor.get(*args, **kwds)

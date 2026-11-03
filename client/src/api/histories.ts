@@ -351,6 +351,21 @@ export async function getHistoryCounts(historyId: string): Promise<HistoryCounts
     return data as HistoryCounts;
 }
 
+/** Removes the current user's own share of a history shared with them. */
+export async function unshareHistoryWithMe(historyId: string): Promise<void> {
+    const { error } = await GalaxyApi().PUT("/api/histories/{history_id}/unshare_with_me", {
+        params: {
+            path: {
+                history_id: historyId,
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+}
+
 export type StorageOperationMode = components["schemas"]["StorageOperationMode"];
 export type StorageOperationExecutePolicy = components["schemas"]["StorageOperationExecutePolicy"];
 export type StorageOperationPreviewResponse = components["schemas"]["StorageOperationPreviewResponse"];

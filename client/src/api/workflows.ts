@@ -162,6 +162,21 @@ export async function undeleteWorkflow(id: string): Promise<WorkflowSummary> {
     return data as WorkflowSummary;
 }
 
+/** Removes the current user's own share of a workflow shared with them. */
+export async function unshareWorkflowWithMe(id: string): Promise<void> {
+    const { error } = await GalaxyApi().PUT("/api/workflows/{workflow_id}/unshare_with_me", {
+        params: {
+            path: {
+                workflow_id: id,
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+}
+
 export function hasCreator(entry?: AnyWorkflow): entry is StoredWorkflowDetailed {
     return entry !== undefined && "creator" in entry && !!entry.creator;
 }

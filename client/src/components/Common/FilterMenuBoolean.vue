@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { BFormGroup, BFormRadioGroup } from "bootstrap-vue";
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 
+import { useUid } from "@/composables/utils/uid";
 import type { ValidFilter } from "@/utils/filtering";
 
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
+import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 
 type FilterType = string | boolean | undefined;
 
@@ -20,6 +21,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     view: "dropdown",
 });
+
+const labelId = useUid("filter-menu-boolean-label-");
 
 const boolType = computed(() => props.filter.boolType || "default");
 const isCheckbox = computed(() => boolType.value === "is" && props.view === "compact");
@@ -42,37 +45,47 @@ const emit = defineEmits<{
     (e: "change", name: string, value: FilterType): void;
 }>();
 
+function filterValue() {
+    const value = props.filters[props.name];
+    return value !== undefined ? value : "any";
+}
+
+// FilterMenu stages changes in a non-reactive object until search, so the shown choice is kept here
+const selected = ref<FilterType>(filterValue());
+
 const value = computed({
-    get: () => {
-        const value = props.filters[props.name];
-        return value !== undefined ? value : "any";
-    },
+    get: () => selected.value,
     set: (newVal) => {
         const value = newVal !== null ? newVal : "any";
+        selected.value = value;
         emit("change", props.name, value);
     },
 });
+
+watch(
+    () => props.filters,
+    () => {
+        selected.value = filterValue();
+    },
+);
 </script>
 
 <template>
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
     <div :class="{ 'd-flex': isCheckbox }" @keyup.enter="emit('on-enter')" @keyup.esc="emit('on-esc')">
-        <small :class="{ 'mr-1': isCheckbox }">{{ props.filter.placeholder }}:</small>
+        <small :id="labelId" :class="{ 'mr-1': isCheckbox }">{{ props.filter.placeholder }}:</small>
 
         <div v-if="isCheckbox" :data-description="`filter ${props.name}`">
             <!-- value is "any" when unset, which is not a checked state -->
-            <GCheckbox
-                :aria-label="props.filter.placeholder"
-                :model-value="value === true"
-                @update:model-value="value = $event" />
+            <GCheckbox :aria-labelledby="labelId" :model-value="value === true" @update:model-value="value = $event" />
         </div>
-        <BFormGroup v-else class="m-0">
-            <BFormRadioGroup
-                v-model="value"
-                :options="options"
-                size="sm"
-                buttons
-                :data-description="`filter ${props.name}`" />
-        </BFormGroup>
+        <GRadioGroup
+            v-else
+            v-model="value"
+            buttons
+            size="small"
+            :aria-labelledby="labelId"
+            :data-description="`filter ${props.name}`"
+            :options="options" />
     </div>
 </template>

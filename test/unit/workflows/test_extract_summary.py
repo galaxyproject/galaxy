@@ -46,7 +46,7 @@ class TestWorkflowExtractSummary(TestCase):
         # source, so the output is attributed to the source's creating job.
         hda = MockHda()
         # Plain copies have no creating job of their own - only the original hda
-        # records the producing job. _original_hda follows the copy chain back to it.
+        # records the producing job. get_original_hda follows the copy chain back to it.
         derived_hda_1 = MockHda(job=UNDEFINED_JOB)
         derived_hda_1.copied_from_history_dataset_association = hda
         derived_hda_2 = MockHda(job=UNDEFINED_JOB)

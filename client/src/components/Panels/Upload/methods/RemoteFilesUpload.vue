@@ -48,6 +48,7 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import BreadcrumbNavigation from "@/components/Common/BreadcrumbNavigation.vue";
 import GTable from "@/components/Common/GTable.vue";
+import FtpUploadHelp from "@/components/FilesDialog/FtpUploadHelp.vue";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 
 interface Props {
@@ -567,8 +568,31 @@ function clearSearch() {
     searchQuery.value = "";
 }
 
+/**
+ * Reloads or refilters for a search the user typed. Navigation resets the search and page
+ * itself and loads once, so neither change may trigger a load on its own.
+ */
 function updateSearchQuery(newQuery: string) {
     searchQuery.value = newQuery;
+    currentPage.value = 1;
+    if (urlTracker.isAtRoot.value || supportsServerSearch.value) {
+        load();
+    } else if (allFetchedItems.value.length > 0) {
+        updateClientSideView();
+    }
+}
+
+function onPageChange(page: number) {
+    currentPage.value = page;
+    if (urlTracker.isAtRoot.value) {
+        return;
+    }
+
+    if (supportsServerPagination.value) {
+        load();
+    } else if (allFetchedItems.value.length > 0) {
+        updateClientSideView();
+    }
 }
 
 function prepareUpload(): PreparedUpload | null {
@@ -582,27 +606,6 @@ function prepareUpload(): PreparedUpload | null {
 
 onMounted(() => {
     load();
-});
-
-watch(searchQuery, () => {
-    currentPage.value = 1;
-    if (urlTracker.isAtRoot.value || supportsServerSearch.value) {
-        load();
-    } else if (allFetchedItems.value.length > 0) {
-        updateClientSideView();
-    }
-});
-
-watch(currentPage, () => {
-    if (urlTracker.isAtRoot.value) {
-        return;
-    }
-
-    if (supportsServerPagination.value) {
-        load();
-    } else if (allFetchedItems.value.length > 0) {
-        updateClientSideView();
-    }
 });
 
 function onErrorRetry() {
@@ -641,12 +644,14 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
             </div>
 
             <!-- Search bar -->
-            <div class="search-bar-container mb-2">
+            <div class="search-bar-container mb-2" :data-search-query="searchQuery" :data-busy="isBusy">
                 <DataDialogSearch
                     :value="searchQuery"
                     :title="urlTracker.isAtRoot.value ? 'file sources' : 'files and folders'"
                     @input="updateSearchQuery" />
             </div>
+
+            <FtpUploadHelp :uri="currentFileSourceUri" />
 
             <!-- Error message -->
             <GAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = undefined">
@@ -762,7 +767,8 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     :total-rows="totalMatches"
                     :per-page="perPage"
                     align="center"
-                    size="sm" />
+                    size="sm"
+                    @change="onPageChange" />
             </div>
 
             <!-- Action buttons -->
@@ -961,6 +967,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 
     .remote-files-browser-label {
         text-align: start;
+        @include upload-browser-label;
     }
 }
 

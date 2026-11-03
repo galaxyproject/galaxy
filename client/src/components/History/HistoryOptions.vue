@@ -165,6 +165,7 @@ watch(
 
             <GDropdownItem
                 v-if="!isUnownedHistory"
+                data-description="resume paused jobs"
                 :disabled="!canEditHistory"
                 :title="localize('Resume all Paused Jobs in this History')"
                 @click="resumePausedJobs()">

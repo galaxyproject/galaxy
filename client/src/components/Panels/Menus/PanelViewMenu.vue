@@ -123,7 +123,7 @@ async function updatePanelView(panel: Panel) {
 
 <template>
     <GDropdown
-        v-g-tooltip.hover.top
+        v-g-tooltip.hover.right
         right
         block
         no-caret

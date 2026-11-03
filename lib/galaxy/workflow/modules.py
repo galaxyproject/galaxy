@@ -326,6 +326,7 @@ def to_cwl(
     step: WorkflowStep | None = None,
     compute_environment: ComputeEnvironment | None = None,
     shell_quotable: bool = False,
+    element_identifiers: dict[DatasetInstance, str] | None = None,
 ):
     element_identifier = None
     if isinstance(value, NoReplacement):
@@ -377,9 +378,12 @@ def to_cwl(
             if isinstance(value.datatype, Directory):
                 properties["class"] = "Directory"
                 properties["listing"] = []
-            set_basename_and_derived_properties(
-                properties, value.dataset.created_from_basename or element_identifier or value.name
-            )
+            set_basename_and_derived_properties(properties, value.dataset.created_from_basename or value.name)
+            if element_identifier:
+                properties["element_identifier"] = element_identifier
+            elif element_identifiers is not None:
+                # Passed by the UDT evaluator only; falls back to the dataset name like Cheetah.
+                properties["element_identifier"] = element_identifiers.get(value) or value.name
             return properties
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":
@@ -390,6 +394,7 @@ def to_cwl(
                     step=step,
                     compute_environment=compute_environment,
                     shell_quotable=shell_quotable,
+                    element_identifiers=element_identifiers,
                 )
                 for dce in value.dataset_elements
             ]
@@ -398,11 +403,12 @@ def to_cwl(
             rval = {}
             for element in value.elements:
                 rval[element.element_identifier] = to_cwl(
-                    element.element_object,
+                    element,
                     hda_references=hda_references,
                     step=step,
                     compute_environment=compute_environment,
                     shell_quotable=shell_quotable,
+                    element_identifiers=element_identifiers,
                 )
             return rval
     elif isinstance(value, list):
@@ -413,6 +419,7 @@ def to_cwl(
                 step=step,
                 compute_environment=compute_environment,
                 shell_quotable=shell_quotable,
+                element_identifiers=element_identifiers,
             )
             for v in value
         ]
@@ -427,6 +434,7 @@ def to_cwl(
                 step=step,
                 compute_environment=compute_environment,
                 shell_quotable=shell_quotable,
+                element_identifiers=element_identifiers,
             )
             for k, v in value.items()
         }
@@ -807,6 +815,32 @@ class WorkflowModule:
         See :mod:`galaxy.workflow.map_over` for the model and the algorithm.
         """
         return MapOverPlanner(self.trans).plan_map_over(progress, step, all_inputs)
+
+
+def workflow_step_name(step: WorkflowStep) -> str:
+    """Return the step label, a legacy input step's name, or its 1-based position."""
+    name = step.label
+    if not name and step.is_input_type and step.tool_inputs:
+        name = step.tool_inputs.get("name")
+    return str(name or step.order_index + 1)
+
+
+def disconnected_required_subworkflow_inputs(step: WorkflowStep, subworkflow: Workflow) -> list[WorkflowStep]:
+    """Return the required input steps of ``subworkflow`` without a default that ``step`` doesn't connect."""
+    connected_input_step_ids = {connection.input_subworkflow_step_id for connection in step.input_connections}
+    default_not_set = object()
+    return [
+        input_step
+        for input_step in subworkflow.input_steps
+        if input_step.id not in connected_input_step_ids
+        and not input_step.input_optional
+        and input_step.get_input_default_value(default_not_set) is default_not_set
+    ]
+
+
+def disconnected_subworkflow_inputs_message(input_steps: list[WorkflowStep]) -> str:
+    input_names = ", ".join(f"'{workflow_step_name(input_step)}'" for input_step in input_steps)
+    return f"Subworkflow has disconnected required input {input_names}"
 
 
 class SubWorkflowModule(WorkflowModule):
@@ -1693,8 +1727,10 @@ class InputParameterModule(WorkflowModule):
                     tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
 
                     def callback(input, prefixed_name, context, **kwargs):
-                        if prefixed_name == connection.input_name and hasattr(input, "get_options"):  # noqa: B023
-                            static_options.append(input.get_options(self.trans, context))
+                        if prefixed_name != connection.input_name:  # noqa: B023
+                            return
+                        if isinstance(input, SelectToolParameter):
+                            static_options.append(input.get_display_options(self.trans, context))
 
                     visit_input_values(tool_inputs, module.state.inputs, callback)
                 elif isinstance(module, SubWorkflowModule):
@@ -1882,11 +1918,15 @@ class InputParameterModule(WorkflowModule):
                 # likely most important for parent workflows, where they run on primitive values.
                 input_param.validate(input_value, trans)
         except ValueError as e:
+            details = str(e)
+            if isinstance(e, ParameterValueError):
+                # Match run_request.py: name the step, not the runtime parameter "input".
+                details = f"{self.label or invocation_step.workflow_step.order_index + 1}: {e.message_suffix}"
             raise FailWorkflowEvaluation(
                 why=InvocationFailureWorkflowParameterInvalid(
                     reason=FailureReason.workflow_parameter_invalid,
-                    workflow_step_id=invocation_step.workflow_step_id,
-                    details=str(e),
+                    workflow_step_id=invocation_step.workflow_step.id,
+                    details=details,
                 )
             )
         step_outputs = dict(output=input_value)
@@ -2696,27 +2736,14 @@ class ToolModule(WorkflowModule):
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def from_dict(Class, trans: "ProvidesHistoryContext", d, **kwds):
+    def resolve_tool_uuid(Class, trans: "ProvidesHistoryContext", d):
+        """Resolve embedded tools with the user's permissions, creating and committing them if needed."""
         tool_id = d.get("content_id") or d.get("tool_id")
-        tool_version = d.get("tool_version")
-        if tool_version:
-            tool_version = str(tool_version)
-        tool_uuid = d.get("tool_uuid", None)
-        if tool_version == "latest":
-            # Resolve to the actual latest installed version via lineage rather than matching the exact GUID.
-            # This mirrors what &version=latest does in the tool form.
-            tool_version = None
-            if tool_id:
-                tool_id = remove_version_from_guid(tool_id) or tool_id
-            kwds = dict(kwds, exact_tools=False)
+        tool_uuid = d.get("tool_uuid")
         tool_representation = d.get("tool_representation")
         if tool_representation and tool_representation.get("class") == "GalaxyUserTool":
-            # User-defined tool embedded in the workflow. A referenced tool the
-            # importing user owns is reused; otherwise (an export by another
-            # user or from another Galaxy) the embedded definition becomes a
-            # private UDT owned by the importing user. Requires
-            # USER_TOOL_EXECUTE; create_unprivileged_tool raises
-            # InsufficientPermissionsException otherwise.
+            # Reuse a tool owned by this user, or create a private copy of the
+            # embedded definition when importing another user's workflow.
             if trans.user is None:
                 raise exceptions.InsufficientPermissionsException("User is not allowed to run unprivileged tools")
             if not (tool_uuid and trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)):
@@ -2729,6 +2756,22 @@ class ToolModule(WorkflowModule):
             create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
             dynamic_tool = trans.app.dynamic_tool_manager.create_tool(create_request)
             tool_uuid = dynamic_tool.uuid
+        return tool_uuid
+
+    @classmethod
+    def from_dict(Class, trans: "ProvidesHistoryContext", d, **kwds):
+        tool_id = d.get("content_id") or d.get("tool_id")
+        tool_version = d.get("tool_version")
+        if tool_version:
+            tool_version = str(tool_version)
+        tool_uuid = Class.resolve_tool_uuid(trans, d)
+        if tool_version == "latest":
+            # Resolve to the actual latest installed version via lineage rather than matching the exact GUID.
+            # This mirrors what &version=latest does in the tool form.
+            tool_version = None
+            if tool_id:
+                tool_id = remove_version_from_guid(tool_id) or tool_id
+            kwds = dict(kwds, exact_tools=False)
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException(f"No content id could be located for for step [{d}]")
         module = super().from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
@@ -3313,10 +3356,17 @@ class ToolModule(WorkflowModule):
         )
 
         complete = False
+        # A step resumed after a capped scheduling iteration skips the jobs it already created.
+        recorded_job_indexes: set[int] = set()
+        if collection_info and not invocation_step.is_new:
+            implicit_collection_jobs = invocation_step.implicit_collection_jobs
+            if implicit_collection_jobs is not None:
+                recorded_job_indexes = implicit_collection_jobs.recorded_order_indexes()
         completed_jobs: dict[int, Job | None] = tool.completed_jobs(
             trans,
             use_cached_job,
             param_combinations,
+            recorded_job_indexes=recorded_job_indexes,
         )
         try:
             mapping_params = MappingParameters(
@@ -3350,6 +3400,7 @@ class ToolModule(WorkflowModule):
                     step, job, progress.effective_replacement_dict()
                 ),
                 completed_jobs=completed_jobs,
+                recorded_job_indexes=recorded_job_indexes,
                 workflow_resource_parameters=resource_parameters,
                 credentials_context=credentials_context,
             )
@@ -3518,13 +3569,12 @@ class ToolModule(WorkflowModule):
         return PostJobAction(value["action_type"], step, output_name, action_arguments)
 
     def get_informal_replacement_parameters(self, step: WorkflowStep) -> list[str]:
-        """Return a list of replacement parameters."""
+        """Return the ``${...}`` names in rename actions, the only actions that substitute them at runtime."""
         replacement_parameters = set()
         for pja in step.post_job_actions:
-            if action_arguments := pja.action_arguments:
-                for argument in action_arguments.values():
-                    for match in re.findall(r"\$\{(.+?)\}", unicodify(argument)):
-                        replacement_parameters.add(match)
+            if pja.action_type == "RenameDatasetAction":
+                newname = (pja.action_arguments or {}).get("newname") or ""
+                replacement_parameters.update(re.findall(r"\$\{(.+?)\}", unicodify(newname)))
 
         return list(replacement_parameters)
 

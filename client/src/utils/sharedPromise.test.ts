@@ -1,17 +1,7 @@
+import { deferred } from "@tests/vitest/deferred";
 import { describe, expect, it, vi } from "vitest";
 
 import { dedupeInFlight, memoizeUntilRejected, rerunWhileBusy } from "./sharedPromise";
-
-/** A promise whose settlement the test controls. */
-function deferred<T>() {
-    let resolve!: (value: T) => void;
-    let reject!: (error: unknown) => void;
-    const promise = new Promise<T>((res, rej) => {
-        resolve = res;
-        reject = rej;
-    });
-    return { promise, resolve, reject };
-}
 
 describe("memoizeUntilRejected", () => {
     it("shares one call between concurrent callers", async () => {

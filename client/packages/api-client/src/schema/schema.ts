@@ -3338,6 +3338,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/unshare_with_me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Remove this item from the items shared with the current user.
+         * @description Removes the current user's own share of this item. Other users' shares are left unchanged.
+         */
+        put: operations["unshare_with_me_api_histories__history_id__unshare_with_me_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/write_store": {
         parameters: {
             query?: never;
@@ -4583,6 +4603,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pages/{id}/extraction_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Summarize the page's history for workflow extraction, seeded from referenced outputs.
+         * @description Summarize the jobs in the page's history, preselecting the subgraph that
+         *     produced the datasets/collections the page references.
+         */
+        get: operations["extraction_summary_api_pages__id__extraction_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pages/{id}/prepare_download": {
         parameters: {
             query?: never;
@@ -4785,20 +4826,19 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/pages/{id}/workflow_extraction_summary": {
+    "/api/pages/{id}/unshare_with_me": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
+        get?: never;
         /**
-         * Summarize the page's history for workflow extraction, seeded from referenced outputs.
-         * @description Summarize the jobs in the page's history, preselecting the subgraph that
-         *     produced the datasets/collections the page references.
+         * Remove this item from the items shared with the current user.
+         * @description Removes the current user's own share of this item. Other users' shares are left unchanged.
          */
-        get: operations["workflow_extraction_summary_api_pages__id__workflow_extraction_summary_get"];
-        put?: never;
+        put: operations["unshare_with_me_api_pages__id__unshare_with_me_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -6805,6 +6845,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visualizations/{id}/unshare_with_me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Remove this item from the items shared with the current user.
+         * @description Removes the current user's own share of this item. Other users' shares are left unchanged.
+         */
+        put: operations["unshare_with_me_api_visualizations__id__unshare_with_me_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/whoami": {
         parameters: {
             query?: never;
@@ -7341,6 +7401,26 @@ export interface paths {
          * @description Removes this item from the published list and return the current sharing status.
          */
         put: operations["unpublish_api_workflows__workflow_id__unpublish_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflows/{workflow_id}/unshare_with_me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Remove this item from the items shared with the current user.
+         * @description Removes the current user's own share of this item. Other users' shares are left unchanged.
+         */
+        put: operations["unshare_with_me_api_workflows__workflow_id__unshare_with_me_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -9440,6 +9520,14 @@ export interface components {
              */
             tags?: string[] | null;
         };
+        /** CollectionMetadata */
+        CollectionMetadata: {
+            /**
+             * Name
+             * @description Expected name of the output collection.
+             */
+            name?: string | null;
+        };
         /**
          * CollectionSourceType
          * @enum {string}
@@ -11531,6 +11619,11 @@ export interface components {
              * @description The number of elements in the collection that are marked as deleted.
              */
             elements_deleted: number;
+            /**
+             * Datasets purged
+             * @description The number of elements in the collection that are purged. Purged elements are also counted as deleted.
+             */
+            elements_purged: number;
             /** @description A dictionary containing counts for each dataset state in the collection. */
             elements_states: components["schemas"]["ElementsStatesDict"];
             /**
@@ -15515,6 +15608,11 @@ export interface components {
              * @description The number of elements in the collection that are marked as deleted.
              */
             elements_deleted?: number | null;
+            /**
+             * Datasets purged
+             * @description The number of elements in the collection that are purged. Purged elements are also counted as deleted.
+             */
+            elements_purged?: number | null;
             /** @description A dictionary containing counts for each dataset state in the collection. */
             elements_states?: components["schemas"]["ElementsStatesDict"] | null;
             /**
@@ -15683,6 +15781,11 @@ export interface components {
              * @description The number of elements in the collection that are marked as deleted.
              */
             elements_deleted: number;
+            /**
+             * Datasets purged
+             * @description The number of elements in the collection that are purged. Purged elements are also counted as deleted.
+             */
+            elements_purged: number;
             /** @description A dictionary containing counts for each dataset state in the collection. */
             elements_states: components["schemas"]["ElementsStatesDict"];
             /**
@@ -15841,6 +15944,11 @@ export interface components {
              * @description The number of elements in the collection that are marked as deleted.
              */
             elements_deleted: number;
+            /**
+             * Datasets purged
+             * @description The number of elements in the collection that are purged. Purged elements are also counted as deleted.
+             */
+            elements_purged: number;
             /** @description A dictionary containing counts for each dataset state in the collection. */
             elements_states: components["schemas"]["ElementsStatesDict"];
             /**
@@ -19994,7 +20102,7 @@ export interface components {
             /** Can Modify Folder */
             can_modify_folder: boolean;
             /** Folder Description */
-            folder_description: string;
+            folder_description: string | null;
             /** Folder Name */
             folder_name: string;
             /** Full Path */
@@ -21081,16 +21189,16 @@ export interface components {
              */
             id: string;
             /**
-             * Kind
-             * @description Whether the output ID identifies an HDA or an HDCA.
-             * @enum {string}
-             */
-            kind: "hda" | "hdca";
-            /**
              * Label
              * @description Workflow output label to assign to the exposed output.
              */
             label: string;
+            /**
+             * Source
+             * @description Whether the output ID identifies an HDA or an HDCA.
+             * @enum {string}
+             */
+            src: "hda" | "hdca";
         };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
@@ -24337,16 +24445,16 @@ export interface components {
              */
             id: string;
             /**
-             * Kind
-             * @description Whether the ID identifies a plain tool job or an ImplicitCollectionJobs (mapped step).
-             * @enum {string}
-             */
-            kind: "job" | "implicit_collection_jobs";
-            /**
              * Label
              * @description Workflow step label to assign to the extracted tool step.
              */
             label: string;
+            /**
+             * Source
+             * @description Whether the ID identifies a plain tool job or an ImplicitCollectionJobs (mapped step).
+             * @enum {string}
+             */
+            src: "job" | "implicit_collection_jobs";
         };
         /** StepReferenceByLabel */
         StepReferenceByLabel: {
@@ -25519,6 +25627,8 @@ export interface components {
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Input"];
             } | null;
+            /** Metadata */
+            metadata?: components["schemas"]["CollectionMetadata"] | null;
         };
         /** TestCollectionOutputAssertions */
         "TestCollectionOutputAssertions-Output": {
@@ -25545,6 +25655,8 @@ export interface components {
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Output"];
             } | null;
+            /** Metadata */
+            metadata?: components["schemas"]["CollectionMetadata"] | null;
         };
         /** TestDataOutputAssertions */
         "TestDataOutputAssertions-Input": {
@@ -28510,11 +28622,6 @@ export interface components {
              */
             output_labels?: components["schemas"]["OutputLabelHint"][];
             /**
-             * Report Title
-             * @description Title for the workflow report built from from_page_id; defaults to the workflow name.
-             */
-            report_title?: string | null;
-            /**
              * Step Labels
              * @description Labels to assign to extracted tool steps. Steps not listed are left unlabeled.
              */
@@ -28776,7 +28883,7 @@ export interface components {
                 | null;
             /**
              * Invocation state
-             * @description State of workflow invocation.
+             * @description State of workflow invocation. `completed` means every job reached a terminal state (ok, error, deleted, skipped, paused or stopped), not that every job succeeded; see `job_state_summary` in `/api/invocations/{invocation_id}/completion`.
              */
             state: components["schemas"]["InvocationState"];
             /**
@@ -28903,7 +29010,7 @@ export interface components {
             };
             /**
              * Invocation state
-             * @description State of workflow invocation.
+             * @description State of workflow invocation. `completed` means every job reached a terminal state (ok, error, deleted, skipped, paused or stopped), not that every job succeeded; see `job_state_summary` in `/api/invocations/{invocation_id}/completion`.
              */
             state: components["schemas"]["InvocationState"];
             /**
@@ -44279,6 +44386,48 @@ export interface operations {
             };
         };
     };
+    unshare_with_me_api_histories__history_id__unshare_with_me_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     write_store_api_histories__history_id__write_store_post: {
         parameters: {
             query?: never;
@@ -48485,6 +48634,50 @@ export interface operations {
             };
         };
     };
+    extraction_summary_api_pages__id__extraction_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the Page. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The history's extraction summary with seeded rows and exposed outputs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowExtractionSummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     prepare_pdf_api_pages__id__prepare_download_post: {
         parameters: {
             query?: never;
@@ -48941,7 +49134,7 @@ export interface operations {
             };
         };
     };
-    workflow_extraction_summary_api_pages__id__workflow_extraction_summary_get: {
+    unshare_with_me_api_pages__id__unshare_with_me_put: {
         parameters: {
             query?: never;
             header?: {
@@ -48956,14 +49149,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The history's extraction summary with seeded rows and exposed outputs. */
-            200: {
+            /** @description Successful Response */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["WorkflowExtractionSummary"];
-                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
@@ -55136,6 +55327,48 @@ export interface operations {
             };
         };
     };
+    unshare_with_me_api_visualizations__id__unshare_with_me_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Visualization. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     whoami_api_whoami_get: {
         parameters: {
             query?: never;
@@ -56874,6 +57107,48 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    unshare_with_me_api_workflows__workflow_id__unshare_with_me_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
+                workflow_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {

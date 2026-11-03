@@ -19,7 +19,15 @@
  * <HistoryList activeList="shared" />
  */
 
-import { faBurn, faColumns, faPlus, faTags, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import {
+    faBurn,
+    faColumns,
+    faPlus,
+    faTags,
+    faTrash,
+    faTrashRestore,
+    faUserSlash,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNav, BNavItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
@@ -31,6 +39,7 @@ import {
     getMyHistories,
     getPublishedHistories,
     getSharedHistories,
+    unshareHistoryWithMe,
 } from "@/api/histories";
 import type HistoryCard from "@/components/History/HistoryCard.vue";
 import { useHistoryCardActions } from "@/components/History/useHistoryCardActions";
@@ -40,7 +49,9 @@ import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { updateHistoryFields } from "@/stores/services/history.services";
 import { useUserStore } from "@/stores/userStore";
+import { describeFailures, settleEach, type SettleFailure } from "@/utils/settleEach";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { pluralize } from "@/utils/strings";
 
 import { getHistoryListFilters } from "./historyList";
 
@@ -103,6 +114,7 @@ const showBulkAddTagsModal = ref(false);
 const bulkTagsLoading = ref(false);
 const bulkDeleteOrRestoreLoading = ref(false);
 const bulkPurgeLoading = ref(false);
+const bulkUnshareLoading = ref(false);
 const historiesLoaded = ref<AnyHistoryEntry[]>([]);
 
 /** Computed property that determines if the current view is "My Histories" */
@@ -184,8 +196,12 @@ const {
     totalItemsInQuery: computed(() => totalHistories.value ?? 0),
     allItems: historiesLoaded,
     filterClass: historyListFilters.value,
-    selectable: computed(() => myView.value),
+    selectable: computed(() => myView.value || sharedView.value),
     onDelete: async (item) => {
+        // Delete/Backspace never removes a share; that takes the explicit footer or card action
+        if (!myView.value) {
+            return;
+        }
         const { onDeleteHistory } = useHistoryCardActions(
             computed(() => item),
             false,
@@ -337,7 +353,7 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
 
     const confirmed = await confirm(
         `${hasPublished ? "Some of the selected histories are published and will be removed from public view. " : ""}
-            Are you sure you want to ${purge ? "purge" : "delete"} ${totalSelected} histories?`,
+            Are you sure you want to ${purge ? "purge" : "delete"} ${totalSelected} ${pluralize(totalSelected, "history", "histories")}?`,
         {
             title: purge ? "Purge histories" : "Delete histories",
             okText: purge ? "Purge histories" : "Delete histories",
@@ -367,7 +383,9 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
                 );
             }
 
-            Toast.success(`${purge ? "Purged" : "Deleted"} ${totalSelected} histories.`);
+            Toast.success(
+                `${purge ? "Purged" : "Deleted"} ${totalSelected} ${pluralize(totalSelected, "history", "histories")}.`,
+            );
 
             resetSelection();
         } catch {
@@ -388,11 +406,14 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
 async function onBulkRestore() {
     const totalSelected = selectedHistories.value.length;
 
-    const confirmed = await confirm(`Are you sure you want to restore ${totalSelected} histories?`, {
-        title: "Restore histories",
-        okText: "Restore histories",
-        okIcon: faTrashRestore,
-    });
+    const confirmed = await confirm(
+        `Are you sure you want to restore ${totalSelected} ${pluralize(totalSelected, "history", "histories")}?`,
+        {
+            title: "Restore histories",
+            okText: "Restore histories",
+            okIcon: faTrashRestore,
+        },
+    );
 
     if (confirmed) {
         const tmpSelected = [...selectedHistories.value];
@@ -410,7 +431,7 @@ async function onBulkRestore() {
                 );
             }
 
-            Toast.success(`Restored ${totalSelected} histories.`);
+            Toast.success(`Restored ${totalSelected} ${pluralize(totalSelected, "history", "histories")}.`);
 
             resetSelection();
         } catch {
@@ -419,6 +440,69 @@ async function onBulkRestore() {
             bulkDeleteOrRestoreLoading.value = false;
 
             await load(true);
+        }
+    }
+}
+
+/**
+ * Removes the current user's shares of the selected histories
+ * Continues past individual failures and reports them together
+ */
+async function onBulkUnshareWithMe() {
+    const totalSelected = selectedHistories.value.length;
+
+    const confirmed = await confirm(
+        `Remove ${totalSelected} ${pluralize(totalSelected, "history", "histories")} from your shared histories? Their owners will need to share them again for you to see them.`,
+        {
+            title: "Remove shared histories",
+            okText: "Remove",
+            okColor: "red",
+            okIcon: faUserSlash,
+        },
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    let failures: SettleFailure<SelectedHistory>[] = [];
+
+    try {
+        overlay.value = true;
+        bulkUnshareLoading.value = true;
+
+        failures = await settleEach(selectedHistories.value, (h) => unshareHistoryWithMe(h.id));
+
+        const removed = totalSelected - failures.length;
+        if (removed > 0) {
+            Toast.success(
+                `Removed ${removed} ${pluralize(removed, "history", "histories")} from your shared histories.`,
+            );
+        }
+        if (failures.length) {
+            Toast.error(
+                `Failed to remove ${failures.length} shared ${pluralize(failures.length, "history", "histories")}: ${describeFailures(failures, (h) => h.name)}`,
+            );
+        }
+
+        resetSelection();
+    } finally {
+        bulkUnshareLoading.value = false;
+
+        await load(true);
+
+        selectTmpSelected(failures.map(({ item }) => item));
+    }
+}
+
+/**
+ * Reselects the given histories that are still loaded
+ */
+function selectTmpSelected(tmpSelected: SelectedHistory[]) {
+    for (const selected of tmpSelected) {
+        const history = historiesLoaded.value.find((h) => h.id === selected.id);
+        if (history) {
+            setSelected(history, true);
         }
     }
 }
@@ -453,7 +537,7 @@ async function onBulkTagsAdd(tags: string[]) {
             );
         }
 
-        Toast.success(`Added tag(s) to ${totalSelected} histories.`);
+        Toast.success(`Added tag(s) to ${totalSelected} ${pluralize(totalSelected, "history", "histories")}.`);
     } catch (e) {
         Toast.error(`Failed to add tag(s) to some histories. ${e}`);
     } finally {
@@ -504,7 +588,7 @@ async function onBulkOpenInMultiview() {
     resetSelection();
 
     Toast.success(
-        `Opened ${totalSelectedHistories} ${totalSelectedHistories === 1 ? "history" : "histories"} in multiview.`,
+        `Opened ${totalSelectedHistories} ${pluralize(totalSelectedHistories, "history", "histories")} in multiview.`,
     );
 }
 
@@ -603,7 +687,7 @@ onMounted(async () => {
                 list-id="histories"
                 show-sort-options
                 show-view-toggle
-                :show-select-all="myView"
+                :show-select-all="myView || sharedView"
                 :select-all-disabled="loading || overlay || noItems || noResults"
                 :all-selected="!!selectedHistories.length && selectedHistories.length === historiesLoaded.length"
                 :indeterminate-selected="
@@ -674,7 +758,7 @@ onMounted(async () => {
                 :published-view="publishedView"
                 :archived-view="archivedView"
                 :grid-view="currentListViewMode === 'grid'"
-                :selectable="myView"
+                :selectable="myView || sharedView"
                 :selected-history-ids="selectedHistories"
                 :item-refs="itemRefs"
                 :range-select-anchor="initSelectedItem"
@@ -762,6 +846,22 @@ onMounted(async () => {
                     @click="onBulkOpenInMultiview">
                     <FontAwesomeIcon :icon="faColumns" fixed-width />
                     Open in Multiview ({{ selectedHistories.length }})
+                </GButton>
+            </div>
+            <div v-else-if="sharedView && selectedHistories.length" class="d-flex flex-gapx-1 w-100 position-absolute">
+                <GButton
+                    id="history-list-footer-bulk-unshare-button"
+                    v-g-tooltip.hover
+                    :title="bulkUnshareLoading ? 'Removing shared histories' : 'Remove selected histories from Shared'"
+                    :disabled="bulkUnshareLoading"
+                    size="small"
+                    color="blue"
+                    @click="onBulkUnshareWithMe">
+                    <span v-if="!bulkUnshareLoading">
+                        <FontAwesomeIcon :icon="faUserSlash" fixed-width />
+                        Remove from Shared ({{ selectedHistories.length }})
+                    </span>
+                    <LoadingSpan v-else message="Removing" />
                 </GButton>
             </div>
 

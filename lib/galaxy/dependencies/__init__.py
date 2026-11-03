@@ -12,6 +12,7 @@ from os.path import (
     exists,
     join,
 )
+from shutil import which
 from typing import (
     Any,
     cast,
@@ -26,7 +27,6 @@ from galaxy.util import (
     asbool,
     etree,
     parse_xml,
-    which,
 )
 from galaxy.util.config_templates import apply_syntactic_sugar
 from galaxy.util.properties import (

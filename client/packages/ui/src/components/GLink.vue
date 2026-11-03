@@ -118,15 +118,17 @@ const linkElementRef = useResolveElement(linkRef);
         text-decoration: underline;
     }
 
-    // bootstrap override
+    // App-wide button styles can give a <button> root a focus shadow that outranks these scoped rules
     &:focus,
     &:active:focus {
         box-shadow: none !important;
     }
 
+    // Page-background gap keeps the ring clear of the surrounding text; outline survives forced colors.
     &:focus-visible {
-        // this important is there because of bootstrap. todo: remove
-        box-shadow: 0 0 0 0.2rem var(--color-blue-400) !important;
+        outline: 2px solid var(--color-blue-600);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 2px var(--background-color) !important;
     }
 
     &.g-dark {

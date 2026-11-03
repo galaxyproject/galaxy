@@ -53,6 +53,7 @@
   <tool file="tool_provided_metadata_10.xml" />
   <tool file="tool_provided_metadata_11.xml" />
   <tool file="tool_provided_metadata_12.xml" />
+  <tool file="tool_provided_metadata_13.xml" />
   <tool file="tool_provided_metadata_security.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="is_of_type.xml" />
@@ -66,6 +67,7 @@
   <tool file="filter_param_value_ref_attribute.xml" />
   <tool file="filter_param_value_nested_conditional.xml" />
   <tool file="filter_static_regexp.xml" />
+  <tool file="select_from_duplicate_value_table.xml" />
   <tool file="select_from_dataset.xml" />
   <tool file="select_from_dataset_in_conditional.xml" />
   <tool file="conditional_name_digit_suffix.xml" />
@@ -84,6 +86,7 @@
   <tool file="unicode_stream.xml" />
   <tool file="vcf_bgzip.xml" />
   <tool file="metadata.xml" />
+  <tool file="metadata_defaults.xml" />
   <tool file="metadata_bam.xml" />
   <tool file="discover_metadata_files.xml" />
   <tool file="metadata_bcf.xml" />
@@ -141,6 +144,7 @@
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_with_input_optional.xml" />
+  <tool file="output_filter_all_by_param.xml" />
   <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
@@ -337,6 +341,12 @@
   <tool file="parameters/gx_boolean_user.yml" />
   <tool file="parameters/gx_data_user.yml" />
   <tool file="parameters/gx_data_multiple_user.yml" />
+  <tool file="parameters/gx_user_boolean_optional_null.yml" />
+  <tool file="parameters/gx_user_boolean_optional_omitted.yml" />
+  <tool file="parameters/gx_user_boolean_defaults.yml" />
+  <tool file="parameters/gx_user_boolean_conditional.yml" />
+  <tool file="parameters/gx_user_repeat.yml" />
+  <tool file="parameters/gx_user_section.yml" />
   <tool file="parameters/gx_select_multiple_one_default_user.yml" />
   <tool file="parameters/gx_data_collection_list_or_paired.yml" />
   <tool file="parameters/gx_data_collection_record.yml" />

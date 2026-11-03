@@ -35,6 +35,7 @@ from galaxy.managers.sse import (
     SSEEvent,
 )
 from galaxy.model import User
+from galaxy.structured_app import StructuredApp
 from galaxy.tools import ToolBox
 from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.data_manager.manager import DataManagers
@@ -45,10 +46,7 @@ log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from galaxy.app import UniverseApplication
-    from galaxy.structured_app import (
-        MinimalManagerApp,
-        StructuredApp,
-    )
+    from galaxy.structured_app import MinimalManagerApp
 
 
 class NotifyUsersPayload(TypedDict, total=False):
@@ -306,6 +304,8 @@ def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: boo
                 tool_source_store=app.tool_source_store,
                 cache_size=app.config.cached_toolbox_cache_size,
                 save_integrated_tool_panel=save_integrated_tool_panel,
+                # A reload is how admins apply in-place tool edits.
+                reindex_edited_sources=True,
             )
         else:
             new_toolbox = ToolBox(
@@ -366,6 +366,8 @@ def reload_tool_data_tables(app, **kwargs):
     table_names = path or table_name or "all tables"
     log.debug("Executing tool data table reload for %s", table_names)
     table_names = app.tool_data_tables.reload_tables(table_names=table_name, path=path)
+    if isinstance(app, StructuredApp):
+        app.watchers.update_watch_data_table_paths()
     log.debug("Finished data table reload for %s", table_names)
 
 
@@ -376,10 +378,10 @@ def rebuild_toolbox_search_index(app, **kwargs):
         log.debug("App is not the config watcher, not building a search index")
 
 
-def reload_job_rules(app: "MinimalManagerApp", **kwargs):
+def reload_job_rules(app: "MinimalManagerApp", **kwargs) -> None:
     reload_timer = util.ExecutionTimer()
-    for module in job_rule_modules(app):
-        rules_module_name = module.__name__
+    for job_rule_module in job_rule_modules(app):
+        rules_module_name = job_rule_module.__name__
         for name, module in sys.modules.items():
             if (name == rules_module_name or name.startswith(f"{rules_module_name}.")) and ismodule(module):
                 log.debug("Reloading job rules module: %s", name)

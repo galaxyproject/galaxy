@@ -935,8 +935,8 @@ class GalaxyInteractorApi:
             submit_with_legacy_api = True
         if submit_with_legacy_api:
             inputs_tree = testdef.inputs.copy()
-            for key, value in inputs_tree.items():
-                values = [value] if not isinstance(value, list) else value
+            for key, values in inputs_tree.items():
+                values = [values] if not isinstance(values, list) else values
                 new_values = []
                 for value in values:
                     if isinstance(value, TestCollectionDef):
@@ -1680,6 +1680,10 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
         raise AssertionError(message)
     if output_collection_def.max and output_collection_def.max < actual_element_count:
         message = f"Output collection '{name}': expected to have at most {output_collection_def.max} elements, but it had {actual_element_count}."
+        raise AssertionError(message)
+    expected_name = output_collection_def.metadata.get("name")
+    if expected_name is not None and expected_name != data_collection.get("name"):
+        message = f"Output collection '{name}': expected to have name [{expected_name}], but it had name [{data_collection.get('name')}]."
         raise AssertionError(message)
 
     def get_element(elements, id):

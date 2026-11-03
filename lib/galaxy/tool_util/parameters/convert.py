@@ -181,8 +181,13 @@ def landing_encode(
     return request_state
 
 
-def strictify(relaxed_state: RelaxedRequestToolState, input_models: ToolParameterBundle) -> RequestToolState:
-    """Convert a relaxed request state into a strict request state by applying legacy behavior."""
+def strictify(
+    relaxed_state: RelaxedRequestToolState, input_models: ToolParameterBundle, yaml_origin: bool = False
+) -> RequestToolState:
+    """Convert a relaxed request state into a strict request state by applying legacy behavior.
+
+    Pass yaml_origin=True for YAML tools so section defaults follow the YAML Boolean policy.
+    """
 
     tool_state = deepcopy(relaxed_state.input_state)
 
@@ -206,7 +211,7 @@ def strictify(relaxed_state: RelaxedRequestToolState, input_models: ToolParamete
                 _strictify_parameters(instance_state, parameter)
         elif isinstance(parameter, SectionParameterModel):
             section_state = _initialize_section_state(parameter, tool_state)
-            _fill_defaults(section_state, parameter)
+            _fill_defaults(section_state, parameter, yaml_origin=yaml_origin)
         elif isinstance(parameter, TextParameterModel):
             parameter_name = parameter.name
             if parameter_name not in tool_state:
@@ -490,14 +495,16 @@ def fill_static_defaults(
     input_models: ToolParameterBundle,
     profile: float,
     partial: bool = True,
+    yaml_origin: bool = False,
 ) -> dict[str, Any]:
     """Fill static defaults into a job_internal tool state; pass only that representation.
 
     Request/request_internal states record absent inputs as absent - filling them here would
     declare inputs that were never requested. Pass partial=True when further defaults may stem
-    from Galaxy runtime; partial=True skips final runtime validation.
+    from Galaxy runtime; partial=True skips final runtime validation. Pass yaml_origin=True for
+    YAML tools, whose Boolean defaults (including an explicit null) are used as declared.
     """
-    _fill_defaults(tool_state, input_models, profile)
+    _fill_defaults(tool_state, input_models, profile, yaml_origin)
 
     if not partial:
         internal_state = JobInternalToolState(tool_state)
@@ -506,19 +513,26 @@ def fill_static_defaults(
 
 
 def _fill_defaults(
-    tool_state: dict[str, Any], input_models: ToolParameterBundle, profile: float | str | None = None
+    tool_state: dict[str, Any],
+    input_models: ToolParameterBundle,
+    profile: float | str | None = None,
+    yaml_origin: bool = False,
 ) -> None:
     for parameter in input_models.parameters:
-        _fill_default_for(tool_state, parameter, profile)
+        _fill_default_for(tool_state, parameter, profile, yaml_origin)
 
 
 def _fill_default_for(
-    tool_state: dict[str, Any], parameter: ToolParameterT, profile: float | str | None = None
+    tool_state: dict[str, Any],
+    parameter: ToolParameterT,
+    profile: float | str | None = None,
+    yaml_origin: bool = False,
 ) -> None:
     parameter_name = parameter.name
     if isinstance(parameter, BooleanParameterModel):
         if parameter_name not in tool_state:
-            if profile and Version(str(profile)) >= Version("26.2"):
+            if yaml_origin or (profile and Version(str(profile)) >= Version("26.2")):
+                # YAML tools and profile 26.2+ use the declared default, including an explicit null.
                 tool_state[parameter_name] = parameter.value
             else:
                 # Older profiles report an unset optional boolean as false.
@@ -563,15 +577,15 @@ def _fill_default_for(
         )
         test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
         when = _select_which_when(parameter, test_value, conditional_state)
-        _fill_default_for(conditional_state, test_parameter, profile)
-        _fill_defaults(conditional_state, when, profile)
+        _fill_default_for(conditional_state, test_parameter, profile, yaml_origin)
+        _fill_defaults(conditional_state, when, profile, yaml_origin)
     elif isinstance(parameter, RepeatParameterModel):
         repeat_instances = _initialize_repeat_state(parameter, tool_state)
         for instance_state in repeat_instances:
-            _fill_defaults(instance_state, parameter, profile)
+            _fill_defaults(instance_state, parameter, profile, yaml_origin)
     elif isinstance(parameter, SectionParameterModel):
         section_state = _initialize_section_state(parameter, tool_state)
-        _fill_defaults(section_state, parameter, profile)
+        _fill_defaults(section_state, parameter, profile, yaml_origin)
     elif isinstance(parameter, DataCollectionParameterModel):
         collection_parameter = parameter
         if parameter_name not in tool_state and collection_parameter.optional:

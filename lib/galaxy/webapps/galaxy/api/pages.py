@@ -258,11 +258,11 @@ class FastAPIPages:
         return self.service.show(trans, id)
 
     @router.get(
-        "/api/pages/{id}/workflow_extraction_summary",
+        "/api/pages/{id}/extraction_summary",
         summary="Summarize the page's history for workflow extraction, seeded from referenced outputs.",
         response_description="The history's extraction summary with seeded rows and exposed outputs.",
     )
-    def workflow_extraction_summary(
+    def extraction_summary(
         self,
         id: PageIdPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
@@ -343,6 +343,20 @@ class FastAPIPages:
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
         return self.service.shareable_service.share_with_users(trans, id, payload)
+
+    @router.put(
+        "/api/pages/{id}/unshare_with_me",
+        summary="Remove this item from the items shared with the current user.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def unshare_with_me(
+        self,
+        id: PageIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> Response:
+        """Removes the current user's own share of this item. Other users' shares are left unchanged."""
+        self.service.shareable_service.unshare_with_me(trans, id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.put(
         "/api/pages/{id}/slug",

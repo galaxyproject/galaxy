@@ -419,12 +419,12 @@ class DatasetCollectionManager:
         dataset_collection_instance = self.get_dataset_collection_instance(
             trans, id=id, instance_type=instance_type, check_ownership=True
         )
-        dbkeys_and_extensions = dataset_collection_instance.dataset_dbkeys_and_extensions_summary
+        summary = dataset_collection_instance.dataset_dbkeys_and_extensions_summary
         suitable_converters = set()
         first_extension = True
         most_recent_datatype = None
         # TODO error checking
-        for datatype in dbkeys_and_extensions[1]:
+        for datatype in summary.extensions:
             new_converters = datatypes_registry.get_converters_by_datatype(datatype)
             set_of_new_converters = set()
             for tgt_type, tgt_val in new_converters.items():

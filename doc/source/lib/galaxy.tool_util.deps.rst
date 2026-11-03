@@ -19,22 +19,6 @@ Subpackages
 Submodules
 ----------
 
-galaxy.tool\_util.deps.brew\_exts module
-----------------------------------------
-
-.. automodule:: galaxy.tool_util.deps.brew_exts
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy.tool\_util.deps.brew\_util module
-----------------------------------------
-
-.. automodule:: galaxy.tool_util.deps.brew_util
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.tool\_util.deps.commands module
 --------------------------------------
 

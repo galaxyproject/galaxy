@@ -218,8 +218,11 @@ class CachedToolboxSearch(ToolBoxSearch):
             if complete:
                 self._mark_built(cached_toolbox)
             else:
-                # The other writer may hold an older corpus: leave the index
-                # stale so the next rebuild_toolbox_search_index retries.
+                # Another process holds the lock: a previous config watcher,
+                # or a web worker that elected itself at boot. It may have
+                # committed an older corpus, so leave the index stale and let
+                # the next rebuild_toolbox_search_index retry, including one
+                # sent without a reload (postfork, watcher election).
                 self.indexed_reload_count = None
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:

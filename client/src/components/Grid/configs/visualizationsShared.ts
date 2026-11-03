@@ -1,10 +1,13 @@
-import { faEye } from "@fortawesome/free-solid-svg-icons";
+import { faEye, faUserSlash } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { loadVisualizations, type VisualizationSortByLiteral } from "@/api/visualizations";
+import { loadVisualizations, unshareVisualizationWithMe, type VisualizationSortByLiteral } from "@/api/visualizations";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
+import { describeFailures, settleEach } from "@/utils/settleEach";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { pluralize } from "@/utils/strings";
 
-import type { FieldArray, GridConfig } from "./types";
+import type { BatchOperationArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -50,6 +53,31 @@ const fields: FieldArray = [
                     });
                 },
             },
+            {
+                title: "Remove from Shared",
+                icon: faUserSlash,
+                handler: async (data: VisualizationEntry) => {
+                    if (
+                        !confirm(
+                            `Remove '${data.title}' from your shared visualizations? Its owner will need to share it again for you to see it.`,
+                        )
+                    ) {
+                        return;
+                    }
+                    try {
+                        await unshareVisualizationWithMe(String(data.id));
+                    } catch (error) {
+                        return {
+                            status: "danger",
+                            message: `Failed to remove '${data.title}': ${errorMessageAsString(error)}.`,
+                        };
+                    }
+                    return {
+                        status: "success",
+                        message: `'${data.title}' has been removed from your shared visualizations.`,
+                    };
+                },
+            },
         ],
     },
     {
@@ -76,6 +104,37 @@ const fields: FieldArray = [
 ];
 
 /**
+ * Declare batch operations
+ */
+const batch: BatchOperationArray = [
+    {
+        title: "Remove from Shared",
+        icon: faUserSlash,
+        handler: async (rows: Array<VisualizationEntry>) => {
+            const total = rows.length;
+            if (
+                !confirm(
+                    `Remove ${total} ${pluralize(total, "visualization")} from your shared visualizations? Their owners will need to share them again for you to see them.`,
+                )
+            ) {
+                return;
+            }
+            const failures = await settleEach(rows, (row) => unshareVisualizationWithMe(String(row.id)));
+            if (failures.length) {
+                return {
+                    status: "danger",
+                    message: `Removed ${total - failures.length} of ${total} ${pluralize(total, "visualization")}. Failed to remove ${describeFailures(failures, (row) => String(row.title))}.`,
+                };
+            }
+            return {
+                status: "success",
+                message: `Removed ${total} ${pluralize(total, "visualization")} from your shared visualizations.`,
+            };
+        },
+    },
+];
+
+/**
  * Declare filter options
  */
 const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
@@ -93,7 +152,8 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
  * Grid configuration
  */
 const gridConfig: GridConfig = {
-    id: "visualizations-published-grid",
+    id: "visualizations-shared-grid",
+    batch: batch,
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false),
     getData: getData,

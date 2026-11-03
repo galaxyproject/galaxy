@@ -35,8 +35,15 @@ class Repository(BaseModel):
     update_time: str
 
 
+class CategorySummary(BaseModel):
+    id: str
+    name: str
+
+
 class DetailedRepository(Repository):
     long_description: str | None
+    categories: list[CategorySummary] = []
+    clone_url: str | None = None
 
 
 class RepositoryPermissions(BaseModel):

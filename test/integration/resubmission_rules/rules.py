@@ -82,3 +82,10 @@ def dynamic_resubmit_tertiary(job) -> JobDestination:
     """
     _expected_chain_attempt(job, 2)
     return JobDestination(runner="local")
+
+
+UNMAPPABLE_RESUBMISSION_MESSAGE = "No destination can run this resubmitted job."
+
+
+def dynamic_unmappable_resubmission() -> JobDestination:
+    raise JobMappingException(UNMAPPABLE_RESUBMISSION_MESSAGE)

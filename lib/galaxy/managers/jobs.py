@@ -487,8 +487,14 @@ class JobSearch:
         job_state: JobStatesT | None = (Job.states.OK,),
         history_id: int | None = None,
         require_name_match: bool = True,
+        element_identifiers: dict[str, str] | None = None,
     ) -> Job | None:
-        """Search for jobs producing same results using the 'inputs' part of a tool POST."""
+        """Search for jobs producing same results using the 'inputs' part of a tool POST.
+
+        ``element_identifiers`` maps input names to the element identifiers the request saw, for inputs
+        that ``param`` holds as plain datasets. When given, the job must have seen the same identifiers,
+        even if ``require_name_match`` is False.
+        """
         input_data: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
         def populate_input_data_input_id(path: tuple[str | int, ...], key, value) -> tuple[Any, Any]:
@@ -515,6 +521,8 @@ class JobSearch:
                     elif isinstance(current_param, dict):
                         current_param = current_param[p]
                 identifier = getattr(current_param, "element_identifier", None)
+                if identifier is None and element_identifiers:
+                    identifier = element_identifiers.get(path_key)
                 input_data[path_key].append(
                     {
                         "src": src,
@@ -536,6 +544,7 @@ class JobSearch:
             wildcard_param_dump=wildcard_param_dump,
             history_id=history_id,
             require_name_match=require_name_match,
+            require_identifier_match=require_name_match or element_identifiers is not None,
         )
 
     def __search(
@@ -549,6 +558,7 @@ class JobSearch:
         wildcard_param_dump=None,
         history_id: int | None = None,
         require_name_match: bool = True,
+        require_identifier_match: bool = True,
     ) -> Job | None:
         search_timer = ExecutionTimer()
 
@@ -596,6 +606,7 @@ class JobSearch:
                         v,
                         identifier,
                         require_name_match=require_name_match,
+                        require_identifier_match=require_identifier_match,
                         value_index=value_index,
                     )
                 elif t == "ldda":
@@ -823,6 +834,7 @@ class JobSearch:
         identifier,
         value_index: int,
         require_name_match: bool = True,
+        require_identifier_match: bool = True,
     ) -> "Select[tuple[int]]":
         a = aliased(model.JobToInputDatasetAssociation)
         b = aliased(model.HistoryDatasetAssociation)
@@ -842,17 +854,22 @@ class JobSearch:
             e._metadata == c._metadata,
             e.version == a.dataset_version,
         ]
+        if require_name_match:
+            hda_history_join_conditions.append(e.name == c.name)
+            name_condition.append(b.name == c.name)
+        identifier_key = f"{k}|__identifier__"
         if identifier:
             stmt = stmt.join(d)
             data_conditions.append(
                 and_(
-                    d.name == f"{k}|__identifier__",
+                    d.name == identifier_key,
                     d.value == json.dumps(identifier),
                 )
             )
-        elif require_name_match:
-            hda_history_join_conditions.append(e.name == c.name)
-            name_condition.append(b.name == c.name)
+        elif require_identifier_match:
+            # A job mapped over a collection saw an element identifier instead of the dataset name.
+            f = aliased(model.JobParameter)
+            data_conditions.append(~exists().where(f.job_id == model.Job.id, f.name == identifier_key))
 
         stmt = stmt.outerjoin(e, and_(*hda_history_join_conditions))
         data_conditions.append(

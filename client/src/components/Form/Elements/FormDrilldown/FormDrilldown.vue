@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { BFormCheckbox } from "bootstrap-vue";
 import { computed, type ComputedRef } from "vue";
+
+import { useUid } from "@/composables/utils/uid";
+import localize from "@/utils/localization";
 
 import { getAllValues, type Option, type Value } from "./utilities";
 
 import FormDrilldownList from "./FormDrilldownList.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -24,6 +27,9 @@ const props = withDefaults(
 const emit = defineEmits<{
     (e: "input", value: Value): void;
 }>();
+
+// Unique per instance: the workflow run form can render the same parameter id once per step
+const radioName = useUid(`drilldown-${props.id}-`);
 
 const hasOptions = computed(() => {
     return props.options.length > 0;
@@ -56,7 +62,7 @@ const selectAllIndeterminate: ComputedRef<boolean> = computed(() => {
 });
 
 // Handle click on individual check/radio element
-function handleClick(clickedElement: string, value: string): void {
+function handleClick(clickedElement: string, value: boolean): void {
     if (props.multiple) {
         // Only the chosen option is submitted; the server expands a recurse hierarchy.
         const selectedElements: string[] = setElementValues(currentValue.value, [clickedElement], value);
@@ -75,7 +81,7 @@ function onSelectAll(selected: boolean): void {
     emit("input", selected ? allValues.value : null);
 }
 
-function setElementValues(oldArray: string[], newArray: string[], value: string): string[] {
+function setElementValues(oldArray: string[], newArray: string[], value: boolean): string[] {
     if (value) {
         return Array.from(new Set([...oldArray, ...newArray]));
     } else {
@@ -88,20 +94,20 @@ function setElementValues(oldArray: string[], newArray: string[], value: string)
 <template>
     <div>
         <div v-if="hasOptions">
-            <BFormCheckbox
+            <GCheckbox
                 v-if="multiple"
-                v-localize
-                :checked="selectAllChecked"
+                class="select-all-checkbox"
                 :indeterminate="selectAllIndeterminate"
-                class="d-inline select-all-checkbox"
-                @change="onSelectAll">
-                Select / Deselect All
-            </BFormCheckbox>
+                :model-value="selectAllChecked"
+                @update:model-value="onSelectAll">
+                {{ localize("Select / Deselect All") }}
+            </GCheckbox>
 
             <FormDrilldownList
                 :show-icons="showIcons"
                 :multiple="multiple"
                 :current-value="currentValue"
+                :name="radioName"
                 :options="options"
                 :handle-click="handleClick" />
         </div>

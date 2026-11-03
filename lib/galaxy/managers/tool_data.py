@@ -68,8 +68,8 @@ class ToolDataManager:
 
     def reload(self, table_name: str) -> ToolDataDetails:
         """Reloads a tool data table."""
-        data_table = self._data_table(table_name)
-        data_table.reload_from_files()
+        self._data_table(table_name)
+        self._app.tool_data_tables.reload_tables(table_name)
         return self._reload_data_table(table_name)
 
     def get_field_file_path(self, trans: ProvidesUserContext, table_name: str, field_name: str, file_name: str) -> Path:

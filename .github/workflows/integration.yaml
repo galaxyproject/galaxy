@@ -74,7 +74,7 @@ jobs:
           persist-credentials: false
       - name: Install uv
         if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           version-file: galaxy cache source/.tool-versions
           python-version: '3.10'
@@ -193,7 +193,7 @@ jobs:
           path: 'galaxy root'
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
@@ -212,6 +212,9 @@ jobs:
           GALAXY_TEST_MULLED_RESOLUTION_CACHE_SEED: '${{ runner.temp }}/mulled-resolution-seed/biocontainers.json'
           GALAXY_CONFIG_OVERRIDE_MULLED_RESOLUTION_CACHE_DATA_DIR: '${{ runner.temp }}/mulled-resolution-cache/data'
           GALAXY_CONFIG_OVERRIDE_MULLED_RESOLUTION_CACHE_LOCK_DIR: '${{ runner.temp }}/mulled-resolution-cache/locks'
+          # The seed is written once at session start and must outlive the whole shard
+          # (bounded by GitHub's default 6 hour job timeout).
+          GALAXY_CONFIG_OVERRIDE_MULLED_RESOLUTION_CACHE_EXPIRE: '21600'
         run: |
           if [ "${{ matrix.lane }}" = "host-services" ]; then
             . .ci/minikube-test-setup/start_services.sh

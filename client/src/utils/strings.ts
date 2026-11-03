@@ -52,3 +52,8 @@ export function capitalizeFirstLetter(str?: string): string {
     str = str.trim();
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
+/** Returns `singular` when `count` is 1, otherwise `plural`. */
+export function pluralize(count: number, singular: string, plural: string = `${singular}s`): string {
+    return count === 1 ? singular : plural;
+}

@@ -490,10 +490,10 @@ class RepositoryDependencyInstallManager:
                                         # but a different owner/changeset revision or version and we add the repo to the list of repos to be installed.
                                         tool_id = required_repo_info_dict[required_repo_info_dict_key][1]
                                         is_present = False
-                                        for repo_info_dict in all_repo_info_dicts:
-                                            for k, v in repo_info_dict.items():
-                                                if required_repo_info_dict_key == k:
-                                                    if tool_id == v[1]:
+                                        for repo_info_dict2 in all_repo_info_dicts:
+                                            for k2, v2 in repo_info_dict2.items():
+                                                if required_repo_info_dict_key == k2:
+                                                    if tool_id == v2[1]:
                                                         is_present = True
                                                         break
                                         if not is_present:

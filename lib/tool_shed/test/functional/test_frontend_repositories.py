@@ -1,6 +1,13 @@
+import re
+
+import yaml
 from playwright.sync_api import expect
 
+from galaxy_test.base.api_util import random_name
+from tool_shed_client.schema import UpdateRepositoryRequest
+from ..base.playwrightbrowser import Locators
 from ..base.playwrighttestcase import PlaywrightTestCase
+from ..base.populators import COLUMN_MAKER_PATH
 
 TEST_CATEGORY_PREFIX = "guitestcategory"
 TEST_REPO_PREFIX = "guitestcolumnmaker"
@@ -156,3 +163,86 @@ class TestFrontendRepositories(PlaywrightTestCase):
         assert readme.locator("img").evaluate("img => img.decode().then(() => img.naturalWidth)") == 24
         readme.scroll_into_view_if_needed()
         self.screenshot("repository_latest_revision_readme")
+
+    def test_repository_page_categories_clone_command_and_shed_yml(self):
+        # Created out of alphabetical order, as the page lists them by name
+        name_base = random_name(prefix=TEST_CATEGORY_PREFIX)
+        beta = self.populator.new_category(name=f"{name_base} Beta")
+        alpha = self.populator.new_category(name=f"{name_base} Alpha")
+        repository = self.populator.new_repository([beta.id, alpha.id], prefix=TEST_REPO_PREFIX)
+        assert self.populator.upload_revision(repository, COLUMN_MAKER_PATH).is_ok
+        self.visit_url(f"/repositories/{repository.id}")
+        page = self._page
+
+        clone_url = f"{self.url.rstrip('/')}/repos/{repository.owner}/{repository.name}"
+        clone_command = page.locator(Locators.repository_link_command)
+        expect(clone_command).to_have_text(f"hg clone {clone_url}")
+        categories = page.locator(Locators.repository_category)
+        expect(categories).to_have_text([alpha.name, beta.name])
+        shed_yml = (
+            page.locator(Locators.config_file_contents)
+            .filter(has=page.locator(Locators.config_file_contents_name, has_text=".shed.yml"))
+            .locator(Locators.config_file_contents_body)
+        )
+        expect(shed_yml).to_contain_text(f"categories: - {alpha.name} - {beta.name}")
+        # to_contain_text collapses whitespace, so check the YAML lines on the settled text
+        shed_yml_text = shed_yml.inner_text()
+        assert f"name: {repository.name}\nowner: {repository.owner}\n" in shed_yml_text
+        assert f"categories:\n- {alpha.name}\n- {beta.name}" in shed_yml_text
+        # The clone command ends the sticky aside; on this short page, scrolling to it shows all three
+        clone_command.scroll_into_view_if_needed()
+        self.screenshot("repository_categories_clone_command_and_shed_yml")
+
+        categories.filter(has_text=beta.name).click()
+        expect(page).to_have_url(re.compile(f"/repositories_by_category/{beta.id}$"))
+
+    def test_repository_shed_yml_loads_back_with_pyyaml(self):
+        # Planemo reads .shed.yml with PyYAML, so awkward values must load back unchanged
+        category = self.populator.new_category(name=f"{random_name(prefix=TEST_CATEGORY_PREFIX)}: yes #1")
+        synopsis = "Mapper: fast #1"
+        homepage_url = "https://example.org/tool:"
+        remote_repository_url = "https://github.com/galaxyproject/tools-iuc"
+        # The first is written as a literal block, the second needs escapes
+        for long_description in ["First line\nsecond: line #2\n\nthird\n", "First\r\nsecond\u2028third\n\n  indented"]:
+            repository = self.populator.new_repository([category.id], prefix=TEST_REPO_PREFIX)
+            self.populator.update(
+                repository,
+                UpdateRepositoryRequest(
+                    synopsis=synopsis,
+                    description=long_description,
+                    homepage_url=homepage_url,
+                    remote_repository_url=remote_repository_url,
+                ),
+            )
+            self.visit_url(f"/repositories/{repository.id}")
+            page = self._page
+
+            shed_yml = (
+                page.locator(Locators.config_file_contents)
+                .filter(has=page.locator(Locators.config_file_contents_name, has_text=".shed.yml"))
+                .locator(Locators.config_file_contents_body)
+            )
+            expect(shed_yml).to_contain_text(f"name: {repository.name}")
+            assert yaml.safe_load(shed_yml.inner_text()) == {
+                "name": repository.name,
+                "owner": repository.owner,
+                "description": synopsis,
+                "long_description": long_description,
+                "homepage_url": homepage_url,
+                "remote_repository_url": remote_repository_url,
+                "type": "unrestricted",
+                "categories": [category.name],
+            }
+
+    def test_repository_aside_end_reachable_on_long_page(self):
+        repository = self.populator.setup_column_maker_repo(prefix=TEST_REPO_PREFIX)
+        long_description = "A long description that runs well past the window. " * 600
+        self.populator.update(repository, UpdateRepositoryRequest(description=long_description))
+        self.visit_url(f"/repositories/{repository.id}")
+        page = self._page
+
+        clone_command = page.locator(Locators.repository_link_command)
+        expect(clone_command).to_be_attached()
+        # Halfway down, a sticky aside taller than the window must still show its last card
+        page.evaluate("window.scrollTo(0, (document.body.scrollHeight - window.innerHeight) / 2)")
+        expect(clone_command).to_be_in_viewport()

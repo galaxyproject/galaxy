@@ -364,18 +364,3 @@ version string is needed.
 If a module matches the dependency is found, code to executed ``modulecmd sh load`` with the name of the dependency
 is added to the script that is run to run the tool. E.g. ``modulecmd sh load bedtools``. If version strings are being
 used, they'll be used in the ``load`` command e.g. ``modulecmd sh load bwa/0.7.10.039ea20639``.
-
-
-Homebrew Dependency Resolver
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The ``homebrew`` dependency resolver uses the `Homebrew Package Manager <https://brew.sh/>`__ to resolve requirements.
-It is highly experimental, undocumented, and unmaintained, and likely to be dropped from the code base.
-
-
-Brewed Tool Shed Package Resolver
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The ``brewed_tool_shed`` dependency resolver was an attempt to resolve tool shed packages that had been auto converted
-to the tool shed. It is highly experimental, undocumented, unmaintained, and will almost certainly be removed from the
-code base.

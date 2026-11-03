@@ -53,6 +53,20 @@ describe("CellAdd.vue", () => {
         expect(wrapper.findComponent(Popper).exists()).toBe(true);
     });
 
+    it("announces the popup as expanded or collapsed, not pressed", async () => {
+        const wrapper = mountTarget();
+        await wrapper.vm.$nextTick();
+        const button = wrapper.get("button");
+        expect(button.attributes("aria-expanded")).toBe("false");
+        expect(button.attributes("aria-pressed")).toBeUndefined();
+
+        await button.trigger("click");
+        await wrapper.vm.$nextTick();
+
+        expect(button.attributes("aria-expanded")).toBe("true");
+        expect(button.attributes("aria-pressed")).toBeUndefined();
+    });
+
     it("filters templates based on search input", async () => {
         const wrapper = mountTarget();
         await wrapper.vm.$nextTick();
