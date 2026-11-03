@@ -303,6 +303,7 @@
   <tool file="interactivetool_tabular_input.xml" />
   <tool file="interactivetool_any_input.xml" />
   <tool file="interactivetool_repeat_input.xml" />
+  <tool file="interactivetool_conditional_input.xml" />
   <tool file="interactivetool_hidden_input.xml" hidden="true" />
   <tool file="interactivetool_login_input.xml" />
   <tool file="converter_target_datatype.xml" />
