@@ -1,5 +1,6 @@
 """Read and write files of queued and running jobs on behalf of remote job runners."""
 
+import logging
 import os
 import re
 import shutil
@@ -9,7 +10,11 @@ from galaxy import (
     util,
 )
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.job_execution.setup import JobWorkingDirectory
+from galaxy.job_execution.setup import (
+    JobFilesManifest,
+    JobWorkingDirectory,
+    read_job_files_manifest,
+)
 from galaxy.model import (
     Job,
     JobToOutputDatasetAssociation,
@@ -19,13 +24,21 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore
 from galaxy.security.idencoding import IdEncodingHelper
 
+log = logging.getLogger(__name__)
+
 APPENDABLE_FILE_NAMES = ("tool_stdout", "tool_stderr")
+# Job directories Pulsar stages results back to: the tool working directory, ``outputs`` (datasets written there with
+# ``outputs_to_working_directory``, tool streams, the version file) and the metadata directory.
+STRICT_WRITABLE_DIRECTORIES = ("working", "outputs", "metadata")
+# The extended metadata model store, written only by jobs that run extended metadata remotely.
+MODEL_STORE_DIRECTORY = ["metadata", "outputs_populated"]
 
 
 class JobFilesManager:
     """Job runner access to low-level job files, authorized by job key only - never by user credentials.
 
-    Reads aren't limited to the job's own files, since tools also read unstructured inputs such as ``.loc`` files.
+    With ``job_files_strict_access``, a job may read only the files its manifest lists, which are the files Galaxy
+    told the runner to stage, and write only its outputs and the job directories results are staged back to.
     """
 
     def __init__(
@@ -46,9 +59,19 @@ class JobFilesManager:
 
     def readable_path(self, encoded_job_id: str, path: str | None, job_key: str | None) -> str:
         job, path = self._authorize(encoded_job_id, path, job_key)
-        if os.path.isfile(path):
+        manifest = self._manifest(job)
+        readable = manifest is not None and path in manifest.readable_paths
+        if not readable and not self._config.job_files_strict_access:
+            log.warning(
+                "Job %s read %s, which is not in its job files manifest. This read will be refused once "
+                "job_files_strict_access is enabled.",
+                job.id,
+                path,
+            )
+            readable = True
+        if readable and os.path.isfile(path):
             return path
-        if os.path.exists(path):
+        if readable and os.path.exists(path):
             raise exceptions.RequestParameterInvalidException("Path does not refer to a file.")
         # Inputs may be purged while the job is queued or running; pulsar handles that error.
         if re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path)):
@@ -59,6 +82,8 @@ class JobFilesManager:
                 for jtid in job.input_datasets
             ):
                 raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
+        if not readable:
+            raise exceptions.ItemAccessibilityException("Job is not authorized to read supplied path.")
         raise exceptions.ObjectNotFound("File not found.")
 
     def authorize_write(self, encoded_job_id: str, path: str | None, job_key: str | None) -> str:
@@ -66,11 +91,35 @@ class JobFilesManager:
         job, path = self._authorize(encoded_job_id, path, job_key)
         if not os.path.isabs(path):
             raise exceptions.RequestParameterInvalidException("'path' parameter must be an absolute path.")
+        if self._config.job_files_strict_access:
+            return self._authorize_strict_write(job, path)
         working_directory = JobWorkingDirectory(job, self._object_store).resolve()
         if util.in_directory(path, working_directory):
             return working_directory
         if dataset_path := self._output_dataset_path(job, path):
             return os.path.dirname(dataset_path)
+        raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
+
+    def _authorize_strict_write(self, job: Job, path: str) -> str:
+        """Allow only the job's outputs and the job directories results are staged back to.
+
+        Job scripts, the manifest, ``configs/`` and ``inputs/`` are Galaxy-produced inputs the runner has no reason to
+        rewrite.
+        """
+        if os.path.islink(path):
+            raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
+        if dataset_path := self._output_dataset_path(job, path):
+            return os.path.dirname(dataset_path)
+        working_directory = JobWorkingDirectory(job, self._object_store).resolve()
+        job_directory = os.path.realpath(working_directory)
+        # Relative to the resolved job directory, so that a symlink among the allowed directories can't widen them.
+        relative = os.path.relpath(os.path.realpath(path), job_directory).split(os.sep)
+        if len(relative) > 1 and relative[0] in STRICT_WRITABLE_DIRECTORIES:
+            if relative[:2] != MODEL_STORE_DIRECTORY:
+                return working_directory
+            manifest = self._manifest(job)
+            if manifest and manifest.remote_extended_metadata:
+                return working_directory
         raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
 
     def assert_job_active(self, encoded_job_id: str) -> None:
@@ -100,15 +149,25 @@ class JobFilesManager:
             raise exceptions.RequestParameterInvalidException("No upload found for session id.")
         return upload_path
 
-    def write(self, path: str, source_path: str) -> None:
+    def write(self, encoded_job_id: str, path: str, source_path: str) -> None:
         """Move ``source_path`` to ``path``, or append it if ``path`` is an existing tool stream."""
         util.safe_makedirs(os.path.dirname(path))
-        if os.path.exists(path) and path.endswith(APPENDABLE_FILE_NAMES):
+        if os.path.exists(path) and self._is_tool_stream(encoded_job_id, path):
             with open(source_path, "rb") as source, open(path, "ab") as destination:
                 shutil.copyfileobj(source, destination)
             os.unlink(source_path)
         else:
             shutil.move(source_path, path)
+
+    def _is_tool_stream(self, encoded_job_id: str, path: str) -> bool:
+        if not self._config.job_files_strict_access:
+            return path.endswith(APPENDABLE_FILE_NAMES)
+        job = self._active_job(self._security.decode_id(encoded_job_id))
+        outputs_directory = os.path.join(JobWorkingDirectory(job, self._object_store).resolve(), "outputs")
+        return any(path == os.path.join(outputs_directory, name) for name in APPENDABLE_FILE_NAMES)
+
+    def _manifest(self, job: Job) -> JobFilesManifest | None:
+        return read_job_files_manifest(JobWorkingDirectory(job, self._object_store).resolve())
 
     def _authorize(self, encoded_job_id: str, path: str | None, job_key: str | None) -> tuple[Job, str]:
         if path is None:

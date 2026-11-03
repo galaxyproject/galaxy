@@ -166,7 +166,7 @@ class FastAPIJobFiles:
             source_path = upload
         else:
             raise exceptions.RequestParameterMissingException("No file uploaded.")
-        self.manager.write(path, source_path)
+        self.manager.write(job_id, path, source_path)
 
     @router.post("/api/job_files/tus_hooks", include_in_schema=False)
     def tus_hooks(self) -> None:

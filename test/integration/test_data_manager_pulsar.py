@@ -79,6 +79,7 @@ class TestDataManagerPulsar(DataManagerIntegrationTestCase):
         )
         config["job_config_file"] = str(job_conf)
         config["galaxy_infrastructure_url"] = "http://localhost:$GALAXY_WEB_PORT"
+        config["job_files_strict_access"] = True
 
     @classmethod
     def extra_environment_params(cls) -> str:

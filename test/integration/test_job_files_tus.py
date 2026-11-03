@@ -47,6 +47,7 @@ class EmbeddedPulsarJobFilesIntegrationInstance(integration_util.IntegrationInst
         config["job_config_file"] = job_conf.name
         infrastructure_url = "http://localhost:$GALAXY_WEB_PORT"
         config["galaxy_infrastructure_url"] = infrastructure_url
+        config["job_files_strict_access"] = True
 
 
 instance = integration_util.integration_module_instance(EmbeddedPulsarJobFilesIntegrationInstance)
