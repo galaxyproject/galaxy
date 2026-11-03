@@ -61,8 +61,19 @@ from galaxy.queues import (
     galaxy_exchange,
 )
 from galaxy.tool_util.ontologies.ontology_data import expand_ontology_data
+from galaxy.tool_util.parameters import (
+    input_models_for_pages,
+    UnmodelableToolInputs,
+)
+from galaxy.tool_util.parameters.data_inputs import (
+    data_inputs_for_parameters,
+    ToolDataInput,
+)
 from galaxy.tool_util.parser import get_tool_source
-from galaxy.tool_util.parser.interface import ToolSource
+from galaxy.tool_util.parser.interface import (
+    PagesSource,
+    ToolSource,
+)
 from galaxy.tool_util.parser.util import (
     parse_profile_version,
     parse_tool_version_with_defaults,
@@ -409,6 +420,17 @@ def _merge_panel_order(previous: list[ToolPanelItem], rebuilt: list[ToolPanelIte
     return merged
 
 
+def _index_data_inputs(tool_id: str, pages: PagesSource, profile: float) -> list[ToolDataInput]:
+    """Data inputs from the parameter models, empty where ``Tool.parse_inputs`` leaves ``parameters`` unset."""
+    try:
+        return data_inputs_for_parameters(input_models_for_pages(pages, profile))
+    except UnmodelableToolInputs:
+        return []
+    except Exception:
+        log.warning("Failed to generate parameter models for tool '%s'", tool_id, exc_info=True)
+        return []
+
+
 def build_index_entry_from_source(
     discovered: DiscoveredTool,
     stored: StoredToolSource,
@@ -476,6 +498,7 @@ def build_index_entry_from_source(
         # profiles it raises (the outer except drops the entry).
         version = parse_tool_version_with_defaults(tool_id, tool_source)
         profile = parse_profile_version(tool_source)
+        data_inputs = _index_data_inputs(tool_id, pages, profile)
         action_module = tool_source.parse_action_module()
         requirements, containers, _, _, _ = tool_source.parse_requirements()
         # The eager Tool tolerates bad tests too: lose the count, not the tool.
@@ -527,6 +550,7 @@ def build_index_entry_from_source(
             produces_real_jobs=tool_produces_real_jobs(tool_type, action_module),
             tags=[],
             data_manager_id=discovered.data_manager_id,
+            data_inputs=data_inputs,
             tool_shed=discovered.tool_shed,
             repository_name=discovered.repository_name,
             repository_owner=discovered.repository_owner,

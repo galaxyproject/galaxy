@@ -14,6 +14,7 @@ from pydantic import (
     PrivateAttr,
 )
 
+from galaxy.tool_util.parameters.data_inputs import ToolDataInput
 from galaxy.tool_util.version import parse_version
 from galaxy.tools import (
     DatabaseOperationTool,
@@ -74,6 +75,8 @@ class ToolIndexEntry(BaseModel):
     tags: list[str] = Field(default_factory=list)
     # Data-manager config id, which may differ from the XML tool id.
     data_manager_id: str | None = None
+    # Dataset inputs for the panel entry; empty when the inputs cannot be modelled.
+    data_inputs: list[ToolDataInput] = Field(default_factory=list)
 
     # === Tests (for /api/tools/tests_summary) ===
     test_count: int = 0

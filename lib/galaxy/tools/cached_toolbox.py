@@ -485,6 +485,7 @@ class CachedTool:
             "panel_section_id": entry.panel_section_id,
             "panel_section_name": entry.panel_section_name,
             "form_style": entry.form_style,
+            "data_inputs": [data_input.model_dump() for data_input in entry.data_inputs],
         }
         if entry.uuid:
             payload["uuid"] = entry.uuid
