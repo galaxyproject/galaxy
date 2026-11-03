@@ -42,6 +42,7 @@ from galaxy.tools.source_store.populator import (
     send_reload_notification,
     ToolFileWatcher,
 )
+from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 
 # --- Fakes for testing ---
 
@@ -631,6 +632,10 @@ class TestDefaultTargetConverters:
         assert _load_default_index(cfg)[1].entries["probe"].version == "1.1"
 
 
+def _raise_listing_error(store):
+    raise RuntimeError("no listing")
+
+
 def _raise_registry_error(config):
     raise RuntimeError("no registry")
 
@@ -750,3 +755,60 @@ class TestToolsMissingFromReadOnlyStore:
         _, index = _load_default_index(config)
         assert index.entries["installed"].in_panel is True
         assert "published" not in index.entries
+
+    def test_listing_failure_only_warns_on_full_populate(self, tmp_path, monkeypatch, caplog):
+        shed_conf, _ = self._published_conf(tmp_path)
+        config = self._config(tmp_path, shed_conf, read_only=True)
+        monkeypatch.setattr(SqlAlchemyToolSourceStore, "list_source_paths", _raise_listing_error)
+
+        populate_store_inline(config, prune=True)
+
+        assert f"Skipping tools of {shed_conf} missing from read-only store published: no listing" in caplog.text
+
+    def test_listing_failure_only_warns_on_partial_populate(self, tmp_path, monkeypatch, caplog):
+        shed_conf, installed = self._published_conf(tmp_path)
+        config = self._config(tmp_path, shed_conf, read_only=True)
+        monkeypatch.setattr(SqlAlchemyToolSourceStore, "list_source_paths", _raise_listing_error)
+
+        populate_store_inline(config, paths=[str(installed)])
+
+        assert f"Skipping tools of {shed_conf} missing from read-only store published: no listing" in caplog.text
+
+    def test_confs_sharing_a_read_only_store_list_it_once(self, tmp_path, monkeypatch):
+        confs = {name: tmp_path / f"{name}_tool_conf.xml" for name in ("first", "second")}
+
+        def write_confs(*tool_kinds: str) -> None:
+            for name, conf in confs.items():
+                tools_dir = tmp_path / f"{name}_tools"
+                items = "".join(f'<tool file="{name}_{kind}.xml"/>' for kind in tool_kinds)
+                conf.write_text(
+                    f'<toolbox tool_path="{tools_dir}" store="published">'
+                    f'<section id="{name}" name="{name}">{items}</section></toolbox>'
+                )
+
+        for name in confs:
+            for kind in ("published", "installed"):
+                _write_tool(tmp_path / f"{name}_tools" / f"{name}_{kind}.xml", f"{name}_{kind}")
+        tool_config_file = ",".join(str(conf) for conf in confs.values())
+        write_confs("published")
+        populate_store_inline(self._config(tmp_path, tool_config_file, read_only=False), target="published")
+        write_confs("published", "installed")
+        listings: list[str] = []
+        list_source_paths = SqlAlchemyToolSourceStore.list_source_paths
+
+        def counting_list_source_paths(store: SqlAlchemyToolSourceStore) -> set[str]:
+            if store.read_only:
+                listings.append(store.url)
+            return list_source_paths(store)
+
+        monkeypatch.setattr(SqlAlchemyToolSourceStore, "list_source_paths", counting_list_source_paths)
+
+        populate_store_inline(self._config(tmp_path, tool_config_file, read_only=True), prune=True)
+
+        assert listings == [f"sqlite:///{tmp_path}/published.sqlite"]
+
+        _, index = _load_default_index(self._config(tmp_path, tool_config_file, read_only=True))
+        assert sorted(tool_id for tool_id in index.entries if tool_id.startswith(("first_", "second_"))) == [
+            "first_installed",
+            "second_installed",
+        ]

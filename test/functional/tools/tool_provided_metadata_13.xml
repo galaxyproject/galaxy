@@ -1,0 +1,27 @@
+<tool id="tool_provided_metadata_13" name="tool_provided_metadata_13" version="1.0.0">
+    <!-- Legacy galaxy.json discovered BAM: set_metadata writes bam_index as a MetadataTempFile into galaxy.json. -->
+    <command><![CDATA[
+cp '$input_bam' sample1.bam &&
+cp '$c1' galaxy.json
+    ]]></command>
+    <configfiles>
+        <configfile name="c1">{"type": "new_primary_dataset", "filename": "sample1.bam", "name": "cool bam", "ext": "bam"}
+</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input_bam" type="data" format="bam" />
+    </inputs>
+    <outputs>
+        <data name="sample">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.bam" visible="true" />
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input_bam" value="3.bam" ftype="bam" />
+            <output name="sample">
+                <discovered_dataset designation="sample1" file="3.bam" ftype="bam" />
+            </output>
+        </test>
+    </tests>
+</tool>

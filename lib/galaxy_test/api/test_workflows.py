@@ -288,6 +288,12 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
             preserve_external_subworkflow_links=preserve_external_subworkflow_links,
         )
 
+    def _yaml_workflow_run_form(self, workflow_yaml: str) -> dict[str, Any]:
+        """Upload a format2 workflow and download its run form against a fresh history."""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(workflow_yaml)
+        with self.dataset_populator.test_history() as history_id:
+            return self._download_workflow(workflow_id, style="run", history_id=history_id)
+
     def _assert_is_runtime_input(self, tool_state_value):
         if not isinstance(tool_state_value, dict):
             tool_state_value = json.loads(tool_state_value)
@@ -419,6 +425,32 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
             workflows_url = self._api_url(f"workflows/{workflow_id}")
             assert get(workflows_url).status_code == 403
 
+    def test_shared_user_can_show_workflow(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_show")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        assert self._show_workflow(workflow_id)["name"] == "test_shared_show"
+
+    def test_anon_can_show_importable_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_importable_show", importable=True)
+        with self._different_user(anon=True):
+            assert self._show_workflow(workflow_id)["name"] == "test_importable_show"
+
+    def test_admin_can_show_private_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_admin_show")
+        show_response = self._get(f"workflows/{workflow_id}", admin=True)
+        self._assert_status_code_is(show_response, 200)
+        assert show_response.json()["name"] == "test_admin_show"
+
+    def test_cannot_show_workflow_with_unset_importable(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_unset_importable")
+        self._assert_status_code_is_ok(
+            self.workflow_populator.update_workflow_fields(workflow_id, {"importable": None})
+        )
+        with self._different_user():
+            self._assert_status_code_is(self._get(f"workflows/{workflow_id}"), 403)
+
     def test_cannot_download_private_workflow(self):
         workflow_id = self.workflow_populator.simple_workflow("test_not_downloadable")
         with self._different_user():
@@ -522,6 +554,114 @@ steps:
             workflow_undelete_url = self._api_url(f"workflows/{workflow_id}/undelete", use_key=True)
             undelete_response = post(workflow_undelete_url)
             self._assert_status_code_is(undelete_response, 403)
+
+    def test_update_show_in_tool_panel(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_update_show_in_tool_panel")
+        self._assert_status_code_is_ok(self._update_workflow(workflow_id, {"show_in_tool_panel": True}))
+        assert self._shows_in_tool_panel(workflow_id)
+        self._assert_status_code_is_ok(self._update_workflow(workflow_id, {"show_in_tool_panel": False}))
+        assert not self._shows_in_tool_panel(workflow_id)
+
+    def test_shared_user_can_update_show_in_tool_panel(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_show_in_tool_panel")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        for key in ("show_in_tool_panel", "menu_entry"):
+            self._assert_status_code_is_ok(self._update_workflow(workflow_id, {key: True}))
+            assert self._shows_in_tool_panel(workflow_id, show_shared=True)
+            self._assert_status_code_is_ok(self._update_workflow(workflow_id, {key: False}))
+            assert not self._shows_in_tool_panel(workflow_id, show_shared=True)
+
+    def test_other_can_update_show_in_tool_panel_for_published(self):
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_published_show_in_tool_panel", publish=True)
+        response = self.workflow_populator.update_workflow_fields(workflow_id, {"show_in_tool_panel": True})
+        self._assert_status_code_is_ok(response)
+        assert self._shows_in_tool_panel(workflow_id, show_published=True)
+
+    def test_update_show_in_tool_panel_by_uuid(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_show_in_tool_panel_by_uuid")
+        workflow_uuid = self._show_workflow(workflow_id)["latest_workflow_uuid"]
+        update_fields = self.workflow_populator.update_workflow_fields
+        self._assert_status_code_is_ok(update_fields(workflow_uuid, {"show_in_tool_panel": True}))
+        assert self._shows_in_tool_panel(workflow_id)
+        self._assert_status_code_is_ok(update_fields(workflow_uuid, {"show_in_tool_panel": False}))
+        assert not self._shows_in_tool_panel(workflow_id)
+
+    def test_other_cannot_update(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_other_update")
+        with self._different_user():
+            for update in ({"name": "other name"}, {"published": True}, {"show_in_tool_panel": True}):
+                self._assert_status_code_is(self._update_workflow(workflow_id, update), 403)
+        workflow = self._show_workflow(workflow_id)
+        assert workflow["name"] == "test_other_update"
+        assert workflow["published"] is False
+
+    def test_admin_can_update_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_admin_update")
+        response = self.workflow_populator.update_workflow_fields(workflow_id, {"hidden": True}, admin=True)
+        self._assert_status_code_is_ok(response)
+        assert self._show_workflow(workflow_id)["hidden"] is True
+
+    def test_shared_user_cannot_update_name_with_show_in_tool_panel(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_update_name")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        update = {"show_in_tool_panel": True, "name": "other name"}
+        self._assert_status_code_is(self._update_workflow(workflow_id, update), 403)
+        assert not self._shows_in_tool_panel(workflow_id, show_shared=True)
+        assert self._show_workflow(workflow_id)["name"] == "test_shared_update_name"
+
+    def test_other_cannot_refactor(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_other_refactor")
+        actions = [{"action_type": "update_name", "name": "other name"}]
+        with self._different_user():
+            for dry_run in (True, False):
+                refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=dry_run)
+                self._assert_status_code_is(refactor_response, 403)
+        assert self._show_workflow(workflow_id)["name"] == "test_other_refactor"
+
+    def test_shared_user_cannot_refactor_or_update(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_refactor")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        actions = [{"action_type": "update_name", "name": "other name"}]
+        for dry_run in (True, False):
+            refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=dry_run)
+            self._assert_status_code_is(refactor_response, 403)
+        for fields in ({"tags": ["other"]}, {"hidden": True}):
+            update_response = self.workflow_populator.update_workflow_fields(workflow_id, fields)
+            self._assert_status_code_is(update_response, 403)
+        workflow = self._show_workflow(workflow_id)
+        assert workflow["name"] == "test_shared_refactor"
+        assert workflow["tags"] == []
+        assert workflow["hidden"] is False
+
+    def test_set_workflow_menu(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            shared_workflow_id = self.workflow_populator.simple_workflow("test_set_menu_shared")
+            self.workflow_populator.share_with_user(shared_workflow_id, my_email)
+            private_workflow_id = self.workflow_populator.simple_workflow("test_set_menu_private")
+        menu_response = self.workflow_populator.set_workflow_menu([shared_workflow_id])
+        self._assert_status_code_is_ok(menu_response)
+        assert self._shows_in_tool_panel(shared_workflow_id, show_shared=True)
+        menu_response = self.workflow_populator.set_workflow_menu([shared_workflow_id, private_workflow_id])
+        self._assert_status_code_is(menu_response, 403)
+        assert self._shows_in_tool_panel(shared_workflow_id, show_shared=True)
+
+    def test_set_workflow_menu_drops_duplicate_ids(self):
+        workflow_id_1 = self.workflow_populator.simple_workflow("test_set_menu_dup_1")
+        workflow_id_2 = self.workflow_populator.simple_workflow("test_set_menu_dup_2")
+        menu_response = self.workflow_populator.set_workflow_menu([workflow_id_1, workflow_id_2, workflow_id_1])
+        self._assert_status_code_is_ok(menu_response)
+        menu = self._get("workflows/menu").json()
+        assert len(menu["ids_in_menu"]) == 2
+        assert self._shows_in_tool_panel(workflow_id_1)
+        assert self._shows_in_tool_panel(workflow_id_2)
 
     def test_index(self):
         index_response = self._get("workflows")
@@ -5072,6 +5212,42 @@ outer_input:
             details = self.dataset_populator.get_history_dataset_details(history_id)
             assert details["name"] == "moocow suffix"
 
+    @skip_without_tool("cat")
+    def test_run_form_replacement_parameters_from_rename(self):
+        run_form = self._yaml_workflow_run_form("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+    out:
+      out_file1:
+        rename: "${a} ${b} suffix"
+""")
+        assert sorted(run_form["steps"][1]["replacement_parameters"]) == ["a", "b"]
+
+    @skip_without_tool("cat")
+    def test_run_form_replacement_parameters_ignore_non_rename_actions(self):
+        run_form = self._yaml_workflow_run_form("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+    out:
+      out_file1:
+        rename: "${a} suffix"
+        add_tags: ["name:${t}"]
+        change_datatype: "${d}"
+""")
+        assert sorted(run_form["steps"][1]["replacement_parameters"]) == ["a"]
+
     @skip_without_tool("random_lines1")
     def test_run_runtime_parameters_after_pause(self):
         with self.dataset_populator.test_history() as history_id:
@@ -5749,10 +5925,30 @@ input_c:
             )
             assert output_filtered["element_count"] == 2, output_filtered
 
-    def test_subworkflow_missing_input_connection_error(self):
-        with self.dataset_populator.test_history() as history_id:
-            summary = self._run_workflow(
-                """
+    def _assert_disconnected_subworkflow_input_rejected(
+        self, workflow_id: str, history_id: str | None, inputs: dict[str, Any], step_path: str, input_name: str
+    ) -> None:
+        jobs_before = self._history_jobs(history_id) if history_id else []
+        history_name = f"disconnected subworkflow input history {uuid4()}"
+        target = {"history_id": history_id} if history_id else {"new_history_name": history_name}
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={**target, "inputs_by": "name", "inputs": inputs},
+            json=True,
+        )
+        self._assert_status_code_is(response, 400)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
+        assert_error_message_contains(
+            response, f"{step_path}: Subworkflow has disconnected required input '{input_name}'"
+        )
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        if history_id:
+            assert self._history_jobs(history_id) == jobs_before
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @pytest.mark.parametrize("new_history", [False, True])
+    def test_subworkflow_missing_input_connection_error(self, history_id, new_history):
+        workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs: []
 steps:
@@ -5763,19 +5959,97 @@ steps:
         my_input:
           type: data
       steps: []
-""",
-                history_id=history_id,
-                assert_ok=False,
-            )
-            workflow_details = self._invocation_details(summary.workflow_id, summary.invocation_id)
-            assert workflow_details["messages"] == [
-                {
-                    "details": "Subworkflow has disconnected required input.",
-                    "reason": "unexpected_failure",
-                    "workflow_step_id": 0,
-                    "workflow_step_index_path": [0],
-                }
-            ]
+""")
+        self._assert_disconnected_subworkflow_input_rejected(
+            workflow_id, None if new_history else history_id, {}, "subworkflow_step", "my_input"
+        )
+
+    def test_subworkflow_partially_connected_required_input_error(self, history_id):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  parent_input:
+    type: data
+steps:
+  subworkflow_step:
+    in:
+      connected_input: parent_input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        connected_input:
+          type: data
+        disconnected_input:
+          type: data
+      steps:
+        cat:
+          tool_id: cat1
+          in:
+            input1: connected_input
+""")
+        hda = self.dataset_populator.new_dataset(history_id, content="1\n2\n", wait=True)
+        self._assert_disconnected_subworkflow_input_rejected(
+            workflow_id,
+            history_id,
+            {"parent_input": {"src": "hda", "id": hda["id"]}},
+            "subworkflow_step",
+            "disconnected_input",
+        )
+
+    def test_nested_subworkflow_missing_input_connection_error(self, history_id):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  parent_input:
+    type: data
+steps:
+  outer_subworkflow:
+    in:
+      outer_input: parent_input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        outer_input:
+          type: data
+      steps:
+        cat:
+          tool_id: cat1
+          in:
+            input1: outer_input
+        inner_subworkflow:
+          run:
+            class: GalaxyWorkflow
+            inputs:
+              inner_input:
+                type: data
+            steps: []
+""")
+        hda = self.dataset_populator.new_dataset(history_id, content="1\n2\n", wait=True)
+        self._assert_disconnected_subworkflow_input_rejected(
+            workflow_id,
+            history_id,
+            {"parent_input": {"src": "hda", "id": hda["id"]}},
+            "outer_subworkflow > inner_subworkflow",
+            "inner_input",
+        )
+
+    @pytest.mark.parametrize("parameter_type,default", [("boolean", False), ("integer", 0), ("text", "")])
+    def test_run_subworkflow_with_falsy_default_unconnected(self, history_id, parameter_type, default):
+        workflow_id = self._upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+steps:
+  subworkflow_step:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        parameter:
+          type: {parameter_type}
+          optional: false
+          default: {json.dumps(default)}
+      steps: []
+""")
+        response = self._post(f"workflows/{workflow_id}/invocations", data={"history_id": history_id}, json=True)
+        self._assert_status_code_is(response, 200)
 
     def test_run_subworkflow_with_required_input_with_default_unconnected(self):
         """Test subworkflow with required parameter input that has default value but is unconnected.
@@ -5879,6 +6153,41 @@ some_file:
             assert message["workflow_step_index_path"] == [1]
             # Verify workflow_step_id points to the conditional_step (step 2 in the subworkflow)
             assert message["workflow_step_id"] == 2
+
+    def test_subworkflow_parameter_validator_failure(self):
+        # The parent input has no validator, so the value is only checked when the subworkflow schedules.
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  outer_text: text
+steps:
+  nested:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_text:
+          type: text
+          validators:
+            - type: regex
+              expression: "^moo"
+              message: must start with moo
+      steps: {}
+    in:
+      inner_text: outer_text
+""")
+        with self.dataset_populator.test_history() as history_id:
+            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                workflow_id, history_id=history_id, inputs={"0": "cow"}
+            )
+            self.workflow_populator.wait_for_invocation(workflow_id, invocation_id, assert_ok=False)
+            invocation_details = self.workflow_populator.get_invocation(invocation_id)
+            assert invocation_details["state"] == "failed"
+            assert len(invocation_details["messages"]) == 1
+            message = invocation_details["messages"][0]
+            assert message["reason"] == "workflow_parameter_invalid"
+            assert message["details"] == "inner_text: must start with moo"
+            assert message["workflow_step_index_path"] == [1]
+            assert message["workflow_step_id"] == 0
 
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")
@@ -10617,6 +10926,27 @@ steps:
         assert len(options) == 1
         assert options[0] == ["hg19", "hg19_value", False]
 
+    @skip_without_tool("select_from_duplicate_value_table")
+    def test_value_restriction_collapses_duplicate_table_values(self):
+        expected = [["Human old", "hg38", False], ["Mouse", "mm10", False]]
+        with self.dataset_populator.test_history() as history_id:
+            tool_state = self.dataset_populator.build_tool_state("select_from_duplicate_value_table", history_id)
+            assert tool_state["inputs"][0]["options"] == expected
+            workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  select_text:
+     type: text
+     restrictOnConnections: true
+steps:
+  select:
+    tool_id: select_from_duplicate_value_table
+    in:
+      ref: select_text
+""")
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        assert run_workflow["steps"][0]["inputs"][0]["options"] == expected
+
     def test_value_restriction_with_select_and_text_param(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
@@ -11671,13 +12001,13 @@ outer_input:
         response = self._show_workflow(workflow_id)
         assert not response["published"]
         assert not response["importable"]
-        published_worklow = self._put(f"workflows/{workflow_id}", data={"published": True}, json=True).json()
+        published_worklow = self.workflow_populator.update_workflow_fields(workflow_id, {"published": True}).json()
         assert published_worklow["published"]
-        importable_worklow = self._put(f"workflows/{workflow_id}", data={"importable": True}, json=True).json()
+        importable_worklow = self.workflow_populator.update_workflow_fields(workflow_id, {"importable": True}).json()
         assert importable_worklow["importable"]
-        unpublished_worklow = self._put(f"workflows/{workflow_id}", data={"published": False}, json=True).json()
+        unpublished_worklow = self.workflow_populator.update_workflow_fields(workflow_id, {"published": False}).json()
         assert not unpublished_worklow["published"]
-        unimportable_worklow = self._put(f"workflows/{workflow_id}", data={"importable": False}, json=True).json()
+        unimportable_worklow = self.workflow_populator.update_workflow_fields(workflow_id, {"importable": False}).json()
         assert not unimportable_worklow["importable"]
 
     def test_workflow_from_path_requires_admin(self):
@@ -11905,6 +12235,70 @@ outer_input:
             assert any(
                 t["representation"]["name"] == TOOL_WITH_SHELL_COMMAND["name"] for t in owned
             ), f"Expected an owned UDT after workflow import: {owned}"
+
+    @pytest.mark.parametrize(
+        "metadata,stock_first,nested",
+        [
+            ("last_output", False, False),
+            ("annotation", False, False),
+            ("output", False, False),
+            ("output", False, True),
+            ("rename", False, False),
+            ("rename", False, True),
+            ("output", True, False),
+            ("output", True, True),
+        ],
+    )
+    def test_import_embedded_user_tools_after_step_metadata(self, metadata, stock_first, nested):
+        first_output = "out_file1" if stock_first else "output"
+        workflow: dict[str, Any] = {
+            "class": "GalaxyWorkflow",
+            "inputs": {"input": {"type": "data"}},
+            "outputs": {"result": {"outputSource": "b/output"}},
+            "steps": {
+                "a": {"run": TOOL_WITH_SHELL_COMMAND, "in": {"input": "input"}},
+                "b": {"run": TOOL_WITH_SHELL_COMMAND, "in": {"input": f"a/{first_output}"}},
+            },
+        }
+        if stock_first:
+            workflow["steps"]["a"] = {"tool_id": "cat1", "in": {"input1": "input"}}
+        if metadata == "annotation":
+            workflow["steps"]["a"]["doc"] = "An annotated earlier step"
+        elif metadata == "output":
+            workflow["outputs"]["earlier"] = {"outputSource": f"a/{first_output}"}
+        elif metadata == "rename":
+            workflow["steps"]["a"]["out"] = {first_output: {"rename": "renamed earlier output"}}
+        if nested:
+            workflow = {
+                "class": "GalaxyWorkflow",
+                "inputs": {"input": {"type": "data"}},
+                "outputs": {"result": {"outputSource": "nested/result"}},
+                "steps": {"nested": {"run": workflow, "in": {"input": "input"}}},
+            }
+        with self.dataset_populator.user_tool_execute_permissions():
+            tools_before = len(self.dataset_populator.get_unprivileged_tools())
+            workflow_id = self.workflow_populator.upload_yaml_workflow(yaml.safe_dump(workflow))
+            # One persisted tool per embedded user-tool step.
+            assert len(self.dataset_populator.get_unprivileged_tools()) == tools_before + (1 if stock_first else 2)
+            downloaded = self.workflow_populator.download_workflow(workflow_id)
+            if nested:
+                downloaded = next(s["subworkflow"] for s in downloaded["steps"].values() if s["type"] == "subworkflow")
+            tools = [s for s in downloaded["steps"].values() if s["type"] == "tool"]
+            assert len(tools) == 2
+            if stock_first:
+                assert tools[0]["tool_id"] == "cat1"
+            else:
+                assert tools[0]["tool_representation"]["class"] == "GalaxyUserTool"
+            assert tools[1]["tool_representation"]["class"] == "GalaxyUserTool"
+            assert tools[1]["workflow_outputs"][0]["label"] == "result"
+            if metadata == "annotation":
+                assert tools[0]["annotation"] == "An annotated earlier step"
+            elif metadata == "output":
+                assert tools[0]["workflow_outputs"][0]["label"] == "earlier"
+            elif metadata == "rename":
+                action = tools[0]["post_job_actions"][f"RenameDatasetAction{first_output}"]
+                assert action["action_arguments"]["newname"] == "renamed earlier output"
+            assert tools[1]["input_connections"]["input"] == {"id": tools[0]["id"], "output_name": first_output}
 
     def _build_user_defined_tool_run_workflow_dict(
         self,
@@ -12286,6 +12680,12 @@ outer_input:
             )
         return self._post(route, import_data)
 
+    def _shows_in_tool_panel(self, workflow_id, show_shared=None, show_published=None):
+        workflows = self.workflow_populator.index(show_shared=show_shared, show_published=show_published)
+        matches = [w["show_in_tool_panel"] for w in workflows if w["id"] == workflow_id]
+        assert len(matches) == 1, f"expected workflow {workflow_id} once in index, found {len(matches)}"
+        return matches[0]
+
     def _assert_looks_like_instance_workflow_representation(self, workflow):
         self._assert_has_keys(workflow, "url", "owner", "inputs", "annotation", "steps")
         for step in workflow["steps"].values():
@@ -12469,6 +12869,47 @@ steps:
 
 class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):
     require_admin_user = True
+
+    @pytest.mark.parametrize("metadata", ["output", "rename"])
+    def test_import_embedded_admin_tool_after_step_metadata(self, metadata):
+        workflow: dict[str, Any] = {
+            "a_galaxy_workflow": "true",
+            "name": "Embedded admin tool after step metadata",
+            "annotation": "",
+            "format-version": "0.1",
+            "steps": {
+                "0": {"id": 0, "type": "tool", "tool_id": "cat1", "tool_state": "{}"},
+                "1": {
+                    "id": 1,
+                    "type": "tool",
+                    "tool_representation": dict(TOOL_WITH_SHELL_COMMAND, **{"class": "GalaxyTool"}),
+                    "tool_state": "{}",
+                    "input_connections": {"input": {"id": 0, "output_name": "out_file1"}},
+                    "workflow_outputs": [{"output_name": "output", "label": "result"}],
+                },
+            },
+        }
+        if metadata == "output":
+            workflow["steps"]["0"]["workflow_outputs"] = [{"output_name": "out_file1", "label": "earlier"}]
+        else:
+            workflow["steps"]["0"]["post_job_actions"] = {
+                "RenameDatasetActionout_file1": {
+                    "action_type": "RenameDatasetAction",
+                    "output_name": "out_file1",
+                    "action_arguments": {"newname": "renamed earlier output"},
+                }
+            }
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        downloaded = self.workflow_populator.download_workflow(workflow_id)
+        assert downloaded["steps"]["1"]["tool_representation"]["class"] == "GalaxyTool"
+        assert downloaded["steps"]["1"]["workflow_outputs"][0]["label"] == "result"
+        assert downloaded["steps"]["1"]["input_connections"]["input"] == {"id": 0, "output_name": "out_file1"}
+        first_step = downloaded["steps"]["0"]
+        if metadata == "output":
+            assert first_step["workflow_outputs"][0]["label"] == "earlier"
+        else:
+            action = first_step["post_job_actions"]["RenameDatasetActionout_file1"]
+            assert action["action_arguments"]["newname"] == "renamed earlier output"
 
 
 class TestCachedWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):

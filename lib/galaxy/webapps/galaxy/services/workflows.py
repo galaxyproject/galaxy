@@ -18,6 +18,7 @@ from galaxy.managers.context import (
 )
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_parse import is_quotable_argument_value
+from galaxy.managers.pages import PageManager
 from galaxy.managers.workflow_extraction_naming import normalize_label
 from galaxy.managers.workflow_extraction_report import reconcile_and_build_report
 from galaxy.managers.workflows import (
@@ -92,7 +93,7 @@ def _to_extraction_result(
 
 
 def _build_report_config(
-    trans: ProvidesHistoryContext, page: Page, title: str | None, index: ExtractionLabelIndex
+    trans: ProvidesHistoryContext, page: Page, title: str, index: ExtractionLabelIndex
 ) -> tuple[dict[str, Any], list[str]]:
     """Turn a notebook page into the extracted workflow's ``reports_config``.
 
@@ -181,6 +182,7 @@ class WorkflowsService(ServiceBase):
         tool_shed_registry: Registry,
         notification_service: NotificationService,
         job_manager: JobManager,
+        page_manager: PageManager,
         workflow_scheduling_manager: WorkflowSchedulingManager,
         config: GalaxyAppConfiguration,
         completion_hook_registry: WorkflowCompletionHookRegistry,
@@ -193,6 +195,7 @@ class WorkflowsService(ServiceBase):
         self.shareable_service = ShareableService(workflows_manager, serializer, notification_service)
         self._tool_shed_registry = tool_shed_registry
         self._job_manager = job_manager
+        self._page_manager = page_manager
         self._config = config
 
     def index(
@@ -427,8 +430,8 @@ class WorkflowsService(ServiceBase):
         self._validate_extract_by_ids_payload(trans, payload)
         build_report = None
         if payload.from_page_id is not None:
-            page = self._load_report_page(trans, payload.from_page_id)
-            build_report = partial(_build_report_config, trans, page, payload.report_title or payload.workflow_name)
+            page, _ = self._page_manager.get_accessible_notebook(trans, payload.from_page_id)
+            build_report = partial(_build_report_config, trans, page, payload.workflow_name)
         stored_workflow, report_warnings = extract_workflow_by_ids(
             trans,
             user=trans.user,
@@ -445,21 +448,6 @@ class WorkflowsService(ServiceBase):
             build_report=build_report,
         )
         return _to_extraction_result(stored_workflow, report_warnings)
-
-    def _load_report_page(self, trans: ProvidesHistoryContext, page_id: int):
-        """Load and gate a notebook page used to build the workflow report.
-
-        Mirrors the page workflow-extraction-summary endpoint: only history-backed
-        pages are extractable, and page accessibility must not leak the underlying
-        history - require access to the history too.
-        """
-        page = self.get_object(trans, page_id, "Page", check_ownership=False, check_accessible=True)
-        if page.history_id is None:
-            raise exceptions.RequestParameterInvalidException(
-                "Workflow report extraction is only available for history-backed pages (notebooks)."
-            )
-        trans.app.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
-        return page
 
     def _validate_extract_by_ids_payload(
         self,
@@ -510,16 +498,16 @@ class WorkflowsService(ServiceBase):
         seen_step_keys: set[tuple[str, int]] = set()
         step_label_strings: list[str] = []
         for step_label in payload.step_labels:
-            step_key = (step_label.kind, step_label.id)
+            step_key = (step_label.src, step_label.id)
             if step_key in seen_step_keys:
                 raise exceptions.RequestParameterInvalidException(
-                    f"step_labels contains duplicate {step_label.kind} id {step_label.id}"
+                    f"step_labels contains duplicate {step_label.src} id {step_label.id}"
                 )
             seen_step_keys.add(step_key)
-            selected = selected_job_ids if step_label.kind == "job" else selected_icj_ids
+            selected = selected_job_ids if step_label.src == "job" else selected_icj_ids
             if step_label.id not in selected:
                 raise exceptions.RequestParameterInvalidException(
-                    f"step_labels includes {step_label.kind} id {step_label.id} "
+                    f"step_labels includes {step_label.src} id {step_label.id} "
                     "that is not a selected extraction step"
                 )
             step_label_strings.append(step_label.label)
@@ -538,18 +526,18 @@ class WorkflowsService(ServiceBase):
         for output_label in payload.output_labels:
             sanitized_label = _sanitize_output_label(output_label.label)
             output_label.label = sanitized_label
-            output_key = normalize_output_label_key(trans, output_label.kind, output_label.id)
+            output_key = normalize_output_label_key(trans, output_label.src, output_label.id)
             output_label.id = output_key[1]
             if output_key in seen_output_ids:
                 raise exceptions.RequestParameterInvalidException(
-                    f"output_labels contains duplicate {output_label.kind} id {output_label.id}"
+                    f"output_labels contains duplicate {output_label.src} id {output_label.id}"
                 )
             seen_output_ids.add(output_key)
 
             output_target = output_targets.get(output_key)
             if output_target is None:
                 raise exceptions.RequestParameterInvalidException(
-                    f"output_labels includes {output_label.kind} id {output_label.id} "
+                    f"output_labels includes {output_label.src} id {output_label.id} "
                     "that is not produced by a selected extraction step"
                 )
             if output_target.step_key in seen_resolved_outputs:
@@ -565,13 +553,11 @@ class WorkflowsService(ServiceBase):
             seen_labels.add(sanitized_label)
 
     def delete(self, trans: ProvidesUserContext, workflow_id):
-        workflow_to_delete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
-        self._workflows_manager.check_security(trans, workflow_to_delete)
+        workflow_to_delete = self._workflows_manager.get_stored_owned_workflow(trans, workflow_id)
         self._workflows_manager.delete(workflow_to_delete)
 
     def undelete(self, trans: ProvidesUserContext, workflow_id):
-        workflow_to_undelete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
-        self._workflows_manager.check_security(trans, workflow_to_undelete)
+        workflow_to_undelete = self._workflows_manager.get_stored_owned_workflow(trans, workflow_id)
         self._workflows_manager.undelete(workflow_to_undelete)
 
     def get_versions(self, trans: ProvidesUserContext, workflow_id, instance: bool):
@@ -604,18 +590,17 @@ class WorkflowsService(ServiceBase):
         payload: RefactorRequest,
         instance: bool,
     ) -> RefactorResponse:
-        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
+        stored_workflow = self._workflows_manager.get_stored_owned_workflow(
+            trans, workflow_id, by_stored_id=not instance
+        )
         return self._workflow_contents_manager.refactor(trans, stored_workflow, payload)
 
     def show_workflow(
         self, trans: ProvidesHistoryContext, workflow_id, instance, legacy, version
     ) -> StoredWorkflowDetailed:
-        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
-        if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
-            wf_count = 0 if not trans.user else trans.user.count_stored_workflow_user_assocs(stored_workflow)
-            if wf_count == 0:
-                message = "Workflow is neither importable, nor owned by or shared with current user"
-                raise exceptions.ItemAccessibilityException(message)
+        stored_workflow = self._workflows_manager.get_stored_accessible_workflow(
+            trans, workflow_id, by_stored_id=not instance
+        )
         if legacy:
             style = "legacy"
         else:

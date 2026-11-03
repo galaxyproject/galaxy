@@ -13,6 +13,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from boltons.iterutils import remap
 from packaging.version import Version
 
 from galaxy import model
@@ -124,6 +125,14 @@ class ToolTemplatingException(Exception):
         self.tool_id = tool_id
         self.tool_version = tool_version
         self.is_latest = is_latest
+
+
+_GROUP_STATE_KEYS = frozenset(("__index__", "__current_case__"))
+
+
+def _is_not_group_state_key(path, key, value) -> bool:
+    """``remap`` visitor dropping repeat ``__index__`` and conditional ``__current_case__`` keys."""
+    return key not in _GROUP_STATE_KEYS
 
 
 def global_tool_logs(func, config_file: StrPath | None, action_str: str, tool: "Tool"):
@@ -274,7 +283,7 @@ class ToolEvaluator:
         param_dict = TreeDict(self.param_dict)
 
         param_dict["__datatypes_config__"] = param_dict["GALAXY_DATATYPES_CONF_FILE"] = os.path.join(
-            job_working_directory, "registry.xml"
+            compute_environment.config_directory(), "registry.xml"
         )
         if self._history:
             param_dict["__history_id__"] = self.app.security.encode_id(self._history.id)
@@ -293,10 +302,10 @@ class ToolEvaluator:
         # Parameters added after this line are not sanitized
         self.__populate_non_job_params(param_dict)
 
-        # MinimalJobWrapper.__prepare_upload_paramfile copies the paramfile to the job working directory
+        # MinimalJobWrapper.__prepare_upload_paramfile copies the paramfile to the job's configs directory
         # so we should use it (otherwise the upload tool does not work in real user setups)
         if self.job.tool_id == "upload1":
-            param_dict["paramfile"] = os.path.join(job_working_directory, "upload_params.json")
+            param_dict["paramfile"] = os.path.join(compute_environment.config_directory(), "upload_params.json")
 
         if "input" not in param_dict.data:
 
@@ -1166,13 +1175,12 @@ class UserToolEvaluator(ToolEvaluator):
             if self.tool.parameters is None:
                 raise RequestParameterInvalidException(f"Tool {self.tool.id} has no parameters defined")
             parameter_bundle = ToolParameterBundleModel(parameters=self.tool.parameters)
-            yaml_origin = self.tool.tool_source.parse_class() in ("GalaxyUserTool", "GalaxyTool")
             job_runtime_state = runtimeify(
                 validated_tool_state,
                 parameter_bundle,
                 adapt_datasets,
                 adapt_collections,
-                yaml_origin=yaml_origin,
+                yaml_origin=self.tool.yaml_origin,
             )
             cwl_style_inputs = job_runtime_state.input_state
         else:
@@ -1183,7 +1191,7 @@ class UserToolEvaluator(ToolEvaluator):
             )
             hda_references = []
             cwl_style_inputs = to_cwl(
-                incoming,
+                remap(incoming, visit=_is_not_group_state_key),
                 hda_references=hda_references,
                 compute_environment=compute_environment,
                 shell_quotable=shell_quotable,

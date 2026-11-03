@@ -7,7 +7,7 @@ import os
 from datetime import timedelta
 
 try:
-    from azure.common import AzureHttpError
+    from azure.core.exceptions import HttpResponseError
     from azure.storage.blob import (
         BlobSasPermissions,
         BlobServiceClient,
@@ -90,9 +90,7 @@ def parse_config_xml(config_xml):
             "transfer": transfer_dict,
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
-            "enable_direct_download": CachingConcreteObjectStore.parse_enable_direct_download_from_config_xml(
-                config_xml
-            ),
+            **CachingConcreteObjectStore.parse_direct_download_config_from_config_xml(config_xml),
         }
         name = config_xml.attrib.get("name", None)
         if name is not None:
@@ -213,7 +211,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
             properties = self._blob_client(rel_path).get_blob_properties()
             size_in_bytes = properties.size
             return size_in_bytes
-        except AzureHttpError:
+        except HttpResponseError:
             log.exception("Could not get size of blob '%s' from Azure", rel_path)
             return -1
 
@@ -221,20 +219,16 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
         return self.service.get_container_client(self.container_name).list_blobs(name_starts_with=rel_path)
 
     def _exists_remotely(self, rel_path: str):
-        try:
-            is_dir = rel_path[-1] == "/"
-            if is_dir:
-                blobs = self._blobs_from(rel_path)
-                if blobs:
-                    return True
-                else:
-                    return False
+        # Errors propagate: taking an object for missing would push a possibly stale cached copy over it.
+        is_dir = rel_path[-1] == "/"
+        if is_dir:
+            blobs = self._blobs_from(rel_path)
+            if blobs:
+                return True
             else:
-                exists = self._blob_client(rel_path).exists()
-        except AzureHttpError:
-            log.exception("Trouble checking existence of Azure blob '%s'", rel_path)
-            return False
-        return exists
+                return False
+        else:
+            return self._blob_client(rel_path).exists()
 
     def _blob_client(self, rel_path: str):
         return self.service.get_blob_client(self.container_name, rel_path)
@@ -249,7 +243,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                 with self._atomic_download(local_destination) as tmp:
                     self._download_to_file(rel_path, tmp)
                 return True
-        except AzureHttpError:
+        except HttpResponseError:
             log.exception("Problem downloading '%s' from Azure", rel_path)
         return False
 
@@ -281,7 +275,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
         try:
             self._blob_client(rel_path).upload_blob(from_string, overwrite=True)
             return True
-        except AzureHttpError:
+        except HttpResponseError:
             log.exception("Trouble pushing to Azure Blob '%s' from string", rel_path)
             return False
 
@@ -296,7 +290,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                     kwd["max_concurrency"] = max_concurrency
                 self._blob_client(rel_path).upload_blob(f, overwrite=True, **kwd)
             return True
-        except AzureHttpError:
+        except HttpResponseError:
             log.exception("Trouble pushing to Azure Blob '%s' from file '%s'", rel_path, source_file)
             return False
 
@@ -307,7 +301,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                 log.debug("Deleting from Azure: %s", blob)
                 self._blob_client(blob.name).delete_blob()
             return True
-        except AzureHttpError:
+        except HttpResponseError:
             log.exception("Could not delete blob '%s' from Azure", rel_path)
             return False
 
@@ -315,7 +309,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
         try:
             self._blob_client(rel_path).delete_blob()
             return True
-        except AzureHttpError:
+        except HttpResponseError:
             log.exception("Could not delete blob '%s' from Azure", rel_path)
             return False
 
@@ -331,12 +325,12 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                     container_name=self.container_name,
                     blob_name=rel_path,
                     permission=BlobSasPermissions(read=True),
-                    expiry=now() + timedelta(hours=1),
+                    expiry=now() + timedelta(seconds=self.direct_download_expires_in),
                     content_disposition=content_disposition,
                     content_type=content_type,
                 )
                 return f"{url}?{token}"
-            except AzureHttpError:
+            except HttpResponseError:
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)
         return None
 

@@ -43,6 +43,7 @@ from pulsar.client.staging.up import submit_job as pulsar_submit_job
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
@@ -54,6 +55,7 @@ from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
+    ContainerRequiredException,
     JobState,
 )
 from galaxy.model.base import check_database_connection
@@ -574,6 +576,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         remote_container = None
 
         fail_or_resubmit = False
+        fail_message = None
         try:
             client = self.get_client_from_wrapper(job_wrapper)
             assert job_wrapper.tool is not None
@@ -597,8 +600,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             try:
                 job_prepare_ret = job_wrapper.prepare(**prepare_kwds)
             except Exception as e:
-                if isinstance(e, ParameterValueError):
-                    log.info("parameter validation error preparing job %d: %s", job_wrapper.job_id, unicodify(e))
+                if isinstance(e, (ParameterValueError, InsufficientPermissionsException)):
+                    log.info("job %d rejected while preparing: %s", job_wrapper.job_id, unicodify(e))
                 else:
                     log.exception("failure preparing job %d", job_wrapper.job_id)
                 job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
@@ -664,6 +667,10 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         except PulsarClientTransportError:
             log.exception("failure running job %d, Pulsar connection failed", job_wrapper.job_id)
             fail_or_resubmit = True
+        except ContainerRequiredException as e:
+            log.info("failure running job %d: %s", job_wrapper.job_id, e)
+            fail_message = str(e)
+            fail_or_resubmit = True
         except Exception:
             log.exception("failure running job %d", job_wrapper.job_id)
             fail_or_resubmit = True
@@ -672,6 +679,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         fail_or_resubmit = fail_or_resubmit or not command_line
         if fail_or_resubmit:
             job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
+            if fail_message:
+                job_state.fail_message = fail_message
             self.work_queue.put((self.fail_job, job_state))
 
         return command_line, client, remote_job_config, compute_environment, remote_container

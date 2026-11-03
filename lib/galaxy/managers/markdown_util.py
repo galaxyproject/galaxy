@@ -150,7 +150,7 @@ def ready_galaxy_markdown_for_import(trans: ProvidesAppContext, external_galaxy_
 
 class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
     def walk(self, trans: ProvidesHistoryContext, internal_galaxy_markdown):
-        export_markdown_raw_embed = self._walk_directives(trans, internal_galaxy_markdown)
+        export_markdown_raw_embed = self.walk_directives(trans, internal_galaxy_markdown)
 
         hda_manager = trans.app.hda_manager
         workflow_manager = trans.app.workflow_manager
@@ -247,7 +247,8 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         )
         return export_markdown, export_markdown_embed_expanded
 
-    def _walk_directives(self, trans: ProvidesHistoryContext, internal_galaxy_markdown):
+    def walk_directives(self, trans: ProvidesHistoryContext, internal_galaxy_markdown: str) -> str:
+        """Pass each fenced directive, access-checked, to its handler; return the remapped markdown."""
         hda_manager = trans.app.hda_manager
         history_manager = trans.app.history_manager
         workflow_manager = trans.app.workflow_manager
@@ -846,14 +847,14 @@ class _ReferencedContentCollector(GalaxyInternalMarkdownDirectiveHandler):
         pass
 
 
-def referenced_content_ids(trans, internal_galaxy_markdown: str) -> ReferencedContent:
+def referenced_content_ids(trans: ProvidesHistoryContext, internal_galaxy_markdown: str) -> ReferencedContent:
     """Return the datasets/collections referenced by internal Galaxy markdown.
 
     Runs only the directive-dispatch pass (skips the export embed passes); the ids
     are recorded as a side effect of the access-checked directive walk.
     """
     collector = _ReferencedContentCollector()
-    collector._walk_directives(trans, internal_galaxy_markdown)
+    collector.walk_directives(trans, internal_galaxy_markdown)
     return collector.content
 
 

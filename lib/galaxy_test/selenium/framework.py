@@ -24,7 +24,6 @@ from requests.models import Response
 from selenium.common.exceptions import (
     NoSuchElementException,
     StaleElementReferenceException,
-    TimeoutException,
 )
 from selenium.webdriver.common.by import By
 
@@ -60,6 +59,7 @@ from galaxy.util import (
 )
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy.util.unittest_utils.test_http_server import TestHttpServer
+from galaxy.util.wait import TimeoutAssertionError
 from galaxy_test.base import populators
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
@@ -75,6 +75,7 @@ from galaxy_test.base.env import (
     get_ip_address,
 )
 from galaxy_test.base.populators import (
+    Cat1Run,
     load_data_dict,
     stage_inputs,
 )
@@ -392,6 +393,25 @@ class TestSnapshot:
 
 class GalaxyTestSeleniumContext(GalaxySeleniumContext):
     """Extend GalaxySeleniumContext with Selenium-aware galaxy_test.base.populators."""
+
+    def register(
+        self,
+        email: str | None = None,
+        password: str | None = None,
+        username: str | None = None,
+        confirm: str | None = None,
+        assert_valid: bool | None = True,
+        via_masthead: bool = False,
+    ) -> None:
+        using_requirement("new_user")
+        super().register(
+            email=email,
+            password=password,
+            username=username,
+            confirm=confirm,
+            assert_valid=assert_valid,
+            via_masthead=via_masthead,
+        )
 
     @property
     def dataset_populator(self) -> "SeleniumSessionDatasetPopulator":
@@ -748,8 +768,8 @@ class UsesLibraryAssertions(NavigatesGalaxyMixin):
                 num_displayed = self.num_displayed_items()
             except StaleElementReferenceException:
                 # The folder refresh re-rendered the table between finding it and counting its rows.
-                return False
-            return num_displayed == n
+                return None
+            return True if num_displayed == n else None
 
         try:
             self._wait_on(
@@ -757,7 +777,7 @@ class UsesLibraryAssertions(NavigatesGalaxyMixin):
                 f"{n} items to be displayed in the library folder",
                 wait_type=self.wait_types.DATABASE_OPERATION,
             )
-        except TimeoutException as e:
+        except TimeoutAssertionError as e:
             raise AssertionError(
                 f"Expected number of displayed items is {n} but actual was {num_displayed} after waiting"
             ) from e
@@ -1089,11 +1109,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
             self._set_text_value(key, str(value))
 
     def _set_boolean_value(self, expanded_id: str, value):
-        checkbox = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).wait_for_present()
-        is_checked = checkbox.is_selected()
-        want_checked = str(value).lower() in ("true", "1", "yes")
-        if is_checked != want_checked:
-            self.execute_script("arguments[0].click();", checkbox)
+        self.tool_form_set_switch(expanded_id, str(value).lower() in ("true", "1", "yes"))
 
     def _set_checkbox_select_value(self, expanded_id: str, values: list):
         all_checkboxes = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).all()
@@ -1398,25 +1414,26 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
                 test_data = yaml_content["test_data"]
             else:
                 test_data = yaml_content
-            inputs, _, _ = load_data_dict(
+            # label_map covers every data input (type: File / Directory too); inputs omits those.
+            _, label_map, _ = load_data_dict(
                 history_id, test_data, self.dataset_populator, self.dataset_collection_populator
             )
-            for input_value in inputs.values():
-                if (
-                    isinstance(input_value, dict)
-                    and (src := input_value.get("src"))
-                    and (content_id := input_value.get("id"))
-                ):
-                    if src == "hda":
-                        content_item = self.dataset_populator.get_history_dataset_details(
-                            history_id, content_id=content_id
-                        )
-                        input_value["hid"] = content_item["hid"]
-                    elif src == "hdca":
-                        content_item = self.dataset_populator.get_history_collection_details(
-                            history_id=history_id, content_id=content_id
-                        )
-                        input_value["hid"] = content_item["hid"]
+            inputs: dict[str, dict[str, Any]] = {}
+            for label, input_value in label_map.items():
+                src = input_value.get("src") if isinstance(input_value, dict) else None
+                if src == "hda":
+                    content_item = self.dataset_populator.get_history_dataset_details(
+                        history_id, content_id=input_value["id"]
+                    )
+                elif src == "hdca":
+                    content_item = self.dataset_populator.get_history_collection_details(
+                        history_id=history_id, content_id=input_value["id"]
+                    )
+                else:
+                    raise ValueError(
+                        f"workflow_run_setup_inputs supports only data inputs, got {label}: {input_value!r}"
+                    )
+                inputs[label] = {"src": src, "id": input_value["id"], "hid": content_item["hid"]}
             self.dataset_populator.wait_for_history(history_id)
         else:
             inputs = {}
@@ -1470,14 +1487,9 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
         assert cat1_jobs, "Expected cat1 job to be present"
         return cat1_jobs[0]["id"]
 
-    def run_cat1(self, history_id: str) -> tuple[str, str]:
-        """Run a single cat1 over two fresh uploads. Returns (job_id, output_id)."""
-        hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
-        hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
-        inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
-        run = self.dataset_populator.run_tool("cat1", inputs, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return run["jobs"][0]["id"], run["outputs"][0]["id"]
+    def run_cat1(self, history_id: str) -> Cat1Run:
+        """Run a single cat1 over two fresh uploads."""
+        return self.dataset_populator.run_cat1(history_id, ("foo\nbar", "baz"))
 
     def setup_two_independent_cat1_runs(self, history_id: str) -> tuple[str, str, str]:
         """Two independent cat1 runs in one history. Returns (job_a, output_a, job_b).
@@ -1486,9 +1498,9 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
         should select run A's subgraph and leave run B unchecked — the
         differentiator vs. the form's default whole-history check.
         """
-        job_a, output_a = self.run_cat1(history_id)
-        job_b, _ = self.run_cat1(history_id)
-        return job_a, output_a, job_b
+        run_a = self.run_cat1(history_id)
+        run_b = self.run_cat1(history_id)
+        return run_a.job_id, run_a.output_id, run_b.job_id
 
     def run_random_lines_mapped(self, history_id: str) -> str:
         """Map random_lines1 over a fresh pair. Returns the implicit output

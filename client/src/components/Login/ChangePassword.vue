@@ -2,8 +2,9 @@
 import axios from "axios";
 import { BCard, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
 import { ref } from "vue";
-import { useRouter } from "vue-router";
 
+import { SKIP_PENDING_REQUESTS_HEADER } from "@/api/pendingRequests";
+import { discardActiveConnectionsBeforeAuthNavigation } from "@/composables/useAuthNavigation";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { uid } from "@/utils/utils";
@@ -20,7 +21,6 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const router = useRouter();
 const fieldId = `change-password-${uid()}`;
 
 const confirm = ref(null);
@@ -30,16 +30,26 @@ const message = ref(props.messageText);
 const variant = ref(props.messageVariant);
 
 async function submit() {
-    try {
-        await axios.post(withPrefix("/user/change_password"), {
-            token: props.token,
-            id: props.expiredUser,
-            current: current.value,
-            password: password.value,
-            confirm: confirm.value,
-        });
+    // Changing the password logs the user in, so stop polling and abort
+    // in-flight requests first; a late anonymous-cookie response could
+    // otherwise overwrite the authenticated cookie we're about to receive.
+    discardActiveConnectionsBeforeAuthNavigation();
 
-        router.push("/");
+    try {
+        await axios.post(
+            withPrefix("/user/change_password"),
+            {
+                token: props.token,
+                id: props.expiredUser,
+                current: current.value,
+                password: password.value,
+                confirm: confirm.value,
+            },
+            { headers: { [SKIP_PENDING_REQUESTS_HEADER]: "1" } },
+        );
+
+        // The server logs the user in; reload so the client picks up that session.
+        window.location.replace(withPrefix("/"));
     } catch (error: any) {
         variant.value = "danger";
         message.value = errorMessageAsString(error, "Password change failed for an unknown reason.");
@@ -48,7 +58,7 @@ async function submit() {
 </script>
 
 <template>
-    <BForm @submit.prevent="submit">
+    <BForm data-description="change password" @submit.prevent="submit">
         <GAlert v-if="!!message" :variant="variant" show>
             {{ message }}
         </GAlert>
@@ -58,16 +68,27 @@ async function submit() {
                 <BFormInput
                     :id="`${fieldId}-current`"
                     v-model="current"
+                    data-description="current password"
                     type="password"
                     autocomplete="current-password" />
             </BFormGroup>
 
             <BFormGroup label="New Password" :label-for="`${fieldId}-new`">
-                <BFormInput :id="`${fieldId}-new`" v-model="password" type="password" autocomplete="new-password" />
+                <BFormInput
+                    :id="`${fieldId}-new`"
+                    v-model="password"
+                    data-description="new password"
+                    type="password"
+                    autocomplete="new-password" />
             </BFormGroup>
 
             <BFormGroup label="Confirm password" :label-for="`${fieldId}-confirm`">
-                <BFormInput :id="`${fieldId}-confirm`" v-model="confirm" type="password" autocomplete="new-password" />
+                <BFormInput
+                    :id="`${fieldId}-confirm`"
+                    v-model="confirm"
+                    data-description="confirm password"
+                    type="password"
+                    autocomplete="new-password" />
             </BFormGroup>
 
             <GButton type="submit">Save new password</GButton>

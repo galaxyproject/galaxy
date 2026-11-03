@@ -1027,6 +1027,16 @@ def test_deferred_with_metadata_options_filter(required_tool: RequiredTool, targ
     required_tool.execute().with_inputs(inputs).assert_has_single_job.with_single_output.with_contents_stripped("chrM")
 
 
+@requires_tool_id("tool_provided_metadata_13")
+def test_legacy_galaxy_json_discovered_bam_gets_index(required_tool: RequiredTool, target_history: TargetHistory):
+    has_src_dict = target_history.with_dataset_for_test_file("3.bam", file_type="bam")
+    job = required_tool.execute().with_inputs({"input_bam": has_src_dict.src_dict}).assert_has_single_job
+    details = job.with_output("__new_primary_file_sample|sample1__").details
+    assert details["state"] == "ok", details.get("misc_info")
+    assert details["file_ext"] == "bam"
+    assert details["metadata_bam_index"]
+
+
 @requires_tool_id("cat_list")
 def test_deferred_multi_input(required_tool: RequiredTool, target_history: TargetHistory):
     has_src_dict_bed = target_history.with_deferred_dataset_for_test_file("1.bed", ext="bed")

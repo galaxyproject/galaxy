@@ -104,6 +104,20 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
         self.history_panel_wait_for_hid_hidden(3)
         self.history_panel_wait_for_hid_hidden(4)
 
+        self.history_panel_filter("deleted:true")
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_wait_for_and_select([2])
+        self.history_panel_undelete_selected()
+        # an undeleted item no longer matches deleted:true
+        self.history_panel_wait_for_hid_hidden(2)
+        self.history_panel_wait_for_hid_visible(4)
+        self._wait_for_history_item_states(
+            history_id,
+            ("deleted", "purged"),
+            {1: (False, False), 2: (False, False), 3: (True, True), 4: (True, False)},
+            "hid 2 to be undeleted",
+        )
+
     @selenium_test
     @managed_history
     def test_unhide_item_with_include_hidden(self):
@@ -129,6 +143,40 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
             ("deleted", "visible"),
             {1: (True, True), 2: (False, True)},
             "hid 1 to be deleted and hid 2 unhidden",
+        )
+
+    @selenium_test
+    @managed_history
+    def test_hide_and_unhide_items(self) -> None:
+        history_id = self.current_history_id()
+        for content in ("1\n", "2\n", "3\n"):
+            self.dataset_populator.new_dataset(history_id, content=content, wait=True)
+        self.home()
+        self.history_panel_wait_for_hid_ok(3)
+
+        self.history_panel_wait_for_and_select([1, 2])
+        self.history_panel_hide_selected()
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_wait_for_hid_hidden(2)
+        self._wait_for_history_item_states(
+            history_id, ("visible",), {1: (False,), 2: (False,), 3: (True,)}, "hids 1 and 2 to be hidden"
+        )
+
+        self.history_panel_include_hidden()
+        self.history_panel_wait_for_and_select([1])
+        self.history_panel_hide_selected(unhide=True)
+        self._wait_for_history_item_states(
+            history_id, ("visible",), {1: (True,), 2: (False,), 3: (True,)}, "hid 1 to be unhidden"
+        )
+        self.screenshot("history_panel_hidden_items_shown")
+
+        self.history_panel_filter("visible:false")
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_item_unhide(2)
+        # an unhidden item no longer matches visible:false
+        self.history_panel_wait_for_hid_hidden(2)
+        self._wait_for_history_item_states(
+            history_id, ("visible",), {1: (True,), 2: (True,), 3: (True,)}, "hid 2 to be unhidden"
         )
 
     def _wait_for_history_item_states(self, history_id, keys, expected, description):
@@ -257,6 +305,39 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
             self.sleep_for(self.wait_types.UX_RENDER)
 
     @selenium_test
+    @managed_history
+    def test_change_datatype_of_selected_items(self):
+        history_id = self._select_two_of_three_datasets()
+        self.history_panel_change_selected("change data type", "tabular")
+
+        for hid in (1, 2):
+            self.history_panel_ensure_showing_item_details(hid)
+            # The change runs as a Celery task, so the panel catches up on a later poll.
+            self.history_panel_wait_for_hid_datatype(hid, "tabular")
+            details = self.dataset_populator.get_history_dataset_details(history_id, hid=hid)
+            assert details["extension"] == "tabular", details
+        self.screenshot("history_panel_change_datatype_of_selected")
+        # hid 3 wasn't selected; check it only once the selected items have changed.
+        unselected = self.dataset_populator.get_history_dataset_details(history_id, hid=3)
+        assert unselected["extension"] == "txt", unselected
+
+    @selenium_test
+    @managed_history
+    def test_change_dbkey_of_selected_items(self):
+        history_id = self._select_two_of_three_datasets()
+        assert self.dataset_populator.get_history_dataset_details(history_id, hid=1)["genome_build"] == "?"
+        self.history_panel_change_selected("change database build", "apiMel3")
+
+        for hid in (1, 2):
+            self.history_panel_ensure_showing_item_details(hid)
+            self.history_panel_wait_for_hid_dbkey(hid, "apiMel3")
+            details = self.dataset_populator.get_history_dataset_details(history_id, hid=hid)
+            assert details["genome_build"] == "apiMel3", details
+        self.screenshot("history_panel_change_dbkey_of_selected")
+        unselected = self.dataset_populator.get_history_dataset_details(history_id, hid=3)
+        assert unselected["genome_build"] == "?", unselected
+
+    @selenium_test
     def test_refresh_preserves_state(self):
         self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
@@ -315,6 +396,15 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
     def assert_name_changed(self):
         name = self.history_panel_name()
         assert name == NEW_HISTORY_NAME
+
+    def _select_two_of_three_datasets(self):
+        history_id = self.current_history_id()
+        for content in ("1\t2\n", "3\t4\n", "5\t6\n"):
+            self.dataset_populator.new_dataset(history_id, content=content, file_type="txt", wait=True)
+        self.home()
+        self.history_panel_wait_for_hid_ok(3)
+        self.history_panel_wait_for_and_select([1, 2])
+        return history_id
 
     def _refresh(self):
         self.home()

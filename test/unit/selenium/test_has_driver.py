@@ -723,9 +723,9 @@ class TestActionChainsAndKeys:
     def test_drag_and_drop_target_rerenders_on_dragenter(self, has_driver_instance, base_url):
         """A zone that swaps its contents on dragenter still receives the drop.
 
-        The caller holds the inner box, which dragenter removes. Unless the whole
-        sequence is dispatched without yielding, the later events land on a
-        detached element and never reach the zone.
+        The caller holds the inner box, which dragenter removes. Unless the drop
+        goes to the nearest ancestor still in the document, it lands on a detached
+        element and never reaches the zone.
         """
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
 

@@ -1,5 +1,6 @@
 import json
 from typing import (
+    Any,
     cast,
     TYPE_CHECKING,
 )
@@ -14,12 +15,16 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
 
 from galaxy.selenium.keys import Key
-from galaxy.selenium.navigates_galaxy import ColumnDefinition
+from galaxy.selenium.navigates_galaxy import (
+    ColumnDefinition,
+    css_attribute_value,
+)
 from galaxy.selenium.web_element_protocol import WebElementProtocol
 from galaxy_test.base.workflow_fixtures import (
     parameter_input_workflow,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
+    WORKFLOW_RENAME_ON_REPLACEMENT_PARAM,
     WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
@@ -100,6 +105,20 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.assert_workflow_has_changes_and_save()
         self.workflow_index_open_with_name(name)
         self.assert_wf_annotation_is(new_annotation)
+
+    @selenium_test
+    def test_edit_tags(self):
+        name = self.create_and_wait_for_new_workflow_in_editor()
+        self.workflow_editor_add_tags(["editortag"])
+        self.screenshot("workflow_editor_tags")
+        # The editor saves tags without blocking; leave only once the server has them.
+        self._wait_on(
+            lambda: [w["tags"] for w in self.api_get("workflows") if w["name"].endswith(name)] == [["editortag"]],
+            "tag save to finish",
+        )
+        self.workflow_index_open()
+        self.workflow_index_search_for(name)
+        self._wait_on(lambda: self.workflow_index_tags() == ["editortag"], "saved workflow to show its tag")
 
     @selenium_test
     def test_edit_name(self):
@@ -298,8 +317,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
         assert annotation == "my cool annotation", annotation
-        data_input_node.destroy.wait_for_and_click()
-        data_input_node.wait_for_absent()
+        self.workflow_editor_remove_node("input1")
         self.screenshot("workflow_editor_data_input_deleted")
 
     @selenium_test
@@ -322,8 +340,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
         assert annotation == "my cool annotation", annotation
-        data_input_node.destroy.wait_for_and_click()
-        data_input_node.wait_for_absent()
+        self.workflow_editor_remove_node("input1")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_collection_input_deleted")
 
@@ -415,8 +432,7 @@ steps:
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
         assert annotation == "my cool annotation", annotation
-        data_input_node.destroy.wait_for_and_click()
-        data_input_node.wait_for_absent()
+        self.workflow_editor_remove_node("input1")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_parameter_input_deleted")
 
@@ -437,16 +453,15 @@ steps:
     tool_id: cat1
 """)
         self.screenshot("workflow_editor_parameter_connection_simple")
-        self.assert_connected("input_int#output", "tool_exec#inttest")
+        self.workflow_editor_assert_connected("input_int#output", "tool_exec#inttest")
 
         editor = self.components.workflow_editor
 
         tool_node = editor.node._(label="tool_exec")
         tool_node.wait_for_and_click()
         tool_input = tool_node.input_terminal(name="inttest")
-        self.hover_over(tool_input.wait_for_visible())
-        tool_node.connector_destroy_callout(name="inttest").wait_for_and_click()
-        self.assert_not_connected("input_int#output", "tool_exec#inttest")
+        self.workflow_editor_destroy_connection("tool_exec#inttest")
+        self.workflow_editor_assert_not_connected("input_int#output", "tool_exec#inttest")
         self.screenshot("workflow_editor_parameter_connection_destroyed")
 
         # When connected, cannot turn it into a RuntimeValue..
@@ -471,7 +486,7 @@ steps:
         self.workflow_editor_connect(
             "input_int#output", "tool_exec#inttest", screenshot_partial="workflow_editor_parameter_connection_dragging"
         )
-        self.assert_connected("input_int#output", "tool_exec#inttest")
+        self.workflow_editor_assert_connected("input_int#output", "tool_exec#inttest")
 
     @selenium_test
     def test_multiple_integer_parameter_connections(self):
@@ -491,14 +506,14 @@ steps:
       inttest: columns
 """)
         editor = self.components.workflow_editor
-        self.assert_connected("columns#output", "single_integer#inttest")
+        self.workflow_editor_assert_connected("columns#output", "single_integer#inttest")
 
         editor.node._(label="columns").wait_for_and_click()
         multiple = self.components.tool_form.parameter_checkbox_input(
             parameter="parameter_definition|multiple"
         ).wait_for_present()
         self.execute_script("arguments[0].click();", multiple)
-        self.assert_connection_invalid("columns#output", "single_integer#inttest")
+        self.workflow_editor_assert_connection_invalid("columns#output", "single_integer#inttest")
         self.screenshot("workflow_editor_multiple_integer_parameter_invalid_connection")
 
         self.workflow_editor_destroy_connection("single_integer#inttest")
@@ -507,7 +522,7 @@ steps:
         editor.connect_icon(name="col").wait_for_and_click()
         multiple_columns.input_terminal(name="col").wait_for_present()
         self.workflow_editor_connect("columns#output", "multiple_columns#col")
-        self.assert_connected("columns#output", "multiple_columns#col")
+        self.workflow_editor_assert_connected("columns#output", "multiple_columns#col")
         self.screenshot("workflow_editor_multiple_integer_parameter_multiple_column_connection")
         self.assert_workflow_has_changes_and_save()
 
@@ -649,7 +664,7 @@ steps:
       text_param: options
 """)
         editor = self.components.workflow_editor
-        self.assert_connected("options#output", "single_text#text_param")
+        self.workflow_editor_assert_connected("options#output", "single_text#text_param")
 
         tool_form = self.components.tool_form
         editor.node._(label="options").wait_for_and_click()
@@ -660,7 +675,7 @@ steps:
             checkbox = tool_form.parameter_checkbox_input(parameter=parameter).wait_for_present()
             self.execute_script("arguments[0].click();", checkbox)
             self.sleep_for(self.wait_types.UX_RENDER)
-        self.assert_connection_invalid("options#output", "single_text#text_param")
+        self.workflow_editor_assert_connection_invalid("options#output", "single_text#text_param")
         self.screenshot("workflow_editor_multiple_text_parameter_invalid_connection")
 
         default = "parameter_definition|optional|specify_default|default"
@@ -677,7 +692,7 @@ steps:
         editor.connect_icon(name="select_ex").wait_for_and_click()
         multi_select.input_terminal(name="select_ex").wait_for_present()
         self.workflow_editor_connect("options#output", "multi_select#select_ex")
-        self.assert_connected("options#output", "multi_select#select_ex")
+        self.workflow_editor_assert_connected("options#output", "multi_select#select_ex")
         self.screenshot("workflow_editor_multiple_text_parameter_multi_select_connection")
         self.assert_workflow_has_changes_and_save()
 
@@ -729,7 +744,7 @@ steps:
             auto_layout=False,
         )
         self.workflow_editor_connect("text_input_step#out_file1", "collection_input#input1")
-        self.assert_connected("text_input_step#out_file1", "collection_input#input1")
+        self.workflow_editor_assert_connected("text_input_step#out_file1", "collection_input#input1")
 
     @selenium_test
     def test_connecting_display_in_upload_false_connections(self):
@@ -743,14 +758,14 @@ steps:
         """)
 
         self.workflow_editor_connect("step1#qname_input_sorted_bam_output", "step2#input5")
-        self.assert_connected("step1#qname_input_sorted_bam_output", "step2#input5")
+        self.workflow_editor_assert_connected("step1#qname_input_sorted_bam_output", "step2#input5")
 
     @selenium_test
     def test_existing_connections(self):
         self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
 
         editor = self.components.workflow_editor
-        self.assert_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_assert_connected("input1#output", "first_cat#input1")
         self.screenshot("workflow_editor_connection_simple")
 
         cat_node = editor.node._(label="first_cat")
@@ -759,26 +774,176 @@ steps:
         cat_node.connector_destroy_callout(name="input1").wait_for_visible()
         self.screenshot("workflow_editor_connection_callout")
         cat_node.connector_destroy_callout(name="input1").wait_for_and_click()
-        self.assert_not_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_assert_not_connected("input1#output", "first_cat#input1")
         self.screenshot("workflow_editor_connection_destroyed")
 
         self.workflow_editor_connect(
             "input1#output", "first_cat#input1", screenshot_partial="workflow_editor_connection_dragging"
         )
-        self.assert_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_assert_connected("input1#output", "first_cat#input1")
 
     @selenium_test
     def test_reconnecting_nodes(self):
         name = self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
-        self.assert_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_assert_connected("input1#output", "first_cat#input1")
         self.workflow_editor_destroy_connection("first_cat#input1")
-        self.assert_not_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_assert_not_connected("input1#output", "first_cat#input1")
         self.workflow_editor_connect("input1#output", "first_cat#input1")
-        self.assert_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_assert_connected("input1#output", "first_cat#input1")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         self.workflow_index_open_with_name(name)
-        self.assert_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_assert_connected("input1#output", "first_cat#input1")
+
+    @selenium_test
+    def test_refused_connection_and_removed_step(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+  int_input: integer
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+  second_cat:
+    tool_id: cat
+""")
+        refusal = self.workflow_editor_try_connect(
+            "int_input#output", "second_cat#input1", screenshot_partial="workflow_editor_connection_refused"
+        )
+        assert refusal == "Cannot connect workflow parameter to data input."
+        self.workflow_editor_assert_not_connected("int_input#output", "second_cat#input1")
+        assert self.workflow_editor_try_connect("first_cat#out_file1", "second_cat#input1") is None
+        self.workflow_editor_assert_connected("first_cat#out_file1", "second_cat#input1")
+        self.workflow_editor_destroy_connection("second_cat#input1")
+        self.workflow_editor_assert_not_connected("first_cat#out_file1", "second_cat#input1")
+        self.workflow_editor_connect("first_cat#out_file1", "second_cat#input1")
+        self.workflow_editor_assert_connected("first_cat#out_file1", "second_cat#input1")
+        self.workflow_editor_remove_node("first_cat")
+        self.assert_workflow_has_changes_and_save()
+
+        connections = self._saved_step_connections_by_label()
+        assert connections == {
+            "input1": {},
+            "int_input": {},
+            "second_cat": {},
+        }
+
+    @selenium_test
+    def test_connect_unlabelled_steps_by_order_index(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+  input2: data
+steps:
+  - tool_id: cat
+  - tool_id: cat
+""")
+        # Both cat steps share a node-label, so only the order index tells them apart.
+        shared_label = self.components.workflow_editor.node._(label="Concatenate datasets (for test workflows)")
+        shared_label.wait_for_element_count_of_at_least(2)
+        assert len(shared_label.all()) == 2
+        self.workflow_editor_connect("input1#output", (2, "input1"))
+        assert self.workflow_editor_try_connect("input2#output", (3, "input1")) is None
+        self.workflow_editor_assert_connected("input1#output", (2, "input1"))
+        self.workflow_editor_assert_connected("input2#output", (3, "input1"))
+        self.assert_workflow_has_changes_and_save()
+        # Saving renumbers steps, so re-read order indices from the API after each save.
+        connections = self._saved_tool_step_connections()
+        from_input1 = {"input1": ("input1", "output")}
+        from_input2 = {"input1": ("input2", "output")}
+        assert sorted(connections.values(), key=repr) == [from_input1, from_input2]
+        input1_step = next(step_id for step_id, inputs in connections.items() if inputs == from_input1)
+        input2_step = next(step_id for step_id, inputs in connections.items() if inputs == from_input2)
+
+        self.workflow_editor_destroy_connection((input2_step, "input1"))
+        self.workflow_editor_assert_not_connected("input2#output", (input2_step, "input1"))
+        self.workflow_editor_assert_connected("input1#output", (input1_step, "input1"))
+        self.assert_workflow_has_changes_and_save()
+        connections = self._saved_tool_step_connections()
+        assert sorted(connections.values(), key=repr) == [from_input1, {}]
+        empty_step = next(step_id for step_id, inputs in connections.items() if not inputs)
+
+        self.workflow_editor_remove_node(empty_step)
+        self.assert_workflow_has_changes_and_save()
+        assert list(self._saved_tool_step_connections().values()) == [from_input1]
+
+    @selenium_test
+    def test_connections_with_labels_needing_css_escapes(self):
+        self.open_in_workflow_editor(r"""
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+steps:
+  nested:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        "it's an input": data
+      outputs:
+        "it's a \\ output":
+          outputSource: inner_cat/out_file1
+      steps:
+        inner_cat:
+          tool_id: cat
+          in:
+            input1: "it's an input"
+  "cat's downstream":
+    tool_id: cat
+""")
+        # Step labels and subworkflow terminal names are free text.
+        nested_input = "nested#it's an input"
+        nested_output = ("nested", "it's a \\ output")
+        downstream_input = "cat's downstream#input1"
+        self.workflow_editor_connect("outer_input#output", nested_input)
+        self.workflow_editor_connect(nested_output, downstream_input)
+        self.workflow_editor_assert_connected("outer_input#output", nested_input)
+        self.workflow_editor_assert_connected(nested_output, downstream_input)
+        self.assert_workflow_has_changes_and_save()
+        connections = self._saved_step_connections_by_label()
+        assert connections == {
+            "outer_input": {},
+            "nested": {"it's an input": ("outer_input", "output")},
+            "cat's downstream": {"input1": ("nested", "it's a \\ output")},
+        }
+
+        self.workflow_editor_destroy_connection(nested_input)
+        self.workflow_editor_assert_not_connected("outer_input#output", nested_input)
+        self.workflow_editor_assert_connected(nested_output, downstream_input)
+        self.assert_workflow_has_changes_and_save()
+        assert self._saved_step_connections_by_label() == {
+            "outer_input": {},
+            "nested": {},
+            "cat's downstream": {"input1": ("nested", "it's a \\ output")},
+        }
+
+    def _saved_step_connections_by_label(self) -> dict[str, dict[str, tuple[str, str]]]:
+        """Map each saved step's label to its input connections."""
+        return {step["label"]: inputs for step, inputs in self._saved_steps_with_connections()}
+
+    def _saved_tool_step_connections(self) -> dict[int, dict[str, tuple[str, str]]]:
+        """Map each unlabelled tool step's order index to its saved connections."""
+        tool_steps = [(step, inputs) for step, inputs in self._saved_steps_with_connections() if step["type"] == "tool"]
+        assert all(step["label"] is None for step, _ in tool_steps)
+        return {step["id"]: inputs for step, inputs in tool_steps}
+
+    def _saved_steps_with_connections(self) -> list[tuple[dict[str, Any], dict[str, tuple[str, str]]]]:
+        """Pair each saved step with its input connections, sources named by label."""
+        steps = self._download_current_workflow()["steps"].values()
+        labels = {step["id"]: step["label"] for step in steps}
+        return [
+            (
+                step,
+                {
+                    name: (labels[connection["id"]], connection["output_name"])
+                    for name, connection in step["input_connections"].items()
+                },
+            )
+            for step in steps
+        ]
 
     @selenium_test
     def test_rendering_output_collection_connections(self):
@@ -791,13 +956,13 @@ steps:
         self.open_in_workflow_editor(WORKFLOW_SIMPLE_MAPPING)
         self.workflow_editor_maximize_center_pane()
         self.screenshot("workflow_editor_simple_mapping")
-        self.assert_connected("input1#output", "cat#input1")
-        self.assert_input_mapped("cat#input1")
+        self.workflow_editor_assert_connected("input1#output", "cat#input1")
+        self.workflow_editor_assert_input_mapped("cat#input1")
         self.workflow_editor_destroy_connection("cat#input1")
-        self.assert_input_not_mapped("cat#input1")
-        self.assert_not_connected("input1#output", "cat#input1")
+        self.workflow_editor_assert_input_not_mapped("cat#input1")
+        self.workflow_editor_assert_not_connected("input1#output", "cat#input1")
         self.workflow_editor_connect("input1#output", "cat#input1")
-        self.assert_input_mapped("cat#input1")
+        self.workflow_editor_assert_input_mapped("cat#input1")
 
     @selenium_test
     def test_rendering_simple_nested_workflow(self):
@@ -811,10 +976,9 @@ steps:
         annotation = "best_practices_input_label"
         self.workflow_create_new(annotation=annotation)
         self.workflow_editor_add_input(item_name="data_input")
-        editor.tool_bar.best_practices.wait_for_and_click()
+        assert self.workflow_editor_best_practices()["input metadata"] == "warning"
+        self.screenshot("workflow_editor_best_practices_input_metadata")
         best_practices = editor.best_practices
-        section_element = best_practices.section_input_metadata.wait_for_present()
-        assert section_element.get_attribute("data-lint-status") == "warning"
         item = best_practices.item_input_metadata(index=0)
         element = item.wait_for_present()
         assert element.get_attribute("data-missing-label") == "true"
@@ -823,7 +987,6 @@ steps:
         item.wait_for_and_click()
         self.workflow_editor_set_node_label("best practice input")
 
-        # editor.tool_bar.best_practices.wait_for_and_click()
         element = item.wait_for_present()
         assert element.get_attribute("data-missing-label") == "false"
         assert element.get_attribute("data-missing-annotation") == "true"
@@ -841,7 +1004,7 @@ steps:
     def test_best_practices_dangling_conditional_gate(self):
         editor = self.components.workflow_editor
         self.open_in_workflow_editor(WORKFLOW_WHEN_NOT_CONNECTED)
-        editor.tool_bar.best_practices.wait_for_and_click()
+        self.workflow_editor_open_best_practices()
         best_practices = editor.best_practices
         section_element = best_practices.section_conditional_gates.wait_for_present()
         assert section_element.get_attribute("data-lint-status") == "warning"
@@ -850,7 +1013,7 @@ steps:
         assert "when" in item_text
 
         self.workflow_editor_connect("should_run#output", "cat1#when")
-        self.assert_connected("should_run#output", "cat1#when")
+        self.workflow_editor_assert_connected("should_run#output", "cat1#when")
 
         @retry_assertion_during_transitions
         def assert_linting_conditional_gates_okay():
@@ -860,20 +1023,47 @@ steps:
         assert_linting_conditional_gates_okay()
 
     @selenium_test
+    def test_best_practices_extract_untyped_rename_parameter(self):
+        editor = self.components.workflow_editor
+        # No auto layout: it marks the workflow changed and the refactor would add a save-first confirm.
+        self.open_in_workflow_editor(WORKFLOW_RENAME_ON_REPLACEMENT_PARAM, auto_layout=False)
+        # Refactors are silently dropped while the workflow is still loading.
+        editor.canvas_loading.wait_for_absent()
+        self.workflow_editor_open_best_practices()
+        best_practices = editor.best_practices
+        section_element = best_practices.section_formal_inputs.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
+        item = best_practices.item_formal_input(index=0)
+        assert "replaceme" in item.wait_for_present().text
+        self.screenshot("workflow_editor_best_practices_untyped_parameter")
+
+        item.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        editor.node._(label="replaceme").wait_for_present()
+
+        @retry_assertion_during_transitions
+        def assert_linting_formal_inputs_okay():
+            section_element = best_practices.section_formal_inputs.wait_for_present()
+            assert section_element.get_attribute("data-lint-status") == "ok"
+
+        assert_linting_formal_inputs_okay()
+        self.screenshot("workflow_editor_best_practices_untyped_parameter_extracted")
+
+    @selenium_test
     def test_rendering_rules_workflow_1(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_RULES_1)
         rule_output = "apply#output"
         random_lines_input = "random_lines#input"
         self.workflow_editor_maximize_center_pane()
         self.screenshot("workflow_editor_rules_1")
-        self.assert_connected(rule_output, random_lines_input)
-        self.assert_input_mapped(random_lines_input)
+        self.workflow_editor_assert_connected(rule_output, random_lines_input)
+        self.workflow_editor_assert_input_mapped(random_lines_input)
         self.workflow_editor_destroy_connection(random_lines_input)
-        self.assert_not_connected(rule_output, random_lines_input)
-        self.assert_input_not_mapped(random_lines_input)
+        self.workflow_editor_assert_not_connected(rule_output, random_lines_input)
+        self.workflow_editor_assert_input_not_mapped(random_lines_input)
         self.workflow_editor_connect(rule_output, random_lines_input)
-        self.assert_connected(rule_output, random_lines_input)
-        self.assert_input_mapped(random_lines_input)
+        self.workflow_editor_assert_connected(rule_output, random_lines_input)
+        self.workflow_editor_assert_input_mapped(random_lines_input)
 
     @selenium_test
     def test_rendering_rules_workflow_2(self):
@@ -888,14 +1078,14 @@ steps:
 
         apply_node = editor.node._(label="apply")
 
-        self.assert_connected(rule_output, copy_list_input)
-        self.assert_input_mapped(copy_list_input)
+        self.workflow_editor_assert_connected(rule_output, copy_list_input)
+        self.workflow_editor_assert_input_mapped(copy_list_input)
         self.workflow_editor_destroy_connection(copy_list_input)
-        self.assert_not_connected(rule_output, copy_list_input)
-        self.assert_input_not_mapped(copy_list_input)
+        self.workflow_editor_assert_not_connected(rule_output, copy_list_input)
+        self.workflow_editor_assert_input_not_mapped(copy_list_input)
         self.workflow_editor_connect(rule_output, copy_list_input)
-        self.assert_connected(rule_output, copy_list_input)
-        self.assert_input_mapped(copy_list_input)
+        self.workflow_editor_assert_connected(rule_output, copy_list_input)
+        self.workflow_editor_assert_input_mapped(copy_list_input)
 
         apply_node.title.wait_for_and_click()
         self.screenshot("workflow_editor_rules_2_form")
@@ -912,16 +1102,16 @@ steps:
         self.sleep_for(self.wait_types.UX_RENDER)
         # screenshot should have async warning about connection removed
         self.screenshot("workflow_editor_rules_2_after_change")
-        self.assert_input_not_mapped(copy_list_input)
+        self.workflow_editor_assert_input_not_mapped(copy_list_input)
         # changing output collection type remove outbound connections, so this
         # this needs to be re-connected. Remove this re-connection if we upgrade
         # the workflow editor to try to re-establish the connection with different
         # mapping.
         self.workflow_editor_connect(rule_output, copy_list_input)
-        self.assert_connected(rule_output, copy_list_input)
+        self.workflow_editor_assert_connected(rule_output, copy_list_input)
         # Regardless - this rules now say to connect a list to a list instead of a list
         # to a list:list, so there should be no mapping anymore even after connected.
-        self.assert_input_not_mapped(copy_list_input)
+        self.workflow_editor_assert_input_not_mapped(copy_list_input)
 
     @selenium_test
     def test_save_as(self):
@@ -952,7 +1142,7 @@ steps:
         self.workflow_index_open()
         self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
-        self.workflow_editor_set_tool_vesrion("0.2", node="multiple_versions")
+        self.workflow_editor_set_tool_version("0.2", node="multiple_versions")
         self.screenshot("workflow_editor_version_update")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
@@ -974,7 +1164,7 @@ steps:
         self.workflow_create_new(annotation=annotation)
         self.workflow_editor_add_tool_step("multiple_versions")
         self.workflow_editor_set_node_label(label="target label")
-        self.workflow_editor_set_tool_vesrion("0.1")
+        self.workflow_editor_set_tool_version("0.1")
         self.assert_workflow_has_changes_and_save()
 
         editor.tool_bar.upgrade_all.wait_for_and_click()
@@ -1045,13 +1235,13 @@ steps:
       input: create_2/out_file1
 """)
         editor = self.components.workflow_editor
-        self.assert_connected("create_2#out_file1", "checksum#input")
+        self.workflow_editor_assert_connected("create_2#out_file1", "checksum#input")
         node = editor.node._(label="create_2")
         node.wait_for_and_click()
         editor.configure_output(output="out_file1").wait_for_and_click()
         self.workflow_editor_change_output_datatype("out_file1", "bam")
         editor.node.output_data_row(output_name="out_file1", extension="bam").wait_for_visible()
-        self.assert_connection_invalid("create_2#out_file1", "checksum#input")
+        self.workflow_editor_assert_connection_invalid("create_2#out_file1", "checksum#input")
         # Assert save button
         save_button = self.components.workflow_editor.save_button
         save_button.wait_for_and_click()
@@ -1062,7 +1252,7 @@ steps:
         editor.configure_output(output="out_file1").wait_for_and_click()
         self.workflow_editor_change_output_datatype("out_file1", "tabular")
         # Assert connection is valid
-        self.assert_connected("create_2#out_file1", "checksum#input")
+        self.workflow_editor_assert_connected("create_2#out_file1", "checksum#input")
 
     @selenium_test
     def test_change_datatype_post_job_action_lost_regression(self):
@@ -1080,11 +1270,11 @@ steps:
     in:
       input_bam: create_2/out_file1
 """)
-        self.assert_connected("create_2#out_file1", "metadata_bam#input_bam")
+        self.workflow_editor_assert_connected("create_2#out_file1", "metadata_bam#input_bam")
         editor = self.components.workflow_editor
         node = editor.node._(label="create_2")
         node.wait_for_and_click()
-        self.assert_connected("create_2#out_file1", "metadata_bam#input_bam")
+        self.workflow_editor_assert_connected("create_2#out_file1", "metadata_bam#input_bam")
 
     @selenium_test
     def test_change_datatype_in_subworkflow(self):
@@ -1115,7 +1305,7 @@ steps:
         # Move canvas, so terminals are in viewport
         self.move_center_of_canvas(xoffset=100, yoffset=100)
         self.workflow_editor_connect("nested_workflow#workflow_output", "metadata_bam#input_bam")
-        self.assert_connected("nested_workflow#workflow_output", "metadata_bam#input_bam")
+        self.workflow_editor_assert_connected("nested_workflow#workflow_output", "metadata_bam#input_bam")
 
     @selenium_test
     def test_edit_subworkflow(self):
@@ -1164,7 +1354,7 @@ steps:
         editor.remove_tags_input.wait_for_and_send_keys("#oldboringtag" + Keys.ENTER + Keys.ESCAPE)
         self.sleep_for(self.wait_types.UX_RENDER)
         cat_node.clone.wait_for_and_click()
-        cloned_node = editor.node.by_id(id=2)
+        cloned_node = editor.node._(id=2)
         cloned_node.wait_for_and_click()
         editor.label_input.wait_for_and_send_keys(Keys.BACKSPACE * 20)
         editor.label_input.wait_for_and_send_keys("cloned label")
@@ -1229,7 +1419,7 @@ steps:
         assert subworkflow_step["type"] == "subworkflow"
         assert subworkflow_step["subworkflow"]["a_galaxy_workflow"] == "true"
         self.workflow_editor_connect("input_collection#output", f"{child_workflow_name}#input1")
-        self.assert_connected("input_collection#output", f"{child_workflow_name}#input1")
+        self.workflow_editor_assert_connected("input_collection#output", f"{child_workflow_name}#input1")
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(parent_workflow_id)
         subworkflow_step = workflow["steps"]["2"]
@@ -1245,7 +1435,7 @@ steps:
         editor = self.components.workflow_editor
         editor.canvas_body.wait_for_visible()
         self.workflow_editor_add_steps(steps_to_insert)
-        self.assert_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_assert_connected("input1#output", "first_cat#input1")
         self.assert_workflow_has_changes_and_save()
         workflow = self._download_current_workflow()
         assert len(workflow["steps"]) == 3
@@ -1324,7 +1514,7 @@ steps:
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_editor_connect("input_data#output", "branch_a#input1")
         self.workflow_editor_connect("branch_a#out_file1", "pick#input_0")
-        self.assert_connected("branch_a#out_file1", "pick#input_0")
+        self.workflow_editor_assert_connected("branch_a#out_file1", "pick#input_0")
 
     @selenium_test
     def test_pick_value_grow_on_connect(self):
@@ -1384,8 +1574,8 @@ steps:
         editor = self.components.workflow_editor
         pick_node = editor.node._(label="pick")
         pick_node.wait_for_present()
-        self.assert_connected("branch_a#out_file1", "pick#input_0")
-        self.assert_connected("branch_b#out_file1", "pick#input_1")
+        self.workflow_editor_assert_connected("branch_a#out_file1", "pick#input_0")
+        self.workflow_editor_assert_connected("branch_b#out_file1", "pick#input_1")
         pick_node.output_terminal(name="output").wait_for_present()
         workflow = self._download_current_workflow()
         pick_step = [s for s in workflow["steps"].values() if s["type"] == "pick_value"][0]
@@ -1583,18 +1773,18 @@ steps:
         editor = self.components.workflow_editor
         pick_node = editor.node._(label="pick")
         # Verify initial state: 3 connected + 1 empty from grow-on-connect
-        self.assert_connected("branch_a#out_file1", "pick#input_0")
-        self.assert_connected("branch_b#out_file1", "pick#input_1")
-        self.assert_connected("branch_c#out_file1", "pick#input_2")
+        self.workflow_editor_assert_connected("branch_a#out_file1", "pick#input_0")
+        self.workflow_editor_assert_connected("branch_b#out_file1", "pick#input_1")
+        self.workflow_editor_assert_connected("branch_c#out_file1", "pick#input_2")
         pick_node.input_terminal(name="input_3").wait_for_present()
         # Disconnect middle input
         self.workflow_editor_destroy_connection("pick#input_1")
         self.sleep_for(self.wait_types.UX_RENDER)
         # branch_b should no longer be connected
-        self.assert_not_connected("branch_b#out_file1", "pick#input_1")
+        self.workflow_editor_assert_not_connected("branch_b#out_file1", "pick#input_1")
         # branch_c should have been compacted from input_2 to input_1
-        self.assert_connected("branch_a#out_file1", "pick#input_0")
-        self.assert_connected("branch_c#out_file1", "pick#input_1")
+        self.workflow_editor_assert_connected("branch_a#out_file1", "pick#input_0")
+        self.workflow_editor_assert_connected("branch_c#out_file1", "pick#input_1")
         # Click pick node to mount FormPickValue watcher (triggers num_inputs shrink)
         pick_node.wait_for_and_click()
         pick_node.input_terminal(name="input_3").wait_for_absent_or_hidden()
@@ -1630,7 +1820,7 @@ steps:
         editor.label_input.wait_for_and_send_keys("conditional_step")
         # Connect head to cat
         self.workflow_editor_connect("conditional_step#out_file1", "downstream_step#input1")
-        self.assert_connected("conditional_step#out_file1", "downstream_step#input1")
+        self.workflow_editor_assert_connected("conditional_step#out_file1", "downstream_step#input1")
         # Make head tool conditional
         conditional_node = editor.node._(label="conditional_step")
         conditional_node.input_terminal(name="input").wait_for_present()
@@ -1646,24 +1836,22 @@ steps:
         self.move_to_and_click(conditional_toggle)
         conditional_node.input_terminal(name="when").wait_for_present()
         # Output connection should be invalid, as output from conditional step is potentially null
-        self.assert_connection_invalid("conditional_step#out_file1", "downstream_step#input1")
-        downstream_step = editor.node._(label="downstream_step")
-        downstream_step.destroy.wait_for_and_click()
-        downstream_step.wait_for_absent()
+        self.workflow_editor_assert_connection_invalid("conditional_step#out_file1", "downstream_step#input1")
+        self.workflow_editor_remove_node("downstream_step")
         # Connect boolean input to when
         self.workflow_editor_connect("param_input#output", "conditional_step#when")
-        self.assert_connected("param_input#output", "conditional_step#when")
+        self.workflow_editor_assert_connected("param_input#output", "conditional_step#when")
         # Change boolean input parameter to invalid parameter type
         editor.node._(label="param_input").wait_for_and_click()
         param_type_element = editor.param_type_form.wait_for_present()
         self.switch_param_type(param_type_element, "Text")
-        self.assert_connection_invalid("param_input#output", "conditional_step#when")
+        self.workflow_editor_assert_connection_invalid("param_input#output", "conditional_step#when")
         editor.node_inspector_close.wait_for_and_click()
         self.workflow_editor_destroy_connection("conditional_step#when")
         # Make sure the when input is still shown
         conditional_node.input_terminal(name="when").wait_for_present()
         # Best practices flag the gate that reads nothing
-        editor.tool_bar.best_practices.wait_for_and_click()
+        self.workflow_editor_open_best_practices()
         section_element = editor.best_practices.section_conditional_gates.wait_for_present()
         assert section_element.get_attribute("data-lint-status") == "warning"
 
@@ -1684,7 +1872,7 @@ steps:
         self.move_to_and_click(conditional_toggle)
         conditional_node.input_terminal(name="when").wait_for_present()
         self.workflow_editor_connect("param_input#output", f"{child_workflow_name}#when")
-        self.assert_connected("param_input#output", f"{child_workflow_name}#when")
+        self.workflow_editor_assert_connected("param_input#output", f"{child_workflow_name}#when")
         self.assert_workflow_has_changes_and_save()
 
     def switch_param_type(self, element, param_type):
@@ -1725,8 +1913,8 @@ steps:
         self.assert_modal_has_text("Tool is not installed")
         self.screenshot("workflow_editor_missing_tool")
         self.workflow_editor_dismiss_state_upgrade_modal()
-        self.assert_connection_invalid("input1#output", "first_cat#input1")
-        self.assert_connection_invalid("first_cat#out_file1", "second_cat#input1")
+        self.workflow_editor_assert_connection_invalid("input1#output", "first_cat#input1")
+        self.workflow_editor_assert_connection_invalid("first_cat#out_file1", "second_cat#input1")
 
     def tab_to(self, aria_label, direction="forward"):
         modifiers = [Key.SHIFT] if direction == "backwards" else []
@@ -1757,20 +1945,20 @@ steps:
 """,
             auto_layout=False,
         )
-        self.assert_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_assert_connected("input1#output", "first_cat#input1")
         self.screenshot("workflow_editor_connection_simple")
         self.components.workflow_editor.canvas_body.wait_for_and_click()
         output_connector = self.tab_to("Press space to see a list of available inputs")
         self.press(Key.SPACE, element=output_connector)
         assert self.active_element().text == "Disconnect from input1 in step 2: first_cat"
         self.press(Key.ENTER)
-        self.assert_not_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_assert_not_connected("input1#output", "first_cat#input1")
         self.hover(self.components.workflow_editor.canvas_body.wait_for_and_click())
         output_connector = self.tab_to("Press space to see a list of available inputs")
         self.press(Key.SPACE, element=output_connector)
         assert self.active_element().text == "Connect to input1 in step 2: first_cat"
         self.press(Key.ENTER)
-        self.assert_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_assert_connected("input1#output", "first_cat#input1")
         self.hover(self.components.workflow_editor.canvas_body.wait_for_and_click())
         output_connector = self.tab_to("Press space to see a list of available inputs")
         output_connector = self.tab_to("Press space to see a list of available inputs")
@@ -2171,13 +2359,11 @@ steps:
 
     @retry_assertion_during_transitions
     def assert_node_output_is(self, label: str, output_type: str, subcollection_type: str | None = None):
-        editor = self.components.workflow_editor
-        node_label, output_name = label.split("#")
-        node = editor.node._(label=node_label)
+        node, output_name = self.workflow_editor_node_and_terminal(label)
         node.wait_for_present()
         # Dismiss any stale tooltip before hovering so retry gets fresh text
         self.click_center()
-        output_element = node.output_terminal(name=output_name).wait_for_visible()
+        output_element = node.output_terminal(name=css_attribute_value(output_name)).wait_for_visible()
         self.hover_over(output_element)
         element = self.components._.tooltip_inner.wait_for_present()
         assert f"output is {output_type}" in element.text, element.text
@@ -2207,25 +2393,6 @@ steps:
 
         self.sleep_for(self.wait_types.UX_RENDER)
 
-    def assert_connected(self, source, sink):
-        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        # SVG <g> elements are considered "hidden" by Playwright even when
-        # rendered, so use wait_for_present instead of wait_for_visible
-        # with the Playwright backend.
-        connector = self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id)
-        if self._driver_impl.backend_type == "playwright":
-            connector.wait_for_present()
-        else:
-            connector.wait_for_visible()
-
-    def assert_connection_invalid(self, source, sink):
-        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        self.components.workflow_editor.connector_invalid_for(source_id=source_id, sink_id=sink_id).wait_for_present()
-
-    def assert_not_connected(self, source, sink):
-        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_absent()
-
     def open_in_workflow_editor(self, yaml_content, auto_layout=True):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
         self.workflow_editor_open_with_name(name)
@@ -2251,29 +2418,6 @@ steps:
         if editor.state_upgrade_modal.is_displayed:
             editor.state_upgrade_modal_close.wait_for_and_click()
             editor.state_upgrade_modal.wait_for_absent_or_hidden()
-
-    def workflow_editor_destroy_connection(self, sink):
-        editor = self.components.workflow_editor
-
-        sink_node_label, sink_input_name = sink.split("#", 1)
-        sink_node = editor.node._(label=sink_node_label)
-        sink_input = sink_node.input_terminal(name=sink_input_name).wait_for_visible()
-        self.hover_over(sink_input)
-        sink_node.connector_destroy_callout(name=sink_input_name).wait_for_and_click()
-
-    def assert_input_mapped(self, sink):
-        editor = self.components.workflow_editor
-        sink_node_label, sink_input_name = sink.split("#", 1)
-        sink_node = editor.node._(label=sink_node_label)
-        sink_mapping_icon = sink_node.input_mapping_icon(name=sink_input_name)
-        sink_mapping_icon.wait_for_visible()
-
-    def assert_input_not_mapped(self, sink):
-        editor = self.components.workflow_editor
-        sink_node_label, sink_input_name = sink.split("#", 1)
-        sink_node = editor.node._(label=sink_node_label)
-        sink_mapping_icon = sink_node.input_mapping_icon(name=sink_input_name)
-        sink_mapping_icon.wait_for_absent_or_hidden()
 
     @retry_assertion_during_transitions
     def assert_wf_name_is(self, expected_name):

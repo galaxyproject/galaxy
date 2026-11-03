@@ -31,7 +31,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import object_session
 
 from galaxy import model
-from galaxy.exceptions import ConfigurationError
+from galaxy.exceptions import (
+    ConfigurationError,
+    InsufficientPermissionsException,
+)
 from galaxy.job_execution.output_collect import (
     default_exit_code_file,
     read_exit_code_from,
@@ -98,6 +101,10 @@ JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE = "Job runner parameter %s failed
 
 GALAXY_LIB_ADJUST_TEMPLATE = """GALAXY_LIB="%s"; if [ "$GALAXY_LIB" != "None" ]; then if [ -n "$PYTHONPATH" ]; then PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"; else PYTHONPATH="$GALAXY_LIB"; fi; export PYTHONPATH; fi;"""
 GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then . "$GALAXY_VIRTUAL_ENV/bin/activate"; fi;"""
+
+
+class ContainerRequiredException(Exception):
+    """No container was found for a job that requires one."""
 
 
 class RunnerParams(ParamsWithSpecs):
@@ -386,8 +393,8 @@ class BaseJobRunner:
                 modify_command_for_container=modify_command_for_container,
                 stream_stdout_stderr=stream_stdout_stderr,
             )
-        except (ParameterValueError, ExpressionTemplateError) as e:
-            log.info("(%s) validation error preparing job: %s", job_id, unicodify(e))
+        except (ParameterValueError, ExpressionTemplateError, InsufficientPermissionsException) as e:
+            log.info("(%s) job rejected while preparing: %s", job_id, unicodify(e))
             job_wrapper.fail(unicodify(e), exception=False)
             return False
         except Exception as e:
@@ -420,8 +427,6 @@ class BaseJobRunner:
         stream_stdout_stderr=False,
     ):
         container = self._find_container(job_wrapper)
-        if not container and job_wrapper.requires_containerization:
-            raise Exception("Failed to find a container when required, contact Galaxy admin.")
         metadata_container = self._get_metadata_container(job_wrapper)
         return build_command(
             self,
@@ -669,6 +674,10 @@ class BaseJobRunner:
         container = self.app.container_finder.find_container(tool_info, destination_info, job_info)
         if container:
             job_wrapper.set_container(container)
+        elif job_wrapper.requires_containerization:
+            # Checked here rather than in build_command_line so that runners building
+            # their own command lines (e.g. Pulsar) enforce it too.
+            raise ContainerRequiredException("Failed to find a container when required, contact Galaxy admin.")
         return container
 
     def _get_metadata_container(

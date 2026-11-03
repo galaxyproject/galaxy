@@ -19,6 +19,18 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         self.screenshot("collection_builder_wizard_list")
         self.collection_builder_create()
         self._wait_for_hid_visible(3)
+        self._assert_selection_cleared()
+
+    @selenium_test
+    @managed_history
+    def test_build_list_open_keeps_selection(self):
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
+        self._wait_for_and_select([1])
+        self.history_panel_build_list_auto()
+        self.components.collection_builders.name.wait_for_visible()
+        multi_operations = self.navigation.history_panel.multi_operations.selectors
+        self.wait_for_visible(multi_operations.selected_content_menu)
+        self.wait_for_visible(multi_operations.item_selector)
 
     @selenium_test
     @managed_history
@@ -57,6 +69,31 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
 
     @selenium_test
     @managed_history
+    def test_build_list_keep_extensions(self):
+        self._upload_and_select_sample_fastas()
+        self.history_panel_build_list_auto()
+        self.collection_builder_toggle_remove_extensions()
+        self.collection_builder_set_name("list keeping extensions")
+        self.collection_builder_create()
+        self._wait_for_hid_visible(5)
+        identifiers = self._collection_identifiers(5)
+        assert identifiers == ["sample1.fasta", "sample2.fasta"]
+
+    @selenium_test
+    @managed_history
+    def test_build_list_advanced_rename_element(self):
+        self._upload_and_select_sample_fastas()
+        self.history_panel_build_list_advanced_and_select_builder("list")
+        self.collection_builder_rename_element(1, "first")
+        self.collection_builder_set_name("list with a renamed element")
+        self.screenshot("collection_builder_advanced_list")
+        self.collection_builder_create()
+        self._wait_for_hid_visible(5)
+        identifiers = self._collection_identifiers(5)
+        assert identifiers == ["first", "sample2"]
+
+    @selenium_test
+    @managed_history
     def test_build_paired_list_auto_matched(self):
         uploader = self.upload_context("paste-content")
         uploader.stage_paste_content("forward content", {"name": "basename_1.fasta"})
@@ -76,6 +113,7 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         pair = element["object"]["elements"]
         assert [e["element_identifier"] for e in pair] == ["forward", "reverse"]
         assert [e["object"]["name"] for e in pair] == ["basename_1.fasta", "basename_2.fasta"], pair
+        self._assert_selection_cleared()
         # switch to hidden filters to see the hidden datasets appear
         self._show_hidden_content()
         self._wait_for_hid_visible(1)
@@ -189,17 +227,30 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         row_selector = self.content_item_by_attributes(hid=hid, state=state)
         self.wait_for_visible(row_selector, timeout=timeout)
 
+    def _assert_selection_cleared(self):
+        multi_operations = self.navigation.history_panel.multi_operations.selectors
+        self.wait_for_absent(multi_operations.selected_content_menu)
+        self.wait_for_absent(multi_operations.item_selector)
+
     def _collection_dropdown(self, option_description):
         return self.use_bootstrap_dropdown(option=option_description, menu="selected content menu")
 
     def _wait_for_and_select(self, hids):
         self.history_panel_wait_for_and_select(hids)
 
+    def _upload_and_select_sample_fastas(self):
+        """Paste ``sample1.fasta`` and ``sample2.fasta`` (hids 1, 2) and select both."""
+        uploader = self.upload_context("paste-content")
+        uploader.stage_paste_content("content 1", {"name": "sample1.fasta"})
+        uploader.stage_paste_content("content 2", {"name": "sample2.fasta"})
+        uploader.start()
+        self._wait_for_and_select([1, 2])
+
+    def _collection_identifiers(self, hid):
+        """Sorted element identifiers of collection ``hid``, via the API."""
+        collection = self.dataset_populator.get_history_collection_details(self.current_history_id(), hid=hid)
+        return sorted(e["element_identifier"] for e in collection["elements"])
+
     def _show_hidden_content(self):
-        """Switches the hidden filter toggle on"""
-        self.sleep_for(self.wait_types.UX_RENDER)
-        filter_element = self.history_element(
-            attribute_value="filter text input", scope=".content-operations-filters"
-        ).wait_for_and_click()
-        filter_element.send_keys("visible:false")
-        self.sleep_for(self.wait_types.UX_RENDER)
+        """Filter the history panel to hidden items."""
+        self.history_panel_filter("visible:false")
