@@ -188,6 +188,36 @@ def test_file_source_http_realizes_idn_ftp_url():
         assert_realizes_as(configured_file_sources(FILE_SOURCES_CONF), "ftp://bücher.example/README", "from ftp")
 
 
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_validates_redirect_target(tmp_path):
+    test_url = "https://www.elsewhere.org/myfile.txt"
+    redirect_url = "http://127.0.0.1/myfile.txt"
+    requested = []
+
+    def fake_open(handler, req):
+        requested.append(req.full_url)
+        if req.full_url == test_url:
+            response: Any = urllib.response.addinfourl(
+                io.BytesIO(b""), email.message_from_string(f"Location: {redirect_url}\n\n"), req.full_url, 302
+            )
+        else:
+            response = urllib.response.addinfourl(io.BytesIO(b"redirected"), email.message.Message(), req.full_url, 200)
+        response.msg = "Found" if response.code == 302 else "OK"
+        return response
+
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    file_source_pair = file_sources.get_file_source_path(test_url)
+    with (
+        mock.patch.object(urllib.request.HTTPSHandler, "https_open", new=fake_open),
+        mock.patch.object(urllib.request.HTTPHandler, "http_open", new=fake_open),
+    ):
+        with pytest.raises(exceptions.ConfigDoesNotAllowException):
+            file_source_pair.file_source.realize_to(
+                file_source_pair.path, str(tmp_path / "realized"), user_context=user_context_fixture()
+            )
+    assert requested == [test_url]
+
+
 def test_file_source_http_without_stock_generic():
     test_url = "https://www.elsewhere.org/myfile.txt"
     file_sources = configured_file_sources(FILE_SOURCES_CONF_WITHOUT_STOCK)
