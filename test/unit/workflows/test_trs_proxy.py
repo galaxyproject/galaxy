@@ -133,7 +133,7 @@ def test_match_url():
     assert expected_exception, "matching url against localhost should fail"
 
 
-@pytest.mark.parametrize("url", ["file:///ga4gh/trs/v2/tools/x/versions/1"])
+@pytest.mark.parametrize("url", ["file:///ga4gh/trs/v2/tools/x/versions/1", "FILE:///ga4gh/trs/v2/tools/x/versions/1"])
 def test_match_url_rejects_file_uri(url):
     with pytest.raises(RequestParameterInvalidException):
         get_trs_proxy().match_url(url, [])

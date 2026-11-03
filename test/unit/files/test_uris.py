@@ -49,6 +49,8 @@ def test_validate_non_local_public_host_passes(url):
         "http://user@127.0.0.1:8080/",
         "http://example.org@127.0.0.1/",
         " http://127.0.0.1/",
+        "HTTP://127.0.0.1/",
+        "HtTpS://127.0.0.1/",
     ],
 )
 def test_validate_non_local_private_address_rejected(url):
@@ -183,6 +185,13 @@ def test_validate_non_local_strips_surrounding_whitespace():
     # slip through to getaddrinfo and raise an opaque error.
     assert validates_as_non_local("  http://google.com/x  ", [])
     assert validates_as_non_local("\thttp://google.com/x\n", [])
+
+
+@pytest.mark.parametrize("uri", ["FILE:///x", " File://foo/bar"])
+def test_validate_uri_access_file_requires_admin(uri):
+    with pytest.raises(AdminRequiredException):
+        validate_uri_access(uri, False, [])
+    validate_uri_access(uri, True, [])
 
 
 def validates_as_non_local(uri: str, allow_list):

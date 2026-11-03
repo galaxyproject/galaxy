@@ -78,7 +78,7 @@ def validate_uri_access(uri: str, is_admin: bool, ip_allowlist: list[IpAllowedLi
     - Don't allow non-admins to access file:// URIs.
     """
     validate_non_local(uri, ip_allowlist)
-    if not is_admin and uri.lstrip().startswith("file://"):
+    if not is_admin and uri.lstrip().lower().startswith("file://"):
         raise AdminRequiredException()
 
 
@@ -100,6 +100,7 @@ def validate_non_local(
     """Check the host of a URL with one of ``schemes`` against ``ip_allowlist``; return other strings unchanged."""
     # If it doesn't look like a URL, ignore it.
     scheme, sep, _ = uri.lstrip().partition("://")
+    scheme = scheme.lower()
     if not sep or scheme not in schemes:
         return uri
 
