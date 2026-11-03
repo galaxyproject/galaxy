@@ -755,22 +755,26 @@ def _shed_image_stored(tool_dir):
     )
 
 
-def _materializing_box():
+def _materializing_box(with_repository_cache=True):
     box = _seam_box()
     # ``Any``: MockApp declares no ``tool_shed_repository_cache`` slot.
     app: Any = MockApp()
     # Empty install database: the published conf's repository has no row.
     app.install_model = install_mapping.init("sqlite:///:memory:", create_tables=True)
-    app.tool_shed_repository_cache = ToolShedRepositoryCache(session=app.install_model.context)
+    # ``UniverseApplication`` drops the cache once startup finishes.
+    app.tool_shed_repository_cache = (
+        ToolShedRepositoryCache(session=app.install_model.context) if with_repository_cache else None
+    )
     box.app = app
     box._cached_materialize_count = 0
     return box
 
 
-def test_materialized_shed_tool_without_install_row_rewrites_help_images(tmp_path):
+@pytest.mark.parametrize("with_repository_cache", [True, False], ids=["during_startup", "after_startup"])
+def test_materialized_shed_tool_without_install_row_rewrites_help_images(tmp_path, with_repository_cache):
     # Regression for #24527: a published shed tool absent from the install
     # database kept a literal ``$PATH_TO_IMAGES`` image URL in its help.
-    box = _materializing_box()
+    box = _materializing_box(with_repository_cache)
     entry = _shed_image_entry()
 
     tool = box._create_tool_from_stored_source(_shed_image_stored(str(tmp_path)), entry=entry)
@@ -787,12 +791,13 @@ def test_materialized_shed_tool_without_install_row_rewrites_help_images(tmp_pat
     )
 
 
-def test_materializing_shed_tools_registers_conf_repository_once(tmp_path):
+def test_materializing_shed_tools_leaves_repository_cache_untouched(tmp_path):
     box = _materializing_box()
     entry = _shed_image_entry()
     for _ in range(3):
-        box._create_tool_from_stored_source(_shed_image_stored(str(tmp_path)), entry=entry)
-    assert len(box.app.tool_shed_repository_cache.local_repositories) == 1
+        tool = box._create_tool_from_stored_source(_shed_image_stored(str(tmp_path)), entry=entry)
+        assert tool.tool_shed_repository.installed_changeset_revision == "d57471728f7b"
+    assert box.app.tool_shed_repository_cache.local_repositories == []
 
 
 def test_materializing_shed_tool_keeps_install_database_repository(tmp_path):
