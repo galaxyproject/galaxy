@@ -1,6 +1,9 @@
+import io
 import os
+import zipfile
 
 import pytest
+import responses
 
 from galaxy.exceptions import AdminRequiredException
 from galaxy.util.unittest_utils import skip_if_github_down
@@ -49,3 +52,49 @@ def test_file_source_cannot_access_local_file():
 
     with pytest.raises(AdminRequiredException):
         realize_to_temp_file(file_sources, test_url, user_context=user_context)
+
+
+ZIP_URL = "https://example.org/archive.zip"
+MOVED_ZIP_URL = "https://other.example/archive.zip"
+MEMBER_CONTENTS = "class: GalaxyWorkflow\n" * 20
+
+
+def _zip_bytes() -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("workflow.gxwf.yml", MEMBER_CONTENTS)
+    return buffer.getvalue()
+
+
+def _zip_url(source: str = ZIP_URL) -> str:
+    data = _zip_bytes()
+    info = zipfile.ZipFile(io.BytesIO(data)).infolist()[0]
+    return (
+        f"zip://extract?source={source}&header_offset={info.header_offset}"
+        f"&compress_size={info.compress_size}&compression_method={info.compress_type}"
+    )
+
+
+def _serve_ranges(url: str):
+    data = _zip_bytes()
+
+    def callback(request):
+        start, end = (int(i) for i in request.headers["Range"].removeprefix("bytes=").split("-"))
+        return 206, {}, data[start : end + 1]
+
+    responses.add_callback(responses.GET, url, callback=callback)
+
+
+def _realize(test_url: str) -> str:
+    return realize_to_temp_file(
+        configured_file_sources(FILE_SOURCES_CONF), test_url, user_context=user_context_fixture()
+    )
+
+
+@responses.activate
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_follows_redirect_to_public_host():
+    responses.head(ZIP_URL, status=302, headers={"Location": MOVED_ZIP_URL})
+    responses.head(MOVED_ZIP_URL)
+    _serve_ranges(MOVED_ZIP_URL)
+    assert _realize(_zip_url()) == MEMBER_CONTENTS
