@@ -172,6 +172,7 @@ def test_copy_of_stale_source_after_swap_locked_follows_swap(engine, source_stat
         stale_source = copier.get(model.HistoryDatasetAssociation, queued_id)
         assert stale_source
         assert stale_source.state == source_state
+        stale_source.name = "renamed by copier"
         with Session(engine) as runner:
             output = runner.get(model.HistoryDatasetAssociation, queued_id)
             cached = runner.get(model.HistoryDatasetAssociation, cached_id)
@@ -191,3 +192,8 @@ def test_copy_of_stale_source_after_swap_locked_follows_swap(engine, source_stat
     assert not thread.is_alive()
     assert not errors, errors
     _assert_copy_on_cached_dataset(engine, copy_ids[0], cached_id)
+    with Session(engine) as session:
+        source = session.get(model.HistoryDatasetAssociation, queued_id)
+        copy = session.get(model.HistoryDatasetAssociation, copy_ids[0])
+        assert source and copy
+        assert source.name == copy.name == "renamed by copier"

@@ -256,6 +256,22 @@ def required_object_session(obj) -> Session:
     return session
 
 
+def refresh_unmodified(obj) -> None:
+    """Reload ``obj`` from the database, keeping attributes with pending changes in its session.
+
+    Unmodified columns are refreshed and unmodified relationships are expired, so they load
+    again on next access, following the refreshed foreign keys.
+    """
+    state = inspect(obj)
+    session = required_object_session(obj)
+    unmodified = [key for key, attr in state.attrs.items() if not attr.history.has_changes()]
+    # An empty attribute_names list refreshes or expires every attribute, so skip the call instead.
+    if columns := [key for key in unmodified if key in state.mapper.column_attrs]:
+        session.refresh(obj, attribute_names=columns)
+    if relationships := [key for key in unmodified if key in state.mapper.relationships]:
+        session.expire(obj, relationships)
+
+
 class ConfigurationTemplateEnvironmentSecret(TypedDict):
     name: str
     type: Literal["secret"]
@@ -5934,7 +5950,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                 .with_for_update(read=True, key_share=True)
             )
             if dataset_id != self.dataset_id:
-                session.refresh(self)
+                refresh_unmodified(self)
 
     def copy(self, parent_id=None, copy_tags=None, flush=True, copy_hid=True, new_name=None):
         """
