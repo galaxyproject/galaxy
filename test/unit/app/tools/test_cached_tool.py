@@ -1,7 +1,5 @@
 import logging
-import os
 import threading
-import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -1354,13 +1352,12 @@ def test_edited_tool_files_hashes_edit_stamped_before_indexed_at(tmp_path):
 def test_edited_tool_files_sees_edit_made_while_populating(tmp_path, monkeypatch):
     box, tool_file = _indexed_shed_tool_box(tmp_path, monkeypatch, _shed_tool_xml("echo before"))
     path = str(tool_file)
+    edited_at: list[datetime] = []
 
     def hash_then_edit(file_path):
         file_hash = md5_hash_file(file_path)
+        edited_at.append(datetime.now(timezone.utc))
         tool_file.write_text(_shed_tool_xml("echo after"))
-        # Linux may stamp the write from its coarse clock, at or before the hash time.
-        now = time.time_ns()
-        os.utime(file_path, ns=(now, now))
         return file_hash
 
     monkeypatch.setattr(populator, "md5_hash_file", hash_then_edit)
@@ -1368,6 +1365,8 @@ def test_edited_tool_files_sees_edit_made_while_populating(tmp_path, monkeypatch
     monkeypatch.undo()
     box._store.invalidate_index_cache()
 
+    # indexed_at is read before hashing, so by the fine-grained clock no later edit is older than it.
+    assert box._store.load_index().get(GUID, "1.0").indexed_at <= edited_at[0]
     assert edited_tool_files([box._store]) == {path: GUID}
 
 
