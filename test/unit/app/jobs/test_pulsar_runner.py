@@ -1,6 +1,7 @@
 """Unit tests for Pulsar job runner utility methods and client construction."""
 
 import os
+import re
 from types import SimpleNamespace
 from typing import (
     Any,
@@ -424,14 +425,11 @@ def _staging_job_wrapper(dataset_id=5):
     return SimpleNamespace(job_id=7, job_io=_RecordingJobIO([input_path]))
 
 
-def _staging_compute_environment(
-    staging, metadata_file_ids=None, extra_files_datasets=None, default_file_action="remote_transfer"
-):
+def _staging_compute_environment(staging, metadata_file_ids=None, extra_files_datasets=None):
     metadata_file_ids = metadata_file_ids or {}
     extra_files_datasets = extra_files_datasets or {}
     return SimpleNamespace(
         object_store_staging=staging,
-        default_file_action=default_file_action,
         materialized_objects={},
         path_rewrites_input_extra={path: f"/pulsar/inputs/{os.path.basename(path)}" for path in extra_files_datasets},
         path_rewrites_input_metadata={path: f"/pulsar/inputs/{os.path.basename(path)}" for path in metadata_file_ids},
@@ -450,10 +448,9 @@ def _assert_signed_input_url(url, kind, object_id, redirect, path=""):
     assert (query.get("redirect") == ["1"]) is redirect
 
 
-@pytest.mark.parametrize("default_file_action", ["remote_transfer", "remote_transfer_tus"])
-def test_inputs_are_staged_from_signed_urls_without_pulling_them(default_file_action):
+def test_inputs_are_staged_from_signed_urls_without_pulling_them():
     runner, job_wrapper = _staging_runner(), _staging_job_wrapper()
-    compute_environment = _staging_compute_environment("stream", default_file_action=default_file_action)
+    compute_environment = _staging_compute_environment("stream")
     client_inputs = runner._client_inputs(job_wrapper, compute_environment, {})
     (client_input,) = list(client_inputs)
     assert client_input.path == INPUT_CACHE_PATH
@@ -523,8 +520,7 @@ def test_materialized_inputs_keep_path_staging():
 
 def test_inputs_keep_path_staging_without_object_store_staging():
     runner, job_wrapper = _staging_runner(), _staging_job_wrapper()
-    # Any file action reads inputs staged by path, so none is refused.
-    compute_environment = _staging_compute_environment(None, {METADATA_CACHE_PATH: 9}, default_file_action="transfer")
+    compute_environment = _staging_compute_environment(None, {METADATA_CACHE_PATH: 9})
     client_inputs = runner._client_inputs(job_wrapper, compute_environment, {})
     assert [client_input.url for client_input in client_inputs] == [None, None]
     assert job_wrapper.job_io.sync_cache is True
@@ -571,22 +567,80 @@ def test_input_metadata_rewrite_records_the_metadata_file_to_stage_by_identity(t
     assert compute_environment.input_metadata_file_ids == {metadata_path: metadata_file.id}
 
 
-def test_unknown_object_store_staging_mode_is_a_configuration_error():
+def _prepare_job(monkeypatch, destination_params, default_file_action="remote_transfer"):
+    """Prepare a job for a Pulsar destination: how the job was prepared, and the messages it failed with."""
+    monkeypatch.setattr("galaxy.jobs.runners.pulsar.PulsarComputeEnvironment", lambda *args: "compute environment")
+    client = SimpleNamespace(
+        destination_params=destination_params,
+        default_file_action=default_file_action,
+        setup=lambda *args: {"pulsar_version": "0.16.0"},
+    )
+    prepared: list[dict] = []
+    fail_messages: list[str] = []
+
+    def prepare(**kwds):
+        prepared.append(kwds)
+        # Stops after preparing, before the command line is built.
+        return False
+
+    job_wrapper = SimpleNamespace(
+        job_id=7,
+        tool=SimpleNamespace(id="cat1", version="1.0.0", requires_galaxy_python_environment=False),
+        prepare=prepare,
+        get_job=lambda: None,
+    )
     runner = _staging_runner()
-    with pytest.raises(ConfigurationError):
-        runner._client_inputs(_staging_job_wrapper(), _staging_compute_environment("true"), {})
+    runner.get_client_from_wrapper = lambda job_wrapper: client
+    runner._job_state = lambda job, job_wrapper: SimpleNamespace()
+    runner.work_queue = SimpleNamespace(put=lambda item: fail_messages.append(item[1].fail_message))
+    runner._PulsarJobRunner__prepare_job(job_wrapper, None)
+    return prepared, fail_messages
+
+
+@pytest.mark.parametrize(
+    "destination_params,default_file_action",
+    [
+        ({"object_store_staging": "stream", "rewrite_parameters": "true"}, "remote_transfer"),
+        ({"object_store_staging": "redirect", "rewrite_parameters": "true"}, "remote_transfer_tus"),
+        # Any file action reads inputs staged by path.
+        ({"rewrite_parameters": "true"}, "transfer"),
+    ],
+    ids=["stream", "redirect", "path-staging"],
+)
+def test_job_is_prepared_for_a_destination_that_can_stage_its_inputs(
+    monkeypatch, destination_params, default_file_action
+):
+    prepared, fail_messages = _prepare_job(monkeypatch, destination_params, default_file_action)
+    assert prepared == [{"compute_environment": "compute environment"}]
+    assert fail_messages == []
 
 
 # 'transfer' is the REST runner's default; these actions read the input's path on Galaxy, which
 # object store staging leaves unpulled.
 @pytest.mark.parametrize("default_file_action", ["transfer", "copy", "remote_object_store_copy"])
-def test_object_store_staging_with_a_default_file_action_that_cannot_fetch_urls_is_a_configuration_error(
-    default_file_action,
+def test_object_store_staging_with_a_default_file_action_that_cannot_fetch_urls_fails_the_job_unprepared(
+    monkeypatch, default_file_action
 ):
-    runner = _staging_runner()
-    compute_environment = _staging_compute_environment("stream", default_file_action=default_file_action)
-    with pytest.raises(ConfigurationError, match=f"default_file_action.*not '{default_file_action}'"):
-        runner._client_inputs(_staging_job_wrapper(), compute_environment, {})
+    destination_params = {"object_store_staging": "stream", "rewrite_parameters": "true"}
+    prepared, fail_messages = _prepare_job(monkeypatch, destination_params, default_file_action)
+    assert prepared == []
+    (fail_message,) = fail_messages
+    assert re.search(f"default_file_action.*not '{default_file_action}'", fail_message)
+
+
+def test_unknown_object_store_staging_mode_fails_the_job_unprepared(monkeypatch):
+    prepared, fail_messages = _prepare_job(monkeypatch, {"object_store_staging": "true", "rewrite_parameters": "true"})
+    assert prepared == []
+    (fail_message,) = fail_messages
+    assert "object_store_staging must be one of" in fail_message
+
+
+def test_object_store_staging_without_rewrite_parameters_fails_the_job_unprepared(monkeypatch):
+    # Without rewrite_parameters, Galaxy hands Pulsar its own paths, and object store staging has no effect.
+    prepared, fail_messages = _prepare_job(monkeypatch, {"object_store_staging": "stream"})
+    assert prepared == []
+    (fail_message,) = fail_messages
+    assert "object_store_staging needs rewrite_parameters" in fail_message
 
 
 def test_input_path_rewrite_keeps_the_local_path_without_object_store_staging():

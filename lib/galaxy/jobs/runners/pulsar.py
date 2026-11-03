@@ -584,6 +584,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 prepare_kwds["compute_environment"] = compute_environment
 
             try:
+                # Before preparing, which may materialize the job's deferred inputs.
+                PulsarJobRunner.__check_object_store_staging(client, rewrite_parameters)
                 job_prepare_ret = job_wrapper.prepare(**prepare_kwds)
             except Exception as e:
                 if isinstance(e, (ParameterValueError, InsufficientPermissionsException)):
@@ -753,17 +755,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         """
         issue_url = None
         staging = compute_environment.object_store_staging
-        if staging is not None and staging not in OBJECT_STORE_STAGING_MODES:
-            raise ConfigurationError(
-                f"object_store_staging must be one of {OBJECT_STORE_STAGING_MODES}, not {staging!r}"
-            )
         if staging in OBJECT_STORE_STAGING_MODES:
-            # Galaxy no longer pulls these inputs into its cache, so an action reading their path finds nothing.
-            if compute_environment.default_file_action not in URL_FILE_ACTIONS:
-                raise ConfigurationError(
-                    f"object_store_staging needs a default_file_action of {' or '.join(URL_FILE_ACTIONS)}, "
-                    f"not {compute_environment.default_file_action!r}"
-                )
             redirect = (
                 staging == "redirect"
                 and self.pulsar_version(remote_job_config) >= MINIMUM_PULSAR_VERSIONS["object_store_staging_redirect"]
@@ -1220,6 +1212,25 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         return remote_metadata
 
     @staticmethod
+    def __check_object_store_staging(pulsar_client, rewrite_parameters):
+        staging = pulsar_client.destination_params.get("object_store_staging")
+        if staging is None:
+            return
+        if staging not in OBJECT_STORE_STAGING_MODES:
+            raise ConfigurationError(
+                f"object_store_staging must be one of {OBJECT_STORE_STAGING_MODES}, not {staging!r}"
+            )
+        if not rewrite_parameters:
+            # Galaxy would hand Pulsar its own paths, with no object store identity to stage by.
+            raise ConfigurationError("object_store_staging needs rewrite_parameters")
+        # Galaxy no longer pulls these inputs into its cache, so an action reading their path finds nothing.
+        if pulsar_client.default_file_action not in URL_FILE_ACTIONS:
+            raise ConfigurationError(
+                f"object_store_staging needs a default_file_action of {' or '.join(URL_FILE_ACTIONS)}, "
+                f"not {pulsar_client.default_file_action!r}"
+            )
+
+    @staticmethod
     def __remote_container_handling(pulsar_client):
         remote_container_handling = string_as_bool_or_none(
             pulsar_client.destination_params.get("remote_container_handling", False)
@@ -1474,7 +1485,6 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         # Inputs are staged by object store identity; metadata file ids and the datasets owning extra
         # files directories are keyed by local path.
         self.object_store_staging = pulsar_client.destination_params.get("object_store_staging")
-        self.default_file_action = pulsar_client.default_file_action
         self.input_metadata_file_ids: dict[str, int] = {}
         self.input_extra_files_datasets: dict[str, model.Dataset] = {}
 
