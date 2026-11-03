@@ -88,6 +88,8 @@ const selected = computed({
 </template>
 
 <style scoped lang="scss">
+@use "../../styles/focus-ring" as *;
+
 .g-select {
     display: inline-block;
     width: 100%;
@@ -110,8 +112,7 @@ const selected = computed({
     cursor: pointer;
 
     &:focus-visible {
-        outline: 2px solid var(--color-blue-500, #197cd2);
-        outline-offset: 1px;
+        @include focus-ring;
     }
 
     &.g-disabled {
