@@ -873,24 +873,24 @@ AZURE_DIRECT_DOWNLOAD_CONFIG_YAML = get_example("azure_simple.yml").replace(
 )
 
 
-def _boto3_direct_download_expires_in(object_store) -> int:
+def _boto3_direct_download_expires_in(object_store, get_url: str = "get_direct_download_url") -> int:
     object_store._client = MagicMock()
     object_store._client.generate_presigned_url.return_value = "https://s3.example.org/signed"
     with patch.object(object_store, "_exists", return_value=True):
-        assert object_store.get_direct_download_url(MockDataset(1)) == "https://s3.example.org/signed"
+        assert getattr(object_store, get_url)(MockDataset(1)) == "https://s3.example.org/signed"
     return object_store._client.generate_presigned_url.call_args.kwargs["ExpiresIn"]
 
 
-def _s3_direct_download_expires_in(object_store) -> int:
+def _s3_direct_download_expires_in(object_store, get_url: str = "get_direct_download_url") -> int:
     object_store._bucket = MagicMock()
     with patch("galaxy.objectstore.s3.Key", create=True) as key_class:
         key_class.return_value.generate_url.return_value = "https://s3.example.org/signed"
         with patch.object(object_store, "_exists", return_value=True):
-            assert object_store.get_direct_download_url(MockDataset(1)) == "https://s3.example.org/signed"
+            assert getattr(object_store, get_url)(MockDataset(1)) == "https://s3.example.org/signed"
     return key_class.return_value.generate_url.call_args.kwargs["expires_in"]
 
 
-def _azure_direct_download_expires_in(object_store) -> int:
+def _azure_direct_download_expires_in(object_store, get_url: str = "get_direct_download_url") -> int:
     signed_at = now()
     with (
         patch("galaxy.objectstore.azure_blob.now", return_value=signed_at),
@@ -900,7 +900,7 @@ def _azure_direct_download_expires_in(object_store) -> int:
         patch.object(object_store, "_exists", return_value=True),
     ):
         blob_client.return_value.url = "https://azure.example.org/blob"
-        assert object_store.get_direct_download_url(MockDataset(1)) == "https://azure.example.org/blob?sig"
+        assert getattr(object_store, get_url)(MockDataset(1)) == "https://azure.example.org/blob?sig"
     return int((generate_blob_sas.call_args.kwargs["expiry"] - signed_at).total_seconds())
 
 
@@ -969,6 +969,21 @@ def test_azure_direct_download_url_configured_lifetime():
     )
     with TestConfig(config_str) as (directory, object_store):
         assert _azure_direct_download_expires_in(object_store) == 600
+
+
+@pytest.mark.parametrize(
+    "config_str,expires_in_of",
+    [
+        (get_example("boto3_direct_download.yml"), _boto3_direct_download_expires_in),
+        (S3_DIRECT_DOWNLOAD_CONFIG_YAML, _s3_direct_download_expires_in),
+        (AZURE_DIRECT_DOWNLOAD_CONFIG_YAML, _azure_direct_download_expires_in),
+    ],
+    ids=["boto3", "s3", "azure"],
+)
+@patch_object_stores_to_skip_initialize
+def test_object_url_lasts_as_long_as_the_store_direct_downloads(config_str, expires_in_of):
+    with TestConfig(config_str) as (directory, object_store):
+        assert expires_in_of(object_store, get_url="get_object_url") == 3600
 
 
 BOTO3_TEE_STREAMING_TEST_CONFIG_YAML = """
@@ -2656,6 +2671,19 @@ def test_cloud_get_direct_download_url_lasts_as_long_as_asked():
         with patch.object(object_store, "_exists", return_value=True):
             object_store.get_direct_download_url(MockDataset(1), expires_in=PRESIGN_LIFETIME)
         assert key.generate_url.call_args.kwargs["expires_in"] == PRESIGN_LIFETIME
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_object_url_lasts_as_long_as_the_store_direct_downloads():
+    with TestConfig(CLOUD_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
+        key = _cloud_object()
+        key.generate_url.return_value = "https://cloud.example.org/signed"
+        bucket = _cloud_bucket()
+        bucket.objects.get.return_value = key
+        object_store.bucket = bucket
+        with patch.object(object_store, "_exists", return_value=True):
+            assert object_store.get_object_url(MockDataset(1)) == "https://cloud.example.org/signed"
+        assert key.generate_url.call_args.kwargs["expires_in"] == 3600
 
 
 @patch_object_stores_to_skip_initialize
