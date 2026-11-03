@@ -382,6 +382,8 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@use "../styles/focus-ring" as *;
+
 .dropdown-toggle-no-caret::after {
     display: none !important;
 }
@@ -399,10 +401,9 @@ defineExpose({
     border: 0;
 }
 
-// Bootstrap's translucent focus shadow is below 3:1 against white
+// The halo replaces a consumer's translucent button focus shadow, which is below 3:1 against white
 .dropdown-toggle:focus-visible {
-    outline: 2px solid var(--color-blue-600);
-    outline-offset: 2px;
+    @include focus-ring;
 }
 </style>
 
