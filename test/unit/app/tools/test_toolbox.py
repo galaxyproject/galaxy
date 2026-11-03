@@ -18,6 +18,7 @@ from galaxy import model
 from galaxy.app import UniverseApplication
 from galaxy.app_unittest_utils.galaxy_mock import MockTrans
 from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
+from galaxy.app_unittest_utils.tools_support import SIMPLE_CAT_TOOL_CONTENTS
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.tool_util.ontologies import ontology_data
@@ -172,6 +173,20 @@ class TestToolBox(BaseToolBoxTestCase):
             trans = mock_trans(is_admin=is_admin)
             assert tool.to_panel_entry(trans) == tool.to_dict(trans)
             assert ("config_file" in tool.to_panel_entry(trans)) is is_admin
+
+    def test_panel_entry_without_data_inputs(self):
+        self._init_tool_in_section()
+        tool = self.toolbox.get_tool("test_tool")
+        assert tool.to_panel_entry(mock_trans())["data_inputs"] == []
+
+    def test_panel_entry_lists_data_inputs(self):
+        self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
+        self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        tool = self.toolbox.get_tool("test_tool")
+        assert tool.to_panel_entry(mock_trans())["data_inputs"] == [
+            {"name": "param1", "extensions": ["tabular"], "multiple": False},
+            {"name": "repeat1_0|param2", "extensions": ["tabular"], "multiple": False},
+        ]
 
     def test_panel_entry_link_uses_url_prefix(self):
         self._init_tool_in_section()

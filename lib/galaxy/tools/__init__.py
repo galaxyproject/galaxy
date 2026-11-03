@@ -99,6 +99,7 @@ from galaxy.tool_util.parameters import (
     RequestInternalDereferencedToolState,
     UnmodelableToolInputs,
 )
+from galaxy.tool_util.parameters.data_inputs import data_inputs_for_parameters
 from galaxy.tool_util.parser import (
     get_tool_source,
     RequiredFiles,
@@ -2989,6 +2990,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             panel_section_id=panel_section_id,
             panel_section_name=panel_section_name,
             form_style="regular" if regular_form else "special",
+            data_inputs=data_inputs_for_parameters(self.parameters) if self.parameters is not None else [],
         )
         if self.dynamic_tool_uuid:
             kwargs["uuid"] = str(self.dynamic_tool_uuid)
