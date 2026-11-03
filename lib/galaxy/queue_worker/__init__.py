@@ -20,11 +20,9 @@ from typing import (
     TypedDict,
 )
 
-from kombu import (
-    Consumer,
-    Queue,
-    uuid,
-)
+from kombu.common import uuid
+from kombu.entity import Queue
+from kombu.messaging import Consumer
 from kombu.mixins import ConsumerProducerMixin
 from kombu.pools import producers
 
