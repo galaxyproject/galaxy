@@ -68,6 +68,7 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
     ):
         config = context.config
         allowlist = self._allowlist or config.fetch_url_allowlist
+        validate_non_local(source_path, allowlist)
         req = urllib.request.Request(source_path, headers=config.http_headers)
         opener = urllib.request.build_opener(ValidatingRedirectHandler(allowlist))
 
