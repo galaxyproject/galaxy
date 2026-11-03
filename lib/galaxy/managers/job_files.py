@@ -15,6 +15,7 @@ from galaxy.job_execution.setup import (
     JobWorkingDirectory,
     read_job_files_manifest,
 )
+from galaxy.job_metrics.instrumenters import INSTRUMENT_FILE_PREFIX
 from galaxy.model import (
     Job,
     JobToOutputDatasetAssociation,
@@ -30,6 +31,9 @@ APPENDABLE_FILE_NAMES = ("tool_stdout", "tool_stderr")
 # Job directories Pulsar stages results back to: the tool working directory, ``outputs`` (datasets written there with
 # ``outputs_to_working_directory``, tool streams, the version file) and the metadata directory.
 STRICT_WRITABLE_DIRECTORIES = ("working", "outputs", "metadata")
+# A job that sets metadata in Galaxy returns only job metrics files and its tool streams to the metadata directory.
+# Galaxy runs ``metadata/set.py`` for such a job, so nothing else may be written next to it.
+INSTRUMENT_FILE_NAME_PREFIX = f"{INSTRUMENT_FILE_PREFIX}_"
 # The extended metadata model store, written only by jobs that run extended metadata remotely.
 MODEL_STORE_DIRECTORY = ["metadata", "outputs_populated"]
 
@@ -69,9 +73,11 @@ class JobFilesManager:
                 path,
             )
             readable = True
-        if readable and os.path.isfile(path):
+        if not readable:
+            raise exceptions.ItemAccessibilityException("Job is not authorized to read supplied path.")
+        if os.path.isfile(path):
             return path
-        if readable and os.path.exists(path):
+        if os.path.exists(path):
             raise exceptions.RequestParameterInvalidException("Path does not refer to a file.")
         # Inputs may be purged while the job is queued or running; pulsar handles that error.
         if re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path)):
@@ -82,8 +88,6 @@ class JobFilesManager:
                 for jtid in job.input_datasets
             ):
                 raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
-        if not readable:
-            raise exceptions.ItemAccessibilityException("Job is not authorized to read supplied path.")
         raise exceptions.ObjectNotFound("File not found.")
 
     def authorize_write(self, encoded_job_id: str, path: str | None, job_key: str | None) -> str:
@@ -115,20 +119,25 @@ class JobFilesManager:
     def _strict_write_directory(self, job: Job, path: str) -> str | None:
         """Return a staging directory if ``job_files_strict_access`` allows writing ``path``, otherwise ``None``.
 
-        Allowed are the job's outputs and the job directories results are staged back to. Job scripts, the manifest,
-        ``configs/`` and ``inputs/`` are Galaxy-produced inputs the runner has no reason to rewrite.
+        A job with a manifest may write its outputs and the job directories results are staged back to. Job scripts,
+        the manifest, ``configs/`` and ``inputs/`` are Galaxy-produced inputs the runner has no reason to rewrite.
         """
         if os.path.islink(path):
             return None
         working_directory = JobWorkingDirectory(job, self._object_store).resolve()
+        manifest = read_job_files_manifest(working_directory)
+        if manifest is None:
+            return None
         job_directory = os.path.realpath(working_directory)
         # Relative to the resolved job directory, so that a symlink among the allowed directories can't widen them.
         relative = os.path.relpath(os.path.realpath(path), job_directory).split(os.sep)
         if len(relative) > 1 and relative[0] in STRICT_WRITABLE_DIRECTORIES:
-            if relative[:2] != MODEL_STORE_DIRECTORY:
+            if relative[0] != "metadata":
                 return working_directory
-            manifest = self._manifest(job)
-            if manifest and manifest.remote_extended_metadata:
+            if relative[:2] == MODEL_STORE_DIRECTORY:
+                if manifest.remote_extended_metadata:
+                    return working_directory
+            elif manifest.remote_metadata or (len(relative) == 2 and _local_metadata_result(relative[1])):
                 return working_directory
         if dataset_path := self._output_dataset_path(job, path):
             return os.path.dirname(dataset_path)
@@ -234,3 +243,7 @@ class JobFilesManager:
             ):
                 return dataset_path
         return None
+
+
+def _local_metadata_result(name: str) -> bool:
+    return name.startswith(INSTRUMENT_FILE_NAME_PREFIX) or name in APPENDABLE_FILE_NAMES

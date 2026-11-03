@@ -334,13 +334,21 @@ class JobFilesManifest(NamedTuple):
     # The paths the runner fetches from the job files API by path. Inputs staged from signed staging URLs are
     # fetched from Galaxy too, but through a separate route, so they are not listed here.
     readable_paths: frozenset[str]
+    # Whether the job sets metadata on the remote side and returns the results in its metadata directory.
+    remote_metadata: bool
     # Whether the job returns its outputs through the extended metadata model store.
     remote_extended_metadata: bool
 
 
-def write_job_files_manifest(job_directory: str, readable_paths: list[str], remote_extended_metadata: bool) -> None:
+def write_job_files_manifest(
+    job_directory: str, readable_paths: list[str], remote_metadata: bool, remote_extended_metadata: bool
+) -> None:
     """Write the job's manifest atomically, so the job files API never reads a partial one."""
-    manifest = {"readable_paths": sorted(set(readable_paths)), "remote_extended_metadata": remote_extended_metadata}
+    manifest = {
+        "readable_paths": sorted(set(readable_paths)),
+        "remote_metadata": remote_metadata,
+        "remote_extended_metadata": remote_extended_metadata,
+    }
     fd, temp_path = tempfile.mkstemp(dir=job_directory, prefix=f".{JOB_FILES_MANIFEST}.")
     try:
         with os.fdopen(fd, "w") as fh:
@@ -357,7 +365,9 @@ def read_job_files_manifest(job_directory: str) -> JobFilesManifest | None:
             manifest = json.load(fh)
     except FileNotFoundError:
         return None
-    return JobFilesManifest(frozenset(manifest["readable_paths"]), manifest["remote_extended_metadata"])
+    return JobFilesManifest(
+        frozenset(manifest["readable_paths"]), manifest["remote_metadata"], manifest["remote_extended_metadata"]
+    )
 
 
 def ensure_configs_directory(work_dir: str) -> str:
