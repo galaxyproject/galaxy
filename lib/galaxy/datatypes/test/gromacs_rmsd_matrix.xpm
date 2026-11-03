@@ -1,0 +1,20 @@
+/* XPM */
+/* This file can be converted to EPS by the GROMACS program xpm2ps */
+/* title:   "C-alpha RMSD matrix" */
+/* legend:  "RMSD (nm)" */
+/* x-label: "Time (ps)" */
+/* y-label: "Time (ps)" */
+/* type:    "Continuous" */
+static char *gromacs_xpm[] = {
+"4 4   4 1",
+"A  c #FFFFFF " /* "0.0105" */,
+"B  c #BFBFBF " /* "0.0410" */,
+"C  c #7F7F7F " /* "0.0715" */,
+"D  c #000000 " /* "0.1092" */,
+/* x-axis:  0 0.1 0.2 0.3 */
+/* y-axis:  0 0.1 0.2 0.3 */
+"ABCD",
+"BACB",
+"CABA",
+"DBAC"
+};

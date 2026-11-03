@@ -184,7 +184,12 @@ class Image(data.Data):
                         dataset.metadata.axes = "YXC"
                         dataset.metadata.channels = im_shape[2]
 
-            except PIL.UnidentifiedImageError:
+            except (PIL.UnidentifiedImageError, ValueError):
+                # Pillow can recognize a file as a particular image format and still fail to
+                # parse it. GROMACS XPM files are one example: they pad the values line of the
+                # header with extra spaces, which Pillow's XPM plugin does not accept, so it
+                # raises a ValueError. Leaving the metadata unset is preferable to failing the
+                # job that produced the dataset.
                 pass
 
 

@@ -10,6 +10,7 @@ from galaxy.datatypes.images import (
     Png,
     Ppm,
     Tiff,
+    Xpm,
 )
 from galaxy.datatypes.sniff import get_test_fname
 from .util import (
@@ -241,6 +242,14 @@ def test_dicom_sniff():
 
 @__test(Pdf, "454Score.pdf")
 def test_unsupported_metadata(metadata):
+    __assert_empty_metadata(metadata)
+
+
+# Test with a file that Pillow recognizes but cannot parse
+
+
+@__test(Xpm, "gromacs_rmsd_matrix.xpm")
+def test_unparsable_metadata(metadata):
     __assert_empty_metadata(metadata)
 
 
