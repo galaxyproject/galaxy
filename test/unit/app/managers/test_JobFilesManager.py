@@ -8,6 +8,7 @@ from galaxy import exceptions
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.job_execution.setup import (
     JobWorkingDirectory,
+    read_job_files_manifest,
     write_job_files_manifest,
 )
 from galaxy.managers.job_files import JobFilesManager
@@ -135,8 +136,12 @@ def test_missing_params(manager, security, job):
         manager.authorize_write(job_id, path, None)
 
 
-def test_empty_path(manager, security, job):
+@pytest.mark.parametrize("strict_access", [False, True])
+def test_empty_path(manager, security, job, config, strict_access):
+    config.job_files_strict_access = strict_access
     job_id, job_key = _keys(security)
+    # Even a manifest listing the empty path doesn't make it readable.
+    _write_manifest(job, [""])
     with pytest.raises(exceptions.RequestParameterInvalidException):
         manager.authorize_write(job_id, "", job_key)
     with pytest.raises(exceptions.RequestParameterInvalidException):
@@ -383,3 +388,14 @@ def test_job_appends_to_other_files_with_a_warning(manager, security, job, caplo
     for path in [stream, other]:
         with open(path) as f:
             assert f.read() == "first second"
+
+
+def test_resubmission_rewrites_the_manifest(manager, security, job, job_files, strict):
+    job_id, job_key = _keys(security)
+    _write_manifest(job, [job_files.input, job_files.input_extra_file], remote_extended_metadata=True)
+    _write_manifest(job, [job_files.input_metadata_file])
+    manifest = read_job_files_manifest(_working_directory(job))
+    assert manifest == (frozenset([job_files.input_metadata_file]), False)
+    assert [name for name in os.listdir(_working_directory(job)) if "manifest" in name] == ["job_files_manifest.json"]
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.readable_path(job_id, job_files.input, job_key)

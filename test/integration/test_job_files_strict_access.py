@@ -6,6 +6,7 @@ import tempfile
 from collections.abc import Iterator
 from unittest.mock import patch
 
+import requests
 from sqlalchemy import select
 
 from galaxy import model
@@ -13,10 +14,12 @@ from galaxy.job_execution.setup import (
     JobFilesManifest,
     JobWorkingDirectory,
     read_job_files_manifest,
+    write_job_files_manifest,
 )
 from galaxy.managers.job_files import JobFilesManager
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util_models import UserToolSource
+from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -59,6 +62,8 @@ tools:
 - id: metadata_bam
   environment: pulsar
 - id: cat1
+  environment: pulsar
+- id: markdown_report_from_script
   environment: pulsar
 """
 
@@ -173,6 +178,61 @@ class TestJobFilesStrictAccessIntegration(integration_util.IntegrationTestCase):
             assert any(f"{os.sep}inputs{os.sep}" in path for path in reads)
             content = self.dataset_populator.get_history_dataset_content(history_id, dataset=run["outputs"][0])
             assert content == "deferred\n"
+
+    def test_tool_directory_script(self):
+        tool = self._app.toolbox.get_tool("markdown_report_from_script")
+        assert tool
+        tool_directory = os.path.dirname(tool.config_file)
+        tool_files = [
+            os.path.join(tool_directory, "markdown_report_simple_script.py"),
+            os.path.join(tool_directory, "data", "1.bed"),
+            os.path.join(tool_directory, "data", "rgWebLogo3_test.jpg"),
+        ]
+        with self.dataset_populator.test_history() as history_id:
+            with self._record_job_files() as (reads, _):
+                run = self.dataset_populator.run_tool("markdown_report_from_script", {"title": "report"}, history_id)
+                job_id = run["jobs"][0]["id"]
+                self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+            assert set(tool_files) <= self._manifest(job_id).readable_paths
+            assert set(tool_files) <= set(reads)
+            report = next(output for output in run["outputs"] if output["output_name"] == "output_report")
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=report)
+            assert "# Dynamically Generated Report" in content
+
+    def test_head_and_get_serve_only_the_manifest(self):
+        # The static job never finishes, which a test history's cleanup would wait for.
+        history_id = self.dataset_populator.new_history()
+        listed = self.dataset_populator.new_dataset(history_id, content="listed\n", wait=True)
+        unlisted = self.dataset_populator.new_dataset(history_id, content="unlisted\n", wait=True)
+        job = self._static_running_job(history_id)
+        write_job_files_manifest(
+            JobWorkingDirectory(job, self._app.object_store).resolve(),
+            [self._input_path(listed["id"])],
+            remote_extended_metadata=False,
+        )
+        url = self._api_url(f"jobs/{self._app.security.encode_id(job.id)}/files")
+        job_key = self._app.security.encode_id(job.id, kind="jobs_files")
+        for method in (requests.head, requests.get):
+            response = method(url, params={"path": self._input_path(listed["id"]), "job_key": job_key})
+            api_asserts.assert_status_code_is_ok(response)
+            assert response.headers["content-length"] == str(len("listed\n"))
+            response = method(url, params={"path": self._input_path(unlisted["id"]), "job_key": job_key})
+            api_asserts.assert_status_code_is(response, 403)
+
+    def _static_running_job(self, history_id: str) -> model.Job:
+        """A running job with no handler, so its state doesn't change."""
+        session = self._app.model.session
+        history = session.get(model.History, self._app.security.decode_id(history_id))
+        assert history
+        job = model.Job()
+        job.history = history
+        job.user = history.user
+        job.handler = "unknown-handler"
+        job.state = model.Job.states.RUNNING
+        session.add(job)
+        session.commit()
+        JobWorkingDirectory(job, self._app.object_store).create()
+        return job
 
     def _run_user_tool(
         self, tool: UserToolSource, input_id: str, history_id: str, assert_ok: bool = True
