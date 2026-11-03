@@ -2989,10 +2989,10 @@
     directories. The extended metadata model store
     (``metadata/outputs_populated``) is writable only for jobs that
     use remote extended metadata. Symlinks are never written. Without
-    this option, Galaxy logs a warning for each read outside a job's
-    manifest. Enable it on servers that run user-defined tools or
-    interactive tools. It will be enabled by default in a future
-    release.
+    this option, Galaxy logs a warning for each read and write that it
+    would refuse, so admins can check what enabling it would break.
+    Enable it on servers that run user-defined tools or interactive
+    tools. It will be enabled by default in a future release.
 :Default: ``false``
 :Type: bool
 

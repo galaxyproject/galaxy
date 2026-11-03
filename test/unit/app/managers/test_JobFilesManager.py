@@ -335,3 +335,51 @@ def test_strict_job_appends_only_its_tool_streams(manager, security, job, strict
         manager.write(job_id, path, _write(tmp_path / "upload", "second"))
         with open(path) as f:
             assert f.read() == ("first second" if relative.startswith("outputs") else "second")
+
+
+STRICT_ACCESS_WARNING = "job_files_strict_access"
+
+
+@pytest.mark.parametrize("relative", ["working/out.txt", "outputs/tool_stdout", "metadata/metadata_out_2"])
+def test_job_writes_staged_results_without_a_warning(manager, security, job, caplog, relative):
+    job_id, job_key = _keys(security)
+    assert manager.authorize_write(job_id, _job_path(job, relative), job_key) == _working_directory(job)
+    assert STRICT_ACCESS_WARNING not in caplog.text
+
+
+def test_job_writes_its_outputs_without_a_warning(manager, security, job, job_files, caplog):
+    job_id, job_key = _keys(security)
+    assert manager.authorize_write(job_id, job_files.output, job_key) == os.path.dirname(job_files.output)
+    assert STRICT_ACCESS_WARNING not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "relative", ["tool_script.sh", "configs/tmp_config", "inputs/materialized.dat", "metadata/outputs_populated/c.json"]
+)
+def test_job_writes_other_job_directory_files_with_a_warning(manager, security, job, caplog, relative):
+    job_id, job_key = _keys(security)
+    _write_manifest(job, [])
+    assert manager.authorize_write(job_id, _job_path(job, relative), job_key) == _working_directory(job)
+    assert STRICT_ACCESS_WARNING in caplog.text
+
+
+def test_job_writes_symlinks_inside_the_job_directory_with_a_warning(manager, security, job, caplog):
+    job_id, job_key = _keys(security)
+    link = _job_path(job, "working", "link")
+    os.makedirs(os.path.dirname(link))
+    os.symlink(_write(_job_path(job, "working", "target")), link)
+    assert manager.authorize_write(job_id, link, job_key) == _working_directory(job)
+    assert STRICT_ACCESS_WARNING in caplog.text
+
+
+def test_job_appends_to_other_files_with_a_warning(manager, security, job, caplog, tmp_path):
+    job_id, _ = _keys(security)
+    stream = _write(_job_path(job, "outputs", "tool_stdout"), "first ")
+    manager.write(job_id, stream, _write(tmp_path / "upload", "second"))
+    assert STRICT_ACCESS_WARNING not in caplog.text
+    other = _write(_job_path(job, "working", "tool_stdout"), "first ")
+    manager.write(job_id, other, _write(tmp_path / "upload", "second"))
+    assert STRICT_ACCESS_WARNING in caplog.text
+    for path in [stream, other]:
+        with open(path) as f:
+            assert f.read() == "first second"

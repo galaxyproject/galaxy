@@ -91,25 +91,35 @@ class JobFilesManager:
         job, path = self._authorize(encoded_job_id, path, job_key)
         if not os.path.isabs(path):
             raise exceptions.RequestParameterInvalidException("'path' parameter must be an absolute path.")
+        strict_directory = self._strict_write_directory(job, path)
         if self._config.job_files_strict_access:
-            return self._authorize_strict_write(job, path)
+            if strict_directory is None:
+                raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
+            return strict_directory
         working_directory = JobWorkingDirectory(job, self._object_store).resolve()
         if util.in_directory(path, working_directory):
-            return working_directory
-        if dataset_path := self._output_dataset_path(job, path):
-            return os.path.dirname(dataset_path)
-        raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
+            directory = working_directory
+        elif dataset_path := self._output_dataset_path(job, path):
+            directory = os.path.dirname(dataset_path)
+        else:
+            raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
+        if strict_directory is None:
+            log.warning(
+                "Job %s wrote %s, which is not one of its outputs or job directories results are staged back to. "
+                "This write will be refused once job_files_strict_access is enabled.",
+                job.id,
+                path,
+            )
+        return directory
 
-    def _authorize_strict_write(self, job: Job, path: str) -> str:
-        """Allow only the job's outputs and the job directories results are staged back to.
+    def _strict_write_directory(self, job: Job, path: str) -> str | None:
+        """Return a staging directory if ``job_files_strict_access`` allows writing ``path``, otherwise ``None``.
 
-        Job scripts, the manifest, ``configs/`` and ``inputs/`` are Galaxy-produced inputs the runner has no reason to
-        rewrite.
+        Allowed are the job's outputs and the job directories results are staged back to. Job scripts, the manifest,
+        ``configs/`` and ``inputs/`` are Galaxy-produced inputs the runner has no reason to rewrite.
         """
         if os.path.islink(path):
-            raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
-        if dataset_path := self._output_dataset_path(job, path):
-            return os.path.dirname(dataset_path)
+            return None
         working_directory = JobWorkingDirectory(job, self._object_store).resolve()
         job_directory = os.path.realpath(working_directory)
         # Relative to the resolved job directory, so that a symlink among the allowed directories can't widen them.
@@ -120,7 +130,9 @@ class JobFilesManager:
             manifest = self._manifest(job)
             if manifest and manifest.remote_extended_metadata:
                 return working_directory
-        raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
+        if dataset_path := self._output_dataset_path(job, path):
+            return os.path.dirname(dataset_path)
+        return None
 
     def assert_job_active(self, encoded_job_id: str) -> None:
         """Check that a job whose write was already authorized is still queued or running."""
@@ -160,11 +172,21 @@ class JobFilesManager:
             shutil.move(source_path, path)
 
     def _is_tool_stream(self, encoded_job_id: str, path: str) -> bool:
-        if not self._config.job_files_strict_access:
-            return path.endswith(APPENDABLE_FILE_NAMES)
+        if not path.endswith(APPENDABLE_FILE_NAMES):
+            return False
         job = self._active_job(self._security.decode_id(encoded_job_id))
         outputs_directory = os.path.join(JobWorkingDirectory(job, self._object_store).resolve(), "outputs")
-        return any(path == os.path.join(outputs_directory, name) for name in APPENDABLE_FILE_NAMES)
+        if any(path == os.path.join(outputs_directory, name) for name in APPENDABLE_FILE_NAMES):
+            return True
+        if self._config.job_files_strict_access:
+            return False
+        log.warning(
+            "Job %s appended to %s, which is not one of its tool streams. This file will be replaced instead once "
+            "job_files_strict_access is enabled.",
+            job.id,
+            path,
+        )
+        return True
 
     def _manifest(self, job: Job) -> JobFilesManifest | None:
         return read_job_files_manifest(JobWorkingDirectory(job, self._object_store).resolve())
