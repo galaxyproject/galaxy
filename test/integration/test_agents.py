@@ -554,7 +554,7 @@ class TestMCPServerSmoke(IntegrationTestCase):
 
         # The TRS proxy fetches the workflow descriptor over HTTP; mock that so we
         # don't actually hit Dockstore from CI.
-        with patch("galaxy.workflow.trs_proxy.requests.get") as mock_get:
+        with patch("galaxy.workflow.trs_proxy.RequestsSession.get") as mock_get:
             mock_get.return_value.ok = True
             mock_get.return_value.json.return_value = {"content": json.dumps(definition)}
             result = self._run_async(_import())
