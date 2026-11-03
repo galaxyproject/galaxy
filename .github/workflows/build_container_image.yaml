@@ -90,6 +90,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ build ]
     steps:
+      - name: Allow processes in containers to signal each other
+        # Ubuntu 26.04 runners set kernel.apparmor_restrict_unprivileged_unconfined=1,
+        # which stacks "//&unconfined" onto the containerd AppArmor profile. The
+        # default profile does not match the stacked label, so signals between a
+        # container's own processes are denied and PostgreSQL fails to start with
+        # "could not signal for checkpoint: Permission denied".
+        # See https://github.com/containerd/containerd/issues/14485
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0
       - name: Start k8s locally
         uses: jupyterhub/action-k3s-helm@v4
         with:
