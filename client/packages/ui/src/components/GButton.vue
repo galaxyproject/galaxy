@@ -232,13 +232,14 @@ const buttonElementRef = useResolveElement(buttonRef);
             border-color: var(--color-grey-600);
         }
 
-        // Out-ranks the hover rule above, so hover is restated here; focus keeps the light fill and the ring shows it
+        // Dark fill keeps >= 3:1 against unpressed and hovered neighbours; out-ranks the hover rule above, so hover is restated
         &.g-pressed:not(.g-outline):not(.g-transparent) {
-            background-color: var(--color-grey-250);
-            border-color: var(--color-grey-600);
+            background-color: var(--color-grey-600);
+            border-color: var(--color-grey-800);
+            color: var(--color-grey-100);
 
             &:hover {
-                background-color: var(--color-grey-300);
+                background-color: var(--color-grey-700);
             }
         }
 
