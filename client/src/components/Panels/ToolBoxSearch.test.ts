@@ -159,7 +159,7 @@ describe("ToolBox search", () => {
             { length: 120 },
             (_, i) => ({ ...toolsList[0], id: `many_tool_${i}`, name: `Many tool ${i}` }) as Tool,
         );
-        const { wrapper } = mountToolBox({
+        const { wrapper, userStore } = mountToolBox({
             tools: manyTools,
             toolSections: {
                 default: {
@@ -189,6 +189,18 @@ describe("ToolBox search", () => {
 
         expect(wrapper.findAll("a[data-tool-id]")).toHaveLength(120);
         expect(wrapper.find('[data-description="show all tool search results button"]').exists()).toBe(false);
+
+        // Starring a tool re-runs the search; the list stays expanded until the query changes.
+        userStore.currentPreferences = { favorites: { tools: ["many_tool_119"] } };
+        await flushPromises();
+        expect(wrapper.find('[data-description="show all tool search results button"]').exists()).toBe(false);
+        expect(wrapper.find('[data-tool-id="many_tool_110"]').exists()).toBe(true);
+
+        // Still matches all 120 tools by word match, but a new query collapses the list again.
+        await input.setValue("Many tool 1");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+        expect(wrapper.find('[data-description="show all tool search results button"]').exists()).toBe(true);
     });
 
     it("shows empty favorites copy in My panel when no favorites are set", async () => {
