@@ -935,9 +935,11 @@ execution:
        # first: 'stream' streams them through Galaxy, while 'redirect' sends
        # Pulsar (0.15.16 or later) to a presigned URL when the object store has
        # enable_direct_download set, and streams otherwise. Use 'redirect' only
-       # if Pulsar can reach the object store. Requires rewrite_parameters,
-       # and a default_file_action of 'remote_transfer' or
-       # 'remote_transfer_tus', the actions that fetch inputs from these URLs.
+       # if Pulsar can reach the object store, and only with stores whose
+       # presigned URLs expire (s3, aws_s3, generic_s3, swift, boto3, cloud and
+       # azure_blob), not irods or pithos. Requires rewrite_parameters, and a
+       # default_file_action of 'remote_transfer' or 'remote_transfer_tus', the
+       # actions that fetch inputs from these URLs; jobs fail without them.
        # Extra files of composite inputs are listed in the object store, which
        # irods, pithos, rucio and onedata stores cannot do, so a job reading
        # them from such a store fails, giving the store as the reason.
@@ -948,9 +950,9 @@ execution:
        # Pulsar needs no object store credentials for this; where Pulsar mounts
        # Galaxy's disk, the path rules above avoid the transfer instead.
        # Galaxy pulls no input into its cache here, so a path rule that sends
-       # an object store input to any other action, which would read its path
-       # on Galaxy ('transfer', 'copy', 'remote_object_store_copy' and so on),
-       # fails the job; such rules suit disk stores only.
+       # an object store input to any other action, which needs the input on
+       # Galaxy's disk ('transfer', 'copy', 'remote_object_store_copy' and so
+       # on), fails the job; such rules suit disk stores only.
        # Inputs with no copy in the object store, such as deferred datasets
        # Galaxy materializes for the job, still go through the job files API,
        # as do tool files and outputs, so the Galaxy hosts answering Pulsar
