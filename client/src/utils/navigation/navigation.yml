@@ -652,6 +652,8 @@ histories:
     bulk_delete_button: 'button[id="history-list-footer-bulk-delete-button"]'
     bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
     bulk_open_multiview_button: 'button[id="history-list-footer-bulk-open-multiview-button"]'
+    sort_button: '[data-title="Sort by ${field} ${direction}"]'
+    list_loading: '#history-list-overlay .g-overlay'
   multiview:
     selectors:
       activity: '#activity-multiview'

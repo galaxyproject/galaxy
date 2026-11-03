@@ -1,0 +1,9 @@
+- doc: |
+    Test to verify a subworkflow text parameter connected to an expression tool output can be used to rename an output collection.
+  job:
+    replacemeouter: moocow
+  outputs:
+    out1:
+      class: Collection
+      metadata:
+        name: 'moocow renamed'
