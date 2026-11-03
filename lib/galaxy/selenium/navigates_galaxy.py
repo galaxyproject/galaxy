@@ -858,6 +858,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
+    def history_panel_wait_for_hid_datatype(self, hid: int, datatype: str):
+        datatype_component = self.history_panel_item_component(hid=hid).datatype
+        self._wait_on(lambda: datatype_component.wait_for_text() == datatype, f"hid {hid} datatype to be [{datatype}]")
+
+    def history_panel_wait_for_hid_dbkey(self, hid: int, dbkey: str):
+        dbkey_component = self.history_panel_item_component(hid=hid).dbkey
+        self._wait_on(lambda: dbkey_component.wait_for_text() == dbkey, f"hid {hid} dbkey to be [{dbkey}]")
+
     def history_panel_wait_for_and_select(self, hids: list[int]):
         """
         Waits for uploads to pass through queued, running, ok. Not all the states are not guaranteed
@@ -1117,6 +1125,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.fill(login.form.wait_for_visible(), {"login": email})
         login.reset_password_link.wait_for_and_click()
         reset_password = self.components.reset_password
+        assert reset_password.email.wait_for_visible().get_attribute("value") == email
         reset_password.submit.wait_for_and_click()
         return reset_password.alert.wait_for_text()
 
@@ -1777,6 +1786,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         cleanup.confirm_enabled.wait_for_and_click()
         cleanup.success.wait_for_visible()
 
+    def storage_dashboard_recalculate_disk_usage(self):
+        """Open the Storage Dashboard from the masthead usage meter and click Refresh (recalculate disk usage)."""
+        self.navigate_to_storage_dashboard()
+        storage_dashboard = self.components.storage_dashboard
+        storage_dashboard.refresh_disk_usage.wait_for_and_click()
+
     def navigate_to_saved_visualizations(self):
         self.home()
         visualizations = self.components.visualization
@@ -1787,6 +1802,27 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.home()
         self.components.histories.activity.wait_for_and_click()
         self.components.shared_histories.shared_tab.wait_for_and_click()
+
+    def navigate_to_manage_information(self):
+        """Open Preferences > Manage Information."""
+        self.navigate_to_user_preferences()
+        self.components.preferences.manage_information.wait_for_and_click()
+
+    def manage_information_save(self, email: str | None = None, username: str | None = None):
+        """Change the email and/or public name on Preferences > Manage Information and Save."""
+        preferences = self.components.preferences
+        if preferences.email_input.is_absent:
+            self.navigate_to_manage_information()
+        for input_field, value in ((preferences.email_input, email), (preferences.username_input, username)):
+            if value is not None:
+                input_field.wait_for_and_clear_and_send_keys(value)
+        self.components.change_user_email.submit.wait_for_and_click()
+        # /user renders the email span before the current user loads.
+        current_email = preferences.current_email
+        if email is not None:
+            self._wait_on(lambda: current_email.wait_for_text() == email, "saved email to render")
+        else:
+            current_email.wait_for_visible()
 
     def navigate_to_user_preferences(self):
         self.home()
@@ -2394,6 +2430,34 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def workflow_editor_set_annotation(self, annotation: str):
         self.components.workflow_editor.edit_annotation.wait_for_and_clear_and_send_keys(annotation)
 
+    def workflow_editor_open_best_practices(self):
+        """Open the editor's Best Practices panel unless already open."""
+        sections = self.components.workflow_editor.best_practices.sections
+        if sections.is_absent or not sections.is_displayed:
+            self.components.workflow_editor.tool_bar.best_practices.wait_for_and_click()
+        sections.wait_for_present()
+
+    def workflow_editor_best_practices(self) -> dict[str, str]:
+        """Open the editor's Best Practices panel; return each check's status (``ok``/``warning``) by name."""
+        self.workflow_editor_open_best_practices()
+        sections = self.components.workflow_editor.best_practices.sections
+        return {
+            section.get_attribute("data-description").removeprefix("linting "): section.get_attribute(
+                "data-lint-status"
+            )
+            for section in sections.all()
+        }
+
+    def workflow_editor_add_tags(self, tags: list[str]):
+        """Add ``tags`` from the editor's Attributes panel (Tags > Add Tags); the editor saves tags at once."""
+        if not tags:
+            return
+        editor = self.components.workflow_editor
+        if editor.edit_name.is_absent:
+            editor.tool_bar.attributes.wait_for_and_click()
+        editor.edit_tags_toggle.wait_for_and_click()
+        self.tagging_add(tags, parent_selector=f"{self.navigation.workflow_editor.attributes_panel.selector} ")
+
     def invocation_index_table_elements(self):
         invocations = self.components.invocations
         invocations.invocations_table.wait_for_visible()
@@ -2714,6 +2778,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def click_history_option_resume_paused_jobs(self):
         """Open History options > Resume Paused Jobs."""
         self.use_bootstrap_dropdown(option="resume paused jobs", menu="history options")
+
+    def click_history_option_tool_references(self):
+        """Open History options > Export Tool References and wait for the references."""
+        self.use_bootstrap_dropdown(option="export tool references", menu="history options")
+        self.components.citations._.reference.wait_for_visible()
 
     def click_history_option_extract_workflow(self):
         self.use_bootstrap_dropdown(option="extract workflow", menu="history options")
@@ -3036,6 +3105,18 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         operation_radio_selector = f"{item_selector} .selector"
         self.wait_for_and_click_selector(operation_radio_selector)
 
+    def history_panel_change_selected(self, operation: str, value: str):
+        """Apply ``value`` to the selected history items through a Selection menu modal.
+
+        ``operation`` is the menu item's data-description, e.g. "change data type" (needs Celery).
+        """
+        self.use_bootstrap_dropdown(option=operation, menu="selected content menu")
+        modal = self.components.history_panel.multi_operations.operation_modal._(operation=operation)
+        modal.item_selector.wait_for_visible()
+        self.select_set_value(modal, value)
+        modal.ok.wait_for_and_click()
+        modal.wait_for_absent_or_hidden()
+
     def history_panel_multi_operation_action_click(self, action):
         # Maybe isn't needed?
         # self.sleep_for(WAIT_TYPES.UX_RENDER)
@@ -3163,11 +3244,25 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def show_dataset_visualizations(self, hid):
         self.display_dataset(hid)
-        # Find and click the Visualize tab
-        visualize_tab_button = self.wait_for_selector_clickable(
-            ".nav-item[title='Explore available visualizations for this dataset'] > a.nav-link"
-        )
-        visualize_tab_button.click()
+        self.components.dataset_view.visualize_tab.wait_for_and_click()
+
+    def dataset_display_applications(self, hid: int) -> list[tuple[str, list[str]]]:
+        """Open dataset ``hid``'s Visualize tab; return (label, link texts) per display application, in page order."""
+        self.show_dataset_visualizations(hid)
+        self.components.visualization.display_applications.wait_for_present()
+        items = self.components.visualization.display_application_items
+        return [
+            (
+                item.find_element(*self.navigation.visualization.display_application_label.element_locator).text,
+                [
+                    link.text
+                    for link in item.find_elements(
+                        *self.navigation.visualization.display_application_links.element_locator
+                    )
+                ],
+            )
+            for item in items.all()
+        ]
 
     def show_dataset_visualization(self, hid: int, visualization_id: str, screenshot_name: str | None = None):
         self.show_dataset_visualizations(hid)

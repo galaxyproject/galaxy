@@ -449,11 +449,11 @@ class TextToolParameter(SimpleTextToolParameter):
     ...     p.validate([["ab"]])
     >>> with assert_throws_param_value_error("Parameter '_name': entries must be text"):
     ...     p.validate([True])
+    >>> with assert_throws_param_value_error("Parameter '_name': entries must be text"):
+    ...     p.validate([1])
     >>> with assert_throws_param_value_error("Parameter '_name': at least one value is required"):
     ...     p.validate(None)
     >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "optional": True}).validate(None)
-    >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "value": [1, 2]}).get_initial_value(None, {})
-    ['1', '2']
     >>> p.from_json("ab", trans)
     ['ab']
     >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "value": "ab"}).get_initial_value(None, {})
@@ -490,9 +490,8 @@ class TextToolParameter(SimpleTextToolParameter):
         values = self._multiple_values(value)
         if any(v is None or v == "" for v in values):
             raise ParameterValueError("entries cannot be empty", self.name, value)
-        if any(isinstance(v, bool) or not isinstance(v, (str, int, float)) for v in values):
+        if any(not isinstance(v, str) for v in values):
             raise ParameterValueError("entries must be text", self.name, value)
-        values = [str(v) for v in values]
         if any("\n" in v for v in values):
             message = "values cannot contain newlines"
             if not isinstance(value, list):
@@ -512,7 +511,7 @@ class TextToolParameter(SimpleTextToolParameter):
 
     def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         if self.multiple and self.value is not None:
-            return [str(v) for v in self._multiple_values(self.value)]
+            return self._multiple_values(self.value)
         return super().get_initial_value(trans, other_values)
 
     def to_json(self, value, app, use_security):
@@ -1101,6 +1100,13 @@ class SelectToolParameter(ToolParameter):
     """
     Parameter that takes on one (or many) or a specific set of values.
 
+    For ``multiple="true"`` parameters the value is always a list of the
+    selected option values, even if only a single option was provided as a
+    scalar (e.g. by legacy API clients or test cases), so that output filters
+    and other consumers of the parameter dict can rely on a single
+    representation. With a comma separated string ``"A" in value`` would be a
+    substring check, which is true for a selection of ``"AA"``.
+
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.util import XML
     >>> trans = Bunch(app=None, history=Bunch(), workflow_building_mode=False, security=lambda x: x)
@@ -1141,6 +1147,13 @@ class SelectToolParameter(ToolParameter):
     ['y']
     >>> print(one.to_param_dict_string(["y"]))
     y
+
+    >>> p.from_json("x", trans)
+    ['x']
+    >>> p.from_json(["x", "y"], trans)
+    ['x', 'y']
+    >>> one.from_json("y", trans)
+    ['y']
     """
 
     value_label: str
@@ -1296,11 +1309,11 @@ class SelectToolParameter(ToolParameter):
                     is_dynamic=self.is_dynamic,
                 )
             if value in legal_values:
-                return value
+                result = value
             elif value in fallback_values:
-                return fallback_values[value]
+                result = fallback_values[value]
             elif not require_legal_value:
-                return value
+                result = value
             else:
                 raise ParameterValueError(
                     f"an invalid option ({value!r}) was selected (valid options: {','.join(iter_to_string(legal_values))})",
@@ -1308,6 +1321,11 @@ class SelectToolParameter(ToolParameter):
                     value,
                     is_dynamic=self.is_dynamic,
                 )
+            # A multiple select is always a list, even if a single value was provided
+            # as a scalar (e.g. by legacy API clients or test cases). Otherwise output
+            # filters and other consumers of the parameter dict would have to deal
+            # with both strings and lists.
+            return [result] if self.multiple else result
 
     def to_param_dict_string(self, value, other_values=None):
         if value in (None, []):
