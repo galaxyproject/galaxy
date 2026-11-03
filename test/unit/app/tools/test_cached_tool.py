@@ -21,7 +21,10 @@ import galaxy.tools.cached_toolbox as mod
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.app_unittest_utils.tool_source_support import populate_config
 from galaxy.exceptions import ConfigurationError
-from galaxy.model.tool_shed_install import mapping as install_mapping
+from galaxy.model.tool_shed_install import (
+    mapping as install_mapping,
+    ToolShedRepository,
+)
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
 from galaxy.tool_util.toolbox.base import NullToolTagManager
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
@@ -800,23 +803,27 @@ def test_materializing_shed_tools_leaves_repository_cache_untouched(tmp_path):
     assert box.app.tool_shed_repository_cache.local_repositories == []
 
 
-def test_materializing_shed_tool_keeps_install_database_repository(tmp_path):
-    box = _materializing_box()
-    entry = _shed_image_entry()
-    installed = MagicMock(
+@pytest.mark.parametrize("with_repository_cache", [True, False], ids=["during_startup", "after_startup"])
+def test_materializing_shed_tool_keeps_install_database_repository(tmp_path, with_repository_cache):
+    box = _materializing_box(with_repository_cache=False)
+    app = box.app
+    installed = ToolShedRepository(
         tool_shed="toolshed.g2.bx.psu.edu",
+        name="bedtools",
         owner="iuc",
         installed_changeset_revision="d57471728f7b",
         changeset_revision="d57471728f7b",
     )
-    installed.name = "bedtools"
-    cache = box.app.tool_shed_repository_cache
-    cache.repos_by_tuple[("toolshed.g2.bx.psu.edu", "iuc", "bedtools")].append(installed)
+    app.install_model.context.add(installed)
+    app.install_model.context.commit()
+    if with_repository_cache:
+        app.tool_shed_repository_cache = ToolShedRepositoryCache(session=app.install_model.context)
 
-    tool = box._create_tool_from_stored_source(_shed_image_stored(str(tmp_path)), entry=entry)
+    tool = box._create_tool_from_stored_source(_shed_image_stored(str(tmp_path)), entry=_shed_image_entry())
 
-    assert cache.local_repositories == []
-    assert tool.tool_shed_repository is installed
+    repository = tool.tool_shed_repository
+    assert isinstance(repository, ToolShedRepository)
+    assert repository.id == installed.id
 
 
 def test_create_tool_raises_on_index_miss():
