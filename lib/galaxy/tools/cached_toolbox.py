@@ -698,7 +698,7 @@ class CachedToolBox(ToolBox):
         # ``_index_panel_items`` only returns placements when the index is
         # populated, so it is non-None here.
         assert self._tool_index is not None
-        missing = self._panel_ids_missing_from_index()
+        missing = self._panel_ids_missing_from_index(placements)
         if missing:
             log.info(
                 "CachedToolBox fast panel init found %d panel ids missing from index; running populator",
@@ -706,7 +706,7 @@ class CachedToolBox(ToolBox):
             )
             self._populate_once(lambda: bool(self._panel_ids_missing_from_index()))
             placements = self._index_panel_items()
-            missing = self._panel_ids_missing_from_index()
+            missing = self._panel_ids_missing_from_index(placements)
             if missing or not placements:
                 log.debug("CachedToolBox fast panel init disabled; %d panel ids still missing from index", len(missing))
                 return False
@@ -732,9 +732,11 @@ class CachedToolBox(ToolBox):
         self._tool_panel_loaded_from_index = True
         return True
 
-    def _panel_ids_missing_from_index(self) -> set[str]:
+    def _panel_ids_missing_from_index(self, placements: list[ToolPanelItem] | None = None) -> set[str]:
         assert self._tool_index is not None
-        return {p.tool_id for p in self._index_panel_items() if p.tool_id not in self._tool_index.entries}
+        if placements is None:
+            placements = self._index_panel_items()
+        return {p.tool_id for p in placements if p.tool_id not in self._tool_index.entries}
 
     def _load_indexed_panel_structure(
         self,
