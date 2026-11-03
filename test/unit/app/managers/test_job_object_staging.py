@@ -7,6 +7,7 @@ from urllib.parse import (
 )
 
 import pytest
+from sqlalchemy import event
 
 from galaxy import exceptions
 from galaxy.managers.job_object_staging import (
@@ -17,6 +18,7 @@ from galaxy.model import (
     Dataset,
     HistoryDatasetAssociation,
     Job,
+    LibraryDatasetDatasetAssociation,
     MetadataFile,
 )
 from galaxy.model.unittest_utils import GalaxyDataTestApp
@@ -152,6 +154,67 @@ def test_input_missing_from_the_object_store_is_not_found(app, manager, redirect
     with mock.patch.object(app.object_store, "get_direct_download_url", return_value="https://s3/signed"):
         with pytest.raises(exceptions.ObjectNotFound):
             manager.staged_input(**_signed(app, job, "dataset", _dataset(hda).id, redirect=redirect), head=head)
+
+
+def _stage_in_a_fresh_session(app, manager, request) -> tuple[int, set[int]]:
+    """Stage as a new web request would: the queries it takes, and the ids of the datasets it loads."""
+    app.model.session.expunge_all()
+    statements: list[str] = []
+    loaded: set[int] = set()
+
+    def record_statement(conn, cursor, statement, parameters, context, executemany):
+        statements.append(statement)
+
+    def record_load(dataset, context):
+        loaded.add(dataset.id)
+
+    engine = app.model.session.get_bind()
+    event.listen(engine, "before_cursor_execute", record_statement)
+    event.listen(Dataset, "load", record_load)
+    try:
+        manager.staged_input(**request, head=True)
+    finally:
+        event.remove(engine, "before_cursor_execute", record_statement)
+        event.remove(Dataset, "load", record_load)
+    return len(statements), loaded
+
+
+# A job's inputs can number thousands, and each of their files is staged with its own request.
+
+
+def test_staging_request_loads_only_the_input_it_is_for(app, manager):
+    hdas = [_stored_hda(app) for _ in range(5)]
+    input_id = _dataset(hdas[-1]).id
+    request = _signed(app, _running_job(app, *hdas), "dataset", input_id)
+    _, loaded = _stage_in_a_fresh_session(app, manager, request)
+    assert loaded == {input_id}
+
+
+def test_metadata_file_request_takes_as_many_queries_however_many_inputs_the_job_has(app, manager):
+    def queries(input_count):
+        hdas = [_stored_hda(app) for _ in range(input_count)]
+        indexes = [_stored_metadata_file(app, hda) for hda in hdas]
+        request = _signed(app, _running_job(app, *hdas), "metadata_file", indexes[-1].id)
+        return _stage_in_a_fresh_session(app, manager, request)[0]
+
+    assert queries(5) == queries(1)
+
+
+def test_input_from_a_library_is_served(app, manager):
+    ldda = LibraryDatasetDatasetAssociation(sa_session=app.model.session, create_dataset=True)
+    app.model.session.add(ldda)
+    app.model.session.commit()
+    assert ldda.dataset is not None
+    _store(app, ldda.dataset, CONTENT)
+    job = Job()
+    job.state = Job.states.RUNNING
+    job.add_input_library_dataset("input", ldda)
+    app.model.session.add(job)
+    app.model.session.commit()
+    staged = manager.staged_input(**_signed(app, job, "dataset", ldda.dataset.id))
+    assert staged.path is not None
+    with open(staged.path, "rb") as f:
+        assert f.read() == CONTENT
 
 
 def test_redirect_mode_answers_with_a_presigned_url(app, manager):
