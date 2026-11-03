@@ -31,7 +31,7 @@ def _home_probe_tool(probe_name: str) -> dict:
     }
 
 
-class BaseEmbeddedPulsarContainerIntegrationTestCase(integration_util.IntegrationTestCase):
+class BaseEmbeddedPulsarContainerIntegration(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
     job_config_file: str
     jobs_directory: str
@@ -81,13 +81,13 @@ class BaseEmbeddedPulsarContainerIntegrationTestCase(integration_util.Integratio
         assert home.endswith("/working")
 
 
-class TestEmbeddedSingularityPulsarIntegration(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
+class TestEmbeddedSingularityPulsarIntegration(BaseEmbeddedPulsarContainerIntegration, MulledJobTestCases):
     dataset_populator: DatasetPopulator
     job_config_file = EMBEDDED_PULSAR_JOB_CONFIG_FILE_SINGULARITY
     container_type = "singularity"
 
 
-class TestEmbeddedDockerPulsarIntegration(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
+class TestEmbeddedDockerPulsarIntegration(BaseEmbeddedPulsarContainerIntegration, MulledJobTestCases):
     dataset_populator: DatasetPopulator
     job_config_file = EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER
     container_type = "docker"
