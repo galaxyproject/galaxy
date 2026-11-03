@@ -788,11 +788,10 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         for input_extra_path in compute_environment.path_rewrites_input_extra.keys():
             # TODO: track dataset for object_Store_ref...
             extra_files = None
-            dataset = compute_environment.input_extra_files_datasets.get(input_extra_path)
-            if issue_url and dataset is not None:
-                extra_files = {
-                    name: issue_url("extra_file", dataset.id, path=name) for name in dataset.list_extra_files()
-                }
+            staged_extra_files = compute_environment.input_extra_files.get(input_extra_path)
+            if issue_url and staged_extra_files is not None:
+                dataset_id, names = staged_extra_files
+                extra_files = {name: issue_url("extra_file", dataset_id, path=name) for name in names}
                 if not extra_files:
                     # Nothing to stage, and no directory on Galaxy's disk for Pulsar to walk instead.
                     continue
@@ -1482,11 +1481,11 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         self.path_rewrites_unstructured = {}
         self.path_rewrites_input_extra = {}
         self.path_rewrites_input_metadata = {}
-        # Inputs are staged by object store identity; metadata file ids and the datasets owning extra
-        # files directories are keyed by local path.
+        # Inputs are staged by object store identity; metadata file ids, and the dataset id and file
+        # names of extra files directories, are keyed by local path.
         self.object_store_staging = pulsar_client.destination_params.get("object_store_staging")
         self.input_metadata_file_ids: dict[str, int] = {}
-        self.input_extra_files_datasets: dict[str, model.Dataset] = {}
+        self.input_extra_files: dict[str, tuple[int, list[str]]] = {}
 
         # job_wrapper.prepare is going to expunge the job backing the following
         # computations, so precalculate these paths.
@@ -1537,7 +1536,10 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         if self.object_store_staging in OBJECT_STORE_STAGING_MODES and dataset.dataset.id is not None:
             # Staged by identity: only the directory's path is needed here, not its files.
             local_extra_files_path = dataset.dataset.get_extra_files_path(sync_cache=False)
-            self.input_extra_files_datasets[local_extra_files_path] = dataset.dataset
+            if local_extra_files_path not in self.input_extra_files:
+                # Listed while the job is prepared, so a store that cannot list them fails the job with its reason.
+                names = dataset.dataset.list_extra_files()
+                self.input_extra_files[local_extra_files_path] = (dataset.dataset.id, names)
         else:
             local_extra_files_path = dataset.extra_files_path
         self.path_rewrites_input_extra[local_extra_files_path] = remote_extra_files_path_rewrite

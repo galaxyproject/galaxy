@@ -7,6 +7,7 @@ from typing import (
     Any,
     cast,
 )
+from unittest import mock
 from urllib.parse import (
     parse_qs,
     urlparse,
@@ -425,16 +426,16 @@ def _staging_job_wrapper(dataset_id=5):
     return SimpleNamespace(job_id=7, job_io=_RecordingJobIO([input_path]))
 
 
-def _staging_compute_environment(staging, metadata_file_ids=None, extra_files_datasets=None):
+def _staging_compute_environment(staging, metadata_file_ids=None, extra_files=None):
     metadata_file_ids = metadata_file_ids or {}
-    extra_files_datasets = extra_files_datasets or {}
+    extra_files = extra_files or {}
     return SimpleNamespace(
         object_store_staging=staging,
         materialized_objects={},
-        path_rewrites_input_extra={path: f"/pulsar/inputs/{os.path.basename(path)}" for path in extra_files_datasets},
+        path_rewrites_input_extra={path: f"/pulsar/inputs/{os.path.basename(path)}" for path in extra_files},
         path_rewrites_input_metadata={path: f"/pulsar/inputs/{os.path.basename(path)}" for path in metadata_file_ids},
         input_metadata_file_ids=metadata_file_ids,
-        input_extra_files_datasets=extra_files_datasets,
+        input_extra_files=extra_files,
     )
 
 
@@ -484,14 +485,11 @@ def test_input_metadata_files_are_staged_from_signed_urls():
     _assert_signed_input_url(metadata_input.url, "metadata_file", 9, redirect=False)
 
 
-def _dataset_with_extra_files(*names):
-    return SimpleNamespace(id=5, list_extra_files=lambda: list(names))
-
-
 def test_input_extra_files_are_staged_from_signed_urls():
     runner = _staging_runner()
-    dataset = _dataset_with_extra_files("Sequences", "sub/deep.txt")
-    compute_environment = _staging_compute_environment("stream", extra_files_datasets={EXTRA_FILES_CACHE_PATH: dataset})
+    compute_environment = _staging_compute_environment(
+        "stream", extra_files={EXTRA_FILES_CACHE_PATH: (5, ["Sequences", "sub/deep.txt"])}
+    )
     client_inputs = runner._client_inputs(_staging_job_wrapper(), compute_environment, {})
     extra_files_input = next(i for i in client_inputs if i.path == EXTRA_FILES_CACHE_PATH)
     assert list(extra_files_input.extra_files) == ["Sequences", "sub/deep.txt"]
@@ -502,9 +500,7 @@ def test_input_extra_files_are_staged_from_signed_urls():
 def test_input_without_extra_files_stages_no_extra_files_directory():
     # There is no directory on Galaxy's disk for Pulsar to fall back to.
     runner = _staging_runner()
-    compute_environment = _staging_compute_environment(
-        "stream", extra_files_datasets={EXTRA_FILES_CACHE_PATH: _dataset_with_extra_files()}
-    )
+    compute_environment = _staging_compute_environment("stream", extra_files={EXTRA_FILES_CACHE_PATH: (5, [])})
     client_inputs = runner._client_inputs(_staging_job_wrapper(), compute_environment, {})
     assert [i.path for i in client_inputs] == [INPUT_CACHE_PATH]
 
@@ -537,7 +533,7 @@ def _staging_compute_environment_for_rewrites(staging):
     compute_environment.path_rewrites_input_metadata = {}
     compute_environment.input_metadata_file_ids = {}
     compute_environment.path_rewrites_input_extra = {}
-    compute_environment.input_extra_files_datasets = {}
+    compute_environment.input_extra_files = {}
     return compute_environment
 
 
@@ -660,13 +656,53 @@ def test_input_metadata_rewrite_stages_a_regenerated_metadata_file_by_path(tmp_p
     assert compute_environment.input_metadata_file_ids == {}
 
 
-def test_input_extra_files_rewrite_records_which_dataset_the_directory_belongs_to():
-    app = GalaxyDataTestApp()
+def _composite_hda(app, tmp_path, *names) -> HistoryDatasetAssociation:
     hda = HistoryDatasetAssociation(extension="velvet", create_dataset=True, sa_session=app.model.session)
     app.model.session.add(hda)
     app.model.session.commit()
+    dataset = hda.dataset
+    assert dataset is not None
+    source = tmp_path / "extra_file"
+    source.write_text("extra file")
+    for name in names:
+        app.object_store.update_from_file(
+            dataset, extra_dir=dataset.extra_files_path_name, alt_name=name, file_name=str(source), create=True
+        )
+    return hda
+
+
+def test_input_extra_files_rewrite_lists_the_files_to_stage_by_identity(tmp_path):
+    app = GalaxyDataTestApp()
+    hda = _composite_hda(app, tmp_path, "Sequences", "sub/deep.txt")
 
     compute_environment = _staging_compute_environment_for_rewrites("stream")
     remote_path = compute_environment.input_extra_files_rewrite(hda)
     assert remote_path == "/pulsar/inputs/dataset_5_files"
-    assert compute_environment.input_extra_files_datasets == {hda.extra_files_path: hda.dataset}
+    assert hda.dataset is not None
+    assert compute_environment.input_extra_files == {
+        hda.extra_files_path: (hda.dataset.id, ["Sequences", "sub/deep.txt"])
+    }
+
+
+def test_input_extra_files_are_listed_once_however_often_the_tool_reads_their_path(tmp_path):
+    # Each listing is a remote call on a cloud store.
+    app = GalaxyDataTestApp()
+    hda = _composite_hda(app, tmp_path, "Sequences")
+
+    compute_environment = _staging_compute_environment_for_rewrites("stream")
+    with mock.patch.object(app.object_store, "list_files", wraps=app.object_store.list_files) as list_files:
+        compute_environment.input_extra_files_rewrite(hda)
+        compute_environment.input_extra_files_rewrite(hda)
+    list_files.assert_called_once()
+
+
+def test_input_extra_files_rewrite_fails_for_a_store_that_cannot_list_them(tmp_path):
+    # Raised while the job is prepared, so the job fails with the store's message.
+    app = GalaxyDataTestApp()
+    hda = _composite_hda(app, tmp_path)
+    cannot_list = NotImplementedError("IRODSObjectStore cannot list the files in a directory")
+
+    compute_environment = _staging_compute_environment_for_rewrites("stream")
+    with mock.patch.object(app.object_store, "list_files", side_effect=cannot_list):
+        with pytest.raises(NotImplementedError, match="IRODSObjectStore cannot list"):
+            compute_environment.input_extra_files_rewrite(hda)

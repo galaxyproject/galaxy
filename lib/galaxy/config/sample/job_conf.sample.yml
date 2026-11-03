@@ -939,7 +939,8 @@ execution:
        # and a default_file_action of 'remote_transfer' or
        # 'remote_transfer_tus', the actions that fetch inputs from these URLs.
        # Extra files of composite inputs are listed in the object store, which
-       # irods, pithos, rucio and onedata stores cannot do.
+       # irods, pithos, rucio and onedata stores cannot do, so a job reading
+       # them from such a store fails, giving the store as the reason.
        # Each input's URL is signed in its query string and works until the
        # job finishes, and a presigned URL for 15 minutes, or the store's
        # direct_download_expires_in if shorter, so keep query strings out of
