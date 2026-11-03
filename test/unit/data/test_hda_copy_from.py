@@ -66,15 +66,19 @@ def _new_hda(session: Session, history: model.History, state: str) -> model.Hist
     return hda
 
 
-@pytest.fixture
-def queued_and_cached(engine: Engine) -> tuple[int, int]:
+def _source_and_cached(engine: Engine, source_state: str) -> tuple[int, int]:
     with Session(engine) as session:
         history = model.History(name="job cache copy race")
         session.add(history)
-        queued = _new_hda(session, history, model.Dataset.states.QUEUED)
+        source = _new_hda(session, history, source_state)
         cached = _new_hda(session, history, model.Dataset.states.OK)
         session.commit()
-        return queued.id, cached.id
+        return source.id, cached.id
+
+
+@pytest.fixture
+def queued_and_cached(engine: Engine) -> tuple[int, int]:
+    return _source_and_cached(engine, model.Dataset.states.QUEUED)
 
 
 def _wait_until_blocked(engine: Engine, thread: threading.Thread) -> None:
@@ -160,13 +164,14 @@ def test_copy_committed_after_swap_starts_follows_swap(engine, queued_and_cached
 
 
 @skip_unless_postgres
-def test_copy_of_stale_source_after_swap_locked_follows_swap(engine, queued_and_cached):
-    queued_id, cached_id = queued_and_cached
+@pytest.mark.parametrize("source_state", [model.Dataset.states.QUEUED, model.Dataset.states.PAUSED])
+def test_copy_of_stale_source_after_swap_locked_follows_swap(engine, source_state):
+    queued_id, cached_id = _source_and_cached(engine, source_state)
     copy_ids: list[int] = []
     with Session(engine) as copier:
         stale_source = copier.get(model.HistoryDatasetAssociation, queued_id)
         assert stale_source
-        assert stale_source.state == model.Dataset.states.QUEUED
+        assert stale_source.state == source_state
         with Session(engine) as runner:
             output = runner.get(model.HistoryDatasetAssociation, queued_id)
             cached = runner.get(model.HistoryDatasetAssociation, cached_id)
