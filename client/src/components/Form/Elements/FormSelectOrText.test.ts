@@ -73,6 +73,23 @@ describe("FormSelectOrText", () => {
         expect((textField(wrapper).element as HTMLInputElement).value).toBe("banana");
     });
 
+    it("types other text into a GFormInput named after the other option", () => {
+        const wrapper = mount(FormSelectOrText as object, {
+            props: {
+                id: "fruit",
+                value: "banana",
+                options: OPTIONS,
+                otherLabel: "Other fruit...",
+                otherPlaceholder: "Fruit name",
+            },
+            global: localVue,
+        });
+        const field = textField(wrapper);
+        expect(field.classes()).toContain("g-form-input");
+        expect(field.attributes("aria-label")).toBe("Other fruit...");
+        expect(field.attributes("placeholder")).toBe("Fruit name");
+    });
+
     it("shows an empty value the select doesn't list in the text field", () => {
         const wrapper = mountWithValue("");
         expect(selectedLabel(wrapper)).toBe("Other fruit...");
@@ -103,7 +120,7 @@ describe("FormSelectOrText", () => {
         await pick(wrapper, "Null section");
         await pick(wrapper, "Other section");
         expect(emitted(wrapper)).toEqual(["__null__", "__other__"]);
-        expect(wrapper.find("input.form-control").exists()).toBe(false);
+        expect(wrapper.find("input.g-form-input").exists()).toBe(false);
     });
 
     it("keeps the value when the selected option is picked again", async () => {
@@ -177,17 +194,17 @@ describe("FormSelectOrText", () => {
         const wrapper = mountWithValue(null);
         await pick(wrapper, "Other fruit...");
         expect(lastAlert(wrapper)).toBe("Enter a value.");
-        expect(textField(wrapper).classes()).not.toContain("is-invalid");
+        expect(textField(wrapper).classes()).not.toContain("g-invalid");
 
         await type(wrapper, "kiwi");
         await type(wrapper, "");
-        expect(textField(wrapper).classes()).toContain("is-invalid");
+        expect(textField(wrapper).classes()).toContain("g-invalid");
     });
 
     it("marks a saved value that fails validation invalid", () => {
         const wrapper = mountWithValue("blood orange", (text) => (text.includes(" ") ? "No spaces" : undefined));
         expect(lastAlert(wrapper)).toBe("No spaces");
-        expect(textField(wrapper).classes()).toContain("is-invalid");
+        expect(textField(wrapper).classes()).toContain("g-invalid");
     });
 
     it("doesn't emit text that fails validation and alerts until it is fixed", async () => {
@@ -195,7 +212,7 @@ describe("FormSelectOrText", () => {
         await type(wrapper, "blood orange");
         expect(emitted(wrapper)).toEqual([]);
         expect(lastAlert(wrapper)).toBe("No spaces");
-        expect(textField(wrapper).classes()).toContain("is-invalid");
+        expect(textField(wrapper).classes()).toContain("g-invalid");
 
         await type(wrapper, "orange");
         expect(emitted(wrapper)).toEqual(["orange"]);
