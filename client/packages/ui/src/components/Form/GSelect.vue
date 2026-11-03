@@ -121,12 +121,21 @@ const selected = computed({
         cursor: not-allowed;
     }
 
+    // The ring takes the state colour, like GFormInput's
     &.g-invalid {
         border-color: var(--color-red-600, #e31a1e);
+
+        &:focus-visible {
+            outline-color: var(--color-red-600, #e31a1e);
+        }
     }
 
     &.g-valid {
         border-color: var(--color-green-700, #006f50);
+
+        &:focus-visible {
+            outline-color: var(--color-green-700, #006f50);
+        }
     }
 
     &.g-small {
