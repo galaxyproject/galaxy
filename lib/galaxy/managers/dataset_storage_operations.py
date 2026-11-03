@@ -57,6 +57,7 @@ from galaxy.schema.storage_operations import (
     StorageOperationSelectionCounts,
 )
 from galaxy.security import RBACAgent
+from galaxy.util import chunk_iterable
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.hash_util import (
     HashFunctionNameEnum,
@@ -397,6 +398,12 @@ class DatasetStorageOperationManager:
             )
             .returning(DatasetStorageOperationRun.id)
         ).all()
+        # Delete the runs' items explicitly: SQLite ignores the cascade unless foreign keys are enabled, and may
+        # reuse a deleted run's id for a new run, which would then show the old items.
+        for run_ids in chunk_iterable(deleted_run_ids):
+            sa_session.execute(
+                delete(DatasetStorageOperationRunItem).where(DatasetStorageOperationRunItem.run_id.in_(run_ids))
+            )
         deleted_count = len(deleted_run_ids)
         sa_session.commit()
         return deleted_count
