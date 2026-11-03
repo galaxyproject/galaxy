@@ -1,7 +1,17 @@
+from unittest.mock import Mock
+
 import pytest
 
-from galaxy.job_execution.actions.post import RenameDatasetAction
-from galaxy.model import PostJobAction
+from galaxy.datatypes.registry import example_datatype_registry_for_sample
+from galaxy.job_execution.actions.post import (
+    ChangeDatatypeAction,
+    RenameDatasetAction,
+)
+from galaxy.model import (
+    Job,
+    PostJobAction,
+)
+from galaxy.util.bunch import Bunch
 
 
 @pytest.mark.parametrize(
@@ -55,3 +65,24 @@ def test_rename_input_references(template, input_names, expected):
 def test_rename_applies_replacement_dict_after_input_references():
     action = PostJobAction("RenameDatasetAction", action_arguments={"newname": "#{a} ${sample}"})
     assert RenameDatasetAction._gen_new_name(action, {"a": "reads"}, {"sample": "S1"}) == "reads S1"
+
+
+@pytest.mark.parametrize(
+    "current,newtype,expected",
+    [
+        ("tabular", "txt", "txt"),
+        ("fastqsanger.c4gh", "c4gh", "c4gh"),
+        ("fastqsanger.c4gh", "tabular", "tabular.c4gh"),
+        ("fastqsanger.c4gh", "tabular.c4gh", "tabular.c4gh"),
+        ("fastqsanger.c4gh", "not_a_datatype", "fastqsanger.c4gh"),
+        ("tabular", "tabular.c4gh", "tabular"),
+    ],
+)
+def test_change_datatype_keeps_encryption(current, newtype, expected):
+    registry = example_datatype_registry_for_sample(crypt4gh_enabled=True)
+    dataset = Mock(extension=current, datatype=registry.get_datatype_by_extension(current))
+    dataset.has_data.return_value = False
+    job = Bunch(state=Job.states.OK, states=Job.states, output_datasets=[Bunch(name="out_file1", dataset=dataset)])
+    action = PostJobAction("ChangeDatatypeAction", output_name="out_file1", action_arguments={"newtype": newtype})
+    ChangeDatatypeAction.execute(Bunch(datatypes_registry=registry), None, action, job)
+    assert dataset.extension == expected

@@ -1,0 +1,13 @@
+<!-- Test tool for Crypt4GH support: an output with a fixed datatype, validated with it on request. -->
+<tool id="crypt4gh_copy_as_interval" name="crypt4gh_copy_as_interval" version="1.0.0">
+    <description>copies its input to an interval output</description>
+    <command><![CDATA[
+cat '$input1' > '$output1'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" format="txt" label="Input"/>
+    </inputs>
+    <outputs>
+        <data name="output1" format="interval"/>
+    </outputs>
+</tool>

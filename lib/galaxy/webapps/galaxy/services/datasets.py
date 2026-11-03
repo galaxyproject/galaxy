@@ -32,6 +32,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.dataset_protection import DatasetProtectionManager
 from galaxy.managers.datasets import (
     DatasetAssociationManager,
     DatasetManager,
@@ -59,6 +60,10 @@ from galaxy.objectstore.badges import BadgeDict
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
+)
+from galaxy.schema.dataset_protection import (
+    Crypt4GHGrantPayload,
+    DatasetProtectionStatus,
 )
 from galaxy.schema.drs import (
     AccessMethod,
@@ -329,6 +334,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         history_contents_filters: HistoryContentsFilters,
         data_provider_registry: DataProviderRegistry,
         dataset_manager: DatasetManager,
+        dataset_protection_manager: DatasetProtectionManager,
     ):
         super().__init__(security)
         self.history_manager = history_manager
@@ -340,6 +346,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self.history_contents_filters = history_contents_filters
         self.data_provider_registry = data_provider_registry
         self.dataset_manager = dataset_manager
+        self.dataset_protection_manager = dataset_protection_manager
 
     @property
     def serializer_by_type(self) -> dict[str, ModelSerializer]:
@@ -631,6 +638,32 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset = dataset_manager.get_accessible(dataset_id, trans.user)
         dataset_manager.update_permissions(trans, dataset, **payload_dict)
         return dataset_manager.serialize_dataset_association_roles(dataset)
+
+    def show_protection(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: DecodedDatabaseIdField,
+        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+    ) -> DatasetProtectionStatus:
+        """
+        Whether the dataset is protected and whether the current user can compute on it.
+        """
+        dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
+        return self.dataset_protection_manager.grant_status(trans.user, dataset_instance)
+
+    def update_protection(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: DecodedDatabaseIdField,
+        payload: Crypt4GHGrantPayload,
+        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+    ) -> DatasetProtectionStatus:
+        """
+        Register the current user's grant to compute on a protected dataset.
+        """
+        self.check_user_is_authenticated(trans)
+        dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
+        return self.dataset_protection_manager.register_user_grant(trans.user, dataset_instance, payload)
 
     def extra_files(
         self,

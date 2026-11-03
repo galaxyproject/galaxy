@@ -31,6 +31,10 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
+from galaxy.schema.dataset_protection import (
+    Crypt4GHGrantPayload,
+    DatasetProtectionStatus,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHDA,
@@ -264,6 +268,36 @@ class FastAPIDatasets:
         """Set permissions of the given history dataset to the given role ids."""
         update_payload = normalize_permission_payload(payload)
         return self.service.update_permissions(trans, dataset_id, update_payload)
+
+    @router.get(
+        "/api/datasets/{dataset_id}/protection",
+        summary="Show whether the dataset is protected and whether the current user can compute on it.",
+    )
+    def show_protection(
+        self,
+        dataset_id: HistoryDatasetIDPathParam,
+        trans=DependsOnTrans,
+        hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
+    ) -> DatasetProtectionStatus:
+        return self.service.show_protection(trans, dataset_id, hda_ldda)
+
+    @router.put(
+        "/api/datasets/{dataset_id}/protection",
+        summary="Register the current user's grant to compute on a protected dataset.",
+    )
+    def update_protection(
+        self,
+        dataset_id: HistoryDatasetIDPathParam,
+        payload: Crypt4GHGrantPayload,
+        trans=DependsOnTrans,
+        hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
+    ) -> DatasetProtectionStatus:
+        """
+        The grant is bound to the current user and the underlying dataset. It is never
+        returned by the API and does not travel with copies of the dataset, so sharing a
+        protected dataset does not share the ability to compute on it.
+        """
+        return self.service.update_protection(trans, dataset_id, payload, hda_ldda)
 
     @router.get(
         "/api/histories/{history_id}/contents/{history_content_id}/extra_files",

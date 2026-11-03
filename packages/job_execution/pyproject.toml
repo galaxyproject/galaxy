@@ -44,13 +44,19 @@ classifiers = [
 keywords = ["Galaxy"]
 
 [project.optional-dependencies]
+crypt4gh = [
+    "crypt4gh",
+]
 test = [
+    "crypt4gh",
+    "galaxy-test-base",
     "pytest",
 ]
 
 [project.scripts]
 galaxy-set-metadata = "galaxy.metadata.set_metadata:set_metadata"
 galaxy-container-monitor = "galaxy.job_execution.container_monitor:main"
+galaxy-protected-stage = "galaxy.job_execution.protection.stage:main"
 
 [project.urls]
 Homepage = "https://github.com/galaxyproject/galaxy"
