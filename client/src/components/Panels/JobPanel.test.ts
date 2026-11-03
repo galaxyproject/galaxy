@@ -127,6 +127,63 @@ describe("JobPanel", () => {
         expect(wrapper.text()).toContain("cat1");
     });
 
+    it.each(["running", "finishing"] as const)(
+        "updates the state of a listed %s job via the periodic refresh",
+        async (state) => {
+            vi.useFakeTimers();
+            try {
+                let resolved = false;
+                server.use(
+                    http.get("/api/jobs", ({ response }) => {
+                        return response(200).json([buildJob({ id: "activeJob", state: resolved ? "ok" : state })], {
+                            headers: { total_matches: "1" },
+                        });
+                    }),
+                );
+
+                const wrapper = mountJobPanel();
+                await flushPromises();
+                await scrollOnce();
+
+                expect(wrapper.find("#g-card-job-activeJob .job-state-badge").text()).toContain(state);
+
+                resolved = true;
+                await vi.advanceTimersByTimeAsync(3000);
+                await flushPromises();
+
+                expect(wrapper.find("#g-card-job-activeJob .job-state-badge").text()).toContain("ok");
+            } finally {
+                vi.useRealTimers();
+            }
+        },
+    );
+
+    it("refreshes new and changed jobs in a single request instead of a per-job poll", async () => {
+        const singleJobRequests: string[] = [];
+        const jobsRequests: URLSearchParams[] = [];
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ params, response }) => {
+                singleJobRequests.push(params.job_id as string);
+                return response(200).json(buildJob({ id: params.job_id as string, state: "ok" }));
+            }),
+            http.get("/api/jobs", ({ request, response }) => {
+                jobsRequests.push(new URL(request.url).searchParams);
+                return response(200).json(
+                    [buildJob({ id: "job1", state: "running" }), buildJob({ id: "job2", state: "running" })],
+                    { headers: { total_matches: "2" } },
+                );
+            }),
+        );
+
+        mountJobPanel();
+        await flushPromises();
+        await scrollOnce();
+
+        // No individual job requests: state updates ride the same cursor-bounded list request.
+        expect(singleJobRequests).toEqual([]);
+        expect(jobsRequests.length).toBeGreaterThan(0);
+    });
+
     it("refetches in name mode when the name toggle flips with filter text present", async () => {
         const requests: URLSearchParams[] = [];
         server.use(
@@ -151,7 +208,7 @@ describe("JobPanel", () => {
         expect(requests.at(-1)?.getAll("tool_id")).toEqual(["cat1"]);
     });
 
-    it("pages by create_time and excludes hidden-tool jobs server-side", async () => {
+    it("pages by update_time and excludes hidden-tool jobs server-side", async () => {
         const requests: URLSearchParams[] = [];
         server.use(
             http.get("/api/jobs", ({ request, response }) => {
@@ -164,10 +221,41 @@ describe("JobPanel", () => {
         await flushPromises();
         await scrollOnce();
 
-        // `create_time`: a job can't skip past the offset when it changes state mid-scroll.
-        expect(requests.at(-1)?.get("order_by")).toBe("create_time");
+        // `update_time`: a cursor on update_time means a job that changes state mid-scroll just
+        // moves to the top instead of being skipped, unlike offset paging.
+        expect(requests.at(-1)?.get("order_by")).toBe("update_time");
         // `exclude_tool_id`: hidden-tool jobs are excluded server-side, not fetched and dropped.
         expect(requests.at(-1)?.getAll("exclude_tool_id")).toEqual(["__DATA_FETCH__", "upload1"]);
+    });
+
+    it("pages older jobs via a date_range_max cursor instead of an offset", async () => {
+        const requests: URLSearchParams[] = [];
+        server.use(
+            http.get("/api/jobs", ({ request, response }) => {
+                const url = new URL(request.url);
+                requests.push(url.searchParams);
+                const offset = requests.length === 1 ? 0 : 20;
+                const jobs = Array.from({ length: 20 }, (_, i) =>
+                    buildJob({
+                        id: `job${offset + i}`,
+                        update_time: new Date(Date.UTC(2024, 0, 1) - (offset + i) * 60_000).toISOString(),
+                    }),
+                );
+                return response(200).json(jobs, { headers: { total_matches: "40" } });
+            }),
+        );
+
+        mountJobPanel();
+        await flushPromises();
+        await scrollOnce(); // first page
+        await scrollOnce(); // second page, should use the cursor from the first
+
+        expect(requests).toHaveLength(2);
+        expect(requests[0]?.has("date_range_max")).toBe(false);
+        // The cursor is the oldest update_time loaded so far (job19's), not an offset.
+        expect(requests[1]?.get("date_range_max")).toBe(new Date(Date.UTC(2024, 0, 1) - 19 * 60_000).toISOString());
+        // offset always stays 0; paging further back is driven by the cursor, not an incrementing offset.
+        expect(requests[1]?.get("offset")).toBe("0");
     });
 
     it("sets and clears the status quick-filter via JobStatusFilter", async () => {
@@ -307,20 +395,29 @@ describe("JobPanel", () => {
     it("only requests the total count on the first page, keeping it stable on later pages", async () => {
         /** Tracks the values of the `include_total_count` query parameter for each request. */
         const includeTotalCountValues: (string | null)[] = [];
+        const PAGE_SIZE = 20;
+        const TOTAL_JOBS = PAGE_SIZE + 1;
         server.use(
             http.get("/api/jobs", ({ request, response }) => {
                 const url = new URL(request.url);
                 includeTotalCountValues.push(url.searchParams.get("include_total_count"));
-                const offset = Number(url.searchParams.get("offset") ?? "0");
-                const jobs = offset === 0 ? [buildJob({ id: "job1" })] : [buildJob({ id: "job2" })];
-                return response(200).json(jobs, offset === 0 ? { headers: { total_matches: "2" } } : {});
+                const cursor = url.searchParams.get("date_range_max");
+                const isFirstPage = cursor === null;
+                const count = isFirstPage ? PAGE_SIZE : TOTAL_JOBS - PAGE_SIZE;
+                const jobs = Array.from({ length: count }, (_, i) =>
+                    buildJob({
+                        id: `job${i}`,
+                        update_time: new Date(Date.UTC(2024, 0, 1) - i * 60_000).toISOString(),
+                    }),
+                );
+                return response(200).json(jobs, isFirstPage ? { headers: { total_matches: `${TOTAL_JOBS}` } } : {});
             }),
         );
 
         const wrapper = mountJobPanel();
         await flushPromises();
         await scrollOnce(); // completes the first page
-        await scrollOnce(); // triggers and completes the second page
+        await scrollOnce(); // triggers and completes the second, shorter page
 
         expect(includeTotalCountValues).toEqual(["true", "false"]);
         expect(wrapper.text()).toContain("All jobs loaded");
@@ -399,7 +496,7 @@ describe("JobPanel", () => {
         expect(wrapper.find("#g-card-job-job1").exists()).toBe(false);
     });
 
-    it("picks up a new job matching the active filter via periodic re-check", async () => {
+    it("picks up a new job matching the active filter via periodic refresh", async () => {
         vi.useFakeTimers();
         try {
             let newJobVisible = false;
@@ -414,6 +511,7 @@ describe("JobPanel", () => {
             await flushPromises();
             wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "state:queued");
             await flushPromises();
+            await scrollOnce();
 
             expect(wrapper.find("#g-card-job-newJob").exists()).toBe(false);
 
@@ -565,19 +663,21 @@ describe("JobPanel", () => {
     it("keeps showing more jobs once scrolling has loaded past jobStore's cache cap", async () => {
         // Pages through a pool larger than MAX_CACHED_JOBS, so later pages' `updateJob` calls
         // would evict earlier pages' jobs from the store if the panel didn't retain them
-        // (see `addCurrentJob`).
+        // (see `addCurrentJob`). Each job has a distinct update_time, one minute apart, and the
+        // mock filters by date_range_max the way a real cursor-bounded backend would (inclusive,
+        // so the cursor job itself repeats on the next page and is deduped client-side).
         const PAGE_SIZE = 20;
         const TOTAL_JOBS = MAX_CACHED_JOBS + PAGE_SIZE;
+        const updateTimeFor = (i: number) => new Date(Date.UTC(2024, 0, 1) - i * 60_000).toISOString();
         server.use(
             http.get("/api/jobs", ({ request, response }) => {
                 const url = new URL(request.url);
-                const offset = Number(url.searchParams.get("offset") ?? "0");
                 const limit = Number(url.searchParams.get("limit") ?? `${PAGE_SIZE}`);
-                const jobs = Array.from({ length: Math.min(limit, TOTAL_JOBS - offset) }, (_, i) =>
-                    buildJob({
-                        id: `job${offset + i}`,
-                        update_time: new Date(Date.UTC(2024, 0, 1) - (offset + i) * 60_000).toISOString(),
-                    }),
+                const cursor = url.searchParams.get("date_range_max");
+                const startIndex =
+                    cursor === null ? 0 : Math.round((Date.UTC(2024, 0, 1) - Date.parse(cursor)) / 60_000);
+                const jobs = Array.from({ length: Math.min(limit, TOTAL_JOBS - startIndex) }, (_, i) =>
+                    buildJob({ id: `job${startIndex + i}`, update_time: updateTimeFor(startIndex + i) }),
                 );
                 return response(200).json(jobs, { headers: { total_matches: `${TOTAL_JOBS}` } });
             }),
@@ -586,8 +686,9 @@ describe("JobPanel", () => {
         const wrapper = mountJobPanel();
         await flushPromises();
 
-        // Scroll enough times to load every job in the pool.
-        for (let i = 0; i < TOTAL_JOBS / PAGE_SIZE; i++) {
+        // Each page after the first renders one duplicate (the inclusive cursor boundary) before
+        // ScrollList's own dedup via item-key settles it, so scroll generously past the exact count.
+        for (let i = 0; i < Math.ceil(TOTAL_JOBS / (PAGE_SIZE - 1)) + 1; i++) {
             await scrollOnce();
         }
 

@@ -32,6 +32,8 @@ import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
 const HIDDEN_TOOL_IDS = ["__DATA_FETCH__", "upload1"];
 const FETCH_LIMIT = 20;
+/** Time overlap in seconds for refreshing jobs to account for clock differences. */
+const REFRESH_OVERLAP_SECONDS = 5;
 
 interface Props {
     inPanel?: boolean;
@@ -150,7 +152,7 @@ function stopRetainingCurrentJobs() {
     unretainJobById.clear();
 }
 
-/** Bumped on every filter change, so pages requested under an earlier filter can be dropped. */
+/** Bumped on every filter change, so a load/refresh in flight under an earlier filter can be dropped. */
 let filterGeneration = 0;
 
 watch(filterKey, () => {
@@ -159,6 +161,9 @@ watch(filterKey, () => {
     currentJobIds.value = new Set();
     totalJobCount.value = undefined;
     updateTimeMsCache.clear();
+    oldestLoaded = undefined;
+    newestSeen = undefined;
+    hasLoadedOnce = false;
 });
 
 watch(
@@ -257,51 +262,116 @@ function buildFetchExtraProps(userId: string, includeTotalCount: boolean): JobFe
     };
 }
 
-/** Flag indicating whether this is the first check for new matching jobs. */
-let isFirstCheck = true;
+/**
+ * The oldest `update_time` loaded so far, i.e. the cursor for paging further back in `loadJobs`.
+ * `undefined` until the first page has loaded.
+ */
+let oldestLoaded: string | undefined;
 
 /**
- * Periodically rechecks the first page so a job that starts matching the current filter, or a
- * brand new job no other view has touched, is found even though it was never fetched into
- * `currentJobIds`.
+ * The newest `update_time` seen so far, i.e. the cursor `refreshChangedJobs` starts from.
+ * `undefined` until a loaded page has actually contained a job; an empty first page (no jobs match
+ * yet) leaves this `undefined` even though loading has happened, so `hasLoadedOnce` below is what
+ * actually gates the refresh timer, not this.
  */
-async function checkForNewMatchingJobs() {
-    if (isFirstCheck) {
-        isFirstCheck = false;
+let newestSeen: string | undefined;
+
+/**
+ * Whether `loadJobs` has completed at least once for the current filter, regardless of whether it
+ * returned any jobs.
+ */
+let hasLoadedOnce = false;
+
+/** Updates `oldestLoaded`/`newestSeen` from a batch of jobs just fetched. */
+function trackBounds(jobs: JobBaseModel[]) {
+    for (const job of jobs) {
+        if (oldestLoaded === undefined || job.update_time < oldestLoaded) {
+            oldestLoaded = job.update_time;
+        }
+        if (newestSeen === undefined || job.update_time > newestSeen) {
+            newestSeen = job.update_time;
+        }
+    }
+}
+
+/**
+ * Re-fetches jobs updated since the last-seen cursor, picking up both new jobs and state changes
+ * on existing ones in a single, usually-empty query.
+ */
+async function refreshChangedJobs() {
+    if (!hasLoadedOnce) {
+        // The initial loadJobs call hasn't completed yet; it covers this moment on its own.
         return;
     }
     if (!currentUser.value || currentUser.value.isAnonymous) {
         return;
     }
+    const requestGeneration = filterGeneration;
     let extraProps: JobFetchExtraParams;
     try {
-        extraProps = buildFetchExtraProps(currentUser.value.id, false);
+        // state is left out so a job that just left the filtered state (e.g. running -> ok under
+        // "Active") still gets refetched here to update its card. currentJobMatcher still drops it
+        // from the visible list client-side if it no longer matches.
+        const { state: _state, ...rest } = buildFetchExtraProps(currentUser.value.id, false);
+        extraProps = rest;
     } catch {
         // Invalid filter text (e.g. mid-edit); loadJobs's own in-flight attempt already reports
         // this, so skip this tick silently instead of re-warning on every poll until it's valid again.
         return;
     }
-    const [data] = await fetchJobs(0, FETCH_LIMIT, extraProps, "create_time");
+
+    // No jobs loaded yet for this filter (an empty first page): run the same query again rather
+    // than bounding by a cursor that doesn't exist yet.
+    if (newestSeen !== undefined) {
+        const refreshFrom = new Date(
+            new Date(`${newestSeen}Z`).getTime() - REFRESH_OVERLAP_SECONDS * 1000,
+        ).toISOString();
+        // Take the tighter (later) of the refresh cursor and any user-entered update_time_gt bound.
+        if (!extraProps.date_range_min || refreshFrom > extraProps.date_range_min) {
+            extraProps.date_range_min = refreshFrom;
+        }
+    }
+
+    const [data] = await fetchJobs(0, FETCH_LIMIT, extraProps);
+    if (requestGeneration !== filterGeneration) {
+        // Filters changed while this was in flight; belongs to the discarded generation.
+        return;
+    }
+
+    if (data.length === FETCH_LIMIT) {
+        // More changed than one page can represent; reset and reload rather than merge a possibly
+        // incomplete picture. The filter hasn't changed, so nothing else re-triggers loadJobs here.
+        stopRetainingCurrentJobs();
+        currentJobIds.value = new Set();
+        totalJobCount.value = undefined;
+        oldestLoaded = undefined;
+        newestSeen = undefined;
+        hasLoadedOnce = false;
+        await loadJobs(0, FETCH_LIMIT);
+        return;
+    }
     for (const item of data) {
         addCurrentJob(item.id);
         jobStore.updateJob(item.id, item);
     }
+    trackBounds(data);
 }
 
-const newJobsWatcher = useResourceWatcher(checkForNewMatchingJobs);
-newJobsWatcher.startWatchingResource();
+const refreshWatcher = useResourceWatcher(refreshChangedJobs);
+refreshWatcher.startWatchingResource();
 
 onUnmounted(() => {
     stopRetainingCurrentJobs();
-    newJobsWatcher.dispose();
+    refreshWatcher.dispose();
 });
 
-async function loadJobs(offset: number, limit: number) {
+async function loadJobs(_offset: number, limit: number) {
     if (!currentUser.value || currentUser.value.isAnonymous) {
         return { items: [], total: 0 };
     }
     const requestGeneration = filterGeneration;
     const userId = currentUser.value.id;
+    const isFirstPage = !hasLoadedOnce;
 
     // Set before anything that can throw (loadTools, buildFetchExtraProps), so a failure here
     // still goes through the same generation-aware clearing below instead of leaving a stale
@@ -314,8 +384,12 @@ async function loadJobs(offset: number, limit: number) {
             await loadTools();
         }
         // Only the first page needs the count; it doesn't change page to page under the same filters.
-        const extraProps = buildFetchExtraProps(userId, offset === 0);
-        [data, totalMatches] = await fetchJobs(offset, limit, extraProps, "create_time");
+        const extraProps = buildFetchExtraProps(userId, isFirstPage);
+        // Take the tighter (earlier) of the paging cursor and any user-entered update_time_lt bound.
+        if (oldestLoaded !== undefined && (!extraProps.date_range_max || oldestLoaded < extraProps.date_range_max)) {
+            extraProps.date_range_max = oldestLoaded;
+        }
+        [data, totalMatches] = await fetchJobs(0, limit, extraProps);
     } finally {
         // A discarded page's own cleanup must not clear the spinner out from under a newer,
         // still-in-flight request for the current filter.
@@ -332,12 +406,14 @@ async function loadJobs(offset: number, limit: number) {
         addCurrentJob(item.id);
         jobStore.updateJob(item.id, item);
     }
+    trackBounds(data);
+    hasLoadedOnce = true;
 
-    if (offset === 0) {
+    if (isFirstPage) {
         totalJobCount.value = totalMatches;
     }
-    // Nothing left to fetch once this page reaches the backend total, so adjust the total count accordingly.
-    if (offset + data.length >= (totalJobCount.value ?? Infinity)) {
+    // A page shorter than requested means nothing older is left to page to.
+    if (data.length < limit) {
         totalJobCount.value = currentSortedJobs.value.length;
     }
     return { items: currentSortedJobs.value, total: totalJobCount.value ?? 0 };

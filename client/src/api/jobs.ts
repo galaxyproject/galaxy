@@ -29,7 +29,7 @@ export type JobMessage =
     | components["schemas"]["UnknownDatatypeJobMessage"]
     | components["schemas"]["RuntimeEnvironmentWarningJobMessage"];
 
-export type JobFetchExtraParams = Omit<JobsQueryParams, "limit" | "offset" | "order_by">;
+export type JobFetchExtraParams = Omit<NonNullable<JobsQueryParams>, "limit" | "offset" | "order_by">;
 
 export const NON_TERMINAL_STATES = [
     "new",
