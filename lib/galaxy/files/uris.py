@@ -3,6 +3,7 @@ import logging
 import os
 import socket
 import tempfile
+import urllib.request
 from typing import Optional
 from urllib.parse import (
     unquote,
@@ -216,3 +217,14 @@ def validate_non_local(
                 # Otherwise, we deny access.
                 raise ConfigDoesNotAllowException("Access to this address in not permitted by server configuration")
     return url
+
+
+class ValidatingRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """A urllib redirect handler that runs validate_non_local on each redirect target before following it."""
+
+    def __init__(self, ip_allowlist: list[IpAllowedListEntryT]):
+        self.ip_allowlist = ip_allowlist
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        validate_non_local(newurl, self.ip_allowlist)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)

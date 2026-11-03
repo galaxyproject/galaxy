@@ -12,7 +12,10 @@ from galaxy.files.models import (
     BaseFileSourceTemplateConfiguration,
     FilesSourceRuntimeContext,
 )
-from galaxy.files.uris import validate_non_local
+from galaxy.files.uris import (
+    validate_non_local,
+    ValidatingRedirectHandler,
+)
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
@@ -80,6 +83,7 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
         self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[HTTPFileSourceConfiguration]
     ):
         config = context.config
+        allowlist = self._allowlist or config.fetch_url_allowlist
         request_url = source_path
         if urlsplit(source_path).scheme.lower() in ("http", "https"):
             # The fragment is not sent to the server, so it may contain spaces.
@@ -90,10 +94,11 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
                 )
             request_url = _requote_http_url(source_path)
         req = urllib.request.Request(request_url, headers=config.http_headers)
-        page = urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT)
-        with page:
+        opener = urllib.request.build_opener(ValidatingRedirectHandler(allowlist))
+
+        with opener.open(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
             # Verify url post-redirects is still allowlisted
-            validate_non_local(page.geturl(), self._allowlist or config.fetch_url_allowlist)
+            validate_non_local(page.geturl(), allowlist)
             return stream_to_path(page, native_path, source_encoding=get_charset_from_http_headers(page.headers))
 
     def _write_from(
