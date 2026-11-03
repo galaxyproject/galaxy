@@ -24,6 +24,8 @@ from galaxy.util.config_parsers import IpAllowedListEntryT
 
 log = logging.getLogger(__name__)
 
+HTTP_SCHEMES = ("http", "https")
+
 
 def stream_url_to_str(
     path: str, file_sources: Optional["ConfiguredFileSources"] = None, prefix: str = "gx_file_stream"
@@ -92,9 +94,13 @@ def split_port(parsed_url: str, url: str) -> tuple[str, int]:
         raise RequestParameterInvalidException(f"Could not verify url '{url}'.")
 
 
-def validate_non_local(uri: str, ip_allowlist: list[IpAllowedListEntryT]) -> str:
+def validate_non_local(
+    uri: str, ip_allowlist: list[IpAllowedListEntryT], schemes: tuple[str, ...] = HTTP_SCHEMES
+) -> str:
+    """Check the host of a URL with one of ``schemes`` against ``ip_allowlist``; return other strings unchanged."""
     # If it doesn't look like a URL, ignore it.
-    if not (uri.strip().startswith("http://") or uri.strip().startswith("https://")):
+    scheme, sep, _ = uri.lstrip().partition("://")
+    if not sep or scheme not in schemes:
         return uri
 
     # Strip surrounding whitespace before passing url to urlparse()
