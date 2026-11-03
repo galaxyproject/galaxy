@@ -18,6 +18,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
 )
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.model.orm.now import now
 from galaxy.schema.invocation import (
     CancelReason,
     FAILURE_REASONS_EXPECTED,
@@ -249,10 +250,18 @@ class WorkflowInvoker:
 
                     workflow_invocation.steps.append(workflow_invocation_step)
 
+                jobs_scheduled_before_step = self.progress.jobs_scheduled_this_iteration
                 incomplete_or_none = self._invoke_step(workflow_invocation_step)
                 if incomplete_or_none is False:
                     step_delayed = delayed_steps = True
                     workflow_invocation_step.state = "ready"
+                    if self.progress.jobs_scheduled_this_iteration > jobs_scheduled_before_step:
+                        # The step created jobs but hit the per-iteration cap.
+                        # The scheduler only revisits an invocation promptly
+                        # when its history or steps changed, and jobs whose
+                        # outputs are all filtered out add nothing to the
+                        # history, so record the progress on the step.
+                        workflow_invocation_step.update_time = now()
                     self.progress.mark_step_outputs_delayed(step, why="Not all jobs scheduled for state.")
                 else:
                     workflow_invocation_step.state = "scheduled"

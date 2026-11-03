@@ -2946,6 +2946,23 @@ class ImplicitCollectionJobs(Base, Serializable):
         )
         return session.execute(stmt)
 
+    def job_attribute_by_order_index(self, attribute: str) -> dict[int, Any]:
+        """Return a job column's value for each recorded job, keyed by order index."""
+        stmt = (
+            select(ImplicitCollectionJobsJobAssociation.order_index, getattr(Job.table.columns, attribute))
+            .select_from(Job)
+            .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+            .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
+        )
+        return dict(required_object_session(self).execute(stmt).tuples().all())
+
+    def recorded_order_indexes(self) -> set[int]:
+        """Return the order indexes of the jobs already recorded for this map-over."""
+        stmt = select(ImplicitCollectionJobsJobAssociation.order_index).where(
+            ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id
+        )
+        return set(required_object_session(self).scalars(stmt))
+
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
             self,
