@@ -105,6 +105,7 @@ FAILURE_REASONS_EXPECTED = (
     FailureReason.output_not_found,
     FailureReason.when_not_boolean,
     FailureReason.step_input_deleted,
+    FailureReason.workflow_parameter_invalid,
 )
 
 
