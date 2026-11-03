@@ -1400,6 +1400,8 @@ def test_toolbox_waits_for_a_peer_populating_the_store(tmp_path, monkeypatch):
     populated = MagicMock()
     monkeypatch.setattr(box, "_run_inline_populator", populated)
     monkeypatch.setattr(box, "_init_tools_from_index", lambda config_filenames: True)
+    needs_population = MagicMock(wraps=box._index_needs_population)
+    monkeypatch.setattr(box, "_index_needs_population", needs_population)
 
     boot = threading.Thread(target=box._init_tools_from_configs, args=([],))
     boot.start()
@@ -1412,5 +1414,7 @@ def test_toolbox_waits_for_a_peer_populating_the_store(tmp_path, monkeypatch):
 
     assert not boot.is_alive()
     populated.assert_not_called()
+    # Only the check before waiting; the peer's index is used without a second one.
+    assert needs_population.call_count == 1
     assert box._tool_index is not None
     assert "bowtie2" in box._tool_index.entries

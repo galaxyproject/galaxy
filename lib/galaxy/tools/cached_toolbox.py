@@ -932,7 +932,8 @@ class CachedToolBox(ToolBox):
         Every process booting or reloading against a stale store would
         otherwise populate it at the same time; the others wait for the one
         holding the store's populate lease and then load its index.
-        ``still_needed`` runs on the reloaded index under the lease.
+        ``still_needed`` runs on the reloaded index under the lease unless a
+        peer's populate is used.
         """
 
         def reload_and_check() -> bool:
@@ -944,15 +945,14 @@ class CachedToolBox(ToolBox):
             # The inline populator writes through a separate store instance.
             self._reload_tool_index()
 
-        lease = self._store.populate_lease() if self._store is not None else None
-        populate_once(
-            lease,
-            reload_and_check,
-            populate,
+        def peer_result_usable() -> bool:
+            self._reload_tool_index()
             # An index this Galaxy cannot load (e.g. written by another
             # version during a rolling upgrade) reloads as empty.
-            peer_result_usable=lambda: bool(self._tool_index and self._tool_index.entries),
-        )
+            return bool(self._tool_index and self._tool_index.entries)
+
+        lease = self._store.populate_lease() if self._store is not None else None
+        populate_once(lease, reload_and_check, populate, peer_result_usable=peer_result_usable)
 
     def _reload_tool_index(self) -> None:
         if self._store is not None:

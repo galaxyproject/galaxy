@@ -48,12 +48,12 @@ def populate_once(
 ) -> bool:
     """Run ``populate`` unless another process populates the store first.
 
-    ``needs_population`` re-reads the store and reports whether a populate is
-    still needed; it runs while holding the lease, so a process that waited
-    for another one sees that process's result. If another process completed
-    a populate while this one waited and ``peer_result_usable`` accepts the
-    result, it is used even when ``needs_population`` would still ask for a
-    populate: the same populate run again would not change its result.
+    ``needs_population`` and ``peer_result_usable`` re-read the store and run
+    while holding the lease, so a process that waited for another one sees
+    that process's result. If another process completed a populate while this
+    one waited and ``peer_result_usable`` accepts the result, it is used
+    without calling ``needs_population``: the same populate run again would
+    not change its result.
 
     Returns ``True`` when this process ran ``populate``.
     """
@@ -73,10 +73,10 @@ def populate_once(
     populated = False
     try:
         with _LeaseRenewal(lease, holder, ttl, renew_interval):
-            if not needs_population():
-                return False
             if _populated_since(lease, populated_at) and peer_result_usable():
                 log.info("Another Galaxy process populated the tool source store; using its index")
+                return False
+            if not needs_population():
                 return False
             populate()
             populated = True

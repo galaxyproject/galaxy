@@ -97,11 +97,11 @@ class _FlakyLease(PopulateLease):
         self._lease.release(holder, populated)
 
 
-def _populate_in_thread(lease, **kwds):
+def _populate_in_thread(lease, needs_population=lambda: True, **kwds):
     calls: list[int] = []
     result: list[bool] = []
     thread = threading.Thread(
-        target=lambda: result.append(populate_once(lease, lambda: True, lambda: calls.append(1), **FAST, **kwds))
+        target=lambda: result.append(populate_once(lease, needs_population, lambda: calls.append(1), **FAST, **kwds))
     )
     thread.start()
     return thread, calls, result
@@ -110,12 +110,20 @@ def _populate_in_thread(lease, **kwds):
 def test_uses_a_populate_another_process_completed_while_waiting(store):
     lease = _lease(store)
     assert lease.try_acquire("peer", ttl=timedelta(minutes=1))
-    thread, calls, result = _populate_in_thread(lease)
+    checks: list[int] = []
+
+    def needs_population():
+        checks.append(1)
+        return True
+
+    thread, calls, result = _populate_in_thread(lease, needs_population=needs_population)
     time.sleep(0.2)
     lease.release("peer", populated=True)
     thread.join(10)
     assert result == [False]
     assert calls == []
+    # The staleness check is skipped, so waiters do not run it one at a time.
+    assert checks == []
 
 
 def test_repopulates_when_the_peer_result_is_unusable(store):
