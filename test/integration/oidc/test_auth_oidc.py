@@ -1,6 +1,7 @@
 """Integration tests for OIDC login and account confirmation using Keycloak."""
 
 import html
+import json
 import os
 import re
 import subprocess
@@ -18,6 +19,7 @@ from galaxy.util import requests
 from galaxy.util.user_input import validate_publicname_str
 from galaxy.webapps.galaxy.controllers.authnz import LOGIN_NEXT_COOKIE_NAME
 from galaxy_test.base.api import ApiTestInteractor
+from galaxy_test.base.mcp_util import mcp_request
 from galaxy_test.driver import integration_util
 
 KEYCLOAK_ADMIN_USERNAME = "admin"
@@ -294,6 +296,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
     def handle_galaxy_oidc_config_kwds(cls, config):
         super().handle_galaxy_oidc_config_kwds(config)
         config["allowed_login_redirect_hosts"] = "tools.example.org"
+        config["enable_mcp_server"] = True
 
     def _get_keycloak_access_token(
         self, client_id="gxyclient", username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD, scopes=None
@@ -532,6 +535,23 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         response = self._get("whoami", headers={"Authorization": f"Bearer {access_token}"})
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser_logged_in_once@galaxy.org"
+
+    def test_mcp_auth_by_access_token(self):
+        self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)
+        result = self._mcp_get_user(self._get_keycloak_access_token())
+        assert not result.get("isError"), result
+        assert json.loads(result["content"][0]["text"])["email"] == "gxyuser@galaxy.org"
+
+    def test_mcp_bearer_galaxy_api_key_hints_x_api_key(self):
+        result = self._mcp_get_user("0123456789abcdef0123456789abcdef")
+        assert result.get("isError"), result
+        error = result["content"][0]["text"]
+        assert "Invalid access token" in error
+        assert "x-api-key header" in error
+
+    def _mcp_get_user(self, bearer_token: str) -> dict:
+        params = {"name": "get_user", "arguments": {}}
+        return mcp_request(f"{self.url}api/mcp", "tools/call", params, {"Authorization": f"Bearer {bearer_token}"})
 
     def test_auth_by_access_token_never_logged_in(self):
         # If the user has not previously logged in via OIDC at least once, OIDC API calls are not allowed

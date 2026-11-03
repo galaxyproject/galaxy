@@ -9,23 +9,8 @@ import json
 
 import requests
 
+from galaxy_test.base.mcp_util import mcp_request
 from galaxy_test.driver.integration_util import IntegrationTestCase
-
-
-def mcp_request(url: str, method: str, params: dict, headers: dict | None = None) -> dict:
-    """POST one JSON-RPC request to a Streamable HTTP endpoint and return its ``result``."""
-    payload = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
-    request_headers = {"Accept": "application/json, text/event-stream", "Content-Type": "application/json"}
-    request_headers.update(headers or {})
-    response = requests.post(url, json=payload, headers=request_headers, allow_redirects=False)
-    response.raise_for_status()
-    if response.headers["content-type"].startswith("application/json"):
-        body = response.json()
-    else:
-        data_lines = [line[len("data:") :].strip() for line in response.text.splitlines() if line.startswith("data:")]
-        assert data_lines, response.text
-        body = json.loads(data_lines[0])
-    return body["result"]
 
 
 def mcp_server_info(url: str) -> dict:
@@ -127,9 +112,28 @@ class TestMCPApiKey(IntegrationTestCase):
         assert self._email_from_get_user(result) == "mcp-header-fallback@bx.psu.edu"
 
     def test_no_key(self) -> None:
-        result = self._call_tool("get_user", {})
-        assert "x-api-key" in self._error_text(result)
+        error = self._error_text(self._call_tool("get_user", {}))
+        assert "x-api-key" in error
+        assert "exposes the key to the model provider" in error
 
     def test_invalid_header_key(self) -> None:
         result = self._call_tool("get_user", {}, headers={"x-api-key": "not-a-real-key"})
         assert "API key is not valid" in self._error_text(result)
+
+    def test_invalid_header_key_with_valid_argument(self) -> None:
+        _, argument_key = self._setup_user_get_key("mcp-argument-not-used@bx.psu.edu")
+        result = self._call_tool("get_user", {"api_key": argument_key}, headers={"x-api-key": "not-a-real-key"})
+        assert "API key is not valid" in self._error_text(result)
+
+    def test_bearer_token_without_oidc(self) -> None:
+        # Like the REST API, a Bearer token is an OIDC access token, never a Galaxy API key.
+        error = self._error_text(self._call_tool("get_user", {}, headers={"Authorization": "Bearer not-a-real-token"}))
+        assert "Invalid access token" in error
+        assert "x-api-key header" in error
+
+    def test_invalid_bearer_token_with_valid_argument(self) -> None:
+        _, argument_key = self._setup_user_get_key("mcp-argument-behind-bearer@bx.psu.edu")
+        result = self._call_tool(
+            "get_user", {"api_key": argument_key}, headers={"Authorization": "Bearer not-a-real-token"}
+        )
+        assert "Invalid access token" in self._error_text(result)
