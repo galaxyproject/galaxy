@@ -59,6 +59,8 @@ tools:
   environment: pulsar
 - id: cat1
   environment: pulsar
+- id: markdown_report_from_script
+  environment: pulsar
 """
 
 
@@ -167,6 +169,25 @@ class TestJobFilesStrictAccessIntegration(integration_util.IntegrationTestCase):
             assert any(f"{os.sep}inputs{os.sep}" in path for path in reads)
             content = self.dataset_populator.get_history_dataset_content(history_id, dataset=run["outputs"][0])
             assert content == "deferred\n"
+
+    def test_tool_directory_script(self):
+        tool = self._app.toolbox.get_tool("markdown_report_from_script")
+        assert tool
+        tool_directory = os.path.dirname(tool.config_file)
+        tool_files = [
+            os.path.join(tool_directory, "markdown_report_simple_script.py"),
+            os.path.join(tool_directory, "data", "1.bed"),
+            os.path.join(tool_directory, "data", "rgWebLogo3_test.jpg"),
+        ]
+        with self.dataset_populator.test_history() as history_id:
+            with self._record_job_files() as (reads, _):
+                run = self.dataset_populator.run_tool("markdown_report_from_script", {"title": "report"}, history_id)
+                job_id = run["jobs"][0]["id"]
+                self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+            assert set(tool_files) <= set(reads)
+            report = next(output for output in run["outputs"] if output["output_name"] == "output_report")
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=report)
+            assert "# Dynamically Generated Report" in content
 
     def _run_user_tool(
         self, tool: UserToolSource, input_id: str, history_id: str, assert_ok: bool = True
