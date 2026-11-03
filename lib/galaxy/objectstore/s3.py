@@ -412,7 +412,9 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
     def _list_remote_keys(self, rel_path):
         return (obj.key for obj in self._bucket.list(prefix=rel_path))
 
-    def _get_object_url(self, obj, content_disposition=None, content_type=None, *, expires_in: int, **kwargs):
+    def _get_object_url(
+        self, obj, content_disposition=None, content_type=None, *, expires_in: int | None = None, **kwargs
+    ):
         if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
@@ -423,7 +425,7 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
                 if content_type is not None:
                     response_headers["response-content-type"] = content_type
                 return key.generate_url(
-                    expires_in=expires_in,
+                    expires_in=expires_in or self.direct_download_expires_in,
                     response_headers=response_headers or None,
                 )
             except S3ResponseError:
