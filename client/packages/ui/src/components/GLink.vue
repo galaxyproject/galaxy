@@ -100,6 +100,8 @@ const linkElementRef = useResolveElement(linkRef);
 </template>
 
 <style scoped lang="scss">
+@use "../styles/focus-ring" as *;
+
 .g-link {
     border: none !important;
     background: none !important;
@@ -124,11 +126,8 @@ const linkElementRef = useResolveElement(linkRef);
         box-shadow: none !important;
     }
 
-    // Page-background gap keeps the ring clear of the surrounding text; outline survives forced colors.
     &:focus-visible {
-        outline: 2px solid var(--color-blue-600);
-        outline-offset: 2px;
-        box-shadow: 0 0 0 2px var(--background-color) !important;
+        @include focus-ring($important: true);
     }
 
     &.g-dark {
