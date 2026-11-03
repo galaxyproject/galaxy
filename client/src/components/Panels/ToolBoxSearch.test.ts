@@ -137,6 +137,23 @@ describe("ToolBox search", () => {
         expect(wrapper.find('[data-tool-id="liftOver1"]').exists()).toBe(true);
     });
 
+    it("searches from 2 characters and flags 1-character queries as too short", async () => {
+        const { wrapper } = mountToolBox();
+        await flushPromises();
+        const input = wrapper.find("input.search-query");
+
+        await input.setValue("Z");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+        expect(wrapper.text()).toContain("Search term is too short");
+
+        await input.setValue("Zi");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+        expect(wrapper.text()).not.toContain("Search term is too short");
+        expect(wrapper.find('[data-tool-id="__ZIP_COLLECTION__"]').exists()).toBe(true);
+    });
+
     it("shows empty favorites copy in My panel when no favorites are set", async () => {
         const { wrapper } = mountToolBox();
         await flushPromises();
