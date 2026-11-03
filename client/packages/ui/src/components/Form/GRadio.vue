@@ -128,6 +128,8 @@ function onChange(event: Event) {
 </template>
 
 <style scoped lang="scss">
+@use "../../styles/focus-ring" as *;
+
 .g-radio {
     display: inline-flex;
     align-items: center;
@@ -162,10 +164,9 @@ function onChange(event: Event) {
         cursor: not-allowed;
     }
 
-    // The offset leaves a gap that shows the real background; outline survives forced colors.
+    // No halo: the square page-colour halo would show around the round native control on tinted rows
     &:focus-visible {
-        outline: 2px solid var(--color-blue-600, #25537b);
-        outline-offset: 2px;
+        @include focus-ring($halo: false);
     }
 }
 
@@ -226,12 +227,9 @@ function onChange(event: Event) {
         z-index: 1;
     }
 
-    // Page-background gap keeps the ring clear of the fill and of neighbouring buttons; outline survives forced colors.
     &:has(.g-radio-input:focus-visible) {
         z-index: 2;
-        outline: 2px solid var(--color-blue-600, #25537b);
-        outline-offset: 2px;
-        box-shadow: 0 0 0 2px var(--background-color, #ffffff);
+        @include focus-ring;
     }
 
     &.g-grey {
