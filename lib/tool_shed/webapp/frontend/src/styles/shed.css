@@ -245,7 +245,8 @@ pre {
 
 /* A darker border on hover; valid/invalid fields keep GFormInput's state colour */
 .shed-main input.g-form-input:hover:not(:focus, .g-valid, .g-invalid),
-.shed-main .q-field:not(.q-field--focused):hover .q-field__control::before {
+.shed-main .q-field--filled:not(.q-field--focused, .q-field--error) .q-field__control:hover::before,
+.shed-main .q-field--outlined:not(.q-field--focused, .q-field--error) .q-field__control:hover::before {
     border-color: var(--color-grey-700, #35373f);
 }
 
@@ -291,7 +292,9 @@ pre {
     box-shadow: 0 0 0 1px var(--color-galaxy-primary, #25537b);
 }
 
-.shed-main .q-field--focused .q-field__control::before {
+/* Quasar clears the ::before border when a focused field is hovered; .q-field outranks its rule */
+.shed-main .q-field--focused .q-field__control::before,
+.shed-main .q-field.q-field--focused .q-field__control:hover::before {
     border-color: var(--color-galaxy-primary, #25537b);
 }
 
