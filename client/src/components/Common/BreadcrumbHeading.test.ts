@@ -16,7 +16,10 @@ const BETA_CLASS = ".breadcrumb-heading-header-beta";
 const localVue = getLocalVue();
 
 async function mountComponent(items: BreadcrumbItem[] = [], routePath: string = "/home", slotContent: string = "") {
-    const router = createRouter({ history: createMemoryHistory(), routes: [] });
+    const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [{ path: "/storage", name: "StorageDashboard", component: { template: "<div />" } }],
+    });
 
     await router.push(routePath);
 
@@ -72,6 +75,19 @@ describe("BreadcrumbHeading.vue", () => {
         expect(link.exists()).toBe(true);
         expect(link.text()).toBe(items[0]?.title);
         expect(link.classes()).toContain(ACTIVE_CLASS.replace(".", ""));
+        expect(link.classes()).toContain("g-link");
+        expect(link.attributes("href")).toBe("/test");
+        expect(link.attributes("title")).toBe("Go back to Test Title");
+    });
+
+    it("resolves a named route location into the link target", async () => {
+        const items = [{ title: "Storage Dashboard", to: { name: "StorageDashboard" } }, { title: "Overview" }];
+
+        const wrapper = await mountComponent(items, "/different-route");
+
+        const link = wrapper.find("a");
+        expect(link.classes()).toContain("g-link");
+        expect(link.attributes("href")).toBe("/storage");
     });
 
     it("renders multiple breadcrumb items with separators", async () => {
