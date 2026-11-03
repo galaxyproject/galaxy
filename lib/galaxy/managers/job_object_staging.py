@@ -9,6 +9,7 @@ Nothing here needs a filesystem shared between Galaxy hosts.
 """
 
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -22,6 +23,7 @@ from galaxy.model import (
     Job,
     MetadataFile,
 )
+from galaxy.model.metadata import FileParameter
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import (
     BaseObjectStore,
@@ -143,9 +145,19 @@ class JobObjectStagingManager:
                     path_kwargs = dataset.extra_file_object_store_path_kwargs(path) if kind == "extra_file" else {}
                     return dataset, dataset, path_kwargs
         elif kind == "metadata_file":
-            metadata_file = self._sa_session.get(MetadataFile, object_id)
-            if metadata_file is not None:
-                owner = metadata_file.history_dataset or metadata_file.library_dataset
-                if owner is not None and owner.dataset is not None and owner in input_associations:
-                    return metadata_file, owner.dataset, metadata_file.object_store_path_kwargs()
+            # Not the file's owner: an input's metadata may name a metadata file of another dataset by uuid.
+            for association in input_associations:
+                if association is not None and association.dataset is not None:
+                    for metadata_file in _metadata_files(association):
+                        if metadata_file.id == object_id:
+                            return metadata_file, association.dataset, metadata_file.object_store_path_kwargs()
         raise exceptions.ItemAccessibilityException(f"Requested {kind} is not an input of this job.")
+
+
+def _metadata_files(dataset_instance) -> Iterator[MetadataFile]:
+    """The metadata files a dataset's metadata names, resolved as for a tool's command line."""
+    for name, spec in dataset_instance.metadata.spec.items():
+        if isinstance(spec.param, FileParameter):
+            value = dataset_instance.metadata.get(name)
+            if isinstance(value, MetadataFile):
+                yield value

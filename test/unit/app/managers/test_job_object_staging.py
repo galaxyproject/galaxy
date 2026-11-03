@@ -214,6 +214,8 @@ def test_head_request_reports_size_without_opening_the_object(app, manager):
 
 
 def _stored_metadata_file(app, hda, content=b"bam index") -> MetadataFile:
+    """A BAM index stored for ``hda``, which its metadata names."""
+    hda.extension = "bam"
     metadata_file = MetadataFile(dataset=hda, name="bam_index")
     app.model.session.add(metadata_file)
     app.model.session.commit()
@@ -221,6 +223,8 @@ def _stored_metadata_file(app, hda, content=b"bam index") -> MetadataFile:
     with open(source, "wb") as f:
         f.write(content)
     metadata_file.update_from_file(source)
+    hda.metadata.bam_index = metadata_file
+    app.model.session.commit()
     return metadata_file
 
 
@@ -251,6 +255,23 @@ def test_metadata_file_of_a_dataset_that_is_not_an_input_is_refused(app, manager
     job = _running_job(app, hda)
     with pytest.raises(exceptions.ItemAccessibilityException):
         manager.staged_input(**_signed(app, job, "metadata_file", metadata_file.id))
+
+
+def test_metadata_file_an_input_names_by_a_uuid_another_dataset_shares_is_served(app, manager):
+    # Metadata file uuids are not unique in existing databases, e.g. after importing a history twice.
+    # An input naming its index by uuid resolves to the oldest row, which may belong to another dataset.
+    first_import, input_hda = _stored_hda(app), _stored_hda(app)
+    first_index = _stored_metadata_file(app, first_import)
+    _stored_metadata_file(app, input_hda).uuid = first_index.uuid
+    input_hda.metadata.bam_index = str(first_index.uuid)
+    app.model.session.commit()
+    job = _running_job(app, input_hda)
+
+    # The index the tool reads, and so the one the runner issues a URL for.
+    assert input_hda.metadata.bam_index is first_index
+    staged = manager.staged_input(**_signed(app, job, "metadata_file", first_index.id))
+    with open(staged.path, "rb") as f:
+        assert f.read() == b"bam index"
 
 
 def _stored_extra_files(app, hda, files) -> dict[str, bytes]:
