@@ -1,3 +1,4 @@
+import contextlib
 import os
 from types import SimpleNamespace
 from typing import cast
@@ -22,6 +23,7 @@ from galaxy.objectstore import BaseObjectStore
 from galaxy.security.idencoding import IdEncodingHelper
 
 JOB_ID = 42
+STRICT_ACCESS_WARNING = "job_files_strict_access"
 
 
 class FakeSession:
@@ -61,6 +63,24 @@ def config(tmp_path):
 @pytest.fixture
 def strict(config):
     config.job_files_strict_access = True
+
+
+@pytest.fixture(params=[False, True], ids=["warn", "strict"])
+def strict_access(request, config):
+    config.job_files_strict_access = request.param
+    return request.param
+
+
+@contextlib.contextmanager
+def _refused_or_warned(strict_access, caplog):
+    """Expect strict access to refuse the request, and otherwise to allow it with a warning."""
+    caplog.clear()
+    if strict_access:
+        with pytest.raises(exceptions.ItemAccessibilityException):
+            yield
+    else:
+        yield
+        assert STRICT_ACCESS_WARNING in caplog.text
 
 
 @pytest.fixture
@@ -140,9 +160,7 @@ def test_missing_params(manager, security, job):
         manager.authorize_write(job_id, path, None)
 
 
-@pytest.mark.parametrize("strict_access", [False, True])
-def test_empty_path(manager, security, job, config, strict_access):
-    config.job_files_strict_access = strict_access
+def test_empty_path(manager, security, job, strict_access):
     job_id, job_key = _keys(security)
     # Even a manifest listing the empty path doesn't make it readable.
     _write_manifest(job, [""])
@@ -183,9 +201,14 @@ def _job_path(job, *parts):
     return os.path.join(_working_directory(job), *parts)
 
 
-def _write_manifest(job, readable_paths, remote_extended_metadata=False):
+def _write_manifest(job, readable_paths, remote_metadata=False, remote_extended_metadata=False):
     os.makedirs(_working_directory(job), exist_ok=True)
-    write_job_files_manifest(_working_directory(job), readable_paths, remote_extended_metadata=remote_extended_metadata)
+    write_job_files_manifest(
+        _working_directory(job),
+        readable_paths,
+        remote_metadata=remote_metadata,
+        remote_extended_metadata=remote_extended_metadata,
+    )
 
 
 @pytest.fixture
@@ -222,35 +245,31 @@ def test_strict_job_reads_its_manifest(manager, security, job, job_files, outsid
         assert manager.readable_path(job_id, path, job_key) == path
 
 
-def test_strict_job_reads_nothing_outside_its_manifest(manager, security, job, job_files, strict, tmp_path):
+def test_job_reads_outside_its_manifest(manager, security, job, job_files, strict_access, caplog, tmp_path):
     job_id, job_key = _keys(security)
     _write_manifest(job, [job_files.input])
+    assert manager.readable_path(job_id, job_files.input, job_key) == job_files.input
+    assert STRICT_ACCESS_WARNING not in caplog.text
     paths = [
         job_files.outside,
         _write(_job_path(job, "tool_script.sh")),
         _write(_job_path(job, "metadata", "object_store_conf.json")),
         # The manifest holds the exact paths Pulsar requests.
         os.path.join(os.path.dirname(job_files.input), "..", "objects", "dataset_1.dat"),
-        str(tmp_path / "missing"),
     ]
     for path in paths:
-        with pytest.raises(exceptions.ItemAccessibilityException):
+        with _refused_or_warned(strict_access, caplog):
             manager.readable_path(job_id, path, job_key)
+    # Strict access refuses an unlisted path before revealing whether it exists.
+    missing = exceptions.ItemAccessibilityException if strict_access else exceptions.ObjectNotFound
+    with pytest.raises(missing):
+        manager.readable_path(job_id, str(tmp_path / "missing"), job_key)
 
 
-def test_strict_job_without_manifest_reads_nothing(manager, security, job, job_files, strict):
+def test_job_without_manifest_reads(manager, security, job, job_files, strict_access, caplog):
     job_id, job_key = _keys(security)
-    with pytest.raises(exceptions.ItemAccessibilityException):
+    with _refused_or_warned(strict_access, caplog):
         manager.readable_path(job_id, job_files.input, job_key)
-
-
-def test_job_reads_outside_its_manifest_with_a_warning(manager, security, job, job_files, caplog):
-    job_id, job_key = _keys(security)
-    _write_manifest(job, [job_files.input])
-    assert manager.readable_path(job_id, job_files.input, job_key) == job_files.input
-    assert "job_files_strict_access" not in caplog.text
-    assert manager.readable_path(job_id, job_files.outside, job_key) == job_files.outside
-    assert "job_files_strict_access" in caplog.text
 
 
 # Purging an input commits the HDA as purged before the dataset.
@@ -269,6 +288,14 @@ def test_strict_job_purged_input_is_reported(manager, security, job, strict, tmp
         manager.readable_path(job_id, purged_input, job_key)
 
 
+def test_strict_job_unlisted_purged_input_is_refused(manager, security, job, strict, tmp_path):
+    job_id, job_key = _keys(security)
+    job.add_input_dataset("input1", _purged_hda())
+    _write_manifest(job, [])
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.readable_path(job_id, str(tmp_path / "dataset_1.dat"), job_key)
+
+
 @pytest.mark.parametrize(
     "relative",
     [
@@ -281,17 +308,21 @@ def test_strict_job_purged_input_is_reported(manager, security, job, strict, tmp
         "metadata/__instrument_core_galaxy_slots",
     ],
 )
-def test_strict_job_writes_staged_results(manager, security, job, strict, relative):
+def test_job_writes_staged_results(manager, security, job, strict_access, caplog, relative):
     job_id, job_key = _keys(security)
+    _write_manifest(job, [], remote_metadata=True)
     assert manager.authorize_write(job_id, _job_path(job, relative), job_key) == _working_directory(job)
+    assert STRICT_ACCESS_WARNING not in caplog.text
 
 
-def test_strict_job_writes_its_outputs(manager, security, job, job_files, strict):
+def test_job_writes_its_outputs(manager, security, job, job_files, strict_access, caplog):
     job_id, job_key = _keys(security)
+    _write_manifest(job, [])
     output_directory = os.path.dirname(job_files.output)
     assert manager.authorize_write(job_id, job_files.output, job_key) == output_directory
     extra_file = os.path.join(job_files.output_extra_files, "child.txt")
     assert manager.authorize_write(job_id, extra_file, job_key) == output_directory
+    assert STRICT_ACCESS_WARNING not in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -309,18 +340,44 @@ def test_strict_job_writes_its_outputs(manager, security, job, job_files, strict
         "working/../tool_script.sh",
     ],
 )
-def test_strict_job_refuses_other_job_directory_writes(manager, security, job, strict, relative):
+def test_job_writes_other_job_directory_files(manager, security, job, strict_access, caplog, relative):
     job_id, job_key = _keys(security)
-    _write_manifest(job, [])
-    with pytest.raises(exceptions.ItemAccessibilityException):
+    _write_manifest(job, [], remote_metadata=True)
+    with _refused_or_warned(strict_access, caplog):
         manager.authorize_write(job_id, _job_path(job, relative), job_key)
 
 
 def test_strict_job_with_remote_extended_metadata_writes_the_model_store(manager, security, job, strict):
     job_id, job_key = _keys(security)
-    _write_manifest(job, [], remote_extended_metadata=True)
+    _write_manifest(job, [], remote_metadata=True, remote_extended_metadata=True)
     path = _job_path(job, "metadata", "outputs_populated", "collection.json")
     assert manager.authorize_write(job_id, path, job_key) == _working_directory(job)
+
+
+def test_job_without_manifest_writes(manager, security, job, job_files, strict_access, caplog):
+    job_id, job_key = _keys(security)
+    for path in [job_files.output, _job_path(job, "working", "out.txt"), _job_path(job, "outputs", "tool_stdout")]:
+        with _refused_or_warned(strict_access, caplog):
+            manager.authorize_write(job_id, path, job_key)
+
+
+def test_strict_job_setting_metadata_in_galaxy_writes_only_job_metrics(manager, security, job, strict):
+    job_id, job_key = _keys(security)
+    _write_manifest(job, [])
+    for relative in ["metadata/__instrument_core_galaxy_slots", "metadata/tool_stdout", "metadata/tool_stderr"]:
+        assert manager.authorize_write(job_id, _job_path(job, relative), job_key) == _working_directory(job)
+    # Galaxy runs metadata/set.py for this job, which imports from its own directory.
+    for relative in [
+        "metadata/traceback.py",
+        "metadata/galaxy_ext/__init__.py",
+        "metadata/set.py",
+        "metadata/params.json",
+        "metadata/metadata_out_HistoryDatasetAssociation_2",
+        "metadata/sub/__instrument_core_galaxy_slots",
+        "metadata/sub/tool_stdout",
+    ]:
+        with pytest.raises(exceptions.ItemAccessibilityException):
+            manager.authorize_write(job_id, _job_path(job, relative), job_key)
 
 
 def test_strict_job_refuses_writes_outside_the_job(manager, security, job, job_files, strict):
@@ -330,7 +387,9 @@ def test_strict_job_refuses_writes_outside_the_job(manager, security, job, job_f
             manager.authorize_write(job_id, path, job_key)
 
 
-def test_strict_job_refuses_writes_through_symlinks(manager, security, job, job_files, outside_link, strict):
+def test_job_refuses_writes_through_symlinks_leaving_the_job(
+    manager, security, job, job_files, outside_link, strict_access
+):
     job_id, job_key = _keys(security)
     linked_directory = _job_path(job, "outputs")
     os.symlink(os.path.dirname(job_files.outside), linked_directory)
@@ -339,69 +398,38 @@ def test_strict_job_refuses_writes_through_symlinks(manager, security, job, job_
             manager.authorize_write(job_id, path, job_key)
 
 
-def test_strict_job_appends_only_its_tool_streams(manager, security, job, strict, tmp_path):
-    job_id, _ = _keys(security)
-    for relative in ["outputs/tool_stdout", "working/tool_stdout"]:
-        path = _write(_job_path(job, relative), "first ")
-        manager.write(job_id, path, _write(tmp_path / "upload", "second"))
-        with open(path) as f:
-            assert f.read() == ("first second" if relative.startswith("outputs") else "second")
-
-
-STRICT_ACCESS_WARNING = "job_files_strict_access"
-
-
-@pytest.mark.parametrize("relative", ["working/out.txt", "outputs/tool_stdout", "metadata/metadata_out_2"])
-def test_job_writes_staged_results_without_a_warning(manager, security, job, caplog, relative):
-    job_id, job_key = _keys(security)
-    assert manager.authorize_write(job_id, _job_path(job, relative), job_key) == _working_directory(job)
-    assert STRICT_ACCESS_WARNING not in caplog.text
-
-
-def test_job_writes_its_outputs_without_a_warning(manager, security, job, job_files, caplog):
-    job_id, job_key = _keys(security)
-    assert manager.authorize_write(job_id, job_files.output, job_key) == os.path.dirname(job_files.output)
-    assert STRICT_ACCESS_WARNING not in caplog.text
-
-
-@pytest.mark.parametrize(
-    "relative", ["tool_script.sh", "configs/tmp_config", "inputs/materialized.dat", "metadata/outputs_populated/c.json"]
-)
-def test_job_writes_other_job_directory_files_with_a_warning(manager, security, job, caplog, relative):
+def test_job_writes_symlinks_inside_the_job_directory(manager, security, job, strict_access, caplog):
     job_id, job_key = _keys(security)
     _write_manifest(job, [])
-    assert manager.authorize_write(job_id, _job_path(job, relative), job_key) == _working_directory(job)
-    assert STRICT_ACCESS_WARNING in caplog.text
-
-
-def test_job_writes_symlinks_inside_the_job_directory_with_a_warning(manager, security, job, caplog):
-    job_id, job_key = _keys(security)
     link = _job_path(job, "working", "link")
     os.makedirs(os.path.dirname(link))
     os.symlink(_write(_job_path(job, "working", "target")), link)
-    assert manager.authorize_write(job_id, link, job_key) == _working_directory(job)
-    assert STRICT_ACCESS_WARNING in caplog.text
+    with _refused_or_warned(strict_access, caplog):
+        manager.authorize_write(job_id, link, job_key)
 
 
-def test_job_appends_to_other_files_with_a_warning(manager, security, job, caplog, tmp_path):
+def test_job_appends_only_its_tool_streams(manager, security, job, strict_access, caplog, tmp_path):
     job_id, _ = _keys(security)
     stream = _write(_job_path(job, "outputs", "tool_stdout"), "first ")
     manager.write(job_id, stream, _write(tmp_path / "upload", "second"))
     assert STRICT_ACCESS_WARNING not in caplog.text
     other = _write(_job_path(job, "working", "tool_stdout"), "first ")
     manager.write(job_id, other, _write(tmp_path / "upload", "second"))
-    assert STRICT_ACCESS_WARNING in caplog.text
-    for path in [stream, other]:
+    # Strict access replaces any other file; otherwise it is appended to with a warning.
+    assert (STRICT_ACCESS_WARNING in caplog.text) != strict_access
+    for path, content in [(stream, "first second"), (other, "second" if strict_access else "first second")]:
         with open(path) as f:
-            assert f.read() == "first second"
+            assert f.read() == content
 
 
 def test_rewritten_manifest_replaces_the_previous_one(manager, security, job, job_files, strict):
     job_id, job_key = _keys(security)
-    _write_manifest(job, [job_files.input, job_files.input_extra_file], remote_extended_metadata=True)
+    _write_manifest(
+        job, [job_files.input, job_files.input_extra_file], remote_metadata=True, remote_extended_metadata=True
+    )
     _write_manifest(job, [job_files.input_metadata_file])
     manifest = read_job_files_manifest(_working_directory(job))
-    assert manifest == (frozenset([job_files.input_metadata_file]), False)
+    assert manifest == (frozenset([job_files.input_metadata_file]), False, False)
     assert [name for name in os.listdir(_working_directory(job)) if "manifest" in name] == ["job_files_manifest.json"]
     with pytest.raises(exceptions.ItemAccessibilityException):
         manager.readable_path(job_id, job_files.input, job_key)

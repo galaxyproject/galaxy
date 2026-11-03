@@ -39,6 +39,10 @@ execution:
       runner: pulsar_embed
       default_file_action: remote_transfer
       remote_metadata: true
+    pulsar_local_metadata:
+      runner: pulsar_embed
+      default_file_action: remote_transfer
+      remote_metadata: false
     pulsar_unstructured:
       runner: pulsar_embed
       default_file_action: remote_transfer
@@ -61,6 +65,8 @@ tools:
   environment: pulsar
 - id: markdown_report_from_script
   environment: pulsar
+- id: cat
+  environment: pulsar_local_metadata
 """
 
 
@@ -188,6 +194,27 @@ class TestJobFilesStrictAccessIntegration(integration_util.IntegrationTestCase):
             report = next(output for output in run["outputs"] if output["output_name"] == "output_report")
             content = self.dataset_populator.get_history_dataset_content(history_id, dataset=report)
             assert "# Dynamically Generated Report" in content
+
+    def test_metadata_set_in_galaxy(self):
+        with self.dataset_populator.test_history() as history_id:
+            dataset = self.dataset_populator.new_dataset(history_id, content="1\t2\n", file_type="tabular", wait=True)
+            with self._record_job_files() as (_, writes):
+                run = self.dataset_populator.run_tool(
+                    "cat", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id
+                )
+                job_id = run["jobs"][0]["id"]
+                self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+            manifest = self._manifest(job_id)
+            assert not manifest.remote_metadata
+            # Only job metrics files and tool streams come back to the metadata directory; Galaxy runs
+            # metadata/set.py there.
+            metadata_writes = {os.path.basename(path) for path in writes if f"{os.sep}metadata{os.sep}" in path}
+            assert "__instrument_core_galaxy_slots" in metadata_writes
+            assert all(
+                name.startswith("__instrument_") or name in ("tool_stdout", "tool_stderr") for name in metadata_writes
+            ), metadata_writes
+            output = self.dataset_populator.get_history_dataset_details(history_id, dataset=run["outputs"][0])
+            assert output["metadata_columns"] == 2
 
     def _run_user_tool(
         self, tool: UserToolSource, input_id: str, history_id: str, assert_ok: bool = True
