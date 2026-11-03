@@ -499,6 +499,7 @@ describe("FormData", () => {
             ["list:list:list", ["list:paired_or_unpaired"], "list"],
             ["list:list:paired_or_unpaired", ["list:paired_or_unpaired"], "list:paired_or_unpaired"],
             ["list:list", ["list:paired_or_unpaired", "paired_or_unpaired"], "list"],
+            ["list:list", ["sample_sheet", "list"], "list"],
         ])(
             "uses a dropped %s on a %j input with map_over_type %s",
             async (collectionType, collectionTypes, mapOverType) => {
@@ -545,6 +546,7 @@ describe("FormData", () => {
         it.each([
             ["paired", ["list"]],
             ["paired_or_unpaired", ["paired"]],
+            ["list:list", ["sample_sheet"]],
         ])("refuses a dropped element holding a %s on a %j input", async (collectionType, collectionTypes) => {
             const value = await dropOnCollectionInput(collectionTypes, droppedCollectionElement(collectionType));
             expect(value).toEqual({

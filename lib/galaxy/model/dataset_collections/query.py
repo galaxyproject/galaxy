@@ -77,6 +77,9 @@ class HistoryQuery:
 
         hdca_collection_type = hdca.collection.collection_type
         for collection_type_description in collection_type_descriptions:
+            if collection_type_description.collection_type.startswith("sample_sheet"):
+                # a split never yields a sample_sheet
+                continue
             # See note about the way this is sorted above.
             if collection_type_description.is_subcollection_of_type(hdca_collection_type):
                 return collection_type_description

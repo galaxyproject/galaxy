@@ -17,8 +17,10 @@ export function matchCollectionType(
     if (inputs.some((input) => input.canMatch(item))) {
         return { mapOverType: null };
     }
-    // deepest first, so each job gets as much data as possible
-    const mapOver = [...inputs].sort((a, b) => b.rank - a.rank).find((input) => item.canMapOver(input));
+    // deepest first, so each job gets as much data as possible; a split never yields a sample_sheet
+    const mapOver = [...inputs]
+        .sort((a, b) => b.rank - a.rank)
+        .find((input) => !input.collectionType.startsWith("sample_sheet") && item.canMapOver(input));
     if (!mapOver) {
         return null;
     }
