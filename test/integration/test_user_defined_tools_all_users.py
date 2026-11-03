@@ -38,6 +38,8 @@ class TestUserDefinedToolsForAllUsers(integration_util.IntegrationTestCase, Test
                 )
                 output_content = self.dataset_populator.get_history_dataset_content(history_id)
                 assert output_content == "abc\n"
+                listed = self.dataset_populator.get_unprivileged_tools()
+                assert dynamic_tool["uuid"] in [t["uuid"] for t in listed]
 
     def test_anonymous_user_still_refused(self):
         with self._different_user(anon=True):
