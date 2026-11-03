@@ -285,30 +285,6 @@ def _nested_data_collection():
     }
 
 
-def test_verify_collection_nested_element_tests_are_checked():
-    output_def = TestCollectionOutputDef.from_dict(
-        {
-            "name": "mapDamage Visualisation",
-            "element_tests": {"sample1": {"element_tests": {"dnacomp": {"asserts": {"has_text": {"text": "x"}}}}}},
-        }
-    )
-    calls = []
-    verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
-    assert calls == ["dnacomp"]
-
-
-def test_verify_collection_nested_elements_alias_still_checked():
-    output_def = TestCollectionOutputDef.from_dict(
-        {
-            "name": "mapDamage Visualisation",
-            "element_tests": {"sample1": {"elements": {"dnacomp": {"asserts": {"has_text": {"text": "x"}}}}}},
-        }
-    )
-    calls = []
-    verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
-    assert calls == ["dnacomp"]
-
-
 @pytest.mark.parametrize("populated_state", ["failed", "new"])
 @pytest.mark.parametrize("assertions", [{"collection_type": "list"}, {"element_tests": {}}])
 def test_verify_collection_rejects_unpopulated_empty_collection(populated_state, assertions):
@@ -341,3 +317,27 @@ def test_verify_collection_rejects_unpopulated_child(populated_state):
 def test_verify_collection_accepts_empty_collection(population):
     output_def = TestCollectionOutputDef.from_dict({"name": "plots", "collection_type": "list", "element_tests": {}})
     verify_collection(output_def, {"collection_type": "list", "elements": [], **population}, lambda *a, **k: None)
+
+
+def test_verify_collection_nested_element_tests_are_checked():
+    output_def = TestCollectionOutputDef.from_dict(
+        {
+            "name": "mapDamage Visualisation",
+            "element_tests": {"sample1": {"element_tests": {"dnacomp": {"asserts": {"has_text": {"text": "x"}}}}}},
+        }
+    )
+    calls = []
+    verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
+    assert calls == ["dnacomp"]
+
+
+def test_verify_collection_nested_elements_alias_still_checked():
+    output_def = TestCollectionOutputDef.from_dict(
+        {
+            "name": "mapDamage Visualisation",
+            "element_tests": {"sample1": {"elements": {"dnacomp": {"asserts": {"has_text": {"text": "x"}}}}}},
+        }
+    )
+    calls = []
+    verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
+    assert calls == ["dnacomp"]
