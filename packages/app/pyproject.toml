@@ -49,7 +49,7 @@ dependencies = [
     "packaging",
     "paramiko!=2.9.0,!=2.9.1",
     "pebble!=5.2.1,!=5.2.2",
-    "pulsar-galaxy-lib>=0.16.0",
+    "pulsar-galaxy-lib @ git+https://github.com/mvdbeek/pulsar@0c2fd2cc575b46b8b928d34e83a0bf4a284d0d61",
     "pydantic>=2.7.4",
     "pydantic-ai>=1.99.0",
     "pysam>=0.21",
