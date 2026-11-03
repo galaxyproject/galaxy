@@ -9433,6 +9433,14 @@ export interface components {
              */
             tags?: string[] | null;
         };
+        /** CollectionMetadata */
+        CollectionMetadata: {
+            /**
+             * Name
+             * @description Expected name of the output collection.
+             */
+            name?: string | null;
+        };
         /**
          * CollectionSourceType
          * @enum {string}
@@ -25512,6 +25520,8 @@ export interface components {
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Input"];
             } | null;
+            /** Metadata */
+            metadata?: components["schemas"]["CollectionMetadata"] | null;
         };
         /** TestCollectionOutputAssertions */
         "TestCollectionOutputAssertions-Output": {
@@ -25538,6 +25548,8 @@ export interface components {
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Output"];
             } | null;
+            /** Metadata */
+            metadata?: components["schemas"]["CollectionMetadata"] | null;
         };
         /** TestDataOutputAssertions */
         "TestDataOutputAssertions-Input": {

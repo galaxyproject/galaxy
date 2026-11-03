@@ -1918,11 +1918,15 @@ class InputParameterModule(WorkflowModule):
                 # likely most important for parent workflows, where they run on primitive values.
                 input_param.validate(input_value, trans)
         except ValueError as e:
+            details = str(e)
+            if isinstance(e, ParameterValueError):
+                # Match run_request.py: name the step, not the runtime parameter "input".
+                details = f"{self.label or invocation_step.workflow_step.order_index + 1}: {e.message_suffix}"
             raise FailWorkflowEvaluation(
                 why=InvocationFailureWorkflowParameterInvalid(
                     reason=FailureReason.workflow_parameter_invalid,
-                    workflow_step_id=invocation_step.workflow_step_id,
-                    details=str(e),
+                    workflow_step_id=invocation_step.workflow_step.id,
+                    details=details,
                 )
             )
         step_outputs = dict(output=input_value)
@@ -3352,10 +3356,17 @@ class ToolModule(WorkflowModule):
         )
 
         complete = False
+        # A step resumed after a capped scheduling iteration skips the jobs it already created.
+        recorded_job_indexes: set[int] = set()
+        if collection_info and not invocation_step.is_new:
+            implicit_collection_jobs = invocation_step.implicit_collection_jobs
+            if implicit_collection_jobs is not None:
+                recorded_job_indexes = implicit_collection_jobs.recorded_order_indexes()
         completed_jobs: dict[int, Job | None] = tool.completed_jobs(
             trans,
             use_cached_job,
             param_combinations,
+            recorded_job_indexes=recorded_job_indexes,
         )
         try:
             mapping_params = MappingParameters(
@@ -3389,6 +3400,7 @@ class ToolModule(WorkflowModule):
                     step, job, progress.effective_replacement_dict()
                 ),
                 completed_jobs=completed_jobs,
+                recorded_job_indexes=recorded_job_indexes,
                 workflow_resource_parameters=resource_parameters,
                 credentials_context=credentials_context,
             )
