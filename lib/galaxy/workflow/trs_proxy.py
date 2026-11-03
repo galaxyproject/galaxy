@@ -2,8 +2,10 @@ import logging
 import os
 import re
 import urllib.parse
+from typing import Callable
 
 import yaml
+from requests import Session as RequestsSession
 
 from galaxy.config import Configuration
 from galaxy.exceptions import (
@@ -18,6 +20,7 @@ from galaxy.util import (
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
 from galaxy.util.search import parse_filters
+from galaxy.util.user_agent import get_default_headers
 
 log = logging.getLogger(__name__)
 
@@ -112,8 +115,9 @@ class TrsProxy:
 
 
 class TrsServer:
-    def __init__(self, trs_url):
+    def __init__(self, trs_url, session_factory: Callable[[], RequestsSession] = RequestsSession):
         self._trs_url = trs_url
+        self._session_factory = session_factory
 
     def get_tools(self, **kwd):
         query_kwd = {}
@@ -156,7 +160,8 @@ class TrsServer:
 
     def _get(self, url, params=None):
         try:
-            response = requests.get(url, params=params, timeout=TRS_REQUEST_TIMEOUT)
+            with self._session_factory() as session:
+                response = session.get(url, params=params, timeout=TRS_REQUEST_TIMEOUT, headers=get_default_headers())
         except requests.exceptions.Timeout as e:
             log.warning("Request to TRS server %s timed out: %s", self._trs_url, e)
             raise InternalServerError(f"TRS server {self._trs_url} did not respond in time.") from e
