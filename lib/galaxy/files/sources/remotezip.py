@@ -22,6 +22,7 @@ from galaxy.files.uris import (
     validate_uri_access,
     ValidatingSession,
 )
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from . import (
     DefaultBaseFilesSource,
     PluginKind,
@@ -136,14 +137,14 @@ def validate_params(params: dict[str, str]) -> FileExtractParameters:
 
 def get_final_url(url: str, session: requests.Session):
     """Follow redirects and return the final URL."""
-    response = session.head(url, allow_redirects=True)
+    response = session.head(url, allow_redirects=True, timeout=DEFAULT_SOCKET_TIMEOUT)
     return response.url
 
 
 def get_range(url: str, start: int, length: int, session: requests.Session):
     """Fetch a specific byte range from a remote file."""
     headers = {"Range": f"bytes={start}-{start + length - 1}"}
-    response = session.get(url, headers=headers, stream=True)
+    response = session.get(url, headers=headers, stream=True, timeout=DEFAULT_SOCKET_TIMEOUT)
     response.raise_for_status()
     return response
 
