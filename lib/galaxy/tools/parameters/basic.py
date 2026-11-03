@@ -1100,6 +1100,13 @@ class SelectToolParameter(ToolParameter):
     """
     Parameter that takes on one (or many) or a specific set of values.
 
+    For ``multiple="true"`` parameters the value is always a list of the
+    selected option values, even if only a single option was provided as a
+    scalar (e.g. by legacy API clients or test cases), so that output filters
+    and other consumers of the parameter dict can rely on a single
+    representation. With a comma separated string ``"A" in value`` would be a
+    substring check, which is true for a selection of ``"AA"``.
+
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.util import XML
     >>> trans = Bunch(app=None, history=Bunch(), workflow_building_mode=False, security=lambda x: x)
@@ -1140,6 +1147,13 @@ class SelectToolParameter(ToolParameter):
     ['y']
     >>> print(one.to_param_dict_string(["y"]))
     y
+
+    >>> p.from_json("x", trans)
+    ['x']
+    >>> p.from_json(["x", "y"], trans)
+    ['x', 'y']
+    >>> one.from_json("y", trans)
+    ['y']
     """
 
     value_label: str
@@ -1295,11 +1309,11 @@ class SelectToolParameter(ToolParameter):
                     is_dynamic=self.is_dynamic,
                 )
             if value in legal_values:
-                return value
+                result = value
             elif value in fallback_values:
-                return fallback_values[value]
+                result = fallback_values[value]
             elif not require_legal_value:
-                return value
+                result = value
             else:
                 raise ParameterValueError(
                     f"an invalid option ({value!r}) was selected (valid options: {','.join(iter_to_string(legal_values))})",
@@ -1307,6 +1321,11 @@ class SelectToolParameter(ToolParameter):
                     value,
                     is_dynamic=self.is_dynamic,
                 )
+            # A multiple select is always a list, even if a single value was provided
+            # as a scalar (e.g. by legacy API clients or test cases). Otherwise output
+            # filters and other consumers of the parameter dict would have to deal
+            # with both strings and lists.
+            return [result] if self.multiple else result
 
     def to_param_dict_string(self, value, other_values=None):
         if value in (None, []):
