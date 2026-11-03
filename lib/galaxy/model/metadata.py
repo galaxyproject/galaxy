@@ -30,6 +30,7 @@ from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.security.object_wrapper import sanitize_lists_to_string
 from galaxy.util import (
     form_builder,
+    in_directory,
     listify,
     string_as_bool,
     stringify_dictionary_keys,
@@ -233,7 +234,7 @@ class MetadataCollection(Mapping):
 
         return False
 
-    def from_JSON_dict(self, filename=None, path_rewriter=None, json_dict=None):
+    def from_JSON_dict(self, filename=None, path_rewriter=None, json_dict=None, metadata_tmp_files_dir=None):
         dataset = self.parent
         if filename is not None:
             log.debug(f"loading metadata from file for: {dataset.__class__.__name__} {dataset.id}")
@@ -263,6 +264,7 @@ class MetadataCollection(Mapping):
                 param = spec.param
                 if isinstance(param, FileParameter):
                     from_ext_kwds["path_rewriter"] = path_rewriter
+                    from_ext_kwds["metadata_tmp_files_dir"] = metadata_tmp_files_dir
                 value = param.from_external_value(external_value, dataset, **from_ext_kwds)
                 metadata_name_value[name] = value
             elif name in dataset._metadata:
@@ -715,22 +717,28 @@ class FileParameter(MetadataParameter):
                 value = str(value.uuid)
         return value
 
-    def from_external_value(self, value, parent, path_rewriter=None):
+    def from_external_value(self, value, parent, path_rewriter=None, metadata_tmp_files_dir: str | None = None):
         """
         Turns a value read from a external dict into its value to be pushed directly into the metadata dict.
+
+        A ``MetadataTempFile`` read from JSON names a file whose content becomes the metadata file, so it
+        must resolve to a path inside ``metadata_tmp_files_dir``. Without that directory it is rejected.
         """
-        if MetadataTempFile.is_JSONified_value(value):
+        from_json = MetadataTempFile.is_JSONified_value(value)
+        if from_json:
             value = MetadataTempFile.from_JSON(value)
         if isinstance(value, MetadataTempFile):
-            mf = parent.metadata.get(self.spec.name, None)
-            if mf is None:
-                mf = self.new_file(dataset=parent, **value.kwds)
-            # Ensure the metadata file gets updated with content
             file_name = value.get_file_name()
             if path_rewriter:
                 # Job may have run with a different (non-local) tmp/working
                 # directory. Correct.
                 file_name = path_rewriter(file_name)
+            if from_json:
+                file_name = _contained_metadata_temp_file_path(file_name, metadata_tmp_files_dir)
+            mf = parent.metadata.get(self.spec.name, None)
+            if mf is None:
+                mf = self.new_file(dataset=parent, **value.kwds)
+            # Ensure the metadata file gets updated with content
             mf.update_from_file(file_name)
             value = str(mf.uuid)
         return value
@@ -760,6 +768,18 @@ class FileParameter(MetadataParameter):
             # we will be copying its contents into the MetadataFile objects filename after restoring from JSON
             # we do not include 'dataset' in the kwds passed, as from_JSON_value() will handle this for us
             return MetadataTempFile(metadata_tmp_files_dir=metadata_tmp_files_dir, **kwds)
+
+
+class MetadataTempFilePathError(ValueError):
+    def __init__(self, path):
+        super().__init__(f"Metadata temp file '{path}' is outside the job's metadata directory.")
+
+
+def _contained_metadata_temp_file_path(file_name: str, metadata_tmp_files_dir: str | None) -> str:
+    real_file_name = os.path.realpath(file_name)
+    if not metadata_tmp_files_dir or not in_directory(real_file_name, metadata_tmp_files_dir):
+        raise MetadataTempFilePathError(file_name)
+    return real_file_name
 
 
 # This class is used when a database file connection is not available

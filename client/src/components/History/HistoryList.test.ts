@@ -13,6 +13,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import HistoryCard from "./HistoryCard.vue";
 import HistoryList from "./HistoryList.vue";
+import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import HistoryCardList from "@/components/History/HistoryCardList.vue";
 
 const { confirm } = vi.hoisted(() => ({ confirm: vi.fn() }));
@@ -188,5 +189,83 @@ describe("HistoryList", () => {
 
         expect(confirm).toHaveBeenCalledTimes(1);
         expect(confirm.mock.calls[0]?.[1]).toMatchObject({ title: "Delete History" });
+    });
+});
+
+type HistoriesResponse = { data: AnyHistoryEntry[]; total: number };
+
+function historiesResponse(names: string[]): HistoriesResponse {
+    return { data: names.map((name) => history(name, name, "me")), total: names.length };
+}
+
+function deferred() {
+    let resolve!: (value: HistoriesResponse) => void;
+    const promise = new Promise<HistoriesResponse>((r) => {
+        resolve = r;
+    });
+    return { promise, resolve };
+}
+
+type SortableWrapper = Awaited<ReturnType<typeof mountHistoryList>>;
+
+async function clickSortByNameTwice(wrapper: SortableWrapper) {
+    const descending = deferred();
+    const ascending = deferred();
+    vi.mocked(getMyHistories)
+        .mockReturnValueOnce(descending.promise as never)
+        .mockReturnValueOnce(ascending.promise as never);
+
+    await wrapper.find("#sortby-name").trigger("click");
+    await wrapper.find("#sortby-name").trigger("click");
+
+    expect(getMyHistories).toHaveBeenNthCalledWith(2, expect.objectContaining({ sortBy: "name", sortDesc: true }));
+    expect(getMyHistories).toHaveBeenNthCalledWith(3, expect.objectContaining({ sortBy: "name", sortDesc: false }));
+    return { descending, ascending };
+}
+
+function listedNames(wrapper: SortableWrapper) {
+    return cardList(wrapper)
+        .props("histories")
+        .map((h: { name: string }) => h.name);
+}
+
+function isBusy(wrapper: SortableWrapper) {
+    return wrapper.findComponent(GOverlay).props("show") === true;
+}
+
+describe("HistoryList sorting", () => {
+    beforeEach(() => {
+        suppressBootstrapVueWarnings();
+        vi.mocked(getMyHistories).mockReset();
+        vi.mocked(getMyHistories).mockResolvedValueOnce(historiesResponse(["b", "a"]) as never);
+    });
+
+    it("ignores a superseded sort response that arrives last", async () => {
+        const wrapper = await mountHistoryList("my");
+        const { descending, ascending } = await clickSortByNameTwice(wrapper);
+
+        ascending.resolve(historiesResponse(["a", "b"]));
+        await flushPromises();
+        descending.resolve(historiesResponse(["b", "a"]));
+        await flushPromises();
+
+        expect(listedNames(wrapper)).toEqual(["a", "b"]);
+        expect(isBusy(wrapper)).toBe(false);
+    });
+
+    it("stays busy until the latest sort response arrives", async () => {
+        const wrapper = await mountHistoryList("my");
+        const { descending, ascending } = await clickSortByNameTwice(wrapper);
+
+        descending.resolve(historiesResponse(["b", "a"]));
+        await flushPromises();
+
+        expect(isBusy(wrapper)).toBe(true);
+
+        ascending.resolve(historiesResponse(["a", "b"]));
+        await flushPromises();
+
+        expect(listedNames(wrapper)).toEqual(["a", "b"]);
+        expect(isBusy(wrapper)).toBe(false);
     });
 });

@@ -817,6 +817,32 @@ class WorkflowModule:
         return MapOverPlanner(self.trans).plan_map_over(progress, step, all_inputs)
 
 
+def workflow_step_name(step: WorkflowStep) -> str:
+    """Return the step label, a legacy input step's name, or its 1-based position."""
+    name = step.label
+    if not name and step.is_input_type and step.tool_inputs:
+        name = step.tool_inputs.get("name")
+    return str(name or step.order_index + 1)
+
+
+def disconnected_required_subworkflow_inputs(step: WorkflowStep, subworkflow: Workflow) -> list[WorkflowStep]:
+    """Return the required input steps of ``subworkflow`` without a default that ``step`` doesn't connect."""
+    connected_input_step_ids = {connection.input_subworkflow_step_id for connection in step.input_connections}
+    default_not_set = object()
+    return [
+        input_step
+        for input_step in subworkflow.input_steps
+        if input_step.id not in connected_input_step_ids
+        and not input_step.input_optional
+        and input_step.get_input_default_value(default_not_set) is default_not_set
+    ]
+
+
+def disconnected_subworkflow_inputs_message(input_steps: list[WorkflowStep]) -> str:
+    input_names = ", ".join(f"'{workflow_step_name(input_step)}'" for input_step in input_steps)
+    return f"Subworkflow has disconnected required input {input_names}"
+
+
 class SubWorkflowModule(WorkflowModule):
     # Two step improvements to build runtime inputs for subworkflow modules
     # - First pass verify nested workflow doesn't have an RuntimeInputs
@@ -1892,11 +1918,15 @@ class InputParameterModule(WorkflowModule):
                 # likely most important for parent workflows, where they run on primitive values.
                 input_param.validate(input_value, trans)
         except ValueError as e:
+            details = str(e)
+            if isinstance(e, ParameterValueError):
+                # Match run_request.py: name the step, not the runtime parameter "input".
+                details = f"{self.label or invocation_step.workflow_step.order_index + 1}: {e.message_suffix}"
             raise FailWorkflowEvaluation(
                 why=InvocationFailureWorkflowParameterInvalid(
                     reason=FailureReason.workflow_parameter_invalid,
-                    workflow_step_id=invocation_step.workflow_step_id,
-                    details=str(e),
+                    workflow_step_id=invocation_step.workflow_step.id,
+                    details=details,
                 )
             )
         step_outputs = dict(output=input_value)
@@ -3326,10 +3356,17 @@ class ToolModule(WorkflowModule):
         )
 
         complete = False
+        # A step resumed after a capped scheduling iteration skips the jobs it already created.
+        recorded_job_indexes: set[int] = set()
+        if collection_info and not invocation_step.is_new:
+            implicit_collection_jobs = invocation_step.implicit_collection_jobs
+            if implicit_collection_jobs is not None:
+                recorded_job_indexes = implicit_collection_jobs.recorded_order_indexes()
         completed_jobs: dict[int, Job | None] = tool.completed_jobs(
             trans,
             use_cached_job,
             param_combinations,
+            recorded_job_indexes=recorded_job_indexes,
         )
         try:
             mapping_params = MappingParameters(
@@ -3363,6 +3400,7 @@ class ToolModule(WorkflowModule):
                     step, job, progress.effective_replacement_dict()
                 ),
                 completed_jobs=completed_jobs,
+                recorded_job_indexes=recorded_job_indexes,
                 workflow_resource_parameters=resource_parameters,
                 credentials_context=credentials_context,
             )
