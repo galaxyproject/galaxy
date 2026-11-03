@@ -1,9 +1,7 @@
 import io
 import json
 import os
-import urllib
 from typing import Any
-from unittest import mock
 
 import responses
 
@@ -11,6 +9,7 @@ from ._util import (
     assert_realizes_as,
     assert_realizes_contains,
     configured_file_sources,
+    patch_http_open,
     user_context_fixture,
 )
 
@@ -55,7 +54,7 @@ def test_file_source_drs_http():
         response.geturl = lambda: test_url
         return response
 
-    with mock.patch.object(urllib.request, "urlopen", new=check_specific_header):
+    with patch_http_open(check_specific_header):
         user_context = user_context_fixture()
         file_sources = configured_file_sources(FILE_SOURCES_CONF)
         file_source_pair = file_sources.get_file_source_path(test_url)
