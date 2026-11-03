@@ -3,6 +3,7 @@ import os
 import re
 import urllib.parse
 from collections.abc import Callable
+from functools import partial
 
 import yaml
 from requests import Session as RequestsSession
@@ -14,7 +15,10 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     UpstreamProxyError,
 )
-from galaxy.files.uris import validate_non_local
+from galaxy.files.uris import (
+    validate_non_local,
+    ValidatingSession,
+)
 from galaxy.util import (
     asbool,
     requests,
@@ -86,7 +90,7 @@ class TrsProxy:
         return TrsServer(trs_url)
 
     def server_from_url(self, trs_url):
-        return TrsServer(trs_url)
+        return TrsServer(trs_url, session_factory=partial(ValidatingSession, self.fetch_url_allowlist_ips or []))
 
     def get_trs_id_and_version_from_trs_url(self, trs_url):
         parts = self.match_url(trs_url, self.fetch_url_allowlist_ips)

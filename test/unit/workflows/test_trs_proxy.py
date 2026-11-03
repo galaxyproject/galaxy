@@ -142,6 +142,18 @@ def test_match_url_rejects_file_uri(url):
 
 @responses.activate
 @pytest.mark.usefixtures("fake_public_dns")
+def test_server_from_url_refuses_redirect_to_private_address():
+    responses.get(
+        "https://trs.example/ga4gh/trs/v2/tools/x", status=302, headers={"Location": "http://127.0.0.1/tools/x"}
+    )
+    redirect_target = responses.get("http://127.0.0.1/tools/x", json={"id": "x"})
+    with pytest.raises(ConfigDoesNotAllowException):
+        get_trs_proxy().server_from_url("https://trs.example").get_tool("x")
+    assert redirect_target.call_count == 0
+
+
+@responses.activate
+@pytest.mark.usefixtures("fake_public_dns")
 def test_server_from_url_follows_redirect_to_public_host():
     responses.get(
         "https://trs.example/ga4gh/trs/v2/tools/x", status=302, headers={"Location": "https://other.example/tools/x"}
@@ -346,7 +358,8 @@ def test_slow_server_reported_as_timeout():
         listener.bind(("127.0.0.1", 0))
         listener.listen()
         host, port = listener.getsockname()
-        server = get_trs_proxy().server_from_url(f"http://{host}:{port}")
+        proxy = TrsProxy(GalaxyAppConfiguration(fetch_url_allowlist="127.0.0.1", override_tempdir=False))
+        server = proxy.server_from_url(f"http://{host}:{port}")
         with mock.patch.object(trs_proxy, "TRS_REQUEST_TIMEOUT", (1, 0.1)):
             with pytest.raises(MessageException, match=r"did not respond in time"):
                 server.get_tool("138")
