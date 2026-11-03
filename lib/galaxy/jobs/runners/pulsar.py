@@ -1346,7 +1346,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         elif target == "job_home":
             return "$_GALAXY_JOB_HOME_DIR"
         elif target == "pwd":
-            os.path.join(self.working_directory(), "working")
+            return self.working_directory()
         else:
             raise Exception(f"Unknown target type [{target}]")
 
