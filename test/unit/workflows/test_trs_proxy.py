@@ -246,14 +246,15 @@ def _response(status_code, text, headers=None):
 
 
 def _mock_get(trs_response):
-    def get(url, **kwargs):
+    def request(method, url, **kwargs):
         if url == "https://workflowhub.eu/":
             return _response(200, "<html>WorkflowHub</html>")
         if isinstance(trs_response, Exception):
             raise trs_response
         return trs_response
 
-    return mock.patch.object(requests, "get", side_effect=get)
+    # Session.request is shared by requests.get and the session TrsServer opens.
+    return mock.patch("requests.Session.request", side_effect=request)
 
 
 @pytest.mark.parametrize(
