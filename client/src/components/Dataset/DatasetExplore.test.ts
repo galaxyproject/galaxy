@@ -3,7 +3,10 @@ import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { type DatasetInteractiveTool, fetchDatasetInteractiveTools } from "@/api/tools";
+import { type DatatypeConverter, fetchDatatypeConverters } from "@/api/datatypes";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+import { type Tool, type ToolDataInput, useToolStore } from "@/stores/toolStore";
 
 import DatasetExplore from "./DatasetExplore.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
@@ -14,64 +17,97 @@ vi.mock("vue-router", () => ({
     useRouter: vi.fn(() => ({ push: mockPush })),
 }));
 
-vi.mock("@/api/tools", () => ({
-    fetchDatasetInteractiveTools: vi.fn(),
+vi.mock("@/api/datatypes", () => ({
+    fetchDatatypeConverters: vi.fn(),
 }));
 
-const mockFetch = vi.mocked(fetchDatasetInteractiveTools);
-
-const localVue = getLocalVue();
+const mockFetchConverters = vi.mocked(fetchDatatypeConverters);
 
 enableAutoUnmount(afterEach);
 
 const DATASET_ID = "dataset_id";
 
-const TOOLS: DatasetInteractiveTool[] = [
-    {
-        id: "interactive_tool_openrefine",
-        name: "OpenRefine",
+const RADIANT_ID = "toolshed.g2.bx.psu.edu/repos/iuc/radiant/interactive_tool_radiant";
+
+const mapper = new DatatypesMapperModel({
+    datatypes: ["bam", "csv", "tabular"],
+    datatypes_mapping: {
+        ext_to_class_name: {
+            bam: "galaxy.datatypes.binary.Bam",
+            csv: "galaxy.datatypes.tabular.CSV",
+            tabular: "galaxy.datatypes.tabular.Tabular",
+        },
+        class_to_classes: {
+            "galaxy.datatypes.binary.Bam": { "galaxy.datatypes.binary.Bam": true, "galaxy.datatypes.data.Data": true },
+            "galaxy.datatypes.tabular.CSV": {
+                "galaxy.datatypes.tabular.CSV": true,
+                "galaxy.datatypes.data.Data": true,
+            },
+            "galaxy.datatypes.tabular.Tabular": {
+                "galaxy.datatypes.tabular.Tabular": true,
+                "galaxy.datatypes.data.Data": true,
+            },
+        },
+    },
+});
+
+const CONVERTERS: DatatypeConverter[] = [{ source: "tabular", target: "csv", tool_id: "CONVERTER_tabular_to_csv" }];
+
+function interactiveTool(
+    id: string,
+    name: string,
+    version: string,
+    dataInputs: ToolDataInput[],
+    extra: Partial<Tool> = {},
+): Tool {
+    return {
+        model_class: "InteractiveTool",
+        id,
+        name,
+        version,
+        description: "",
+        data_inputs: dataInputs,
+        ...extra,
+    } as Tool;
+}
+
+function dataInput(name: string | null, extensions: string[]): ToolDataInput {
+    return { name, extensions, multiple: false };
+}
+
+const IGV_TOOL = interactiveTool("interactive_tool_igv", "IGV", "1.0", [dataInput("input", ["bam"])]);
+
+const TOOLS: Tool[] = [
+    interactiveTool("interactive_tool_openrefine", "OpenRefine", "3.8", [dataInput("input", ["tabular"])], {
         description: "Explore and clean tabular data",
-        version: "3.8",
-        icon: true,
-        input_name: "input",
-        match: "direct",
-    },
-    {
-        id: "toolshed.g2.bx.psu.edu/repos/iuc/radiant/interactive_tool_radiant/1.0",
-        name: "Radiant",
+        icon: "openrefine.png",
+    }),
+    interactiveTool(`${RADIANT_ID}/1.0`, "Radiant", "1.0", [dataInput("inputs|infile", ["csv"])], {
         description: "Business analytics",
-        version: "1.0",
-        icon: false,
-        input_name: "inputs|infile",
-        match: "converted",
-    },
-    {
-        id: "interactive_tool_jupyter_notebook",
-        name: "Jupyter Notebook",
+    }),
+    interactiveTool(`${RADIANT_ID}/0.9`, "Radiant", "0.9", [dataInput("infile", ["csv"])]),
+    interactiveTool("interactive_tool_jupyter_notebook", "Jupyter Notebook", "1.0.1", [dataInput(null, ["data"])], {
         description: "General purpose notebook",
-        version: "1.0.1",
-        icon: false,
-        input_name: null,
-        match: "generic",
-    },
-    {
-        id: "interactive_tool_ml_jupyter_notebook",
-        name: "ML Jupyter",
-        description: null,
-        version: "1.0",
-        icon: false,
-        input_name: "input",
-        match: "generic",
-    },
+    }),
+    interactiveTool("interactive_tool_ml_jupyter_notebook", "ML Jupyter", "1.0", [dataInput("input", ["data"])]),
+    IGV_TOOL,
+    { ...interactiveTool("cat1", "Concatenate", "1.0", [dataInput("input1", ["data"])]), model_class: "Tool" },
 ];
 
-async function mountComponent(
-    tools: DatasetInteractiveTool[] = TOOLS,
-    datasetExtension: string | undefined = "tabular",
-) {
-    mockFetch.mockResolvedValue(tools);
+/** Mount options whose pinia already holds the tools and the datatypes mapper. */
+function setupStores(tools: Tool[]) {
+    const localVue = getLocalVue();
+    // A loaded tool list keeps fetchTools off the network.
+    useToolStore().toolsById = Object.fromEntries(tools.map((tool) => [tool.id, tool]));
+    useDatatypesMapperStore().datatypesMapper = mapper;
+    return localVue;
+}
+
+async function mountComponent(tools: Tool[] = TOOLS) {
+    const localVue = setupStores(tools);
+    mockFetchConverters.mockResolvedValue(CONVERTERS);
     const wrapper = mount(DatasetExplore as object, {
-        props: { datasetId: DATASET_ID, datasetExtension },
+        props: { datasetId: DATASET_ID, datasetExtension: "tabular" },
         // isVisible() reads computed styles, which need the element in the document.
         attachTo: document.body,
         global: {
@@ -100,14 +136,16 @@ describe("DatasetExplore", () => {
         vi.clearAllMocks();
     });
 
-    it("fetches tools for the dataset and lists specific matches", async () => {
+    it("lists the latest version of each interactive tool that accepts the dataset", async () => {
         const wrapper = await mountComponent();
-        expect(mockFetch).toHaveBeenCalledWith(DATASET_ID);
         const specificRows = wrapper.findAll(".dataset-explore-specific [data-tool-id]");
         expect(specificRows.length).toBe(2);
         expect(nth(specificRows, 0).text()).toContain("OpenRefine");
         expect(nth(specificRows, 0).text()).toContain("Explore and clean tabular data");
         expect(nth(specificRows, 1).text()).toContain("Radiant");
+        expect(row(wrapper, `${RADIANT_ID}/0.9`).exists()).toBe(false);
+        expect(row(wrapper, "interactive_tool_igv").exists()).toBe(false);
+        expect(row(wrapper, "cat1").exists()).toBe(false);
         expect(row(wrapper, "interactive_tool_openrefine").find("img").attributes("src")).toBe(
             "/api/tools/interactive_tool_openrefine/icon",
         );
@@ -134,7 +172,7 @@ describe("DatasetExplore", () => {
         const direct = row(wrapper, "interactive_tool_openrefine");
         expect(direct.find(".dataset-explore-converted").exists()).toBe(false);
         expect(direct.find(".dataset-explore-no-prefill").exists()).toBe(false);
-        const converted = row(wrapper, TOOLS[1]!.id);
+        const converted = row(wrapper, `${RADIANT_ID}/1.0`);
         expect(converted.find(".dataset-explore-converted").text()).toBe("via conversion");
         const noPrefill = row(wrapper, "interactive_tool_jupyter_notebook");
         expect(noPrefill.find(".dataset-explore-no-prefill").text()).toBe("select dataset in form");
@@ -145,9 +183,9 @@ describe("DatasetExplore", () => {
         await row(wrapper, "interactive_tool_openrefine").trigger("click");
         expect(mockPush).toHaveBeenCalledWith(`/?tool_id=interactive_tool_openrefine&version=3.8&input=${DATASET_ID}`);
 
-        await row(wrapper, TOOLS[1]!.id).trigger("click");
+        await row(wrapper, `${RADIANT_ID}/1.0`).trigger("click");
         expect(mockPush).toHaveBeenLastCalledWith(
-            `/?tool_id=${encodeURIComponent(TOOLS[1]!.id)}&version=1.0&inputs%7Cinfile=${DATASET_ID}`,
+            `/?tool_id=${encodeURIComponent(`${RADIANT_ID}/1.0`)}&version=1.0&inputs%7Cinfile=${DATASET_ID}`,
         );
     });
 
@@ -158,7 +196,7 @@ describe("DatasetExplore", () => {
     });
 
     it("shows the dataset extension when no tools match", async () => {
-        const wrapper = await mountComponent([]);
+        const wrapper = await mountComponent([IGV_TOOL]);
         expect(wrapper.find(".dataset-explore-empty").text()).toBe(
             "No interactive tools accept 'tabular' on this server.",
         );
@@ -207,15 +245,16 @@ describe("DatasetExplore", () => {
         expect(wrapper.findAll("[data-tool-id]").length).toBe(0);
     });
 
-    it("shows an error when the request fails", async () => {
-        mockFetch.mockRejectedValue(new Error("Dataset not accessible"));
+    it("shows an error when loading fails", async () => {
+        const localVue = setupStores(TOOLS);
+        mockFetchConverters.mockRejectedValue(new Error("Converters unavailable"));
         const wrapper = mount(DatasetExplore as object, {
-            props: { datasetId: DATASET_ID },
+            props: { datasetId: DATASET_ID, datasetExtension: "tabular" },
             global: { ...localVue, stubs: { DelayedInput: true, FontAwesomeIcon: true } },
         });
         expect(wrapper.find(".loading-message").exists()).toBe(true);
         await flushPromises();
-        expect(wrapper.find(".alert-danger").text()).toBe("Dataset not accessible");
+        expect(wrapper.find(".alert-danger").text()).toBe("Converters unavailable");
         expect(wrapper.find("[data-tool-id]").exists()).toBe(false);
     });
 });

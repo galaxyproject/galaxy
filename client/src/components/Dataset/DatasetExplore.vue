@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { faChevronDown, faChevronRight, faTools } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 
-import { type DatasetInteractiveTool, fetchDatasetInteractiveTools } from "@/api/tools";
+import { type DatatypeConverter, fetchDatatypeConverters } from "@/api/datatypes";
 import { useUid } from "@/composables/utils/uid";
 import { getAppRoot } from "@/onload/loadConfig";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+import { useToolStore } from "@/stores/toolStore";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { filterLatestToolVersions } from "@/utils/tool-version";
+
+import { type InteractiveToolMatch, matchInteractiveTools } from "./interactiveToolMatching";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -21,25 +26,58 @@ interface Props {
      */
     datasetId: string;
     /**
-     * Datatype extension of the dataset, shown in the empty state
-     * @default undefined
+     * Datatype extension of the dataset, matched against the tools' data inputs
      */
-    datasetExtension?: string;
+    datasetExtension: string;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    datasetExtension: undefined,
-});
+interface ExploreTool {
+    id: string;
+    name: string;
+    description: string;
+    version: string;
+    icon?: string;
+    inputName: string | null;
+    match: InteractiveToolMatch;
+}
+
+const props = defineProps<Props>();
 
 const router = useRouter();
+const toolStore = useToolStore();
+const datatypesMapperStore = useDatatypesMapperStore();
 
 const genericListId = useUid("dataset-explore-generic-");
 
-const tools = ref<DatasetInteractiveTool[]>([]);
-const loading = ref(true);
+const toolsLoaded = ref(false);
+const converters = ref<DatatypeConverter[] | null>(null);
 const errorMessage = ref("");
 const query = ref("");
 const genericExpanded = ref(false);
+
+// The mapper may still be loading for another component, so wait for it reactively.
+const loading = computed(
+    () => !errorMessage.value && (!toolsLoaded.value || !converters.value || !datatypesMapperStore.datatypesMapper),
+);
+
+const tools = computed<ExploreTool[]>(() => {
+    const mapper = datatypesMapperStore.datatypesMapper;
+    if (!toolsLoaded.value || !converters.value || !mapper) {
+        return [];
+    }
+    const interactiveTools = filterLatestToolVersions(toolStore.getInteractiveTools());
+    return matchInteractiveTools(interactiveTools, props.datasetExtension, mapper, converters.value).map(
+        ({ tool, inputName, match }) => ({
+            id: tool.id,
+            name: tool.name,
+            description: tool.description,
+            version: tool.version,
+            icon: tool.icon,
+            inputName,
+            match,
+        }),
+    );
+});
 
 const searching = computed(() => Boolean(query.value.trim()));
 
@@ -62,10 +100,7 @@ const genericTools = computed(() => filteredTools.value.filter((tool) => tool.ma
 // Search hits stay visible: the group is forced open while searching and the user's choice returns after.
 const showGeneric = computed(() => genericExpanded.value || searching.value);
 
-const emptyMessage = computed(() => {
-    const target = props.datasetExtension ? `'${props.datasetExtension}'` : "this dataset";
-    return `No interactive tools accept ${target} on this server.`;
-});
+const emptyMessage = computed(() => `No interactive tools accept '${props.datasetExtension}' on this server.`);
 
 const groups = computed(() =>
     [
@@ -74,43 +109,33 @@ const groups = computed(() =>
     ].filter((group) => group.tools.length > 0),
 );
 
-function iconUrl(tool: DatasetInteractiveTool) {
+function iconUrl(tool: ExploreTool) {
     return `${getAppRoot()}api/tools/${encodeURIComponent(tool.id)}/icon`;
 }
 
-function launchTool(tool: DatasetInteractiveTool) {
+function launchTool(tool: ExploreTool) {
     let url = `/?tool_id=${encodeURIComponent(tool.id)}&version=${encodeURIComponent(tool.version)}`;
-    if (tool.input_name) {
-        url += `&${encodeURIComponent(tool.input_name)}=${encodeURIComponent(props.datasetId)}`;
+    if (tool.inputName) {
+        url += `&${encodeURIComponent(tool.inputName)}=${encodeURIComponent(props.datasetId)}`;
     }
     router.push(url);
 }
 
-async function loadTools(datasetId: string) {
-    loading.value = true;
-    errorMessage.value = "";
+async function loadTools() {
     try {
-        const result = await fetchDatasetInteractiveTools(datasetId);
-        if (datasetId === props.datasetId) {
-            tools.value = result;
-        }
+        const [, loadedConverters] = await Promise.all([
+            toolStore.fetchTools(),
+            fetchDatatypeConverters(),
+            datatypesMapperStore.createMapper(),
+        ]);
+        converters.value = loadedConverters;
+        toolsLoaded.value = true;
     } catch (e) {
-        if (datasetId === props.datasetId) {
-            tools.value = [];
-            errorMessage.value = errorMessageAsString(e);
-        }
-    } finally {
-        if (datasetId === props.datasetId) {
-            loading.value = false;
-        }
+        errorMessage.value = errorMessageAsString(e);
     }
 }
 
-watch(
-    () => props.datasetId,
-    (datasetId) => loadTools(datasetId),
-    { immediate: true },
-);
+loadTools();
 </script>
 
 <template>
@@ -166,7 +191,7 @@ watch(
                             <small v-if="tool.match === 'converted'" class="dataset-explore-converted text-muted">
                                 via conversion
                             </small>
-                            <small v-if="!tool.input_name" class="dataset-explore-no-prefill text-muted">
+                            <small v-if="!tool.inputName" class="dataset-explore-no-prefill text-muted">
                                 select dataset in form
                             </small>
                         </div>
