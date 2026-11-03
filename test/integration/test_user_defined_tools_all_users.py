@@ -42,9 +42,21 @@ class TestUserDefinedToolsForAllUsers(integration_util.IntegrationTestCase, Test
                 assert dynamic_tool["uuid"] in [t["uuid"] for t in listed]
 
     def test_anonymous_user_still_refused(self):
-        with self._different_user(anon=True):
-            response = self.dataset_populator.create_unprivileged_tool_raw(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
-            assert response.status_code in (400, 403), response.text
-            response = self._get("unprivileged_tools")
-            response.raise_for_status()
-            assert response.json() == []
+        # Every unprivileged-tools endpoint and the tool_uuid lookup in /api/tools need a user
+        # before they reach the manager's gate, so this checks the HTTP surface; the gate's own
+        # anonymous refusal is covered in test_DynamicToolManager.
+        with self.dataset_populator.test_history() as history_id:
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc")
+            with self._different_user(anon=True):
+                response = self.dataset_populator.create_unprivileged_tool_raw(
+                    UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+                )
+                assert response.status_code == 403, response.text
+                assert response.json()["err_msg"] == "Action requires user authentication."
+                response = self._run(
+                    history_id=history_id,
+                    tool_uuid=dynamic_tool["uuid"],
+                    inputs={"input": {"src": "hda", "id": dataset["id"]}},
+                )
+                assert response.status_code == 404, response.text
