@@ -343,7 +343,7 @@ def build_workflow_run_configs(
         raise exceptions.RequestParameterInvalidException(
             "Cannot specify both legacy parameters and step_parameters attributes."
         )
-    if "inputs" in payload and "ds_map" in payload:
+    if payload.get("inputs") is not None and payload.get("ds_map"):
         raise exceptions.RequestParameterInvalidException("Cannot specify both legacy ds_map and input attributes.")
     for object_store_id_key in (
         "preferred_object_store_id",
@@ -357,7 +357,7 @@ def build_workflow_run_configs(
                     f"Invalid '{object_store_id_key}': {validation_error}"
                 )
 
-    add_to_history = "no_add_to_history" not in payload
+    add_to_history = not payload.get("no_add_to_history", False)
     legacy = payload.get("legacy", False)
     already_normalized = payload.get("parameters_normalized", False)
     raw_parameters = payload.get("parameters") or {}
