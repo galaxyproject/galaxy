@@ -1,45 +1,45 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { afterEach, describe, expect, it } from "vitest";
-import { defineComponent } from "vue";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { defineComponent, h } from "vue";
 
 import type ConfirmDialogComponent from "@/components/ConfirmDialog.vue";
+import { ensureDefined } from "@/utils/assertions";
 
-import { type ConfirmDialogOptions, setConfirmDialogComponentRef, useConfirmDialog } from "./confirmDialog";
+import { setConfirmDialogComponentRef, useConfirmDialog } from "./confirmDialog";
 
 type ConfirmDialogInstance = InstanceType<typeof ConfirmDialogComponent>;
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
 
 describe("useConfirmDialog", () => {
     afterEach(() => {
         setConfirmDialogComponentRef(null);
     });
 
-    it("cancels pending confirm when caller component unmounts", async () => {
-        setConfirmDialogComponentRef({
-            confirm: (_msg: string, options: ConfirmDialogOptions) =>
+    it("cancels a pending confirmation when its caller unmounts", async () => {
+        const confirm = vi.fn<ConfirmDialogInstance["confirm"]>(
+            (_message, options = {}) =>
                 new Promise<boolean>((resolve) => {
                     options.signal?.addEventListener("abort", () => resolve(false), { once: true });
                 }),
-        } as ConfirmDialogInstance);
-
-        let confirm: ReturnType<typeof useConfirmDialog>["confirm"] = () => Promise.resolve(null);
+        );
+        const dialog: Pick<ConfirmDialogInstance, "confirm"> = { confirm };
+        // The registration API requires a component instance; this double only implements its exposed method.
+        setConfirmDialogComponentRef(dialog as ConfirmDialogInstance);
 
         const CallerComponent = defineComponent({
-            setup() {
-                ({ confirm } = useConfirmDialog());
-                return {};
-            },
-            template: "<div />",
+            setup: useConfirmDialog,
+            render: () => h("div"),
         });
+        const wrapper = mount(CallerComponent, { global: getLocalVue() });
+        const confirmation = wrapper.vm.confirm("Are you sure?");
+        const signal = ensureDefined(confirm.mock.calls[0]?.[1]?.signal);
+        expect(signal.aborted).toBe(false);
 
-        const wrapper = mount(CallerComponent as object, { global: localVue });
+        wrapper.unmount();
 
-        const promise = confirm("Are you sure?");
-
-        wrapper.unmount(); // triggers onUnmounted → controller.abort()
-
-        expect(await promise).toBe(false);
+        expect(signal.aborted).toBe(true);
+        expect(await confirmation).toBe(false);
     });
 });

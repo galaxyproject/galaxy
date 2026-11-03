@@ -1,69 +1,58 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { deferred } from "@tests/vitest/deferred";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { waitOnJob } from "@/components/JobStates/wait";
 
-import ToLink from "./ToLink.vue";
+import { EXPORT_JOB_ID, EXPORTED_HISTORY_ID } from "./test_fixtures";
+import * as ToLinkStories from "./ToLink.stories";
 
-const localVue = getLocalVue();
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const stories = composeStories(ToLinkStories);
+const mountStory = useStoryMount();
 const { server, http } = useServerMock();
-
-const TEST_HISTORY_ID = "hist1235";
-const TEST_EXPORTS_URL = `/api/histories/${TEST_HISTORY_ID}/exports`;
-const TEST_JOB_ID = "test1234job";
 
 vi.mock("@/components/JobStates/wait", () => ({
     waitOnJob: vi.fn(),
 }));
 
-describe("ToLink.vue", () => {
-    let wrapper;
+afterEach(() => {
+    vi.mocked(waitOnJob).mockReset();
+});
 
-    async function mountWithInitialExports(exports) {
-        server.use(
-            http.untyped.get(TEST_EXPORTS_URL, () => {
-                return HttpResponse.json(exports);
-            }),
-        );
-        wrapper = shallowMount(ToLink, {
-            props: {
-                historyId: TEST_HISTORY_ID,
-            },
-            global: localVue,
-        });
+describe("ToLink.vue", () => {
+    async function mountAndLoadExports(story) {
+        const wrapper = mountStory(story);
         await wrapper.vm.$nextTick();
-        expect(wrapper.find("loading-span-stub").exists()).toBeTruthy();
+        expect(wrapper.findComponent(LoadingSpan).exists()).toBeTruthy();
+        expect(wrapper.findComponent(LoadingSpan).props("message")).toContain("Loading history export information");
         await flushPromises();
+        return wrapper;
     }
 
-    beforeEach(async () => {
-        // Reset before each test
-    });
-
     it("should display a link if no exports ever generated", async () => {
-        await mountWithInitialExports([]);
-        expect(wrapper.find(".export-link")).toBeTruthy();
-        expect(wrapper.find("loading-span-stub").exists()).toBeFalsy(); // loading span gone
+        const wrapper = await mountAndLoadExports(stories.NoExports);
+        const exportLink = wrapper.find(".export-link");
+        expect(exportLink).toBeTruthy();
+        expect(exportLink.exists()).toBe(true);
     });
 
     it("should start polling if latest export is preparing", async () => {
-        let then = null;
-        vi.mocked(waitOnJob).mockReturnValue(
-            new Promise((then_) => {
-                then = then_;
-            }),
-        );
-        await mountWithInitialExports([
-            {
-                preparing: true,
-                job_id: TEST_JOB_ID,
-            },
-        ]);
-        expect(then).toBeTruthy();
-        expect(wrapper.vm.waitingOnJob).toBeTruthy();
-        expect(wrapper.find("loading-span-stub").exists()).toBeTruthy();
+        const jobCompletion = deferred();
+        vi.mocked(waitOnJob).mockReturnValue(jobCompletion.promise);
+        try {
+            await mountAndLoadExports(stories.Preparing);
+            expect(jobCompletion.resolve).toBeTruthy();
+            expect(waitOnJob).toHaveBeenCalledExactlyOnceWith(EXPORT_JOB_ID);
+        } finally {
+            // The completed job reloads exports; return a settled history before unmount.
+            server.use(http.untyped.get(`/api/histories/${EXPORTED_HISTORY_ID}/exports`, () => HttpResponse.json([])));
+            jobCompletion.resolve();
+            await flushPromises();
+        }
     });
 });

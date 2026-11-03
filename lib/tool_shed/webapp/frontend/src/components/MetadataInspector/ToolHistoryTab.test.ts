@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from "vitest"
-import { mount } from "@vue/test-utils"
+import { afterEach, describe, it, expect } from "vitest"
+import { enableAutoUnmount, mount } from "@vue/test-utils"
 import ToolHistoryTab from "./ToolHistoryTab.vue"
 import {
     repositoryMetadataColumnMaker,
@@ -10,168 +10,122 @@ import {
     type RepositoryMetadata,
 } from "./__fixtures__"
 
-vi.mock("./MetadataJsonViewer.vue", () => ({
-    default: {
-        name: "MetadataJsonViewer",
-        props: ["data", "modelName", "deep"],
-        template: '<div class="mock-json-viewer">{{ JSON.stringify(data) }}</div>',
-    },
-}))
+import { MetadataJsonViewerStub } from "./test-utils"
+
+enableAutoUnmount(afterEach)
 
 const fixtureMetadata = repositoryMetadataColumnMaker
 
-describe("ToolHistoryTab", () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
+function mountTab(props: { metadata: RepositoryMetadata | null }) {
+    return mount(ToolHistoryTab, {
+        props,
+        global: { stubs: { MetadataJsonViewer: MetadataJsonViewerStub } },
     })
+}
 
+describe("ToolHistoryTab", () => {
     describe("rendering", () => {
         it("displays 'No tools found' when metadata is null", () => {
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: null },
-            })
+            const wrapper = mountTab({ metadata: null })
 
             expect(wrapper.text()).toContain("No tools found")
         })
 
         it("displays 'No tools found' when metadata has no tools", () => {
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: simulatedMetadataEmpty },
-            })
+            const wrapper = mountTab({ metadata: simulatedMetadataEmpty })
 
             expect(wrapper.text()).toContain("No tools found")
         })
 
         it("displays tool cards with tool ID as header", () => {
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
             const cards = wrapper.findAll(".tool-history-card")
-            expect(cards.length).toBeGreaterThan(0)
+            expect(cards).toHaveLength(1)
             expect(wrapper.text()).toContain("Add_a_column1")
         })
 
         it("shows version numbers in timeline", () => {
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
-            expect(wrapper.text()).toMatch(/\d+\.\d+\.\d+/)
+            expect(wrapper.findAll(".tool-history-version").map((version) => version.text())).toEqual([
+                "1.3.0",
+                "1.2.0",
+                "1.1.0",
+            ])
         })
     })
 
     describe("revision badge", () => {
         it("labels each version with its revision number", () => {
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
             const badges = wrapper.findAll(".revision-badge")
-            expect(badges.length).toBeGreaterThan(0)
-            for (const badge of badges) {
-                expect(badge.text()).toMatch(/^\[\d+\]$/)
-            }
+            expect(badges.map((badge) => badge.text())).toEqual(["[2]", "[1]", "[0]"])
         })
     })
 
     describe("timeline", () => {
         it("lists each tool's versions as an ordered list with name and description", () => {
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: simulatedMetadataMultiTool },
-            })
+            const wrapper = mountTab({ metadata: simulatedMetadataMultiTool })
 
             const timelines = wrapper.findAll("ol.tool-history-timeline")
             expect(timelines.length).toBe(4)
 
-            const versionCount = Object.values(simulatedMetadataMultiTool).reduce(
-                (count, revision) => count + (revision.tools?.length ?? 0),
-                0,
-            )
             const entries = wrapper.findAll("li.tool-history-entry")
-            expect(entries.length).toBe(versionCount)
-
-            // Tools sort alphabetically and versions newest first, so the first entry is
-            // align_sequences at its highest revision.
-            const newestAlign = Object.entries(simulatedMetadataMultiTool)
-                .sort(([a], [b]) => parseInt(b) - parseInt(a))
-                .flatMap(([, revision]) => revision.tools ?? [])
-                .find((tool) => tool.id === "align_sequences")
+            expect(entries).toHaveLength(10)
             expect(entries[0].find(".tool-history-subtitle").text()).toBe(
-                `${newestAlign?.name} ${newestAlign?.description}`,
+                "Sequence Aligner Align sequences using algorithm A - performance optimized",
             )
         })
     })
 
     describe("tool history sorting", () => {
         it("sorts versions with newest revision first", () => {
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
-            const text = wrapper.text()
-            // column_maker has versions 1.1.0, 1.2.0, 1.3.0 - newest should be first
-            const v130Index = text.indexOf("1.3.0")
-            const v110Index = text.indexOf("1.1.0")
-
-            if (v130Index !== -1 && v110Index !== -1) {
-                expect(v130Index).toBeLessThan(v110Index)
-            }
+            expect(wrapper.findAll(".tool-history-version").map((version) => version.text())).toEqual([
+                "1.3.0",
+                "1.2.0",
+                "1.1.0",
+            ])
         })
 
         it("sorts tools alphabetically by tool ID", () => {
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: simulatedMetadataMultiTool },
-            })
+            const wrapper = mountTab({ metadata: simulatedMetadataMultiTool })
 
-            const text = wrapper.text()
-            const alignIndex = text.indexOf("align_sequences")
-            const convertIndex = text.indexOf("convert_format")
-            const filterIndex = text.indexOf("filter_quality")
-            const mergeIndex = text.indexOf("merge_sequences")
-
-            expect(alignIndex).not.toBe(-1)
-            expect(convertIndex).not.toBe(-1)
-            expect(filterIndex).not.toBe(-1)
-            expect(mergeIndex).not.toBe(-1)
-
-            expect(alignIndex).toBeLessThan(convertIndex)
-            expect(convertIndex).toBeLessThan(filterIndex)
-            expect(filterIndex).toBeLessThan(mergeIndex)
+            expect(wrapper.findAll(".tool-history-card-title").map((title) => title.text())).toEqual([
+                "align_sequences",
+                "convert_format",
+                "filter_quality",
+                "merge_sequences",
+            ])
         })
     })
 
     describe("events", () => {
         it("emits goToRevision when revision link is clicked", async () => {
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
-            const revButtons = wrapper.findAll("button")
-            const revButton = revButtons.find((btn) => btn.text().includes("Rev"))
-            expect(revButton).toBeTruthy()
+            const revisionButton = wrapper.get(".tool-history-title-row button")
+            expect(revisionButton.text()).toBe("Rev 2")
 
-            await revButton!.trigger("click")
+            await revisionButton.trigger("click")
 
-            expect(wrapper.emitted("goToRevision")).toBeTruthy()
-            expect(wrapper.emitted("goToRevision")![0]).toBeTruthy()
+            expect(wrapper.emitted("goToRevision")).toEqual([["2:062143ff0665"]])
         })
     })
 
     describe("expansion", () => {
         it("has expandable tool details section", () => {
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
             const toggles = wrapper.findAll(".tool-details-toggle")
-            expect(toggles.length).toBeGreaterThan(0)
+            expect(toggles).toHaveLength(3)
         })
 
         it("toggles tool details from an accessible button", async () => {
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
             const toggle = wrapper.find(".tool-details-toggle")
             expect(toggle.element.tagName).toBe("BUTTON")
@@ -197,26 +151,27 @@ describe("ToolHistoryTab", () => {
     describe("edge cases", () => {
         it("shows multiple entries when tool has same version in different revisions", () => {
             // simulatedMetadataMultiTool has filter_quality at 1.0.0 in rev 0 and rev 1
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: simulatedMetadataMultiTool },
-            })
+            const wrapper = mountTab({ metadata: simulatedMetadataMultiTool })
 
-            const text = wrapper.text()
-            expect(text).toContain("filter_quality")
-            expect(text).toContain("1.0.0")
+            const [qualityFilter] = wrapper
+                .findAll(".tool-history-card")
+                .filter((card) => card.get(".tool-history-card-title").text() === "filter_quality")
+            expect(qualityFilter.findAll(".tool-history-version").map((version) => version.text())).toEqual([
+                "1.1.0",
+                "1.0.0",
+                "1.0.0",
+            ])
+            expect(qualityFilter.findAll(".revision-badge").map((badge) => badge.text())).toEqual(["[2]", "[1]", "[0]"])
         })
 
         it("handles special characters in tool IDs", () => {
-            const keys = Object.keys(fixtureMetadata)
             const specialCharsMetadata: RepositoryMetadata = {
-                [keys[0]]: makeRevision({
+                "0:specialchars": makeRevision({
                     tools: [makeTool({ id: "tool_with-special.chars", name: "Tool Name", version: "1.0" })],
                 }),
             }
 
-            const wrapper = mount(ToolHistoryTab, {
-                props: { metadata: specialCharsMetadata },
-            })
+            const wrapper = mountTab({ metadata: specialCharsMetadata })
 
             expect(wrapper.text()).toContain("tool_with-special.chars")
         })

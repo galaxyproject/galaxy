@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ExportRecordModel } from "./exportRecordModel";
 import {
@@ -10,15 +10,21 @@ import {
 } from "./testData/exportData";
 
 describe("ExportRecordModel", () => {
+    beforeEach(() => {
+        vi.spyOn(Date, "now").mockReturnValue(new Date(RECENT_STS_DOWNLOAD_RESPONSE.create_time).getTime());
+    });
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
     describe("STS Download Record", () => {
-        const stsDownloadRecord = new ExportRecordModel(RECENT_STS_DOWNLOAD_RESPONSE);
-
         it("should be considered temporal (STS) when it has a short term storage ID defined", () => {
+            const stsDownloadRecord = new ExportRecordModel(RECENT_STS_DOWNLOAD_RESPONSE);
             expect(stsDownloadRecord.isStsDownload).toBe(true);
             expect(stsDownloadRecord.stsDownloadId).toBeTruthy();
         });
 
         it("should allow download when ready and not yet expired", () => {
+            const stsDownloadRecord = new ExportRecordModel(RECENT_STS_DOWNLOAD_RESPONSE);
             expect(stsDownloadRecord.isReady).toBe(true);
             expect(stsDownloadRecord.hasExpired).toBe(false);
             expect(stsDownloadRecord.canDownload).toBe(true);
@@ -26,24 +32,36 @@ describe("ExportRecordModel", () => {
     });
 
     describe("Expired STS Download Record", () => {
-        const expiredDownloadRecord = new ExportRecordModel(EXPIRED_STS_DOWNLOAD_RESPONSE);
-
         it("should calculate the correct expiration date", () => {
+            const expiredDownloadRecord = new ExportRecordModel(EXPIRED_STS_DOWNLOAD_RESPONSE);
             expect(expiredDownloadRecord.canExpire).toBe(true);
             expect(expiredDownloadRecord.expirationDate).toStrictEqual(EXPECTED_EXPIRATION_DATE());
         });
 
         it("should not allow download when expired", () => {
+            const expiredDownloadRecord = new ExportRecordModel(EXPIRED_STS_DOWNLOAD_RESPONSE);
             expect(expiredDownloadRecord.hasExpired).toBe(true);
             expect(expiredDownloadRecord.canDownload).toBe(false);
             expect(expiredDownloadRecord.isReady).toBe(false);
         });
     });
 
-    describe("Failed STS Download Record", () => {
-        const failedDownloadRecord = new ExportRecordModel(FAILED_DOWNLOAD_RESPONSE);
+    it("expires only after the expiration instant", () => {
+        const record = new ExportRecordModel(EXPIRED_STS_DOWNLOAD_RESPONSE);
+        const expirationTime = EXPECTED_EXPIRATION_DATE().getTime();
 
+        vi.mocked(Date.now).mockReturnValue(expirationTime);
+        expect(record.hasExpired).toBe(false);
+        expect(record.canDownload).toBe(true);
+
+        vi.mocked(Date.now).mockReturnValue(expirationTime + 1);
+        expect(record.hasExpired).toBe(true);
+        expect(record.canDownload).toBe(false);
+    });
+
+    describe("Failed STS Download Record", () => {
         it("should not be downloadable", () => {
+            const failedDownloadRecord = new ExportRecordModel(FAILED_DOWNLOAD_RESPONSE);
             expect(failedDownloadRecord.isReady).toBe(false);
             expect(failedDownloadRecord.isPreparing).toBe(false);
             expect(failedDownloadRecord.hasExpired).toBe(false);
@@ -52,12 +70,11 @@ describe("ExportRecordModel", () => {
     });
 
     describe("File Source Storage Record", () => {
-        const failedDownloadRecord = new ExportRecordModel(FILE_SOURCE_STORE_RESPONSE);
-
         it("should be importable", () => {
-            expect(failedDownloadRecord.isReady).toBe(true);
-            expect(failedDownloadRecord.canReimport).toBe(true);
-            expect(failedDownloadRecord.importUri).toBeTruthy();
+            const fileSourceRecord = new ExportRecordModel(FILE_SOURCE_STORE_RESPONSE);
+            expect(fileSourceRecord.isReady).toBe(true);
+            expect(fileSourceRecord.canReimport).toBe(true);
+            expect(fileSourceRecord.importUri).toBeTruthy();
         });
     });
 });

@@ -1,31 +1,33 @@
 import { describe, expect, it } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import type { components } from "@/api";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import { copyDatasets, copyHistoryItems } from "./datasets";
 
 const { server, http } = useServerMock();
 
+type CopyRequestBody = components["schemas"]["CreateHistoryContentPayload"];
+
 describe("copyDatasets", () => {
     it("copies all dataset ids to the target history", async () => {
-        const copiedDatasetIds: unknown[] = [];
-
-        let receivedHistoryId;
+        const copiedDatasetIds: CopyRequestBody["content"][] = [];
+        const receivedHistoryIds: string[] = [];
 
         server.use(
             http.post("/api/histories/{history_id}/contents/{type}s", async ({ params, request, response }) => {
-                const body = (await request.json()) as { content: unknown };
+                const body = await request.json();
 
-                receivedHistoryId = params.history_id;
+                receivedHistoryIds.push(params.history_id);
 
                 copiedDatasetIds.push(body.content);
 
-                return response(200).json({ id: body.content } as any);
+                return response.untyped(HttpResponse.json({ id: body.content }));
             }),
         );
 
         const result = await copyDatasets(["dataset-a", "dataset-b"], "target-history");
-        expect(receivedHistoryId).toBe("target-history");
+        expect(receivedHistoryIds).toEqual(["target-history", "target-history"]);
 
         expect(copiedDatasetIds).toEqual(["dataset-a", "dataset-b"]);
         expect(result).toEqual({
@@ -40,10 +42,11 @@ describe("copyDatasets", () => {
 
         server.use(
             http.post("/api/histories/{history_id}/contents/{type}s", async ({ request, response }) => {
-                const body = (await request.json()) as { content: unknown };
+                const body = await request.json();
                 inFlight++;
                 peakInFlight = Math.max(peakInFlight, inFlight);
 
+                // Keep requests overlapping so the batch limit is observable.
                 await new Promise((resolve) => setTimeout(resolve, 1));
                 inFlight--;
 
@@ -51,7 +54,7 @@ describe("copyDatasets", () => {
                     return response("5XX").json({ err_code: 500, err_msg: "Copy failed" }, { status: 500 });
                 }
 
-                return response(200).json({ id: body.content } as any);
+                return response.untyped(HttpResponse.json({ id: body.content }));
             }),
         );
 
@@ -68,16 +71,17 @@ describe("copyDatasets", () => {
 
 describe("copyHistoryItems", () => {
     it("copies datasets and collections using their matching content type and source", async () => {
-        const requests: Array<{ pathname: string; body: Record<string, unknown> }> = [];
+        const requests: Array<{ pathname: string; body: CopyRequestBody }> = [];
 
         server.use(
             http.post("/api/histories/{history_id}/contents/{type}s", async ({ request, response }) => {
+                const body = await request.json();
                 requests.push({
                     pathname: new URL(request.url).pathname,
-                    body: (await request.json()) as Record<string, unknown>,
+                    body,
                 });
 
-                return response(200).json({ id: requests.at(-1)?.body.content } as never);
+                return response.untyped(HttpResponse.json({ id: body.content }));
             }),
         );
 

@@ -1,22 +1,38 @@
-/*
- * All the types around the fetch API are broken because of:
- * https://github.com/galaxyproject/galaxy/issues/20227 so this file
- * does a lot of broken type casting to get the tests to run on actual
- * valid data that doesn't match the stated typescript types.
- */
 import { describe, expect, it } from "vitest";
 
 import type { AnyFetchTarget, NestedElementItem, UrlDataElement } from "@/api/tools";
 
 import type { ParsedFetchWorkbookColumnType } from "../Collections/wizard/types";
 import {
+    type CellValueType,
     DerivedColumn,
     type FetchTable,
     fetchTargetToRows,
     fetchTargetToTable,
-    type RowType,
     tableToRequest,
 } from "./fetchModels";
+
+// Generated fetch types require backend-defaulted fields that these fixtures intentionally omit.
+// The canonical URL/nested factories add those defaults, changing the omission/round-trip inputs.
+
+function sortTagsDeep<T>(value: T): T {
+    const result = structuredClone(value);
+    function sortTags(node: unknown): void {
+        if (Array.isArray(node)) {
+            node.forEach(sortTags);
+        } else if (node && typeof node === "object") {
+            for (const [key, item] of Object.entries(node)) {
+                if (key === "tags" && Array.isArray(item)) {
+                    item.sort();
+                } else {
+                    sortTags(item);
+                }
+            }
+        }
+    }
+    sortTags(result);
+    return result;
+}
 
 describe("fetchModels", () => {
     const urlDataElement: UrlDataElement = {
@@ -30,18 +46,18 @@ describe("fetchModels", () => {
         "SHA-512": "sha512hash",
         ext: "txt",
         tags: ["name:file1", "group:treatment:control", "foobar"],
-    } as unknown as UrlDataElement;
+    } as UrlDataElement;
 
     function expectRowToHaveColumnValue(
         table: FetchTable,
         rowIndex: number,
         columnType: ParsedFetchWorkbookColumnType,
-        expectedValue: any,
+        expectedValue: CellValueType,
     ) {
         const columnKey = new DerivedColumn(columnType, 0, "").key();
-        const row = table.rows[rowIndex] as RowType;
+        const row = table.rows[rowIndex];
         expect(row).toBeDefined();
-        expect(row[columnKey]).toEqual(expectedValue);
+        expect(row?.[columnKey]).toEqual(expectedValue);
     }
 
     const simpleTarget: AnyFetchTarget = {
@@ -136,7 +152,7 @@ describe("fetchModels", () => {
             src: "url",
             name: "badfile",
             // url missing
-        } as any;
+        } as UrlDataElement;
         const columns: DerivedColumn[] = [new DerivedColumn("url", 0, "URL")];
         expect(() =>
             fetchTargetToRows({ collection_type: null, elements: [badElement] } as AnyFetchTarget, columns, []),
@@ -176,13 +192,13 @@ describe("fetchModels", () => {
         const simplestUrlElement: UrlDataElement = {
             src: "url",
             url: "http://example.com/file1.txt",
-        } as unknown as UrlDataElement;
+        } as UrlDataElement;
 
         const elementWithTabToSpace: UrlDataElement = {
             src: "url",
             url: "http://example.com/file2.txt",
             space_to_tab: true,
-        } as unknown as UrlDataElement;
+        } as UrlDataElement;
 
         const simplestTarget: AnyFetchTarget = {
             destination: { type: "hdas" },
@@ -199,7 +215,7 @@ describe("fetchModels", () => {
         const targetWithNoDecompressSpecified: AnyFetchTarget = {
             destination: { type: "hdas" },
             elements: [simplestUrlElement],
-        } as unknown as AnyFetchTarget;
+        } as AnyFetchTarget;
 
         const targetWithTabToSpaceElement: AnyFetchTarget = {
             destination: { type: "hdas" },
@@ -217,25 +233,7 @@ describe("fetchModels", () => {
 
         it("should round trip any supported target", () => {
             targetsForRoundTripCheck.forEach((target) => {
-                // Deep clone target and sort any 'tags' arrays for comparison
-                // the order here is not guaranteed in the conversion - at least
-                // between different kinds of tags (name, group, etc.)
-                function sortTagsDeep(obj: any): any {
-                    if (Array.isArray(obj)) {
-                        return obj.map(sortTagsDeep);
-                    } else if (obj && typeof obj === "object") {
-                        const newObj: any = {};
-                        for (const key of Object.keys(obj)) {
-                            if (key === "tags" && Array.isArray(obj[key])) {
-                                newObj[key] = [...obj[key]].sort();
-                            } else {
-                                newObj[key] = sortTagsDeep(obj[key]);
-                            }
-                        }
-                        return newObj;
-                    }
-                    return obj;
-                }
+                // Tag order between name/group/plain tags is not preserved by conversion.
                 const table = fetchTargetToTable(sortTagsDeep(target));
                 const restoredTarget = tableToRequest(table);
                 expect(sortTagsDeep(restoredTarget)).toEqual(sortTagsDeep(target));

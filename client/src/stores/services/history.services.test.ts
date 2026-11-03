@@ -1,41 +1,44 @@
-import axios from "axios";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+
+import { useServerMock } from "@/api/client/__mocks__";
 
 import { getHistoryList } from "./history.services";
 
-vi.mock("axios", () => ({
-    default: {
-        get: vi.fn(),
-    },
-}));
+const { server, http } = useServerMock();
 
-const mockedGet = vi.mocked(axios.get);
+function mockHistoryList() {
+    const requests: URLSearchParams[] = [];
 
-/** The url the last `axios.get` call was made with, parsed as query params. */
-function lastRequestParams() {
-    const url = mockedGet.mock.calls.at(-1)?.[0] as string;
-    return new URLSearchParams(url.slice(url.indexOf("?") + 1));
+    server.use(
+        http.get("/api/histories", ({ request, response }) => {
+            requests.push(new URL(request.url).searchParams);
+            return response(200).json([]);
+        }),
+    );
+
+    return requests;
 }
 
 describe("getHistoryList", () => {
-    beforeEach(() => {
-        mockedGet.mockReset();
-        mockedGet.mockResolvedValue({ status: 200, data: [] } as any);
-    });
-
     it("restricts the listing to histories owned by the current user", async () => {
+        const requests = mockHistoryList();
+
         await getHistoryList();
 
-        const params = lastRequestParams();
+        expect(requests).toHaveLength(1);
+        const params = requests[0]!;
         expect(params.get("show_own")).toBe("true");
         expect(params.get("show_published")).toBe("false");
         expect(params.get("show_shared")).toBe("false");
     });
 
     it("keeps the ownership flags when paginating and filtering", async () => {
+        const requests = mockHistoryList();
+
         await getHistoryList(20, 25, "q=name-contains&qv=zebrafish");
 
-        const params = lastRequestParams();
+        expect(requests).toHaveLength(1);
+        const params = requests[0]!;
         expect(params.get("show_own")).toBe("true");
         expect(params.get("show_published")).toBe("false");
         expect(params.get("show_shared")).toBe("false");

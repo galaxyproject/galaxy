@@ -1,9 +1,9 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { createPinia, disposePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
@@ -35,7 +35,7 @@ const fakeQuotaUsages: UserQuotaUsageData[] = [
 
 const FAKE_TASK_ID = "fakeTaskId";
 
-async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
+async function mountDiskUsageSummary(enableQuotas: boolean) {
     server.use(
         http.get("/api/configuration", ({ response }) => {
             return response.untyped(HttpResponse.json({ enable_quotas: enableQuotas }));
@@ -49,45 +49,49 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
     );
 
     const pinia = createPinia();
-    const wrapper = mount(DiskUsageSummary as object, {
-        global: localVue,
-        pinia,
+    onTestFinished(() => disposePinia(pinia));
+    const wrapper = mount(DiskUsageSummary, {
+        global: withPlugins(localVue, pinia),
     });
-    const userStore = useUserStore();
+    const userStore = useUserStore(pinia);
     userStore.currentUser = fakeUserWithQuota;
     await flushPromises();
     return wrapper;
 }
 
-describe("DiskUsageSummary.vue", () => {
-    vi.useFakeTimers();
-    it("should display basic disk usage summary if quotas are NOT enabled", async () => {
-        const enableQuotasInConfig = false;
-        const wrapper = await mountDiskUsageSummaryWrapper(enableQuotasInConfig);
+describe("DiskUsageSummary", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+    afterEach(() => {
+        vi.clearAllTimers();
+        vi.useRealTimers();
+    });
+    enableAutoUnmount(afterEach);
+
+    it("shows basic disk usage when quotas are disabled", async () => {
+        const wrapper = await mountDiskUsageSummary(false);
         expect(wrapper.find(basicDiskUsageSummaryId).exists()).toBe(true);
         const quotaUsages = wrapper.findAll(quotaUsageClassSelector);
         expect(quotaUsages.length).toBe(0);
     });
 
-    it("should display quota usage summary if quotas are enabled", async () => {
-        const enableQuotasInConfig = true;
-        const wrapper = await mountDiskUsageSummaryWrapper(enableQuotasInConfig);
+    it("shows quota usage when quotas are enabled", async () => {
+        const wrapper = await mountDiskUsageSummary(true);
         expect(wrapper.find(basicDiskUsageSummaryId).exists()).toBe(false);
         const quotaUsages = wrapper.findAll(quotaUsageClassSelector);
         expect(quotaUsages.length).toBe(1);
     });
 
-    it("should display the correct quota usage", async () => {
-        const enableQuotasInConfig = true;
-        const wrapper = await mountDiskUsageSummaryWrapper(enableQuotasInConfig);
-        const quotaUsage = wrapper.find(quotaUsageClassSelector);
+    it("shows the quota usage in readable units", async () => {
+        const wrapper = await mountDiskUsageSummary(true);
+        const quotaUsage = wrapper.get(quotaUsageClassSelector);
         expect(quotaUsage.text()).toContain("1 MB");
     });
 
-    it("should refresh the quota usage when the user clicks the refresh button", async () => {
-        const enableQuotasInConfig = true;
-        const wrapper = await mountDiskUsageSummaryWrapper(enableQuotasInConfig);
-        const quotaUsage = wrapper.find(quotaUsageClassSelector);
+    it("refreshes quota usage after the pending recalculation task succeeds", async () => {
+        const wrapper = await mountDiskUsageSummary(true);
+        const quotaUsage = wrapper.get(quotaUsageClassSelector);
         expect(quotaUsage.text()).toContain("1 MB");
         const updatedFakeQuotaUsages: UserQuotaUsageData[] = [
             {
@@ -107,12 +111,11 @@ describe("DiskUsageSummary.vue", () => {
                 return response(200).json("PENDING");
             }),
         );
-        const refreshButton = wrapper.find("#refresh-disk-usage");
+        const refreshButton = wrapper.get("#refresh-disk-usage");
         await refreshButton.trigger("click");
         await flushPromises();
         expect(wrapper.find(".refreshing-alert").exists()).toBe(true);
 
-        // Make sure the refresh has finished before checking the quota usage
         server.use(
             http.get("/api/tasks/{task_id}/state", ({ response }) => {
                 return response(200).json("SUCCESS");
@@ -121,7 +124,6 @@ describe("DiskUsageSummary.vue", () => {
         vi.runAllTimers();
         await flushPromises();
 
-        // The refreshing alert should disappear and the quota usage should be updated
         expect(wrapper.find(".refreshing-alert").exists()).toBe(false);
         expect(quotaUsage.text()).toContain("2 MB");
     });

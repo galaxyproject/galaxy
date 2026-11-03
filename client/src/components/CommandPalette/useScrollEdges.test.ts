@@ -1,5 +1,6 @@
+import { runInTestScope } from "@tests/vitest/effectScope";
 import { describe, expect, it } from "vitest";
-import { effectScope, nextTick, ref } from "vue";
+import { nextTick, ref } from "vue";
 
 import { useScrollEdges } from "./useScrollEdges";
 
@@ -17,21 +18,23 @@ function scrollTo(row: HTMLElement, left: number) {
 }
 
 describe("useScrollEdges", () => {
-    it("fades whichever edge hides content as the row scrolls", async () => {
+    it.each([
+        { position: "start", scrollLeft: 0, fadeStart: false, fadeEnd: true },
+        { position: "middle", scrollLeft: 100, fadeStart: true, fadeEnd: true },
+        { position: "end", scrollLeft: 200, fadeStart: true, fadeEnd: false },
+    ])("fades the hidden edges at the $position of the row", async ({ scrollLeft, fadeStart, fadeEnd }) => {
         const row = makeRow(300, 100);
-        const scope = effectScope();
-        const edges = scope.run(() => useScrollEdges(ref(row)))!;
+        const edges = runInTestScope(() => useScrollEdges(ref(row)));
         await nextTick();
 
         scrollTo(row, 0);
-        expect([edges.fadeStart.value, edges.fadeEnd.value]).toEqual([false, true]);
+        expect({ fadeStart: edges.fadeStart.value, fadeEnd: edges.fadeEnd.value }).toEqual({
+            fadeStart: false,
+            fadeEnd: true,
+        });
 
-        scrollTo(row, 100);
-        expect([edges.fadeStart.value, edges.fadeEnd.value]).toEqual([true, true]);
+        scrollTo(row, scrollLeft);
 
-        scrollTo(row, 200);
-        expect([edges.fadeStart.value, edges.fadeEnd.value]).toEqual([true, false]);
-
-        scope.stop();
+        expect({ fadeStart: edges.fadeStart.value, fadeEnd: edges.fadeEnd.value }).toEqual({ fadeStart, fadeEnd });
     });
 });

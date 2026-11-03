@@ -1,44 +1,25 @@
 import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import GDateTime from "./GDateTime.vue";
 
 const localVue = getLocalVue(true);
+enableAutoUnmount(afterEach);
 
-async function mountGDateTime(props: object) {
-    const wrapper = mount(GDateTime as object, {
-        props: {
-            ...props,
-        },
-        global: localVue,
-    });
-
-    return wrapper;
+function mountDateTime(value: Date) {
+    return mount(GDateTime, { props: { value }, global: localVue });
 }
 
 describe("GDateTime.vue", () => {
-    it("emits updated date when input changes", async () => {
-        const wrapper = await mountGDateTime({
-            value: new Date("1970-01-01T00:00:00"),
-        });
-
-        const dateInput = wrapper.find('input[type="date"]');
-        await dateInput.setValue("2023-08-30");
-
-        expect(wrapper.emitted()).toHaveProperty("input");
-        expect(emittedArg(wrapper, "input")).toEqual(new Date("2023-08-30T00:00:00"));
-    });
-
-    it("emits updated time when input changes", async () => {
-        const wrapper = await mountGDateTime({
-            value: new Date("1970-01-01T00:00:00"),
-        });
-
-        const timeInput = wrapper.find('input[type="time"]');
-        await timeInput.setValue("12:30");
+    it.each([
+        { field: "date", inputValue: "2023-08-30", expectedValue: "2023-08-30T00:00:00" },
+        { field: "time", inputValue: "12:30", expectedValue: "1970-01-01T12:30:00" },
+    ])("emits the updated $field when its input changes", async ({ field, inputValue, expectedValue }) => {
+        const wrapper = mountDateTime(new Date("1970-01-01T00:00:00"));
+        await wrapper.get(`input[type="${field}"]`).setValue(inputValue);
 
         expect(wrapper.emitted()).toHaveProperty("input");
-        expect(emittedArg(wrapper, "input")).toEqual(new Date("1970-01-01T12:30:00"));
+        expect(emittedArg(wrapper, "input")).toEqual(new Date(expectedValue));
     });
 });

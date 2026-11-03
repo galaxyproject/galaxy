@@ -1,16 +1,22 @@
 import { createPopper } from "@popperjs/core";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import {
     advanceToJustBeforeTooltipHoverDelay,
     advanceTooltipHoverDelay,
     runPendingTimersAndFlush,
 } from "@tests/vitest/tooltipTestUtils";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { nextTick } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, INTERACTIVE_POPOVER_CLOSE_DELAY_MS } from "@/utils/tooltipTiming";
 
+import * as PopperStories from "./Popper.stories";
+
 import PopperComponent from "./Popper.vue";
+
+const stories = composeStories(PopperStories);
 
 vi.mock("@popperjs/core", () => ({
     createPopper: vi.fn(() => ({
@@ -24,18 +30,9 @@ vi.mock("@popperjs/core", () => ({
 // detached container.
 let container;
 
-function mountTarget(trigger = "click", interactive = false) {
-    return mount(PopperComponent, {
-        props: {
-            title: "Test Title",
-            placement: "bottom",
-            interactive,
-            trigger,
-        },
-        slots: {
-            reference: "<button>Reference</button>",
-            default: "<p>Popper Content</p>",
-        },
+function mountPlainPopper() {
+    return mount(PopperStories.InputPopover, {
+        props: PopperStories.default.args,
         attachTo: container,
     });
 }
@@ -48,24 +45,31 @@ describe("PopperComponent.vue", () => {
     });
 
     afterEach(() => {
-        vi.runOnlyPendingTimers();
+        vi.clearAllTimers();
         vi.useRealTimers();
         vi.clearAllMocks();
         container.remove();
     });
+    enableAutoUnmount(afterEach);
+    const mountStory = useStoryMount();
+
+    function mountPopper(trigger = "click", interactive = false) {
+        const story =
+            trigger === "click" ? stories.ClickDetails : interactive ? stories.InteractiveHelp : stories.HoverHelp;
+        return mountStory(story, { attachTo: container });
+    }
 
     test("omits the header and close control without a title", async () => {
-        const wrapper = mountTarget();
+        const wrapper = mountPlainPopper();
         await wrapper.setProps({ title: undefined });
         await wrapper.get("button").trigger("click");
         expect(wrapper.get(".popper-element").isVisible()).toBe(true);
         expect(wrapper.find(".popper-header").exists()).toBe(false);
         expect(wrapper.find(".popper-close").exists()).toBe(false);
-        wrapper.unmount();
     });
 
     test("offers a named native close button and returns focus to its trigger", async () => {
-        const wrapper = mountTarget();
+        const wrapper = mountPopper();
         await wrapper.get("button").trigger("click");
         const close = wrapper.get(".popper-close");
         expect(close.element).toHaveAccessibleName("Close");
@@ -76,11 +80,10 @@ describe("PopperComponent.vue", () => {
         await close.trigger("click");
         expect(wrapper.get(".popper-element").isVisible()).toBe(false);
         expect(document.activeElement).toBe(wrapper.get("button").element);
-        wrapper.unmount();
     });
 
     test("returns focus to the trigger when Escape dismisses the focused popup", async () => {
-        const wrapper = mountTarget();
+        const wrapper = mountPopper();
         await wrapper.get("button").trigger("click");
         const close = wrapper.get(".popper-close");
         close.element.focus();
@@ -88,11 +91,10 @@ describe("PopperComponent.vue", () => {
         await close.trigger("keydown", { key: "Escape" });
         expect(wrapper.get(".popper-element").isVisible()).toBe(false);
         expect(document.activeElement).toBe(wrapper.get("button").element);
-        wrapper.unmount();
     });
 
     test("closes a hover popup on Escape only when focus is inside it", async () => {
-        const wrapper = mountTarget("hover", true);
+        const wrapper = mountPopper("hover", true);
         const reference = wrapper.get("button");
         const popperElement = wrapper.get(".popper-element");
         await reference.trigger("mouseover");
@@ -108,7 +110,6 @@ describe("PopperComponent.vue", () => {
         await close.trigger("keydown", { key: "Escape" });
         expect(popperElement.isVisible()).toBe(false);
         expect(document.activeElement).toBe(reference.element);
-        wrapper.unmount();
     });
 
     test("returns focus to an external reference without stealing focus from elsewhere", async () => {
@@ -139,7 +140,6 @@ describe("PopperComponent.vue", () => {
         await close.trigger("click");
         expect(wrapper.get(".popper-element").isVisible()).toBe(false);
         expect(document.activeElement).toBe(elsewhere);
-        wrapper.unmount();
     });
 
     test("keeps a hover popup open on Escape when its reference cannot take focus back", async () => {
@@ -158,7 +158,6 @@ describe("PopperComponent.vue", () => {
         await link.trigger("keydown", { key: "Escape" });
         expect(wrapper.get(".popper-element").isVisible()).toBe(true);
         expect(document.activeElement).toBe(link.element);
-        wrapper.unmount();
     });
 
     test("keeps a hover popup open on Escape when its external reference is not focusable", async () => {
@@ -175,7 +174,6 @@ describe("PopperComponent.vue", () => {
         link.element.focus();
         await link.trigger("keydown", { key: "Escape" });
         expect(wrapper.get(".popper-element").isVisible()).toBe(true);
-        wrapper.unmount();
     });
 
     test("returns focus to the first enabled, tabbable control in the reference", async () => {
@@ -193,58 +191,39 @@ describe("PopperComponent.vue", () => {
         await close.trigger("keydown", { key: "Escape" });
         expect(wrapper.get(".popper-element").isVisible()).toBe(false);
         expect(document.activeElement).toBe(wrapper.get(".target").element);
-        wrapper.unmount();
     });
 
-    test("renders component with default props", async () => {
-        const wrapper = mountTarget();
-        expect(wrapper.find(".popper-element").exists()).toBe(true);
-        expect(wrapper.find(".popper-element").isVisible()).toBe(false);
-        const reference = wrapper.find("button");
-        await reference.trigger("click");
-        expect(wrapper.find(".popper-header").exists()).toBe(true);
-        expect(wrapper.find(".popper-header").text()).toContain("Test Title");
-    });
-
-    test("opens and closes popper on click trigger", async () => {
-        const wrapper = mountTarget();
-        const reference = wrapper.find("button");
-        expect(wrapper.find(".popper-element").isVisible()).toBe(false);
-        await reference.trigger("click");
-        expect(wrapper.find(".popper-element").isVisible()).toBe(true);
-        await wrapper.find(".popper-close").trigger("click");
-        expect(wrapper.find(".popper-element").isVisible()).toBe(false);
-    });
-
+    // Initial disabled visibility has no independent positive sync point; keep this guard in unit.
     test("disables popper when `disabled` prop is true", async () => {
-        const wrapper = mountTarget();
+        const wrapper = mountPlainPopper();
         await wrapper.setProps({ disabled: true });
-        const reference = wrapper.find("button");
+        const reference = wrapper.get("button");
         await reference.trigger("click");
-        expect(wrapper.find(".popper-element").isVisible()).toBe(false);
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
     });
 
+    // Decorative arrows, mode variants, and placement options stay as structural/contract checks.
     test("renders the arrow when `arrow` prop is true", () => {
-        const wrapper = mountTarget();
+        const wrapper = mountPopper();
         expect(wrapper.find(".popper-arrow").exists()).toBe(true);
     });
 
     test("does not render the arrow when `arrow` prop is false", async () => {
-        const wrapper = mountTarget();
+        const wrapper = mountPlainPopper();
         await wrapper.setProps({ arrow: false });
         expect(wrapper.find(".popper-arrow").exists()).toBe(false);
     });
 
     test("applies correct mode class", async () => {
-        const wrapper = mountTarget();
+        const wrapper = mountPlainPopper();
         await wrapper.setProps({ mode: "light" });
-        expect(wrapper.find(".popper-element").classes()).toContain("popper-element-light");
+        expect(wrapper.get(".popper-element").classes()).toContain("popper-element-light");
         await wrapper.setProps({ mode: "dark" });
-        expect(wrapper.find(".popper-element").classes()).toContain("popper-element-dark");
+        expect(wrapper.get(".popper-element").classes()).toContain("popper-element-dark");
     });
 
     test("uses correct placement prop", () => {
-        mountTarget();
+        mountPopper();
         expect(createPopper).toHaveBeenCalledWith(
             expect.anything(),
             expect.anything(),
@@ -252,20 +231,11 @@ describe("PopperComponent.vue", () => {
         );
     });
 
-    test("updates visibility when props or watchers change", async () => {
-        const wrapper = mountTarget();
-        await wrapper.setProps({ disabled: false });
-        const reference = wrapper.find("button");
-        await reference.trigger("click");
-        expect(wrapper.find(".popper-element").isVisible()).toBe(true);
-        await wrapper.setProps({ disabled: true });
-        expect(wrapper.find(".popper-element").isVisible()).toBe(false);
-    });
-
+    // Fake-timer boundaries are the contract, including the interactive close grace period.
     test("shows and hides popper on hover trigger over reference", async () => {
-        const wrapper = mountTarget("hover");
-        const reference = wrapper.find("button");
-        const popperElement = wrapper.find(".popper-element");
+        const wrapper = mountPopper("hover");
+        const reference = wrapper.get("button");
+        const popperElement = wrapper.get(".popper-element");
         expect(popperElement.isVisible()).toBe(false);
         await reference.trigger("mouseover");
         expect(popperElement.isVisible()).toBe(false);
@@ -279,9 +249,9 @@ describe("PopperComponent.vue", () => {
     });
 
     test("popper remains visible when hovering over popper", async () => {
-        const wrapper = mountTarget("hover", true);
-        const reference = wrapper.find("button");
-        const popperElement = wrapper.find(".popper-element");
+        const wrapper = mountPopper("hover", true);
+        const reference = wrapper.get("button");
+        const popperElement = wrapper.get(".popper-element");
         expect(popperElement.isVisible()).toBe(false);
         await reference.trigger("mouseover");
         await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
@@ -294,20 +264,5 @@ describe("PopperComponent.vue", () => {
         await popperElement.trigger("mouseout");
         await advanceTooltipHoverDelay(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
         expect(popperElement.isVisible()).toBe(false);
-    });
-
-    test("popper remains visible when clicked inside of popper", async () => {
-        const wrapper = mountTarget("click");
-        const reference = wrapper.find("button");
-        const popperElement = wrapper.find(".popper-element");
-        expect(popperElement.isVisible()).toBe(false);
-        await reference.trigger("click");
-        expect(popperElement.isVisible()).toBe(true);
-        await popperElement.trigger("mouseover");
-        expect(popperElement.isVisible()).toBe(true);
-        await popperElement.trigger("mouseout");
-        expect(popperElement.isVisible()).toBe(true);
-        await popperElement.trigger("click");
-        expect(popperElement.isVisible()).toBe(true);
     });
 });

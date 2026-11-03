@@ -1,32 +1,29 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import { describe, expect, it, vi } from "vitest";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
-import TextSummary from "./TextSummary.vue";
+import * as TextSummaryStories from "./TextSummary.stories";
 
-const DESCRIPTION = "Trimmed <b>paired</b> reads";
+const stories = composeStories(TextSummaryStories);
+const mountStory = useStoryMount();
 
-function mountSummary(propsData: Record<string, unknown>) {
-    return mount(TextSummary as object, { localVue: getLocalVue(), propsData });
-}
+const DESCRIPTION = stories.PlainText.args.description;
 
 describe("TextSummary", () => {
     it("renders the description as text by default", () => {
         vi.mocked(sanitizeHtml).mockClear();
-        const paragraph = mountSummary({ description: DESCRIPTION }).find(".html-paragraph");
+        const paragraph = mountStory(stories.PlainText).get(".html-paragraph");
 
-        expect(paragraph.find("b").exists()).toBe(false);
         expect(paragraph.text()).toBe(DESCRIPTION);
         expect(sanitizeHtml).not.toHaveBeenCalled();
     });
 
     it("renders the description through v-sanitize-html when isHtml is set", () => {
         vi.mocked(sanitizeHtml).mockClear();
-        const paragraph = mountSummary({ description: DESCRIPTION, isHtml: true }).find(".html-paragraph");
+        mountStory(stories.RenderedHtml);
 
         expect(sanitizeHtml).toHaveBeenCalledWith(DESCRIPTION, "default");
-        expect(paragraph.find("b").text()).toBe("paired");
     });
 });

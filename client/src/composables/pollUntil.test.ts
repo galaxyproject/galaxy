@@ -1,78 +1,82 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { pollUntil } from "./pollUntil";
 
 describe("pollUntil", () => {
-    it("should return immediately when condition is met on first call", async () => {
-        const fn = vi.fn().mockResolvedValue("done");
-        const result = await pollUntil({
-            fn,
-            condition: (v) => v === "done",
-        });
-        expect(result).toBe("done");
-        expect(fn).toHaveBeenCalledTimes(1);
+    beforeEach(() => {
+        vi.useFakeTimers();
     });
 
-    it("should poll until condition is met", async () => {
-        let callCount = 0;
-        const fn = vi.fn().mockImplementation(async () => {
-            callCount++;
-            return callCount >= 3 ? "ready" : "pending";
-        });
-        const result = await pollUntil({
-            fn,
-            condition: (v) => v === "ready",
-            interval: 10,
-        });
-        expect(result).toBe("ready");
+    afterEach(() => {
+        vi.clearAllTimers();
+        vi.useRealTimers();
+    });
+
+    it("returns immediately when the first result satisfies the condition", async () => {
+        const fn = vi.fn<() => Promise<string>>().mockResolvedValue("done");
+
+        const result = await pollUntil({ fn, condition: (value) => value === "done" });
+
+        expect(result).toBe("done");
+        expect(fn).toHaveBeenCalledTimes(1);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it("returns the third result after two pending polls", async () => {
+        const fn = vi
+            .fn<() => Promise<string>>()
+            .mockResolvedValueOnce("pending")
+            .mockResolvedValueOnce("pending")
+            .mockResolvedValue("ready");
+
+        const polling = pollUntil({ fn, condition: (value) => value === "ready", interval: 10 });
+        await vi.advanceTimersByTimeAsync(20);
+
+        expect(await polling).toBe("ready");
         expect(fn).toHaveBeenCalledTimes(3);
     });
 
-    it("should throw on timeout", async () => {
-        const fn = vi.fn().mockResolvedValue("pending");
-        await expect(
-            pollUntil({
-                fn,
-                condition: (v) => v === "done",
-                interval: 10,
-                timeout: 50,
-            }),
-        ).rejects.toThrow("Polling timed out");
+    it("rejects when no result satisfies the condition before the 50ms timeout", async () => {
+        const fn = vi.fn<() => Promise<string>>().mockResolvedValue("pending");
+        const polling = pollUntil({ fn, condition: (value) => value === "done", interval: 10, timeout: 50 });
+        const rejection = expect(polling).rejects.toThrow("Polling timed out");
+
+        await vi.advanceTimersByTimeAsync(50);
+
+        await rejection;
+        expect(fn).toHaveBeenCalledTimes(5);
+        expect(vi.getTimerCount()).toBe(0);
     });
 
-    it("should propagate errors from fn", async () => {
-        const fn = vi.fn().mockRejectedValue(new Error("network error"));
-        await expect(
-            pollUntil({
-                fn,
-                condition: () => true,
-            }),
-        ).rejects.toThrow("network error");
+    it("propagates a rejected poll without scheduling a retry", async () => {
+        const fn = vi.fn<() => Promise<string>>().mockRejectedValue(new Error("network error"));
+
+        await expect(pollUntil({ fn, condition: () => true })).rejects.toThrow("network error");
+
+        expect(fn).toHaveBeenCalledTimes(1);
+        expect(vi.getTimerCount()).toBe(0);
     });
 
-    it("should wait the specified interval between polls", async () => {
-        let callCount = 0;
-        const fn = vi.fn().mockImplementation(async () => {
-            callCount++;
-            return callCount >= 2 ? "done" : "pending";
-        });
-        const start = Date.now();
-        await pollUntil({
-            fn,
-            condition: (v) => v === "done",
-            interval: 100,
-        });
-        const elapsed = Date.now() - start;
-        expect(elapsed).toBeGreaterThanOrEqual(80);
+    it("waits the full 100ms interval before polling again", async () => {
+        const fn = vi.fn<() => Promise<string>>().mockResolvedValueOnce("pending").mockResolvedValue("done");
+        const polling = pollUntil({ fn, condition: (value) => value === "done", interval: 100 });
+
+        await vi.advanceTimersByTimeAsync(99);
+        expect(fn).toHaveBeenCalledTimes(1);
+
+        await vi.advanceTimersByTimeAsync(1);
+
+        expect(await polling).toBe("done");
         expect(fn).toHaveBeenCalledTimes(2);
     });
 
-    it("should work with complex result types", async () => {
-        const fn = vi.fn().mockResolvedValue({ status: "complete", value: 42 });
-        const result = await pollUntil({
-            fn,
-            condition: (r: { status: string; value: number }) => r.status === "complete",
-        });
+    it("returns the complete object that satisfies the condition", async () => {
+        const fn = vi
+            .fn<() => Promise<{ status: string; value: number }>>()
+            .mockResolvedValue({ status: "complete", value: 42 });
+
+        const result = await pollUntil({ fn, condition: (value) => value.status === "complete" });
+
         expect(result).toEqual({ status: "complete", value: 42 });
     });
 });

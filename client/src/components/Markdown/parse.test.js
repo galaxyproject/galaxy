@@ -22,8 +22,8 @@ describe("parse.ts", () => {
         });
     });
 
-    describe("parseSections", () => {
-        it("strip leading whitespace by default", () => {
+    describe("parseMarkdown", () => {
+        it("strips leading whitespace by default", () => {
             const sections = parseMarkdown(
                 "```galaxy\njob_metrics(job_id=THISFAKEID)\n```\n DEFAULT_CONTENT \n```special\n SPECIAL_CONTENT \n```\n MORE_DEFAULT_CONTENT",
             );
@@ -40,7 +40,7 @@ describe("parse.ts", () => {
     });
 
     describe("splitMarkdown", () => {
-        it("strip leading whitespace by default", () => {
+        it("strips leading whitespace by default", () => {
             const { sections } = splitMarkdown("\n```galaxy\njob_metrics(job_id=THISFAKEID)\n```");
             expect(sections.length).toBe(1);
         });
@@ -59,119 +59,123 @@ describe("parse.ts", () => {
     });
 
     describe("replaceLabel", () => {
+        function markdownWithDirective(directive) {
+            return ["some random", "`markdown content`", "```galaxy", directive, "```", ""].join("\n");
+        }
+
         it("should leave unaffected markdown alone", () => {
             const input = "some random\n`markdown content`\n";
             const result = replaceLabel(input, "output", "from", "to");
             expect(result).toBe(result);
+            expect(result).toBe(input);
         });
 
         it("should leave unaffected galaxy directives alone", () => {
-            const input = "some random\n`markdown content`\n```galaxy\ncurrent_time()\n```\n";
+            const input = markdownWithDirective("current_time()");
             const result = replaceLabel(input, "output", "from", "to");
             expect(result).toBe(result);
+            expect(result).toBe(input);
         });
 
         it("should leave galaxy directives of same type with other labels alone", () => {
-            const input = "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(output=moo)\n```\n";
+            const input = markdownWithDirective("history_dataset_embedded(output=moo)");
             const result = replaceLabel(input, "output", "from", "to");
             expect(result).toBe(result);
+            expect(result).toBe(input);
         });
 
         it("should leave galaxy directives of other types with same labels alone", () => {
-            const input = "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(input=from)\n```\n";
+            const input = markdownWithDirective("history_dataset_embedded(input=from)");
             const result = replaceLabel(input, "output", "from", "to");
             expect(result).toBe(result);
+            expect(result).toBe(input);
         });
 
         it("should swap simple directives of specified type", () => {
-            const input = "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(output=from)\n```\n";
-            const output = "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(output=to)\n```\n";
+            const input = markdownWithDirective("history_dataset_embedded(output=from)");
+            const output = markdownWithDirective("history_dataset_embedded(output=to)");
             const result = replaceLabel(input, "output", "from", "to");
             expect(result).toBe(output);
         });
 
         it("should swap single quoted directives of specified type", () => {
-            const input = "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(output='from')\n```\n";
-            const output = "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(output=to)\n```\n";
+            const input = markdownWithDirective("history_dataset_embedded(output='from')");
+            const output = markdownWithDirective("history_dataset_embedded(output=to)");
             const result = replaceLabel(input, "output", "from", "to");
             expect(result).toBe(output);
         });
 
         it("should swap single quoted directives of specified type with extra args", () => {
-            const input =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output='from', title=dog)\n```\n";
-            const output =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output=to, title=dog)\n```\n";
+            const input = markdownWithDirective("history_dataset_embedded(footer='cow', output='from', title=dog)");
+            const output = markdownWithDirective("history_dataset_embedded(footer='cow', output=to, title=dog)");
             const result = replaceLabel(input, "output", "from", "to");
             expect(result).toBe(output);
         });
 
         it("should swap double quoted directives of specified type", () => {
-            const input = 'some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(output="from")\n```\n';
-            const output = "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(output=to)\n```\n";
+            const input = markdownWithDirective('history_dataset_embedded(output="from")');
+            const output = markdownWithDirective("history_dataset_embedded(output=to)");
             const result = replaceLabel(input, "output", "from", "to");
             expect(result).toBe(output);
         });
 
         it("should swap double quoted directives of specified type with extra args", () => {
-            const input =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output=\"from\", title=dog)\n```\n";
-            const output =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output=to, title=dog)\n```\n";
+            const input = markdownWithDirective("history_dataset_embedded(footer='cow', output=\"from\", title=dog)");
+            const output = markdownWithDirective("history_dataset_embedded(footer='cow', output=to, title=dog)");
             const result = replaceLabel(input, "output", "from", "to");
             expect(result).toBe(output);
         });
 
         it("should work with double quotes for labels and spaces in the quotes", () => {
-            const input =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output=\"from this\", title=dog)\n```\n";
-            const output =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output=\"to that\", title=dog)\n```\n";
+            const input = markdownWithDirective(
+                "history_dataset_embedded(footer='cow', output=\"from this\", title=dog)",
+            );
+            const output = markdownWithDirective(
+                "history_dataset_embedded(footer='cow', output=\"to that\", title=dog)",
+            );
             const result = replaceLabel(input, "output", "from this", "to that");
             expect(result).toBe(output);
         });
 
         it("should work with single quotes for labels and spaces in the quotes", () => {
-            const input =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output='from this', title=dog)\n```\n";
-            const output =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output='to that', title=dog)\n```\n";
+            const input = markdownWithDirective(
+                "history_dataset_embedded(footer='cow', output='from this', title=dog)",
+            );
+            const output = markdownWithDirective("history_dataset_embedded(footer='cow', output='to that', title=dog)");
             const result = replaceLabel(input, "output", "from this", "to that");
             expect(result).toBe(output);
         });
 
         it("should work with single quotes for labels and spaces in the quotes including end", () => {
-            const input =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output='from this ', title=dog)\n```\n";
-            const output =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output='to thatx ', title=dog)\n```\n";
+            const input = markdownWithDirective(
+                "history_dataset_embedded(footer='cow', output='from this ', title=dog)",
+            );
+            const output = markdownWithDirective(
+                "history_dataset_embedded(footer='cow', output='to thatx ', title=dog)",
+            );
             const result = replaceLabel(input, "output", "from this ", "to thatx ");
             expect(result).toBe(output);
         });
 
         it("should add quotes when refactoring to labels with spaces", () => {
-            const input =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output=fromthis, title=dog)\n```\n";
-            const output =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output='to that', title=dog)\n```\n";
+            const input = markdownWithDirective("history_dataset_embedded(footer='cow', output=fromthis, title=dog)");
+            const output = markdownWithDirective("history_dataset_embedded(footer='cow', output='to that', title=dog)");
             const result = replaceLabel(input, "output", "fromthis", "to that");
             expect(result).toBe(output);
         });
 
         it("should add quotes when refactoring to labels with spaces including end space", () => {
-            const input =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output=fromthis, title=dog)\n```\n";
-            const output =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output='to that ', title=dog)\n```\n";
+            const input = markdownWithDirective("history_dataset_embedded(footer='cow', output=fromthis, title=dog)");
+            const output = markdownWithDirective(
+                "history_dataset_embedded(footer='cow', output='to that ', title=dog)",
+            );
             const result = replaceLabel(input, "output", "fromthis", "to that ");
             expect(result).toBe(output);
         });
 
         it("should leave non-arguments alone", () => {
-            const input =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(title='cow from farm', output=from)\n```\n";
-            const output =
-                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(title='cow from farm', output=to)\n```\n";
+            const input = markdownWithDirective("history_dataset_embedded(title='cow from farm', output=from)");
+            const output = markdownWithDirective("history_dataset_embedded(title='cow from farm', output=to)");
             const result = replaceLabel(input, "output", "from", "to");
             expect(result).toBe(output);
         });

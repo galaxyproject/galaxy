@@ -1,155 +1,101 @@
-import { describe, it, expect, beforeEach, vi } from "vitest"
-import { mount, flushPromises } from "@vue/test-utils"
-import { nextTick } from "vue"
+import { afterEach, describe, it, expect } from "vitest"
+import { enableAutoUnmount, mount, flushPromises, type VueWrapper } from "@vue/test-utils"
 import ErrorBanner from "./ErrorBanner.vue"
 
-describe("ErrorBanner", () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-    })
+const BANNER = '[role="alert"]'
 
+enableAutoUnmount(afterEach)
+
+function mountBanner(error: string) {
+    return mount(ErrorBanner, { props: { error } })
+}
+
+async function clickDismiss(wrapper: VueWrapper) {
+    await wrapper.find("button").trigger("click")
+    await flushPromises()
+}
+
+describe("ErrorBanner", () => {
     describe("rendering", () => {
-        it("displays error message when error prop is provided", () => {
-            const wrapper = mount(ErrorBanner, {
-                props: {
-                    error: "Something went wrong",
-                },
-            })
+        it("displays the error message", () => {
+            const wrapper = mountBanner("Something went wrong")
 
             expect(wrapper.text()).toContain("Something went wrong")
         })
 
-        it("does not display banner when error prop is empty", () => {
-            const wrapper = mount(ErrorBanner, {
-                props: {
-                    error: "",
-                },
-            })
+        it("renders no banner for an empty error", () => {
+            const wrapper = mountBanner("")
 
-            const banner = wrapper.find('[role="alert"]')
-            expect(banner.exists()).toBe(false)
+            expect(wrapper.find(BANNER).exists()).toBe(false)
         })
 
-        it("has correct ARIA attributes for accessibility", () => {
-            const wrapper = mount(ErrorBanner, {
-                props: {
-                    error: "Test error",
-                },
-            })
+        it("announces the error assertively to assistive technology", () => {
+            const wrapper = mountBanner("Test error")
 
-            const banner = wrapper.find('[role="alert"]')
+            const banner = wrapper.find(BANNER)
             expect(banner.exists()).toBe(true)
             expect(banner.attributes("aria-live")).toBe("assertive")
         })
-    })
 
-    describe("dismiss functionality", () => {
-        it("hides banner when dismiss button is clicked", async () => {
-            const wrapper = mount(ErrorBanner, {
-                props: {
-                    error: "Test error message",
-                },
-            })
-
-            // Banner should be visible initially
-            expect(wrapper.find('[role="alert"]').exists()).toBe(true)
-
-            // Find and click dismiss button (button has label "Dismiss")
-            const button = wrapper.find("button")
-            expect(button.exists()).toBe(true)
-            expect(button.text()).toBe("Dismiss")
-            await button.trigger("click")
-
-            await flushPromises()
-
-            // Banner should be hidden after dismiss
-            expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-        })
-
-        it("emits dismiss event when dismiss button is clicked", async () => {
-            const wrapper = mount(ErrorBanner, {
-                props: {
-                    error: "Test error",
-                },
-            })
-
-            const button = wrapper.find("button")
-            await button.trigger("click")
-            await flushPromises()
-
-            expect(wrapper.emitted("dismiss")).toBeTruthy()
-            expect(wrapper.emitted("dismiss")).toHaveLength(1)
-        })
-    })
-
-    describe("error prop changes", () => {
-        it("shows banner again when error prop changes after dismiss", async () => {
-            const wrapper = mount(ErrorBanner, {
-                props: {
-                    error: "First error",
-                },
-            })
-
-            // Dismiss the banner
-            const button = wrapper.find("button")
-            await button.trigger("click")
-            await flushPromises()
-
-            expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-
-            // Change error prop
-            await wrapper.setProps({ error: "Second error" })
-            await nextTick()
-            await flushPromises()
-
-            // Banner should be visible again with new error
-            expect(wrapper.find('[role="alert"]').exists()).toBe(true)
-            expect(wrapper.text()).toContain("Second error")
-        })
-
-        it("displays new error message when error prop changes", async () => {
-            const wrapper = mount(ErrorBanner, {
-                props: {
-                    error: "Initial error",
-                },
-            })
-
-            expect(wrapper.text()).toContain("Initial error")
-
-            await wrapper.setProps({ error: "Updated error" })
-            await flushPromises()
-
-            expect(wrapper.text()).toContain("Updated error")
-            expect(wrapper.text()).not.toContain("Initial error")
-        })
-    })
-
-    describe("edge cases", () => {
-        it("handles long error messages", () => {
+        it("displays a long error message in full", () => {
             const longError =
                 "This is a very long error message that might wrap or cause layout issues in the UI, but should still be displayed correctly to the user."
 
-            const wrapper = mount(ErrorBanner, {
-                props: {
-                    error: longError,
-                },
-            })
+            const wrapper = mountBanner(longError)
 
             expect(wrapper.text()).toContain(longError)
         })
 
-        it("handles special characters in error message", () => {
+        it("displays markup in the error message as escaped text", () => {
             const specialError = "Error: <script>alert('xss')</script> & 'quotes'"
 
-            const wrapper = mount(ErrorBanner, {
-                props: {
-                    error: specialError,
-                },
-            })
+            const wrapper = mountBanner(specialError)
 
-            // Should display the error text (Vue escapes HTML by default)
-            expect(wrapper.text()).toContain("Error:")
-            expect(wrapper.text()).toContain("quotes")
+            expect(wrapper.text()).toContain(specialError)
+            expect(wrapper.find("script").exists()).toBe(false)
+        })
+    })
+
+    describe("dismissing", () => {
+        it("hides the banner when its Dismiss button is clicked", async () => {
+            const wrapper = mountBanner("Test error message")
+            expect(wrapper.find(BANNER).exists()).toBe(true)
+            expect(wrapper.find("button").text()).toBe("Dismiss")
+
+            await clickDismiss(wrapper)
+
+            expect(wrapper.find(BANNER).exists()).toBe(false)
+        })
+
+        it("emits a single dismiss event when its Dismiss button is clicked", async () => {
+            const wrapper = mountBanner("Test error")
+
+            await clickDismiss(wrapper)
+
+            expect(wrapper.emitted("dismiss")).toEqual([[]])
+        })
+    })
+
+    describe("error prop changes", () => {
+        it("shows the banner again with a new error after it was dismissed", async () => {
+            const wrapper = mountBanner("First error")
+            await clickDismiss(wrapper)
+            expect(wrapper.find(BANNER).exists()).toBe(false)
+
+            await wrapper.setProps({ error: "Second error" })
+
+            expect(wrapper.find(BANNER).exists()).toBe(true)
+            expect(wrapper.text()).toContain("Second error")
+        })
+
+        it("replaces the displayed message with the new error", async () => {
+            const wrapper = mountBanner("Initial error")
+            expect(wrapper.text()).toContain("Initial error")
+
+            await wrapper.setProps({ error: "Updated error" })
+
+            expect(wrapper.text()).toContain("Updated error")
+            expect(wrapper.text()).not.toContain("Initial error")
         })
     })
 })

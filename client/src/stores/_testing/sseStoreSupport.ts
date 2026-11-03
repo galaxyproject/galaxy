@@ -99,3 +99,18 @@ export function useVisibilityPatch(): {
         },
     };
 }
+
+/** Track resource-watcher listeners so store tests can remove them after stopping polling. */
+export function trackVisibilityListeners() {
+    const addListener = vi.spyOn(document, "addEventListener");
+    return {
+        restore() {
+            for (const [event, listener, options] of addListener.mock.calls) {
+                if (event === "visibilitychange") {
+                    document.removeEventListener(event, listener, options);
+                }
+            }
+            addListener.mockRestore();
+        },
+    };
+}

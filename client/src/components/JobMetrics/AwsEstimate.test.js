@@ -1,16 +1,46 @@
+import { composeStories } from "@storybook/vue3-vite";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { useStoryMount } from "@tests/vitest/stories";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { ec2Instances } from "./awsEc2ReferenceData.js";
+import * as AwsEstimateStories from "./AwsEstimate.stories";
 
 import AwsEstimate from "./AwsEstimate.vue";
 
+const stories = composeStories(AwsEstimateStories);
+const mountStory = useStoryMount();
 const localVue = getLocalVue();
 
+async function renderedAwsEstimate(cores, seconds, memory, story = stories.ShortSingleCoreJob) {
+    const wrapper = mountStory(story, {
+        props: {
+            jobRuntimeInSeconds: Number(seconds),
+            coresAllocated: Number(cores),
+            memoryAllocatedInMebibyte: Number(memory),
+        },
+    });
+    await flushPromises();
+
+    let estimate = {};
+    if (wrapper.find("#aws-estimate").exists()) {
+        estimate = {
+            cost: wrapper.get("#aws-cost").text(),
+            vCpuCount: wrapper.get("#aws-vcpus").text(),
+            cpu: wrapper.get("#aws-cpu").text(),
+            mem: wrapper.get("#aws-mem").text(),
+            name: wrapper.get("#aws-name").text(),
+        };
+    }
+    return { estimate, wrapper };
+}
+
 describe("JobMetrics/AwsEstimate.vue", () => {
-    it("renders nothing if no matching EC2 instance exists.", async () => {
+    enableAutoUnmount(afterEach);
+
+    it("renders nothing if no matching EC2 instance exists", async () => {
         const wrapper = mount(AwsEstimate, {
             props: {
                 jobId: "0",
@@ -21,63 +51,16 @@ describe("JobMetrics/AwsEstimate.vue", () => {
             },
             global: localVue,
         });
-
         await wrapper.vm.$nextTick();
         expect(wrapper.find("#aws-name").exists()).toBe(false);
+        expect(wrapper.find("#aws-estimate").exists()).toBe(false);
+        expect(wrapper.text()).toBe("");
     });
 
-    it("renders correct AWS estimates.", async () => {
-        const deriveRenderedAwsEstimate = async (cores, seconds, memory) => {
-            const JOB_ID = Math.random().toString(36).substring(2);
-
-            const wrapper = mount(AwsEstimate, {
-                global: localVue,
-                props: {
-                    jobId: JOB_ID,
-                    jobRuntimeInSeconds: Number(seconds),
-                    coresAllocated: Number(cores),
-                    memoryAllocatedInMebibyte: Number(memory),
-                    ec2Instances,
-                },
-            });
-
-            await flushPromises();
-
-            if (wrapper.find("#aws-estimate").exists()) {
-                return {
-                    cost: wrapper.find("#aws-cost").text(),
-                    vCpuCount: wrapper.find("#aws-vcpus").text(),
-                    cpu: wrapper.find("#aws-cpu").text(),
-                    mem: wrapper.find("#aws-mem").text(),
-                    name: wrapper.find("#aws-name").text(),
-                };
-            }
-
-            return {};
-        };
-
-        const assertAwsInstance = (estimates) => {
-            const instance = ec2Instances.find((instance) => estimates.name === instance.name);
-            expect(estimates.mem).toBe(instance.mem.toString());
-            expect(estimates.vCpuCount).toBe(instance.vCpuCount.toString());
-            expect(estimates.cpu).toBe(instance.cpu.map(({ cpuModel }) => cpuModel).join(", "));
-        };
-
-        const estimates_small = await deriveRenderedAwsEstimate("1.0000000", "9.0000000", "2048.0000000");
-        expect(estimates_small.name).toBe("t2.small");
-        expect(estimates_small.cost).toBe("0.00 USD");
-        assertAwsInstance(estimates_small);
-
-        const estimates_large = await deriveRenderedAwsEstimate("40.0000000", "18000.0000000", "194560.0000000");
-        expect(estimates_large.name).toBe("m5d.12xlarge");
-        expect(estimates_large.cost).toBe("16.32 USD");
-        assertAwsInstance(estimates_large);
-
-        const estimates_not_available = await deriveRenderedAwsEstimate(
-            "99999.0000000",
-            "18000.0000000",
-            "99999.0000000",
-        );
-        expect(estimates_not_available).toEqual({});
+    it("renders no estimate when resource requirements exceed available instances", async () => {
+        const { estimate, wrapper } = await renderedAwsEstimate("99999.0000000", "18000.0000000", "99999.0000000");
+        expect(estimate).toEqual({});
+        expect(wrapper.find("#aws-estimate").exists()).toBe(false);
+        expect(wrapper.text()).toBe("");
     });
 });

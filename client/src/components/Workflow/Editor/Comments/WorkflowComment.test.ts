@@ -1,54 +1,60 @@
 import { createTestingPinia } from "@pinia/testing";
-import { emittedArg, suppressErrorForCustomIcons } from "@tests/vitest/helpers";
+import { composeStories } from "@storybook/vue3-vite";
+import { emittedArg, nth, suppressErrorForCustomIcons } from "@tests/vitest/helpers";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
 import { mount, shallowMount } from "@vue/test-utils";
-import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { nextTick, reactive, ref } from "vue";
+import { zoomIdentity } from "d3-zoom";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { nextTick, ref } from "vue";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
-import type { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";
-import type { TextWorkflowComment } from "@/stores/workflowEditorCommentStore";
+import {
+    type MarkdownWorkflowComment,
+    type TextWorkflowComment,
+    useWorkflowCommentStore,
+    type WorkflowComment as WorkflowCommentModel,
+} from "@/stores/workflowEditorCommentStore";
+
+import { COMMENTS_WORKFLOW_ID } from "./test_fixtures";
+import * as WorkflowCommentStories from "./WorkflowComment.stories";
 
 import MarkdownComment from "./MarkdownComment.vue";
 import TextComment from "./TextComment.vue";
 import WorkflowComment from "./WorkflowComment.vue";
 
-const changeData = vi.fn();
-const changeSize = vi.fn();
-const changePosition = vi.fn();
-const changeColor = vi.fn();
-const deleteComment = vi.fn();
+const stories = composeStories(WorkflowCommentStories);
+const mountStory = useStoryMount();
 
-const pinia = createTestingPinia({ createSpy: vi.fn });
-setActivePinia(pinia);
+const TEXT_NOTE = stories.TextNote.args.comment as TextWorkflowComment;
+const MARKDOWN_NOTE = stories.MarkdownNote.args.comment as MarkdownWorkflowComment;
 
-vi.mock("@/composables/workflowStores", () => ({
-    useWorkflowStores: () => ({
-        commentStore: {
-            changeData,
-            changeSize,
-            changePosition,
-            changeColor,
-            deleteComment,
-            isJustCreated: () => false,
-            getCommentMultiSelected: () => false,
+const sanitizeMock = vi.mocked(sanitizeHtml);
+const originalSanitize = sanitizeMock.getMockImplementation();
+
+afterEach(() => {
+    sanitizeMock.mockReset();
+    if (originalSanitize) {
+        sanitizeMock.mockImplementation(originalSanitize);
+    }
+    vi.restoreAllMocks();
+});
+afterEach(async () => {
+    // Let the mounted draggable's current resize/frame callbacks finish before unmount.
+    await new Promise((resolve) => window.requestAnimationFrame(resolve));
+});
+
+/** WorkflowComment on its own, for checks that change its props on a live mount (a story remounts on setProps). */
+function mountLiveComment(mountComponent: typeof mount | typeof shallowMount, comment: WorkflowCommentModel) {
+    const wrapper = mountComponent(WorkflowComment, {
+        props: { ...WorkflowCommentStories.default.args, comment },
+        global: {
+            plugins: [createTestingPinia({ createSpy: vi.fn })],
+            provide: { workflowId: COMMENTS_WORKFLOW_ID, transform: ref(zoomIdentity) },
         },
-        toolbarStore: reactive({
-            snapActive: false,
-            snapDistance: 12,
-        }),
-        undoRedoStore: {
-            applyAction: (action: UndoRedoAction) => action.run(),
-            applyLazyAction: (action: LazyUndoRedoAction) => {
-                action.queued();
-                action.run();
-            },
-        },
-    }),
-}));
-
-// Mock transform injection that Draggable components expect
-const mockTransform = ref({ x: 0, y: 0, k: 1 });
+    });
+    onTestFinished(() => wrapper.unmount());
+    return wrapper;
+}
 
 function getStyleProperty(element: Element, property: string) {
     const style = element.getAttribute("style") ?? "";
@@ -60,30 +66,12 @@ function getStyleProperty(element: Element, property: string) {
 }
 
 describe("WorkflowComment", () => {
-    const comment = {
-        id: 0,
-        type: "text",
-        color: "none",
-        position: [0, 0],
-        size: [100, 100],
-        data: {},
-    };
-
     beforeEach(() => {
         suppressErrorForCustomIcons();
     });
 
     it("changes position and size reactively", async () => {
-        const wrapper = shallowMount(WorkflowComment as any, {
-            props: {
-                comment: { ...comment },
-                scale: 1,
-                rootOffset: {},
-            },
-            provide: {
-                transform: mockTransform,
-            },
-        });
+        const wrapper = mountLiveComment(shallowMount, TEXT_NOTE);
 
         const position = () => ({
             x: parseInt(getStyleProperty(wrapper.element, "--position-left")),
@@ -95,132 +83,89 @@ describe("WorkflowComment", () => {
             h: parseInt(getStyleProperty(wrapper.element, "--height")),
         });
 
-        expect(position()).toEqual({ x: 0, y: 0 });
-        expect(size()).toEqual({ w: 100, h: 100 });
+        const [x, y] = TEXT_NOTE.position;
+        const [w, h] = TEXT_NOTE.size;
+        expect(position()).toEqual({ x, y });
+        expect(size()).toEqual({ w, h });
 
-        await wrapper.setProps({
-            comment: { ...comment, position: [123, 456] },
-            scale: 1,
-            rootOffset: {},
-        });
+        await wrapper.setProps({ comment: { ...TEXT_NOTE, position: [123, 456] } });
 
         expect(position()).toEqual({ x: 123, y: 456 });
-        expect(size()).toEqual({ w: 100, h: 100 });
+        expect(size()).toEqual({ w, h });
 
-        await wrapper.setProps({
-            comment: { ...comment, size: [2000, 3000] },
-            scale: 1,
-            rootOffset: {},
-        });
+        await wrapper.setProps({ comment: { ...TEXT_NOTE, size: [2000, 3000] } });
 
-        expect(position()).toEqual({ x: 0, y: 0 });
+        expect(position()).toEqual({ x, y });
         expect(size()).toEqual({ w: 2000, h: 3000 });
     });
 
-    it("displays the correct comment type", async () => {
-        const wrapper = mount(WorkflowComment as any, {
-            props: {
-                comment: { ...comment, type: "text", data: { size: 1, text: "HelloWorld" } },
-                scale: 1,
-                rootOffset: {},
-            },
-            provide: {
-                transform: mockTransform,
-            },
-        });
+    it("displays the new comment type after a live change", async () => {
+        const wrapper = mountLiveComment(mount, TEXT_NOTE);
 
-        expect(wrapper.findComponent(TextComment).isVisible()).toBe(true);
+        expect(wrapper.getComponent(TextComment).isVisible()).toBe(true);
 
-        await wrapper.setProps({
-            comment: { ...comment, type: "markdown", data: { text: "# Hello World" } },
-            scale: 1,
-            rootOffset: {},
-        });
+        await wrapper.setProps({ comment: MARKDOWN_NOTE });
 
         await nextTick();
-        expect(wrapper.findComponent(MarkdownComment).isVisible()).toBe(true);
+        expect(wrapper.getComponent(MarkdownComment).isVisible()).toBe(true);
     });
 
     it("forwards events to the comment store", () => {
-        const testComment = { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } } as TextWorkflowComment;
+        const { id } = TEXT_NOTE;
+        const textComment = mountStory(stories.TextNote).getComponent(TextComment);
+        const commentStore = useWorkflowCommentStore(COMMENTS_WORKFLOW_ID);
+        const editedData = { size: 1, text: "Trim adapters before mapping" };
 
-        const wrapper = mount(WorkflowComment as any, {
-            props: {
-                comment: testComment,
-                scale: 1,
-                rootOffset: {},
-            },
-            provide: {
-                transform: mockTransform,
-            },
-        });
-
-        const textComment = wrapper.findComponent(TextComment);
-
-        textComment.vm.$emit("change", "abc");
-        expect(changeData).toBeCalledWith(123, "abc");
+        textComment.vm.$emit("change", editedData);
+        expect(commentStore.changeData).toBeCalledWith(id, editedData);
 
         textComment.vm.$emit("resize", [1000, 1000]);
-        expect(changeSize).toBeCalledWith(123, [1000, 1000]);
+        expect(commentStore.changeSize).toBeCalledWith(id, [1000, 1000]);
 
         textComment.vm.$emit("move", [20, 20]);
-        expect(changePosition).toBeCalledWith(123, [20, 20]);
+        expect(commentStore.changePosition).toBeCalledWith(id, [20, 20]);
 
         textComment.vm.$emit("set-color", "pink");
-        expect(changeColor).toBeCalledWith(123, "pink");
+        expect(commentStore.changeColor).toBeCalledWith(id, "pink");
 
         textComment.vm.$emit("remove");
-        expect(deleteComment).toBeCalledWith(123);
+        expect(commentStore.deleteComment).toBeCalledWith(id);
     });
 
     it("forwards pan events", () => {
-        const wrapper = mount(WorkflowComment as any, {
-            props: {
-                comment: { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } },
-                scale: 1,
-                rootOffset: {},
-            },
-            provide: {
-                transform: mockTransform,
-            },
-        });
+        const wrapper = mountStory(stories.TextNote);
 
-        const textComment = wrapper.findComponent(TextComment);
-
-        textComment.vm.$emit("pan-by", { x: 50, y: 50 });
-        expect(emittedArg(wrapper, "pan-by")).toEqual({ x: 50, y: 50 });
+        wrapper.getComponent(TextComment).vm.$emit("pan-by", { x: 50, y: 50 });
+        expect(emittedArg(wrapper.getComponent(WorkflowComment), "pan-by")).toEqual({ x: 50, y: 50 });
     });
 
     describe("rendering comment text", () => {
-        function mountComment(type: string, data: object) {
+        function mountComment(story: StoryOf<typeof stories>) {
             vi.mocked(sanitizeHtml).mockClear();
             vi.mocked(sanitizeHtml).mockImplementation((html) => `<span class="sanitized">${html}</span>`);
-            return mount(WorkflowComment as any, {
-                propsData: { comment: { ...comment, type, data }, scale: 1, rootOffset: {} },
-                provide: { transform: mockTransform },
-            });
+            return mountStory(story);
         }
 
         it("renders text comments through v-sanitize-html", () => {
-            const wrapper = mountComment("text", { size: 1, text: "line one<br>line <em>two</em>" });
+            const wrapper = mountComment(stories.TextNote);
             // escapeAndSanitize runs DOMPurify first, whose happy-dom output isn't meaningful
             expect(sanitizeHtml).toHaveBeenCalledWith(expect.any(String), "default");
             expect(wrapper.find(".sanitized").exists()).toBe(true);
         });
 
         it("renders frame titles through v-sanitize-html", () => {
-            const wrapper = mountComment("frame", { title: "Frame <em>title</em>" });
+            const wrapper = mountComment(stories.ColoredFrame);
             expect(sanitizeHtml).toHaveBeenCalledWith(expect.any(String), "default");
             expect(wrapper.find(".sanitized").exists()).toBe(true);
         });
 
         it("renders markdown comments with the links profile", () => {
-            const wrapper = mountComment("markdown", { text: "[docs](https://galaxyproject.org) <b>raw</b>" });
-            const [html, profile] = vi.mocked(sanitizeHtml).mock.calls[0]!;
+            const wrapper = mountComment(stories.MarkdownNote);
+            const [html, profile] = nth(sanitizeMock.mock.calls, 0);
             expect(profile).toBe("links");
             expect(html).toContain('target="_blank"');
             // markdown-it escapes raw HTML in the source before it reaches the sanitizer
-            expect(html).toContain("&lt;b&gt;raw&lt;/b&gt;");
+            expect(html).toContain("&lt;b&gt;before&lt;/b&gt;");
             expect(wrapper.find(".rendered-markdown .sanitized").exists()).toBe(true);
         });
     });

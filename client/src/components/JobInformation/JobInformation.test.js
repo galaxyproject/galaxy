@@ -1,11 +1,11 @@
 import "@tests/vitest/mockHelpPopovers";
 
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { http as mswHttp } from "msw";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
@@ -21,81 +21,69 @@ vi.mock("vue-router/composables", () => ({
 
 const JOB_ID = "test_id";
 
+const SELECTORS = {
+    INFO_TABLE: "#job-information",
+    JOB_MESSAGE: "#job-messages .job-message",
+    JOB_STATE: "td[data-description='galaxy-job-state']",
+    INVOCATION_LOOKUP_ERROR: "#invocation-lookup-error",
+};
+
 const localVue = getLocalVue();
 
 const { server, http } = useServerMock();
 
-describe("JobInformation/JobInformation.vue", () => {
-    let wrapper;
-    let jobInfoTable;
+enableAutoUnmount(afterEach);
 
+function serveJob(job) {
+    server.use(http.get("/api/jobs/{job_id}", ({ response }) => response(200).json(job)));
+}
+
+async function mountJobInformation() {
+    const wrapper = mount(JobInformation, {
+        props: { jobId: JOB_ID },
+        global: withPlugins(localVue, createTestingPinia({ createSpy: vi.fn, stubActions: false })),
+    });
+    await flushPromises();
+    return wrapper;
+}
+
+describe("JobInformation", () => {
     beforeEach(() => {
         server.use(
             http.get("/api/configuration/decode/{encoded_id}", ({ response }) => {
                 return response(200).json({ decoded_id: 123 });
             }),
-            http.get("/api/jobs/{job_id}", ({ response }) => {
-                return response(200).json(jobResponse);
-            }),
             http.get("/api/invocations", ({ response }) => {
                 return response(200).json([]);
             }),
             http.get("/api/jobs/{job_id}/console_output", ({ response }) => {
-                return response(200).json({
-                    stdout: "stdout",
-                    stderr: "stderr",
-                });
+                return response(200).json({ stdout: "stdout", stderr: "stderr" });
             }),
         );
+        serveJob(jobResponse);
     });
 
-    const verifyValues = (rendered_entries, infoTable, backendResponse) => {
-        rendered_entries.forEach((entry) => {
-            const renderedText = infoTable.find(`#${entry.id}`).text();
-            const backendText = entry.wrapped_in_brackets
-                ? `(${backendResponse[entry.backend_key]})`
-                : backendResponse[entry.backend_key];
-            // use includes because we append the decoded id
-            expect(renderedText.includes(backendText.toString())).toBeTruthy();
-        });
-    };
+    it("renders a row for each field the job has", async () => {
+        const wrapper = await mountJobInformation();
 
-    beforeEach(async () => {
-        const propsData = {
-            jobId: JOB_ID,
-        };
-        wrapper = mount(JobInformation, {
-            props: propsData,
-            global: {
-                ...localVue,
-                plugins: [...(localVue.plugins ?? []), createTestingPinia({ createSpy: vi.fn, stubActions: false })],
-            },
-        });
-        await flushPromises();
-        jobInfoTable = wrapper.find("#job-information");
+        const infoTable = wrapper.find(SELECTORS.INFO_TABLE);
+        expect(infoTable.exists()).toBe(true);
+        expect(infoTable.findAll("tr").length).toBe(6);
+        expect(wrapper.findAll(".code-row").length).toBe(3);
     });
 
-    it("job information table should be rendered", async () => {
-        // table should exist
-        expect(jobInfoTable).toBeTruthy();
-        const rows = jobInfoTable.findAll("tr");
-        // should contain 7 rows
-        expect(rows.length).toBe(6);
-        const codeRows = wrapper.findAll(".code-row");
-        // should contain 3 code rows
-        expect(codeRows.length).toBe(3);
-    });
+    it("renders the running job's stdout and stderr", async () => {
+        const wrapper = await mountJobInformation();
 
-    it("stdout and stderr should be rendered", async () => {
-        ["stdout", "stderr"].forEach((std) => {
-            const label = wrapper.find("#" + std);
-            const value = label.find(".code");
-            expect(value.text()).toBe(std);
-        });
+        for (const stream of ["stdout", "stderr"]) {
+            expect(wrapper.find(`#${stream} .code`).text()).toBe(stream);
+        }
     });
 
     it("numbers each job message and lists its fields", async () => {
-        const messages = jobInfoTable.findAll("#job-messages .job-message");
+        const wrapper = await mountJobInformation();
+
+        const messages = wrapper.findAll(SELECTORS.JOB_MESSAGE);
         expect(messages.length).toBe(jobResponse.job_messages.length);
         messages.forEach((message, index) => {
             expect(message.text()).toMatch(new RegExp(`^Job Message ${index + 1}:`));
@@ -108,67 +96,66 @@ describe("JobInformation/JobInformation.vue", () => {
         });
     });
 
+    it("lists the fields of each structured job message", async () => {
+        serveJob({
+            ...jobResponse,
+            job_messages: [
+                { type: "regex", desc: "first problem", error_level: 2 },
+                { type: "exit_code", desc: "second problem", error_level: 3 },
+            ],
+        });
+
+        const wrapper = await mountJobInformation();
+
+        const messages = wrapper.findAll(SELECTORS.JOB_MESSAGE);
+        expect(messages.length).toBe(2);
+        expect(nth(messages, 0).text()).toContain("Job Message 1:");
+        expect(nth(messages, 0).text()).toContain("desc: first problem");
+        expect(nth(messages, 1).text()).toContain("Job Message 2:");
+        expect(nth(messages, 1).text()).toContain("desc: second problem");
+    });
+
     it("explains stream read failures and displays structured diagnostics", async () => {
         const desc = "Job failed because the tool stdout file could not be read: No such file or directory";
-        server.use(
-            http.get("/api/jobs/{job_id}", ({ response }) => {
-                return response(200).json({
-                    ...jobResponse,
-                    state: "error",
-                    job_messages: [{ type: "stdio_read_error", stream: "stdout", errno: 2, error_level: 3, desc }],
-                });
-            }),
-        );
-        wrapper.unmount();
-        wrapper = mount(JobInformation, {
-            propsData: { jobId: JOB_ID },
-            localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
+        serveJob({
+            ...jobResponse,
+            state: "error",
+            job_messages: [{ type: "stdio_read_error", stream: "stdout", errno: 2, error_level: 3, desc }],
         });
-        await flushPromises();
 
-        const message = wrapper.find("#job-messages .job-message").text();
+        const wrapper = await mountJobInformation();
+
+        const message = wrapper.find(SELECTORS.JOB_MESSAGE).text();
         expect(message).toContain(desc);
         expect(message).toContain("type: stdio_read_error");
         expect(message).toContain("stream: stdout");
         expect(message).toContain("errno: 2");
     });
 
-    it("job_information API content", async () => {
-        const rendered_entries = [
-            { id: "galaxy-tool-id", backend_key: "tool_id" },
-            { id: "galaxy-tool-version", backend_key: "tool_version" },
-            { id: "encoded-copied-from-job-id", backend_key: "copied_from_job_id" },
-        ];
-        verifyValues(rendered_entries, jobInfoTable, jobResponse);
-        expect(wrapper.find('td[data-description="galaxy-job-state"]').exists()).toBe(true);
-        expect(wrapper.find("#encoded-job-id").text()).toContain(JOB_ID);
+    it("renders the tool, job and copied-from ids and the job state from the API", async () => {
+        const wrapper = await mountJobInformation();
+
+        const infoTable = wrapper.find(SELECTORS.INFO_TABLE);
+        const renderedFields = {
+            "galaxy-tool-id": jobResponse.tool_id,
+            "galaxy-tool-version": jobResponse.tool_version,
+            "encoded-copied-from-job-id": jobResponse.copied_from_job_id,
+        };
+        for (const [id, value] of Object.entries(renderedFields)) {
+            // Contains rather than equals: ids are followed by their decoded value.
+            expect(infoTable.find(`#${id}`).text()).toContain(value);
+        }
+        expect(wrapper.get("#encoded-job-id").text()).toContain(jobResponse.id);
+        expect(wrapper.find(SELECTORS.JOB_STATE).exists()).toBe(true);
     });
-});
 
-describe("JobInformation/JobInformation.vue invocation lookup", () => {
     it("renders the job and reports an invocation lookup that fails to reach the server", async () => {
-        server.use(
-            http.get("/api/configuration/decode/{encoded_id}", ({ response }) => {
-                return response(200).json({ decoded_id: 123 });
-            }),
-            http.get("/api/jobs/{job_id}", ({ response }) => {
-                return response(200).json(jobResponse);
-            }),
-            mswHttp.get("/api/invocations", () => HttpResponse.error()),
-            http.get("/api/jobs/{job_id}/console_output", ({ response }) => {
-                return response(200).json({ stdout: "stdout", stderr: "stderr" });
-            }),
-        );
-        const wrapper = mount(JobInformation, {
-            propsData: { jobId: JOB_ID },
-            localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-        });
-        await flushPromises();
+        server.use(mswHttp.get("/api/invocations", () => HttpResponse.error()));
 
-        expect(wrapper.find("#job-information").exists()).toBe(true);
-        expect(wrapper.find("#invocation-lookup-error").text()).toContain(
+        const wrapper = await mountJobInformation();
+
+        expect(wrapper.find(SELECTORS.INFO_TABLE).exists()).toBe(true);
+        expect(wrapper.find(SELECTORS.INVOCATION_LOOKUP_ERROR).text()).toContain(
             "Could not determine the workflow invocation",
         );
     });

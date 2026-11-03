@@ -1,59 +1,61 @@
-import { shallowMount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import { describe, expect, it, vi } from "vitest";
+
+import * as JobOutputsStories from "./JobOutputs.stories";
 
 import JobOutputs from "./JobOutputs.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 vi.mock("components/providers/DatasetCollectionProvider");
 
-describe("JobInformation/JobOutputs.vue", () => {
-    let wrapper;
-    let jobOutputsTable;
+const stories = composeStories(JobOutputsStories);
+const mountStory = useStoryMount();
 
-    it("displays a table with job collection outputs", async () => {
-        const propsData = {
+async function mountJobOutputs(story, props, stubs = {}) {
+    const root = mountStory(story, {
+        props,
+        global: {
+            renderStubDefaultSlot: true,
+            stubs: { Heading: true, GenericHistoryItem: true, GButton: true, ...stubs },
+        },
+    });
+    await vi.waitFor(() => root.getComponent(JobOutputs));
+    return root.getComponent(JobOutputs);
+}
+
+describe("JobInformation/JobOutputs.vue", () => {
+    it("displays a titled table with one collection output", async () => {
+        const props = {
             jobOutputs: { list_output: [{ label: "List Output", value: { id: "1", src: "hdca" } }] },
             title: "my cool title",
         };
-        wrapper = shallowMount(JobOutputs, {
-            propsData,
-            global: { renderStubDefaultSlot: true },
-        });
-        jobOutputsTable = wrapper.find("#job-outputs");
-        // header should exist
-        expect(wrapper.find("heading-stub").text()).toBe("my cool title");
-        // table should exist
+        const wrapper = await mountJobOutputs(stories.CollectionOutput, props);
+        const jobOutputsTable = wrapper.get("#job-outputs");
+        expect(wrapper.get("heading-stub").text()).toBe("my cool title");
         expect(jobOutputsTable).toBeTruthy();
-        // title should be set
         const rows = jobOutputsTable.findAll("tr");
-        // should contain 2 rows, header + 1 collection
         expect(rows.length).toBe(2);
     });
 
-    it("displays a table with 2 job outputs", async () => {
-        const propsData = {
+    it("shows dataset and collection outputs while excluding hidden outputs", async () => {
+        const props = {
             jobOutputs: {
                 list_output: [{ label: "List Output", value: { id: "1", src: "hdca" } }],
                 another_outputs: [{ label: "Other Output", value: { id: "2", src: "hda" } }],
                 __hidden_output: [{ label: "hidden Output", value: { id: "2", src: "hda" } }],
             },
         };
-        wrapper = shallowMount(JobOutputs, {
-            propsData,
-            global: { renderStubDefaultSlot: true },
-        });
-        // no title
+        const wrapper = await mountJobOutputs(stories.MixedOutputs, props);
         expect(wrapper.find("heading-stub").exists()).toBeFalsy();
-        jobOutputsTable = wrapper.find("#job-outputs");
-        // table should exist
+        const jobOutputsTable = wrapper.get("#job-outputs");
         expect(jobOutputsTable).toBeTruthy();
         const rows = jobOutputsTable.findAll("tr");
-        // should contain 2 rows, header + 1 collection + 1 hda
         expect(rows.length).toBe(3);
     });
 
     it("displays a table with 15 visible job outputs (paginated)", async () => {
-        const propsData = {
+        const props = {
             jobOutputs: {
                 a: [{ label: "a", value: { id: "1", src: "hda" } }],
                 b: [{ label: "b", value: { id: "2", src: "hda" } }],
@@ -75,30 +77,19 @@ describe("JobInformation/JobOutputs.vue", () => {
             paginate: true,
         };
         // Real GButton so the click runs through its handler.
-        wrapper = shallowMount(JobOutputs, {
-            propsData,
-            global: { renderStubDefaultSlot: true, stubs: { GButton } },
-        });
-        // ---- Before all remaining outputs are paginated: ----
-        // heading should exist and include count (due to pagination)
-        expect(wrapper.find("heading-stub").text()).toContain(
-            "(showing 10 of " + Object.keys(propsData.jobOutputs).length + ")",
+        const wrapper = await mountJobOutputs(stories.ManyOutputs, props, { GButton });
+        expect(wrapper.get("heading-stub").text()).toContain(
+            "(showing 10 of " + Object.keys(props.jobOutputs).length + ")",
         );
-        jobOutputsTable = wrapper.find("#job-outputs");
-        // table should exist
+        const jobOutputsTable = wrapper.get("#job-outputs");
         expect(jobOutputsTable).toBeTruthy();
-        let rows = jobOutputsTable.findAll("tr");
-        // should initially contain a header and 11 rows (10 items + a button)
-        expect(rows.length).toBe(12);
-        // ---- Click button, remaining 5 outputs should be displayed ----
+        const initialRows = jobOutputsTable.findAll("tr");
+        expect(initialRows.length).toBe(12);
         expect(wrapper.find("#paginate-btn").exists()).toEqual(true);
-        await wrapper.find("#paginate-btn").trigger("click");
-        jobOutputsTable = wrapper.find("#job-outputs");
-        rows = jobOutputsTable.findAll("tr");
-        // should now contain a header and 15 rows (all 15 items and no button)
-        expect(rows.length).toBe(16);
+        await wrapper.get("#paginate-btn").trigger("click");
+        const expandedRows = wrapper.get("#job-outputs").findAll("tr");
+        expect(expandedRows.length).toBe(16);
         expect(wrapper.find("#paginate-btn").exists()).toEqual(false);
-        // heading reverts to original value of title (as all ouputs are paginated)
-        expect(wrapper.find("heading-stub").text()).toBe("Job Outputs");
+        expect(wrapper.get("heading-stub").text()).toBe("Job Outputs");
     });
 });

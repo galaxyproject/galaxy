@@ -1,144 +1,75 @@
-import { createTestingPinia } from "@pinia/testing";
-import { dispatchEvent, emittedArg, getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { h, ref } from "vue";
+import { composeStories } from "@storybook/vue3-vite";
+import { dispatchEvent, emittedArg } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
+import flushPromises from "flush-promises";
+import { disposePinia, getActivePinia } from "pinia";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import SortableList from "@/components/Common/SortableList";
+import { OWN_WORKFLOW } from "@/components/Workflow/test_fixtures";
 import { useActivityStore } from "@/stores/activityStore";
+import { useConfigStore } from "@/stores/configurationStore";
 import { useEventStore } from "@/stores/eventStore";
 
-import mountTarget from "./ActivityBar.vue";
+import * as ActivityBarStories from "./ActivityBar.stories";
 
-const mockConfig = ref({});
+import ActivityBar from "./ActivityBar.vue";
 
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: mockConfig,
-        isConfigLoaded: true,
-    })),
-}));
+const stories = composeStories(ActivityBarStories);
+const mountStory = useStoryMount();
+const scope = ActivityBarStories.default.args.activityBarId;
 
-vi.mock("vue-router", () => ({
-    useRoute: vi.fn(() => ({ path: "/", params: {}, query: {} })),
-    useRouter: vi.fn(() => ({ push: vi.fn() })),
-}));
-
-const { server, http } = useServerMock();
-
-const localVue = getLocalVue();
-
-// shallowMount stubs draggable without rendering its scoped item slot, so render it ourselves.
-const draggableStub = {
-    compatConfig: { MODE: 3 },
-    props: ["modelValue"],
-    render() {
-        return h(
-            "div",
-            (this.modelValue || []).flatMap((element, index) => this.$slots.item({ element, index })),
-        );
-    },
-};
-
-function testActivity(id, newOptions = {}) {
-    const defaultOptions = {
-        anonymous: true,
-        id: `test-${id}`,
-        description: "test-description",
-        icon: "test-icon",
-        mutable: true,
-        optional: false,
-        title: "test-title",
-        to: "test-to",
-        tooltip: "test-tooltip",
-        visible: true,
-    };
-    return { ...defaultOptions, ...newOptions };
+async function mountBar(story = stories.InteractiveToolsEnabled) {
+    const wrapper = mountStory(story);
+    const pinia = getActivePinia();
+    onTestFinished(() => disposePinia(pinia));
+    await vi.waitFor(() => {
+        expect(useConfigStore().isLoaded).toBe(true);
+        expect(wrapper.findComponent(ActivityBar).exists()).toBe(true);
+    });
+    // ActivityBar updates its defaults through the store's existing 10ms debounce.
+    await useActivityStore(scope).sync();
+    await flushPromises();
+    return wrapper.getComponent(ActivityBar);
 }
 
 describe("ActivityBar", () => {
-    let activityStore;
-    let eventStore;
-    let wrapper;
-
-    beforeEach(async () => {
-        mockConfig.value = {};
-        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-        activityStore = useActivityStore("default");
-        eventStore = useEventStore();
-        mockUnprivilegedToolsRequest(server, http);
-        server.use(
-            http.get("/api/configuration", ({ response }) => {
-                return response(200).json({});
-            }),
-        );
-        wrapper = shallowMount(mountTarget, {
-            global: { ...localVue, stubs: { draggable: draggableStub } },
-            pinia,
-        });
-    });
-
-    it("rendering", async () => {
-        activityStore.setAll([testActivity("1"), testActivity("2"), testActivity("3")]);
-        await wrapper.vm.$nextTick();
-        const items = wrapper.findAll("[title='test-title']");
+    it("renders each configured activity", async () => {
+        const wrapper = await mountBar();
+        const items = wrapper.findAll("#activity-tools, #activity-interactivetools, #activity-workflows");
         expect(items.length).toBe(3);
     });
 
-    it("drag start", async () => {
-        activityStore.setAll([testActivity("1"), testActivity("2"), testActivity("3")]);
-        eventStore.setDragData({
-            id: "workflow-id",
-            description: "workflow-description",
+    it("emits the workflow run destination when a workflow is dragged onto the bar", async () => {
+        const wrapper = await mountBar();
+        useEventStore().setDragData({
+            id: OWN_WORKFLOW.id,
+            description: OWN_WORKFLOW.name,
             model_class: "StoredWorkflow",
-            name: "workflow-name",
+            name: OWN_WORKFLOW.name,
         });
-        const bar = wrapper.find("[data-description='activity bar']");
+        const bar = wrapper.get("[data-description='activity bar']");
         dispatchEvent(bar, "dragenter");
         const emittedEvent = emittedArg(wrapper, "dragstart");
-        expect(emittedEvent.to).toBe("/workflows/run?id=workflow-id");
+        expect(emittedEvent.to).toBe(`/workflows/run?id=${OWN_WORKFLOW.id}`);
     });
 
     describe("interactivetools visibility", () => {
-        async function mountWithInteractiveToolsConfig(enabled, activityBarId) {
-            mockConfig.value = { interactivetools_enable: enabled };
-            const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-            const testStore = useActivityStore(activityBarId);
-            testStore.setAll([
-                testActivity("1"),
-                testActivity("interactivetools", { id: "interactivetools", title: "Interactive Tools" }),
-                testActivity("3"),
-            ]);
-            mockUnprivilegedToolsRequest(server, http);
-            const testWrapper = shallowMount(mountTarget, {
-                localVue,
-                stubs: { draggable: draggableStub },
-                pinia,
-                propsData: { activityBarId },
-            });
-            await testWrapper.vm.$nextTick();
-            return testWrapper;
-        }
-
+        // Other activities can render before configuration loads, so keep this synced absence check in unit.
         it("hides interactivetools activity when interactivetools_enable is false", async () => {
-            const testWrapper = await mountWithInteractiveToolsConfig(false, "it-test-hide");
-            expect(testWrapper.findAll("[id='interactivetools']").length).toBe(0);
-        });
-
-        it("shows interactivetools activity when interactivetools_enable is true", async () => {
-            const testWrapper = await mountWithInteractiveToolsConfig(true, "it-test-show");
-            expect(testWrapper.findAll("[id='interactivetools']").length).toBe(1);
+            const testWrapper = await mountBar(stories.InteractiveToolsDisabled);
+            expect(testWrapper.findAll("[id='activity-interactivetools']").length).toBe(0);
         });
 
         it("keeps a hidden interactivetools activity when the visible ones are reordered", async () => {
-            const testWrapper = await mountWithInteractiveToolsConfig(false, "it-test-reorder");
-            const bar = testWrapper.findComponent(draggableStub);
+            const testWrapper = await mountBar(stories.InteractiveToolsDisabled);
+            const bar = testWrapper.getComponent(SortableList);
             const visible = bar.props("modelValue");
-            expect(visible.map((activity) => activity.id)).toEqual(["test-1", "test-3"]);
+            expect(visible.map((activity) => activity.id)).toEqual(["tools", "workflows"]);
             bar.vm.$emit("update:modelValue", [...visible].reverse());
             await testWrapper.vm.$nextTick();
-            const stored = useActivityStore("it-test-reorder").activities.map((activity) => activity.id);
-            expect(stored).toEqual(["test-3", "test-1", "interactivetools"]);
+            const stored = useActivityStore(scope).activities.map((activity) => activity.id);
+            expect(stored).toEqual(["workflows", "tools", "interactivetools"]);
         });
     });
 });

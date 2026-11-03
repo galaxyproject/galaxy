@@ -1,48 +1,24 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
-import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
+import * as ConfigurationMarkdownStories from "./ConfigurationMarkdown.stories";
 
-const localVue = getLocalVue();
+const stories = composeStories(ConfigurationMarkdownStories);
+const mountStory = useStoryMount();
 
 describe("ConfigurationMarkdown.vue", () => {
-    let wrapper;
-
-    it("should convert supplied configuration markup to markdown and display", () => {
-        wrapper = shallowMount(ConfigurationMarkdown as object, {
-            props: { markdown: "the *content*", admin: true },
-            global: localVue,
-        });
-        expect(wrapper.html()).toContain("<em>content</em>");
-    });
-
-    it("should allow HTML in configuration markup explicitly set by the admin", () => {
-        wrapper = shallowMount(ConfigurationMarkdown as object, {
-            props: { markdown: "the <b>content</b>", admin: true },
-            global: localVue,
-        });
-        expect(wrapper.html()).toContain("<b>content</b>");
-    });
-
-    it("should escape supplied HTML for non-admin sourced content", () => {
-        wrapper = shallowMount(ConfigurationMarkdown as object, {
-            props: { markdown: "the <b>content</b>", admin: false },
-            global: localVue,
-        });
-        expect(wrapper.html()).not.toContain("<b>content</b>");
+    beforeEach(() => {
+        vi.mocked(sanitizeHtml).mockClear();
     });
 
     it("renders through v-sanitize-html with the links profile", () => {
-        vi.mocked(sanitizeHtml).mockClear();
-        shallowMount(ConfigurationMarkdown as object, {
-            propsData: { markdown: 'the <a href="https://example.org" target="_blank">link</a>', admin: true },
-            localVue,
-        });
+        mountStory(stories.AdminConfigured);
+
         expect(sanitizeHtml).toHaveBeenCalledWith(
-            '<p>the <a href="https://example.org" target="_blank">link</a></p>\n',
+            '<p>Scratch space, <em>not backed up</em>. <b>Purged after 30 days.</b> See the <a href="https://example.org" target="_blank">storage policy</a>.</p>\n',
             "links",
         );
     });

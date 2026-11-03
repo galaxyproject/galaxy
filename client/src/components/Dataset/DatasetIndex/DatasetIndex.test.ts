@@ -1,7 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { computed } from "vue";
 
 import type { PathDestination } from "@/composables/datasetPathDestination";
@@ -14,15 +14,23 @@ const localVue = getLocalVue();
 vi.mock("@/composables/datasetPathDestination");
 
 describe("DatasetIndex", () => {
-    let mockDatasetPathDestination: ReturnType<typeof vi.fn>;
+    type DatasetPathDestination = ReturnType<
+        typeof datasetPathDestinationModule.useDatasetPathDestination
+    >["datasetPathDestination"]["value"];
+    const mockDatasetPathDestination = vi.fn<DatasetPathDestination>();
 
     beforeEach(() => {
-        // Reset mock before each test
-        mockDatasetPathDestination = vi.fn();
-        vi.mocked(datasetPathDestinationModule.useDatasetPathDestination).mockReturnValue({
-            datasetPathDestination: computed(() => mockDatasetPathDestination) as any,
-        });
+        mockDatasetPathDestination.mockReset();
+        vi.mocked(datasetPathDestinationModule.useDatasetPathDestination).mockImplementation(() => ({
+            datasetPathDestination: computed(() => mockDatasetPathDestination),
+        }));
     });
+
+    afterEach(() => {
+        vi.mocked(datasetPathDestinationModule.useDatasetPathDestination).mockReset();
+        mockDatasetPathDestination.mockReset();
+    });
+    enableAutoUnmount(afterEach);
 
     it("renders GTable when dataset has valid content", async () => {
         const mockPathDestination: PathDestination = {
@@ -35,18 +43,17 @@ describe("DatasetIndex", () => {
 
         mockDatasetPathDestination.mockResolvedValue(mockPathDestination);
 
-        const wrapper = shallowMount(DatasetIndex as object, {
-            propsData: {
+        const wrapper = shallowMount(DatasetIndex, {
+            props: {
                 historyDatasetId: "test-dataset-123",
             },
-            localVue,
+            global: localVue,
         });
 
         // Wait for async computedAsync to resolve
         await flushPromises();
 
-        // Table renders (shallowMount converts it to anonymous-stub)
-        const gTable = wrapper.find("#g-table-0");
+        const gTable = wrapper.findComponent({ name: "GTable" });
         expect(gTable.exists()).toBe(true);
         expect(gTable.attributes("fields")).toBeDefined();
     });
@@ -54,17 +61,17 @@ describe("DatasetIndex", () => {
     it("displays error message when dataset is not composite", async () => {
         mockDatasetPathDestination.mockResolvedValue(null);
 
-        const wrapper = shallowMount(DatasetIndex as object, {
-            propsData: {
+        const wrapper = shallowMount(DatasetIndex, {
+            props: {
                 historyDatasetId: "test-dataset-123",
             },
-            localVue,
+            global: localVue,
         });
 
         await flushPromises();
 
         expect(wrapper.text()).toContain("Dataset is not composite!");
-        const gTable = wrapper.find("gtable-stub");
+        const gTable = wrapper.findComponent({ name: "GTable" });
         expect(gTable.exists()).toBe(false);
     });
 
@@ -77,18 +84,18 @@ describe("DatasetIndex", () => {
 
         mockDatasetPathDestination.mockResolvedValue(mockPathDestination);
 
-        const wrapper = shallowMount(DatasetIndex as object, {
-            propsData: {
+        const wrapper = shallowMount(DatasetIndex, {
+            props: {
                 historyDatasetId: "test-dataset-123",
                 path: "file1.txt",
             },
-            localVue,
+            global: localVue,
         });
 
         await flushPromises();
 
         expect(wrapper.text()).toContain("is not a directory!");
-        const gTable = wrapper.find("gtable-stub");
+        const gTable = wrapper.findComponent({ name: "GTable" });
         expect(gTable.exists()).toBe(false);
     });
 
@@ -101,19 +108,19 @@ describe("DatasetIndex", () => {
 
         mockDatasetPathDestination.mockResolvedValue(mockPathDestination);
 
-        const wrapper = shallowMount(DatasetIndex as object, {
-            propsData: {
+        const wrapper = shallowMount(DatasetIndex, {
+            props: {
                 historyDatasetId: "test-dataset-123",
                 path: "nonexistent.txt",
             },
-            localVue,
+            global: localVue,
         });
 
         await flushPromises();
 
         expect(wrapper.text()).toContain("nonexistent.txt");
         expect(wrapper.text()).toContain("is not found!");
-        const gTable = wrapper.find("gtable-stub");
+        const gTable = wrapper.findComponent({ name: "GTable" });
         expect(gTable.exists()).toBe(false);
     });
 
@@ -128,11 +135,11 @@ describe("DatasetIndex", () => {
 
         mockDatasetPathDestination.mockResolvedValue(mockPathDestination);
 
-        const wrapper = shallowMount(DatasetIndex as object, {
-            propsData: {
+        const wrapper = shallowMount(DatasetIndex, {
+            props: {
                 historyDatasetId: "test-dataset-123",
             },
-            localVue,
+            global: localVue,
         });
 
         await flushPromises();
@@ -141,6 +148,10 @@ describe("DatasetIndex", () => {
         expect(html).toContain("fields");
         expect(html).toContain("items");
         expect(html).toContain("[object Object]");
+        expect(wrapper.getComponent({ name: "GTable" }).props("fields")).toEqual([
+            { key: "path", label: "Path", sortable: true },
+            { key: "class", label: "Type", sortable: true },
+        ]);
     });
 
     it("filters directory content when viewing a subdirectory", async () => {
@@ -155,35 +166,38 @@ describe("DatasetIndex", () => {
 
         mockDatasetPathDestination.mockResolvedValue(mockPathDestination);
 
-        const wrapper = shallowMount(DatasetIndex as object, {
-            propsData: {
+        const wrapper = shallowMount(DatasetIndex, {
+            props: {
                 historyDatasetId: "test-dataset-123",
                 path: "subfolder",
             },
-            localVue,
+            global: localVue,
         });
 
         await flushPromises();
 
-        // Check that table renders (shallowMount converts GTable to anonymous-stub)
         expect(wrapper.html()).toContain("fields");
         expect(wrapper.html()).not.toContain("is not found");
         expect(wrapper.html()).not.toContain("is not a directory");
+        expect(wrapper.getComponent({ name: "GTable" }).props("items")).toEqual([
+            { path: "nested.txt", class: "File" },
+            { path: "another.csv", class: "File" },
+        ]);
     });
 
     it("does not render GTable when error message is displayed", async () => {
         mockDatasetPathDestination.mockResolvedValue(null);
 
-        const wrapper = shallowMount(DatasetIndex as object, {
-            propsData: {
+        const wrapper = shallowMount(DatasetIndex, {
+            props: {
                 historyDatasetId: "test-dataset-123",
             },
-            localVue,
+            global: localVue,
         });
 
         await flushPromises();
 
-        const gTable = wrapper.find("gtable-stub");
+        const gTable = wrapper.findComponent({ name: "GTable" });
         const errorDiv = wrapper.find("div");
 
         expect(gTable.exists()).toBe(false);

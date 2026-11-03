@@ -1,59 +1,45 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { nth } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
-import TourList from "./TourList.vue";
+import { CORE_TOURS, RNA_SEQ_TOUR } from "./test_fixtures";
+import * as TourListStories from "./TourList.stories";
 
-const { server, http } = useServerMock();
+const { CoreTours, FormattedDescription } = composeStories(TourListStories);
+const mountStory = useStoryMount();
 
-const localVue = getLocalVue();
+const SELECTORS = {
+    TOUR_LINK: "[data-description='tour link']",
+};
 
-vi.mock("app");
+async function mountTourList(story) {
+    const wrapper = mountStory(story);
+    await flushPromises();
+    return wrapper;
+}
 
-const mockTours = [
-    {
-        id: "intro-to-galaxy",
-        name: "Intro to Galaxy",
-        description: "Learn the basics",
-        tags: ["beginner"],
-    },
-    {
-        id: "advanced-analysis",
-        name: "Advanced Analysis",
-        description: "Deep dive into tools",
-        tags: ["advanced"],
-    },
-];
+describe("TourList", () => {
+    it("renders a link to each tour", async () => {
+        const wrapper = await mountTourList(CoreTours);
 
-describe("Tour", () => {
-    let wrapper;
-
-    beforeEach(async () => {
-        server.use(http.get("/api/tours", ({ response }) => response(200).json(mockTours)));
-        wrapper = shallowMount(TourList, {
-            props: {},
-            global: localVue,
+        const links = wrapper.findAll(SELECTORS.TOUR_LINK);
+        expect(links.length).toBe(CORE_TOURS.length);
+        CORE_TOURS.forEach((tour, index) => {
+            expect(nth(links, index).text()).toContain(tour.name);
+            expect(nth(links, index).attributes("href")).toBe(`/tours/${tour.id}`);
         });
-        await flushPromises();
-    });
-
-    it("test tours", async () => {
-        expect(wrapper.findAll("[data-description='tour link']").length).toBe(2);
     });
 
     it("renders tour descriptions through v-sanitize-html", async () => {
-        server.use(
-            http.get("/api/tours", ({ response }) =>
-                response(200).json([{ id: "t", name: "T", description: "Uses <b>markup</b>", tags: [] }]),
-            ),
-        );
-        const textWrapper = shallowMount(TourList, { propsData: {}, localVue });
-        await flushPromises();
-        expect(sanitizeHtml).toHaveBeenCalledWith("Uses <b>markup</b>", "default");
-        expect(textWrapper.find("b").text()).toBe("markup");
+        vi.mocked(sanitizeHtml).mockClear();
+
+        const wrapper = await mountTourList(FormattedDescription);
+
+        expect(sanitizeHtml).toHaveBeenCalledWith(RNA_SEQ_TOUR.description, "default");
+        expect(wrapper.find("b").text()).toBe("HISAT2");
     });
 });

@@ -1,156 +1,101 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { deferred } from "@tests/vitest/deferred";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { h, ref } from "vue";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
+import { nextTick } from "vue";
 
+import { GalaxyApi } from "@/api";
+import { useServerMock } from "@/api/client/__mocks__";
 import { useChatStore } from "@/stores/chatStore";
 
-import GalaxyAI from "./GalaxyAI.vue";
+import * as GalaxyAIStories from "./GalaxyAI.stories";
+import { chatResponse, MAPPER_ANSWER, NEW_EXCHANGE_ID } from "./GalaxyAI/test_fixtures";
 
-const { mockGet, mockPost, mockPut, ChatMessageCellStub, ChatInputStub } = vi.hoisted(() => ({
-    mockGet: vi.fn(),
-    mockPost: vi.fn(),
-    mockPut: vi.fn(),
-    // render functions because the test environment uses the runtime-only Vue build
-    ChatMessageCellStub: {
-        name: "ChatMessageCellStub",
-        props: ["message"],
-        render(this: { message: { content: string } }) {
-            return h("div", { class: "chat-message-stub" }, [this.message.content]);
-        },
-    },
-    ChatInputStub: {
-        name: "ChatInputStub",
-        props: ["value", "busy"],
-        render() {
-            return h("input", { class: "chat-input-stub" });
-        },
-    },
-}));
+import ChatInput from "./GalaxyAI/ChatInput.vue";
 
-vi.mock("@/api", () => ({
-    GalaxyApi: () => ({ GET: mockGet, POST: mockPost, PUT: mockPut, DELETE: vi.fn() }),
-}));
+const stories = composeStories(GalaxyAIStories);
+const mountStory = useStoryMount();
+const { server, http } = useServerMock();
 
-vi.mock("@/api/client", () => ({
-    GalaxyApi: () => ({ GET: mockGet, POST: mockPost, PUT: mockPut, DELETE: vi.fn() }),
-}));
+const NEW_CONVERSATION = expect.stringContaining("New conversation started");
 
-vi.mock("vue-router", () => ({
-    useRoute: () => ({ path: "/", params: {}, query: {} }),
-    useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-}));
+let post: MockInstance;
 
-vi.mock("@/app", () => ({
-    getGalaxyInstance: () => ({ frame: { add: vi.fn() } }),
-}));
+beforeEach(() => {
+    // Passes through to the stories' handlers; awaiting its results waits for an answer to arrive.
+    post = vi.spyOn(GalaxyApi(), "POST");
+});
 
-// Child components are referenced directly from setup scope, so the test-utils
-// `stubs` option cannot replace them — mock the modules instead.
-vi.mock("@/components/GalaxyAI/ChatMessageCell.vue", () => ({ default: ChatMessageCellStub }));
-vi.mock("@/components/GalaxyAI/ChatInput.vue", () => ({ default: ChatInputStub }));
+afterEach(() => {
+    post.mockRestore();
+});
 
-vi.mock("@/composables/useActiveContext", () => ({
-    useActiveContext: () => ({ activeContext: ref(null), contextLabel: ref("") }),
-}));
-
-vi.mock("@/composables/agentActions", () => ({
-    useAgentActions: () => ({ processingAction: ref(false), handleAction: vi.fn() }),
-}));
-
-vi.mock("@/composables/confirmDialog", () => ({
-    useConfirmDialog: () => ({ confirm: vi.fn() }),
-}));
-
-vi.mock("@/composables/markdown", () => ({
-    useMarkdown: () => ({ renderMarkdown: (content: string) => content }),
-}));
-
-vi.mock("@/composables/toast");
-
-vi.mock("@/composables/useEntityMentions", () => ({
-    MENTION_PATTERN_SOURCE: "@(dataset|history):(\\S+)",
-    parseMentions: () => [],
-    resolveMentions: () => [],
-    buildEntityContext: () => null,
-}));
-
-vi.mock("@/composables/userLocalStorage", () => ({
-    useUserLocalStorage: vi.fn((_key: string, initialValue: unknown) => ref(initialValue)),
-}));
-
-const localVue = getLocalVue();
-
-// jsdom does not implement Element.scrollTo
-window.HTMLElement.prototype.scrollTo = vi.fn();
-
-function mountChat() {
-    const pinia = createPinia();
-    setActivePinia(pinia);
-    const wrapper = mount(GalaxyAI as object, {
-        localVue,
-        pinia,
-        propsData: { panel: true },
-        stubs: { FontAwesomeIcon: true, BSkeleton: true },
-    });
-    const chatStore = useChatStore();
-    return { wrapper, chatStore };
+async function mountChat(story: StoryOf<typeof stories> = stories.NewConversation) {
+    const wrapper = mountStory(story);
+    await flushPromises();
+    return { wrapper, chatStore: useChatStore() };
 }
 
+/** The text of every message in the conversation, oldest first. */
 function messageTexts(wrapper: VueWrapper) {
-    return wrapper.findAll(".chat-message-stub").map((w) => w.text());
+    return wrapper.findAll(".system-notice, .query-text, .response-content").map((message) => message.text());
 }
 
+/** Type `text` into the chat input, submit it, and let the request start. */
 async function sendMessage(wrapper: VueWrapper, text: string) {
-    const input = wrapper.findComponent(ChatInputStub);
+    const input = wrapper.findComponent(ChatInput);
     input.vm.$emit("input", text);
-    await wrapper.vm.$nextTick();
+    await nextTick();
     input.vm.$emit("submit");
     await flushPromises();
 }
 
-function deferredResponse() {
-    let resolve!: (value: unknown) => void;
-    const promise = new Promise((r) => {
-        resolve = r;
-    });
-    return { promise, resolve };
+/** Waits until the answer to the `index`th question has reached the chat. */
+async function answerArrived(index: number) {
+    await post.mock.results[index]!.value;
+    await flushPromises();
+}
+
+/** Holds the next question's answer until the test releases it. */
+function holdNextAnswer() {
+    const release = deferred<{ response: string; exchangeId: string }>();
+    server.use(
+        http.post(
+            "/api/chat",
+            async ({ response }) => {
+                const { response: answer, exchangeId } = await release.promise;
+                return response(200).json(chatResponse(answer, exchangeId));
+            },
+            { once: true },
+        ),
+    );
+    return (response: string, exchangeId: string) => release.resolve({ response, exchangeId });
+}
+
+function isAwaitingReply(wrapper: VueWrapper) {
+    return wrapper.find(".loading-entry").exists();
 }
 
 describe("GalaxyAI", () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        mockGet.mockResolvedValue({ data: [], error: undefined });
-    });
-
     it("appends the response and records the exchange id on a normal exchange", async () => {
-        mockPost.mockResolvedValue({
-            data: { response: "Here you go", exchange_id: "exchange-123" },
-            error: undefined,
-        });
-        const { wrapper, chatStore } = mountChat();
-        await flushPromises();
+        const { wrapper, chatStore } = await mountChat();
 
         await sendMessage(wrapper, "find me a mapper");
+        await answerArrived(0);
 
-        const texts = messageTexts(wrapper);
-        expect(texts).toHaveLength(3);
-        expect(texts[1]).toBe("find me a mapper");
-        expect(texts[2]).toBe("Here you go");
-        expect(chatStore.activeChatId).toBe("exchange-123");
+        expect(messageTexts(wrapper)).toEqual([NEW_CONVERSATION, "find me a mapper", MAPPER_ANSWER]);
+        expect(chatStore.activeChatId).toBe(NEW_EXCHANGE_ID);
     });
 
     it("resets an unsaved conversation when a new chat is requested mid-flight", async () => {
-        const deferred = deferredResponse();
-        mockPost.mockReturnValue(deferred.promise);
-        const { wrapper, chatStore } = mountChat();
-        await flushPromises();
+        const { wrapper, chatStore } = await mountChat();
+        const releaseAnswer = holdNextAnswer();
 
         await sendMessage(wrapper, "what mappers are available?");
-        expect(messageTexts(wrapper)).toHaveLength(2);
-        expect(wrapper.find(".loading-entry").exists()).toBe(true);
+        expect(messageTexts(wrapper)).toEqual([NEW_CONVERSATION, "what mappers are available?"]);
+        expect(isAwaitingReply(wrapper)).toBe(true);
         // the conversation is unsaved — no exchange id yet, so the identity
         // (activeChatId) would not change and a plain showChat(null) is a no-op
         expect(chatStore.activeChatId).toBeNull();
@@ -158,96 +103,86 @@ describe("GalaxyAI", () => {
         chatStore.requestNewChat();
         await flushPromises();
 
-        const texts = messageTexts(wrapper);
-        expect(texts).toHaveLength(1);
-        expect(texts[0]).toContain("New conversation started");
-        expect(wrapper.find(".loading-entry").exists()).toBe(false);
+        expect(messageTexts(wrapper)).toEqual([NEW_CONVERSATION]);
+        expect(isAwaitingReply(wrapper)).toBe(false);
 
         // the stale response must not be appended or re-attach the old exchange
-        deferred.resolve({ data: { response: "Late answer", exchange_id: "exchange-123" }, error: undefined });
-        await flushPromises();
+        releaseAnswer("Late answer", "exchange-123");
+        await answerArrived(0);
 
-        expect(messageTexts(wrapper)).toHaveLength(1);
+        expect(messageTexts(wrapper)).toEqual([NEW_CONVERSATION]);
         expect(chatStore.activeChatId).toBeNull();
     });
 
     it("does not let a stale response clobber a newly started conversation", async () => {
-        const first = deferredResponse();
-        const second = deferredResponse();
-        mockPost.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
-        const { wrapper, chatStore } = mountChat();
-        await flushPromises();
+        const { wrapper, chatStore } = await mountChat();
+        const releaseFirstAnswer = holdNextAnswer();
 
         await sendMessage(wrapper, "first question");
         chatStore.requestNewChat();
         await flushPromises();
+        const releaseSecondAnswer = holdNextAnswer();
         await sendMessage(wrapper, "second question");
-        expect(wrapper.find(".loading-entry").exists()).toBe(true);
+        expect(isAwaitingReply(wrapper)).toBe(true);
 
-        first.resolve({ data: { response: "First answer", exchange_id: "exchange-1" }, error: undefined });
-        await flushPromises();
+        releaseFirstAnswer("First answer", "exchange-1");
+        await answerArrived(0);
 
-        // still only welcome + second user message, still waiting on the second response
-        let texts = messageTexts(wrapper);
-        expect(texts).toHaveLength(2);
-        expect(texts[1]).toBe("second question");
-        expect(wrapper.find(".loading-entry").exists()).toBe(true);
+        expect(messageTexts(wrapper)).toEqual([NEW_CONVERSATION, "second question"]);
+        expect(isAwaitingReply(wrapper)).toBe(true);
         expect(chatStore.activeChatId).toBeNull();
 
-        second.resolve({ data: { response: "Second answer", exchange_id: "exchange-2" }, error: undefined });
-        await flushPromises();
+        releaseSecondAnswer("Second answer", "exchange-2");
+        await answerArrived(1);
 
-        texts = messageTexts(wrapper);
-        expect(texts).toHaveLength(3);
-        expect(texts[2]).toBe("Second answer");
-        expect(wrapper.find(".loading-entry").exists()).toBe(false);
+        expect(messageTexts(wrapper)).toEqual([NEW_CONVERSATION, "second question", "Second answer"]);
+        expect(isAwaitingReply(wrapper)).toBe(false);
         expect(chatStore.activeChatId).toBe("exchange-2");
     });
 
     it("uses its own wording for a gateway failure rather than the normalized one", async () => {
-        mockPost.mockResolvedValue({
-            data: undefined,
-            error: { err_msg: "Galaxy took too long to respond (504)", err_code: 504 },
-            response: { status: 504 },
-        });
-        const { wrapper } = mountChat();
-        await flushPromises();
+        const { wrapper } = await mountChat(stories.GatewayTimeout);
 
         await sendMessage(wrapper, "how do I remove the first row of a table?");
+        await answerArrived(0);
 
-        const texts = messageTexts(wrapper);
-        expect(texts[texts.length - 1]).toBe("Error: GalaxyAI took too long to respond (504). Please try again.");
+        expect(messageTexts(wrapper)).toEqual([
+            NEW_CONVERSATION,
+            "how do I remove the first row of a table?",
+            "Error: GalaxyAI took too long to respond (504). Please try again.",
+        ]);
     });
 
     it("shows the message from a genuine API error", async () => {
-        mockPost.mockResolvedValue({
-            data: undefined,
-            error: { err_msg: "No agent is configured for that request", err_code: 400 },
-            response: { status: 400 },
-        });
-        const { wrapper } = mountChat();
-        await flushPromises();
+        const { wrapper } = await mountChat(stories.SessionExpired);
 
         await sendMessage(wrapper, "route this somewhere");
+        await answerArrived(0);
 
-        const texts = messageTexts(wrapper);
-        expect(texts[texts.length - 1]).toContain("No agent is configured for that request");
+        expect(messageTexts(wrapper)).toEqual([
+            NEW_CONVERSATION,
+            "route this somewhere",
+            "Error: Action requires user authentication.",
+        ]);
     });
 
-    // The API client normalizes failures into objects, so this only bites if a
-    // response reaches the chat without going through it.
+    // The API client normalizes failures into objects, so no story can produce this; it only
+    // bites if a response reaches the chat without going through the client.
     it("never puts an unparsed body in the conversation", async () => {
-        mockPost.mockResolvedValue({
+        post.mockResolvedValueOnce({
             data: undefined,
             error: "<h1>500 Internal Server Error</h1><hr><center>nginx</center>",
             response: { status: 500 },
         });
-        const { wrapper } = mountChat();
-        await flushPromises();
+        const { wrapper } = await mountChat();
 
         await sendMessage(wrapper, "anything");
+        await answerArrived(0);
 
-        const texts = messageTexts(wrapper);
-        expect(texts[texts.length - 1]).toBe("Error: GalaxyAI could not answer that request (500). Please try again.");
+        expect(messageTexts(wrapper)).toEqual([
+            NEW_CONVERSATION,
+            "anything",
+            "Error: GalaxyAI could not answer that request (500). Please try again.",
+        ]);
     });
 });

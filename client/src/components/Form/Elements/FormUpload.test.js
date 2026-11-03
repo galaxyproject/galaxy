@@ -1,35 +1,24 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import { describe, expect, it } from "vitest";
 
-import FormUpload from "./FormUpload.vue";
+import * as FormUploadStories from "./FormUpload.stories";
 
-const localVue = getLocalVue();
+const stories = composeStories(FormUploadStories);
+const mountStory = useStoryMount();
 
 describe("FormUpload", () => {
-    const mountFormUpload = (props) =>
-        mount(FormUpload, {
-            props: props,
-            global: localVue,
-        });
-
-    it("should display selected file in disabled textarea", async () => {
-        const v = "H1, H2, H3\nv1, v2, v3";
-        const wrapper = mountFormUpload({ value: v });
-        const el = wrapper.find("textarea");
-        expect(el.element.value).toEqual(v);
-        expect(el.element.disabled).toBe(true);
-    });
-
-    it("should not display text box if file has not been selected", async () => {
-        const wrapper = mountFormUpload({ value: null });
-        const el = wrapper.find("textarea");
+    it("should not display text box if file has not been selected", () => {
+        const wrapper = mountStory(stories.NoFileChosen);
+        const textarea = wrapper.get("textarea");
         // happy-dom's getComputedStyle doesn't reflect inline styles reliably, so
         // isVisible() (which relies on it) can't be used here -- check the v-show
         // style directly instead.
-        expect(el.element.style.display).toBe("none");
-        expect(el.text()).toBe("");
-        const noInput = wrapper.find("label");
+        expect(textarea.element.style.display).toBe("none");
+        expect(textarea.text()).toBe("");
+        // Native textarea contents live in value; empty textContent alone cannot prove they are empty.
+        expect(textarea.element.value).toBe("");
+        const noInput = wrapper.get("label");
         expect(noInput.text()).toBe("No file chosen");
     });
 });

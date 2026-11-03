@@ -1,10 +1,13 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { getFakePageDetails, getFakePageSummary } from "@tests/test-data/pages";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as VueRouter from "vue-router";
 
+import type { HistoryPageSummary } from "@/api/pages";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import HistoryPageList from "./HistoryPageList.vue";
@@ -21,7 +24,7 @@ vi.mock("@/composables/config", () => ({
 
 const mockPush = vi.fn();
 vi.mock("vue-router", async (importOriginal) => {
-    const actual = (await importOriginal()) as Record<string, unknown>;
+    const actual = await importOriginal<typeof VueRouter>();
     return {
         ...actual,
         useRouter: vi.fn(() => ({
@@ -62,7 +65,7 @@ vi.mock("@/app", () => ({
     getGalaxyInstance: vi.fn(() => mockGalaxyInstance),
 }));
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
 
 const HISTORY_ID = "history-1";
 const PAGE_ID = "page-1";
@@ -74,19 +77,20 @@ const SELECTORS = {
 
 let pinia: Pinia;
 
-function mountComponent(propsData: { historyId: string; pageId?: string; displayOnly?: boolean }) {
-    return shallowMount(HistoryPageView as object, {
-        localVue,
-        propsData,
-        pinia,
+async function mountComponent(props: { historyId: string; pageId?: string; displayOnly?: boolean }) {
+    const wrapper = shallowMount(HistoryPageView as object, {
+        props,
+        global: withPlugins(getLocalVue(), pinia),
     });
+    await flushPromises();
+    return wrapper;
 }
 
-function setupListViewStore(pages: any[] = []) {
+function setupListViewStore(pages: HistoryPageSummary[] = []) {
     const store = usePageEditorStore();
     store.isLoadingList = false;
     store.error = null;
-    store.pages = pages as any;
+    store.pages = pages;
     return store;
 }
 
@@ -105,8 +109,7 @@ describe("HistoryPageView", () => {
         it("shows loading alert when isLoadingList is true", async () => {
             const store = usePageEditorStore();
             store.isLoadingList = true;
-            const wrapper = mountComponent({ historyId: HISTORY_ID });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID });
 
             const alerts = wrapper.findAll(SELECTORS.INFO_ALERT);
             const loadingAlert = alerts.find((w) => w.text().includes("Loading galaxy notebooks"));
@@ -119,8 +122,7 @@ describe("HistoryPageView", () => {
             const store = usePageEditorStore();
             store.isLoadingList = false;
             store.error = "Something went wrong";
-            const wrapper = mountComponent({ historyId: HISTORY_ID });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID });
 
             const errorAlert = wrapper.find(SELECTORS.ERROR_ALERT);
             expect(errorAlert.exists()).toBe(true);
@@ -131,8 +133,7 @@ describe("HistoryPageView", () => {
             const store = usePageEditorStore();
             store.isLoadingList = false;
             store.error = "Save failed";
-            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
 
             // Outer error alert is suppressed in edit mode — ownership belongs to PageEditorView
             // (otherwise the same store.error renders twice). The editor must stay mounted.
@@ -144,8 +145,7 @@ describe("HistoryPageView", () => {
             const store = usePageEditorStore();
             store.isLoadingList = false;
             store.error = "Load failed";
-            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
 
             expect(wrapper.find(SELECTORS.ERROR_ALERT).exists()).toBe(true);
             expect(wrapper.findComponent(PageEditorView).exists()).toBe(false);
@@ -155,19 +155,23 @@ describe("HistoryPageView", () => {
     describe("List view (no pageId)", () => {
         it("shows HistoryPageList when no pageId and not loading/error", async () => {
             setupListViewStore();
-            const wrapper = mountComponent({ historyId: HISTORY_ID });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID });
 
             expect(wrapper.findComponent(HistoryPageList).exists()).toBe(true);
         });
 
         it("passes store.pages to HistoryPageList", async () => {
             const fakePages = [
-                { id: "nb-1", history_id: HISTORY_ID, title: "NB1", deleted: false, create_time: "", update_time: "" },
+                getFakePageSummary({
+                    id: "nb-1",
+                    history_id: HISTORY_ID,
+                    title: "NB1",
+                    create_time: "",
+                    update_time: "",
+                }),
             ];
             setupListViewStore(fakePages);
-            const wrapper = mountComponent({ historyId: HISTORY_ID });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID });
 
             const list = wrapper.findComponent(HistoryPageList);
             expect(list.props("pages")).toEqual(fakePages);
@@ -177,16 +181,14 @@ describe("HistoryPageView", () => {
     describe("Edit mode delegation", () => {
         it("renders PageEditorView when pageId set and not displayOnly", async () => {
             setupListViewStore();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
 
             expect(wrapper.findComponent(PageEditorView).exists()).toBe(true);
         });
 
         it("passes pageId and historyId to PageEditorView", async () => {
             setupListViewStore();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
 
             const editor = wrapper.findComponent(PageEditorView);
             expect(editor.props("pageId")).toBe(PAGE_ID);
@@ -197,17 +199,17 @@ describe("HistoryPageView", () => {
             const store = usePageEditorStore();
             store.isLoadingList = false;
             store.error = null;
-            store.currentPage = {
+            store.currentPage = getFakePageDetails({
                 id: PAGE_ID,
                 history_id: HISTORY_ID,
                 title: "NB",
                 content: "# Hello",
                 update_time: "2024-01-01T00:00:00",
-            } as any;
+                username: "",
+            });
             store.currentContent = "# Hello";
             store.currentTitle = "NB";
-            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
 
             expect(wrapper.findComponent(PageEditorView).exists()).toBe(false);
             expect(wrapper.findComponent(PageDisplayOnly).exists()).toBe(true);
@@ -220,32 +222,29 @@ describe("HistoryPageView", () => {
             store.isLoadingList = false;
             store.isLoadingPage = false;
             store.error = null;
-            store.currentPage = {
+            store.currentPage = getFakePageDetails({
                 id: PAGE_ID,
                 history_id: HISTORY_ID,
                 title: "My Page",
                 content: "# Hello",
                 update_time: "2024-01-01T00:00:00",
-            } as any;
+                username: "",
+            });
             store.currentContent = "# Hello";
             store.currentTitle = "My Page";
-            // hasCurrentPage is a computed (readonly) — stub it so the display toolbar renders
-            vi.spyOn(store, "hasCurrentPage", "get").mockReturnValue(true);
             return store;
         }
 
-        it("renders Markdown when displayOnly is true", async () => {
+        it("renders PageDisplayOnly when displayOnly is true", async () => {
             setupLoadedPage();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
 
             expect(wrapper.findComponent(PageDisplayOnly).exists()).toBe(true);
         });
 
         it("passes correct markdownConfig to PageDisplayOnly", async () => {
             setupLoadedPage();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
 
             const md = wrapper.findComponent(PageDisplayOnly);
             expect(md.props("markdownConfig")).toMatchObject({ id: PAGE_ID, title: "My Page", content: "# Hello" });
@@ -253,8 +252,7 @@ describe("HistoryPageView", () => {
 
         it("Edit button navigates to edit mode (no displayOnly)", async () => {
             setupLoadedPage();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
 
             wrapper.findComponent(PageDisplayOnly).vm.$emit("edit");
 
@@ -263,8 +261,7 @@ describe("HistoryPageView", () => {
 
         it("list view renders normally regardless of displayOnly", async () => {
             setupListViewStore();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, displayOnly: true });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID, displayOnly: true });
 
             expect(wrapper.findComponent(HistoryPageList).exists()).toBe(true);
         });
@@ -272,8 +269,7 @@ describe("HistoryPageView", () => {
         it("does not clear editor state on unmount in displayOnly mode", async () => {
             setupLoadedPage();
             const store = usePageEditorStore();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
 
             wrapper.unmount();
             expect(store.$reset).not.toHaveBeenCalled();
@@ -283,9 +279,10 @@ describe("HistoryPageView", () => {
 
     describe("Navigation/Events", () => {
         it("edit emit from list navigates to page edit URL", async () => {
-            setupListViewStore([{ id: "nb-1", history_id: HISTORY_ID, title: "NB1" }]);
-            const wrapper = mountComponent({ historyId: HISTORY_ID });
-            await flushPromises();
+            setupListViewStore([
+                getFakePageSummary({ id: "nb-1", history_id: HISTORY_ID, title: "NB1", username: "" }),
+            ]);
+            const wrapper = await mountComponent({ historyId: HISTORY_ID });
 
             const list = wrapper.findComponent(HistoryPageList);
             list.vm.$emit("edit", "nb-1");
@@ -296,14 +293,16 @@ describe("HistoryPageView", () => {
 
         it("handleCreate calls store.createPage and navigates on success", async () => {
             const store = setupListViewStore();
-            vi.mocked(store.createPage).mockResolvedValue({
-                id: "new-page",
-                history_id: HISTORY_ID,
-                title: "Untitled Page",
-                content: "",
-            } as any);
-            const wrapper = mountComponent({ historyId: HISTORY_ID });
-            await flushPromises();
+            vi.mocked(store.createPage).mockResolvedValue(
+                getFakePageDetails({
+                    id: "new-page",
+                    history_id: HISTORY_ID,
+                    title: "Untitled Page",
+                    content: "",
+                    username: "",
+                }),
+            );
+            const wrapper = await mountComponent({ historyId: HISTORY_ID });
 
             const list = wrapper.findComponent(HistoryPageList);
             list.vm.$emit("create");
@@ -314,9 +313,10 @@ describe("HistoryPageView", () => {
         });
 
         it("view emit from list navigates to displayOnly URL via pushToFrameOrPage", async () => {
-            setupListViewStore([{ id: "nb-1", history_id: HISTORY_ID, title: "NB1" }]);
-            const wrapper = mountComponent({ historyId: HISTORY_ID });
-            await flushPromises();
+            setupListViewStore([
+                getFakePageSummary({ id: "nb-1", history_id: HISTORY_ID, title: "NB1", username: "" }),
+            ]);
+            const wrapper = await mountComponent({ historyId: HISTORY_ID });
 
             const list = wrapper.findComponent(HistoryPageList);
             list.vm.$emit("view", "nb-1");
@@ -337,9 +337,10 @@ describe("HistoryPageView", () => {
 
         it("view emit opens in WinBox when WM is active", async () => {
             mockGalaxyInstance.frame.active = true;
-            setupListViewStore([{ id: "nb-1", history_id: HISTORY_ID, title: "NB1" }]);
-            const wrapper = mountComponent({ historyId: HISTORY_ID });
-            await flushPromises();
+            setupListViewStore([
+                getFakePageSummary({ id: "nb-1", history_id: HISTORY_ID, title: "NB1", username: "" }),
+            ]);
+            const wrapper = await mountComponent({ historyId: HISTORY_ID });
 
             const list = wrapper.findComponent(HistoryPageList);
             list.vm.$emit("view", "nb-1");
@@ -357,32 +358,28 @@ describe("HistoryPageView", () => {
     describe("Lifecycle", () => {
         it("calls store.loadPages on mount", async () => {
             const store = usePageEditorStore();
-            mountComponent({ historyId: HISTORY_ID });
-            await flushPromises();
+            await mountComponent({ historyId: HISTORY_ID });
 
             expect(store.loadPages).toHaveBeenCalledWith(HISTORY_ID, undefined);
         });
 
         it("does not call store.loadPageById on mount when no pageId", async () => {
             const store = usePageEditorStore();
-            mountComponent({ historyId: HISTORY_ID });
-            await flushPromises();
+            await mountComponent({ historyId: HISTORY_ID });
 
             expect(store.loadPageById).not.toHaveBeenCalled();
         });
 
         it("calls store.loadPageById on mount when pageId and displayOnly", async () => {
             const store = usePageEditorStore();
-            mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
-            await flushPromises();
+            await mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
 
             expect(store.loadPageById).toHaveBeenCalledWith(PAGE_ID);
         });
 
         it("does not call store.loadPageById on mount when pageId but not displayOnly", async () => {
             const store = usePageEditorStore();
-            mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
-            await flushPromises();
+            await mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
 
             // Edit mode delegates loading to PageEditorView
             expect(store.loadPageById).not.toHaveBeenCalled();
@@ -390,8 +387,7 @@ describe("HistoryPageView", () => {
 
         it("calls store.$reset on unmount", async () => {
             const store = usePageEditorStore();
-            const wrapper = mountComponent({ historyId: HISTORY_ID });
-            await flushPromises();
+            const wrapper = await mountComponent({ historyId: HISTORY_ID });
 
             wrapper.unmount();
             expect(store.$reset).toHaveBeenCalled();

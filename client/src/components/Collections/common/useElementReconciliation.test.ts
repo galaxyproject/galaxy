@@ -1,6 +1,7 @@
+import { getFakeDatasetSummary } from "@tests/test-data/datasets";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { HDASummary, HistoryItemSummary } from "@/api";
+import type { HistoryItemSummary } from "@/api";
 import { Toast } from "@/composables/toast";
 
 import {
@@ -19,8 +20,8 @@ beforeEach(() => {
     vi.clearAllMocks();
 });
 
-function fakeDataset(id: string, hid: number, name: string): HDASummary {
-    return { id, hid, name, history_content_type: "dataset" } as unknown as HDASummary;
+function fakeDataset(id: string, hid: number, name: string) {
+    return getFakeDatasetSummary({ id, hid, name });
 }
 
 /** Nothing is ever invalid - the default for tests about presence, not validity. */

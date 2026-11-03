@@ -1,11 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
+import { composeStories } from "@storybook/vue3-vite";
 import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { createMemoryHistory, createRouter, type Router } from "vue-router";
 
-import { useServerMock } from "@/api/client/__mocks__";
 import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
 import { Toast } from "@/composables/toast";
 import { useCommandPalette } from "@/composables/useCommandPalette";
@@ -13,11 +14,10 @@ import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useHistoryStore } from "@/stores/historyStore";
 import { usePageStore } from "@/stores/pageStore";
 import { useToolStore } from "@/stores/toolStore";
-import { useUserStore } from "@/stores/userStore";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 
+import * as CommandPaletteStories from "./CommandPalette.stories";
 import { datasetsProvider } from "./providers/datasets";
-import { PaletteFetchError } from "./providers/errors";
 import { historiesProvider } from "./providers/histories";
 import { invocationsProvider } from "./providers/invocations";
 import { PALETTE_LIMITS } from "./providers/limits";
@@ -35,13 +35,16 @@ vi.mock("@/composables/toast");
 
 const localVue = getLocalVue(true);
 
-const { server, http } = useServerMock();
+const stories = composeStories(CommandPaletteStories);
+const mountStory = useStoryMount();
 
 const DEBOUNCE_WAIT = 250;
 /** The debounce wait plus the pause before root searches reach the backend */
 const BACKEND_WAIT = DEBOUNCE_WAIT + PALETTE_LIMITS.backendSettle;
 /** The palette only opens once the configuration store holds a configuration */
 const CONFIG_LOADED = { configurationStore: { config: {} } };
+/** Store actions are stubbed: the providers' stores are filled by hand where a test needs rows */
+const PALETTE_PINIA = { stubActions: true, initialState: CONFIG_LOADED };
 
 async function settle(wait = DEBOUNCE_WAIT) {
     await vi.advanceTimersByTimeAsync(wait);
@@ -111,29 +114,23 @@ describe("CommandPalette", () => {
     let wrapper: VueWrapper;
     let router: Router;
 
-    beforeEach(async () => {
-        // the debounce, the backend pause and the transitions run on the fake clock, so a slow runner cannot outlast a wait
-        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame"] });
-        server.use(
-            http.get("/api/unprivileged_tools", ({ response }) => {
-                return response(200).json([]);
-            }),
-        );
-        router = createRouter({ history: createMemoryHistory(), routes: [] });
-        wrapper = mount(MountTarget as object, {
-            localVue,
-            router,
-            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: true, initialState: CONFIG_LOADED }),
-        });
-        useCommandPalette().openPalette();
+    /** Mounts a story, which opens the palette, and waits for its first search */
+    async function openStory(story: StoryOf<typeof stories>) {
+        wrapper = mountStory(story, { router, pinia: PALETTE_PINIA });
         await settle();
+    }
+
+    beforeEach(async () => {
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame"] });
+        router = createRouter({ history: createMemoryHistory(), routes: [] });
+        await openStory(stories.Open);
     });
 
     afterEach(() => {
         useCommandPalette().closePalette();
         // the MRU list is a module level singleton, shared by every test here
         useRecentPaletteItems().clearRecentItems();
-        wrapper?.unmount();
+        vi.clearAllTimers();
         vi.useRealTimers();
     });
 
@@ -239,53 +236,11 @@ describe("CommandPalette", () => {
         return wrapper.findAll("[data-description='palette option secondary']");
     }
 
-    /** The offer standing in for a scope an anonymous visitor cannot reach */
-    function loginPrompt() {
-        return wrapper.find("[data-description='palette section login-prompt']");
+    /** Reopens the palette for a visitor without an account, in place of the signed-in user */
+    async function browseAnonymously() {
+        wrapper.unmount();
+        await openStory(stories.AnonymousVisitor);
     }
-
-    /** Turns the current user into a visitor without an account */
-    function browseAnonymously() {
-        useUserStore().currentUser = { id: "anon", isAnonymous: true } as never;
-    }
-
-    it("shows actions and navigation sections for an empty query", () => {
-        const text = wrapper.text();
-        expect(text).toContain("Actions");
-        expect(text).toContain("Navigation");
-        expect(text).toContain("Upload data");
-    });
-
-    it("filters results while typing", async () => {
-        await type("workflows", BACKEND_WAIT);
-        const options = wrapper.findAll("[role='option']");
-        expect(options.length).toBeGreaterThan(0);
-        expect(nth(options, 0).text()).toContain("Workflows");
-    });
-
-    it("scopes to actions with the '>' prefix", async () => {
-        await type("> ");
-        const text = wrapper.text();
-        expect(badge().text()).toContain("Actions");
-        expect(text).toContain("Upload data");
-        expect(text).not.toContain("Navigation");
-    });
-
-    it("converts a scope token into a badge and strips it from the input", async () => {
-        await type("t: align");
-        expect(badge().text()).toContain("Tools");
-        expect(inputValue()).toBe("align");
-    });
-
-    it("hands a scope to its registered provider", async () => {
-        await type("w: rna");
-        expect(badge().text()).toContain("My workflows");
-        // the workflow store is empty here, so the scope has nothing to offer
-        expect(wrapper.find("[data-description='palette scope hint']").exists()).toBe(false);
-        expect(wrapper.find("[data-description='palette empty']").exists()).toBe(true);
-        // a known user is never asked to log in for a scope they already have
-        expect(loginPrompt().exists()).toBe(false);
-    });
 
     it("remembers an opened entity in the palette recents", async () => {
         const visualizationStore = useVisualizationStore();
@@ -320,81 +275,15 @@ describe("CommandPalette", () => {
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
     });
 
-    it("collects an action argument on shift+enter and runs the picked row", async () => {
+    it("runs the row picked in an action's argument mode", async () => {
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
 
         await type("> upload");
-        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Upload data");
-        expect(hint("secondary").text()).toContain("pick a method");
-
         await press("Enter", { shiftKey: true });
-        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
-        expect(badge().text()).toContain("Upload data");
-        expect(inputValue()).toBe("");
-        expect(wrapper.text()).toContain("Paste File Content");
-        expect(hint("run").exists()).toBe(true);
-        expect(hint("remove-action").exists()).toBe(true);
-
         await type("paste file content");
         await press("Enter");
         expect(push).toHaveBeenCalledWith("/upload/paste-content");
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
-    });
-
-    it("opens the picker on plain enter for an action without a default", async () => {
-        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
-
-        await type("> run workflow");
-        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Run workflow");
-
-        await press("Enter");
-        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
-        expect(badge().text()).toContain("Run workflow");
-    });
-
-    it("prompts for a free text argument instead of reporting no results", async () => {
-        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
-
-        await type("> create new history");
-        await press("Enter", { shiftKey: true });
-        expect(badge().text()).toContain("Create new history");
-
-        const prompt = () => wrapper.find("[data-description='palette argument hint']");
-        expect(prompt().text()).toContain("Type a name for the new history");
-        expect(wrapper.find("[data-description='palette empty']").exists()).toBe(false);
-
-        await type("rna seq");
-        expect(prompt().exists()).toBe(false);
-        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("rna seq");
-
-        await type("");
-        expect(prompt().exists()).toBe(true);
-    });
-
-    it("keeps prompting for a free text argument that is only whitespace", async () => {
-        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
-
-        await type("> create new report");
-        await press("Enter", { shiftKey: true });
-        expect(badge().text()).toContain("Create new report");
-
-        // a title of spaces alone leaves the action nothing to run, so the prompt
-        // has to ask again instead of the palette claiming there are no results
-        await type("   ");
-        expect(wrapper.find("[data-description='palette argument hint']").text()).toContain(
-            "Type a title for the new report",
-        );
-        expect(wrapper.find("[data-description='palette empty']").exists()).toBe(false);
-    });
-
-    it("leaves an action's argument badge on backspace at the start", async () => {
-        await type("> upload");
-        await press("Enter", { shiftKey: true });
-        expect(badge().text()).toContain("Upload data");
-
-        await press("Backspace");
-        expect(badge().exists()).toBe(false);
-        expect(wrapper.text()).toContain("Navigation");
     });
 
     it("ignores shift+enter on an item without a secondary behavior", async () => {
@@ -406,116 +295,12 @@ describe("CommandPalette", () => {
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
     });
 
-    it("pops the badge on backspace with the caret at the start", async () => {
-        await type("t:");
-        expect(badge().exists()).toBe(true);
-
-        await press("Backspace");
-        expect(badge().exists()).toBe(false);
-        expect(wrapper.text()).toContain("Navigation");
-    });
-
-    it("keeps the badge on backspace while the caret is inside the text", async () => {
-        await type("t: align");
-        (input().element as HTMLInputElement).setSelectionRange(2, 2);
-
-        await press("Backspace");
-        expect(badge().exists()).toBe(true);
-    });
-
-    it("pops the badge when its remove button is clicked", async () => {
-        await type("t: align");
-        expect(badge().attributes("aria-label")).toContain("Tools");
-
-        await badge().trigger("click");
-        await settle();
-        expect(badge().exists()).toBe(false);
-        // the query typed after the badge is kept
-        expect(inputValue()).toBe("align");
-    });
-
-    it("clears the text, then the badge, then closes on escape", async () => {
-        await type("t: align");
-
-        await press("Escape");
-        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
-        expect(badge().exists()).toBe(true);
-        expect(inputValue()).toBe("");
-
-        await press("Escape");
-        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
-        expect(badge().exists()).toBe(false);
-
-        await press("Escape");
-        expect(useCommandPalette().isPaletteOpen.value).toBe(false);
-    });
-
-    it("lists the scopes in help mode and applies the selected one", async () => {
-        await type("?");
-        const text = wrapper.text();
-        expect(text).toContain("Scopes");
-        expect(text).toContain("Search my workflows");
-        expect(text).toContain("w:");
-        // gated behind interactivetools_enable, which the mocked config leaves off
-        expect(text).not.toContain("Search interactive tools");
-        // the scopes lead, then the actions, then the key bindings
-        expect(sectionIds()).toEqual([
-            "palette section help:scopes",
-            "palette section help:actions",
-            "palette section help:keys",
-        ]);
-
-        await press("Enter");
-        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
-        expect(badge().text()).toContain("My workflows");
-    });
-
     it("marks help mode with a question mark in place of the search icon", async () => {
         expect(inputIcons()).toContain("search");
 
         await type("?");
         expect(inputIcons()).toContain("question-circle");
         expect(inputIcons()).not.toContain("search");
-    });
-
-    it("lists one help row per action, applying the action scope with it", async () => {
-        await type("?");
-        const uploadRow = optionRow("Upload data");
-        expect(uploadRow).toBeDefined();
-        // every action row documents the sigil that reaches it
-        expect(uploadRow?.text()).toContain(">");
-        expect(wrapper.text()).toContain("Create workflow");
-
-        await uploadRow?.trigger("click");
-        await settle();
-
-        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
-        expect(badge().text()).toContain("Actions");
-        expect(inputValue()).toBe("Upload data");
-        expect(nth(wrapper.findAll("[role='option']"), 0).text()).toContain("Upload data");
-    });
-
-    it("documents every binding in the help keys section", async () => {
-        await type("?");
-        const text = wrapper.text();
-        expect(text).toContain("Keys");
-        expect(text).toContain("Open the selected result");
-        expect(text).toContain("Remove the active filter");
-        expect(input().attributes("placeholder")).toContain("shortcuts");
-
-        // the key badge is decorative, so the row names its shortcut itself
-        const keyRow = wrapper
-            .findAll("[data-description='palette option']")
-            .find((row) => row.text().includes("Open the selected result"));
-        expect(keyRow?.attributes("aria-label")).toBe("Open the selected result (↵)");
-    });
-
-    it("names the syntax in the root placeholder and the filter in a scoped one", async () => {
-        expect(input().attributes("placeholder")).toContain("> actions");
-        expect(input().attributes("placeholder")).toContain("? help");
-
-        await type("t:");
-        expect(input().attributes("placeholder")).toBe("Search tools…");
     });
 
     it("navigates to the selected item on enter and closes", async () => {
@@ -619,36 +404,25 @@ describe("CommandPalette", () => {
         expect(secondaryHints().length).toBe(0);
     });
 
-    it("flips the escape hint between close, clear and back", async () => {
-        expect(hint("escape").text()).toContain("close");
-        expect(hint("help").exists()).toBe(true);
-        // help sits opposite the bindings it explains
+    it("sets the help hint opposite the bindings it explains", () => {
         expect(hint("help").classes()).toContain("hint-right");
-        expect(hint("remove-scope").exists()).toBe(false);
-
-        await type("t: align");
-        expect(hint("escape").text()).toContain("clear");
-        expect(hint("remove-scope").text()).toContain("remove filter");
-        expect(hint("help").exists()).toBe(false);
-
-        await press("Escape");
-        expect(hint("escape").text()).toContain("back");
     });
 
-    it("shows the category row only for an unscoped query", async () => {
-        expect(categoryRow().exists()).toBe(false);
+    it("names the optional footer hints a narrow palette hides", async () => {
         expect(hint("category").exists()).toBe(false);
+        expect(hint("remove-scope").exists()).toBe(false);
 
         await type("workflows");
-        expect(categoryRow().exists()).toBe(true);
-        expect(categoryRow().text()).toContain("All");
-        expect(categoryRow().text()).toContain("Navigation");
-        // actions have no category of their own, they only show under "All"
-        expect(category("actions").exists()).toBe(false);
         expect(hint("category").text()).toContain("category");
 
         await type("t: align");
-        expect(categoryRow().exists()).toBe(false);
+        expect(hint("remove-scope").text()).toContain("remove filter");
+
+        await press("Escape");
+        await press("Escape");
+        await type("> upload");
+        await press("Enter", { shiftKey: true });
+        expect(hint("remove-action").exists()).toBe(true);
     });
 
     it("reaches the category row with arrow up and hands the selection back", async () => {
@@ -720,24 +494,10 @@ describe("CommandPalette", () => {
         expect(sectionIds()).toContain("palette section reports");
     });
 
-    it("resets the category when the query is cleared", async () => {
+    it("keeps the category row selected after a category chip is clicked", async () => {
         await type("workflows");
-        await pickCategory("tools");
-        expect(category("tools").attributes("aria-selected")).toBe("true");
-
-        await press("Escape");
-        expect(categoryRow().exists()).toBe(false);
-
-        await type("workflows");
-        expect(category("all").attributes("aria-selected")).toBe("true");
-    });
-
-    it("hands focus back to the input after a category chip is clicked", async () => {
-        await type("workflows");
-        const focus = spyOnInputFocus();
 
         await pickCategory("tools");
-        expect(focus).toHaveBeenCalled();
         // the row keeps the selection, so the arrows keep moving the category
         expect(categoryRow().classes()).toContain("row-selected");
     });
@@ -792,12 +552,7 @@ describe("CommandPalette", () => {
         expect(focus).toHaveBeenCalled();
     });
 
-    it("holds the focus in the input when the dialog chrome is pressed", async () => {
-        // the footer, a section title and every other gap around the controls
-        // would take the focus away, leaving the palette unusable by keyboard
-        expect(sendMousedown(wrapper.find(".palette-footer").element).defaultPrevented).toBe(true);
-        expect(sendMousedown(wrapper.find(".palette-section-title").element).defaultPrevented).toBe(true);
-
+    it("keeps the mouse default of the input, for the caret and the selection", () => {
         // the input keeps its own default, so the caret and the text selection
         // still answer to the mouse
         expect(sendMousedown(input().element).defaultPrevented).toBe(false);
@@ -858,35 +613,6 @@ describe("CommandPalette", () => {
         const row = optionRow("constructor");
         expect(row).toBeDefined();
         expect(row?.text()).not.toContain("native code");
-    });
-
-    it("drops the previous results while the new scope is still fetching", async () => {
-        expect(wrapper.text()).toContain("Upload data");
-
-        const original = workflowsProvider.searchScoped;
-        let land: () => void = () => {};
-        const pending = new Promise<never[]>((resolve) => {
-            land = () => resolve([]);
-        });
-        workflowsProvider.searchScoped = () => pending;
-        try {
-            await type("w: rna");
-
-            expect(badge().text()).toContain("My workflows");
-            // the root actions may not keep rendering under the new badge
-            expect(wrapper.text()).not.toContain("Upload data");
-            expect(wrapper.find("[data-description='palette searching']").exists()).toBe(true);
-            expect(wrapper.find("[data-description='palette empty']").exists()).toBe(false);
-
-            land();
-            await settle();
-            expect(wrapper.find("[data-description='palette searching']").exists()).toBe(false);
-            const empty = wrapper.get("[data-description='palette empty']");
-            expect(empty.element.closest("[role='listbox']")).toBeNull();
-            expect(wrapper.find("[role='group']").exists()).toBe(false);
-        } finally {
-            workflowsProvider.searchScoped = original;
-        }
     });
 
     it("renders every provider as it answers and holds the slow one's place", async () => {
@@ -1023,32 +749,6 @@ describe("CommandPalette", () => {
         }
     });
 
-    it("says a scope could not be loaded instead of calling it empty", async () => {
-        const original = workflowsProvider.searchScoped;
-        workflowsProvider.searchScoped = () => Promise.reject(new PaletteFetchError());
-        try {
-            await type("w: rna");
-
-            const error = wrapper.find("[data-description='palette error']");
-            expect(error.exists()).toBe(true);
-            expect(error.text()).toContain("Couldn't load my workflows");
-            expect(wrapper.find("[data-description='palette empty']").exists()).toBe(false);
-        } finally {
-            workflowsProvider.searchScoped = original;
-        }
-
-        // the next search clears it again
-        await type("t: align");
-        expect(wrapper.find("[data-description='palette error']").exists()).toBe(false);
-    });
-
-    it("keeps a scope token the user may not use as plain text", async () => {
-        // interactivetools_enable is off in the mocked config
-        await type("it: jupyter");
-        expect(badge().exists()).toBe(false);
-        expect(inputValue()).toBe("it: jupyter");
-    });
-
     it("keeps a scope token still being typed away from every backend search", async () => {
         const searches = [toolsProvider, historiesProvider].map((provider) => vi.spyOn(provider, "search"));
         try {
@@ -1094,23 +794,18 @@ describe("CommandPalette", () => {
         }
     });
 
-    it("offers a login when an anonymous visitor types a scope that needs one", async () => {
-        browseAnonymously();
+    it("logs in from the offer an anonymous visitor gets for a scope that needs one", async () => {
+        await browseAnonymously();
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
 
         await type("w:rna");
-        // the token never became a badge, so the offer stands in its place
-        expect(badge().exists()).toBe(false);
-        expect(loginPrompt().text()).toContain("Log in to search my workflows");
-        expect(loginPrompt().text()).toContain("Create a Galaxy account");
-
         // the offer is made of ordinary rows, so enter reaches it like any result
         await press("Enter");
         expect(push).toHaveBeenCalledWith(`/login/start?redirect=${encodeURIComponent("/")}`);
     });
 
     it("never asks the login-only providers for an anonymous visitor", async () => {
-        browseAnonymously();
+        await browseAnonymously();
         const stalled = [datasetsProvider, visualizationsProvider, invocationsProvider].map(stallSearch);
         try {
             await type("workflows", BACKEND_WAIT);
@@ -1127,30 +822,8 @@ describe("CommandPalette", () => {
         }
     });
 
-    it("says nothing about a scope this instance does not offer at all", async () => {
-        browseAnonymously();
-
-        // interactivetools_enable is off in the mocked config, so an account
-        // would not unlock the scope either
-        await type("it:jupyter");
-        expect(loginPrompt().exists()).toBe(false);
-        expect(inputValue()).toBe("it:jupyter");
-    });
-
-    it("hides the register row where the instance creates no local accounts", async () => {
-        browseAnonymously();
-        setMockConfig({ allow_local_account_creation: false });
-        try {
-            await type("h:");
-            expect(loginPrompt().text()).toContain("Log in to search my histories");
-            expect(loginPrompt().text()).not.toContain("Create a Galaxy account");
-        } finally {
-            resetMockConfig();
-        }
-    });
-
     it("registers through the single OIDC provider where local accounts are off", async () => {
-        browseAnonymously();
+        await browseAnonymously();
         setMockConfig({
             allow_local_account_creation: false,
             oidc: { okta: { end_user_registration_endpoint: "https://okta.example.org/register" } },
@@ -1170,24 +843,12 @@ describe("CommandPalette", () => {
         }
     });
 
-    it("lists the scopes an account would add behind a lock in help mode", async () => {
-        browseAnonymously();
+    it("marks the scopes an account would add with a lock in help mode", async () => {
+        await browseAnonymously();
 
         await type("?");
-        // what an anonymous visitor may search is listed as it always is
-        expect(wrapper.text()).toContain("Search public workflows");
-
         const locked = optionRow("Search my workflows");
         expect(locked?.find(".item-icon svg").attributes("data-icon")).toBe("lock");
-
-        await locked?.trigger("click");
-        await settle();
-
-        // picking one types its token, which answers with the same login offer
-        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
-        expect(badge().exists()).toBe(false);
-        expect(inputValue()).toBe("w: ");
-        expect(loginPrompt().text()).toContain("Log in to search my workflows");
     });
 
     it("never searches, tabs or lists a provider the instance disabled", async () => {
@@ -1196,13 +857,7 @@ describe("CommandPalette", () => {
         setMockConfig({ command_palette_disabled_providers: ["workflows"] });
         const search = vi.spyOn(workflowsProvider, "search");
         try {
-            wrapper = mount(MountTarget as object, {
-                localVue,
-                router,
-                pinia: createTestingPinia({ createSpy: vi.fn, stubActions: true, initialState: CONFIG_LOADED }),
-            });
-            useCommandPalette().openPalette();
-            await settle();
+            await openStory(stories.Open);
 
             await type("workflow");
             expect(sectionIds()).not.toContain("palette section workflows");
@@ -1239,7 +894,9 @@ describe("CommandPalette", () => {
 
         const searches = countEmptyQuerySearches(navigationProvider);
         try {
+            // the story would open, and so hydrate, before fetchTools could be held
             wrapper = mount(MountTarget as object, { localVue, router, pinia });
+            onTestFinished(() => wrapper.unmount());
             useCommandPalette().openPalette();
             await settle();
 
@@ -1309,11 +966,6 @@ describe("CommandPalette", () => {
 
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
         expect(dialog.classes()).toContain("palette-open");
-    });
-
-    it("closes on escape", async () => {
-        await input().trigger("keydown", { key: "Escape" });
-        expect(useCommandPalette().isPaletteOpen.value).toBe(false);
     });
 
     it("keeps the query and the badge when the palette is closed without escape", async () => {
@@ -1405,7 +1057,6 @@ describe("CommandPalette", () => {
     });
 
     it("surfaces a failing action instead of dropping it", async () => {
-        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
         vi.mocked(useHistoryStore().createNewHistory).mockRejectedValue(new Error("history quota exceeded"));
 
         await type("> new history");
@@ -1421,7 +1072,6 @@ describe("CommandPalette", () => {
     });
 
     it("reports a rejected Set as current secondary action", async () => {
-        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
         const store = useHistoryStore();
         vi.mocked(store.setCurrentHistory).mockRejectedValue(new Error("history is unavailable"));
         store.storedHistories = {
@@ -1441,7 +1091,6 @@ describe("CommandPalette", () => {
     });
 
     it("reports a synchronous action failure", async () => {
-        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
         vi.mocked(useHistoryStore().createNewHistory).mockImplementation(() => {
             throw new Error("cannot start creation");
         });

@@ -4,7 +4,7 @@ import { computed, ref } from "vue";
 import { usePagination } from "./pagination";
 
 describe("usePagination", () => {
-    it("should paginate items with default settings", () => {
+    it("starts on the first page with the default page size of 24", () => {
         const items = ref([1, 2, 3, 4, 5]);
         const { paginatedItems, currentPage, itemsPerPage } = usePagination(items);
 
@@ -13,22 +13,22 @@ describe("usePagination", () => {
         expect(paginatedItems.value).toEqual([1, 2, 3, 4, 5]);
     });
 
-    it("should paginate items correctly across multiple pages", () => {
+    it.each([
+        { name: "first", page: 1, expected: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+        { name: "second", page: 2, expected: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20] },
+        { name: "last full", page: 5, expected: [41, 42, 43, 44, 45, 46, 47, 48, 49, 50] },
+    ])("returns the $name page of 50 items", ({ page, expected }) => {
         const items = ref(Array.from({ length: 50 }, (_, i) => i + 1));
         const { paginatedItems, currentPage, onPageChange } = usePagination(items, { itemsPerPage: 10 });
-
         expect(paginatedItems.value).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
-        onPageChange(2);
-        expect(currentPage.value).toBe(2);
-        expect(paginatedItems.value).toEqual([11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
+        onPageChange(page);
 
-        onPageChange(5);
-        expect(currentPage.value).toBe(5);
-        expect(paginatedItems.value).toEqual([41, 42, 43, 44, 45, 46, 47, 48, 49, 50]);
+        expect(currentPage.value).toBe(page);
+        expect(paginatedItems.value).toEqual(expected);
     });
 
-    it("should show pagination only when items exceed page size", () => {
+    it("shows pagination after the items exceed the configured page size", () => {
         const items = ref([1, 2, 3]);
         const { showPagination } = usePagination(items, { itemsPerPage: 5 });
 
@@ -38,7 +38,7 @@ describe("usePagination", () => {
         expect(showPagination.value).toBe(true);
     });
 
-    it("should reset to first page", () => {
+    it("resets the current page after navigating to page three", () => {
         const items = ref(Array.from({ length: 30 }, (_, i) => i + 1));
         const { currentPage, onPageChange, resetPage } = usePagination(items, { itemsPerPage: 10 });
 
@@ -49,7 +49,7 @@ describe("usePagination", () => {
         expect(currentPage.value).toBe(1);
     });
 
-    it("should compute total items correctly", () => {
+    it("updates the total after items are appended", () => {
         const items = ref([1, 2, 3]);
         const { totalItems } = usePagination(items);
 
@@ -59,7 +59,7 @@ describe("usePagination", () => {
         expect(totalItems.value).toBe(5);
     });
 
-    it("should work with computed items", () => {
+    it("paginates the results of a computed filter", () => {
         const baseItems = ref([1, 2, 3, 4, 5, 6]);
         const filteredItems = computed(() => baseItems.value.filter((item) => item > 3));
         const { paginatedItems, totalItems } = usePagination(filteredItems, { itemsPerPage: 2 });
@@ -68,7 +68,7 @@ describe("usePagination", () => {
         expect(paginatedItems.value).toEqual([4, 5]);
     });
 
-    it("should handle empty items array", () => {
+    it("returns no items and hides pagination for an empty list", () => {
         const items = ref<number[]>([]);
         const { paginatedItems, totalItems, showPagination } = usePagination(items);
 
@@ -77,7 +77,7 @@ describe("usePagination", () => {
         expect(showPagination.value).toBe(false);
     });
 
-    it("should handle last page with fewer items", () => {
+    it("returns the remaining five items on the last partial page", () => {
         const items = ref(Array.from({ length: 25 }, (_, i) => i + 1));
         const { paginatedItems, onPageChange } = usePagination(items, { itemsPerPage: 10 });
 

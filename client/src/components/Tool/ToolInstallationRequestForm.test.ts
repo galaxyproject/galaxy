@@ -6,6 +6,8 @@ import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { clickModalButton } from "@/components/BaseComponents/test-utils";
+
 import ToolInstallationRequestForm from "./ToolInstallationRequestForm.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
@@ -67,8 +69,7 @@ describe("ToolInstallationRequestForm", () => {
         await wrapper.find("#tool-installation-request-additional-remarks").setValue("Optional extra info");
         await flushPromises();
 
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        await clickModalButton(wrapper, "Submit Request");
 
         expect(mockSubmitToolInstallationRequest).toHaveBeenCalledOnce();
         const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as Record<string, unknown>;
@@ -89,8 +90,7 @@ describe("ToolInstallationRequestForm", () => {
     it("rejects a field over its length limit and does not submit", async () => {
         const wrapper = await mountForm();
         await fillRequiredFields(wrapper, { tool_name: "x".repeat(256) });
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        await clickModalButton(wrapper, "Submit Request");
         expect(mockSubmitToolInstallationRequest).not.toHaveBeenCalled();
         expect(wrapper.find(".alert-danger").text()).toContain(
             "Tool Name is too long (256 characters; the maximum is 255).",
@@ -101,8 +101,7 @@ describe("ToolInstallationRequestForm", () => {
         const wrapper = await mountForm();
         await fillRequiredFields(wrapper);
         await wrapper.find("#tool-installation-request-url").setValue("http://example.com/tool");
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        await clickModalButton(wrapper, "Submit Request");
         expect(mockSubmitToolInstallationRequest).not.toHaveBeenCalled();
         expect(wrapper.text()).toContain("https://");
     });
@@ -111,8 +110,7 @@ describe("ToolInstallationRequestForm", () => {
         const wrapper = await mountForm();
         await fillRequiredFields(wrapper);
         await wrapper.find("#tool-installation-request-url").setValue("HTTPS://Example.com/Tool");
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        await clickModalButton(wrapper, "Submit Request");
         expect(mockSubmitToolInstallationRequest).toHaveBeenCalledOnce();
         const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as { tools: { tool_url?: string }[] };
         expect(payload.tools[0]?.tool_url).toBe("HTTPS://Example.com/Tool");
@@ -122,13 +120,11 @@ describe("ToolInstallationRequestForm", () => {
         mockSubmitToolInstallationRequest.mockRejectedValueOnce(new Error("Network error"));
         const wrapper = await mountForm();
         await fillRequiredFields(wrapper);
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        await clickModalButton(wrapper, "Submit Request");
         expect(wrapper.find(".alert-danger").exists()).toBe(true);
 
         await wrapper.find("#tool-installation-request-url").setValue("http://example.com/tool");
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        await clickModalButton(wrapper, "Submit Request");
 
         // Only the inline URL error explains this attempt; the stale banner is gone.
         expect(wrapper.find(".alert-danger").exists()).toBe(false);
@@ -140,16 +136,14 @@ describe("ToolInstallationRequestForm", () => {
         const wrapper = await mountForm();
         expect(wrapper.findComponent(GModal).props("cancelText")).toBe("Cancel");
         await fillRequiredFields(wrapper);
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        await clickModalButton(wrapper, "Submit Request");
         expect(wrapper.findComponent(GModal).props("cancelText")).toBe("Close");
     });
 
     it("shows success alert after successful submission", async () => {
         const wrapper = await mountForm();
         await fillRequiredFields(wrapper);
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        await clickModalButton(wrapper, "Submit Request");
         expect(wrapper.find(".alert-success").exists()).toBe(true);
         expect(wrapper.text()).toContain("submitted");
     });
@@ -158,8 +152,7 @@ describe("ToolInstallationRequestForm", () => {
         mockSubmitToolInstallationRequest.mockRejectedValue(new Error("Network error"));
         const wrapper = await mountForm();
         await fillRequiredFields(wrapper);
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        await clickModalButton(wrapper, "Submit Request");
         expect(wrapper.find(".alert-danger").exists()).toBe(true);
     });
 });

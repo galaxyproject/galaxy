@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from "vitest"
-import { mount } from "@vue/test-utils"
+import { afterEach, describe, it, expect } from "vitest"
+import { enableAutoUnmount, mount } from "@vue/test-utils"
 import { nextTick } from "vue"
 import RevisionsTab from "./RevisionsTab.vue"
 import {
@@ -9,96 +9,77 @@ import {
     type RepositoryMetadata,
 } from "./__fixtures__"
 
-vi.mock("./MetadataJsonViewer.vue", () => ({
-    default: {
-        name: "MetadataJsonViewer",
-        props: ["data", "modelName", "deep"],
-        template: '<div class="mock-json-viewer">{{ JSON.stringify(data) }}</div>',
-    },
-}))
+import { MetadataJsonViewerStub } from "./test-utils"
+
+enableAutoUnmount(afterEach)
 
 const fixtureMetadata = repositoryMetadataColumnMaker
 const bismarkMetadata = repositoryMetadataBismark
 
-describe("RevisionsTab", () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
+function mountTab(props: { metadata: RepositoryMetadata | null; expandRevision?: string | null }) {
+    return mount(RevisionsTab, {
+        props,
+        global: { stubs: { MetadataJsonViewer: MetadataJsonViewerStub } },
     })
+}
 
+describe("RevisionsTab", () => {
     describe("rendering", () => {
         it("displays 'No revisions found' when metadata is null", () => {
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: null },
-            })
+            const wrapper = mountTab({ metadata: null })
 
             expect(wrapper.text()).toContain("No revisions found")
         })
 
         it("displays 'No revisions found' when metadata is empty", () => {
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: {} as RepositoryMetadata },
-            })
+            const wrapper = mountTab({ metadata: {} })
 
             expect(wrapper.text()).toContain("No revisions found")
         })
 
         it("displays list of revisions", () => {
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
             expect(wrapper.find(".revision-list").exists()).toBe(true)
         })
 
         it("shows revision identifiers in format [num:hash]", () => {
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
-            const keys = Object.keys(fixtureMetadata)
-            for (const key of keys) {
-                const [num, hash] = key.split(":")
-                expect(wrapper.text()).toContain(`[${num}:${hash.substring(0, 7)}]`)
-            }
+            const summaries = wrapper.findAll(".revision-summary")
+            expect(summaries.map((summary) => summary.get("div").text())).toEqual([
+                "[2:062143f]",
+                "[1:191823a]",
+                "[0:d6e7311]",
+            ])
         })
     })
 
     describe("sorting", () => {
         it("sorts revisions with newest first", () => {
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
-            const text = wrapper.text()
-            const keys = Object.keys(fixtureMetadata)
-            const nums = keys.map((k) => parseInt(k.split(":")[0])).sort((a, b) => b - a)
-
-            if (nums.length >= 2) {
-                const newestIndex = text.indexOf(`[${nums[0]}:`)
-                const oldestIndex = text.indexOf(`[${nums[nums.length - 1]}:`)
-                expect(newestIndex).toBeLessThan(oldestIndex)
-            }
+            expect(wrapper.findAll(".revision-toggle").map((toggle) => toggle.attributes("aria-label"))).toEqual([
+                "Details for revision 2",
+                "Details for revision 1",
+                "Details for revision 0",
+            ])
         })
     })
 
     describe("tool summary", () => {
         it("shows tool ID for revisions with tools", () => {
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
             expect(wrapper.text()).toContain("Add_a_column1")
         })
 
         it("shows 'No tools' for revisions without tools", () => {
-            const keys = Object.keys(fixtureMetadata)
             const noToolsMetadata: RepositoryMetadata = {
-                [keys[0]]: makeRevision({ tools: [] }),
+                "0:notools": makeRevision({ tools: [] }),
             }
 
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: noToolsMetadata },
-            })
+            const wrapper = mountTab({ metadata: noToolsMetadata })
 
             expect(wrapper.text()).toContain("No tools")
         })
@@ -106,55 +87,40 @@ describe("RevisionsTab", () => {
 
     describe("invalid tools", () => {
         it("shows badge for revisions with invalid tools", () => {
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: bismarkMetadata },
-            })
+            const wrapper = mountTab({ metadata: bismarkMetadata })
 
-            expect(wrapper.text()).toMatch(/\d+ invalid/)
-            expect(wrapper.find(".invalid-tools-badge").text()).toMatch(/^\d+ invalid$/)
+            expect(wrapper.text()).toContain("1 invalid")
+            expect(wrapper.findAll(".invalid-tools-badge").map((badge) => badge.text())).toEqual([
+                "2 invalid",
+                "1 invalid",
+            ])
         })
 
         it("shows no badge for revisions without invalid tools", () => {
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
             expect(wrapper.find(".invalid-tools-badge").exists()).toBe(false)
         })
 
         it("shows invalid tool paths when revision is expanded", async () => {
-            const entryWithInvalid = Object.entries(bismarkMetadata).find(
-                ([, rev]) => rev.invalid_tools && rev.invalid_tools.length > 0,
-            )
-            expect(entryWithInvalid).toBeDefined()
-
-            const [keyWithInvalid, revision] = entryWithInvalid ?? []
-            const invalidTools = revision?.invalid_tools ?? []
-            expect(invalidTools.length).toBeGreaterThan(0)
-
-            const wrapper = mount(RevisionsTab, {
-                props: {
-                    metadata: bismarkMetadata,
-                    expandRevision: keyWithInvalid,
-                },
+            const wrapper = mountTab({
+                metadata: bismarkMetadata,
+                expandRevision: "0:c35bbde3c5e0",
             })
 
             await nextTick()
 
-            expect(wrapper.text()).toContain(invalidTools[0].tool_config)
-            expect(wrapper.text()).toContain(invalidTools[0].error_message)
+            const invalidTools = wrapper.get(".invalid-tools-list")
+            expect(invalidTools.text()).toContain("bismark_bowtie_wrapper.xml")
+            expect(invalidTools.text()).toContain("Tool XML parsing error")
         })
     })
 
     describe("expandRevision prop", () => {
         it("auto-expands revision when expandRevision prop is set", async () => {
-            const firstKey = Object.keys(fixtureMetadata)[0]
-
-            const wrapper = mount(RevisionsTab, {
-                props: {
-                    metadata: fixtureMetadata,
-                    expandRevision: firstKey,
-                },
+            const wrapper = mountTab({
+                metadata: fixtureMetadata,
+                expandRevision: "0:d6e73113c7a5",
             })
 
             await nextTick()
@@ -163,24 +129,17 @@ describe("RevisionsTab", () => {
         })
 
         it("expands new revision when expandRevision prop changes", async () => {
-            const keys = Object.keys(fixtureMetadata)
-
-            const wrapper = mount(RevisionsTab, {
-                props: {
-                    metadata: fixtureMetadata,
-                    expandRevision: null,
-                },
+            const wrapper = mountTab({
+                metadata: fixtureMetadata,
+                expandRevision: null,
             })
 
-            // Initially no revision toggle is expanded
             const expandedToggles = () => wrapper.findAll(".revision-toggle[aria-expanded=true]")
             expect(expandedToggles().length).toBe(0)
             expect(wrapper.find(".mock-json-viewer").exists()).toBe(false)
 
-            await wrapper.setProps({ expandRevision: keys[0] })
-            await nextTick()
+            await wrapper.setProps({ expandRevision: "0:d6e73113c7a5" })
 
-            // After setting prop, one should be expanded
             expect(expandedToggles().length).toBe(1)
             expect(wrapper.findAll(".mock-json-viewer").length).toBe(1)
         })
@@ -188,18 +147,14 @@ describe("RevisionsTab", () => {
 
     describe("expansion items", () => {
         it("renders one expansion item per revision", () => {
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
             const toggles = wrapper.findAll(".revision-toggle")
             expect(toggles.length).toBe(Object.keys(fixtureMetadata).length)
         })
 
         it("toggles a revision's details from its button", async () => {
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: fixtureMetadata },
-            })
+            const wrapper = mountTab({ metadata: fixtureMetadata })
 
             const toggle = wrapper.find(".revision-toggle")
             expect(toggle.element.tagName).toBe("BUTTON")
@@ -223,9 +178,8 @@ describe("RevisionsTab", () => {
 
     describe("edge cases", () => {
         it("handles revision with many invalid tools", () => {
-            const keys = Object.keys(fixtureMetadata)
             const manyInvalidMetadata: RepositoryMetadata = {
-                [keys[0]]: makeRevision({
+                "0:invalidtools": makeRevision({
                     tools: [],
                     downloadable: false,
                     invalid_tools: [
@@ -238,9 +192,7 @@ describe("RevisionsTab", () => {
                 }),
             }
 
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: manyInvalidMetadata },
-            })
+            const wrapper = mountTab({ metadata: manyInvalidMetadata })
 
             expect(wrapper.text()).toContain("5 invalid")
             expect(wrapper.find(".invalid-tools-badge").text()).toBe("5 invalid")

@@ -1,132 +1,90 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { createPinia, defineStore, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { describe, expect, it, vi } from "vitest";
 import Multiselect from "vue-multiselect";
 
-import { getDataset } from "./services";
+import { useServerMock } from "@/api/client/__mocks__";
+import { useEventStore } from "@/stores/eventStore";
+
+import * as SelectionFieldStories from "./SelectionField.stories";
+import { CURRENT_HISTORY, HISTORY_DATASETS } from "./test_fixtures";
 
 import SelectionField from "./SelectionField.vue";
 
-vi.mock("@/stores/eventStore", () => ({
-    useEventStore: () => ({
-        getDragItems: vi.fn(() => [{ id: "item1", name: "Item One", history_content_type: "dataset" }]),
-    }),
-}));
+const stories = composeStories(SelectionFieldStories);
+const mountStory = useStoryMount();
+const { server, http } = useServerMock();
 
-vi.mock("./services", () => ({
-    getHistories: vi.fn(() => Promise.resolve([{ id: "1", name: "History One" }])),
-    getDataset: vi.fn(() => Promise.resolve([{ id: "ds1", name: "Dataset A" }])),
-    getDatasetCollection: vi.fn(),
-    getInvocations: vi.fn(),
-    getJobs: vi.fn(),
-    getWorkflows: vi.fn(),
-}));
+const [FORWARD_READS, REVERSE_READS] = HISTORY_DATASETS;
 
-const localVue = getLocalVue();
-let mockedStore;
-
-// Helper to wait for debounce + async resolution
-const waitForDebouncedSearch = async () => {
+/** Waits out the component's 300 ms search debounce and the search it starts. */
+async function waitForDebouncedSearch() {
     await new Promise((resolve) => setTimeout(resolve, 350));
     await flushPromises();
-};
-
-vi.mock("@/stores/historyStore", () => {
-    return {
-        useHistoryStore: () => mockedStore,
-    };
-});
-
-function mountComponent(props = {}) {
-    return mount(SelectionField, {
-        global: localVue,
-        props: {
-            objectType: "history_dataset_id",
-            ...props,
-        },
-    });
 }
 
-beforeEach(() => {
-    setActivePinia(createPinia());
-    const useFakeHistoryStore = defineStore("history", {
-        state: () => ({
-            currentHistoryId: ref("history123"),
+/** Mounts a story and waits for the field's first search. */
+async function mountSelectionField(story, options) {
+    const wrapper = mountStory(story, options);
+    await waitForDebouncedSearch();
+    return wrapper;
+}
+
+/** Records the query parameters of each dataset search; the story still answers. */
+function recordDatasetSearches() {
+    const searches = [];
+    server.use(
+        http.get("/api/datasets", ({ query }) => {
+            searches.push({ historyId: query.get("history_id"), text: query.get("qv") });
         }),
-    });
-    mockedStore = useFakeHistoryStore();
-});
+    );
+    return searches;
+}
 
-describe("SelectionField.vue", () => {
-    it("renders label and multiselect when ready", async () => {
-        const wrapper = mountComponent({ objectName: "My Dataset", objectId: "ds1" });
-        await waitForDebouncedSearch();
-        const label = wrapper.find("label");
-        expect(label.exists()).toBe(true);
-        expect(label.text()).toContain("Select a History Dataset Id");
-        expect(wrapper.findComponent(Multiselect).exists()).toBeTruthy();
-    });
+describe("SelectionField", () => {
+    it("searches the current history's datasets when the search text changes", async () => {
+        const wrapper = await mountSelectionField(stories.NothingSelected);
+        const searches = recordDatasetSearches();
 
-    it("renders empty state when no data found", async () => {
-        getDataset.mockImplementationOnce(() => Promise.resolve([]));
-        const wrapper = mountComponent();
-        await waitForDebouncedSearch();
-        expect(wrapper.text()).toContain("No datasets found in your current history");
-    });
-
-    it("triggers search when input changes", async () => {
-        const wrapper = mountComponent();
-        await waitForDebouncedSearch();
         const multiselect = wrapper.findComponent(Multiselect);
         expect(multiselect.exists()).toBe(true);
-        multiselect.vm.$emit("search-change", "abc");
+        multiselect.vm.$emit("search-change", "SRR");
         await waitForDebouncedSearch();
-        expect(getDataset).toHaveBeenCalledWith("abc", "history123");
+
+        expect(searches).toContainEqual({ historyId: CURRENT_HISTORY.id, text: "SRR" });
     });
 
-    it("shows error if service throws", async () => {
-        getDataset.mockImplementationOnce(() => {
-            throw new Error("Oops!");
-        });
-        const wrapper = mountComponent();
-        await waitForDebouncedSearch();
-        expect(wrapper.text()).toContain("Oops!");
+    it("highlights a dragged dataset and emits it as the selection when dropped", async () => {
+        const wrapper = await mountSelectionField(stories.NothingSelected);
+        const dropZone = wrapper.find("[aria-roledescription='drop zone']");
+        useEventStore().setDragData(REVERSE_READS);
+
+        expect(dropZone.classes()).not.toContain("ui-dragover-success");
+        await dropZone.trigger("dragenter");
+        expect(dropZone.classes()).toContain("ui-dragover-success");
+        await dropZone.trigger("drop");
+        expect(dropZone.classes()).not.toContain("ui-dragover-success");
+        expect(wrapper.getComponent(SelectionField).emitted("change")).toEqual([
+            [{ id: REVERSE_READS.id, name: REVERSE_READS.name }],
+        ]);
     });
 
-    it("handles dragenter and drop", async () => {
-        const wrapper = mountComponent();
+    it("searches with the custom objectQuery function when provided", async () => {
+        const objectQuery = vi.fn(stories.WorkflowLabels.args.objectQuery);
+        const wrapper = await mountSelectionField(stories.WorkflowLabels, { props: { objectQuery } });
+
+        wrapper.findComponent(Multiselect).vm.$emit("search-change", "reads");
         await waitForDebouncedSearch();
-        expect(wrapper.classes()).not.toContain("ui-dragover-success");
-        await wrapper.trigger("dragenter");
-        expect(wrapper.classes()).toContain("ui-dragover-success");
-        await wrapper.trigger("drop");
-        expect(wrapper.classes()).not.toContain("ui-dragover-success");
-        expect(wrapper.emitted("change")).toEqual([[{ id: "item1", name: "Item One" }]]);
+
+        expect(objectQuery).toHaveBeenCalledWith("reads");
     });
 
-    it("uses custom objectQuery function when provided", async () => {
-        const mockQuery = vi.fn(() => Promise.resolve([{ id: "custom1", name: "Custom Result" }]));
-        const wrapper = mountComponent({ objectQuery: mockQuery });
-        await waitForDebouncedSearch();
-        const multiselect = wrapper.findComponent(Multiselect);
-        multiselect.vm.$emit("search-change", "test");
-        await waitForDebouncedSearch();
-        expect(mockQuery).toHaveBeenCalledWith("test");
-    });
+    it("gives the picker the first dataset, with its id, when no objectId and objectName are given", async () => {
+        const wrapper = await mountSelectionField(stories.NothingSelected);
 
-    it("falls back to first option if no objectId and objectName provided", async () => {
-        const wrapper = mountComponent({ objectId: "", objectName: "" });
-        await waitForDebouncedSearch();
         const multiselect = wrapper.findComponent(Multiselect);
         expect(multiselect.exists()).toBe(true);
-        const multiselectOptions = multiselect.props("options");
-        expect(multiselectOptions.length).toBeGreaterThan(0);
-        await wrapper.vm.$nextTick();
-        const currentValue = wrapper.vm.currentValue;
-        expect(currentValue.id).toBe("ds1");
-        expect(currentValue.name).toBe("Dataset A");
+        expect(multiselect.props("modelValue")).toEqual({ id: FORWARD_READS.id, name: FORWARD_READS.name });
     });
 });

@@ -1,58 +1,40 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { getFakeAnonymousUser, getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import { createPinia } from "pinia";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
-import type { RegisteredUser } from "@/api";
+import type { AnonymousUser, RegisteredUser } from "@/api";
 import { useUserStore } from "@/stores/userStore";
 
 import HistoryNavigation from "./HistoryNavigation.vue";
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
 
-async function createWrapper(props: object, userData?: Partial<RegisteredUser>) {
+function createWrapper(user: RegisteredUser | AnonymousUser) {
+    const localVue = getLocalVue();
     const pinia = createPinia();
-
-    const wrapper = shallowMount(HistoryNavigation as object, {
-        props,
-        global: localVue,
-        pinia,
+    useUserStore(pinia).currentUser = user;
+    return shallowMount(HistoryNavigation, {
+        props: { history: getFakeHistorySummary({ id: "current_history_id" }) },
+        global: withPlugins(localVue, pinia),
     });
-
-    const userStore = useUserStore();
-    userStore.currentUser = { ...(userStore.currentUser as RegisteredUser), ...userData };
-
-    return wrapper;
 }
 
 describe("History Navigation", () => {
-    it("presents all options to logged-in users", async () => {
-        const wrapper = await createWrapper(
-            {
-                history: { id: "current_history_id" },
-                histories: [],
-            },
-            {
-                id: "user.id",
-                email: "user.email",
-            },
-        );
-
-        const createButton = wrapper.find("*[data-description='create new history']");
-        expect(createButton.attributes().disabled).toBeFalsy();
-        const switchButton = wrapper.find("*[data-description='switch to another history']");
-        expect(switchButton.attributes().disabled).toBeFalsy();
+    it("enables history creation and switching for logged-in users", () => {
+        const wrapper = createWrapper(getFakeRegisteredUser({ id: "user.id", email: "user.email" }));
+        const createButton = wrapper.get("[data-description='create new history']");
+        const switchButton = wrapper.get("[data-description='switch to another history']");
+        expect(createButton.attributes("disabled")).toBeUndefined();
+        expect(switchButton.attributes("disabled")).toBeUndefined();
     });
 
-    it("disables options for anonymous users", async () => {
-        const wrapper = await createWrapper({
-            history: { id: "current_history_id" },
-            histories: [],
-        });
-
-        const createButton = wrapper.find("*[data-description='create new history']");
-        expect(createButton.attributes().disabled).toBeTruthy();
-        const switchButton = wrapper.find("*[data-description='switch to another history']");
-        expect(switchButton.attributes().disabled).toBeTruthy();
+    it("disables history creation and switching for anonymous users", () => {
+        const wrapper = createWrapper(getFakeAnonymousUser());
+        const createButton = wrapper.get("[data-description='create new history']");
+        const switchButton = wrapper.get("[data-description='switch to another history']");
+        expect(createButton.attributes("disabled")).toBeDefined();
+        expect(switchButton.attributes("disabled")).toBeDefined();
     });
 });
