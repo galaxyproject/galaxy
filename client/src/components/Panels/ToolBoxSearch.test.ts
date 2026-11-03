@@ -154,6 +154,43 @@ describe("ToolBox search", () => {
         expect(wrapper.find('[data-tool-id="__ZIP_COLLECTION__"]').exists()).toBe(true);
     });
 
+    it("caps rendered search results and shows all of them on request", async () => {
+        const manyTools = Array.from(
+            { length: 120 },
+            (_, i) => ({ ...toolsList[0], id: `many_tool_${i}`, name: `Many tool ${i}` }) as Tool,
+        );
+        const { wrapper } = mountToolBox({
+            tools: manyTools,
+            toolSections: {
+                default: {
+                    many: {
+                        model_class: "ToolSection",
+                        id: "many",
+                        name: "Many",
+                        tools: manyTools.map((tool) => tool.id),
+                    } as unknown as ToolSection,
+                },
+            },
+        });
+        await flushPromises();
+
+        const input = wrapper.find("input.search-query");
+        await input.setValue("Many tool");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        expect(wrapper.findAll("a[data-tool-id]")).toHaveLength(100);
+        expect(wrapper.text()).toContain("Loaded 100 out of 120 tools");
+
+        const showAll = wrapper.find('[data-description="show all tool search results button"]');
+        expect(showAll.exists()).toBe(true);
+        await showAll.trigger("click");
+        await flushPromises();
+
+        expect(wrapper.findAll("a[data-tool-id]")).toHaveLength(120);
+        expect(wrapper.find('[data-description="show all tool search results button"]').exists()).toBe(false);
+    });
+
     it("shows empty favorites copy in My panel when no favorites are set", async () => {
         const { wrapper } = mountToolBox();
         await flushPromises();
