@@ -11,6 +11,7 @@ from galaxy.exceptions import (
     ConfigDoesNotAllowException,
 )
 from galaxy.files.models import FileSourcePluginsConfig
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from ._util import (
     assert_realizes_contains,
     configured_file_sources,
@@ -133,3 +134,14 @@ def test_file_source_refuses_range_redirect_to_private_address():
     with pytest.raises(ConfigDoesNotAllowException):
         _realize(_zip_url())
     assert len(responses.calls) == 2
+
+
+@responses.activate
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_requests_use_socket_timeout():
+    responses.head(ZIP_URL)
+    _serve_ranges(ZIP_URL)
+    _realize(_zip_url())
+    # responses records the send() kwargs on each request.
+    timeouts = [call.request.req_kwargs["timeout"] for call in responses.calls]  # type: ignore[attr-defined]
+    assert timeouts == [DEFAULT_SOCKET_TIMEOUT] * 3
