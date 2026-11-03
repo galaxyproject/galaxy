@@ -2,7 +2,9 @@
 
 import os
 import tempfile
+import urllib.request
 from typing import Optional
+from unittest import mock
 
 from galaxy.files import (
     ConfiguredFileSources,
@@ -16,6 +18,15 @@ from galaxy.files.plugins import FileSourcePluginsConfig
 TEST_USERNAME = "alice"
 TEST_EMAIL = "alice@galaxyproject.org"
 TEST_OIDC_ACCESS_TOKENS = {"oidc": "test-oidc-token"}
+
+
+def patch_http_open(fn):
+    """Route urllib opener requests, ``urlopen`` included, to ``fn(request, timeout=...)``."""
+
+    def open(self, req, data=None, timeout=None):
+        return fn(req, timeout=timeout)
+
+    return mock.patch.object(urllib.request.OpenerDirector, "open", new=open)
 
 
 def serialize_and_recover(file_sources_o: ConfiguredFileSources, user_context: OptionalUserContext = None):
