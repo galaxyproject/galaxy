@@ -243,6 +243,12 @@ pre {
         box-shadow var(--shed-transition);
 }
 
+/* A darker border on hover; valid/invalid fields keep GFormInput's state colour */
+.shed-main input.g-form-input:hover:not(:focus, .g-valid, .g-invalid),
+.shed-main .q-field:not(.q-field--focused):hover .q-field__control::before {
+    border-color: var(--color-grey-700, #35373f);
+}
+
 /* The focus ring comes from GFormInput's outline; a box-shadow ring here would draw a second one */
 .shed-main input.g-form-input:focus {
     border-color: var(--color-galaxy-primary, #25537b);
