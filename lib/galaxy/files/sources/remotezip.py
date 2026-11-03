@@ -18,7 +18,10 @@ from galaxy.files.models import (
     BaseFileSourceTemplateConfiguration,
     FilesSourceRuntimeContext,
 )
-from galaxy.files.uris import validate_uri_access
+from galaxy.files.uris import (
+    validate_uri_access,
+    ValidatingSession,
+)
 from . import (
     DefaultBaseFilesSource,
     PluginKind,
@@ -73,12 +76,13 @@ class RemoteZipFilesSource(DefaultBaseFilesSource):
     ):
         params = extract_query_parameters(source_path)
         file_extract_params = validate_params(params)
+        allowlist = self._allowlist or []
         validate_uri_access(
             file_extract_params.source,
             context.user_data.is_admin,
-            self._allowlist or [],
+            allowlist,
         )
-        with requests.Session() as session:
+        with ValidatingSession(allowlist) as session:
             stream_and_decompress(file_extract_params, native_path, session)
 
     def _write_from(
