@@ -3634,3 +3634,9 @@ galaxy:
   # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
   # for user defined tools.
   #enable_beta_tool_formats: false
+
+  # Fail jobs of user defined tools that would not run in a container,
+  # regardless of the destination's ``require_container`` setting. User
+  # defined tools run arbitrary commands, only disable this if the job
+  # destinations isolate them in some other way (or for testing).
+  #require_container_for_user_defined_tools: true

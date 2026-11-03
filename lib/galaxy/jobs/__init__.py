@@ -114,6 +114,7 @@ from galaxy.objectstore import (
 from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.deps.container_classes import JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
@@ -1286,6 +1287,13 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def requires_containerization(self):
+        # User-defined tools run arbitrary commands, don't run them on the host.
+        if (
+            self.tool
+            and self.tool.tool_type == "user_defined"
+            and self.app.config.require_container_for_user_defined_tools
+        ):
+            return True
         return util.asbool(self.get_destination_configuration("require_container", "False"))
 
     @property
@@ -1382,8 +1390,8 @@ class MinimalJobWrapper(HasResourceParameters):
         return os.path.abspath(os.path.join(self.working_directory, "outputs", COMMAND_VERSION_FILENAME))
 
     def __prepare_upload_paramfile(self, job):
-        """Copy the upload paramfile into the working directory and use the stable path."""
-        new = os.path.join(self.working_directory, "upload_params.json")
+        """Copy the upload paramfile into the configs directory and use the stable path."""
+        new = os.path.join(ensure_configs_directory(self.working_directory), "upload_params.json")
         paramfile_parameter = next(iter(param for param in job.parameters if param.name == "paramfile"))
         if (param_file_path := json.loads(paramfile_parameter.value)) != new:
             try:
@@ -1469,7 +1477,9 @@ class MinimalJobWrapper(HasResourceParameters):
         self.galaxy_lib_dir  # noqa: B018
         if self.tool.requires_galaxy_python_environment or self.remote_command_line:
             # These tools (upload, metadata, data_source) may need access to the datatypes registry.
-            self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, "registry.xml"))
+            self.app.datatypes_registry.to_xml_file(
+                os.path.join(ensure_configs_directory(self.working_directory), "registry.xml")
+            )
         if self.remote_command_line:
             os.makedirs(os.path.join(self.working_directory, "metadata", "outputs_new"), exist_ok=True)
             self.job_io.to_json(path=os.path.join(self.working_directory, "metadata", "outputs_new", "job_io.json"))
@@ -1493,7 +1503,8 @@ class MinimalJobWrapper(HasResourceParameters):
             # The tool execution is given a working directory beneath the
             # "job" working directory.
             safe_makedirs(self.tool_working_directory)
-            safe_makedirs(os.path.join(working_directory, "outputs"))
+            for name in JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES:
+                safe_makedirs(os.path.join(working_directory, name))
             log.debug("(%s) Working directory for job is: %s", self.job_id, self.working_directory)
         except ObjectInvalid:
             raise Exception("(%s) Unable to create job working directory", job.id)
