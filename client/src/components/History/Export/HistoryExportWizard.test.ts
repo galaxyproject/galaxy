@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeFileSource } from "@tests/test-data/fileSources";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -18,7 +19,7 @@ const FAKE_HISTORY_ID = "fake-history-id";
 const FAKE_HISTORY_NAME = "Test History";
 
 const REMOTE_FILES_API_RESPONSE: BrowsableFilesSourcePlugin[] = [
-    {
+    getFakeFileSource({
         id: "test-posix-source",
         type: "posix",
         label: "TestSource",
@@ -34,10 +35,10 @@ const REMOTE_FILES_API_RESPONSE: BrowsableFilesSourcePlugin[] = [
             recursive: true,
         },
         uri_root: "gxfiles://test-posix-source",
-    },
+    }),
 ];
 
-const ZENODO_PLUGIN: BrowsableFilesSourcePlugin = {
+const ZENODO_PLUGIN: BrowsableFilesSourcePlugin = getFakeFileSource({
     id: "zenodo",
     type: "rdm",
     label: "Zenodo",
@@ -51,9 +52,9 @@ const ZENODO_PLUGIN: BrowsableFilesSourcePlugin = {
         recursive: true,
     },
     uri_root: "zenodo://",
-};
+});
 
-const USER_ZENODO_PLUGIN: BrowsableFilesSourcePlugin = {
+const USER_ZENODO_PLUGIN: BrowsableFilesSourcePlugin = getFakeFileSource({
     id: "998c5bba-b18f-4223-9c93-0f36fa2fdae8",
     type: "zenodo",
     label: "My Zenodo",
@@ -70,7 +71,7 @@ const USER_ZENODO_PLUGIN: BrowsableFilesSourcePlugin = {
         recursive: true,
     },
     uri_root: "gxuserfiles://998c5bba-b18f-4223-9c93-0f36fa2fdae8",
-};
+});
 
 const selectors = {
     wizard: ".history-export-wizard",
