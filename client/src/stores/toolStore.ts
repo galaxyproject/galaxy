@@ -40,6 +40,15 @@ export interface Panel {
     searchable: boolean;
 }
 
+/** A data parameter of a tool, as listed on its panel entry. */
+export interface ToolDataInput {
+    /** `|`-joined form path that prefills the input, or null when the form cannot prefill it. */
+    name: string | null;
+    /** Accepted datatype extensions; `data` accepts any datatype. */
+    extensions: string[];
+    multiple: boolean;
+}
+
 // TODO: Once the backend models are typed, we will replace these with the generated types from the schema.
 export interface Tool {
     model_class: string;
@@ -68,6 +77,7 @@ export interface Tool {
         tool_shed: string;
     };
     help?: string;
+    data_inputs?: ToolDataInput[];
 }
 
 export interface ToolSection {
