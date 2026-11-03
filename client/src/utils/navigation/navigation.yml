@@ -528,6 +528,8 @@ histories:
     bulk_restore_confirm: '#bulk-restore-histories .btn.btn-primary'
     bulk_open_multiview_button: 'button[id="history-list-footer-bulk-open-multiview-button"]'
     bulk_open_multiview_limit_confirm_button: '#bulk-open-multiview-histories .btn.btn-primary'
+    sort_button: '[data-title="Sort by ${field} ${direction}"]'
+    list_loading: '#history-list-overlay[aria-busy="true"]'
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'
