@@ -523,6 +523,10 @@ class CachedTool:
         return real
 
 
+# File mtimes come from a coarse clock that can trail indexed_at, so files stamped this close are hashed anyway.
+MTIME_SLACK_SECONDS = 2
+
+
 def edited_tool_files(stores: Iterable[ToolSourceStore]) -> dict[str, str | None]:
     """Tool files of writable ``stores`` edited since indexed, mapped to their shed guid (or ``None``).
 
@@ -547,7 +551,7 @@ def edited_tool_files(stores: Iterable[ToolSourceStore]) -> dict[str, str | None
                 mtime = os.stat(path).st_mtime
             except OSError:
                 continue
-            if entry.indexed_at is not None and mtime <= entry.indexed_at.timestamp():
+            if entry.indexed_at is not None and mtime < entry.indexed_at.timestamp() - MTIME_SLACK_SECONDS:
                 continue
             file_hash = md5_hash_file(path)
             if file_hash is not None and file_hash != entry.file_hash:
