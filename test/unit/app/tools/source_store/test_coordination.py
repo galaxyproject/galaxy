@@ -1,8 +1,5 @@
 """Tests for coordinating tool source store populates across processes."""
 
-import os
-import subprocess
-import sys
 import threading
 import time
 from datetime import timedelta
@@ -203,7 +200,7 @@ from galaxy.tools.source_store.coordination import populate_once
 
 # Waiting for the populate must not depend on the SQLite busy timeout.
 sqlalchemy_store.SQLITE_BUSY_TIMEOUT_SECONDS = 1
-url, ready, go, populated_log, done = sys.argv[1:]
+ready, go, url, populated_log, done = sys.argv[1:]
 store = sqlalchemy_store.SqlAlchemyToolSourceStore(url=url)
 open(ready, "w").close()
 while not os.path.exists(go):
@@ -219,40 +216,8 @@ populate_once(store.populate_lease(), lambda: not os.path.exists(done), populate
 """
 
 
-def test_one_of_many_processes_populates_while_the_others_wait(tmp_path):
+def test_one_of_many_processes_populates_while_the_others_wait(tmp_path, run_processes_together):
     url = f"sqlite:///{tmp_path / 'store.sqlite'}"
-    go = tmp_path / "go"
     populated_log = tmp_path / "populated.log"
-    ready_files = [tmp_path / f"ready-{i}" for i in range(6)]
-    env = dict(os.environ, PYTHONPATH=os.pathsep.join(sys.path))
-    processes = [
-        subprocess.Popen(
-            [
-                sys.executable,
-                "-c",
-                _POPULATE_ON_SIGNAL,
-                url,
-                str(ready),
-                str(go),
-                str(populated_log),
-                str(tmp_path / "done"),
-            ],
-            env=env,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        for ready in ready_files
-    ]
-    try:
-        deadline = time.monotonic() + 120
-        while not all(ready.exists() for ready in ready_files):
-            assert all(p.poll() is None for p in processes), "a populate process exited before the start signal"
-            assert time.monotonic() < deadline, "populate processes did not start"
-            time.sleep(0.01)
-        go.touch()
-        errors = [p.communicate(timeout=120)[1] for p in processes]
-    finally:
-        for p in processes:
-            p.kill()
-    assert [p.returncode for p in processes] == [0] * len(processes), "\n".join(errors)
+    run_processes_together(_POPULATE_ON_SIGNAL, [[url, str(populated_log), str(tmp_path / "done")]] * 6)
     assert len(populated_log.read_text().splitlines()) == 1
