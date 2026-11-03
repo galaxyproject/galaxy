@@ -1,4 +1,5 @@
 import ipaddress
+import urllib.request
 
 import pytest
 
@@ -10,6 +11,7 @@ from galaxy.exceptions import (
 from galaxy.files.uris import (
     validate_non_local,
     validate_uri_access,
+    ValidatingRedirectHandler,
 )
 
 LOOPBACK = ipaddress.ip_address("127.0.0.1")
@@ -128,6 +130,14 @@ def test_validate_non_local_unverifiable(url):
 )
 def test_validate_non_local_non_http_returned_unchanged(uri):
     assert validate_non_local(uri, []) == uri
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_redirect_handler_refuses_unchecked_scheme():
+    handler = ValidatingRedirectHandler([])
+    request = urllib.request.Request("https://example.org/a")
+    with pytest.raises(RequestParameterInvalidException):
+        handler.redirect_request(request, None, 302, "Found", {}, "ftp://example.org/README")
 
 
 @pytest.mark.usefixtures("fake_public_dns")

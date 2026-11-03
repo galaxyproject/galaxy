@@ -132,6 +132,7 @@ def test_file_source_http_leaves_reused_fd_open(tmp_path):
     assert target.read_text() == "hello generic world"
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 def test_file_source_ftp_url():
     test_url = "ftp://ftp.gnu.org/README"
 
@@ -197,10 +198,33 @@ def test_file_source_http_validates_redirect_target(tmp_path):
     assert requested == [test_url]
 
 
+@pytest.mark.usefixtures("fake_public_dns")
+@pytest.mark.parametrize("redirect_url", ["ftp://127.0.0.1/myfile.txt", "FTP://127.0.0.1/myfile.txt"])
+def test_file_source_http_validates_ftp_redirect_target(tmp_path, redirect_url):
+    test_url = "https://www.elsewhere.org/myfile.txt"
+    requested = _realize_with_redirect(tmp_path, test_url, redirect_url, exceptions.ConfigDoesNotAllowException)
+    assert requested == [test_url]
+
+
 def test_file_source_http_validates_initial_url(tmp_path):
     requested = _realize_with_redirect(
         tmp_path, "http://127.0.0.1/myfile.txt", None, exceptions.ConfigDoesNotAllowException
     )
+    assert requested == []
+
+
+@pytest.mark.parametrize(
+    "url, expected_exception",
+    [
+        ("ftp://127.0.0.1/README", exceptions.ConfigDoesNotAllowException),
+        ("ftp://user:pw@127.0.0.1:21/README", exceptions.ConfigDoesNotAllowException),
+        # urllib percent-decodes hosts before resolving them, DNS lookup here does not.
+        ("ftp://127.0.0.%31/README", exceptions.RequestParameterInvalidException),
+        ("ftp://user@127.0.0.1%40example.org/README", exceptions.RequestParameterInvalidException),
+    ],
+)
+def test_file_source_http_validates_initial_ftp_url(tmp_path, url, expected_exception):
+    requested = _realize_with_redirect(tmp_path, url, None, expected_exception)
     assert requested == []
 
 
@@ -224,6 +248,7 @@ def _realize_with_redirect(tmp_path, test_url, redirect_url, expected_exception)
     with (
         mock.patch.object(urllib.request.HTTPSHandler, "https_open", new=fake_open),
         mock.patch.object(urllib.request.HTTPHandler, "http_open", new=fake_open),
+        mock.patch.object(urllib.request.FTPHandler, "ftp_open", new=fake_open),
     ):
         with pytest.raises(expected_exception):
             file_source_pair.file_source.realize_to(
