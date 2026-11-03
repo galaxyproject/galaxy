@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCheckCircle, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { type CreateNewCollectionPayload, type HDCASummary, type HistoryItemSummary, isHDCA } from "@/api";
@@ -22,6 +21,7 @@ import PairCollectionCreator from "./PairCollectionCreator.vue";
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
 import SampleSheetCollectionCreator from "./SampleSheetCollectionCreator.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import Heading from "@/components/Common/Heading.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -234,10 +234,10 @@ defineExpose({ redrawCreator });
         </GAlert>
         <GAlert v-else-if="createCollectionError" variant="danger" show>
             {{ createCollectionError }}
-            <BLink class="text-decoration-none" @click.stop.prevent="resetCreator">
+            <GLink thin @click.stop.prevent="resetCreator">
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
                 {{ localize("Try again") }}
-            </BLink>
+            </GLink>
         </GAlert>
         <div v-else-if="createdCollection">
             <GAlert v-if="!createdCollectionInReadyState" variant="info" show>
@@ -249,10 +249,10 @@ defineExpose({ redrawCreator });
                     {{ localize("Collection created successfully.") }}
                     {{ localize("It might still not be a valid input based on individual element properties.") }}
                     {{ localize("Expand the collection to see its individual elements.") }}
-                    <BLink v-if="!fromSelection" class="text-decoration-none" @click.stop.prevent="resetCreator">
+                    <GLink v-if="!fromSelection" thin @click.stop.prevent="resetCreator">
                         <FontAwesomeIcon :icon="faUndo" fixed-width />
                         {{ localize("Create another collection") }}
-                    </BLink>
+                    </GLink>
                 </GAlert>
 
                 <GenericItem
