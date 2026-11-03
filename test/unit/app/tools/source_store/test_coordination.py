@@ -72,12 +72,16 @@ def test_holder_keeps_the_lease_past_its_ttl_while_populating(store):
 
 
 class _FlakyLease(PopulateLease):
-    """Delegates to a real lease, failing the operations named in ``fail``."""
+    """Delegates to a real lease, failing the operations named in ``fail``.
+
+    ``waiting`` is set once a ``try_acquire`` finds the lease held by another holder.
+    """
 
     def __init__(self, lease, fail_acquires=0, fail_release=False):
         self._lease = lease
         self._fail_acquires = fail_acquires
         self._fail_release = fail_release
+        self.waiting = threading.Event()
 
     def last_populated_at(self):
         return self._lease.last_populated_at()
@@ -86,7 +90,10 @@ class _FlakyLease(PopulateLease):
         if self._fail_acquires:
             self._fail_acquires -= 1
             raise PopulateLeaseBusy("database is locked")
-        return self._lease.try_acquire(holder, ttl)
+        acquired = self._lease.try_acquire(holder, ttl)
+        if not acquired:
+            self.waiting.set()
+        return acquired
 
     def renew(self, holder, ttl):
         return self._lease.renew(holder, ttl)
@@ -116,8 +123,9 @@ def test_uses_a_populate_another_process_completed_while_waiting(store):
         checks.append(1)
         return True
 
-    thread, calls, result = _populate_in_thread(lease, needs_population=needs_population)
-    time.sleep(0.2)
+    flaky = _FlakyLease(lease)
+    thread, calls, result = _populate_in_thread(flaky, needs_population=needs_population)
+    assert flaky.waiting.wait(10)
     lease.release("peer", populated=True)
     thread.join(10)
     assert result == [False]
@@ -129,19 +137,29 @@ def test_uses_a_populate_another_process_completed_while_waiting(store):
 def test_repopulates_when_the_peer_result_is_unusable(store):
     lease = _lease(store)
     assert lease.try_acquire("peer", ttl=timedelta(minutes=1))
-    thread, calls, result = _populate_in_thread(lease, peer_result_usable=lambda: False)
-    time.sleep(0.2)
+    flaky = _FlakyLease(lease)
+    usable_checks: list[int] = []
+
+    def peer_result_usable():
+        usable_checks.append(1)
+        return False
+
+    thread, calls, result = _populate_in_thread(flaky, peer_result_usable=peer_result_usable)
+    assert flaky.waiting.wait(10)
     lease.release("peer", populated=True)
     thread.join(10)
     assert result == [True]
     assert calls == [1]
+    assert usable_checks == [1]
 
 
 def test_keeps_waiting_through_transient_database_errors(store):
     real_lease = _lease(store)
     assert real_lease.try_acquire("peer", ttl=timedelta(minutes=1))
-    thread, calls, result = _populate_in_thread(_FlakyLease(real_lease, fail_acquires=3))
-    time.sleep(0.2)
+    flaky = _FlakyLease(real_lease, fail_acquires=3)
+    thread, calls, result = _populate_in_thread(flaky)
+    assert flaky.waiting.wait(10)
+    assert flaky._fail_acquires == 0
     assert calls == []
     real_lease.release("peer", populated=True)
     thread.join(10)

@@ -1,6 +1,5 @@
 import logging
 import threading
-import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -1395,6 +1394,19 @@ def test_toolbox_waits_for_a_peer_populating_the_store(tmp_path, monkeypatch):
     peer_lease = store.populate_lease()
     assert peer_lease is not None
     assert peer_lease.try_acquire("peer", ttl=timedelta(minutes=1))
+    lease = store.populate_lease()
+    assert lease is not None
+    waiting = threading.Event()
+    try_acquire = lease.try_acquire
+
+    def try_acquire_and_signal(holder, ttl):
+        acquired = try_acquire(holder, ttl)
+        if not acquired:
+            waiting.set()
+        return acquired
+
+    monkeypatch.setattr(lease, "try_acquire", try_acquire_and_signal)
+    monkeypatch.setattr(store, "populate_lease", lambda: lease)
     box = _seam_box()
     box._store = store
     populated = MagicMock()
@@ -1405,7 +1417,7 @@ def test_toolbox_waits_for_a_peer_populating_the_store(tmp_path, monkeypatch):
 
     boot = threading.Thread(target=box._init_tools_from_configs, args=([],))
     boot.start()
-    time.sleep(0.2)
+    assert waiting.wait(10)
     # The peer finishes its populate while this process waits for the lease.
     store.store(StoredToolSource(hash="abc", tool_source_class="XmlToolSource", raw_source="<tool/>"))
     store.store_index(ToolIndex(entries={"bowtie2": _entry()}, freshness_token="current"))
