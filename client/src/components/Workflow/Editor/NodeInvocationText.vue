@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput } from "bootstrap-vue";
 import purify from "dompurify";
 
 import type { JobState } from "@/api/jobs";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import type { GraphStep } from "@/composables/useInvocationGraph";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import InvocationStepStateDisplay from "@/components/WorkflowInvocationState/InvocationStepStateDisplay.vue";
 
 const props = defineProps<{
@@ -41,11 +41,11 @@ function toJobState(key: string | number): JobState {
             </span>
             <span v-else-if="isColor(props.invocationStep.nodeText)" class="d-flex align-items-center">
                 <i> {{ props.invocationStep.nodeText }}: </i>
-                <BFormInput
-                    :value="props.invocationStep.nodeText"
+                <GFormInput
+                    :model-value="props.invocationStep.nodeText"
                     class="ml-1 p-0 color-input"
                     type="color"
-                    size="sm"
+                    size="small"
                     readonly />
             </span>
             <span
