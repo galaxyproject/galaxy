@@ -1665,6 +1665,21 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
         )
         raise AssertionError(message)
 
+    def verify_population(collection, collection_name):
+        # A failed dynamic collection can be empty even though its job succeeded.
+        # Older clients may provide collection dictionaries without population state.
+        populated_state = collection.get("populated_state")
+        if populated_state is not None and populated_state != "ok":
+            message = f"Output collection '{collection_name}': populated state is '{populated_state}', expected 'ok'."
+            if populated_state_message := collection.get("populated_state_message"):
+                message += f" {populated_state_message}"
+            raise AssertionError(message)
+        for element in collection["elements"]:
+            if element["element_type"] == "dataset_collection":
+                verify_population(element["object"], f"{collection_name}/{element['element_identifier']}")
+
+    verify_population(data_collection, name)
+
     if expected_collection_type := output_collection_def.collection_type:
         collection_type = data_collection["collection_type"]
         if expected_collection_type != collection_type:

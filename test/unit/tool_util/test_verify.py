@@ -307,3 +307,37 @@ def test_verify_collection_nested_elements_alias_still_checked():
     calls = []
     verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
     assert calls == ["dnacomp"]
+
+
+@pytest.mark.parametrize("populated_state", ["failed", "new"])
+@pytest.mark.parametrize("assertions", [{"collection_type": "list"}, {"element_tests": {}}])
+def test_verify_collection_rejects_unpopulated_empty_collection(populated_state, assertions):
+    output_def = TestCollectionOutputDef.from_dict({"name": "plots", **assertions})
+    collection = {"collection_type": "list", "elements": [], "populated_state": populated_state}
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, collection, lambda *a, **k: None)
+    assert str(exc_info.value) == f"Output collection 'plots': populated state is '{populated_state}', expected 'ok'."
+
+
+@pytest.mark.parametrize("populated_state", ["failed", "new"])
+def test_verify_collection_rejects_unpopulated_child(populated_state):
+    output_def = TestCollectionOutputDef.from_dict({"name": "plots", "collection_type": "list:list"})
+    collection = _nested_data_collection()
+    collection["populated_state"] = "ok"
+    collection["elements"][0]["object"] = {
+        "elements": [],
+        "populated_state": populated_state,
+        "populated_state_message": "Could not populate collection.",
+    }
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, collection, lambda *a, **k: None)
+    assert str(exc_info.value) == (
+        f"Output collection 'plots/sample1': populated state is '{populated_state}', expected 'ok'."
+        " Could not populate collection."
+    )
+
+
+@pytest.mark.parametrize("population", [{}, {"populated_state": None}, {"populated_state": "ok"}])
+def test_verify_collection_accepts_empty_collection(population):
+    output_def = TestCollectionOutputDef.from_dict({"name": "plots", "collection_type": "list", "element_tests": {}})
+    verify_collection(output_def, {"collection_type": "list", "elements": [], **population}, lambda *a, **k: None)
