@@ -99,7 +99,7 @@ class TrsProxy:
         return server.get_version_descriptor(trs_tool_id, trs_version_id)
 
     def match_url(self, url, ip_allowlist: list[IpAllowedListEntryT]):
-        if url.lstrip().startswith("file://"):
+        if url.lstrip().lower().startswith("file://"):
             # requests doesn't know what to do with file:// anyway, but just in case we swap
             # out the implementation
             raise RequestParameterInvalidException(f"Invalid TRS URL {url}")
