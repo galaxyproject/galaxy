@@ -136,6 +136,13 @@ ToolIdLikeQueryParam = Query(
     description="Limit listing of jobs to those that match one of the included tool ID sql-like patterns. If none, all are returned",
 )
 
+ExcludeToolIdsQueryParam = Query(
+    default=None,
+    alias="exclude_tool_id",
+    title="Exclude Tool ID(s)",
+    description="Exclude jobs whose tool_id matches one of the given values. If none, no jobs are excluded on this basis.",
+)
+
 DateRangeMinQueryParam: OffsetNaiveDatetime | date | None = Query(
     default=None,
     title="Date Range Minimum",
@@ -299,6 +306,7 @@ class FastAPIJobs:
         view: JobIndexViewEnum = ViewQueryParam,
         tool_ids: list[str] | None = Depends(query_parameter_as_list(ToolIdQueryParam)),
         tool_ids_like: list[str] | None = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
+        exclude_tool_id: list[str] | None = Depends(query_parameter_as_list(ExcludeToolIdsQueryParam)),
         date_range_min: datetime | date | None = DateRangeMinQueryParam,
         date_range_max: datetime | date | None = DateRangeMaxQueryParam,
         history_id: DecodedDatabaseIdField | None = HistoryIdQueryParam,
@@ -319,6 +327,7 @@ class FastAPIJobs:
             view=view,
             tool_ids=tool_ids,
             tool_ids_like=tool_ids_like,
+            exclude_tool_id=exclude_tool_id,
             date_range_min=date_range_min,
             date_range_max=date_range_max,
             history_id=history_id,
