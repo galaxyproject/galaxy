@@ -130,5 +130,7 @@ def test_container_uses_home_exported_by_tool_or_destination(job_wrapper_kwds):
     [{"environment_variables": ["HOME"]}, {"tool_env_names": ["HOME"]}],
 )
 def test_docker_does_not_mount_home_exported_by_tool_or_destination(job_wrapper_kwds):
-    command = _runner(DockerContainer)._find_container(_job_wrapper(None, **job_wrapper_kwds)).containerize_command("true")
+    command = (
+        _runner(DockerContainer)._find_container(_job_wrapper(None, **job_wrapper_kwds)).containerize_command("true")
+    )
     assert "$HOME:$HOME" not in command
