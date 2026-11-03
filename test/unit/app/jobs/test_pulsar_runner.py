@@ -551,7 +551,7 @@ def test_input_path_rewrite_does_not_pull_an_input_staged_by_identity():
     assert compute_environment.job_wrapper.job_io.sync_cache is False
 
 
-def test_input_metadata_rewrite_records_which_metadata_file_the_path_belongs_to(tmp_path):
+def test_input_metadata_rewrite_records_the_metadata_file_to_stage_by_identity(tmp_path):
     app = GalaxyDataTestApp()
     hda = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=app.model.session)
     index = tmp_path / "index"
@@ -562,11 +562,13 @@ def test_input_metadata_rewrite_records_which_metadata_file_the_path_belongs_to(
         json_dict={"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": str(index)})}
     )
     app.model.session.commit()
-    metadata_path = hda.metadata.bam_index.get_file_name()
+    metadata_file = hda.metadata.bam_index
+    metadata_path = metadata_file.get_file_name(sync_cache=False)
 
     compute_environment = _staging_compute_environment_for_rewrites("stream")
-    compute_environment.input_metadata_rewrite(hda, metadata_path)
-    assert compute_environment.input_metadata_file_ids == {metadata_path: hda.metadata.bam_index.id}
+    remote_path = compute_environment.input_metadata_rewrite(hda, metadata_file)
+    assert remote_path == f"/pulsar/inputs/{os.path.basename(metadata_path)}"
+    assert compute_environment.input_metadata_file_ids == {metadata_path: metadata_file.id}
 
 
 def test_unknown_object_store_staging_mode_is_a_configuration_error():
@@ -593,14 +595,14 @@ def test_input_path_rewrite_keeps_the_local_path_without_object_store_staging():
     assert compute_environment.job_wrapper.job_io.sync_cache is None  # the local path config was used
 
 
-def test_input_metadata_rewrite_records_nothing_for_a_path_that_is_no_metadata_file(tmp_path):
-    app = GalaxyDataTestApp()
-    hda = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=app.model.session)
-    app.model.session.add(hda)
-    app.model.session.commit()
+def test_input_metadata_rewrite_stages_a_regenerated_metadata_file_by_path(tmp_path):
+    # As for a materialized deferred input, whose metadata files have no object store identity.
+    regenerated = MetadataTempFile(metadata_tmp_files_dir=str(tmp_path))
 
     compute_environment = _staging_compute_environment_for_rewrites("stream")
-    compute_environment.input_metadata_rewrite(hda, str(tmp_path / "not_a_metadata_file.dat"))
+    remote_path = compute_environment.input_metadata_rewrite(object(), regenerated)
+    assert remote_path == f"/pulsar/inputs/{os.path.basename(regenerated.get_file_name())}"
+    assert compute_environment.path_rewrites_input_metadata == {regenerated.get_file_name(): remote_path}
     assert compute_environment.input_metadata_file_ids == {}
 
 

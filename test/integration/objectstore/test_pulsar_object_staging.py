@@ -163,6 +163,8 @@ class TestPulsarObjectStagingStream(BaseObjectStoreIntegrationTestCase):
         output = self.dataset_populator.get_history_dataset_content(history_id, dataset=run["outputs"][0])
         assert output.strip() == "chrM"
         assert not os.path.exists(self._cache_path(hda))
+        # The index is stored under its own uuid.
+        assert not os.path.exists(self._hda(hda).metadata.bam_index.get_file_name(sync_cache=False))
 
     def test_deferred_input_is_materialized_for_the_job_and_staged(self):
         # The deferred dataset has no bytes in the object store; Galaxy materializes it into the

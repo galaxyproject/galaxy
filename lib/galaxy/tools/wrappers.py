@@ -334,11 +334,11 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                     rval = self.metadata.spec[name].no_value
                 metadata_param = self.metadata.spec[name].param
 
-                rval = metadata_param.to_safe_string(rval)
+                rewrite = None
                 if isinstance(metadata_param, FileParameter) and self.compute_environment:
+                    # Handed the file, not its path: the path of a stored file is only known once it is fetched.
                     rewrite = self.compute_environment.input_metadata_rewrite(self.dataset, rval)
-                    if rewrite is not None:
-                        rval = rewrite
+                rval = rewrite if rewrite is not None else metadata_param.to_safe_string(rval)
 
                 # Store this value, so we don't need to recalculate if needed
                 # again

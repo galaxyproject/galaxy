@@ -69,7 +69,6 @@ from galaxy.managers.job_object_staging import (
     INPUT_URL_LIFETIME_SECONDS,
 )
 from galaxy.model.base import check_database_connection
-from galaxy.model.metadata import FileParameter
 from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.tool_util.deps import dependencies
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
@@ -1463,16 +1462,6 @@ class PulsarEmbeddedMQJobRunner(PulsarMQJobRunner):
     default_build_pulsar_app = True
 
 
-def _metadata_file_with_path(dataset, path) -> model.MetadataFile | None:
-    """The metadata file of ``dataset`` stored at ``path``: tool evaluation hands the runner only the path."""
-    for name, spec in dataset.metadata.spec.items():
-        if isinstance(spec.param, FileParameter):
-            value = dataset.metadata.get(name)
-            if isinstance(value, model.MetadataFile) and value.get_file_name(sync_cache=False) == path:
-                return value
-    return None
-
-
 class PulsarComputeEnvironment(ComputeEnvironment):
     def __init__(self, pulsar_client, job_wrapper, remote_job_config):
         self.pulsar_client = pulsar_client
@@ -1549,7 +1538,18 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         remote_extra_files_path_rewrite = dataset_path_to_extra_path(output_path_rewrite)
         return remote_extra_files_path_rewrite
 
-    def input_metadata_rewrite(self, dataset, metadata_val):
+    def input_metadata_rewrite(self, dataset, metadata_value):
+        # A metadata file regenerated for a materialized deferred input has no object store identity.
+        staged_by_identity = (
+            self.object_store_staging in OBJECT_STORE_STAGING_MODES
+            and isinstance(metadata_value, model.MetadataFile)
+            and metadata_value.id is not None
+        )
+        if staged_by_identity:
+            # Only the file's path is needed here, not its bytes.
+            metadata_val = metadata_value.get_file_name(sync_cache=False)
+        else:
+            metadata_val = metadata_value.get_file_name() if metadata_value else str(metadata_value)
         # May technically be incorrect to not pass through local_path_config.input_metadata_rewrite
         # first but that adds untested logic that wouln't ever be used.
         remote_input_path = self.path_mapper.remote_input_path_rewrite(
@@ -1558,10 +1558,8 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         if remote_input_path:
             log.info(f"input_metadata_rewrite is {remote_input_path} from {metadata_val}")
             self.path_rewrites_input_metadata[metadata_val] = remote_input_path
-            if self.object_store_staging in OBJECT_STORE_STAGING_MODES:
-                metadata_file = _metadata_file_with_path(dataset, metadata_val)
-                if metadata_file is not None:
-                    self.input_metadata_file_ids[metadata_val] = metadata_file.id
+            if staged_by_identity:
+                self.input_metadata_file_ids[metadata_val] = metadata_value.id
             return remote_input_path
 
         # No rewrite...
