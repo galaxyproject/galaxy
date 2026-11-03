@@ -193,12 +193,26 @@ def test_file_source_http_realizes_idn_ftp_url():
 @pytest.mark.usefixtures("fake_public_dns")
 def test_file_source_http_validates_redirect_target(tmp_path):
     test_url = "https://www.elsewhere.org/myfile.txt"
-    redirect_url = "http://127.0.0.1/myfile.txt"
+    requested = _realize_with_redirect(
+        tmp_path, test_url, "http://127.0.0.1/myfile.txt", exceptions.ConfigDoesNotAllowException
+    )
+    assert requested == [test_url]
+
+
+def test_file_source_http_validates_initial_url(tmp_path):
+    requested = _realize_with_redirect(
+        tmp_path, "http://127.0.0.1/myfile.txt", None, exceptions.ConfigDoesNotAllowException
+    )
+    assert requested == []
+
+
+def _realize_with_redirect(tmp_path, test_url, redirect_url, expected_exception):
+    """Realize ``test_url``, which redirects to ``redirect_url``, expecting a refusal; return the URLs requested."""
     requested = []
 
     def fake_open(handler, req):
         requested.append(req.full_url)
-        if req.full_url == test_url:
+        if req.full_url == test_url and redirect_url:
             response: Any = urllib.response.addinfourl(
                 io.BytesIO(b""), email.message_from_string(f"Location: {redirect_url}\n\n"), req.full_url, 302
             )
@@ -213,11 +227,11 @@ def test_file_source_http_validates_redirect_target(tmp_path):
         mock.patch.object(urllib.request.HTTPSHandler, "https_open", new=fake_open),
         mock.patch.object(urllib.request.HTTPHandler, "http_open", new=fake_open),
     ):
-        with pytest.raises(exceptions.ConfigDoesNotAllowException):
+        with pytest.raises(expected_exception):
             file_source_pair.file_source.realize_to(
                 file_source_pair.path, str(tmp_path / "realized"), user_context=user_context_fixture()
             )
-    assert requested == [test_url]
+    return requested
 
 
 def test_file_source_http_without_stock_generic():
@@ -249,6 +263,7 @@ def test_file_source_http_without_stock_specific():
         assert_realizes_as(file_sources, test_url, "hello specific world 2", user_context=user_context)
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 def test_file_source_http_with_spaces_in_url_error():
     """Test that URLs with unencoded spaces give a helpful error (issue #21221)."""
     test_url = "https://example.com/Markers File.csv"
