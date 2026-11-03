@@ -20,12 +20,11 @@ from datetime import (
     timedelta,
 )
 
-from sqlalchemy.exc import (
-    OperationalError,
-    SQLAlchemyError,
+from .interface import (
+    PopulateLease,
+    PopulateLeaseBusy,
+    PopulateLeaseError,
 )
-
-from .interface import PopulateLease
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +63,7 @@ def populate_once(
     holder = f"{socket.gethostname()}:{os.getpid()}:{uuid.uuid4().hex[:8]}"
     try:
         populated_at = lease.last_populated_at()
-    except SQLAlchemyError as e:
+    except PopulateLeaseError as e:
         # e.g. a server database whose operator has not created the lease table.
         log.warning("Cannot coordinate tool source store population with other processes; populating anyway: %s", e)
         populate()
@@ -85,7 +84,7 @@ def populate_once(
     finally:
         try:
             lease.release(holder, populated)
-        except SQLAlchemyError as e:
+        except PopulateLeaseError as e:
             # The lease expires on its own; waiters then take it over.
             log.warning("Releasing the tool source store populate lease failed: %s", e)
 
@@ -93,7 +92,7 @@ def populate_once(
 def _populated_since(lease: PopulateLease, populated_at: datetime | None) -> bool:
     try:
         return lease.last_populated_at() != populated_at
-    except SQLAlchemyError as e:
+    except PopulateLeaseError as e:
         log.warning("Cannot tell whether another process populated the tool source store: %s", e)
         return False
 
@@ -105,7 +104,7 @@ def _wait_for_lease(lease: PopulateLease, holder: str, ttl: timedelta, poll_inte
         try:
             if lease.try_acquire(holder, ttl):
                 return
-        except OperationalError as e:
+        except PopulateLeaseBusy as e:
             # e.g. the busy timeout expired on a slow shared filesystem; the
             # holder is still populating, so keep waiting for it.
             log.debug("Polling the tool source store populate lease failed: %s", e)

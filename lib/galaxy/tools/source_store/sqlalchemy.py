@@ -41,7 +41,11 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.engine import make_url
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import (
+    IntegrityError,
+    OperationalError,
+    SQLAlchemyError,
+)
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -58,6 +62,8 @@ from .index import (
 )
 from .interface import (
     PopulateLease,
+    PopulateLeaseBusy,
+    PopulateLeaseError,
     ReadOnlyStoreError,
     StoredToolSource,
     ToolSourceStore,
@@ -140,6 +146,21 @@ class _PopulateLeaseRow(_Base):
 _LEASE_ROW_ID = 1
 
 
+def _lease_errors(method: Callable[_P, _R]) -> Callable[_P, _R]:
+    """Raise database errors as :class:`PopulateLeaseError`."""
+
+    @functools.wraps(method)
+    def wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
+        try:
+            return method(*args, **kwargs)
+        except OperationalError as e:
+            raise PopulateLeaseBusy(str(e)) from e
+        except SQLAlchemyError as e:
+            raise PopulateLeaseError(str(e)) from e
+
+    return wrapper
+
+
 class _SqlAlchemyPopulateLease(PopulateLease):
     """Populate lease kept in a row of the store's own database.
 
@@ -151,12 +172,14 @@ class _SqlAlchemyPopulateLease(PopulateLease):
     def __init__(self, store: "SqlAlchemyToolSourceStore") -> None:
         self._store = store
 
+    @_lease_errors
     def last_populated_at(self) -> datetime | None:
         with self._store._session() as session:
             return session.execute(
                 select(_PopulateLeaseRow.populated_at).where(_PopulateLeaseRow.id == _LEASE_ROW_ID)
             ).scalar_one_or_none()
 
+    @_lease_errors
     def try_acquire(self, holder: str, ttl: timedelta) -> bool:
         current_time = now()
         with self._store._session() as session:
@@ -200,6 +223,7 @@ class _SqlAlchemyPopulateLease(PopulateLease):
                 return False
             return True
 
+    @_lease_errors
     def renew(self, holder: str, ttl: timedelta) -> bool:
         with self._store._write_lock, self._store._session() as session:
             result = session.execute(
@@ -210,6 +234,7 @@ class _SqlAlchemyPopulateLease(PopulateLease):
             session.commit()
             return bool(result.rowcount)  # type: ignore[attr-defined]
 
+    @_lease_errors
     def release(self, holder: str, populated: bool) -> None:
         values: dict[str, Any] = {"holder": None, "expires_at": None}
         if populated:

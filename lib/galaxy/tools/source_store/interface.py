@@ -270,6 +270,8 @@ class PopulateLease(ABC):
     populate while the others wait for its result. The holder renews the
     lease while it works; a lease that is not renewed before it expires
     (its holder died) can be taken over.
+
+    Operations that cannot reach the lease raise :class:`PopulateLeaseError`.
     """
 
     @abstractmethod
@@ -287,6 +289,14 @@ class PopulateLease(ABC):
     @abstractmethod
     def release(self, holder: str, populated: bool) -> None:
         """Free ``holder``'s lease, recording a successful populate if ``populated``."""
+
+
+class PopulateLeaseError(Exception):
+    """The populate lease could not be read or written."""
+
+
+class PopulateLeaseBusy(PopulateLeaseError):
+    """A lease operation failed transiently, e.g. the database stayed locked."""
 
 
 class ConfigurationError(Exception):

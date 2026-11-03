@@ -9,11 +9,14 @@ from datetime import timedelta
 from typing import Any
 
 import pytest
-from sqlalchemy.exc import OperationalError
 
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.coordination import populate_once
-from galaxy.tools.source_store.interface import PopulateLease
+from galaxy.tools.source_store.interface import (
+    PopulateLease,
+    PopulateLeaseBusy,
+    PopulateLeaseError,
+)
 from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 
 FAST: dict[str, Any] = {"poll_interval": 0.02, "renew_interval": 0.05}
@@ -82,7 +85,7 @@ class _FlakyLease(PopulateLease):
     def try_acquire(self, holder, ttl):
         if self._fail_acquires:
             self._fail_acquires -= 1
-            raise OperationalError("UPDATE", {}, Exception("database is locked"))
+            raise PopulateLeaseBusy("database is locked")
         return self._lease.try_acquire(holder, ttl)
 
     def renew(self, holder, ttl):
@@ -90,7 +93,7 @@ class _FlakyLease(PopulateLease):
 
     def release(self, holder, populated):
         if self._fail_release:
-            raise OperationalError("UPDATE", {}, Exception("disk I/O error"))
+            raise PopulateLeaseError("disk I/O error")
         self._lease.release(holder, populated)
 
 
@@ -141,6 +144,15 @@ def test_keeps_waiting_through_transient_database_errors(store):
 def test_failed_release_does_not_fail_the_populate(store):
     calls = []
     lease = _FlakyLease(_lease(store), fail_release=True)
+    assert populate_once(lease, lambda: True, lambda: calls.append(1), **FAST)
+    assert calls == [1]
+
+
+def test_populates_without_coordination_when_the_lease_table_is_missing(store):
+    lease = _lease(store)
+    with store._engine.begin() as connection:
+        connection.exec_driver_sql("DROP TABLE tool_source_populate_lease")
+    calls = []
     assert populate_once(lease, lambda: True, lambda: calls.append(1), **FAST)
     assert calls == [1]
 
