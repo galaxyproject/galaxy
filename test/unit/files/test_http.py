@@ -1,22 +1,30 @@
+import email
+import email.message
 import io
+import ipaddress
 import os
-import urllib
+import urllib.request
+import urllib.response
 from typing import Any
 from unittest import mock
 
 import pytest
 
 from galaxy import exceptions
+from galaxy.files.models import FileSourcePluginsConfig
 from ._util import (
     assert_realizes_as,
     assert_realizes_contains,
     configured_file_sources,
     user_context_fixture,
 )
+from .conftest import FtpServerFixture
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "http_file_sources_conf.yml")
 FILE_SOURCES_CONF_WITHOUT_STOCK = os.path.join(SCRIPT_DIRECTORY, "http_without_stock_file_sources_conf.yml")
+# localhost may resolve to either loopback address.
+LOOPBACK_ALLOWLIST = [ipaddress.ip_network("127.0.0.0/8"), ipaddress.ip_address("::1")]
 
 
 @pytest.mark.usefixtures("fake_public_dns")
@@ -147,6 +155,38 @@ def test_file_source_ftp_url():
             "This is ftp.gnu.org, the FTP server of the the GNU project.",
             user_context=user_context,
         )
+
+
+def test_file_source_http_follows_allowlisted_redirect(mock_http_server):
+    final_url = mock_http_server.get_url(remote_url="https://example.org/final", body="redirected")
+    start_url = mock_http_server.get_url(
+        remote_url="https://example.org/start", status=302, response_headers={"Location": final_url}
+    )
+    file_sources = configured_file_sources(
+        FILE_SOURCES_CONF, FileSourcePluginsConfig(fetch_url_allowlist=LOOPBACK_ALLOWLIST)
+    )
+    assert_realizes_as(file_sources, start_url, "redirected")
+
+
+def test_file_source_http_follows_allowlisted_ftp_redirect(mock_http_server, ftp_server: FtpServerFixture):
+    (ftp_server.root / "README").write_text("served over ftp")
+    ftp_url = f"ftp://anonymous@{ftp_server.host}:{ftp_server.port}/README"
+    start_url = mock_http_server.get_url(
+        remote_url="https://example.org/start", status=302, response_headers={"Location": ftp_url}
+    )
+    file_sources = configured_file_sources(
+        FILE_SOURCES_CONF, FileSourcePluginsConfig(fetch_url_allowlist=LOOPBACK_ALLOWLIST)
+    )
+    assert_realizes_as(file_sources, start_url, "served over ftp")
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_realizes_idn_ftp_url():
+    def ftp_open(handler, req):
+        return urllib.response.addinfourl(io.BytesIO(b"from ftp"), email.message.Message(), req.full_url, 200)
+
+    with mock.patch.object(urllib.request.FTPHandler, "ftp_open", new=ftp_open):
+        assert_realizes_as(configured_file_sources(FILE_SOURCES_CONF), "ftp://bücher.example/README", "from ftp")
 
 
 def test_file_source_http_without_stock_generic():
