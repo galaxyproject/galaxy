@@ -1339,6 +1339,18 @@ def test_edited_tool_files_selects_only_changed_files(tmp_path):
     assert edited_tool_files(stores) == {str(edited): None, str(shed): shed_guid}
 
 
+def test_edited_tool_files_hashes_edit_stamped_before_indexed_at(tmp_path):
+    path, entry = _indexed(tmp_path, "racy.xml", "racy")
+    path.write_text(path.read_text().replace("1.0", "1.1"))
+    # A coarse file clock can stamp an edit made after hashing slightly before indexed_at.
+    entry.indexed_at = datetime.fromtimestamp(path.stat().st_mtime + 0.01, tz=timezone.utc)
+    index = ToolIndex()
+    index.add_entry(entry)
+
+    stores = cast(list[ToolSourceStore], [_IndexStore(read_only=False, index=index)])
+    assert edited_tool_files(stores) == {str(path): None}
+
+
 def test_edited_tool_files_sees_edit_made_while_populating(tmp_path, monkeypatch):
     box, tool_file = _indexed_shed_tool_box(tmp_path, monkeypatch, _shed_tool_xml("echo before"))
     path = str(tool_file)
