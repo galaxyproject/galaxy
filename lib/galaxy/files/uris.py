@@ -212,3 +212,16 @@ class ValidatingRedirectHandler(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         validate_non_local(newurl, self.ip_allowlist)
         return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+class ValidatingSession(requests.Session):
+    """A requests session that runs validate_non_local on each URL before sending it, redirect hops included."""
+
+    def __init__(self, ip_allowlist: list[IpAllowedListEntryT]):
+        super().__init__()
+        self.ip_allowlist = ip_allowlist
+
+    def send(self, request, **kwargs):
+        assert request.url
+        validate_non_local(request.url, self.ip_allowlist)
+        return super().send(request, **kwargs)
