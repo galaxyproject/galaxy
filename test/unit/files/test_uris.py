@@ -49,6 +49,8 @@ def test_validate_non_local_public_host_passes(url):
         "http://user@127.0.0.1:8080/",
         "http://example.org@127.0.0.1/",
         " http://127.0.0.1/",
+        "HTTP://127.0.0.1/",
+        "HtTpS://127.0.0.1/",
     ],
 )
 def test_validate_non_local_private_address_rejected(url):
@@ -160,6 +162,13 @@ def test_validate():
     # check that only admins can acess files...
     assert not validates("file://foo/bar", False, [])
     assert validates("file://foo/bar", True, [])
+
+
+@pytest.mark.parametrize("uri", ["FILE:///x", " File://foo/bar"])
+def test_validate_uri_access_file_requires_admin(uri):
+    with pytest.raises(AdminRequiredException):
+        validate_uri_access(uri, False, [])
+    validate_uri_access(uri, True, [])
 
 
 def validates_as_non_local(uri: str, allow_list):
