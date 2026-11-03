@@ -1456,12 +1456,17 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 
     def input_extra_files_rewrite(self, dataset):
         input_path_rewrite = self.input_path_rewrite(dataset)
+        if input_path_rewrite is None:
+            # Pulsar reads unstaged inputs in place, so their extra files stay where Galaxy keeps them.
+            return self.local_path_config.input_extra_files_rewrite(dataset)
         remote_extra_files_path_rewrite = dataset_path_to_extra_path(input_path_rewrite)
         self.path_rewrites_input_extra[dataset.extra_files_path] = remote_extra_files_path_rewrite
         return remote_extra_files_path_rewrite
 
     def output_extra_files_rewrite(self, dataset):
         output_path_rewrite = self.output_path_rewrite(dataset)
+        if output_path_rewrite is None:
+            return self.local_path_config.output_extra_files_rewrite(dataset)
         remote_extra_files_path_rewrite = dataset_path_to_extra_path(output_path_rewrite)
         return remote_extra_files_path_rewrite
 
