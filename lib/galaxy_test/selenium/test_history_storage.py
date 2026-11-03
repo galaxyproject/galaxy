@@ -30,6 +30,13 @@ UPLOAD_DATA_3 = {
 class TestHistoryStorage(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
+    @selenium_test
+    def test_recalculate_disk_usage_from_storage_dashboard(self):
+        self.storage_dashboard_recalculate_disk_usage()
+        # Celery-less test servers show this for 30s; with Celery it can clear at once.
+        self.components.storage_dashboard.recalculating.wait_for_visible()
+        self.screenshot("storage_dashboard_recalculating_disk_usage")
+
     def _upload_named_paste_content(self, data: dict[str, str]) -> None:
         uploader = self.upload_context("paste-content")
         for name, content in data.items():
