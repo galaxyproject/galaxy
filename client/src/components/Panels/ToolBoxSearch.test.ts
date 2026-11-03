@@ -154,24 +154,32 @@ describe("ToolBox search", () => {
         expect(wrapper.find('[data-tool-id="__ZIP_COLLECTION__"]').exists()).toBe(true);
     });
 
-    it("caps rendered search results and shows all of them on request", async () => {
-        const manyTools = Array.from(
-            { length: 120 },
-            (_, i) => ({ ...toolsList[0], id: `many_tool_${i}`, name: `Many tool ${i}` }) as Tool,
-        );
-        const { wrapper, userStore } = mountToolBox({
-            tools: manyTools,
+    /** Mounts a toolbox with 120 "Many tool N" tools in one section, followed by `extraTools`. */
+    function mountWithManyTools(extraTools: Tool[] = []) {
+        const tools = [
+            ...Array.from(
+                { length: 120 },
+                (_, i) => ({ ...toolsList[0], id: `many_tool_${i}`, name: `Many tool ${i}` }) as Tool,
+            ),
+            ...extraTools,
+        ];
+        return mountToolBox({
+            tools,
             toolSections: {
                 default: {
                     many: {
                         model_class: "ToolSection",
                         id: "many",
                         name: "Many",
-                        tools: manyTools.map((tool) => tool.id),
+                        tools: tools.map((tool) => tool.id),
                     } as unknown as ToolSection,
                 },
             },
         });
+    }
+
+    it("caps rendered search results and shows all of them on request", async () => {
+        const { wrapper, userStore } = mountWithManyTools();
         await flushPromises();
 
         const input = wrapper.find("input.search-query");
@@ -201,6 +209,23 @@ describe("ToolBox search", () => {
         vi.advanceTimersByTime(250);
         await flushPromises();
         expect(wrapper.find('[data-description="show all tool search results button"]').exists()).toBe(true);
+    });
+
+    it("keeps the best-ranked matches when capping, even if they come last in the tool list", async () => {
+        const exactMatch = { ...toolsList[0], id: "exact_tool", name: "Tool" } as Tool;
+        const startsWithMatch = { ...toolsList[0], id: "starts_with_tool", name: "Tool kit" } as Tool;
+        const { wrapper } = mountWithManyTools([exactMatch, startsWithMatch]);
+        await flushPromises();
+
+        const input = wrapper.find("input.search-query");
+        await input.setValue("Tool");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        const toolIds = wrapper.findAll("a[data-tool-id]").map((item) => item.attributes("data-tool-id"));
+        expect(toolIds).toHaveLength(100);
+        expect(toolIds.slice(0, 2)).toEqual([exactMatch.id, startsWithMatch.id]);
+        expect(wrapper.text()).toContain("Loaded 100 out of 122 tools");
     });
 
     it("shows empty favorites copy in My panel when no favorites are set", async () => {
