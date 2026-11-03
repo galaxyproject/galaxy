@@ -935,26 +935,24 @@ class CachedToolBox(ToolBox):
         ``still_needed`` runs on the reloaded index under the lease.
         """
 
-        reloaded = False
-
         def reload_and_check() -> bool:
-            nonlocal reloaded
             self._reload_tool_index()
-            reloaded = True
             return still_needed()
 
+        def populate() -> None:
+            self._run_inline_populator()
+            # The inline populator writes through a separate store instance.
+            self._reload_tool_index()
+
         lease = self._store.populate_lease() if self._store is not None else None
-        populated = populate_once(
+        populate_once(
             lease,
             reload_and_check,
-            self._run_inline_populator,
+            populate,
             # An index this Galaxy cannot load (e.g. written by another
             # version during a rolling upgrade) reloads as empty.
             peer_result_usable=lambda: bool(self._tool_index and self._tool_index.entries),
         )
-        # The inline populator writes through a separate store instance.
-        if populated or not reloaded:
-            self._reload_tool_index()
 
     def _reload_tool_index(self) -> None:
         if self._store is not None:
