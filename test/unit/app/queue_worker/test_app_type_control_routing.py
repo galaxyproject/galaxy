@@ -3,7 +3,7 @@
 import uuid
 
 import pytest
-from kombu import Connection
+from kombu.connection import Connection
 from kombu.transport import (
     memory,
     virtual,
