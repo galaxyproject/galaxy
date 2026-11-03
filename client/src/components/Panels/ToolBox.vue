@@ -104,6 +104,7 @@ watch(
     () => query.value,
     () => {
         queryPending.value = true;
+        showAllResults.value = false;
         if (!props.favoritesDefault) {
             if (FAVORITES_KEYS.includes(query.value)) {
                 emit("update:show-favorites", true);
@@ -371,7 +372,6 @@ function onResults(
     if (idResults !== null && idResults.length > 0) {
         results.value = idResults;
         resultPanel.value = sectioned;
-        showAllResults.value = false;
         if (sectioned === null) {
             showSections.value = false;
         }
