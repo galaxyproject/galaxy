@@ -241,15 +241,17 @@ function onChange(event: Event) {
 
         &:hover {
             background-color: var(--color-grey-300);
+            border-color: var(--color-grey-400);
         }
 
-        // Light fill keeps the dark text readable; the darker border sets it apart from a hovered unchecked button
+        // Dark fill keeps >= 3:1 against unchecked and hovered neighbours, so the state does not rest on the border
         &.g-checked {
-            background-color: var(--color-grey-250);
-            border-color: var(--color-grey-600);
+            background-color: var(--color-grey-600);
+            border-color: var(--color-grey-800);
+            color: var(--color-grey-100);
 
             &:hover:not(.g-outline) {
-                background-color: var(--color-grey-300);
+                background-color: var(--color-grey-700);
             }
         }
 
