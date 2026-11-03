@@ -4303,6 +4303,88 @@ test_data:
                 assert outer_hdca["job_state_summary"]["all_jobs"] == 0
                 assert outer_hdca["collection_type"] == "list:list:list"
 
+    def test_conditional_subworkflow_independent_child_mapping(self):
+        # Inner mapping lengths 2 and 3 both differ from the outer list's 2 conditions.
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  outer_mapping_source: collection
+  inner_mapping_source:
+    type: collection
+    collection_type: list
+steps:
+  create_boolean_values:
+    tool_id: param_value_from_file
+    in:
+      input1: outer_mapping_source
+    state:
+      param_type: boolean
+  subworkflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        mapped_dataset: data
+        should_run: boolean
+        independent_collection:
+          type: collection
+          collection_type: list
+      steps:
+        consume_independent_collection:
+          tool_id: cat1
+          in:
+            input1: independent_collection
+      outputs:
+        independent_output:
+          outputSource: consume_independent_collection/out_file1
+    in:
+      mapped_dataset: outer_mapping_source
+      should_run: create_boolean_values/boolean_param
+      independent_collection: inner_mapping_source
+    when: $(inputs.should_run)
+outputs:
+  output:
+    outputSource: subworkflow/independent_output
+"""
+        for inner_identifiers in (["P", "Q"], ["P", "Q", "R"]):
+            inner_elements = "".join(
+                f"    - identifier: {identifier}\n      content: {identifier}\n" for identifier in inner_identifiers
+            )
+            with self.dataset_populator.test_history() as history_id:
+                summary = self._run_workflow(
+                    workflow,
+                    test_data=f"""
+outer_mapping_source:
+  collection_type: list
+  elements:
+    - identifier: run
+      content: true
+    - identifier: skip
+      content: false
+inner_mapping_source:
+  collection_type: list
+  elements:
+{inner_elements}""",
+                    history_id=history_id,
+                    assert_ok=True,
+                    wait=True,
+                )
+                invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+                output = self.dataset_populator.get_history_collection_details(
+                    history_id, content_id=invocation["output_collections"]["output"]["id"]
+                )
+                assert output["collection_type"] == "list:list"
+                assert [element["element_identifier"] for element in output["elements"]] == ["run", "skip"]
+                run_elements, skip_elements = (element["object"]["elements"] for element in output["elements"])
+                assert [element["element_identifier"] for element in run_elements] == inner_identifiers
+                assert [element["element_identifier"] for element in skip_elements] == inner_identifiers
+                for element in run_elements:
+                    content = self.dataset_populator.get_history_dataset_content(
+                        history_id, dataset_id=element["object"]["id"]
+                    )
+                    assert content.strip() == element["element_identifier"]
+                for element in skip_elements:
+                    assert element["object"]["misc_blurb"] == "skipped"
+
     def test_run_workflow_conditional_step_map_over_expression_tool_pick_value(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
@@ -6846,6 +6928,80 @@ test_data:
         assert len(elements) == 1
         assert elements[0]["element_identifier"] == "test_level_1"
         assert elements[0]["element_type"] == "hda"
+
+    @skip_without_tool("identifier_multiple")
+    def test_invocation_conditional_map_over_inner_collection(self, history_id):
+        # Conditional variant of test_invocation_map_over_inner_collection.
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    collection_type: list:list
+    type: collection
+  should_run:
+    type: boolean
+outputs:
+  main_out:
+    outputSource: subworkflow/sub_out
+steps:
+  subworkflow:
+    in:
+      list_input: input_collection
+      should_run: should_run
+    when: $(inputs.should_run)
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        list_input:
+          type: collection
+          collection_type: list
+        should_run:
+          type: boolean
+      outputs:
+        sub_out:
+          outputSource: output_step/output1
+      steps:
+        intermediate_step:
+          tool_id: identifier_multiple
+          in:
+            input1: list_input
+        output_step:
+          tool_id: identifier_multiple
+          in:
+            input1: intermediate_step/output1
+test_data:
+  input_collection:
+    collection_type: list:list
+  should_run:
+    value: {should_run}
+    type: raw
+"""
+        summary = self._run_workflow(
+            workflow.format(should_run="true"), history_id=history_id, assert_ok=True, wait=True
+        )
+        invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+        hdca_details = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=invocation["output_collections"]["main_out"]["id"]
+        )
+        assert hdca_details["collection_type"] == "list"
+        elements = hdca_details["elements"]
+        assert len(elements) == 1
+        assert elements[0]["element_identifier"] == "test_level_1"
+        assert elements[0]["element_type"] == "hda"
+        assert elements[0]["object"]["misc_blurb"] != "skipped"
+
+        summary = self._run_workflow(
+            workflow.format(should_run="false"), history_id=history_id, assert_ok=True, wait=True
+        )
+        invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+        hdca_details = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=invocation["output_collections"]["main_out"]["id"]
+        )
+        assert hdca_details["collection_type"] == "list"
+        elements = hdca_details["elements"]
+        assert len(elements) == 1
+        assert elements[0]["element_identifier"] == "test_level_1"
+        assert elements[0]["object"]["misc_blurb"] == "skipped"
 
     @skip_without_tool("identifier_multiple")
     def test_invocation_map_over_inner_collection_with_tool_collection_input(self, history_id):
