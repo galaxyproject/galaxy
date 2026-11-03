@@ -1,7 +1,5 @@
 import logging
-import os
 import threading
-import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -1339,16 +1337,27 @@ def test_edited_tool_files_selects_only_changed_files(tmp_path):
     assert edited_tool_files(stores) == {str(edited): None, str(shed): shed_guid}
 
 
+def test_edited_tool_files_hashes_edit_stamped_before_indexed_at(tmp_path):
+    path, entry = _indexed(tmp_path, "racy.xml", "racy")
+    path.write_text(path.read_text().replace("1.0", "1.1"))
+    # A coarse file clock can stamp an edit made after hashing slightly before indexed_at.
+    entry.indexed_at = datetime.fromtimestamp(path.stat().st_mtime + 0.01, tz=timezone.utc)
+    index = ToolIndex()
+    index.add_entry(entry)
+
+    stores = cast(list[ToolSourceStore], [_IndexStore(read_only=False, index=index)])
+    assert edited_tool_files(stores) == {str(path): None}
+
+
 def test_edited_tool_files_sees_edit_made_while_populating(tmp_path, monkeypatch):
     box, tool_file = _indexed_shed_tool_box(tmp_path, monkeypatch, _shed_tool_xml("echo before"))
     path = str(tool_file)
+    edited_at: list[datetime] = []
 
     def hash_then_edit(file_path):
         file_hash = md5_hash_file(file_path)
+        edited_at.append(datetime.now(timezone.utc))
         tool_file.write_text(_shed_tool_xml("echo after"))
-        # Linux may stamp the write from its coarse clock, at or before the hash time.
-        now = time.time_ns()
-        os.utime(file_path, ns=(now, now))
         return file_hash
 
     monkeypatch.setattr(populator, "md5_hash_file", hash_then_edit)
@@ -1356,6 +1365,8 @@ def test_edited_tool_files_sees_edit_made_while_populating(tmp_path, monkeypatch
     monkeypatch.undo()
     box._store.invalidate_index_cache()
 
+    # indexed_at is read before hashing, so by the fine-grained clock no later edit is older than it.
+    assert box._store.load_index().get(GUID, "1.0").indexed_at <= edited_at[0]
     assert edited_tool_files([box._store]) == {path: GUID}
 
 

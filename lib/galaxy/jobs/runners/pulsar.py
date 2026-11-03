@@ -55,6 +55,7 @@ from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
+    ContainerRequiredException,
     JobState,
 )
 from galaxy.model.base import check_database_connection
@@ -575,6 +576,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         remote_container = None
 
         fail_or_resubmit = False
+        fail_message = None
         try:
             client = self.get_client_from_wrapper(job_wrapper)
             assert job_wrapper.tool is not None
@@ -665,6 +667,10 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         except PulsarClientTransportError:
             log.exception("failure running job %d, Pulsar connection failed", job_wrapper.job_id)
             fail_or_resubmit = True
+        except ContainerRequiredException as e:
+            log.info("failure running job %d: %s", job_wrapper.job_id, e)
+            fail_message = str(e)
+            fail_or_resubmit = True
         except Exception:
             log.exception("failure running job %d", job_wrapper.job_id)
             fail_or_resubmit = True
@@ -673,6 +679,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         fail_or_resubmit = fail_or_resubmit or not command_line
         if fail_or_resubmit:
             job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
+            if fail_message:
+                job_state.fail_message = fail_message
             self.work_queue.put((self.fail_job, job_state))
 
         return command_line, client, remote_job_config, compute_environment, remote_container
@@ -1535,7 +1543,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         elif target == "job_home":
             return "$_GALAXY_JOB_HOME_DIR"
         elif target == "pwd":
-            os.path.join(self.working_directory(), "working")
+            return self.working_directory()
         else:
             raise Exception(f"Unknown target type [{target}]")
 

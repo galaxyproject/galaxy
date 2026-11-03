@@ -8,9 +8,9 @@ import datetime
 import logging
 import socket
 
-from kombu import (
+from kombu.connection import Connection
+from kombu.entity import (
     binding,
-    Connection,
     Exchange,
     Queue,
 )
