@@ -8,7 +8,10 @@ from galaxy.files.models import (
     BaseFileSourceTemplateConfiguration,
     FilesSourceRuntimeContext,
 )
-from galaxy.files.uris import validate_non_local
+from galaxy.files.uris import (
+    validate_non_local,
+    ValidatingRedirectHandler,
+)
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
@@ -64,9 +67,11 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
         self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[HTTPFileSourceConfiguration]
     ):
         config = context.config
+        allowlist = self._allowlist or config.fetch_url_allowlist
         req = urllib.request.Request(source_path, headers=config.http_headers)
+        opener = urllib.request.build_opener(ValidatingRedirectHandler(allowlist))
         try:
-            page = urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT)
+            page = opener.open(req, timeout=DEFAULT_SOCKET_TIMEOUT)
         except Exception as e:
             if "control characters" in str(e):
                 raise ValueError(
@@ -77,7 +82,7 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
 
         with page:
             # Verify url post-redirects is still allowlisted
-            validate_non_local(page.geturl(), self._allowlist or config.fetch_url_allowlist)
+            validate_non_local(page.geturl(), allowlist)
             return stream_to_path(page, native_path, source_encoding=get_charset_from_http_headers(page.headers))
 
     def _write_from(
