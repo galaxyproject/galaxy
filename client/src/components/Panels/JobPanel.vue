@@ -8,6 +8,7 @@ import type { JobBaseModel, JobFetchExtraParams, ShowFullJobResponse } from "@/a
 import { fetchJobs } from "@/api/jobs";
 import {
     type AppliedTimeRange,
+    currentTimeRangeCutoff,
     getActiveTimeRange,
     type JobMatcher,
     jobsFilterParams,
@@ -239,10 +240,19 @@ watch(storedJobIds, (ids) => {
 });
 
 function buildFetchExtraProps(userId: string, includeTotalCount: boolean): JobFetchExtraParams {
+    const params = jobsFilterParams(filterText.value, showToolNamesInJobPanel.value).params;
+
+    // A quick-pick range's `date_range_min` is otherwise the fixed cutoff written into `filterText`
+    // at pick time; recompute it here so a periodic re-check keeps using a true sliding window
+    // instead of a window that only grows for as long as the panel stays open.
+    const range = activeTimeRange.value;
+    if (range && range !== "custom") {
+        params.date_range_min = currentTimeRangeCutoff(range);
+    }
     return {
         user_id: userId,
         exclude_tool_id: includeUploads.value ? undefined : HIDDEN_TOOL_IDS,
-        ...jobsFilterParams(filterText.value, showToolNamesInJobPanel.value).params,
+        ...params,
         include_total_count: includeTotalCount,
     };
 }

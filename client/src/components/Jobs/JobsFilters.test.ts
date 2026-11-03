@@ -5,6 +5,7 @@ import type { JobBaseModel } from "@/api/jobs";
 import { type Tool, useToolStore } from "@/stores/toolStore";
 
 import {
+    currentTimeRangeCutoff,
     getActiveTimeRange,
     jobsFilterParams,
     JobsFiltersById,
@@ -270,6 +271,22 @@ describe("jobsFilterParams", () => {
             const second = setActiveTimeRange(first.filterText, "30m");
             expect(second.filterText).toBe("update_time>2024-01-01T11:30:00.000Z");
             expect(second.appliedRange).toEqual({ key: "30m", value: "2024-01-01t11:30:00.000z" });
+        });
+    });
+
+    describe("currentTimeRangeCutoff (periodic re-check's own usage)", () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date("2024-01-01T12:00:00.000Z"));
+        });
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it("recomputes from the current time, instead of staying fixed like setActiveTimeRange's own cutoff", () => {
+            expect(currentTimeRangeCutoff("30m")).toBe("2024-01-01T11:30:00.000Z");
+            vi.setSystemTime(new Date("2024-01-01T13:00:00.000Z"));
+            expect(currentTimeRangeCutoff("30m")).toBe("2024-01-01T12:30:00.000Z");
         });
     });
 

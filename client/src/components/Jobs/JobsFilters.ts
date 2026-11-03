@@ -63,6 +63,16 @@ export function setActiveTimeRange(
 }
 
 /**
+ * Recomputes a quick-pick range's `update_time_gt` cutoff as of right now, rather than the fixed
+ * value `setActiveTimeRange` wrote into the filter text at pick time. Used to keep a periodic
+ * re-check's own query live without rewriting the filter text itself (which would also disturb
+ * `getActiveTimeRange`'s stored `lastApplied` comparison and anything else keyed on filter text).
+ */
+export function currentTimeRangeCutoff(range: Exclude<JobTimeRangeKey, "custom">): string {
+    return new Date(Date.now() - TIME_RANGE_DURATIONS_MS[range]).toISOString();
+}
+
+/**
  * Derives the active `JobTimeRangeFilter` quick-pick from filter text: "custom" for a
  * manually-entered `update_time` filter, or `undefined` for "Anytime".
  * @param lastApplied The range `setActiveTimeRange` itself last applied (its own return value),
