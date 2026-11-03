@@ -20,6 +20,8 @@ class EmbeddedAndExtendedMetadataPulsarIntegrationInstance(integration_util.Inte
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
         config["retry_metadata_internally"] = False
+        config["galaxy_infrastructure_url"] = "http://localhost:$GALAXY_WEB_PORT"
+        config["job_files_strict_access"] = True
 
 
 class TestEmbeddedAndExtendedMetadataPulsarRuntimeEnvironment(integration_util.IntegrationTestCase):

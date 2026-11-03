@@ -3,6 +3,7 @@
 import json
 import os
 import shutil
+import tempfile
 import threading
 from typing import (
     Any,
@@ -36,6 +37,7 @@ from galaxy.util import (
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.path import StrPath
 
+JOB_FILES_MANIFEST = "job_files_manifest.json"
 TOOL_PROVIDED_JOB_METADATA_FILE = "galaxy.json"
 TOOL_PROVIDED_JOB_METADATA_KEYS = ["name", "info", "dbkey", "created_from_basename"]
 
@@ -324,6 +326,38 @@ class JobIO(UsesDictVisibleKeys):
             elif os.path.basename(dp.real_path) == file:
                 return dp.dataset_id
         return None
+
+
+class JobFilesManifest(NamedTuple):
+    """What a job's remote runner may do through the job files API, recorded when Galaxy submits the job."""
+
+    # The paths the runner fetches from the job files API by path. Inputs staged from signed staging URLs are
+    # fetched from Galaxy too, but through a separate route, so they are not listed here.
+    readable_paths: frozenset[str]
+    # Whether the job returns its outputs through the extended metadata model store.
+    remote_extended_metadata: bool
+
+
+def write_job_files_manifest(job_directory: str, readable_paths: list[str], remote_extended_metadata: bool) -> None:
+    """Write the job's manifest atomically, so the job files API never reads a partial one."""
+    manifest = {"readable_paths": sorted(set(readable_paths)), "remote_extended_metadata": remote_extended_metadata}
+    fd, temp_path = tempfile.mkstemp(dir=job_directory, prefix=f".{JOB_FILES_MANIFEST}.")
+    try:
+        with os.fdopen(fd, "w") as fh:
+            json.dump(manifest, fh)
+        os.replace(temp_path, os.path.join(job_directory, JOB_FILES_MANIFEST))
+    except BaseException:
+        os.unlink(temp_path)
+        raise
+
+
+def read_job_files_manifest(job_directory: str) -> JobFilesManifest | None:
+    try:
+        with open(os.path.join(job_directory, JOB_FILES_MANIFEST)) as fh:
+            manifest = json.load(fh)
+    except FileNotFoundError:
+        return None
+    return JobFilesManifest(frozenset(manifest["readable_paths"]), manifest["remote_extended_metadata"])
 
 
 def ensure_configs_directory(work_dir: str) -> str:

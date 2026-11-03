@@ -128,6 +128,10 @@ Every user-defined tool names the image it runs in, and that reference is resolv
 
 Set `require_container: true` on any destination that accepts user-defined tools. Without it, a tool whose image cannot be resolved runs directly on the host instead of failing.
 
+## Job files
+
+A Pulsar destination with `remote_transfer` file actions reads job inputs from, and writes job outputs to, Galaxy's job files API. Set `job_files_strict_access: true` in `galaxy.yml` on any server that runs user-defined tools. Each job may then read only the files Galaxy told Pulsar to stage for it, and write only its outputs and its `working`, `outputs` and `metadata` directories. Without it, a job's key can read any file the Galaxy process can read.
+
 ## Limitations
 
 The user-defined tool language is still evolving, and additional safety audits are ongoing.

@@ -229,6 +229,7 @@ class GalaxyAppConfigurationAttributes:
     nginx_upload_path: str | None
     nginx_upload_job_files_store: str | None
     nginx_upload_job_files_path: str | None
+    job_files_strict_access: bool
     tus_upload_store: str | None
     tus_upload_store_job_files: str | None
     chunk_upload_size: int
