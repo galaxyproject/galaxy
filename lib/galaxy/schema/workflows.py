@@ -211,7 +211,7 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     no_add_to_history: bool | None = Field(
         False,
         title="No Add to History",
-        description="Indicates if the workflow invocation should not be added to the history.",
+        description="If true, workflow inputs from other histories or libraries are not copied into the target history.",
     )
     legacy: bool | None = Field(
         False,
