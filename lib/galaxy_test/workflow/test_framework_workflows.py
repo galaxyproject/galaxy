@@ -32,6 +32,10 @@ from galaxy_test.base.populators import (
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 TEST_WORKFLOW_AFTER_RERUN = asbool(os.environ.get("GALAXY_TEST_WORKFLOW_AFTER_RERUN", "0"))
+# Invocation timeouts (seconds) for slow workflows, keyed by workflow test name.
+SLOW_WORKFLOW_TIMEOUTS = {
+    "subworkflow_mapping_per_step": 300,
+}
 
 
 def find_workflows():
@@ -41,11 +45,13 @@ def find_workflows():
 def pytest_generate_tests(metafunc):
     parameter_combinations = []
     test_ids = []
-    for workflow_path in find_workflows():
+    workflow_paths = find_workflows()
+    unknown_slow_workflows = set(SLOW_WORKFLOW_TIMEOUTS) - {_workflow_test_name(path) for path in workflow_paths}
+    assert not unknown_slow_workflows, f"SLOW_WORKFLOW_TIMEOUTS names unknown workflows: {unknown_slow_workflows}"
+    for workflow_path in workflow_paths:
         for index, test_job in enumerate(_test_jobs(workflow_path)):
             parameter_combinations.append([workflow_path, test_job])
-            workflow_test_name = workflow_path.name[0 : -len(".gxwf.yml")]
-            test_ids.append(f"{workflow_test_name}_{index}")
+            test_ids.append(f"{_workflow_test_name(workflow_path)}_{index}")
     if "workflow_path" in metafunc.fixturenames:
         metafunc.parametrize("workflow_path,test_job", parameter_combinations, ids=test_ids)
 
@@ -67,8 +73,7 @@ class TestWorkflow(ApiTestCase):
         with self.dataset_populator.test_history() as history_id:
             exc = None
             try:
-                configured_timeout = test_job.get("timeout")
-                timeout = DEFAULT_TIMEOUT if configured_timeout is None else configured_timeout
+                timeout = SLOW_WORKFLOW_TIMEOUTS.get(_workflow_test_name(workflow_path), DEFAULT_TIMEOUT)
                 run_summary = self.workflow_populator.run_workflow(
                     yaml_content,
                     test_data=test_job["job"],
@@ -148,10 +153,12 @@ def _test_jobs(workflow_path: Path) -> TestDicts:
     return jobs
 
 
+def _workflow_test_name(workflow_path: Path) -> str:
+    return workflow_path.name[0 : -len(".gxwf.yml")]
+
+
 def _workflow_test_path(workflow_path: Path) -> Path:
-    base_name = workflow_path.name[0 : -len(".gxwf.yml")]
-    test_path = workflow_path.parent / f"{base_name}.gxwf-tests.yml"
-    return test_path
+    return workflow_path.parent / f"{_workflow_test_name(workflow_path)}.gxwf-tests.yml"
 
 
 def _get_location(location: str) -> str:
