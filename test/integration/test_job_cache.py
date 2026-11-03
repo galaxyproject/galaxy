@@ -99,9 +99,20 @@ class TestJobCacheFiltering(integration_util.IntegrationTestCase):
             self._set_hda_to_failed_metadata(hda_id)
             self._verify_cache_excluded_with_failed_metadata("cat1", inputs, history_id)
 
-    def test_cache_preserves_dunder_section_parameters(self):
-        """Both cache lookups must respect QIIME2-style input section names."""
+    def _run_dunder_section_workflow(self, workflow: dict, history_id: str, test_data=None) -> tuple[dict, str]:
         workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+        summary = workflow_populator.run_workflow(
+            workflow, test_data=test_data, history_id=history_id, use_cached_job=True
+        )
+        invocation_jobs = self._get("jobs", data={"invocation_id": summary.invocation_id}).json()
+        assert len(invocation_jobs) == 1
+        job = self.dataset_populator.get_job_details(invocation_jobs[0]["id"], full=True).json()
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id, dataset_id=job["outputs"]["output"]["id"]
+        )
+        return job, content
+
+    def test_cache_preserves_dunder_section_parameters(self):
         with self.dataset_populator.test_history() as history_id:
             jobs = []
             for value in (1, 2, 2):
@@ -114,17 +125,32 @@ class TestJobCacheFiltering(integration_util.IntegrationTestCase):
                         }
                     },
                 }
-                summary = workflow_populator.run_workflow(workflow, history_id=history_id, use_cached_job=True)
-                invocation_jobs = self._get("jobs", data={"invocation_id": summary.invocation_id}).json()
-                assert len(invocation_jobs) == 1
-                job = self.dataset_populator.get_job_details(invocation_jobs[0]["id"], full=True).json()
+                job, content = self._run_dunder_section_workflow(workflow, history_id)
                 jobs.append(job)
-                content = self.dataset_populator.get_history_dataset_content(history_id, hid=len(jobs))
                 assert content.strip() == str(value)
 
             assert jobs[0]["copied_from_job_id"] is None
             assert jobs[1]["copied_from_job_id"] is None
             assert jobs[2]["copied_from_job_id"] == jobs[1]["id"]
+
+    def test_cache_preserves_dunder_section_data_inputs(self):
+        with self.dataset_populator.test_history() as history_id:
+            for content in ("A", "B"):
+                workflow = {
+                    "class": "GalaxyWorkflow",
+                    "inputs": {"input1": {"type": "data"}},
+                    "steps": {
+                        "write_value": {
+                            "tool_id": "cache_dunder_section",
+                            "in": {"__q2galaxy__GUI__section__extra_opts__|input1": "input1"},
+                        }
+                    },
+                }
+                job, output = self._run_dunder_section_workflow(
+                    workflow, history_id, test_data={"input1": f"{content}\n"}
+                )
+                assert job["copied_from_job_id"] is None
+                assert output.splitlines() == ["1", content]
 
     def test_job_cache_excludes_failed_metadata_hdca_element(self):
         """Test that job cache lookup excludes HDCAs with elements in failed_metadata state.
