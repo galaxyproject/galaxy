@@ -98,7 +98,7 @@ const TOOLS: Tool[] = [
 function setupStores(tools: Tool[]) {
     const localVue = getLocalVue();
     // A loaded tool list keeps fetchTools off the network.
-    useToolStore().toolsById = Object.fromEntries(tools.map((tool) => [tool.id, tool]));
+    useToolStore().saveAllTools(tools);
     useDatatypesMapperStore().datatypesMapper = mapper;
     return localVue;
 }

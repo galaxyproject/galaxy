@@ -59,4 +59,39 @@ describe("toolStore", () => {
 
         expect(store.getToolsById("constructor")).toEqual({});
     });
+
+    it("fetches the full tool list once even when a single tool was loaded first", async () => {
+        const fastqc = { id: "fastqc", name: "FastQC" } as Tool;
+        const igv = { id: "igv", name: "IGV", model_class: "InteractiveTool" } as Tool;
+        vi.mocked(axios.get)
+            .mockResolvedValueOnce({ data: fastqc })
+            .mockResolvedValueOnce({ data: [fastqc, igv] });
+        const store = useToolStore();
+
+        await store.fetchToolForId("fastqc");
+        await store.fetchTools();
+        await store.fetchTools();
+
+        expect(axios.get).toHaveBeenCalledTimes(2);
+        expect(axios.get).toHaveBeenLastCalledWith(expect.stringContaining("api/tools"), {
+            params: { in_panel: false },
+        });
+        expect(Object.keys(store.toolsById)).toEqual(["fastqc", "igv"]);
+        expect(store.getInteractiveTools()).toEqual([igv]);
+    });
+
+    it("keeps a single tool missing from the bulk list after the bulk load", async () => {
+        const converter = { id: "CONVERTER_bam_to_bigwig_0", name: "Convert BAM to BigWig", hidden: true } as Tool;
+        const fastqc = { id: "fastqc", name: "FastQC" } as Tool;
+        vi.mocked(axios.get)
+            .mockResolvedValueOnce({ data: converter })
+            .mockResolvedValueOnce({ data: [fastqc] });
+        const store = useToolStore();
+
+        await store.fetchToolForId(converter.id);
+        await store.fetchTools();
+
+        expect(store.getToolForId(converter.id)).toEqual(converter);
+        expect(store.getToolForId("fastqc")).toEqual(fastqc);
+    });
 });
