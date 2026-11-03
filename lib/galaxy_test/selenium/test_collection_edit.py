@@ -45,9 +45,7 @@ class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
         self.wait_for_history()
         self.history_panel_expand_collection(3)
         self.history_panel_ensure_showing_item_details(1)
-        item = self.history_panel_item_component(hid=1)
-        item.datatype.wait_for_visible()
-        self._wait_on(lambda *_: item.datatype.wait_for_text() == dataNew)
+        self.history_panel_wait_for_hid_datatype(1, dataNew)
 
     @selenium_test
     @managed_history
