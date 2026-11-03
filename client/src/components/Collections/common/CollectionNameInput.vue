@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { BFormGroup, BFormInput } from "bootstrap-vue";
+import { BFormGroup } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import localize from "@/utils/localization";
+
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 interface Props {
     value: string;
@@ -29,8 +31,8 @@ watch(name, (newValue) => {
     emit("input", newValue);
 });
 
-function updateName(v: string) {
-    name.value = v;
+function updateName(v: string | null) {
+    name.value = v ?? "";
 }
 </script>
 
@@ -39,14 +41,14 @@ function updateName(v: string) {
         class="flex-gapx-1 d-flex align-items-center w-50 inputs-form-group"
         :label="localize('Name:')"
         label-for="collection-name">
-        <BFormInput
+        <GFormInput
             id="collection-name"
-            :value="name"
+            :model-value="name"
             class="collection-name"
             :placeholder="localize('Enter a name for your new ' + shortWhatIsBeingCreated)"
-            size="sm"
+            size="small"
             required
             :state="!name ? false : null"
-            @input="updateName" />
+            @update:model-value="updateName" />
     </BFormGroup>
 </template>

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { BFormInput } from "bootstrap-vue";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import { uid } from "@/utils/utils";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 // The select holds generated values rather than the options' own, so no option value can collide with
@@ -131,11 +131,11 @@ function onSelect(value: string | null) {
     emit("input", selected);
 }
 
-function onText(value: string) {
-    text.value = value;
+function onText(value: string | null) {
+    text.value = value ?? "";
     edited.value = true;
     if (!textError.value) {
-        emit("input", value);
+        emit("input", text.value);
     }
 }
 </script>
@@ -145,13 +145,13 @@ function onText(value: string) {
         <FormSelect :id="id" :value="selectValue" :options="selectOptions" optional @input="onSelect" />
         <small v-if="selectedHelp" class="form-text text-muted">{{ selectedHelp }}</small>
         <div v-if="otherMode" class="mt-2">
-            <BFormInput
+            <GFormInput
                 :id="`${id}-other`"
-                :value="text"
+                :model-value="text"
                 :state="textInvalid ? false : null"
                 :placeholder="otherPlaceholder"
                 :aria-label="otherLabel"
-                @input="onText" />
+                @update:model-value="onText" />
             <small v-if="otherHelp" class="form-text text-muted">{{ otherHelp }}</small>
         </div>
     </div>

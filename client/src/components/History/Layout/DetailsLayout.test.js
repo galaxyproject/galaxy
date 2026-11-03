@@ -90,6 +90,70 @@ describe("DetailsLayout", () => {
         expect(wrapper.emitted("save")).toEqual([[{ annotation: "new annotation" }]]);
     });
 
+    it("edits the name in a GFormInput and saves it trimmed", async () => {
+        const wrapper = await createWrapper(DetailsLayout, localVue, { id: "user.id", email: "user.email" }, false, {
+            name: "history name",
+            annotation: "",
+            tags: [],
+        });
+
+        await wrapper.find("[data-description='editor toggle']").trigger("click");
+        const nameInput = wrapper.get("[data-description='name input']");
+        expect(nameInput.classes()).toContain("g-form-input");
+        expect(nameInput.element.value).toBe("history name");
+        await nameInput.setValue("  new name  ");
+        await wrapper.find("[data-description='editor save button']").trigger("click");
+
+        expect(wrapper.emitted("save")).toEqual([[{ name: "new name" }]]);
+    });
+
+    it("leaves a stored padded name alone when only the annotation is edited", async () => {
+        const wrapper = await createWrapper(DetailsLayout, localVue, { id: "user.id", email: "user.email" }, false, {
+            name: " padded ",
+            annotation: "",
+            tags: [],
+        });
+
+        await wrapper.find("[data-description='editor toggle']").trigger("click");
+        await wrapper.find("[data-description='annotation input']").setValue("new annotation");
+        await wrapper.find("[data-description='editor save button']").trigger("click");
+
+        expect(wrapper.emitted("save")).toEqual([[{ annotation: "new annotation" }]]);
+    });
+
+    it("saves the name on Enter and closes the editor on Escape", async () => {
+        const wrapper = await createWrapper(DetailsLayout, localVue, { id: "user.id", email: "user.email" }, false, {
+            name: "history name",
+            annotation: "",
+            tags: [],
+        });
+
+        await wrapper.find("[data-description='editor toggle']").trigger("click");
+        const nameInput = wrapper.get("[data-description='name input']");
+        await nameInput.setValue("entered name");
+        await nameInput.trigger("keyup", { key: "Enter" });
+        expect(wrapper.emitted("save")).toEqual([[{ name: "entered name" }]]);
+        expect(wrapper.find("[data-description='edit form']").exists()).toBe(false);
+
+        await wrapper.find("[data-description='editor toggle']").trigger("click");
+        await wrapper.get("[data-description='name input']").setValue("discarded name");
+        await wrapper.get("[data-description='name input']").trigger("keyup", { key: "Escape" });
+        expect(wrapper.find("[data-description='edit form']").exists()).toBe(false);
+        expect(wrapper.emitted("save")).toHaveLength(1);
+    });
+
+    it("does not save a blank name", async () => {
+        const wrapper = await createWrapper(DetailsLayout, localVue, { id: "user.id", email: "user.email" }, false, {
+            name: "history name",
+            annotation: "",
+            tags: [],
+        });
+
+        await wrapper.find("[data-description='editor toggle']").trigger("click");
+        await wrapper.get("[data-description='name input']").setValue("   ");
+        expect(wrapper.get("[data-description='editor save button']").attributes("aria-disabled")).toBe("true");
+    });
+
     it("does not emit a save when nothing was edited", async () => {
         const wrapper = await createWrapper(DetailsLayout, localVue, { id: "user.id", email: "user.email" }, false, {
             name: "history name",
