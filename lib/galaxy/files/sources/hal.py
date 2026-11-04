@@ -13,7 +13,6 @@ from urllib.parse import (
     unquote,
     urljoin,
     urlsplit,
-    urlunsplit,
 )
 
 from requests import (
@@ -49,7 +48,7 @@ from galaxy.util.config_templates import TemplateExpansion
 DEFAULT_API_URL = "https://api.hal.science/search/"
 # Redirects versioned file URLs to the portal that hosts the deposit.
 HAL_URL = "https://hal.science"
-RECORD_RE = re.compile(r"([a-z][a-z0-9-]*-[0-9]+)v([1-9][0-9]*)")
+RECORD_RE = re.compile(r"([a-z][a-z0-9-]*[-_][0-9]+)v([1-9][0-9]*)")
 FIELDS = "halId_s,version_i,title_s,files_s,fileAnnexes_s"
 SIZE_LOOKUP_TIMEOUT = 5
 MAX_SIZE_LOOKUP_WORKERS = 4
@@ -82,6 +81,7 @@ class HALFilesSource(BaseFilesSource[HALFileSourceTemplateConfiguration, HALFile
     plugin_type = "hal"
     supports_pagination = True
     supports_search = True
+    supports_recursive = True
     template_config_class = HALFileSourceTemplateConfiguration
     resolved_config_class = HALFileSourceConfiguration
 
@@ -107,9 +107,11 @@ class HALFilesSource(BaseFilesSource[HALFileSourceTemplateConfiguration, HALFile
     ) -> tuple[list[AnyRemoteEntry], int]:
         if write_intent:
             raise MessageException("HAL file sources are read-only and do not support exporting files.")
-        if recursive:
-            raise MessageException("Recursive listing is not supported for HAL file sources.")
         if path in ("", "/"):
+            if recursive:
+                raise MessageException(
+                    "Recursive listing is not supported at the HAL root; select individual deposits."
+                )
             result = self._search(
                 context.config,
                 q=(query or "").strip() or "*:*",
@@ -144,8 +146,11 @@ class HALFilesSource(BaseFilesSource[HALFileSourceTemplateConfiguration, HALFile
         entries = [
             RemoteFile(name=name, path=file_path, uri=self.uri_from_path(file_path))
             for file_path, (name, _) in files.items()
-            if not query or query.casefold() in name.casefold()
+            if recursive or not query or query.casefold() in name.casefold()
         ]
+        if recursive:
+            # Deposits are flat: return every attachment without pagination or metadata requests.
+            return entries, len(entries)
         start = offset or 0
         page = entries[start : start + limit if limit is not None else None]
         if page and limit is not None:
@@ -210,7 +215,14 @@ class HALFilesSource(BaseFilesSource[HALFileSourceTemplateConfiguration, HALFile
     def _search(self, config: HALFileSourceConfiguration, **params: str | int) -> HALSearchResult:
         with self._open_url(config.api_url, params={"wt": "json", "fl": FIELDS, **params}) as response:
             try:
-                result = response.json()["response"]
+                payload = response.json()
+                if isinstance(payload, dict) and "error" in payload:
+                    log.warning("HAL search API error: %s", payload["error"])
+                    raise MessageException(
+                        "HAL could not complete the search. Large page offsets may exceed its search timeout; "
+                        "narrow your search and try again."
+                    )
+                result = payload["response"]
                 if not isinstance(result["docs"], list) or not isinstance(result["numFound"], int):
                     raise ValueError("Invalid search results")
                 return {"docs": result["docs"], "numFound": result["numFound"]}
@@ -241,10 +253,9 @@ class HALFilesSource(BaseFilesSource[HALFileSourceTemplateConfiguration, HALFile
             if name is None:
                 continue
             # HAL's index returns unversioned URLs; pin them before exposing or downloading the file.
-            versioned_url = urlunsplit((parsed.scheme, parsed.netloc, f"/{record_id}/file/{parts[3]}", "", ""))
+            # Let HAL route the request instead of trusting the indexed attachment host.
+            versioned_url = f"{HAL_URL}/{record_id}/file/{quote(name, safe='')}"
             file_path = f"/{record_id}/{quote(name, safe='')}"
-            if file_path in files and files[file_path][1] != versioned_url:
-                raise MessageException(f"HAL returned ambiguous attachments named {name}.")
             files[file_path] = (name, versioned_url)
         return dict(sorted(files.items()))
 

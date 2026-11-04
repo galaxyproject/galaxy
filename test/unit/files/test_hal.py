@@ -31,7 +31,7 @@ RECORD = {
     ],
 }
 ARTICLE_URL = "https://hal.science/hal-01479142v2/file/article.pdf"
-TABLE_URL = "https://hal.univ-lorraine.fr/hal-01479142v2/file/variants%20table.xlsx"
+TABLE_URL = "https://hal.science/hal-01479142v2/file/variants%20table.xlsx"
 REPORT_URL = "https://hal.science/hal-01479142v2/file/report.html"
 
 
@@ -137,7 +137,7 @@ def test_invalid_paths_are_not_found(hal):
     assert not hal.calls
 
 
-def test_imports_current_version_from_the_indexed_portal(hal, tmp_path):
+def test_imports_current_version_from_the_canonical_endpoint(hal, tmp_path):
     _add_search(hal, [RECORD])
     hal.add(responses.GET, TABLE_URL, body=b"table")
 
@@ -191,3 +191,114 @@ def test_redirect_to_a_local_address_is_refused(hal, tmp_path):
     with pytest.raises(ConfigDoesNotAllowException):
         _realize("/hal-01479142v2/article.pdf", tmp_path)
     assert [call.request.url for call in hal.calls][-1] == ARTICLE_URL
+
+
+@pytest.mark.parametrize("path", ["/hal-01479142v2", "/hal-01479142v2/"])
+@pytest.mark.parametrize("options", [{}, {"limit": 1, "offset": 1, "query": "article"}])
+def test_recursive_deposit_listing_returns_all_files_without_probing(hal, path, options):
+    _add_search(hal, [RECORD])
+    source = _source()
+
+    assert source.supports_recursive
+    entries, total = source.list(path, recursive=True, **options)
+
+    assert total == 3
+    assert [entry.name for entry in entries] == ["article.pdf", "report.html", "variants table.xlsx"]
+    assert all(isinstance(entry, RemoteFile) for entry in entries)
+    assert [(call.request.method, call.request.url.split("?")[0]) for call in hal.calls] == [("GET", API_URL)]
+
+
+@pytest.mark.parametrize("path", ["", "/"])
+def test_recursive_root_listing_is_refused_without_requests(hal, path):
+    with pytest.raises(MessageException, match="HAL root"):
+        _source().list(path, recursive=True)
+    assert not hal.calls
+
+
+def test_recursive_listing_of_an_older_version_is_refused(hal):
+    _add_search(hal, [RECORD])
+    with pytest.raises(MessageException, match="browse hal-01479142v2"):
+        _source().list("/hal-01479142v1", recursive=True)
+
+
+@pytest.mark.parametrize("method", [responses.GET, responses.HEAD])
+def test_canonical_endpoint_can_redirect_to_a_portal(hal, tmp_path, method):
+    _add_search(hal, [RECORD])
+    portal_url = "https://hal.univ-lorraine.fr/hal-01479142v2/file/variants%20table.xlsx"
+    hal.add(method, TABLE_URL, status=302, headers={"Location": portal_url})
+    hal.add(method, portal_url, body=b"table", headers={"Content-Length": "5"})
+
+    if method == responses.GET:
+        assert _realize("/hal-01479142v2/variants%20table.xlsx", tmp_path) == b"table"
+    else:
+        entries, total = _source().list("/hal-01479142v2", limit=1, query="variants")
+        assert total == 1
+        assert entries[0].size == 5
+    assert [call.request.url for call in hal.calls][-2:] == [TABLE_URL, portal_url]
+
+
+def test_indexed_host_is_not_contacted_and_duplicate_attachments_are_collapsed(hal, tmp_path):
+    record = {
+        **RECORD,
+        "files_s": [
+            "https://unrelated.example/hal-01479142/file/article.pdf",
+            "https://hal.science/hal-01479142v2/file/article.pdf",
+        ],
+        "fileAnnexes_s": [],
+    }
+    _add_search(hal, [record])
+    hal.add(responses.HEAD, ARTICLE_URL, headers={"Content-Length": "7"})
+    hal.add(responses.GET, ARTICLE_URL, body=b"article")
+
+    entries, total = _source().list("/hal-01479142v2", limit=25)
+    assert total == 1
+    assert entries[0].name == "article.pdf"
+    assert entries[0].size == 7
+    assert _realize("/hal-01479142v2/article.pdf", tmp_path) == b"article"
+    assert all(call.request.url.split("?")[0] in (API_URL, ARTICLE_URL) for call in hal.calls)
+
+
+def test_search_page_includes_legacy_underscore_identifiers(hal):
+    legacy = {**RECORD, "halId_s": "sic_01002025", "version_i": 1}
+    _add_search(hal, [RECORD, legacy], num_found=225)
+
+    entries, total = _source().list("/", limit=25, offset=200)
+
+    assert total == 225
+    assert [entry.uri for entry in entries] == [
+        "gxfiles://hal/hal-01479142v2",
+        "gxfiles://hal/sic_01002025v1",
+    ]
+
+
+def test_legacy_underscore_deposit_can_be_listed_and_imported(hal, tmp_path):
+    record = {
+        "halId_s": "sic_01002025",
+        "version_i": 1,
+        "files_s": ["https://archivesic.ccsd.cnrs.fr/sic_01002025/file/article.pdf"],
+    }
+    _add_search(hal, [record])
+    url = "https://hal.science/sic_01002025v1/file/article.pdf"
+    hal.add(responses.GET, url, body=b"article")
+
+    entries, total = _source().list("/sic_01002025v1", recursive=True)
+
+    assert total == 1
+    assert entries[0].uri == "gxfiles://hal/sic_01002025v1/article.pdf"
+    assert _realize("/sic_01002025v1/article.pdf", tmp_path) == b"article"
+    assert hal.calls[0].request.params["q"] == 'halId_s:"sic_01002025"'
+
+
+def test_search_api_error_is_reported_as_a_search_failure(hal):
+    hal.add(responses.GET, API_URL, json={"error": {"msg": "cURL error (28): Timeout was reached"}})
+
+    with pytest.raises(MessageException, match="narrow your search"):
+        _source().list("/", limit=25, offset=1850625)
+
+
+@pytest.mark.parametrize("payload", [{}, {"response": {"docs": [], "numFound": "invalid"}}])
+def test_malformed_search_response_is_reported(hal, payload):
+    hal.add(responses.GET, API_URL, json=payload)
+
+    with pytest.raises(MessageException, match="Invalid response"):
+        _source().list("/")
