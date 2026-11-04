@@ -84,6 +84,13 @@ def test_data_inputs_carry_multiple():
     ]
 
 
+def test_data_inputs_mark_dataset_inputs():
+    assert [(data_input.type, data_input.collection_type) for data_input in _data_inputs(SELECTED_CASE_TOOL)] == [
+        ("data", None),
+        ("data", None),
+    ]
+
+
 def test_data_inputs_use_the_selected_case_as_default():
     assert [(data_input.name, data_input.extensions) for data_input in _data_inputs(SELECTED_CASE_TOOL)] == [
         (None, ["tabular"]),

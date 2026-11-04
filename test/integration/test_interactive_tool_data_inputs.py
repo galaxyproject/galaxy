@@ -31,12 +31,24 @@ class TestInteractiveToolDataInputs(IntegrationTestCase):
 
     def test_listing_carries_data_inputs(self):
         data_inputs = self._listed_data_inputs()
-        assert data_inputs[TABULAR_INPUT_TOOL] == [{"name": "infile", "extensions": ["tabular"], "multiple": False}]
-        assert data_inputs[ANY_INPUT_TOOL] == [{"name": "infile", "extensions": ["data"], "multiple": False}]
-        assert data_inputs[REPEAT_INPUT_TOOL] == [
-            {"name": "user_inputs_0|infile", "extensions": ["data"], "multiple": False}
+        assert data_inputs[TABULAR_INPUT_TOOL] == [
+            {"name": "infile", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None}
         ]
-        assert data_inputs[CONDITIONAL_INPUT_TOOL] == [{"name": None, "extensions": ["tabular"], "multiple": False}]
+        assert data_inputs[ANY_INPUT_TOOL] == [
+            {"name": "infile", "extensions": ["data"], "multiple": False, "type": "data", "collection_type": None}
+        ]
+        assert data_inputs[REPEAT_INPUT_TOOL] == [
+            {
+                "name": "user_inputs_0|infile",
+                "extensions": ["data"],
+                "multiple": False,
+                "type": "data",
+                "collection_type": None,
+            }
+        ]
+        assert data_inputs[CONDITIONAL_INPUT_TOOL] == [
+            {"name": None, "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None}
+        ]
         assert data_inputs[SIMPLE_TOOL] == []
 
     def test_input_name_prefills_the_tool_form(self):

@@ -4,6 +4,7 @@ from collections.abc import (
     Iterable,
     Iterator,
 )
+from typing import Literal
 
 from pydantic import (
     BaseModel,
@@ -31,6 +32,14 @@ class ToolDataInput(BaseModel):
         description="Datatype extensions the input accepts; `data` accepts any datatype.",
     )
     multiple: bool = Field(..., description="Whether the input accepts several datasets.")
+    type: Literal["data", "data_collection"] = Field(
+        ..., description="The parameter type: a dataset input or a collection input."
+    )
+    collection_type: str | None = Field(
+        ...,
+        description="Collection types a `data_collection` input accepts, comma-separated (`list,paired`); null for a "
+        "`data` input and for a collection input that accepts any collection type.",
+    )
 
 
 def data_inputs_for_parameters(parameters: Iterable[ToolParameterT]) -> list[ToolDataInput]:
@@ -42,7 +51,13 @@ def _walk(parameters: Iterable[ToolParameterT], prefix: str | None) -> Iterator[
     for parameter in parameters:
         name = None if prefix is None else f"{prefix}{parameter.name}"
         if isinstance(parameter, DataParameterModel):
-            yield ToolDataInput(name=name, extensions=list(parameter.extensions), multiple=parameter.multiple)
+            yield ToolDataInput(
+                name=name,
+                extensions=list(parameter.extensions),
+                multiple=parameter.multiple,
+                type="data",
+                collection_type=None,
+            )
         elif isinstance(parameter, SectionParameterModel):
             yield from _walk(parameter.parameters, None if name is None else f"{name}|")
         elif isinstance(parameter, RepeatParameterModel):

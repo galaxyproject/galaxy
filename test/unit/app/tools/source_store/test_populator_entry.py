@@ -122,8 +122,8 @@ def test_entry_captures_data_inputs(tmp_path):
     entry = _build(tmp_path, _TOOL_XML_DATA_INPUTS)
     assert entry is not None
     assert [data_input.model_dump() for data_input in entry.data_inputs] == [
-        {"name": "infile", "extensions": ["tabular"], "multiple": False},
-        {"name": "rep_0|more", "extensions": ["data"], "multiple": True},
+        {"name": "infile", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None},
+        {"name": "rep_0|more", "extensions": ["data"], "multiple": True, "type": "data", "collection_type": None},
     ]
 
 

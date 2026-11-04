@@ -184,8 +184,14 @@ class TestToolBox(BaseToolBoxTestCase):
         self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
         tool = self.toolbox.get_tool("test_tool")
         assert tool.to_panel_entry(mock_trans())["data_inputs"] == [
-            {"name": "param1", "extensions": ["tabular"], "multiple": False},
-            {"name": "repeat1_0|param2", "extensions": ["tabular"], "multiple": False},
+            {"name": "param1", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None},
+            {
+                "name": "repeat1_0|param2",
+                "extensions": ["tabular"],
+                "multiple": False,
+                "type": "data",
+                "collection_type": None,
+            },
         ]
 
     def test_panel_entry_link_uses_url_prefix(self):
