@@ -327,7 +327,7 @@ async function refreshChangedJobs() {
             new Date(`${newestSeen}Z`).getTime() - REFRESH_OVERLAP_SECONDS * 1000,
         ).toISOString();
         // Take the tighter (later) of the refresh cursor and any user-entered update_time_gt bound.
-        if (!extraProps.date_range_min || refreshFrom > extraProps.date_range_min) {
+        if (!extraProps.date_range_min || Date.parse(refreshFrom) > Date.parse(extraProps.date_range_min)) {
             extraProps.date_range_min = refreshFrom;
         }
     }
@@ -386,7 +386,12 @@ async function loadJobs(_offset: number, limit: number) {
         // Only the first page needs the count; it doesn't change page to page under the same filters.
         const extraProps = buildFetchExtraProps(userId, isFirstPage);
         // Take the tighter (earlier) of the paging cursor and any user-entered update_time_lt bound.
-        if (oldestLoaded !== undefined && (!extraProps.date_range_max || oldestLoaded < extraProps.date_range_max)) {
+        // Compared as parsed dates, not raw strings, for the same case-mismatch reason as the
+        // refresh cursor's own comparison in refreshChangedJobs.
+        if (
+            oldestLoaded !== undefined &&
+            (!extraProps.date_range_max || Date.parse(oldestLoaded) < Date.parse(extraProps.date_range_max))
+        ) {
             extraProps.date_range_max = oldestLoaded;
         }
         [data, totalMatches] = await fetchJobs(0, limit, extraProps);

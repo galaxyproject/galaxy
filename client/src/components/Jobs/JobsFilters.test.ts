@@ -284,9 +284,9 @@ describe("jobsFilterParams", () => {
         });
 
         it("recomputes from the current time, instead of staying fixed like setActiveTimeRange's own cutoff", () => {
-            expect(currentTimeRangeCutoff("30m")).toBe("2024-01-01t11:30:00.000z");
+            expect(currentTimeRangeCutoff("30m")).toBe("2024-01-01T11:30:00.000Z");
             vi.setSystemTime(new Date("2024-01-01T13:00:00.000Z"));
-            expect(currentTimeRangeCutoff("30m")).toBe("2024-01-01t12:30:00.000z");
+            expect(currentTimeRangeCutoff("30m")).toBe("2024-01-01T12:30:00.000Z");
         });
     });
 

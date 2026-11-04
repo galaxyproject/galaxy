@@ -327,7 +327,7 @@ describe("JobPanel", () => {
             await flushPromises();
             await scrollOnce();
 
-            expect(requests.at(-1)?.get("date_range_min")).toBe("2024-01-01t11:00:00.000z");
+            expect(requests.at(-1)?.get("date_range_min")).toBe("2024-01-01T11:00:00.000Z");
 
             wrapper.findComponent(JobTimeRangeFilter).vm.$emit("update:active-range", undefined);
             await flushPromises();
