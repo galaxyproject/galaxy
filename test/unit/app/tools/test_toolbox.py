@@ -506,6 +506,21 @@ class TestToolBox(BaseToolBoxTestCase):
         test_tool = self.toolbox.get_tool("test_tool", tool_version="3")
         assert test_tool.version == "0.2"
 
+    def test_exact_lookup_matches_tool_id_not_version(self):
+        self._init_tool()
+        self._setup_two_versions_in_config(section=False)
+        self._setup_two_versions()
+        unversioned = "github.com/galaxyproject/example/test_tool"
+
+        # Non-exact lookups resolve an unversioned guid through its lineage.
+        assert self.toolbox.get_tool(unversioned, tool_version="0.1").id == f"{unversioned}/0.1"
+        assert self.toolbox.has_tool(unversioned, tool_version="0.1")
+        # ``exact`` means exact tool id, so the same unversioned guid misses...
+        assert self.toolbox.get_tool(unversioned, tool_version="0.1", exact=True) is None
+        assert not self.toolbox.has_tool(unversioned, tool_version="0.1", exact=True)
+        # ... while the versioned guid hits.
+        assert self.toolbox.has_tool(f"{unversioned}/0.1", tool_version="0.1", exact=True)
+
     def test_load_file_in_section(self):
         self._init_tool_in_section()
 
