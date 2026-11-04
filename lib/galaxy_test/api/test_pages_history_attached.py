@@ -576,7 +576,9 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
                 inputs={"input1": {"src": "hda", "id": d1["id"]}},
                 history_id=history_id,
             )
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            # The split tool only produces a dynamic collection, so the history can
+            # report ok before its job has finished populating the collection.
+            self.dataset_populator.wait_for_job(split["jobs"][0]["id"], assert_ok=True)
             split_collection = split["output_collections"][0]
             cat_list = self.dataset_populator.run_tool(
                 tool_id="cat_list",
