@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faWrench, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 
@@ -13,7 +13,7 @@ withDefaults(
         errorMessage: string;
         description?: string;
         isLoading?: boolean;
-        icon?: IconDefinition;
+        icon: Object;
         logo?: string;
         name?: string;
         version?: string;
