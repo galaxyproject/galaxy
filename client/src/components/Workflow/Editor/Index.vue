@@ -856,6 +856,8 @@ async function onActivityClicked(activityId: string) {
         onDownload();
     } else if (activityId === "workflow-upgrade") {
         onUpgrade();
+    } else if (activityId === "workflow-upgrade-subworkflows") {
+        onUpgradeSubworkflows();
     } else if (activityId === "workflow-run") {
         onRun();
     } else if (activityId === "save-workflow") {
@@ -998,6 +1000,17 @@ function onLabel(nodeId: string, newLabel: string) {
 
 function onUpgrade() {
     onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
+}
+
+function onUpgradeSubworkflows() {
+    const actions = Object.values(steps.value)
+        .filter((step) => step.type === "subworkflow")
+        .map((step) => ({ action_type: "upgrade_subworkflow", step: { order_index: step.id }, recursive: true }));
+    if (actions.length === 0) {
+        Toast.info("This workflow has no sub-workflows.");
+        return;
+    }
+    onAttemptRefactor(actions);
 }
 
 async function generateAIReport() {

@@ -37,6 +37,11 @@
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
+            <FormSubworkflowVersion
+                v-if="isSubworkflow && contentId"
+                :content-id="contentId"
+                :step-id="stepId"
+                @onAttemptRefactor="(actions: unknown) => emit('onAttemptRefactor', actions)" />
             <FormConditional
                 v-if="isSubworkflow"
                 :step="step"
@@ -89,6 +94,7 @@ import { useStepProps } from "../composables/useStepProps";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 
 import FormConditional from "./FormConditional.vue";
+import FormSubworkflowVersion from "./FormSubworkflowVersion.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
