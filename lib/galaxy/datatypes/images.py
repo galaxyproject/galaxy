@@ -184,13 +184,12 @@ class Image(data.Data):
                         dataset.metadata.axes = "YXC"
                         dataset.metadata.channels = im_shape[2]
 
-            except (PIL.UnidentifiedImageError, ValueError):
-                # Pillow can recognize a file as a particular image format and still fail to
-                # parse it. GROMACS XPM files are one example: they pad the values line of the
-                # header with extra spaces, which Pillow's XPM plugin does not accept, so it
-                # raises a ValueError. Leaving the metadata unset is preferable to failing the
-                # job that produced the dataset.
+            except PIL.UnidentifiedImageError:
                 pass
+            except Exception as e:
+                # Image metadata is optional: an unparsable header (e.g. GROMACS XPM) or an image
+                # above Pillow's decompression bomb limit leaves it unset.
+                log.warning("Could not read image metadata from %s: %s", dataset.get_file_name(), e)
 
 
 class Jpg(Image):
