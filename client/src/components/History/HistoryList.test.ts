@@ -7,7 +7,7 @@ import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { type AnyHistoryEntry, getMyHistories, getSharedHistories } from "@/api/histories";
+import { type AnyHistoryEntry, getArchivedHistories, getMyHistories, getSharedHistories } from "@/api/histories";
 import { raisedToasts } from "@/composables/__mocks__/toast";
 import { useUserStore } from "@/stores/userStore";
 
@@ -24,6 +24,7 @@ vi.mock("@/composables/confirmDialog", () => ({
 vi.mock("@/composables/toast");
 vi.mock("@/api/histories", async (importOriginal) => ({
     ...(await importOriginal<object>()),
+    getArchivedHistories: vi.fn(),
     getMyHistories: vi.fn(),
     getSharedHistories: vi.fn(),
 }));
@@ -52,7 +53,7 @@ const MINE = [history("mine_1", "Mine", "me")];
 
 let failSecond = false;
 
-async function mountHistoryList(activeList: "my" | "shared") {
+async function mountHistoryList(activeList: "my" | "shared" | "archived") {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
     useUserStore().currentUser = FAKE_USER;
@@ -251,6 +252,25 @@ describe("HistoryList sorting", () => {
 
         expect(listedNames(wrapper)).toEqual(["a", "b"]);
         expect(isBusy(wrapper)).toBe(false);
+    });
+
+    it("sorts by size, largest first", async () => {
+        const wrapper = await mountHistoryList("my");
+        vi.mocked(getMyHistories).mockResolvedValueOnce(historiesResponse(["big", "small"]) as never);
+
+        await wrapper.find("#sortby-size").trigger("click");
+        await flushPromises();
+
+        expect(getMyHistories).toHaveBeenLastCalledWith(expect.objectContaining({ sortBy: "size", sortDesc: true }));
+        expect(listedNames(wrapper)).toEqual(["big", "small"]);
+    });
+
+    it("offers no size sort for archived histories", async () => {
+        vi.mocked(getArchivedHistories).mockResolvedValueOnce(historiesResponse([]) as never);
+        const wrapper = await mountHistoryList("archived");
+
+        expect(wrapper.find("#sortby-update_time").exists()).toBe(true);
+        expect(wrapper.find("#sortby-size").exists()).toBe(false);
     });
 
     it("stays busy until the latest sort response arrives", async () => {
