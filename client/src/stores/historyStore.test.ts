@@ -170,29 +170,97 @@ describe("historyStore — config-driven SSE vs polling", () => {
             expect(mockRefreshHistoryFromPush).not.toHaveBeenCalled();
         });
 
-        it.each([
-            ["refreshes", "another history", ["hist-2"], 1],
-            ["does not refresh", "only the current history", ["hist-1"], 0],
-        ])("%s the user when an SSE event names %s", async (_action, _histories, historyIds, expectedRequests) => {
+        const STORED_SIZE = 100;
+
+        /** Answers the content stats of the given histories with their current sizes. */
+        function serveHistorySizes(sizes: Record<string, number>) {
+            server.use(
+                rawHttp.get("/api/histories/:historyId", ({ params }) =>
+                    HttpResponse.json({ size: sizes[params.historyId as string], contents_active: {} }),
+                ),
+                rawHttp.get("/api/histories/:historyId/contents", () =>
+                    HttpResponse.json({ stats: { total_matches: 0 }, contents: [] }),
+                ),
+            );
+        }
+
+        /** Watches "hist-1" as the current history, with other histories stored at the given sizes. */
+        async function watchWithStoredHistories(histories: { id: string; size?: number; user_id: string }[]) {
             const store = useHistoryStore();
+            await useUserStore().loadUser(false);
             await primeStore(() => store.startWatchingHistory());
             store.setHistory(getFakeHistorySummary({ id: "hist-1" }));
             store.setCurrentHistoryId("hist-1");
-            const userRequests = countCurrentUserRequests();
+            for (const { size, ...summary } of histories) {
+                const history = getFakeHistorySummary(summary);
+                store.setHistory(size === undefined ? history : { ...history, size });
+            }
+        }
 
-            emitSse(sseState, "history_update", { history_ids: historyIds });
-            await flushPromises();
-
-            expect(userRequests.count).toBe(expectedRequests);
-        });
-
-        it("refreshes the user at most once per window while other histories keep changing", async () => {
-            const store = useHistoryStore();
-            await primeStore(() => store.startWatchingHistory());
+        it.each([
+            {
+                title: "refreshes the user when another own history changes size",
+                owner: CURRENT_USER.id,
+                newSize: 200,
+                requests: 1,
+            },
+            {
+                title: "doesn't refresh the user when the size stays the same",
+                owner: CURRENT_USER.id,
+                newSize: STORED_SIZE,
+                requests: 0,
+            },
+            {
+                title: "doesn't refresh the user for someone else's history",
+                owner: "user-2",
+                newSize: 200,
+                requests: 0,
+            },
+        ])("$title", async ({ owner, newSize, requests }) => {
+            await watchWithStoredHistories([{ id: "hist-2", size: STORED_SIZE, user_id: owner }]);
+            serveHistorySizes({ "hist-2": newSize });
             const userRequests = countCurrentUserRequests();
 
             emitSse(sseState, "history_update", { history_ids: ["hist-2"] });
+            await flushPromises();
+
+            expect(userRequests.count).toBe(requests);
+        });
+
+        it("refreshes the user when the previous size of another own history is unknown", async () => {
+            // Without a size to compare with, a change can't be ruled out
+            await watchWithStoredHistories([{ id: "hist-2", user_id: CURRENT_USER.id }]);
+            serveHistorySizes({ "hist-2": 200 });
+            const userRequests = countCurrentUserRequests();
+
+            emitSse(sseState, "history_update", { history_ids: ["hist-2"] });
+            await flushPromises();
+
+            expect(userRequests.count).toBe(1);
+        });
+
+        it("does not refresh the user when an SSE event names only the current history", async () => {
+            await watchWithStoredHistories([]);
+            const userRequests = countCurrentUserRequests();
+
+            emitSse(sseState, "history_update", { history_ids: ["hist-1"] });
+            await flushPromises();
+
+            expect(userRequests.count).toBe(0);
+        });
+
+        it("refreshes the user at most once per window while other histories keep growing", async () => {
+            await watchWithStoredHistories([
+                { id: "hist-2", size: STORED_SIZE, user_id: CURRENT_USER.id },
+                { id: "hist-3", size: STORED_SIZE, user_id: CURRENT_USER.id },
+            ]);
+            const userRequests = countCurrentUserRequests();
+
+            serveHistorySizes({ "hist-2": 200, "hist-3": 200 });
+            emitSse(sseState, "history_update", { history_ids: ["hist-2"] });
             emitSse(sseState, "history_update", { history_ids: ["hist-3"] });
+            await flushPromises();
+            serveHistorySizes({ "hist-2": 300, "hist-3": 200 });
             emitSse(sseState, "history_update", { history_ids: ["hist-2"] });
             await flushPromises();
             expect(userRequests.count).toBe(1);

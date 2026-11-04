@@ -10,6 +10,7 @@ import {
     type HistorySortByLiteral,
     type HistorySummary,
     type HistorySummaryExtended,
+    userOwnsHistory,
 } from "@/api";
 import {
     type AnyHistoryEntry,
@@ -777,10 +778,6 @@ export const useHistoryStore = defineStore("historyStore", () => {
                     console.error("Error refreshing current history from SSE push:", err),
                 );
             }
-            if (changedHistoryIds.some((id) => id !== currentId)) {
-                // Jobs, copies and purges in other histories change the user's storage usage too
-                useUserStore().refreshStorageUsageThrottled();
-            }
             // Also refresh other tracked histories (e.g. visible in the
             // multi-history view). Skip ids not in storedHistories — there's
             // no rendered panel for them, so refetching wastes a request.
@@ -793,9 +790,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
                     continue;
                 }
                 const filterText = storedFilterTexts.value[id] ?? "";
-                updateContentStats(id).catch((err) =>
-                    console.error(`Error updating content stats for history ${id}:`, err),
-                );
+                const refreshUsageIfResized = watchOwnHistorySize(id);
+                updateContentStats(id)
+                    .then(refreshUsageIfResized)
+                    .catch((err) => console.error(`Error updating content stats for history ${id}:`, err));
                 itemsStore
                     .fetchHistoryItems(id, filterText, 0)
                     .catch((err) => console.error(`Error fetching items for history ${id}:`, err));
@@ -803,6 +801,24 @@ export const useHistoryStore = defineStore("historyStore", () => {
         } catch (e) {
             console.error("Error handling history SSE event:", e);
         }
+    }
+
+    /**
+     * Returns a callback that refreshes the storage usage if the new stats of the user's own history
+     * show another size. Most history events don't change the size (e.g. job states, metadata).
+     */
+    function watchOwnHistorySize(historyId: string) {
+        const history = storedHistories.value[historyId];
+        const userStore = useUserStore();
+        if (!history || !userOwnsHistory(userStore.currentUser, history)) {
+            return () => {};
+        }
+        const previousSize = "size" in history ? history.size : undefined;
+        return (stats: HistoryContentsStats) => {
+            if (stats.size !== previousSize) {
+                userStore.refreshStorageUsageThrottled();
+            }
+        };
     }
 
     // Choose between SSE and polling based on the server config flag
