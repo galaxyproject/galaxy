@@ -4,7 +4,14 @@ from typing import (
     Any,
 )
 
-from sqlalchemy import select
+from sqlalchemy import (
+    ColumnElement,
+    exists,
+    func,
+    or_,
+    select,
+    true,
+)
 
 from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import (
@@ -14,8 +21,6 @@ from galaxy.celery.tasks import (
 from galaxy.exceptions import (
     AdminRequiredException,
     InconsistentDatabase,
-    ItemAccessibilityException,
-    ItemOwnershipException,
     ObjectNotFound,
 )
 from galaxy.managers.context import (
@@ -33,8 +38,10 @@ from galaxy.managers.jobs import (
 )
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import (
+    History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    HistoryUserShareAssociation,
     WorkflowInvocation,
     WorkflowInvocationStep,
     WorkflowRequestInputParameter,
@@ -81,6 +88,28 @@ class PrepareStoreDownloadPayload(StoreExportPayload, BcoGenerationParametersMix
 
 class WriteInvocationStoreToPayload(WriteStoreToPayload, BcoGenerationParametersMixin):
     pass
+
+
+def _accessible_invocation_clause(trans: ProvidesUserContext) -> ColumnElement[bool] | None:
+    """SQL form of ``WorkflowsManager.check_security(..., check_accessible=True)`` for invocations.
+
+    Invocation access follows the invocation's history (``security_check``): admins see every
+    invocation, other users those in histories they own, importable histories and histories
+    shared with them. Anonymous users cannot run workflows, so they only see invocations in
+    importable histories. Returns ``None`` when no restriction applies.
+    """
+    if trans.user_is_admin:
+        return None
+    history_accessible = [History.importable == true()]
+    if trans.user is not None:
+        history_accessible.append(History.user_id == trans.user.id)
+        history_accessible.append(
+            exists().where(
+                HistoryUserShareAssociation.history_id == History.id,
+                HistoryUserShareAssociation.user_id == trans.user.id,
+            )
+        )
+    return exists().where(History.id == WorkflowInvocation.history_id, or_(*history_accessible))
 
 
 class InvocationsService(ServiceBase, ConsumesModelStores):
@@ -297,13 +326,6 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
     ):
         return self.serialize_workflow_invocations([invocation], params, default_view=default_view, trans=trans)[0]
 
-    def _can_access_invocation(self, trans: ProvidesUserContext, invocation: WorkflowInvocation) -> bool:
-        try:
-            self._workflows_manager.check_security(trans, invocation, check_ownership=False, check_accessible=True)
-        except (ItemAccessibilityException, ItemOwnershipException):
-            return False
-        return True
-
     def serialize_workflow_invocations(
         self,
         invocations,
@@ -312,31 +334,59 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         *,
         trans: ProvidesUserContext,
     ):
+        invocations = list(invocations)
         view = params.view or default_view
+        lineage = self._invocation_lineage(trans, invocations) if view == InvocationSerializationView.element else {}
         responses = []
         for invocation in invocations:
             as_dict = invocation.to_dict(
                 view.value, step_details=params.step_details, legacy_job_state=params.legacy_job_state
             )
             as_dict["messages"] = invocation.messages
-            if view == InvocationSerializationView.element:
-                source = invocation.rerun_of_invocation
-                if source is not None and self._can_access_invocation(trans, source):
-                    as_dict["rerun_of_invocation_id"] = source.id
-                # Lineage links are local to this server. Check each related invocation's
-                # history access independently, since reruns can target another history.
-                successors = trans.sa_session.scalars(
-                    select(WorkflowInvocation)
-                    .where(WorkflowInvocation.rerun_of_invocation_id == invocation.id)
-                    .order_by(WorkflowInvocation.create_time.desc(), WorkflowInvocation.id.desc())
-                    .execution_options(yield_per=100)
-                )
-                for successor in successors:
-                    if self._can_access_invocation(trans, successor):
-                        as_dict["latest_rerun_invocation_id"] = successor.id
-                        break
+            as_dict.update(lineage.get(invocation.id, {}))
             responses.append(WorkflowInvocationResponse(**as_dict))
         return responses
+
+    def _invocation_lineage(
+        self, trans: ProvidesUserContext, invocations: list[WorkflowInvocation]
+    ) -> dict[int, dict[str, int]]:
+        """Resolve accessible source and latest direct-rerun links for a batch of invocations.
+
+        Lineage links are local to this server. Each related invocation's history access is
+        checked independently, since reruns can target another history. Uses at most two
+        queries per batch, whatever the batch size or the number of reruns of each invocation.
+        """
+        lineage: dict[int, dict[str, int]] = {invocation.id: {} for invocation in invocations}
+        if not lineage:
+            return lineage
+        accessible = _accessible_invocation_clause(trans)
+        source_ids = {i.rerun_of_invocation_id for i in invocations if i.rerun_of_invocation_id is not None}
+        if source_ids:
+            sources = select(WorkflowInvocation.id).where(WorkflowInvocation.id.in_(source_ids))
+            if accessible is not None:
+                sources = sources.where(accessible)
+            accessible_source_ids = set(trans.sa_session.scalars(sources))
+            for invocation in invocations:
+                if invocation.rerun_of_invocation_id in accessible_source_ids:
+                    lineage[invocation.id]["rerun_of_invocation_id"] = invocation.rerun_of_invocation_id
+        rank = (
+            func.row_number()
+            .over(
+                partition_by=WorkflowInvocation.rerun_of_invocation_id,
+                order_by=(WorkflowInvocation.create_time.desc(), WorkflowInvocation.id.desc()),
+            )
+            .label("rank")
+        )
+        successors = select(WorkflowInvocation.rerun_of_invocation_id, WorkflowInvocation.id, rank).where(
+            WorkflowInvocation.rerun_of_invocation_id.in_(lineage)
+        )
+        if accessible is not None:
+            successors = successors.where(accessible)
+        ranked = successors.subquery()
+        latest = select(ranked.c.rerun_of_invocation_id, ranked.c.id).where(ranked.c.rank == 1)
+        for source_id, successor_id in trans.sa_session.execute(latest):
+            lineage[source_id]["latest_rerun_invocation_id"] = successor_id
+        return lineage
 
     def serialize_workflow_invocation_step(
         self,
