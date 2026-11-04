@@ -244,7 +244,7 @@ steps:
             self._assert_missing_tools(
                 workflow_id,
                 history_id,
-                "nonexistent_tool (version 0.1), compose_text_param (version 0.0.1)",
+                "nonexistent_tool (version 0.1), compose_text_param (version 0.0.1, installed: 0.1.0)",
                 require_exact_tool_versions=True,
             )
             # should fail but return only the tool_id of non_existent tool as another version of compose_text_param is installed
@@ -266,7 +266,7 @@ steps:
             self._assert_missing_tools(
                 workflow_id,
                 history_id,
-                f"{UNVERSIONED_COMPOSE_TEXT_PARAM} (version 0.0.1)",
+                f"{UNVERSIONED_COMPOSE_TEXT_PARAM} (version 0.0.1, installed: 0.1.0)",
                 require_exact_tool_versions=True,
             )
 
