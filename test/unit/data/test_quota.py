@@ -1,10 +1,23 @@
 import uuid
 from decimal import Decimal
 from typing import cast
+from unittest import mock
 
-from sqlalchemy import update
+import pytest
+from sqlalchemy import (
+    create_engine,
+    text,
+    update,
+)
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import Session
 
 from galaxy import model
+from galaxy.celery.tasks import (
+    DISK_USAGE_RUNNING_LOCK,
+    DISK_USAGE_WAITING_LOCK,
+    recalculate_disk_usage_deduplicated,
+)
 from galaxy.model.unittest_utils.utils import random_email
 from galaxy.objectstore import (
     BaseObjectStore,
@@ -571,6 +584,70 @@ class TestCalculateUsagePostgres(TestCalculateUsage):
     @classmethod
     def _db_uri(cls):
         return create_postgres_test_database()
+
+
+@skip_if_not_postgres_base
+class TestRecalculateDiskUsageDeduplicatedPostgres(BaseModelTestCase):
+    @classmethod
+    def _db_uri(cls):
+        return create_postgres_test_database()
+
+    def setUp(self):
+        self.object_store = cast(BaseObjectStore, MockObjectStore())
+        self.u = model.User(email=random_email(), password="password")
+        h = model.History(name="History for deduplicated usage", user=self.u)
+        d = model.HistoryDatasetAssociation(
+            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
+        )
+        assert d.dataset is not None
+        d.dataset.total_size = Decimal(10)
+        self.persist(self.u, h, d)
+        self.lock_params = {"user_id": self.u.id}
+
+    def test_recalculates_usage(self):
+        assert recalculate_disk_usage_deduplicated(self.model.session(), self.u, self.object_store)
+        self.model.context.refresh(self.u)
+        assert self.u.disk_usage == 10
+
+    def test_skips_while_another_recalculation_is_waiting(self):
+        waiting_lock = {"lock": DISK_USAGE_WAITING_LOCK, **self.lock_params}
+        with self.model.engine.connect() as waiting:
+            waiting.execute(text("SELECT pg_advisory_lock(:lock, :user_id)"), waiting_lock)
+            assert not recalculate_disk_usage_deduplicated(self.model.session(), self.u, self.object_store)
+            waiting.execute(text("SELECT pg_advisory_unlock(:lock, :user_id)"), waiting_lock)
+        self.model.context.refresh(self.u)
+        assert self.u.disk_usage is None
+
+    def test_recalculates_with_a_single_pooled_connection(self):
+        engine = create_engine(self.model.engine.url, pool_size=1, max_overflow=0, pool_timeout=1)
+        try:
+            with Session(engine) as session:
+                user = session.get(model.User, self.u.id)
+                assert user
+                assert recalculate_disk_usage_deduplicated(session, user, self.object_store)
+        finally:
+            engine.dispose()
+        self.model.context.refresh(self.u)
+        assert self.u.disk_usage == 10
+
+    def test_waits_for_running_recalculation_within_time_limit(self):
+        with self.model.engine.connect() as running:
+            running.execute(
+                text("SELECT pg_advisory_xact_lock(:lock, :user_id)"),
+                {"lock": DISK_USAGE_RUNNING_LOCK, **self.lock_params},
+            )
+            with mock.patch("galaxy.celery.tasks.RECALCULATE_DISK_USAGE_TIME_LIMIT", 1):
+                with pytest.raises(OperationalError, match="statement timeout"):
+                    recalculate_disk_usage_deduplicated(self.model.session(), self.u, self.object_store)
+            self.model.session.rollback()
+            # the waiting slot is free again for the next recalculation
+            waiting_lock = {"lock": DISK_USAGE_WAITING_LOCK, **self.lock_params}
+            assert running.scalar(text("SELECT pg_try_advisory_lock(:lock, :user_id)"), waiting_lock)
+            running.execute(text("SELECT pg_advisory_unlock(:lock, :user_id)"), waiting_lock)
+            running.rollback()
+        assert recalculate_disk_usage_deduplicated(self.model.session(), self.u, self.object_store)
+        self.model.context.refresh(self.u)
+        assert self.u.disk_usage == 10
 
 
 class TestQuota(BaseModelTestCase):

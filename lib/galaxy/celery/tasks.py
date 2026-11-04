@@ -21,6 +21,7 @@ from sqlalchemy import (
     text,
     update,
 )
+from sqlalchemy.orm import Session
 
 from galaxy import model
 from galaxy.celery import (
@@ -119,14 +120,66 @@ def cached_create_tool_from_representation(
     )
 
 
-@galaxy_task(action="recalculate a user's disk usage")
+# Upper bound for one disk usage recalculation, including the time spent waiting
+# for a recalculation of the same user that is already running.
+RECALCULATE_DISK_USAGE_TIME_LIMIT = 3600
+# First keys of the two-key PostgreSQL advisory locks, the second key is the user id.
+DISK_USAGE_RUNNING_LOCK = 1146442529
+DISK_USAGE_WAITING_LOCK = 1146442530
+
+
+def recalculate_disk_usage_deduplicated(session: Session, user: User, object_store: BaseObjectStore) -> bool:
+    """Recalculate ``user``'s disk usage unless an equivalent recalculation is already queued.
+
+    On PostgreSQL at most one recalculation per user runs and at most one waits for it.
+    The waiting one starts computing after the changes that triggered this call were
+    committed, so this call returns ``False`` without computing when another one is
+    waiting. ``statement_timeout`` bounds the wait and each statement, Celery's thread
+    pool does not enforce task time limits.
+
+    All locks are taken on the session's connection. The waiting lock is session-level,
+    so it survives a rollback: if anything fails before it is released, the connection
+    is invalidated, which releases it on the server instead of returning it to the pool.
+    """
+    if session.get_bind().dialect.name != "postgresql":
+        user.calculate_and_set_disk_usage(object_store)
+        return True
+    connection = session.connection()
+    lock_params = {"user_id": user.id}
+    if not connection.scalar(
+        text("SELECT pg_try_advisory_lock(:lock, :user_id)"), {"lock": DISK_USAGE_WAITING_LOCK, **lock_params}
+    ):
+        log.info("Disk usage recalculation for user %s is already queued, skipping", user.id)
+        return False
+    try:
+        connection.execute(
+            text("SELECT set_config('statement_timeout', :timeout, true)"),
+            {"timeout": f"{RECALCULATE_DISK_USAGE_TIME_LIMIT}s"},
+        )
+        connection.execute(
+            text("SELECT pg_advisory_xact_lock(:lock, :user_id)"), {"lock": DISK_USAGE_RUNNING_LOCK, **lock_params}
+        )
+        connection.execute(
+            text("SELECT pg_advisory_unlock(:lock, :user_id)"), {"lock": DISK_USAGE_WAITING_LOCK, **lock_params}
+        )
+    except BaseException:
+        connection.invalidate()
+        raise
+    # commits, which releases the running lock and resets statement_timeout
+    user.calculate_and_set_disk_usage(object_store)
+    return True
+
+
+# statement_timeout bounds waiting for a running recalculation and each statement of
+# this one, the soft time limit (prefork pools only) stays clear of both.
+@galaxy_task(action="recalculate a user's disk usage", soft_time_limit=2 * RECALCULATE_DISK_USAGE_TIME_LIMIT + 300)
 def recalculate_user_disk_usage(
     session: galaxy_scoped_session, object_store: BaseObjectStore, task_user_id: int | None = None
 ):
     if task_user_id:
         user = session.get(User, task_user_id)
         if user:
-            user.calculate_and_set_disk_usage(object_store)
+            recalculate_disk_usage_deduplicated(session(), user, object_store)
         else:
             log.error(f"Recalculate user disk usage task failed, user {task_user_id} not found")
     else:
@@ -211,7 +264,7 @@ def purge_history_datasets(
     sa_session.commit()
     # Recalculate user disk usage from scratch
     if user := history.user:
-        user.calculate_and_set_disk_usage(object_store)
+        recalculate_disk_usage_deduplicated(sa_session(), user, object_store)
         if not request.preserve_owner_update_time:
             user.update_time = now()
             sa_session.commit()
