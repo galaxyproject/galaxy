@@ -160,7 +160,7 @@ const sortOptions = computed(() =>
         : [
               { value: "name", label: "Name" },
               { value: "update_time", label: "Update time" },
-              { value: "size", label: "Size" },
+              { value: "size", label: "Storage used" },
           ],
 );
 const noItems = computed(() => !loading.value && historiesLoaded.value.length === 0 && !filterText.value);
