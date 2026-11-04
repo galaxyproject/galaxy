@@ -8,6 +8,7 @@ from galaxy.model import (
     Dataset,
     HistoryDatasetAssociation,
     Job,
+    StoredWorkflow,
 )
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -268,6 +269,40 @@ steps:
                 f"{UNVERSIONED_COMPOSE_TEXT_PARAM} (version 0.0.1)",
                 require_exact_tool_versions=True,
             )
+
+    def test_run_workflow_with_unversioned_shed_tool_id_exact_version(self):
+        self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
+        with self.dataset_populator.test_history() as history_id:
+            for tool_id in (UNVERSIONED_COMPOSE_TEXT_PARAM, "compose_text_param"):
+                workflow_id = self._upload_compose_text_param_workflow(tool_id, "0.1.0")
+                invocation_response = self.workflow_populator.invoke_workflow(
+                    workflow_id, history_id=history_id, request={"require_exact_tool_versions": True}
+                )
+                self._assert_status_code_is(invocation_response, 200)
+                invocation_id = invocation_response.json()["id"]
+                self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+                jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
+                assert [job["tool_id"] for job in jobs] == [f"{UNVERSIONED_COMPOSE_TEXT_PARAM}/0.1.0"]
+
+    def test_update_workflow_with_unversioned_shed_tool_id(self):
+        self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
+        workflow_id = self._upload_compose_text_param_workflow(UNVERSIONED_COMPOSE_TEXT_PARAM, "0.1.0")
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        assert workflow["steps"]["0"]["tool_id"] == UNVERSIONED_COMPOSE_TEXT_PARAM
+        # Save resolves the installed tool rather than rejecting it as missing.
+        update_response = self.workflow_populator.update_workflow(workflow_id, workflow)
+        self._assert_status_code_is(update_response, 200)
+        # The tool id is stored as given, not rewritten to the versioned guid.
+        updated_workflow = self.workflow_populator.download_workflow(workflow_id)
+        assert updated_workflow["steps"]["0"]["tool_id"] == UNVERSIONED_COMPOSE_TEXT_PARAM
+        assert updated_workflow["steps"]["0"]["tool_version"] == "0.1.0"
+
+    def test_create_workflow_with_unversioned_shed_tool_id(self):
+        self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
+        workflow_id = self._upload_compose_text_param_workflow(UNVERSIONED_COMPOSE_TEXT_PARAM, "0.1.0")
+        stored_workflow = self.sa_session.get(StoredWorkflow, self._app.security.decode_id(workflow_id))
+        assert stored_workflow
+        assert not stored_workflow.latest_workflow.has_errors
 
     def _assert_missing_tools(
         self, workflow_id: str, history_id: str, expected_tools: str, *, require_exact_tool_versions: bool

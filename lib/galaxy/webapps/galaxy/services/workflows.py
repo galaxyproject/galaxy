@@ -192,6 +192,10 @@ def _find_workflow_tool(
         return toolbox.get_tool(
             tool_id, tool_version=tool_version, tool_uuid=tool_uuid, exact=require_exact_tool_versions, user=user
         )
+    # ``exact`` means exact tool id; an unversioned shed guid or short id
+    # still satisfies an exact version request if that version is installed.
+    if require_exact_tool_versions and tool_version and not tool_uuid:
+        return toolbox.get_tool_at_version(tool_id, tool_version)
     return None
 
 
