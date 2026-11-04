@@ -28,6 +28,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_IMAGES_IN_REPORT,
     WORKFLOW_WITH_IMAGES_IN_REPORT_TEST_DATA,
+    WORKFLOW_WITH_INPUT_SECTIONS,
     WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_RULES_1,
@@ -553,6 +554,34 @@ SRR5681005\tinput\t\t
         self.screenshot("workflow_run_runtime_parameters_initial")
         self._set_num_lines_to_3("num_lines")
         self.screenshot("workflow_run_runtime_parameters_modified")
+        self.workflow_run_submit()
+
+        self._assert_has_3_lines_after_run(hid=2)
+
+    @selenium_test
+    @managed_history
+    def test_input_sections(self):
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
+        self.wait_for_history()
+        name = self._get_random_name()
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_INPUT_SECTIONS)
+        native = self.workflow_populator.download_workflow(workflow_id, style="ga")
+        native["name"] = name
+        native["input_sections"] = [{"name": "advanced", "label": "Advanced options", "help": "Rarely changed."}]
+        step_index_by_label = {}
+        for step in native["steps"].values():
+            step_index_by_label[step["label"]] = step["id"]
+            if step["label"] in ("num_lines", "pattern"):
+                step["section"] = "advanced"
+        self.workflow_populator.create_workflow(native)
+
+        self.workflow_run_with_name(name)
+        num_lines_id = f"advanced|{step_index_by_label['num_lines']}"
+        self.components.tool_form.parameter_div(parameter=num_lines_id).wait_for_absent_or_hidden()
+        self.screenshot("workflow_run_input_sections_collapsed")
+        self.components.workflow_run.input_section_header(title="Advanced options").wait_for_and_click()
+        self._set_num_lines_to_3(num_lines_id)
+        self.screenshot("workflow_run_input_sections_expanded")
         self.workflow_run_submit()
 
         self._assert_has_3_lines_after_run(hid=2)

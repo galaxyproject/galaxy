@@ -1171,6 +1171,9 @@ workflow_run:
       changed_value_badge: '${_} .form-input-changed-input-badge'
 
   selectors:
+    input_section_header:
+      type: xpath
+      selector: '//div[contains(@class, "portlet-header")][.//b[contains(@class, "portlet-title-text")][normalize-space(text())="${title}"]]'
     warning: '[data-description="workflow run warning"]'
     run_error: '[data-description="workflow run error"]'
     input_div: "[step-label='${label}']"

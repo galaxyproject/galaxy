@@ -3,7 +3,7 @@
         <div
             v-for="(input, index) in inputs"
             :key="index"
-            :class="{ 'bordered-input': syncWithGraph && activeNodeId === index }">
+            :class="{ 'bordered-input': syncWithGraph && activeNodeId === graphNodeId(input, index) }">
             <div v-if="input.type == 'conditional'" class="ui-portlet-section mt-3">
                 <div class="portlet-header">
                     <b v-localize>{{ input.test_param.label || input.test_param.name }}</b>
@@ -92,9 +92,9 @@
                         size="small"
                         color="blue"
                         transparent
-                        :title="activeNodeId === index ? 'Active' : 'View in Graph'"
-                        :disabled="activeNodeId === index"
-                        @click="$emit('update:active-node-id', index)">
+                        :title="activeNodeId === graphNodeId(input, index) ? 'Active' : 'View in Graph'"
+                        :disabled="activeNodeId === graphNodeId(input, index)"
+                        @click="$emit('update:active-node-id', graphNodeId(input, index))">
                         <span class="fas fa-sitemap" />
                         <span class="fas fa-arrow-right" />
                     </GButton>
@@ -234,6 +234,15 @@ export default {
             input.cache.splice(b, 1, tmpA);
 
             this.onChangeForm();
+        },
+        graphNodeId(input, index) {
+            // Workflow run inputs are named by step index, which is also the graph node id.
+            // Their position differs once inputs are grouped into sections.
+            if (input.type === "section") {
+                return undefined;
+            }
+            const name = String(input.name);
+            return this.workflowRun && /^\d+$/.test(name) ? parseInt(name) : index;
         },
         valMismatches(name) {
             return this.workflowRun && this.stepsNotMatchingRequest.map((step) => step.toString()).includes(name);

@@ -27,6 +27,12 @@ import type { Step } from "@/stores/workflowStepStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import {
+    flattenSectionedValues,
+    groupInputsIntoSections,
+    stripSectionPrefix,
+    type WorkflowInputSection,
+} from "./inputSections";
 import { invokeWorkflow, searchHistoryContents } from "./services";
 
 import WorkflowAnnotation from "../WorkflowAnnotation.vue";
@@ -142,10 +148,19 @@ const computedActiveNodeId = computed<number | undefined>(() => {
 // handlers can locate and mutate it in O(1) without walking the array.
 const formInputs = ref<any[]>([]);
 const stepInputByIndex = new Map<string, any>();
+// Maps an input's name to the workflow input section it is presented under.
+const sectionOfInput = new Map<string, string>();
+
+const inputSections = computed<WorkflowInputSection[]>(() => props.model.runData.input_sections || []);
+const displayInputs = computed(() => groupInputsIntoSections(formInputs.value, inputSections.value, sectionOfInput));
+const sectionNames = computed(() =>
+    displayInputs.value.filter((input) => input.type === "section").map((input) => input.name as string),
+);
 
 function buildFormInputs() {
     const inputs: any[] = [];
     stepInputByIndex.clear();
+    sectionOfInput.clear();
     // Add workflow parameters.
     Object.values(props.model.wpInputs).forEach((input) => {
         const inputCopy = Object.assign({}, input) as any;
@@ -216,6 +231,9 @@ function buildFormInputs() {
             stepAsInput.flavor = "module";
             inputs.push(stepAsInput);
             stepInputByIndex.set(String(step.step_index), stepAsInput);
+            if (step.section) {
+                sectionOfInput.set(String(step.step_index), step.section);
+            }
             inputTypes.value[stepName] = stepType;
         }
     });
@@ -301,14 +319,14 @@ const canRunOnHistory = computed(() => props.canMutateCurrentHistory || sendToNe
 
 function onValidation(validation: [string, string] | null) {
     if (validation && validation.length == 2) {
-        stepValidation.value = [validation[0], validation[1]];
+        stepValidation.value = [stripSectionPrefix(validation[0], sectionNames.value), validation[1]];
     } else {
         stepValidation.value = null;
     }
 }
 
 function onChange(data: any) {
-    formData.value = data;
+    formData.value = flattenSectionedValues(data, sectionNames.value);
 }
 
 function shapeContentsRow(row: any): PaginatedDataOption {
@@ -330,7 +348,7 @@ async function fetchStepOptions(
 ) {
     // ``stepAsInput`` is a local copy built in ``buildFormInputs``, so this
     // does not mutate the model prop.
-    const input = stepInputByIndex.get(String(name));
+    const input = stepInputByIndex.get(stripSectionPrefix(String(name), sectionNames.value));
     if (!input) {
         return;
     }
@@ -727,7 +745,7 @@ onBeforeMount(() => {
                             <LoadingSpan message="Changing your current history" />
                         </template>
                         <FormDisplay
-                            :inputs="formInputs"
+                            :inputs="displayInputs"
                             :reject-empty-required-inputs="true"
                             :sync-with-graph="showGraph"
                             :active-node-id="computedActiveNodeId"

@@ -131,7 +131,11 @@ function onHighlight(val: [string, string] | null | undefined, silent = false): 
 }
 
 function scrollToElement(elementId: string | number): void {
-    const el = instance?.proxy?.$el?.querySelector(`[id='form-element-${elementId}']`);
+    // Inputs inside a section are prefixed with the section name.
+    const root = instance?.proxy?.$el;
+    const el =
+        root?.querySelector(`[id='form-element-${elementId}']`) ??
+        root?.querySelector(`[id^='form-element-'][id$='|${elementId}']`);
     if (el) {
         const centerPanel = document.querySelector("#center");
         if (centerPanel) {
