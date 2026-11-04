@@ -18,13 +18,15 @@ Singularity and Apptainer home directories
 ==========================================
 
 Galaxy now passes ``--home`` to Singularity and Apptainer only when the job
-sets ``HOME``: a per-job home directory (tools with profile 18.01 or newer),
-the job working directory (YAML tools), the destination's
-``shared_home_dir``, a tool's own ``HOME`` environment variable, or a ``HOME``
-``tool_env`` entry. ``singularity_env_HOME`` still sets the container home
-explicitly. Other jobs, such as legacy tools on a destination without
-``shared_home_dir``, get the empty home that ``--contain`` provides instead of
-a read-write bind mount of the home directory of the user running the job.
-A ``HOME`` set with ``env`` or ``job_env`` stays outside the container; use
-``tool_env`` or ``singularity_env_HOME`` to choose the container home.
-Destinations that disable ``--contain`` keep Singularity's default home mount.
+sets ``HOME``. Galaxy sets it to a per-job home directory (tools with profile
+18.01 or newer), the job working directory (YAML tools), or the destination's
+``shared_home_dir``. When Galaxy sets none of these, a tool's own ``HOME``
+environment variable or a ``HOME`` ``tool_env`` entry sets it instead; a
+``tool_env`` entry does not replace a home directory Galaxy sets.
+``singularity_env_HOME`` still sets the container home explicitly. Other jobs,
+such as legacy tools on a destination without ``shared_home_dir``, get the
+empty home that ``--contain`` provides instead of a read-write bind mount of
+the home directory of the user running the job. A ``HOME`` set with ``env`` or
+``job_env`` stays outside the container; use ``singularity_env_HOME`` to choose
+the container home. Destinations that disable ``--contain`` keep Singularity's
+default home mount.
