@@ -16,7 +16,7 @@ so you can continue to serve EU users.
 Configuration
 -------------
 
-The Galaxy GDPR compliance is enabled by switching the ``gdpr_compliance`` flag available in
+The Galaxy GDPR compliance is enabled by switching the ``enable_beta_gdpr`` flag available in
 the configuration of Galaxy and the Tool Shed. If you intend to serve
 users from anywhere in the EU, you should set this to true. This has some
 important implications of which you must be aware:
@@ -31,77 +31,61 @@ pseudonymise the data and reduce risk of PII being leaked.
 
 We may change this redaction method to use encoded user IDs in the future.
 
-You can configure the location of the compliance log like so:
+When a user is purged, Galaxy logs a ``delete-user-event`` record with the
+user's ID to the ``COMPLIANCE`` logger, at ``INFO`` level. With the default
+logging configuration, this record goes to the same destination as the rest of
+Galaxy's log (see the ``log_destination`` option), even when ``log_level`` is
+set higher than ``INFO``.
+
+To write these records to a separate file instead, start from the default
+logging configuration shown in :doc:`../config_logging` and add a handler and a
+logger for ``COMPLIANCE`` to it. Note that the file path should be absolute and
+writable by the Galaxy user, e.g.:
 
 .. code-block:: yaml
 
     logging:
-          filters:
-              stack:
-                  (): galaxy.web.stack.application_stack_log_filter
-          formatters:
-              stack:
-                  (): galaxy.web.stack.application_stack_log_formatter
-              brief:
-                  format: '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
-          handlers:
-              console:
-                  class: logging.StreamHandler
-                  filters:
-                  - stack
-                  formatter: stack
-                  level: DEBUG
-                  stream: ext://sys.stderr
-              compliance_log:
-                  class : logging.handlers.RotatingFileHandler
-                  formatter: brief
-                  filename: compliance.log
-                  backupCount: 0
-          loggers:
-              COMPLIANCE:
-                  handlers:
-                  - compliance_log
-                  level: DEBUG
-                  qualname: COMPLIANCE
-              galaxy:
-                  handlers:
-                  - console
-                  level: DEBUG
-                  propagate: 0
-                  qualname: galaxy
-              paste.httpserver.ThreadPool:
-                  level: WARN
-                  qualname: paste.httpserver.ThreadPool
-              routes.middleware:
-                  level: WARN
-                  qualname: routes.middleware
-          root:
-              handlers:
-              - console
-              level: INFO
-          version: 1
-
+        # ... the rest of the default logging configuration ...
+        formatters:
+            # ...
+            brief:
+                format: '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
+        handlers:
+            # ...
+            compliance_log:
+                class: logging.handlers.RotatingFileHandler
+                formatter: brief
+                filename: /srv/galaxy/var/log/compliance.log
+        loggers:
+            # ...
+            COMPLIANCE:
+                handlers:
+                - compliance_log
+                level: INFO
+                qualname: COMPLIANCE
 
 Which will produce logging events like this:
 
 .. code-block:: text
 
-    2018-05-10 18:32:20,787 INFO     COMPLIANCE      delete-user-event: f597429621d6eb2b
+    2018-05-10 18:32:20,787 INFO     COMPLIANCE      delete-user-event: 42
 
 
 User Deletion
 -------------
 
-User deletion is always enabled when ``gdpr_compliance`` is enabled to comply with
-the right to erasure. When users are deleted, their PII is obscured.
+User deletion is always enabled when ``enable_beta_gdpr`` is enabled to comply with
+the right to erasure. When users are purged, their PII is obscured.
 In practice this means:
 
-- username
-- email
-- user_address (when supplied)
+- their username and email are replaced with a one-way hash
+- their display name is removed
+- their user addresses (when supplied) are deleted
 
-All have their values that constitute PII permanently redacted with a one-way
-hash function.
+Note that this is pseudonymisation, not anonymisation: the hash is computed
+from the original value and the time of the purge, which is also recorded in
+the compliance log. So the redacted user record, together with the compliance
+log, should still be treated as personal data.
 
 This does not automatically remove their histories or datasets or any data they
 created on the service. It is expected that following deletion the normal
@@ -118,6 +102,7 @@ ID number, allowing you to re-delete them following a restoration. There is
 currently no automation to help enforce this; you are responsible for ensuring
 that when you restore services from backup, that you re-delete any PII of users
 which had previously requested deletion.
+Make sure the compliance log is kept for at least as long as your backups are.
 
 Tool Shed Specific
 ------------------
