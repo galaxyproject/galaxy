@@ -44,8 +44,9 @@ function compareCandidates(a: InteractiveToolForDataset, b: InteractiveToolForDa
 }
 
 /**
- * Interactive tools with a data input that accepts a dataset of `extension`, best match first, then by name.
- * Each tool is matched through its best input; on a tie the input the form can prefill wins.
+ * Interactive tools with a dataset input that accepts a dataset of `extension`, best match first, then by name.
+ * Each tool is matched through its best input; on a tie the input the form can prefill wins. Collection inputs
+ * are skipped.
  */
 export function matchInteractiveTools(
     tools: Tool[],
@@ -58,6 +59,9 @@ export function matchInteractiveTools(
     for (const tool of tools) {
         const candidates: InteractiveToolForDataset[] = [];
         for (const input of tool.data_inputs ?? []) {
+            if (input.type !== "data") {
+                continue;
+            }
             const match = matchInput(input, extension, mapper, targets);
             if (match) {
                 candidates.push({ tool, inputName: input.name, match });

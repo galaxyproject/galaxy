@@ -101,6 +101,21 @@ describe("matchInteractiveTools", () => {
         expect(summary("tabular", tools)).toEqual([]);
     });
 
+    it("matches only dataset inputs, not collection inputs", () => {
+        const collectionInput: ToolDataInput = {
+            name: "collection",
+            extensions: ["data"],
+            multiple: false,
+            type: "data_collection",
+            collection_type: "list",
+        };
+        const tools = [
+            tool("collection_only", [collectionInput]),
+            tool("mixed", [collectionInput, dataInput("infile", ["tabular"])]),
+        ];
+        expect(summary("tabular", tools)).toEqual([["mixed", "direct", "infile"]]);
+    });
+
     it("does not match unknown datatypes", () => {
         const tools = [tool("unknown_input", [dataInput("infile", ["not_a_datatype"])])];
         expect(summary("tabular", tools)).toEqual([]);
