@@ -248,7 +248,7 @@ def test_unsupported_metadata(metadata):
 # Test with a file that Pillow recognizes but cannot parse
 
 
-@__test(Xpm, "gromacs_rmsd_matrix.xpm")
+@__test(Xpm, "gromacs_rmsd_matrix_false.xpm")
 def test_unparsable_metadata(metadata):
     __assert_empty_metadata(metadata)
 
