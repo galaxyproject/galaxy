@@ -155,3 +155,31 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
         datatypes_tab.wait_for_and_click()
 
         assert datatype_component.wait_for_text() == expected_datatype
+
+    @selenium_test
+    @managed_history
+    def test_history_dataset_assign_interval_columns(self):
+        history_id = self.current_history_id()
+        self.dataset_populator.new_dataset(history_id, content="r1\tchr1\t100\t200\n", file_type="interval", wait=True)
+        self.home()
+        self.history_panel_wait_for_hid_ok(1)
+        self.history_panel_item_edit(hid=1)
+        columns = ("chromCol", "startCol", "endCol", "nameCol")
+        before = {name: value for name, _, value in self.edit_dataset_attribute_fields()}
+        assert [before[name] for name in columns[:3]] == ["1", "2", "3"]
+
+        assigned = dict(zip(columns, ["2", "3", "4", "1"]))
+        for name, value in assigned.items():
+            self.form_element_set_value(name, value)
+        self.screenshot("dataset_edit_attributes_interval_columns")
+        edit_dataset_attributes = self.components.edit_dataset_attributes
+        edit_dataset_attributes.save_button.wait_for_and_click()
+        edit_dataset_attributes.alert.wait_for_visible()
+        assert edit_dataset_attributes.alert.has_class("alert-success")
+        details = self.dataset_populator.get_history_dataset_details(history_id, hid=1)
+        assert {name: str(details[f"metadata_{name}"]) for name in columns} == assigned
+
+        self.home()
+        self.history_panel_item_edit(hid=1)
+        after = {name: value for name, _, value in self.edit_dataset_attribute_fields()}
+        assert {name: after[name] for name in columns} == assigned
