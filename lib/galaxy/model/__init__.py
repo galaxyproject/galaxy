@@ -9190,6 +9190,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     help: Mapped[str | None] = mapped_column(Text)
     uuid: Mapped[UUID | str | None] = mapped_column(UUIDType)
     doi: Mapped[list[str] | None] = mapped_column(JSON)
+    input_sections: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONType)
 
     steps: Mapped[list["WorkflowStep"]] = relationship(
         "WorkflowStep",
@@ -9342,6 +9343,7 @@ class Workflow(Base, Dictifiable, RepresentById):
         copied_workflow.help = self.help
         copied_workflow.logo_url = self.logo_url
         copied_workflow.doi = self.doi
+        copied_workflow.input_sections = self.input_sections
         # uuid identifies a single revision and __init__ mints a fresh one, and
         # source_metadata records where this exact content was fetched from and is
         # dropped whenever a workflow is modified (see test_trs_import) - so neither
@@ -9419,6 +9421,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     when_expression: Mapped[bytes | None] = mapped_column(JSONType)
     uuid: Mapped[UUID | str | None] = mapped_column(UUIDType)
     label: Mapped[str | None] = mapped_column(Unicode(255))
+    input_section: Mapped[str | None] = mapped_column(Unicode(255))
     temp_input_connections = None
     parent_comment_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_comment.id"), index=True)
 
@@ -9665,6 +9668,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         copied_step.position = self.position
         copied_step.config = self.config
         copied_step.label = self.label
+        copied_step.input_section = self.input_section
         copied_step.when_expression = self.when_expression
         copied_step.inputs = copy_list(self.inputs, copied_step)
 

@@ -130,6 +130,10 @@ from galaxy.util.search import (
 )
 from galaxy.work.context import WorkRequestContext
 from galaxy.workflow.curated import parse_curated_search
+from galaxy.workflow.input_sections import (
+    normalize_input_sections,
+    step_input_section,
+)
 from galaxy.workflow.modules import (
     ConnectedInputName,
     module_factory,
@@ -1155,6 +1159,10 @@ class WorkflowContentsManager(UsesAnnotations):
         # Second pass to deal with connections between steps
         self.__connect_workflow_steps(steps, steps_by_external_id, dry_run)
 
+        workflow.input_sections = normalize_input_sections(
+            data.get("input_sections"), (step.input_section for step in steps)
+        )
+
         workflow.has_cycles = True
         workflow.steps = steps
         # Safeguard: workflow was implicitly merged into this Session prior to SQLAlchemy 2.0.
@@ -1405,6 +1413,8 @@ class WorkflowContentsManager(UsesAnnotations):
                         input_dict["acceptable_extensions"] = sorted(accepted) if accepted else []
                     input_dicts.append(input_dict)
                 step_model = {"inputs": input_dicts}
+                if step.input_section:
+                    step_model["section"] = step.input_section
             step_model["when"] = step.when_expression
             step_model["replacement_parameters"] = step.module.get_informal_replacement_parameters(step)
             step_model["step_type"] = step.type
@@ -1436,6 +1446,7 @@ class WorkflowContentsManager(UsesAnnotations):
             "name": stored.name,
             "owner": stored.user.username,
             "steps": step_models,
+            "input_sections": workflow.input_sections or [],
             "step_version_changes": step_version_changes,
             "has_upgrade_messages": has_upgrade_messages,
             "workflow_resource_parameters": self._workflow_resource_parameters(trans, stored, workflow),
@@ -1599,6 +1610,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data["help"] = workflow.help
         data["logo_url"] = workflow.logo_url
         data["doi"] = workflow.doi
+        data["input_sections"] = workflow.input_sections or []
         data["source_metadata"] = workflow.source_metadata
         data["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
         data["comments"] = [comment.to_dict() for comment in workflow.comments]
@@ -1642,6 +1654,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 "when": step.when_expression,
                 "workflow_outputs": [],
             }
+            if step.input_section:
+                step_dict["section"] = step.input_section
             if tooltip:
                 step_dict["tooltip"] = module.get_tooltip(static_path="/static")
             # Connections
@@ -1875,6 +1889,8 @@ class WorkflowContentsManager(UsesAnnotations):
             data["logo_url"] = workflow.logo_url
         if workflow.doi is not None:
             data["doi"] = workflow.doi
+        if workflow.input_sections:
+            data["input_sections"] = workflow.input_sections
 
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
@@ -1909,6 +1925,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 "annotation": annotation_str,
                 "when": step.when_expression,
             }
+            if step.input_section:
+                step_dict["section"] = step.input_section
             if step.type == "tool":
                 step_dict["tool_id"] = content_id if allow_upgrade else step.effective_tool_id
                 step_dict["tool_uuid"] = str(step.tool_uuid) if step.tool_uuid else None
@@ -2106,6 +2124,7 @@ class WorkflowContentsManager(UsesAnnotations):
         item["help"] = workflow.help
         item["logo_url"] = workflow.logo_url
         item["doi"] = workflow.doi
+        item["input_sections"] = workflow.input_sections or []
 
         steps = {}
         steps_to_order_index = {}
@@ -2125,6 +2144,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 "input_steps": {},
                 "when": step.when_expression,
             }
+            if step.input_section:
+                step_dict["section"] = step.input_section
 
             if step_type == "subworkflow":
                 del step_dict["tool_id"]
@@ -2249,6 +2270,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step.uuid = step_dict["uuid"]
         if "label" in step_dict:
             step.label = step_dict["label"]
+        step.input_section = step_input_section(step_dict)
 
         module = module_factory.from_dict(trans, step_dict, detached=dry_run, **kwds)
         connected_input_names = [name for name, conns in step_dict.get("input_connections", {}).items() if conns]

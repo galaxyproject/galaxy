@@ -17508,6 +17508,11 @@ export interface components {
                 [key: string]: components["schemas"]["InputStep"];
             };
             /**
+             * Section
+             * @description Name of the workflow input section this input is presented under in the run form.
+             */
+            section?: string | null;
+            /**
              * Tool ID
              * @description The unique name of the tool associated with this step.
              */
@@ -17555,6 +17560,11 @@ export interface components {
                 [key: string]: components["schemas"]["InputStep"];
             };
             /**
+             * Section
+             * @description Name of the workflow input section this input is presented under in the run form.
+             */
+            section?: string | null;
+            /**
              * Tool ID
              * @description The unique name of the tool associated with this step.
              */
@@ -17601,6 +17611,11 @@ export interface components {
             input_steps: {
                 [key: string]: components["schemas"]["InputStep"];
             };
+            /**
+             * Section
+             * @description Name of the workflow input section this input is presented under in the run form.
+             */
+            section?: string | null;
             /**
              * Tool ID
              * @description The unique name of the tool associated with this step.
@@ -24870,6 +24885,12 @@ export interface components {
              */
             importable: boolean | null;
             /**
+             * Input Sections
+             * @description Collapsible groups of workflow inputs in the run form, referenced by the `section` of input steps.
+             * @default []
+             */
+            input_sections: components["schemas"]["WorkflowInputSection"][];
+            /**
              * Inputs
              * @description A dictionary containing information about all the inputs of the workflow.
              * @default {}
@@ -28840,6 +28861,33 @@ export interface components {
              * @description TODO
              */
             value: unknown | null;
+        };
+        /**
+         * WorkflowInputSection
+         * @description A collapsible group of workflow inputs in the workflow run form.
+         */
+        WorkflowInputSection: {
+            /**
+             * Expanded
+             * @description Whether the section is open when the run form loads.
+             * @default false
+             */
+            expanded: boolean;
+            /**
+             * Help
+             * @description Help text shown at the top of the section.
+             */
+            help?: string | null;
+            /**
+             * Label
+             * @description Heading shown to users in the run form. Defaults to the name.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description Identifier of the section, referenced by the `section` attribute of workflow input steps.
+             */
+            name: string;
         };
         /** WorkflowInvocationCollectionView */
         WorkflowInvocationCollectionView: {

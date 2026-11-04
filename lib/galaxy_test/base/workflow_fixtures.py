@@ -16,6 +16,25 @@ steps:
       input1: input1
 """
 
+WORKFLOW_WITH_INPUT_SECTIONS = """
+class: GalaxyWorkflow
+name: Workflow With Input Sections
+inputs:
+  input1: data
+  num_lines:
+    type: int
+    default: 1
+  pattern:
+    type: text
+    optional: true
+steps:
+  random_lines:
+    tool_id: random_lines1
+    in:
+      input: input1
+      num_lines: num_lines
+"""
+
 WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES = """
 class: GalaxyWorkflow
 doc: |

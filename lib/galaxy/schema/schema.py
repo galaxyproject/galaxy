@@ -28,6 +28,7 @@ from pydantic import (
     Json,
     model_validator,
     RootModel,
+    StringConstraints,
     Tag,
     UUID4,
 )
@@ -2844,6 +2845,33 @@ class WorkflowInput(Model):
     )
 
 
+class WorkflowInputSection(Model):
+    """A collapsible group of workflow inputs in the workflow run form."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)] = Field(
+        ...,
+        title="Name",
+        description="Identifier of the section, referenced by the `section` attribute of workflow input steps.",
+    )
+    label: str | None = Field(
+        None,
+        title="Label",
+        description="Heading shown to users in the run form. Defaults to the name.",
+    )
+    expanded: bool = Field(
+        False,
+        title="Expanded",
+        description="Whether the section is open when the run form loads.",
+    )
+    help: str | None = Field(
+        None,
+        title="Help",
+        description="Help text shown at the top of the section.",
+    )
+
+
 class WorkflowOutput(Model):
     label: str | None = Field(
         None,
@@ -2904,15 +2932,23 @@ class WorkflowStepBase(Model):
     tool_inputs: Any = Field(None, title="Tool Inputs", description="TODO")
 
 
-class InputDataStep(WorkflowStepBase):
+class InputStepBase(WorkflowStepBase):
+    section: str | None = Field(
+        None,
+        title="Section",
+        description="Name of the workflow input section this input is presented under in the run form.",
+    )
+
+
+class InputDataStep(InputStepBase):
     type: Literal["data_input"]
 
 
-class InputDataCollectionStep(WorkflowStepBase):
+class InputDataCollectionStep(InputStepBase):
     type: Literal["data_collection_input"]
 
 
-class InputParameterStep(WorkflowStepBase):
+class InputParameterStep(InputStepBase):
     type: Literal["parameter_input"]
 
 

@@ -32,6 +32,7 @@ from galaxy.schema.schema import (
     SubworkflowStep,
     ToolStep,
     WorkflowInput,
+    WorkflowInputSection,
 )
 from galaxy.schema.states import DatasetState
 
@@ -258,6 +259,11 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
     )
     doi: list[str] | None = Field(
         None, title="DOI", description="A list of Digital Object Identifiers associated with this workflow."
+    )
+    input_sections: list[WorkflowInputSection] = Field(
+        [],
+        title="Input Sections",
+        description="Collapsible groups of workflow inputs in the run form, referenced by the `section` of input steps.",
     )
     steps: dict[
         int,

@@ -82,6 +82,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_IMAGES_IN_REPORT,
+    WORKFLOW_WITH_INPUT_SECTIONS,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_OUTPUT_ACTIONS,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
@@ -1902,6 +1903,124 @@ steps:
         workflow_id = response.json()["id"]
         workflow = self._download_workflow(workflow_id)
         assert workflow["readme"] == big_but_valid_readme
+
+    def _native_workflow_with_input_sections(self) -> dict[str, Any]:
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_INPUT_SECTIONS)
+        native = self._download_workflow(workflow_id, style="ga")
+        native["input_sections"] = [{"name": "advanced", "label": "Advanced options", "help": "Rarely changed."}]
+        for step in native["steps"].values():
+            if step["label"] == "num_lines":
+                step["section"] = "advanced"
+            elif step["label"] == "pattern":
+                step["section"] = "filtering"
+        return native
+
+    def _sections_by_step_label(self, workflow: dict[str, Any]) -> dict[str, str | None]:
+        return {step["label"]: step.get("section") for step in workflow["steps"].values() if step.get("label")}
+
+    def test_input_sections_round_trip(self):
+        expected_sections = [
+            {"name": "advanced", "label": "Advanced options", "expanded": False, "help": "Rarely changed."},
+            {"name": "filtering", "expanded": False},
+        ]
+        expected_membership = {"input1": None, "num_lines": "advanced", "pattern": "filtering", "random_lines": None}
+        workflow_id = self.workflow_populator.create_workflow(self._native_workflow_with_input_sections())
+
+        exported = self._download_workflow(workflow_id, style="ga")
+        assert exported["input_sections"] == expected_sections
+        assert self._sections_by_step_label(exported) == expected_membership
+
+        reimported_id = self.workflow_populator.create_workflow(exported)
+        reimported = self._download_workflow(reimported_id, style="ga")
+        assert reimported["input_sections"] == expected_sections
+        assert self._sections_by_step_label(reimported) == expected_membership
+
+        editor = self._download_workflow(workflow_id, style="editor")
+        assert editor["input_sections"] == expected_sections
+        assert self._sections_by_step_label(editor) == expected_membership
+
+        instance = self._get(f"workflows/{workflow_id}").json()
+        assert [
+            {key: value for key, value in section.items() if value is not None}
+            for section in instance["input_sections"]
+        ] == expected_sections
+        sections_by_type = {step["type"]: step.get("section") for step in instance["steps"].values()}
+        assert sections_by_type["data_input"] is None
+        assert sections_by_type["tool"] is None
+
+        with self.dataset_populator.test_history() as history_id:
+            run_form = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        assert run_form["input_sections"] == expected_sections
+        run_membership = {step["step_label"]: step.get("section") for step in run_form["steps"]}
+        assert run_membership == expected_membership
+
+    def test_input_sections_editor_update(self):
+        workflow_id = self.workflow_populator.create_workflow(self._native_workflow_with_input_sections())
+        editor = self._download_workflow(workflow_id, style="editor")
+        editor["input_sections"][0]["label"] = "Tuning"
+        editor["input_sections"][0]["expanded"] = True
+        for step in editor["steps"].values():
+            if step["label"] == "pattern":
+                step["section"] = "advanced"
+            elif step["label"] == "num_lines":
+                del step["section"]
+        response = self.workflow_populator.update_workflow_fields(
+            workflow_id, {"workflow": editor, "from_tool_form": True}
+        )
+        self._assert_status_code_is(response, 200)
+
+        updated = self._download_workflow(workflow_id, style="ga")
+        assert updated["input_sections"] == [
+            {"name": "advanced", "label": "Tuning", "expanded": True, "help": "Rarely changed."},
+            {"name": "filtering", "expanded": False},
+        ]
+        assert self._sections_by_step_label(updated) == {
+            "input1": None,
+            "num_lines": None,
+            "pattern": "advanced",
+            "random_lines": None,
+        }
+
+    def test_input_sections_absent_by_default(self):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_INPUT_SECTIONS)
+        exported = self._download_workflow(workflow_id, style="ga")
+        assert "input_sections" not in exported
+        assert all("section" not in step for step in exported["steps"].values())
+
+    def test_input_sections_ignored_on_tool_steps(self):
+        native = self._native_workflow_with_input_sections()
+        tool_step = next(step for step in native["steps"].values() if step["type"] == "tool")
+        tool_step["section"] = "tools"
+        workflow_id = self.workflow_populator.create_workflow(native)
+        exported = self._download_workflow(workflow_id, style="ga")
+        assert [section["name"] for section in exported["input_sections"]] == ["advanced", "filtering"]
+        assert self._sections_by_step_label(exported)["random_lines"] is None
+
+    @pytest.mark.parametrize(
+        "input_sections",
+        [
+            "advanced",
+            [{"label": "No name"}],
+            [{"name": ""}],
+            [{"name": "advanced"}, {"name": "advanced"}],
+            [{"name": "advanced", "unknown": True}],
+        ],
+    )
+    def test_input_sections_invalid(self, input_sections):
+        native = self._native_workflow_with_input_sections()
+        native["input_sections"] = input_sections
+        response = self.workflow_populator.create_workflow_response(native)
+        self._assert_status_code_is(response, 400)
+
+    def test_input_sections_format2_round_trip(self):
+        workflow_id = self.workflow_populator.create_workflow(self._native_workflow_with_input_sections())
+        format2 = self._download_workflow(workflow_id, style="format2")
+        if "input_sections" not in format2:
+            pytest.skip("The installed gxformat2 does not convert workflow input sections yet.")
+        reimported_id = self.workflow_populator.create_workflow(format2)
+        reimported = self._download_workflow(reimported_id, style="ga")
+        assert [section["name"] for section in reimported["input_sections"]] == ["advanced", "filtering"]
+        assert self._sections_by_step_label(reimported)["num_lines"] == "advanced"
 
     @skip_if_dockstore_down
     def test_trs_import(self):
