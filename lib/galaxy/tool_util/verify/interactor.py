@@ -1667,7 +1667,8 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
     def verify_population(collection, collection_name):
         # A failed dynamic collection can be empty even though its job succeeded.
-        # Older clients may provide collection dictionaries without population state.
+        # Only the top-level collection carries populated_state; nested collection
+        # objects carry the recursive populated flag instead.
         populated_state = collection.get("populated_state")
         if populated_state is not None and populated_state != "ok":
             message = f"Output collection '{collection_name}': populated state is '{populated_state}', expected 'ok'."
@@ -1677,6 +1678,9 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
         for element in collection["elements"]:
             if element["element_type"] == "dataset_collection":
                 verify_population(element["object"], f"{collection_name}/{element['element_identifier']}")
+        # Checked after the children so the deepest unpopulated collection is reported.
+        if collection.get("populated") is False:
+            raise AssertionError(f"Output collection '{collection_name}': collection is not populated.")
 
     verify_population(data_collection, name)
 

@@ -295,25 +295,28 @@ def test_verify_collection_rejects_unpopulated_empty_collection(populated_state,
     assert str(exc_info.value) == f"Output collection 'plots': populated state is '{populated_state}', expected 'ok'."
 
 
-@pytest.mark.parametrize("populated_state", ["failed", "new"])
-def test_verify_collection_rejects_unpopulated_child(populated_state):
+def test_verify_collection_rejects_unpopulated_child():
     output_def = TestCollectionOutputDef.from_dict({"name": "plots", "collection_type": "list:list"})
     collection = _nested_data_collection()
-    collection["populated_state"] = "ok"
-    collection["elements"][0]["object"] = {
-        "elements": [],
-        "populated_state": populated_state,
-        "populated_state_message": "Could not populate collection.",
-    }
+    collection.update(populated_state="ok", populated=False)
+    collection["elements"][0]["object"] = {"collection_type": "list", "elements": [], "populated": False}
     with pytest.raises(AssertionError) as exc_info:
         verify_collection(output_def, collection, lambda *a, **k: None)
-    assert str(exc_info.value) == (
-        f"Output collection 'plots/sample1': populated state is '{populated_state}', expected 'ok'."
-        " Could not populate collection."
-    )
+    assert str(exc_info.value) == "Output collection 'plots/sample1': collection is not populated."
 
 
-@pytest.mark.parametrize("population", [{}, {"populated_state": None}, {"populated_state": "ok"}])
+def test_verify_collection_accepts_populated_child():
+    output_def = TestCollectionOutputDef.from_dict({"name": "plots", "collection_type": "list:list"})
+    collection = _nested_data_collection()
+    collection.update(populated_state="ok", populated=True)
+    collection["elements"][0]["object"]["populated"] = True
+    verify_collection(output_def, collection, lambda *a, **k: None)
+
+
+@pytest.mark.parametrize(
+    "population",
+    [{}, {"populated_state": None}, {"populated_state": "ok"}, {"populated_state": "ok", "populated": True}],
+)
 def test_verify_collection_accepts_empty_collection(population):
     output_def = TestCollectionOutputDef.from_dict({"name": "plots", "collection_type": "list", "element_tests": {}})
     verify_collection(output_def, {"collection_type": "list", "elements": [], **population}, lambda *a, **k: None)
