@@ -171,7 +171,12 @@ class TestHashicorpVaultRenewalGalaxyIntegration(integration_util.IntegrationTes
     def setUpClass(cls):
         cls.vault_addr, cls._vault_client = _start_vault_container(cls.container_name)
         super().setUpClass()
-        cls._start_beat()
+        try:
+            cls._start_beat()
+        except Exception:
+            # unittest skips tearDownClass when setUpClass raises.
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
