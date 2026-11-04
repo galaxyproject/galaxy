@@ -79,9 +79,10 @@ class TestPulsarToolProvidedMetadataClientOutputs(TestCase, UsesTools):
             _tool_provided_metadata_client_outputs(tool, self.tool_working_directory)
 
 
-# Galaxy keeps the dataset here, but the job sees it at a different local
-# path (a false path, or outputs_to_working_directory), so a fallback that
-# skipped local_path_config would return the wrong directory.
+# Under a `none` action, extra files resolve from the job's local dataset path,
+# as the local runner's SharedComputeEnvironment resolves them. That path
+# differs from where Galaxy keeps the dataset here (as it does under
+# outputs_to_working_directory), so the tests can tell the two apart.
 GALAXY_INPUT = "/galaxy/objects/dataset_1.dat"
 JOB_INPUT = "/galaxy/jobs/1/inputs/dataset_1.dat"
 GALAXY_OUTPUT = "/galaxy/objects/dataset_2.dat"
