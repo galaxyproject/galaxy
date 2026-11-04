@@ -9629,10 +9629,30 @@ steps: {}
             self.workflow_populator.get_invocation(original_id)["latest_rerun_invocation_id"]
             == batch_invocations[-1]["id"]
         )
-        missing_source = self.workflow_populator.invoke_workflow(
-            workflow_id, history_id=history_id, request={"rerun_of_invocation_id": "ffffffffffffffff"}
+
+    @requires_admin
+    def test_workflow_invocation_rerun_invalid_source(self, history_id: str):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  value:
+    type: int
+    default: 1
+steps: {}
+""")
+        malformed = self.workflow_populator.invoke_workflow(
+            workflow_id, history_id=history_id, request={"rerun_of_invocation_id": "not-an-encoded-id"}
         )
-        assert missing_source.status_code in (400, 404)
+        self._assert_status_code_is(malformed, 400)
+        nonexistent_id = self._get("configuration/encode/999999999", admin=True).json()["encoded_id"]
+        missing = self.workflow_populator.invoke_workflow(
+            workflow_id, history_id=history_id, request={"rerun_of_invocation_id": nonexistent_id}
+        )
+        self._assert_status_code_is(missing, 404)
+        self._assert_error_code_is(missing, error_codes.error_codes_by_name["USER_OBJECT_NOT_FOUND"])
+        assert_error_message_contains(missing, f"'{nonexistent_id}' is not a valid workflow invocation id")
+        # Neither request created an invocation.
+        assert self.workflow_populator.history_invocations(history_id) == []
 
     def test_workflow_invocation_rerun_access(self, history_id: str):
         workflow_yaml = """
