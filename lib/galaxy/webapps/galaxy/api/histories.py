@@ -238,6 +238,9 @@ class FastAPIHistories:
             deprecated=True,  # Marked as deprecated as it seems just like '/api/histories/deleted'
         ),
     ) -> list[AnyHistoryView]:
+        """With `search`, `limit` defaults to 100 and must be less than 1000, and `sort_by=size`
+        is accepted only for a listing of the caller's own histories.
+        """
         if search is None:
             return self.service.index(
                 trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
