@@ -42,10 +42,8 @@ from typing import (
     Protocol,
 )
 
-from kombu import (
-    Connection,
-    Queue,
-)
+from kombu.connection import Connection
+from kombu.entity import Queue
 from kombu.pools import producers
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
