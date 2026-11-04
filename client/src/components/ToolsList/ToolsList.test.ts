@@ -9,6 +9,7 @@ import toolsListUntyped from "@/components/ToolsView/testData/toolsList.json";
 import type { Tool } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 
+import FilterMenu from "../Common/FilterMenu.vue";
 import ToolFilterChip from "./ToolFilterChip.vue";
 import ToolsList from "./ToolsList.vue";
 import ToolsListSectionFilters from "./ToolsListSectionFilters.vue";
@@ -70,6 +71,15 @@ vi.mock("vue-router", async (importOriginal) => {
 
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
+
+/** Lands a route on the mounted page, which the router passes its query to as props. */
+async function landRoute(
+    wrapper: { setProps: (props: never) => Promise<void> },
+    query: Record<string, string | string[] | undefined>,
+) {
+    await wrapper.setProps(query as never);
+    await flushPromises();
+}
 
 describe("ToolsList", () => {
     let fetchToolsMock: ReturnType<typeof vi.spyOn>;
@@ -168,6 +178,112 @@ describe("ToolsList", () => {
             'fastqc ontology:"operation_1"',
         );
         expect(fetchToolsMock).toHaveBeenLastCalledWith("(fastqc) AND (edam_operations:(operation_1))");
+    });
+
+    it("pushes each tag pick to the URL once and takes the route catching up as that push", async () => {
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router, props: { search: "fastqc" } });
+        await flushPromises();
+        routerPushMock.mockClear();
+        fetchToolsMock.mockClear();
+        const selector = wrapper.findComponent(ToolsListTagFilter);
+
+        selector.vm.$emit("toggle-tag", "data cleanup");
+        await flushPromises();
+        expect(routerPushMock).toHaveBeenCalledTimes(1);
+        expect(routerPushMock).toHaveBeenLastCalledWith({
+            path: "/tools/list",
+            query: { search: 'fastqc tag:"data cleanup"' },
+        });
+        await landRoute(wrapper, { search: 'fastqc tag:"data cleanup"' });
+
+        selector.vm.$emit("toggle-tag", "collection_ops");
+        await flushPromises();
+        await landRoute(wrapper, { search: 'fastqc tag:"data cleanup" tag:collection_ops' });
+        expect(routerPushMock).toHaveBeenCalledTimes(2);
+        expect(fetchToolsMock).toHaveBeenCalledTimes(2);
+        expect(fetchToolsMock).toHaveBeenLastCalledWith(
+            '(fastqc) AND ((tool_tags:("data cleanup") AND tool_tags:(collection_ops)))',
+        );
+        expect(selector.props("selectedTags")).toEqual(["data cleanup", "collection_ops"]);
+    });
+
+    it("pushes an unpick made before the pick's route lands", async () => {
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router, props: { search: "fastqc" } });
+        await flushPromises();
+        routerPushMock.mockClear();
+        const selector = wrapper.findComponent(ToolsListTagFilter);
+        const searchInput = () => (wrapper.get("input.search-query").element as HTMLInputElement).value;
+
+        selector.vm.$emit("toggle-tag", "data cleanup");
+        await flushPromises();
+        selector.vm.$emit("toggle-tag", "data cleanup");
+        await flushPromises();
+        expect(routerPushMock).toHaveBeenCalledTimes(2);
+        expect(routerPushMock).toHaveBeenLastCalledWith({ path: "/tools/list", query: { search: "fastqc" } });
+
+        // No route lands: the real router cancels the pick's navigation once the unpick's push starts
+        expect(searchInput()).toBe("fastqc");
+        expect(selector.props("selectedTags")).toEqual([]);
+        expect(routerPushMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("follows the route query back and forward without pushing it again", async () => {
+        const wrapper = mount(ToolsList as object, {
+            localVue,
+            pinia,
+            router,
+            props: { tag: ["data cleanup"] },
+        });
+        await flushPromises();
+        routerPushMock.mockClear();
+        const searchInput = () => (wrapper.get("input.search-query").element as HTMLInputElement).value;
+        const firstSearch = searchInput();
+
+        await landRoute(wrapper, { tag: ["data cleanup", "collection_ops"] });
+        expect(wrapper.findComponent(ToolsListTagFilter).props("selectedTags")).toEqual([
+            "data cleanup",
+            "collection_ops",
+        ]);
+        expect(fetchToolsMock).toHaveBeenLastCalledWith('(tool_tags:("data cleanup") AND tool_tags:(collection_ops))');
+
+        await landRoute(wrapper, { tag: ["data cleanup"] });
+        expect(searchInput()).toBe(firstSearch);
+        expect(fetchToolsMock).toHaveBeenLastCalledWith('(tool_tags:("data cleanup"))');
+
+        await landRoute(wrapper, { tag: undefined, search: "fastqc" });
+        expect(searchInput()).toBe("fastqc");
+        expect(fetchToolsMock).toHaveBeenLastCalledWith("fastqc");
+        expect(routerPushMock).not.toHaveBeenCalled();
+    });
+
+    it("keeps a search as typed when the route catches up with it", async () => {
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router, props: { search: "fastqc" } });
+        await flushPromises();
+        routerPushMock.mockClear();
+
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "tag:collection_ops owner:devteam");
+        await flushPromises();
+        expect(routerPushMock).toHaveBeenCalledTimes(1);
+        expect(routerPushMock).toHaveBeenLastCalledWith({
+            path: "/tools/list",
+            query: { tag: ["collection_ops"], owner: "devteam" },
+        });
+        await landRoute(wrapper, { search: "", owner: "devteam", tag: "collection_ops" });
+        expect((wrapper.get("input.search-query").element as HTMLInputElement).value).toBe(
+            "tag:collection_ops owner:devteam",
+        );
+        expect(routerPushMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not push a legacy section route it follows", async () => {
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router, props: { search: "fastqc" } });
+        await flushPromises();
+        routerPushMock.mockClear();
+
+        await landRoute(wrapper, { search: "", section: "collection_ops" });
+        expect(wrapper.findComponent(ToolsListTagFilter).props("selectedTags")).toEqual(["collection_ops"]);
+        expect(fetchToolsMock).toHaveBeenLastCalledWith("(tool_tags:(collection_ops))");
+        expect(routerPushMock).not.toHaveBeenCalled();
     });
 
     it("labels the reset button by what it clears", async () => {

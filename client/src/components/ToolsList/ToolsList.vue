@@ -255,10 +255,15 @@ const filterSettings = computed<FilterSettings>(() =>
 
 // `FilterMenu` Component Props
 const showAdvanced = ref(false);
-const initialFilters = normalizePropsToFilterSettings(props);
-const filterText = ref(
-    ToolFilters.value.applyFiltersToText(initialFilters as Record<string, string | string[]>, "") || props.search,
+/** The search the route asks for; the router passes its query as props. */
+const routeFilterText = computed(
+    () =>
+        ToolFilters.value.applyFiltersToText(
+            normalizePropsToFilterSettings(props) as Record<string, string | string[]>,
+            "",
+        ) || props.search,
 );
+const filterText = ref(routeFilterText.value);
 const toolFilterMenu = ref<InstanceType<typeof FilterMenu> | null>(null);
 const initialFocusDone = ref(false);
 
@@ -379,21 +384,79 @@ const hasOwnerFilter = computed(() => {
     return typeof ownerFilter === "string" && Boolean(ownerFilter.replace(/^"(.*)"$/, "$1"));
 });
 
+type SearchQuery = Record<string, string | string[] | undefined>;
+
+/** The route query for the current search: filters as their own parameters, or else the search text. */
+const searchQuery = computed<SearchQuery>(() => {
+    if (shouldPreserveRawSearchText.value) {
+        return { search: filterText.value.trim() };
+    } else if (Object.keys(filterSettings.value).length) {
+        return Object.fromEntries(Object.entries(filterSettings.value).filter(([, value]) => value !== undefined));
+    } else if (whooshQuery.value) {
+        return { search: filterText.value.trim() };
+    }
+    return {};
+});
+
+const routeQuery = computed<SearchQuery>(() => ({
+    name: props.name,
+    ontology: props.ontology,
+    id: props.id,
+    owner: props.owner,
+    help: props.help,
+    tag: props.tag,
+    section: props.section,
+    search: props.search,
+}));
+
+/** Compares queries by value: key order, empty values and single values versus one-item lists do not matter. */
+function queryKey(query: SearchQuery) {
+    const entries = Object.entries(query)
+        .map(([key, value]) => [key, [value ?? []].flat().filter(Boolean)] as const)
+        .filter(([, values]) => values.length)
+        .sort(([left], [right]) => left.localeCompare(right));
+    return JSON.stringify(entries);
+}
+
+function searchMatchesRoute() {
+    return (
+        queryKey(searchQuery.value) === queryKey(routeQuery.value) ||
+        filterText.value.trim() === routeFilterText.value.trim()
+    );
+}
+
+/** The query of the last push until the route reaches it, so a route that is about to change is not compared against. */
+let pendingRouteKey: string | undefined;
+
+// Back, forward and links to this page change only the query, so the search follows it
+watch(
+    () => queryKey(routeQuery.value),
+    (routeKey) => {
+        const ownPush = routeKey === pendingRouteKey;
+        pendingRouteKey = undefined;
+        if (!ownPush && !searchMatchesRoute()) {
+            filterText.value = routeFilterText.value;
+        }
+    },
+);
+
 // As soon as we have filters creating the whoosh query, or a raw search text, push search to router
 watch(
     () => whooshQuery.value,
     async (newQuery) => {
-        const routerParams: { path: string; query?: Record<string, string | string[]> } = { path: "/tools/list" };
-        if (shouldPreserveRawSearchText.value) {
-            routerParams.query = { search: filterText.value.trim() };
-        } else if (Object.keys(filterSettings.value).length) {
-            routerParams.query = Object.fromEntries(
-                Object.entries(filterSettings.value).filter(([, value]) => value !== undefined),
-            ) as Record<string, string | string[]>;
-        } else if (newQuery) {
-            routerParams.query = { search: filterText.value.trim() };
+        const searchKey = queryKey(searchQuery.value);
+        const inRoute = pendingRouteKey === undefined ? searchMatchesRoute() : searchKey === pendingRouteKey;
+        if (!inRoute) {
+            pendingRouteKey = searchKey;
+            const query = searchQuery.value as Record<string, string | string[]>;
+            Promise.resolve(
+                router.push(Object.keys(query).length ? { path: "/tools/list", query } : { path: "/tools/list" }),
+            ).then((failure) => {
+                if (failure && pendingRouteKey === searchKey) {
+                    pendingRouteKey = undefined;
+                }
+            });
         }
-        router.push(routerParams);
         await toolStore.fetchTools(newQuery);
     },
 );
