@@ -246,6 +246,28 @@ describe("userStore", () => {
             expect(userStore.currentUser?.total_disk_usage).toBe(2);
         });
 
+        it("sets the user when a load answers before a later refresh", async () => {
+            const responses = [
+                { delayMs: 10, user: getFakeRegisteredUser({ total_disk_usage: 1 }) },
+                { delayMs: 50, user: getFakeRegisteredUser({ total_disk_usage: 2 }) },
+            ];
+            server.use(
+                http.get("/api/users/{user_id}", async ({ response }) => {
+                    const { delayMs, user } = responses.shift()!;
+                    await delay(delayMs);
+                    return response(200).json(user);
+                }),
+            );
+            const userStore = useUserStore();
+
+            const firstLoad = userStore.loadUser(false);
+            const refresh = userStore.refreshUser();
+            await firstLoad;
+
+            expect(userStore.currentUser?.total_disk_usage).toBe(1);
+            await refresh;
+        });
+
         it("doesn't notify the preferences' watchers when a refresh returns the same preferences", async () => {
             const preferences = { favorites: JSON.stringify({ tools: ["cat1"] }) };
             server.use(

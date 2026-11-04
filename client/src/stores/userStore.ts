@@ -72,6 +72,7 @@ export const useUserStore = defineStore("userStore", () => {
 
     let loadPromise: Promise<void> | null = null;
     let lastLoadRequest = 0;
+    let lastAppliedRequest = 0;
 
     function $reset() {
         currentUser.value = null;
@@ -198,8 +199,10 @@ export const useUserStore = defineStore("userStore", () => {
             const request = ++lastLoadRequest;
             const promise = (async () => {
                 const user = await getCurrentUser();
-                // A later refresh replaced this request: its answer may be newer
-                if (request === lastLoadRequest) {
+                // Overlapping requests can answer out of order. Apply any answer newer than the last one
+                // applied, even while a later request is pending, so that code awaiting this one sees a user.
+                if (request > lastAppliedRequest) {
+                    lastAppliedRequest = request;
                     setUserState(user);
                 }
                 if (includeHistories) {
