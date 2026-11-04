@@ -1370,7 +1370,7 @@ class SelectToolParameter(ToolParameter):
         value = super().to_python(value, app)
         # Stored state (e.g. a workflow step written by hand or uploaded via the API) may
         # hold a single selected option as a scalar. "" and "None" mean nothing is selected
-        # and are resolved by from_json.
+        # and stay strings; from_json turns them into None or [] where it runs.
         if (
             self.multiple
             and self.stored_string_is_single_option
