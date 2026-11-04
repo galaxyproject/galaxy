@@ -29,7 +29,7 @@ watch(
 </script>
 
 <template>
-    <span id="encoded-job-id" v-g-tooltip.hover class="job-id-chip" :title="`Job API ID: ${props.id}`">
+    <span class="job-id-chip">
         <span class="job-id-chip-value" :class="{ 'job-id-chip-value-reveal': justChanged }">{{ props.id }}</span>
         <DecodedId :id="props.id" />
         <CopyToClipboard message="Job API ID was copied to your clipboard" :text="props.id" title="Copy Job API ID" />
