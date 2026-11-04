@@ -192,39 +192,41 @@ describe("GridList", () => {
         expect(vi.mocked(testGrid.getData).mock.calls[1]!.slice(0, 5)).toEqual([0, 25, "filter query", "id", true]);
     });
 
-    it("cell filter handling", async () => {
+    it("column filter handling", async () => {
         const testGrid = createTestGrid();
         testGrid.filtering = new Filtering({
             link: { handler: equals("link", "link"), menuItem: false },
             name: { handler: equals("name", "name"), menuItem: false },
         });
-        testGrid.fields[1]!.filter = {
-            key: "link",
-            clears: ["name"],
-            title: "Filter by link",
-            value: (data) => (data.id === "id-2" ? undefined : (data.link as string)),
-        };
+        const search = vi.fn(async () => [
+            { id: "link-1", name: "Link one" },
+            { id: "link-2", name: "Link two" },
+        ]);
+        testGrid.fields[1]!.filter = { key: "link", clears: ["name"], plural: "links", search };
         const wrapper = createTarget({
             gridConfig: testGrid,
         });
         await flushPromises();
-        expect(
-            wrapper.find("[data-description='grid cell 1-1'] [data-description='grid cell filter link']").exists(),
-        ).toBeFalsy();
+        const filterInput = () => wrapper.find("[data-description='filter text input']").element as HTMLInputElement;
         await wrapper.find("[data-description='filter text input']").setValue("name:foo");
         vi.runAllTimers();
         await flushPromises();
-        expect(vi.mocked(testGrid.getData).mock.calls.at(-1)![2]).toBe("name:foo");
-        const cellFilter = wrapper.find(
-            "[data-description='grid cell 0-1'] [data-description='grid cell filter link']",
-        );
-        expect(cellFilter.attributes("title")).toBe("Filter by link");
-        await cellFilter.trigger("click");
+        await wrapper.find("[data-description='grid column filter link'] button").trigger("click");
         await flushPromises();
-        expect((wrapper.find("[data-description='filter text input']").element as HTMLInputElement).value).toBe(
-            "link:link-1",
-        );
-        expect(vi.mocked(testGrid.getData).mock.calls.at(-1)!.slice(0, 5)).toEqual([0, 25, "link:link-1", "id", true]);
+        expect(search).toHaveBeenCalledWith("");
+        await wrapper.find("input[data-description='grid column filter option link-2']").setValue(true);
+        await flushPromises();
+        expect(filterInput().value).toBe("link:link-2");
+        expect(vi.mocked(testGrid.getData).mock.calls.at(-1)!.slice(0, 5)).toEqual([0, 25, "link:link-2", "id", true]);
+        await wrapper.find("input[data-description='grid column filter option link-1']").setValue(true);
+        await flushPromises();
+        expect(filterInput().value).toBe("link:link-2,link-1");
+        const chips = wrapper.findAll("[data-description='grid active column filter link']");
+        expect(chips.map((chip) => chip.text())).toEqual(["link: Link two", "link: Link one"]);
+        await chips[0]!.trigger("click");
+        await flushPromises();
+        expect(filterInput().value).toBe("link:link-1");
+        expect(wrapper.find("[data-description='grid column filter count']").text()).toBe("1");
     });
 
     it("pagination", async () => {

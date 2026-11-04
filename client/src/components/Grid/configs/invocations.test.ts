@@ -114,7 +114,7 @@ describe("invocations grid filtering", () => {
         invocationQueries.mockReset();
     });
 
-    it("sends every matching workflow id and the history id", async () => {
+    it("sends every matching workflow id and the picked history ids", async () => {
         mockServer();
         server.use(
             http.get("/api/workflows", ({ request, response }) => {
@@ -124,16 +124,20 @@ describe("invocations grid filtering", () => {
             }),
         );
 
-        const [data, total, matches] = await getData(0, 25, "rna history_id:1cd8e2f6b131e891", "create_time", true, {
-            user_id: "user-1",
-        });
+        const [data, total] = await getData(
+            0,
+            25,
+            "rna history_id:1cd8e2f6b131e891,f2db41e1fa331b3e",
+            "create_time",
+            true,
+            { user_id: "user-1" },
+        );
 
         expect(data).toHaveLength(4);
         expect(total).toBe(4);
-        expect(matches.workflows!.items).toHaveLength(2);
         expect(invocationQueries).toHaveBeenCalledWith({
             workflow_id: ["workflow-1", "workflow-2"],
-            history_id: ["1cd8e2f6b131e891"],
+            history_id: ["1cd8e2f6b131e891", "f2db41e1fa331b3e"],
             user_id: "user-1",
         });
     });

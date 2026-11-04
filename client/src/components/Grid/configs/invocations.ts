@@ -9,7 +9,12 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import _l from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import { invocationsFiltering, resolveInvocationFilters } from "./invocationFilters";
+import {
+    historyColumnFilter,
+    invocationsFiltering,
+    resolveInvocationFilters,
+    workflowColumnFilter,
+} from "./invocationFilters";
 import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
@@ -30,9 +35,9 @@ export async function getData(
     sort_desc: boolean,
     extraProps?: Record<string, unknown>,
 ) {
-    const { params: filterParams, matches } = await resolveInvocationFilters(search);
+    const filterParams = await resolveInvocationFilters(search);
     if (!filterParams) {
-        return [[] as WorkflowInvocation[], 0, matches] as const;
+        return [[] as WorkflowInvocation[], 0] as const;
     }
     const params = {
         limit,
@@ -57,7 +62,7 @@ export async function getData(
     fetchHistoriesAndWorkflows(data);
     const headers = response.headers;
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
-    return [data, totalMatches, matches] as const;
+    return [data, totalMatches] as const;
 }
 
 /**
@@ -118,26 +123,13 @@ const fields: FieldArray = [
             const invocation = data as WorkflowInvocation;
             return workflowStore.getStoredWorkflowNameByInstanceId(invocation.workflow_id);
         },
-        filter: {
-            key: "workflow_id",
-            clears: ["workflow"],
-            title: "Show only invocations of this workflow",
-            value: (data) => {
-                const invocation = data as WorkflowInvocation;
-                return useWorkflowStore().getStoredWorkflowIdByInstanceId(invocation.workflow_id);
-            },
-        },
+        filter: workflowColumnFilter,
     },
     {
         key: "history_id",
         title: "History",
         type: "history",
-        filter: {
-            key: "history_id",
-            clears: ["history"],
-            title: "Show only invocations in this history",
-            value: (data) => (data as WorkflowInvocation).history_id,
-        },
+        filter: historyColumnFilter,
     },
     {
         key: "create_time",

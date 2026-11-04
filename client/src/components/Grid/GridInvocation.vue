@@ -9,13 +9,11 @@ import invocationsHistoryGridConfig from "@/components/Grid/configs/invocationsH
 import invocationsWorkflowGridConfig from "@/components/Grid/configs/invocationsWorkflow";
 import { useUserStore } from "@/stores/userStore";
 
-import type { InvocationFilterMatches as Matches } from "./configs/invocationFilters";
 import type { GridConfig } from "./configs/types";
 
 import Heading from "../Common/Heading.vue";
 import UtcDate from "../UtcDate.vue";
 import WorkflowInvocationState from "../WorkflowInvocationState/WorkflowInvocationState.vue";
-import InvocationFilterMatches from "./InvocationFilterMatches.vue";
 import GridList from "@/components/Grid/GridList.vue";
 
 interface Props {
@@ -97,11 +95,6 @@ if (forBatch.value) {
     gridConfig = invocationsGridConfig;
 }
 
-/** `GridList` passes the third `getData` element through untyped; for this grid it is the filter matches */
-function asFilterMatches(meta: unknown) {
-    return meta as Matches | undefined;
-}
-
 function refreshTable() {
     // TODO: Implement
 }
@@ -120,9 +113,6 @@ function refreshTable() {
             :no-data-message="effectiveNoInvocationsMessage"
             :extra-props="extraProps"
             :embedded="forStoredWorkflow || forHistory || forBatch">
-            <template v-if="gridConfig === invocationsGridConfig" v-slot:results-header="{ meta }">
-                <InvocationFilterMatches :matches="asFilterMatches(meta)" />
-            </template>
             <template v-slot:expanded="{ rowData }">
                 <span class="mb-2" :data-invocation-id="rowData.id">
                     <small>

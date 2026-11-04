@@ -48,15 +48,27 @@ export interface FieldEntry {
     width?: number;
 }
 
+/** An item offered by a column's filter dropdown */
+export interface FilterOption {
+    id: string;
+    name: string;
+    /** Shown as elapsed time */
+    updateTime?: string;
+    /** Secondary text such as a run or item count, read reactively */
+    detail?: () => string | undefined;
+}
+
 /**
- * Renders a button next to the cell that sets `key:value` in the grid's filter text
- * and removes the `clears` keys from it
+ * Adds a filter dropdown to the column header. Picking items sets `key:<id>,<id>` in the grid's
+ * filter text and removes the `clears` keys from it.
  */
 export interface FieldFilter {
     key: string;
     clears?: string[];
-    title: string;
-    value: (data: RowData) => string | undefined;
+    /** Name of the items, used in the dropdown's labels (e.g. "workflows") */
+    plural: string;
+    /** Items matching the search text; an empty query lists the most recent items */
+    search: (query: string) => Promise<FilterOption[]>;
 }
 
 export type FieldHandler = (data: RowData) => void;

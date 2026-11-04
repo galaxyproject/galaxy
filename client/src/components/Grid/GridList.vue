@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCaretDown, faCaretUp, faFilter, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faCaretUp, faShieldAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
 import { BCard, BPagination } from "bootstrap-vue";
@@ -13,6 +13,7 @@ import type {
     FieldEntry,
     FieldFilter,
     FieldHandler,
+    FilterOption,
     GridConfig,
     Operation,
     RowData,
@@ -21,6 +22,7 @@ import type {
 import LoadingOverlay from "../Common/LoadingOverlay.vue";
 import HelpText from "../Help/HelpText.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
+import GridColumnFilter from "./GridColumnFilter.vue";
 import GridBoolean from "./GridElements/GridBoolean.vue";
 import GridExpand from "./GridElements/GridExpand.vue";
 import GridLink from "./GridElements/GridLink.vue";
@@ -69,8 +71,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 // contains the current grid data provided by the corresponding api endpoint
 const gridData = ref();
-// optional third element returned by `getData`, handed to the `results-header` slot
-const gridMeta = ref<unknown>();
 
 // message references
 const errorMessage = ref("");
@@ -149,6 +149,54 @@ function setFilters(filters: Record<string, string | undefined>) {
     filterText.value = text;
 }
 
+// names of the items picked in column filter dropdowns, by filter key and id
+const columnFilterNames = ref<Record<string, Record<string, FilterOption>>>({});
+
+/**
+ * Items currently selected in a column filter, read from the `key:<id>,<id>` filter term
+ */
+function columnFilterSelection(filter: FieldFilter): FilterOption[] {
+    const value = rawFilters.value[filter.key];
+    if (typeof value !== "string" || !value) {
+        return [];
+    }
+    const known = columnFilterNames.value[filter.key] ?? {};
+    return value
+        .split(",")
+        .filter((id) => id.length > 0)
+        .map((id) => known[id] ?? { id, name: id });
+}
+
+const activeColumnFilters = computed(() =>
+    props.gridConfig.fields.flatMap((fieldEntry) => {
+        const filter = fieldEntry.filter;
+        if (!filter) {
+            return [];
+        }
+        return columnFilterSelection(filter).map((option) => ({ title: fieldTitle(fieldEntry), filter, option }));
+    }),
+);
+
+function onColumnFilter(filter: FieldFilter, options: FilterOption[]) {
+    columnFilterNames.value = {
+        ...columnFilterNames.value,
+        [filter.key]: {
+            ...columnFilterNames.value[filter.key],
+            ...Object.fromEntries(options.map((option) => [option.id, option])),
+        },
+    };
+    const cleared = Object.fromEntries((filter.clears ?? []).map((key) => [key, undefined]));
+    const value = options.length > 0 ? options.map((option) => option.id).join(",") : undefined;
+    setFilters({ ...cleared, [filter.key]: value });
+}
+
+function removeColumnFilterOption(filter: FieldFilter, option: FilterOption) {
+    onColumnFilter(
+        filter,
+        columnFilterSelection(filter).filter((selectedOption) => selectedOption.id !== option.id),
+    );
+}
+
 /**
  * Display initial message parsed through route query
  */
@@ -198,7 +246,7 @@ async function getGridData() {
         }
         try {
             const offset = props.limit * (currentPage.value ? currentPage.value - 1 : 0);
-            const [responseData, responseTotal, responseMeta] = await props.gridConfig.getData(
+            const [responseData, responseTotal] = await props.gridConfig.getData(
                 offset,
                 props.limit,
                 validatedFilterText(),
@@ -208,7 +256,6 @@ async function getGridData() {
             );
             gridData.value = responseData;
             totalRows.value = responseTotal;
-            gridMeta.value = responseMeta;
             errorMessage.value = "";
         } catch (e) {
             errorMessage.value = `Failed to obtain grid data: ${e}`;
@@ -274,14 +321,6 @@ function onTagInput(data: RowData, tags: Array<string>, tagsHandler?: FieldHandl
         data.tags = tags;
     }
 }
-function onCellFilter(fieldFilter: FieldFilter, rowData: RowData) {
-    const value = fieldFilter.value(rowData);
-    if (value) {
-        const cleared = Object.fromEntries((fieldFilter.clears ?? []).map((key) => [key, undefined]));
-        setFilters({ ...cleared, [fieldFilter.key]: value });
-    }
-}
-
 function onFilter(filter?: string) {
     if (filter) {
         applyFilter(filter, true);
@@ -396,8 +435,25 @@ watch(operationMessage, () => {
                 :filter-class="filterClass"
                 :loading="initDataLoading || resultsLoading"
                 view="compact" />
+            <div
+                v-if="activeColumnFilters.length > 0"
+                class="d-flex flex-wrap align-items-center"
+                data-description="grid active column filters">
+                <GButton
+                    v-for="chip in activeColumnFilters"
+                    :key="`${chip.filter.key}-${chip.option.id}`"
+                    class="mr-1 mb-1"
+                    size="small"
+                    outline
+                    color="blue"
+                    :title="localize('Remove this filter')"
+                    :data-description="`grid active column filter ${chip.filter.key}`"
+                    @click="removeColumnFilterOption(chip.filter, chip.option)">
+                    <span>{{ chip.title }}: {{ chip.option.name }}</span>
+                    <FontAwesomeIcon :icon="faTimes" class="ml-1" />
+                </GButton>
+            </div>
         </div>
-        <slot v-if="!initDataLoading" name="results-header" :meta="gridMeta" />
         <div v-if="initDataLoading" class="position-relative h-100" data-description="grid initial loading">
             <LoadingOverlay />
         </div>
@@ -467,6 +523,12 @@ watch(operationMessage, () => {
                                 </GButton>
                             </span>
                             <span v-else-if="fieldTitle(fieldEntry)">{{ fieldTitle(fieldEntry) }}</span>
+                            <GridColumnFilter
+                                v-if="fieldEntry.filter"
+                                :filter="fieldEntry.filter"
+                                :title="fieldTitle(fieldEntry) ?? fieldEntry.key"
+                                :selected="columnFilterSelection(fieldEntry.filter)"
+                                @update:selected="onColumnFilter(fieldEntry.filter, $event)" />
                         </th>
                     </thead>
                     <tbody v-for="(rowData, rowIndex) in gridData" :key="rowIndex" data-description="grid item">
@@ -486,7 +548,6 @@ watch(operationMessage, () => {
                                 :style="{ width: `${fieldEntry.width}%` }">
                                 <div
                                     v-if="!fieldEntry.condition || fieldEntry.condition(rowData)"
-                                    :class="{ 'd-flex align-items-center': !!fieldEntry.filter }"
                                     :data-description="`grid cell ${rowIndex}-${fieldIndex}`">
                                     <GridOperations
                                         v-if="fieldEntry.type == 'operations' && fieldEntry.operations"
@@ -541,17 +602,6 @@ watch(operationMessage, () => {
                                         @input="onTagInput(rowData, $event, fieldEntry.handler)"
                                         @tag-click="applyFilter('tag', $event, true)" />
                                     <span v-else v-localize> Not available. </span>
-                                    <GButton
-                                        v-if="fieldEntry.filter && fieldEntry.filter.value(rowData)"
-                                        transparent
-                                        size="small"
-                                        color="blue"
-                                        class="grid-cell-filter p-0 ml-1"
-                                        :title="localize(fieldEntry.filter.title)"
-                                        :data-description="`grid cell filter ${fieldEntry.filter.key}`"
-                                        @click="onCellFilter(fieldEntry.filter, rowData)">
-                                        <FontAwesomeIcon :icon="faFilter" fixed-width />
-                                    </GButton>
                                 </div>
                                 <FontAwesomeIcon v-else :icon="faShieldAlt" />
                             </td>

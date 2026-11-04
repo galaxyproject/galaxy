@@ -1,14 +1,21 @@
 import { type AnyHistoryEntry, getHistories } from "@/api/histories";
 import { loadWorkflows, type WorkflowSummary } from "@/api/workflows";
+import { useInvocationStore } from "@/stores/invocationStore";
+import { useUserStore } from "@/stores/userStore";
 import Filtering, { equals, isQuoted, type ValidFilter } from "@/utils/filtering";
 
-/** Maximum number of workflows or histories a name filter resolves to, per lookup. */
+import type { FieldFilter, FilterOption } from "./types";
+
+/** Maximum number of workflows or histories a name resolves to, per lookup. */
 export const NAME_MATCH_LIMIT = 50;
+
+/** Number of most recently updated items a column filter lists before anything is typed. */
+export const RECENT_LIMIT = 20;
 
 /**
  * `workflow` and `history` match by name (substring, or exact when quoted) and are resolved to ids
- * through the workflow and history list APIs. `workflow_id` and `history_id` take an id directly;
- * the filter buttons in the grid set those. Unkeyed text is a workflow name.
+ * through the workflow and history list APIs. `workflow_id` and `history_id` take comma-separated
+ * ids; the column filters set those. Unkeyed text is a workflow name.
  */
 const validFilters: Record<string, ValidFilter<string>> = {
     workflow: {
@@ -29,23 +36,9 @@ const validFilters: Record<string, ValidFilter<string>> = {
 
 export const invocationsFiltering = new Filtering(validFilters, undefined, false, "workflow");
 
-export interface NameMatches<T> {
-    /** The name filter value as typed */
-    search: string;
-    items: T[];
-    /** A lookup returned more than `NAME_MATCH_LIMIT` matches, so only the first ones are used */
-    truncated: boolean;
-}
-
-export interface InvocationFilterMatches {
-    workflows?: NameMatches<WorkflowSummary>;
-    histories?: NameMatches<AnyHistoryEntry>;
-}
-
-export interface ResolvedInvocationFilters {
-    /** Query parameters for `/api/invocations`, `null` when a name filter matched nothing */
-    params: { workflow_id?: string[]; history_id?: string[] } | null;
-    matches: InvocationFilterMatches;
+export interface InvocationFilterParams {
+    workflow_id?: string[];
+    history_id?: string[];
 }
 
 /**
@@ -63,54 +56,43 @@ export function nameSearch(value: string): string {
         .join(" ");
 }
 
-function collect<T extends { id: string }>(
-    search: string,
-    results: Array<{ items: T[]; total: number }>,
-): NameMatches<T> {
+function uniqueById<T extends { id: string }>(lists: T[][]): T[] {
     const byId = new Map<string, T>();
-    for (const { items } of results) {
-        for (const item of items) {
-            byId.set(item.id, item);
-        }
+    for (const item of lists.flat()) {
+        byId.set(item.id, item);
     }
-    return {
-        search,
-        items: [...byId.values()],
-        truncated: results.some(({ total }) => total > NAME_MATCH_LIMIT),
-    };
+    return [...byId.values()];
 }
+
+const workflowListOptions = {
+    sortBy: "update_time" as const,
+    sortDesc: true,
+    offset: 0,
+    showPublished: false,
+    skipStepCounts: true,
+};
 
 /**
  * Invocations can reference the user's own visible, deleted and hidden workflows, and workflows
  * shared with or published by others. The index lists deleted and hidden workflows only on request,
  * one kind per call, so this takes three lookups.
  */
-export async function findWorkflowsByName(name: string): Promise<NameMatches<WorkflowSummary>> {
+export async function findWorkflowsByName(name: string): Promise<WorkflowSummary[]> {
     const search = nameSearch(name);
-    const options = {
-        sortBy: "update_time" as const,
-        sortDesc: true,
-        limit: NAME_MATCH_LIMIT,
-        offset: 0,
-        showPublished: false,
-        skipStepCounts: true,
-    };
+    const options = { ...workflowListOptions, limit: NAME_MATCH_LIMIT };
     const results = await Promise.all([
         loadWorkflows({ ...options, filterText: search, showPublished: true }),
         loadWorkflows({ ...options, filterText: `${search} is:deleted` }),
         loadWorkflows({ ...options, filterText: search, showHidden: true }),
     ]);
-    return collect(
-        name,
-        results.map(({ data, totalMatches }) => ({ items: data, total: totalMatches })),
-    );
+    return uniqueById(results.map(({ data }) => data));
 }
 
 /**
  * Invocations live in the user's own histories: active and archived ones, plus deleted and purged
  * ones, which the index lists only when asked for with `is:deleted` / `is:purged`.
  */
-export async function findHistoriesByName(name: string): Promise<NameMatches<AnyHistoryEntry>> {
+export async function findHistoriesByName(name: string): Promise<AnyHistoryEntry[]> {
     const search = nameSearch(name);
     const options = { limit: NAME_MATCH_LIMIT, sortDesc: true, showArchived: true };
     const results = await Promise.all([
@@ -118,38 +100,100 @@ export async function findHistoriesByName(name: string): Promise<NameMatches<Any
         getHistories({ ...options, search: `${search} is:deleted` }),
         getHistories({ ...options, search: `${search} is:purged` }),
     ]);
-    return collect(
-        name,
-        results.map(({ data, total }) => ({ items: data, total })),
-    );
+    return uniqueById(results.map(({ data }) => data));
+}
+
+function splitIds(value: string): string[] {
+    return value.split(",").filter((id) => id.length > 0);
+}
+
+/** Ids picked in a column filter, narrowed to the name matches when a name filter is set as well */
+function combine(ids: string[] | undefined, matches: Array<{ id: string }> | undefined): string[] | undefined {
+    if (!matches) {
+        return ids;
+    }
+    const matchIds = matches.map((match) => match.id);
+    return ids ? ids.filter((id) => matchIds.includes(id)) : matchIds;
 }
 
 /**
- * Translate the grid's filter text into `/api/invocations` query parameters, looking up names
+ * Translate the grid's filter text into `/api/invocations` query parameters, looking up names.
+ * Returns `null` when the filters match no workflow or history, so no invocation can match.
  */
-export async function resolveInvocationFilters(search: string): Promise<ResolvedInvocationFilters> {
+export async function resolveInvocationFilters(search: string): Promise<InvocationFilterParams | null> {
     const filters = Object.fromEntries(invocationsFiltering.getFiltersForText(search));
-    const matches: InvocationFilterMatches = {};
-    const params: { workflow_id?: string[]; history_id?: string[] } = {};
-
     const [workflows, histories] = await Promise.all([
-        !filters.workflow_id && filters.workflow ? findWorkflowsByName(filters.workflow) : undefined,
-        !filters.history_id && filters.history ? findHistoriesByName(filters.history) : undefined,
+        filters.workflow ? findWorkflowsByName(filters.workflow) : undefined,
+        filters.history ? findHistoriesByName(filters.history) : undefined,
     ]);
-
-    if (filters.workflow_id) {
-        params.workflow_id = [filters.workflow_id];
-    } else if (workflows) {
-        matches.workflows = workflows;
-        params.workflow_id = workflows.items.map((workflow) => workflow.id);
+    const params: InvocationFilterParams = {};
+    const workflowIds = combine(filters.workflow_id ? splitIds(filters.workflow_id) : undefined, workflows);
+    const historyIds = combine(filters.history_id ? splitIds(filters.history_id) : undefined, histories);
+    if (workflowIds) {
+        params.workflow_id = workflowIds;
     }
-    if (filters.history_id) {
-        params.history_id = [filters.history_id];
-    } else if (histories) {
-        matches.histories = histories;
-        params.history_id = histories.items.map((history) => history.id);
+    if (historyIds) {
+        params.history_id = historyIds;
     }
-
     const nothingMatched = params.workflow_id?.length === 0 || params.history_id?.length === 0;
-    return { params: nothingMatched ? null : params, matches };
+    return nothingMatched ? null : params;
 }
+
+function plural(count: number, singular: string, pluralForm: string) {
+    return `${count} ${count === 1 ? singular : pluralForm}`;
+}
+
+function workflowOption(workflow: WorkflowSummary): FilterOption {
+    const notes = [
+        useUserStore().matchesCurrentUsername(workflow.owner) ? undefined : `by ${workflow.owner}`,
+        workflow.deleted ? "deleted" : undefined,
+        workflow.hidden ? "hidden" : undefined,
+    ];
+    return {
+        id: workflow.id,
+        name: workflow.name,
+        updateTime: workflow.update_time,
+        detail: () => {
+            const runs = useInvocationStore().getInvocationCountByWorkflowId(workflow.id);
+            const runText = typeof runs === "number" ? plural(runs, "run", "runs") : undefined;
+            return [runText, ...notes].filter(Boolean).join(" · ") || undefined;
+        },
+    };
+}
+
+function historyOption(history: AnyHistoryEntry): FilterOption {
+    const state = history.purged ? "purged" : history.deleted ? "deleted" : history.archived ? "archived" : undefined;
+    const itemText = "count" in history ? plural(history.count, "item", "items") : undefined;
+    return {
+        id: history.id,
+        name: history.name,
+        updateTime: history.update_time,
+        detail: () => [itemText, state].filter(Boolean).join(" · ") || undefined,
+    };
+}
+
+export const workflowColumnFilter: FieldFilter = {
+    key: "workflow_id",
+    clears: ["workflow"],
+    plural: "workflows",
+    async search(query) {
+        if (query) {
+            return (await findWorkflowsByName(query)).map(workflowOption);
+        }
+        const { data } = await loadWorkflows({ ...workflowListOptions, filterText: "", limit: RECENT_LIMIT });
+        return data.map(workflowOption);
+    },
+};
+
+export const historyColumnFilter: FieldFilter = {
+    key: "history_id",
+    clears: ["history"],
+    plural: "histories",
+    async search(query) {
+        if (query) {
+            return (await findHistoriesByName(query)).map(historyOption);
+        }
+        const { data } = await getHistories({ limit: RECENT_LIMIT, sortDesc: true });
+        return data.map(historyOption);
+    },
+};
