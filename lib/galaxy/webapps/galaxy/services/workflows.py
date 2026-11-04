@@ -33,6 +33,7 @@ from galaxy.model import (
     LandingRequestToWorkflowInvocationAssociation,
     Page,
     StoredWorkflow,
+    User,
     Workflow,
     WorkflowInvocation,
     WorkflowLandingRequest,
@@ -55,6 +56,10 @@ from galaxy.schema.workflows import (
     WorkflowExtractionByIdsPayload,
     WorkflowExtractionPayload,
     WorkflowExtractionResult,
+)
+from galaxy.tool_util.toolbox.base import (
+    AbstractToolBox,
+    ToolLike,
 )
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.tool_shed.tool_shed_registry import Registry
@@ -171,6 +176,23 @@ def _describe_tool_references(tools: list[dict[str, Any]], require_exact_tool_ve
     else:
         descriptions = [tool["tool_id"] for tool in tools]
     return ", ".join(dict.fromkeys(descriptions))
+
+
+def _find_workflow_tool(
+    toolbox: AbstractToolBox, tool_reference: dict[str, Any], require_exact_tool_versions: bool, user: User | None
+) -> ToolLike | None:
+    tool_id = tool_reference["tool_id"]
+    tool_version = tool_reference["tool_version"]
+    tool_uuid = tool_reference["tool_uuid"]
+    # Availability comes from has_tool: for exact requests the cached
+    # toolbox's get_tool can resolve a different version of the tool.
+    if toolbox.has_tool(
+        tool_id, tool_version=tool_version, tool_uuid=tool_uuid, exact=require_exact_tool_versions, user=user
+    ):
+        return toolbox.get_tool(
+            tool_id, tool_version=tool_version, tool_uuid=tool_uuid, exact=require_exact_tool_versions, user=user
+        )
+    return None
 
 
 class WorkflowsService(ServiceBase):
@@ -639,25 +661,11 @@ class WorkflowsService(ServiceBase):
         incompatible_tools = []
         toolbox = trans.app.toolbox
         for tool_reference in tools:
-            # Availability comes from has_tool: for exact requests the cached
-            # toolbox's get_tool can resolve a different version of the tool.
-            if not toolbox.has_tool(
-                tool_reference["tool_id"],
-                tool_version=tool_reference["tool_version"],
-                tool_uuid=tool_reference["tool_uuid"],
-                exact=require_exact_tool_versions,
-                user=trans.user,
-            ):
+            tool = _find_workflow_tool(toolbox, tool_reference, require_exact_tool_versions, trans.user)
+            if tool is None:
                 missing_tools.append(tool_reference)
                 continue
-            tool = toolbox.get_tool(
-                tool_reference["tool_id"],
-                tool_version=tool_reference["tool_version"],
-                tool_uuid=tool_reference["tool_uuid"],
-                exact=require_exact_tool_versions,
-                user=trans.user,
-            )
-            if tool and not tool.is_workflow_compatible:
+            if not tool.is_workflow_compatible:
                 incompatible_tools.append(tool_reference)
         if missing_tools:
             raise exceptions.MessageException(
