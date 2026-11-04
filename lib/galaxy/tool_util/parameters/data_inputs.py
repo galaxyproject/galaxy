@@ -1,4 +1,4 @@
-"""Summaries of a tool's dataset inputs, derived from its parameter models."""
+"""Summaries of a tool's dataset and collection inputs, derived from its parameter models."""
 
 from collections.abc import (
     Iterable,
@@ -13,6 +13,7 @@ from pydantic import (
 
 from galaxy.tool_util_models.parameters import (
     ConditionalParameterModel,
+    DataCollectionParameterModel,
     DataParameterModel,
     RepeatParameterModel,
     SectionParameterModel,
@@ -23,7 +24,7 @@ from galaxy.tool_util_models.parameters import (
 class ToolDataInput(BaseModel):
     name: str | None = Field(
         ...,
-        description="The `|`-joined path of the data parameter, usable as a tool form URL parameter; inputs in a "
+        description="The `|`-joined path of the parameter, usable as a tool form URL parameter; inputs in a "
         "repeat use its first element (`queries_0|input`). Null when the tool form cannot prefill it (an input in a "
         "conditional case that is not the default one).",
     )
@@ -31,7 +32,7 @@ class ToolDataInput(BaseModel):
         ...,
         description="Datatype extensions the input accepts; `data` accepts any datatype.",
     )
-    multiple: bool = Field(..., description="Whether the input accepts several datasets.")
+    multiple: bool = Field(..., description="Whether the input accepts several datasets; false for a collection input.")
     type: Literal["data", "data_collection"] = Field(
         ..., description="The parameter type: a dataset input or a collection input."
     )
@@ -43,7 +44,7 @@ class ToolDataInput(BaseModel):
 
 
 def data_inputs_for_parameters(parameters: Iterable[ToolParameterT]) -> list[ToolDataInput]:
-    """List every ``data`` parameter of a tool, in input order."""
+    """List every ``data`` and ``data_collection`` parameter of a tool, in input order."""
     return list(_walk(parameters, ""))
 
 
@@ -57,6 +58,14 @@ def _walk(parameters: Iterable[ToolParameterT], prefix: str | None) -> Iterator[
                 multiple=parameter.multiple,
                 type="data",
                 collection_type=None,
+            )
+        elif isinstance(parameter, DataCollectionParameterModel):
+            yield ToolDataInput(
+                name=name,
+                extensions=list(parameter.extensions),
+                multiple=False,
+                type="data_collection",
+                collection_type=parameter.collection_type,
             )
         elif isinstance(parameter, SectionParameterModel):
             yield from _walk(parameter.parameters, None if name is None else f"{name}|")
