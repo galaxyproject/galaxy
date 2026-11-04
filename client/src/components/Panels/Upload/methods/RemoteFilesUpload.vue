@@ -9,7 +9,7 @@ import { browseRemoteFiles, fetchFileSources, type RemoteEntry } from "@/api/rem
 import type { BreadcrumbItem } from "@/components/Common";
 import type { TableField } from "@/components/Common/GTable.types";
 import { Model } from "@/components/FilesDialog/model";
-import { fileSourcePluginToItem, selectionToArray } from "@/components/FilesDialog/utilities";
+import { entryToSelectionItem, fileSourcePluginToItem, selectionToArray } from "@/components/FilesDialog/utilities";
 import { urlUploadOptionVisibility } from "@/components/Panels/Upload/shared/uploadOptionVisibility";
 import { getUploadSettingsColumnWidth } from "@/components/Panels/Upload/shared/uploadTableOptionsWidth";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
@@ -232,17 +232,6 @@ function toggleSelectAll() {
         }
     });
     selectionCount.value = selectionModel.value.count();
-}
-
-function entryToSelectionItem(entry: RemoteEntry): SelectionItem {
-    return {
-        id: entry.uri,
-        label: entry.name,
-        url: entry.uri,
-        isLeaf: entry.class === "File",
-        details: "No details available",
-        entry: entry,
-    };
 }
 
 /**
