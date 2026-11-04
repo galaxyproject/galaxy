@@ -244,6 +244,11 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         sort_column: Any
         if payload.sort_by == "username":
             sort_column = model.User.username
+        elif payload.sort_by == "size":
+            # A correlated subquery that coalesces to 0, so it is never null. Postgres
+            # requires a SELECT DISTINCT to select every expression it orders by.
+            sort_column = model.History.disk_size
+            stmt = stmt.add_columns(sort_column)
         else:
             sort_column = getattr(model.History, payload.sort_by)
         stmt = apply_sort_column(stmt, sort_column, payload.sort_desc, model.History.id)

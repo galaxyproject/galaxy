@@ -40003,7 +40003,7 @@ export interface operations {
                 /** @description Whether to include archived histories. */
                 show_archived?: boolean | null;
                 /** @description Sort index by this specified attribute */
-                sort_by?: "create_time" | "name" | "update_time" | "username";
+                sort_by?: "create_time" | "name" | "size" | "update_time" | "username";
                 /** @description Sort in descending order? */
                 sort_desc?: boolean;
                 /**

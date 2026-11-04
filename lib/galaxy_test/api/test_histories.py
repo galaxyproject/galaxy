@@ -275,6 +275,26 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             names = [history["name"] for history in self._get("histories", data=data).json()]
             assert names == [f"Zeta_{unique_id}", f"Beta_{unique_id}", f"alpha_{unique_id}"]
 
+    def test_index_sort_by_size(self):
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            unique_id = uuid4().hex
+            large = self._create_history(f"large_{unique_id}")["id"]
+            self.dataset_populator.new_dataset(large, content="1\t2\t3\n" * 100, wait=True)
+            empty_first = self._create_history(f"empty_first_{unique_id}")["id"]
+            small = self._create_history(f"small_{unique_id}")["id"]
+            self.dataset_populator.new_dataset(small, content="1\t2\t3\n", wait=True)
+            empty_second = self._create_history(f"empty_second_{unique_id}")["id"]
+
+            data = dict(search=unique_id, show_published=False, sort_by="size", sort_desc=False)
+            response = self._get("histories", data=data)
+            self._assert_status_code_is(response, 200)
+            assert [history["id"] for history in response.json()] == [empty_first, empty_second, small, large]
+
+            data["sort_desc"] = True
+            response = self._get("histories", data=data)
+            self._assert_status_code_is(response, 200)
+            assert [history["id"] for history in response.json()] == [large, small, empty_second, empty_first]
+
     def test_index_advanced_filter(self):
         # Create the histories with a different user to ensure the test
         # is not conflicted with the current user's histories.
