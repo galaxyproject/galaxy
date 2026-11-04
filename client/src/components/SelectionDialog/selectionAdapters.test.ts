@@ -62,8 +62,7 @@ describe("historyToItem", () => {
     });
 
     it("maps a history to a folder item", () => {
-        const item = historyToItem(history);
-        expect(item).toMatchObject({
+        expect(historyToItem(history)).toEqual({
             id: "h1",
             label: "My history",
             details: "",
@@ -72,9 +71,9 @@ describe("historyToItem", () => {
             size: 4,
             tags: ["name:rna"],
             update_time: ISO_TIME,
+            updateTime: new Date(ISO_TIME),
             entry: history,
         });
-        expect(item.updateTime?.getTime()).toBe(Date.parse(ISO_TIME));
     });
 });
 
@@ -111,9 +110,16 @@ describe("datasetToItem", () => {
 describe("collectionToItem", () => {
     it("maps a collection to a leaf item", () => {
         const collection = { id: "c1", name: "pairs", hid: 3, created_time: ISO_TIME };
-        const item = collectionToItem(collection);
-        expect(item).toMatchObject({ id: "c1", label: "pairs", isLeaf: true, time: ISO_TIME, entry: collection });
-        expect(item.updateTime?.getTime()).toBe(Date.parse(ISO_TIME));
+        expect(collectionToItem(collection)).toEqual({
+            id: "c1",
+            label: "pairs",
+            details: "",
+            isLeaf: true,
+            url: "",
+            time: ISO_TIME,
+            updateTime: new Date(ISO_TIME),
+            entry: collection,
+        });
     });
 });
 
@@ -122,9 +128,16 @@ describe("basicEntryToItem", () => {
 
     it("reads label, details and time from the configured keys", () => {
         const entry = { id: "b1", title: "Page", info: "about", update_time: ISO_TIME };
-        const item = basicEntryToItem(entry, keys);
-        expect(item).toMatchObject({ id: "b1", label: "Page", details: "about", time: ISO_TIME, isLeaf: true });
-        expect(item.updateTime?.getTime()).toBe(Date.parse(ISO_TIME));
+        expect(basicEntryToItem(entry, keys)).toEqual({
+            id: "b1",
+            label: "Page",
+            details: "about",
+            isLeaf: true,
+            url: "",
+            time: ISO_TIME,
+            updateTime: new Date(ISO_TIME),
+            entry: entry,
+        });
     });
 
     it("leaves missing values empty", () => {
@@ -139,7 +152,7 @@ describe("basicEntryToItem", () => {
 describe("file source adapters", () => {
     it("maps a file source plugin to a folder item", () => {
         const plugin = { id: "ftp", label: "FTP", doc: "Your FTP", uri_root: "gxftp://" } as BrowsableFilesSourcePlugin;
-        expect(fileSourcePluginToItem(plugin)).toMatchObject({
+        expect(fileSourcePluginToItem(plugin)).toEqual({
             id: "ftp",
             label: "FTP",
             details: "Your FTP",
@@ -160,19 +173,49 @@ describe("file source adapters", () => {
     const directory = { class: "Directory", name: "dir", uri: "gxftp://dir", path: "dir" } as RemoteDirectory;
 
     it("maps a remote file for the file browser", () => {
-        expect(entryToSelectionItem(file)).toMatchObject({ id: file.uri, label: "a.txt", isLeaf: true, details: "" });
-        expect(entryToSelectionItem(directory).isLeaf).toBe(false);
+        expect(entryToSelectionItem(file)).toEqual({
+            id: "gxftp://a.txt",
+            label: "a.txt",
+            url: "gxftp://a.txt",
+            isLeaf: true,
+            details: "",
+            entry: file,
+        });
+        expect(entryToSelectionItem(directory)).toEqual({
+            id: "gxftp://dir",
+            label: "dir",
+            url: "gxftp://dir",
+            isLeaf: false,
+            details: "",
+            entry: directory,
+        });
     });
 
     it("maps a remote file for the files dialog with its creation time and size", () => {
-        const item = filesDialogEntryToItem(file);
-        expect(item).toMatchObject({ id: file.uri, label: "a.txt", isLeaf: true, size: 12, time: ISO_TIME });
-        expect(item.updateTime?.getTime()).toBe(Date.parse(ISO_TIME));
+        expect(filesDialogEntryToItem(file)).toEqual({
+            id: "gxftp://a.txt",
+            label: "a.txt",
+            time: ISO_TIME,
+            details: ISO_TIME,
+            isLeaf: true,
+            url: "gxftp://a.txt",
+            size: 12,
+            updateTime: new Date(ISO_TIME),
+            entry: file,
+        });
     });
 
     it("maps a remote directory for the files dialog without time or size", () => {
-        const item = filesDialogEntryToItem(directory);
-        expect(item).toMatchObject({ isLeaf: false, size: 0, time: "", details: "" });
-        expect(item.updateTime).toBeUndefined();
+        expect(filesDialogEntryToItem(directory)).toEqual({
+            id: "gxftp://dir",
+            label: "dir",
+            time: "",
+            details: "",
+            isLeaf: false,
+            url: "gxftp://dir",
+            size: 0,
+            updateTime: undefined,
+            entry: directory,
+        });
     });
 });
