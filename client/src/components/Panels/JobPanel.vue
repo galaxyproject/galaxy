@@ -32,6 +32,8 @@ import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
 const HIDDEN_TOOL_IDS = ["__DATA_FETCH__", "upload1"];
 const FETCH_LIMIT = 20;
+/** Separate limit for the refresh query, so a real batch of 20+ changed jobs doesn't trigger a full-list reset. */
+const REFRESH_LIMIT = 100;
 /** Time overlap in seconds for refreshing jobs to account for clock differences. */
 const REFRESH_OVERLAP_SECONDS = 5;
 
@@ -339,13 +341,13 @@ async function refreshChangedJobs() {
     }
 
     const requestStartedAt = new Date().toISOString();
-    const [data] = await fetchJobs(0, FETCH_LIMIT, extraProps);
+    const [data] = await fetchJobs(0, REFRESH_LIMIT, extraProps);
     if (requestGeneration !== filterGeneration) {
         // Filters changed while this was in flight; belongs to the discarded generation.
         return;
     }
 
-    if (data.length === FETCH_LIMIT) {
+    if (data.length === REFRESH_LIMIT) {
         // More changed than one page can represent; reset and reload rather than merge a possibly
         // incomplete picture.
         filterGeneration++;

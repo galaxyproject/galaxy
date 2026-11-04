@@ -549,7 +549,7 @@ describe("JobPanel", () => {
                         // The filtered load: nothing is actually queued.
                         return response(200).json([], { headers: { total_matches: "0" } });
                     }
-                    // The refresh query (state is intentionally left out of it). A server with 20
+                    // The refresh query (state is intentionally left out of it). A server with 100
                     // jobs in other states, last updated well before "now", should only come back
                     // empty once the refresh cursor is a recent bound, not a missing or stale one.
                     refreshRequests.push(params);
@@ -557,7 +557,7 @@ describe("JobPanel", () => {
                     const isRecentBound = dateRangeMin !== null && Date.parse(dateRangeMin) >= Date.now() - 60_000;
                     const jobs = isRecentBound
                         ? []
-                        : Array.from({ length: 20 }, (_, i) => buildJob({ id: `other${i}`, state: "ok" }));
+                        : Array.from({ length: 100 }, (_, i) => buildJob({ id: `other${i}`, state: "ok" }));
                     return response(200).json(jobs, { headers: { total_matches: `${jobs.length}` } });
                 }),
             );
