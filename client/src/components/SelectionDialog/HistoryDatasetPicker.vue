@@ -87,7 +87,7 @@ async function loadHistories(query: SelectItemsQuery) {
 }
 
 async function loadDatasets(query: SelectItemsQuery, historyId: string) {
-    const querySortBy = query.sortBy === "time" ? "update_time" : "name";
+    const querySortBy = query.sortBy === "update_time" ? "update_time" : "name";
     const sortPrefix = query.sortDesc ? "-dsc" : "-asc";
 
     const { response, data, error } = await GalaxyApi().GET("/api/datasets", {

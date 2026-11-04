@@ -144,6 +144,17 @@ describe("HistoryDatasetPicker", () => {
         expect(nth(historyQueries, -1).get("sort_desc")).toBe("false");
     });
 
+    it("sorts the datasets by update time when Last Updated is sorted", async () => {
+        const { datasetQueries } = mockApi();
+        const wrapper = await mountPicker();
+        await nth(wrapper.findAll("button.selection-dialog-folder"), 0).trigger("click");
+        await flushPromises();
+
+        wrapper.findComponent(GTable).vm.$emit("sort-changed", "update_time", true);
+        await flushPromises();
+        expect(nth(datasetQueries, -1).get("order")).toBe("update_time-dsc");
+    });
+
     it("searches the histories on the server from page 1", async () => {
         const { historyQueries } = mockApi();
         const wrapper = await mountPicker();
