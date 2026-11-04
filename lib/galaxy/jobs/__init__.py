@@ -1441,8 +1441,12 @@ class MinimalJobWrapper(HasResourceParameters):
         ) = tool_evaluator.build()
         if tool_evaluator.use_cached_job and job.user and job.tool_id and not tool_evaluator.consumes_names:
             # search again, now we know tool doesn't require name match
-            param_dump = {p.name: p.value for p in job.parameters if not p.name.startswith("__")}
             assert self.tool
+            # Some wrappers (e.g. QIIME2) declare __-prefixed input sections.
+            # Keep these scientific parameters while excluding internal state.
+            param_dump = {
+                p.name: p.value for p in job.parameters if p.name in self.tool.inputs or not p.name.startswith("__")
+            }
             params = self.tool.params_from_strings(param_dump)
             json_internal = params_to_json_internal(self.tool.inputs, params, self.app)
             element_identifiers = None
