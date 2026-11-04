@@ -6,7 +6,7 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
-import { FREE_TEXT_UNSUPPORTED, getData, getInvocationQueryParams } from "./invocations";
+import { getData } from "./invocations";
 
 const { server, http } = useServerMock();
 
@@ -24,7 +24,12 @@ const invocationQueries = vi.fn();
 function mockServer(workflowFails = false, historyFails = false) {
     server.use(
         http.get("/api/invocations", ({ request, response }) => {
-            invocationQueries(Object.fromEntries(new URL(request.url).searchParams));
+            const searchParams = new URL(request.url).searchParams;
+            invocationQueries({
+                workflow_id: searchParams.getAll("workflow_id"),
+                history_id: searchParams.getAll("history_id"),
+                user_id: searchParams.get("user_id"),
+            });
             return response.untyped(HttpResponse.json(INVOCATIONS, { headers: { total_matches: "4" } }));
         }),
         http.get("/api/histories/{history_id}", ({ params, response }) => {
@@ -104,37 +109,47 @@ describe("invocations grid getData", () => {
 });
 
 describe("invocations grid filtering", () => {
-    it.each([
-        ["", {}],
-        ["workflow:f2db41e1fa331b3e", { workflow_id: "f2db41e1fa331b3e" }],
-        ["history:1cd8e2f6b131e891", { history_id: "1cd8e2f6b131e891" }],
-        [
-            "workflow:f2db41e1fa331b3e history:1cd8e2f6b131e891",
-            { workflow_id: "f2db41e1fa331b3e", history_id: "1cd8e2f6b131e891" },
-        ],
-    ])("maps %j to %j", (search, expected) => {
-        expect(getInvocationQueryParams(search)).toEqual(expected);
-    });
-
-    it.each(["my workflow", "workflow:f2db41e1fa331b3e rnaseq", "text:rnaseq"])("rejects free text in %j", (search) => {
-        expect(() => getInvocationQueryParams(search)).toThrow(FREE_TEXT_UNSUPPORTED);
-    });
-
-    it("sends filters as API query parameters", async () => {
+    beforeEach(() => {
         setActivePinia(createPinia());
         invocationQueries.mockReset();
-        mockServer();
+    });
 
-        await getData(0, 25, "workflow:f2db41e1fa331b3e history:1cd8e2f6b131e891", "create_time", true, {
+    it("sends every matching workflow id and the history id", async () => {
+        mockServer();
+        server.use(
+            http.get("/api/workflows", ({ request, response }) => {
+                const search = new URL(request.url).searchParams.get("search");
+                const items = search === "name:rna" ? [{ id: "workflow-1" }, { id: "workflow-2" }] : [];
+                return response.untyped(HttpResponse.json(items, { headers: { total_matches: String(items.length) } }));
+            }),
+        );
+
+        const [data, total, matches] = await getData(0, 25, "rna history_id:1cd8e2f6b131e891", "create_time", true, {
             user_id: "user-1",
         });
 
-        expect(invocationQueries).toHaveBeenCalledWith(
-            expect.objectContaining({
-                workflow_id: "f2db41e1fa331b3e",
-                history_id: "1cd8e2f6b131e891",
-                user_id: "user-1",
+        expect(data).toHaveLength(4);
+        expect(total).toBe(4);
+        expect(matches.workflows!.items).toHaveLength(2);
+        expect(invocationQueries).toHaveBeenCalledWith({
+            workflow_id: ["workflow-1", "workflow-2"],
+            history_id: ["1cd8e2f6b131e891"],
+            user_id: "user-1",
+        });
+    });
+
+    it("skips the invocation request when a name matches nothing", async () => {
+        mockServer();
+        server.use(
+            http.get("/api/workflows", ({ response }) => {
+                return response.untyped(HttpResponse.json([], { headers: { total_matches: "0" } }));
             }),
         );
+
+        const [data, total] = await getData(0, 25, "workflow:missing", "create_time", true);
+
+        expect(data).toEqual([]);
+        expect(total).toBe(0);
+        expect(invocationQueries).not.toHaveBeenCalled();
     });
 });

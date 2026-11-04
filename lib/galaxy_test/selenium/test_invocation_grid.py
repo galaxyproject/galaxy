@@ -44,14 +44,16 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
 
     @selenium_test
     def test_filter_by_workflow_and_history(self):
-        first_history_id = self.dataset_populator.new_history()
-        self.workflow_populator.run_workflow(
+        workflow_name = self._get_random_name(prefix="filter workflow ")
+        history_name = self._get_random_name(prefix="filter history ")
+        first_history_id = self.dataset_populator.new_history(name=history_name)
+        first_workflow_id = self.workflow_populator.run_workflow(
             WORKFLOW_RENAME_ON_INPUT,
             history_id=first_history_id,
             assert_ok=True,
             wait=True,
             invocations=2,
-        )
+        ).workflow_id
         # run_workflow uploads the workflow again, so this is a second stored workflow
         second_history_id = self.dataset_populator.new_history()
         second_workflow_id = self.workflow_populator.run_workflow(
@@ -60,25 +62,38 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
             assert_ok=True,
             wait=True,
         ).workflow_id
+        # both workflows share a name, like a workflow imported twice
+        for workflow_id in (first_workflow_id, second_workflow_id):
+            self.workflow_populator.update_workflow_fields(workflow_id, {"name": workflow_name}).raise_for_status()
         self.navigate_to_invocations_grid()
         invocations = self.components.invocations
         invocations.invocations_table.wait_for_visible()
         self._assert_showing_n_invocations(3)
 
         # newest first: row 0 is the second workflow's invocation
-        invocations.invocations_table_cell_filter(row=0, column=1, key="workflow").wait_for_and_click()
+        invocations.invocations_table_cell_filter(row=0, column=1, key="workflow_id").wait_for_and_click()
         self._assert_showing_n_invocations(1)
-        self._assert_filter_text(f"workflow:{second_workflow_id}")
-        self.screenshot("invocations_filtered_by_workflow")
+        self._assert_filter_text(f"workflow_id:{second_workflow_id}")
 
-        self.published_grid_search_for(f"history:{first_history_id}")
+        self.published_grid_search_for(f"workflow:'{workflow_name}'")
+        self._assert_showing_n_invocations(3)
+        invocations.filter_workflow_matches.wait_for_visible()
+        self._assert_n_elements(invocations.filter_workflow_match_cards, 2)
+        self.screenshot("invocations_filtered_by_workflow_name")
+
+        self.published_grid_search_for(f"history:'{history_name}'")
         self._assert_showing_n_invocations(2)
+        self._assert_n_elements(invocations.filter_history_match_cards, 1)
 
         self.published_grid_search_for()
         self._assert_showing_n_invocations(3)
-        invocations.invocations_table_cell_filter(row=2, column=2, key="history").wait_for_and_click()
+        invocations.invocations_table_cell_filter(row=2, column=2, key="history_id").wait_for_and_click()
         self._assert_showing_n_invocations(2)
-        self._assert_filter_text(f"history:{first_history_id}")
+        self._assert_filter_text(f"history_id:{first_history_id}")
+
+    @retry_assertion_during_transitions
+    def _assert_n_elements(self, component, n):
+        assert len(component.all()) == n
 
     @retry_assertion_during_transitions
     def _assert_filter_text(self, expected):

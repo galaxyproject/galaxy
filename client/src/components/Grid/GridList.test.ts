@@ -194,9 +194,13 @@ describe("GridList", () => {
 
     it("cell filter handling", async () => {
         const testGrid = createTestGrid();
-        testGrid.filtering = new Filtering({ link: { handler: equals("link", "link"), menuItem: false } });
+        testGrid.filtering = new Filtering({
+            link: { handler: equals("link", "link"), menuItem: false },
+            name: { handler: equals("name", "name"), menuItem: false },
+        });
         testGrid.fields[1]!.filter = {
             key: "link",
+            clears: ["name"],
             title: "Filter by link",
             value: (data) => (data.id === "id-2" ? undefined : (data.link as string)),
         };
@@ -207,6 +211,10 @@ describe("GridList", () => {
         expect(
             wrapper.find("[data-description='grid cell 1-1'] [data-description='grid cell filter link']").exists(),
         ).toBeFalsy();
+        await wrapper.find("[data-description='filter text input']").setValue("name:foo");
+        vi.runAllTimers();
+        await flushPromises();
+        expect(vi.mocked(testGrid.getData).mock.calls.at(-1)![2]).toBe("name:foo");
         const cellFilter = wrapper.find(
             "[data-description='grid cell 0-1'] [data-description='grid cell filter link']",
         );

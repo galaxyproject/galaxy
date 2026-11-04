@@ -25,6 +25,8 @@ interface Props {
     itemRefs?: Record<string, Ref<InstanceType<typeof WorkflowCard> | null>>;
     rangeSelectAnchor?: WorkflowSummary;
     clickable?: boolean;
+    /** Show selection checkboxes (never shown in the published and editor views) */
+    selectable?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -38,6 +40,7 @@ const props = withDefaults(defineProps<Props>(), {
     selectedWorkflowIds: () => [],
     itemRefs: () => ({}),
     rangeSelectAnchor: undefined,
+    selectable: true,
 });
 
 const emit = defineEmits<{
@@ -100,7 +103,7 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             :key="workflow.id"
             tabindex="0"
             :workflow="workflow"
-            :selectable="!publishedView && !editorView"
+            :selectable="props.selectable && !publishedView && !editorView"
             :selected="props.selectedWorkflowIds.some((w) => w.id === workflow.id)"
             :grid-view="props.gridView"
             :hide-runs="props.hideRuns"

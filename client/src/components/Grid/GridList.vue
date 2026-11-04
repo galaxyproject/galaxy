@@ -69,6 +69,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 // contains the current grid data provided by the corresponding api endpoint
 const gridData = ref();
+// optional third element returned by `getData`, handed to the `results-header` slot
+const gridMeta = ref<unknown>();
 
 // message references
 const errorMessage = ref("");
@@ -129,6 +131,25 @@ function applyFilter(filter: string, value: string | boolean, quoted = false) {
 }
 
 /**
+ * Set or remove (`undefined` value) several filters in the filter text at once
+ */
+function setFilters(filters: Record<string, string | undefined>) {
+    if (!filterClass) {
+        return;
+    }
+    const toRemove = Object.fromEntries(Object.entries(filters).filter(([, value]) => value === undefined));
+    const toSet = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== undefined));
+    let text = filterText.value;
+    if (Object.keys(toRemove).length > 0) {
+        text = filterClass.applyFiltersToText(toRemove, text, true);
+    }
+    if (Object.keys(toSet).length > 0) {
+        text = filterClass.applyFiltersToText(toSet, text);
+    }
+    filterText.value = text;
+}
+
+/**
  * Display initial message parsed through route query
  */
 function displayInitialMessage() {
@@ -177,7 +198,7 @@ async function getGridData() {
         }
         try {
             const offset = props.limit * (currentPage.value ? currentPage.value - 1 : 0);
-            const [responseData, responseTotal] = await props.gridConfig.getData(
+            const [responseData, responseTotal, responseMeta] = await props.gridConfig.getData(
                 offset,
                 props.limit,
                 validatedFilterText(),
@@ -187,6 +208,7 @@ async function getGridData() {
             );
             gridData.value = responseData;
             totalRows.value = responseTotal;
+            gridMeta.value = responseMeta;
             errorMessage.value = "";
         } catch (e) {
             errorMessage.value = `Failed to obtain grid data: ${e}`;
@@ -255,7 +277,8 @@ function onTagInput(data: RowData, tags: Array<string>, tagsHandler?: FieldHandl
 function onCellFilter(fieldFilter: FieldFilter, rowData: RowData) {
     const value = fieldFilter.value(rowData);
     if (value) {
-        applyFilter(fieldFilter.key, value);
+        const cleared = Object.fromEntries((fieldFilter.clears ?? []).map((key) => [key, undefined]));
+        setFilters({ ...cleared, [fieldFilter.key]: value });
     }
 }
 
@@ -374,6 +397,7 @@ watch(operationMessage, () => {
                 :loading="initDataLoading || resultsLoading"
                 view="compact" />
         </div>
+        <slot v-if="!initDataLoading" name="results-header" :meta="gridMeta" />
         <div v-if="initDataLoading" class="position-relative h-100" data-description="grid initial loading">
             <LoadingOverlay />
         </div>

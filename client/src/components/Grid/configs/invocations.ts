@@ -6,10 +6,10 @@ import type { WorkflowInvocation } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
-import Filtering, { equals, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import { invocationsFiltering, resolveInvocationFilters } from "./invocationFilters";
 import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
@@ -18,52 +18,6 @@ const { emit } = useEventBus<string>("grid-router-push");
  * Local types
  */
 type SortKeyLiteral = "create_time" | "update_time" | "None" | null | undefined;
-
-/**
- * `workflow` takes a stored workflow id, `history` a history id; both map to the
- * `/api/invocations` query parameters of the same name. Unkeyed text lands in `text`,
- * which the API cannot search, so `getData` rejects it.
- */
-const validFilters: Record<string, ValidFilter<string>> = {
-    workflow: {
-        placeholder: "workflow id",
-        type: String,
-        handler: equals("workflow_id", "workflow_id"),
-        menuItem: true,
-        helpInfo: "Use the filter button next to a workflow name to show only invocations of that workflow.",
-    },
-    history: {
-        placeholder: "history id",
-        type: String,
-        handler: equals("history_id", "history_id"),
-        menuItem: true,
-        helpInfo: "Use the filter button next to a history name to show only invocations in that history.",
-    },
-    text: { handler: equals("text", "text"), menuItem: false },
-};
-
-export const invocationsFiltering = new Filtering(validFilters, undefined, true, "text");
-
-export const FREE_TEXT_UNSUPPORTED =
-    "Free-text search is not available for invocations, filter with workflow: or history: instead.";
-
-/**
- * Translate the grid's filter text into `/api/invocations` query parameters
- */
-export function getInvocationQueryParams(search: string): Record<string, string> {
-    const queryDict = invocationsFiltering.getQueryDict(search);
-    if (queryDict.text) {
-        throw new Error(FREE_TEXT_UNSUPPORTED);
-    }
-    const params: Record<string, string> = {};
-    if (queryDict.workflow_id) {
-        params.workflow_id = queryDict.workflow_id;
-    }
-    if (queryDict.history_id) {
-        params.history_id = queryDict.history_id;
-    }
-    return params;
-}
 
 /**
  * Request and return invocations from server
@@ -76,13 +30,17 @@ export async function getData(
     sort_desc: boolean,
     extraProps?: Record<string, unknown>,
 ) {
+    const { params: filterParams, matches } = await resolveInvocationFilters(search);
+    if (!filterParams) {
+        return [[] as WorkflowInvocation[], 0, matches] as const;
+    }
     const params = {
         limit,
         offset,
         sort_by: sort_by as SortKeyLiteral,
         sort_desc,
         include_nested_invocations: false,
-        ...getInvocationQueryParams(search),
+        ...filterParams,
     } as Record<string, unknown>;
 
     if (extraProps && "include_terminal" in extraProps) {
@@ -99,7 +57,7 @@ export async function getData(
     fetchHistoriesAndWorkflows(data);
     const headers = response.headers;
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
-    return [data, totalMatches] as const;
+    return [data, totalMatches, matches] as const;
 }
 
 /**
@@ -161,7 +119,8 @@ const fields: FieldArray = [
             return workflowStore.getStoredWorkflowNameByInstanceId(invocation.workflow_id);
         },
         filter: {
-            key: "workflow",
+            key: "workflow_id",
+            clears: ["workflow"],
             title: "Show only invocations of this workflow",
             value: (data) => {
                 const invocation = data as WorkflowInvocation;
@@ -174,7 +133,8 @@ const fields: FieldArray = [
         title: "History",
         type: "history",
         filter: {
-            key: "history",
+            key: "history_id",
+            clears: ["history"],
             title: "Show only invocations in this history",
             value: (data) => (data as WorkflowInvocation).history_id,
         },
