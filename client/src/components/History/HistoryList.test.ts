@@ -7,7 +7,13 @@ import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { type AnyHistoryEntry, getArchivedHistories, getMyHistories, getSharedHistories } from "@/api/histories";
+import {
+    type AnyHistoryEntry,
+    getArchivedHistories,
+    getMyHistories,
+    getPublishedHistories,
+    getSharedHistories,
+} from "@/api/histories";
 import { raisedToasts } from "@/composables/__mocks__/toast";
 import { useUserStore } from "@/stores/userStore";
 
@@ -26,6 +32,7 @@ vi.mock("@/api/histories", async (importOriginal) => ({
     ...(await importOriginal<object>()),
     getArchivedHistories: vi.fn(),
     getMyHistories: vi.fn(),
+    getPublishedHistories: vi.fn(),
     getSharedHistories: vi.fn(),
 }));
 
@@ -53,7 +60,7 @@ const MINE = [history("mine_1", "Mine", "me")];
 
 let failSecond = false;
 
-async function mountHistoryList(activeList: "my" | "shared" | "archived") {
+async function mountHistoryList(activeList: "my" | "shared" | "published" | "archived") {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
     useUserStore().currentUser = FAKE_USER;
@@ -265,9 +272,11 @@ describe("HistoryList sorting", () => {
         expect(listedNames(wrapper)).toEqual(["big", "small"]);
     });
 
-    it("offers no size sort for archived histories", async () => {
-        vi.mocked(getArchivedHistories).mockResolvedValueOnce(historiesResponse([]) as never);
-        const wrapper = await mountHistoryList("archived");
+    it.each(["shared", "published", "archived"] as const)("offers no size sort for %s histories", async (list) => {
+        for (const fetch of [getSharedHistories, getPublishedHistories, getArchivedHistories]) {
+            vi.mocked(fetch).mockResolvedValueOnce(historiesResponse([]) as never);
+        }
+        const wrapper = await mountHistoryList(list);
 
         expect(wrapper.find("#sortby-update_time").exists()).toBe(true);
         expect(wrapper.find("#sortby-size").exists()).toBe(false);

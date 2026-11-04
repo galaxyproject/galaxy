@@ -155,6 +155,13 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
             message = "Requires user to log in."
             raise RequestParameterInvalidException(message)
 
+        own_only = not show_published and not show_shared and (show_own or not is_admin)
+        if payload.sort_by == "size" and not own_only:
+            # Sorting by size sums the datasets of every matching history, which is
+            # bounded only for a listing of the caller's own histories.
+            message = "Sorting by size requires listing only your own histories."
+            raise RequestParameterInvalidException(message)
+
         stmt = select(self.model_class).outerjoin(model.User)
 
         filters = []

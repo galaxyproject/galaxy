@@ -19,6 +19,7 @@ from galaxy_test.base.api_mixins import (
     BaseHistories,
     ImportExportTests,
 )
+from galaxy_test.base.api_util import ADMIN_TEST_USER
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_library,
@@ -294,6 +295,22 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             response = self._get("histories", data=data)
             self._assert_status_code_is(response, 200)
             assert [history["id"] for history in response.json()] == [large, small, empty_second, empty_first]
+
+    def test_index_sort_by_size_requires_own_histories(self):
+        for flags in [dict(show_published=True), dict(show_published=False, show_shared=True)]:
+            response = self._get("histories", data=dict(search="", sort_by="size", **flags))
+            self._assert_status_code_is(response, 400)
+
+    @requires_admin
+    def test_index_sort_by_size_requires_own_histories_for_admins(self):
+        with self._different_user(ADMIN_TEST_USER):
+            data = dict(search="", sort_by="size", show_own=False, show_published=False)
+            response = self._get("histories", data=data)
+            self._assert_status_code_is(response, 400)
+
+            data["show_own"] = True
+            response = self._get("histories", data=data)
+            self._assert_status_code_is(response, 200)
 
     def test_index_advanced_filter(self):
         # Create the histories with a different user to ensure the test

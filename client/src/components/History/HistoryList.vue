@@ -153,15 +153,15 @@ const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const currentListViewMode = computed(() => userStore.currentListViewPreferences.histories || "grid");
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
-// Only /api/histories sorts by size; the archived view reads /api/histories/archived.
+// The server sorts by size only when listing the user's own, non-archived histories.
 const sortOptions = computed(() =>
-    archivedView.value
-        ? []
-        : [
+    myView.value
+        ? [
               { value: "name", label: "Name" },
               { value: "update_time", label: "Update time" },
               { value: "size", label: "Storage used" },
-          ],
+          ]
+        : [],
 );
 const noItems = computed(() => !loading.value && historiesLoaded.value.length === 0 && !filterText.value);
 const noResults = computed(() => !loading.value && historiesLoaded.value.length === 0 && Boolean(filterText.value));
