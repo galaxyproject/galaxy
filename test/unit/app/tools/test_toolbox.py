@@ -296,7 +296,10 @@ class TestToolBox(BaseToolBoxTestCase):
         tool = self._init_curated_tag_tool()
         assert self.toolbox.curated_tool_tags_by_id(mock_trans()) == {"test_tool": ["curated_tag"]}
 
-        tool.allow_user_access = lambda user, attempting_access: False
+        def deny_access(user, attempting_access: bool = True) -> bool:
+            return False
+
+        tool.allow_user_access = deny_access  # type: ignore[method-assign]
         assert self.toolbox.curated_tool_tags_by_id(mock_trans()) == {}
 
     def test_curated_tool_tags_by_id_skips_hidden_tools(self):
