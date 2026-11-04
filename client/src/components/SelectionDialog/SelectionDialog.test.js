@@ -147,8 +147,8 @@ describe("SelectionDialog.vue", () => {
                 { key: "time", label: "Time" },
             ],
             items: [
-                { id: "1", label: "file1", isLeaf: true, time: "2026-10-17T09:30:00", updateTime },
-                { id: "2", label: "file2", isLeaf: true, time: "not a date" },
+                { id: "1", label: "file1", isLeaf: true, time: "2020-01-01T00:00:00", updateTime },
+                { id: "2", label: "file2", isLeaf: true, time: "2026-10-17T09:30:00" },
             ],
         });
 
