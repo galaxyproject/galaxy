@@ -9,8 +9,12 @@ import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import FormCollectionType from "./FormCollectionType.vue";
 import FormDefault from "./FormDefault.vue";
 import FormInputCollection from "./FormInputCollection.vue";
+import FormSubworkflowReplace from "./FormSubworkflowReplace.vue";
+import FormSubworkflowVersion from "./FormSubworkflowVersion.vue";
 
 vi.mock("./FormDatatype.vue", () => ({ default: { render: () => h("div") } }));
+vi.mock("./FormSubworkflowReplace.vue", () => ({ default: { render: () => h("div") } }));
+vi.mock("./FormSubworkflowVersion.vue", () => ({ default: { render: () => h("div") } }));
 
 const localVue = getLocalVue();
 
@@ -27,6 +31,7 @@ describe("FormDefault", () => {
                 datatypes: [],
                 step: {
                     id: 0,
+                    content_id: "id",
                     contentId: "id",
                     annotation: "annotation",
                     label: "label",
@@ -42,6 +47,11 @@ describe("FormDefault", () => {
             global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             pinia: createTestingPinia({ createSpy: vi.fn }),
         });
+    });
+
+    it("offers version switching and replacement for a sub-workflow step", () => {
+        expect(wrapper.findComponent(FormSubworkflowVersion).exists()).toBe(true);
+        expect(wrapper.findComponent(FormSubworkflowReplace).exists()).toBe(true);
     });
 
     it("re-seeds the collection input form from the step on refresh", async () => {

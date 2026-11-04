@@ -49,6 +49,11 @@
                 :content-id="contentId"
                 :step-id="stepId"
                 @onAttemptRefactor="(actions: unknown) => emit('onAttemptRefactor', actions)" />
+            <FormSubworkflowReplace
+                v-if="isSubworkflow"
+                :step-id="stepId"
+                :workflow-id="workflowId"
+                @onAttemptRefactor="(actions: unknown) => emit('onAttemptRefactor', actions)" />
             <FormConditional
                 v-if="isSubworkflow"
                 :step="step"
@@ -103,6 +108,7 @@ import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 import { defaultFileLocation, withDefaultFileLocation } from "../modules/defaultFile";
 
 import FormConditional from "./FormConditional.vue";
+import FormSubworkflowReplace from "./FormSubworkflowReplace.vue";
 import FormSubworkflowVersion from "./FormSubworkflowVersion.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FormCard from "@/components/Form/FormCard.vue";
@@ -128,7 +134,7 @@ const emit = defineEmits([
 const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm, stepInputs, postJobActions } =
     useStepProps(stepRef);
-const { stepStore, undoRedoStore, stateStore, connectionStore } = useWorkflowStores();
+const { stepStore, undoRedoStore, stateStore, connectionStore, workflowId } = useWorkflowStores();
 const { setInputDefaults } = useStepActions(stepStore, undoRedoStore, stateStore, connectionStore);
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
