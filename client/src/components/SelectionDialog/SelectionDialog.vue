@@ -82,6 +82,9 @@ const emit = defineEmits<{
     (e: "onUndo"): void;
 }>();
 
+// GTable's local filter stringifies every item key; these hold no displayed text.
+const FILTER_IGNORED_FIELDS = ["entry", "selectionState", "updateTime"];
+
 const filter = ref("");
 const currentPage = ref(1);
 const perPage = ref(25);
@@ -185,9 +188,8 @@ function onSelectAll(selected: boolean) {
 }
 
 /** Format time stamp */
-function formatTime(value: string) {
-    if (value) {
-        const date = new Date(value);
+function formatTime(date?: Date) {
+    if (date) {
         return date.toLocaleString("default", {
             day: "numeric",
             month: "short",
@@ -314,6 +316,7 @@ defineExpose({
                     :current-page="usingProvider ? undefined : currentPage"
                     :fields="fieldDetails"
                     :filter="filter"
+                    :filter-ignored-fields="FILTER_IGNORED_FIELDS"
                     :items="tableItems"
                     :loading="isBusy"
                     :local-filtering="!usingProvider"
@@ -360,11 +363,11 @@ defineExpose({
                     </template>
 
                     <template v-slot:cell(time)="data">
-                        {{ formatTime(data.value) }}
+                        {{ formatTime(data.item.updateTime) }}
                     </template>
 
                     <template v-slot:cell(update_time)="data">
-                        {{ formatTime(data.value) }}
+                        {{ formatTime(data.item.updateTime) }}
                     </template>
                 </GTable>
 

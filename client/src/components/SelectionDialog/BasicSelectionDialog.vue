@@ -2,14 +2,11 @@
 import { computed, onMounted, type Ref, ref } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
+import { basicEntryToItem } from "@/components/SelectionDialog/selectionAdapters";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
-
-interface BasicItem extends SelectionItem {
-    time: string | null;
-}
 
 interface Props {
     detailsKey?: string;
@@ -59,18 +56,9 @@ async function load() {
         // this could potentially load quite a lot of items
         const incoming = await props.getData();
         if (incoming) {
-            items.value = incoming.map((entry: any) => {
-                const timeStamp = entry[props.timeKey];
-                showTime.value = !!timeStamp;
-                const item: BasicItem = {
-                    id: entry.id,
-                    label: entry[props.labelKey] || null,
-                    details: entry[props.detailsKey] || null,
-                    time: timeStamp || null,
-                    entry: entry,
-                    isLeaf: true,
-                    url: "",
-                };
+            items.value = incoming.map((entry) => {
+                const item = basicEntryToItem(entry, props);
+                showTime.value = !!item.time;
                 return item;
             });
         }

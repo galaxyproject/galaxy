@@ -17,13 +17,9 @@ import { Services } from "./services";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-// `_rowVariant` was bootstrap-vue's BTable row-styling convention; GTable doesn't read it (this
-// is a no-op today), but keeping the type honest rather than dropping the assignment outright.
-type Record = SelectionItem & { _rowVariant?: string };
-
 interface Props {
     allowUpload?: boolean;
-    callback?: (results: Record[] | DataOption[]) => void;
+    callback?: (results: SelectionItem[] | DataOption[]) => void;
     filterOkState?: boolean;
     filterByTypeIds?: string[];
     format?: string;
@@ -57,7 +53,7 @@ const { openUploadModal } = useUploadMethodModal();
 
 const errorMessage = ref("");
 const filter = ref("");
-const items: Ref<Array<Record>> = ref([]);
+const items: Ref<Array<SelectionItem>> = ref([]);
 const hasValue = ref(false);
 const modalShow = ref(true);
 const optionsShow = ref(true);
@@ -87,17 +83,6 @@ const fields: TableField[] = [
     },
 ];
 
-/** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
-function formatRows() {
-    for (const item of items.value) {
-        let _rowVariant = "active";
-        if (item.isLeaf) {
-            _rowVariant = model.exists(item.id) ? "success" : "default";
-        }
-        item._rowVariant = _rowVariant;
-    }
-}
-
 /** Returns the default url i.e. the url of the current history **/
 function getHistoryUrl() {
     let queryString = "&q=deleted&qv=false";
@@ -117,13 +102,11 @@ function onCancel() {
 }
 
 /** Collects selected datasets in value array **/
-function onClick(record: Record) {
+function onClick(record: SelectionItem) {
     if (record.isLeaf) {
         model.add(record);
         hasValue.value = model.count() > 0;
-        if (props.multiple) {
-            formatRows();
-        } else {
+        if (!props.multiple) {
             onOk();
         }
     } else {
@@ -140,7 +123,7 @@ function onOk() {
 }
 
 /** On clicking folder name div: overloader for the @click.stop in DataDialogTable **/
-function onOpen(record: Record) {
+function onOpen(record: SelectionItem) {
     load(record.url);
 }
 
@@ -179,7 +162,6 @@ function load(url?: string) {
                 });
             }
             items.value = incoming;
-            formatRows();
             optionsShow.value = true;
         })
         .catch((error) => {

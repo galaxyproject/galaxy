@@ -1,5 +1,6 @@
 import axios from "axios";
 
+import { toDate } from "@/components/SelectionDialog/selectionAdapters";
 import { getAppRoot } from "@/onload/loadConfig";
 
 /** Data populator traverses raw server responses **/
@@ -37,6 +38,7 @@ export class Services {
         const host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
         record.extension = record.extension ?? record.file_ext;
         record.details = record.extension || record.description;
+        record.updateTime = toDate(record.update_time);
         record.time = record.update_time || record.create_time;
         record.isLeaf = this.isDataset(record);
         if (record.time) {

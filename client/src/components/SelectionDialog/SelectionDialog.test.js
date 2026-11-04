@@ -1,6 +1,6 @@
-import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
 import { SELECTION_STATES } from "./selectionTypes";
@@ -24,6 +24,10 @@ describe("SelectionDialog.vue", () => {
             props: mockOptions,
             global: localVue,
         });
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
@@ -136,5 +140,61 @@ describe("SelectionDialog.vue", () => {
 
         expect(wrapper.emitted("onClick")).toBeTruthy();
         expect(wrapper.emitted("onClick")).toHaveLength(1);
+    });
+
+    it("formats the time column from the item's updateTime and shows - when it is missing", async () => {
+        const updateTime = new Date("2026-10-17T09:30:00");
+        await wrapper.setProps({
+            optionsShow: true,
+            fields: [
+                { key: "label", label: "Name" },
+                { key: "time", label: "Time" },
+            ],
+            items: [
+                { id: "1", label: "file1", isLeaf: true, time: "2020-01-01T00:00:00", updateTime },
+                { id: "2", label: "file2", isLeaf: true, time: "2026-10-17T09:30:00" },
+            ],
+        });
+
+        const cells = wrapper.findAll("td[id^='g-table-cell-time-']");
+        expect(cells).toHaveLength(2);
+        expect(nth(cells, 0).text()).toBe(
+            updateTime.toLocaleString("default", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+                minute: "numeric",
+                hour: "numeric",
+            }),
+        );
+        expect(nth(cells, 1).text()).toBe("-");
+    });
+
+    it.each([
+        ["the parsed update time", "gmt"],
+        ["the raw entry", "object"],
+        ["the selection state", "unselected"],
+    ])("does not search %s (%j)", async (_field, text) => {
+        vi.useFakeTimers();
+        await wrapper.setProps({
+            optionsShow: true,
+            items: [
+                {
+                    id: "1",
+                    label: "reads.fastq",
+                    isLeaf: true,
+                    selectionState: SELECTION_STATES.UNSELECTED,
+                    updateTime: new Date("2026-10-17T09:30:00Z"),
+                    entry: { id: "1" },
+                },
+                { id: "2", label: `${text}.txt`, isLeaf: true },
+            ],
+        });
+
+        await wrapper.get("input[type='text']").setValue(text);
+        await vi.advanceTimersByTimeAsync(500);
+
+        const labels = wrapper.findAll("td[id^='g-table-cell-label-']").map((cell) => cell.text());
+        expect(labels).toEqual([`${text}.txt`]);
     });
 });
