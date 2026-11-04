@@ -526,6 +526,54 @@ describe("JobPanel", () => {
         }
     });
 
+    it("doesn't reset-loop the refresh under a status filter nothing currently matches", async () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date("2024-01-01T12:00:00.000Z"));
+            const refreshRequests: URLSearchParams[] = [];
+            server.use(
+                http.get("/api/jobs", ({ request, response }) => {
+                    const params = new URL(request.url).searchParams;
+                    if (params.has("state")) {
+                        // The filtered load: nothing is actually queued.
+                        return response(200).json([], { headers: { total_matches: "0" } });
+                    }
+                    // The refresh query (state is intentionally left out of it). A server with 20
+                    // jobs in other states, last updated well before "now", should only come back
+                    // empty once the refresh cursor is a recent bound, not a missing or stale one.
+                    refreshRequests.push(params);
+                    const dateRangeMin = params.get("date_range_min");
+                    const isRecentBound = dateRangeMin !== null && Date.parse(dateRangeMin) >= Date.now() - 60_000;
+                    const jobs = isRecentBound
+                        ? []
+                        : Array.from({ length: 20 }, (_, i) => buildJob({ id: `other${i}`, state: "ok" }));
+                    return response(200).json(jobs, { headers: { total_matches: `${jobs.length}` } });
+                }),
+            );
+
+            const wrapper = mountJobPanel();
+            await flushPromises();
+            wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "state:queued");
+            await flushPromises();
+            await scrollOnce();
+
+            await vi.advanceTimersByTimeAsync(3000);
+            await flushPromises();
+            await vi.advanceTimersByTimeAsync(3000);
+            await flushPromises();
+
+            // Each refresh carried a recent date_range_min, so the mock server-with-other-jobs
+            // never matched and the list never had reason to reset.
+            expect(refreshRequests.length).toBeGreaterThan(0);
+            for (const params of refreshRequests) {
+                expect(params.has("date_range_min")).toBe(true);
+            }
+            expect(wrapper.text()).not.toContain("other0");
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it("shows an invalid filter error with a clear-search hint", async () => {
         const wrapper = mountJobPanel();
         await flushPromises();
