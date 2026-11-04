@@ -7,7 +7,7 @@ import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
 import type { GalaxyConfiguration } from "@/stores/configurationStore";
-import Filtering from "@/utils/filtering";
+import Filtering, { equals } from "@/utils/filtering";
 
 import type { GridConfig, RowData } from "./configs/types";
 
@@ -190,6 +190,33 @@ describe("GridList", () => {
         await flushPromises();
         expect(vi.mocked(testGrid.getData)).toHaveBeenCalledTimes(2);
         expect(vi.mocked(testGrid.getData).mock.calls[1]!.slice(0, 5)).toEqual([0, 25, "filter query", "id", true]);
+    });
+
+    it("cell filter handling", async () => {
+        const testGrid = createTestGrid();
+        testGrid.filtering = new Filtering({ link: { handler: equals("link", "link"), menuItem: false } });
+        testGrid.fields[1]!.filter = {
+            key: "link",
+            title: "Filter by link",
+            value: (data) => (data.id === "id-2" ? undefined : (data.link as string)),
+        };
+        const wrapper = createTarget({
+            gridConfig: testGrid,
+        });
+        await flushPromises();
+        expect(
+            wrapper.find("[data-description='grid cell 1-1'] [data-description='grid cell filter link']").exists(),
+        ).toBeFalsy();
+        const cellFilter = wrapper.find(
+            "[data-description='grid cell 0-1'] [data-description='grid cell filter link']",
+        );
+        expect(cellFilter.attributes("title")).toBe("Filter by link");
+        await cellFilter.trigger("click");
+        await flushPromises();
+        expect((wrapper.find("[data-description='filter text input']").element as HTMLInputElement).value).toBe(
+            "link:link-1",
+        );
+        expect(vi.mocked(testGrid.getData).mock.calls.at(-1)!.slice(0, 5)).toEqual([0, 25, "link:link-1", "id", true]);
     });
 
     it("pagination", async () => {

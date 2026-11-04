@@ -44,7 +44,17 @@ export interface FieldEntry {
     icon?: IconDefinition;
     handler?: FieldHandler;
     converter?: (data: RowData) => string;
+    filter?: FieldFilter;
     width?: number;
+}
+
+/**
+ * Renders a button next to the cell that sets `key:value` in the grid's filter text
+ */
+export interface FieldFilter {
+    key: string;
+    title: string;
+    value: (data: RowData) => string | undefined;
 }
 
 export type FieldHandler = (data: RowData) => void;

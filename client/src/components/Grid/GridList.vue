@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faCaretUp, faFilter, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
 import { BCard, BPagination } from "bootstrap-vue";
@@ -8,7 +8,15 @@ import { useRouter } from "vue-router";
 
 import localize from "@/utils/localization";
 
-import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
+import type {
+    BatchOperation,
+    FieldEntry,
+    FieldFilter,
+    FieldHandler,
+    GridConfig,
+    Operation,
+    RowData,
+} from "./configs/types";
 
 import LoadingOverlay from "../Common/LoadingOverlay.vue";
 import HelpText from "../Help/HelpText.vue";
@@ -244,6 +252,13 @@ function onTagInput(data: RowData, tags: Array<string>, tagsHandler?: FieldHandl
         data.tags = tags;
     }
 }
+function onCellFilter(fieldFilter: FieldFilter, rowData: RowData) {
+    const value = fieldFilter.value(rowData);
+    if (value) {
+        applyFilter(fieldFilter.key, value);
+    }
+}
+
 function onFilter(filter?: string) {
     if (filter) {
         applyFilter(filter, true);
@@ -447,6 +462,7 @@ watch(operationMessage, () => {
                                 :style="{ width: `${fieldEntry.width}%` }">
                                 <div
                                     v-if="!fieldEntry.condition || fieldEntry.condition(rowData)"
+                                    :class="{ 'd-flex align-items-center': !!fieldEntry.filter }"
                                     :data-description="`grid cell ${rowIndex}-${fieldIndex}`">
                                     <GridOperations
                                         v-if="fieldEntry.type == 'operations' && fieldEntry.operations"
@@ -501,6 +517,17 @@ watch(operationMessage, () => {
                                         @input="onTagInput(rowData, $event, fieldEntry.handler)"
                                         @tag-click="applyFilter('tag', $event, true)" />
                                     <span v-else v-localize> Not available. </span>
+                                    <GButton
+                                        v-if="fieldEntry.filter && fieldEntry.filter.value(rowData)"
+                                        transparent
+                                        size="small"
+                                        color="blue"
+                                        class="grid-cell-filter p-0 ml-1"
+                                        :title="localize(fieldEntry.filter.title)"
+                                        :data-description="`grid cell filter ${fieldEntry.filter.key}`"
+                                        @click="onCellFilter(fieldEntry.filter, rowData)">
+                                        <FontAwesomeIcon :icon="faFilter" fixed-width />
+                                    </GButton>
                                 </div>
                                 <FontAwesomeIcon v-else :icon="faShieldAlt" />
                             </td>
