@@ -79,18 +79,13 @@ function cardClicked(job: JobBaseModel) {
             </div>
         </template>
         <template v-slot:description>
-            <div class="d-flex align-items-center justify-content-between flex-gapx-1">
-                <Heading v-if="props.job.history_id" class="job-card-history m-0" size="text">
-                    <FontAwesomeIcon :icon="faHdd" fixed-width />
+            <Heading v-if="props.job.history_id" class="job-card-history m-0" size="text">
+                <FontAwesomeIcon :icon="faHdd" fixed-width />
 
-                    <small class="text-muted truncate-n-lines two-lines">
-                        {{ getHistoryNameById(props.job.history_id) }}
-                    </small>
-                </Heading>
-                <span v-g-tooltip.hover class="job-card-id-chip flex-shrink-0" :title="`Job API ID: ${props.job.id}`">
-                    <span class="job-card-id-chip-value">{{ props.job.id }}</span>
-                </span>
-            </div>
+                <small class="text-muted truncate-n-lines two-lines">
+                    {{ getHistoryNameById(props.job.history_id) }}
+                </small>
+            </Heading>
         </template>
     </GCard>
 </template>
@@ -98,31 +93,6 @@ function cardClicked(job: JobBaseModel) {
 <style scoped lang="scss">
 .job-card-history {
     min-width: 0;
-}
-
-.job-card-id-chip {
-    display: inline-flex;
-    align-items: center;
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-    font-size: var(--font-size-small);
-    font-weight: 600;
-    color: var(--color-blue-600);
-    background: var(--color-blue-100);
-    border: 1px solid var(--color-grey-200);
-    border-radius: 999px;
-    padding: 0.1rem 0.5rem;
-    white-space: nowrap;
-}
-
-// Only show tail of id because jobs submitted together often share a leading
-// prefix, so a trailing slice is more likely to actually distinguish them at a glance.
-.job-card-id-chip-value {
-    display: inline-block;
-    max-width: 8ch;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    direction: rtl;
-    text-align: left;
 }
 
 .job-card-title {
