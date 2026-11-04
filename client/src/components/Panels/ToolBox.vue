@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
-import { faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -27,6 +27,8 @@ import {
     getValidPanelItems,
     getValidToolsInEachSection,
     getVisibleTools,
+    MIN_TOOL_QUERY_LENGTH,
+    TOOL_SEARCH_RESULTS_LIMIT,
     UNSECTIONED_SECTION,
 } from "./utilities";
 
@@ -85,6 +87,7 @@ const query = ref("");
 const queryPending = ref(false);
 const showSections = ref(props.workflow);
 const results = ref<string[]>([]);
+const showAllResults = ref(false);
 const resultPanel = ref<Record<string, Tool | ToolSectionType> | null>(null);
 const closestTerm = ref<string | null>(null);
 
@@ -92,7 +95,7 @@ const toolStore = useToolStore();
 
 const { currentPanelView, currentToolSections, defaultPanelView, toolSections } = storeToRefs(toolStore);
 const hasResults = computed(() => results.value.length > 0);
-const queryTooShort = computed(() => query.value && query.value.length < 3);
+const queryTooShort = computed(() => query.value && query.value.trim().length < MIN_TOOL_QUERY_LENGTH);
 const queryFinished = computed(() => query.value && queryPending.value != true);
 const showMyToolsLanding = computed(() => props.favoritesDefault && !query.value);
 
@@ -101,6 +104,7 @@ watch(
     () => query.value,
     () => {
         queryPending.value = true;
+        showAllResults.value = false;
         if (!props.favoritesDefault) {
             if (FAVORITES_KEYS.includes(query.value)) {
                 emit("update:show-favorites", true);
@@ -195,8 +199,23 @@ const myToolsDefaultSectionsById = computed(() => defaultSectionsById.value || l
 // results). The full My-Tools landing state lives inside `MyToolsLanding.vue`.
 const { favoritesCollapsed, favoriteToolIdSet, recentToolIdsToShowSet } = useToolPanelFavorites(localToolsById);
 
+// Favorites are always kept; other results are capped to the top-ranked ones unless the user shows all.
+const displayedResults = computed(() => {
+    if (showAllResults.value) {
+        return results.value;
+    }
+    let nonFavoriteCount = 0;
+    return results.value.filter(
+        (id) => favoriteToolIdSet.value.has(id) || nonFavoriteCount++ < TOOL_SEARCH_RESULTS_LIMIT,
+    );
+});
+const hiddenResultsCount = computed(() => results.value.length - displayedResults.value.length);
+
 // Use composable for search results filtering
-const { favoriteResults, nonFavoriteResults, hasMixedResults } = useFavoriteSearchResults(results, favoriteToolIdSet);
+const { favoriteResults, nonFavoriteResults, hasMixedResults } = useFavoriteSearchResults(
+    displayedResults,
+    favoriteToolIdSet,
+);
 
 const toolsCount = computed(() =>
     countUniqueToolsInPanel(
@@ -205,7 +224,7 @@ const toolsCount = computed(() =>
     ),
 );
 
-const resultsSet = computed(() => new Set(results.value));
+const resultsSet = computed(() => new Set(displayedResults.value));
 const nonFavoriteResultsSet = computed(() => new Set(nonFavoriteResults.value));
 
 /**
@@ -244,7 +263,7 @@ const flatResultsPanel = computed<Record<string, Tool | ToolSectionLabel> | null
     }
 
     if (!hasMixedResults.value) {
-        return filterTools(localToolsById.value, results.value);
+        return filterTools(localToolsById.value, displayedResults.value);
     }
 
     const entries: Array<[string, Tool | ToolSectionLabel]> = [];
@@ -284,7 +303,7 @@ const sectionedResultsPanel = computed<Record<string, ToolPanelItem> | null>(() 
     }
 
     if (!hasMixedResults.value) {
-        return props.favoritesDefault && defaultSectionsById.value
+        return (props.favoritesDefault && defaultSectionsById.value) || hiddenResultsCount.value > 0
             ? filterPanelByToolIds(basePanel, resultsSet.value)
             : basePanel;
     }
@@ -492,6 +511,21 @@ function onLabelToggle(labelId: string) {
                         @onClick="onToolClick"
                         @onFilter="onSectionFilter"
                         @onLabelToggle="onLabelToggle" />
+                    <div
+                        v-if="hiddenResultsCount > 0 && !showAllResults"
+                        class="mr-auto d-flex justify-content-center align-items-center mt-1">
+                        <i class="mr-1">Loaded {{ displayedResults.length }} out of {{ results.length }} tools</i>
+                        <GButton
+                            data-description="show all tool search results button"
+                            size="small"
+                            tooltip
+                            title="Show all"
+                            aria-label="Show all"
+                            transparent
+                            @click="showAllResults = true">
+                            <FontAwesomeIcon :icon="faArrowDown" />
+                        </GButton>
+                    </div>
                 </div>
             </div>
         </div>
