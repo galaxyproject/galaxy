@@ -1,3 +1,6 @@
+import pytest
+from pydantic import ValidationError
+
 from galaxy.workflow.refactor.schema import (
     AddInputAction,
     AddStepAction,
@@ -12,6 +15,7 @@ from galaxy.workflow.refactor.schema import (
     StepReferenceByLabel,
     StepReferenceByOrderIndex,
     UpdateStepLabelAction,
+    UpgradeSubworkflowAction,
 )
 
 
@@ -117,3 +121,15 @@ def test_executions():
     assert isinstance(execution.messages, (list,))
     execution = RefactorActionExecution(action=ar.actions[0].model_dump(), messages=[])
     assert isinstance(execution.messages, (list,))
+
+
+def test_upgrade_subworkflow_takes_one_target():
+    with pytest.raises(ValidationError, match="at most one of"):
+        UpgradeSubworkflowAction(
+            action_type="upgrade_subworkflow", step={"label": "nested"}, version=0, trs_version_id="v0.2"
+        )
+
+
+def test_upgrade_subworkflow_version_is_not_negative():
+    with pytest.raises(ValidationError):
+        UpgradeSubworkflowAction(action_type="upgrade_subworkflow", step={"label": "nested"}, version=-1)
