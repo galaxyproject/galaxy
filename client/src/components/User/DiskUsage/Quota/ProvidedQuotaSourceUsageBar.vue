@@ -1,11 +1,12 @@
 <template>
     <div v-if="objectStore.quota.enabled">
-        <LoadingSpan v-if="isLoadingUsage" :message="loadingMessage" />
+        <!-- Keep showing the usage while it reloads -->
         <QuotaUsageBar
-            v-else-if="quotaUsage"
+            v-if="quotaUsage"
             :quota-usage="quotaUsage"
             :embedded="props.embedded"
             :compact="props.compact" />
+        <LoadingSpan v-else-if="isLoadingUsage" :message="loadingMessage" />
     </div>
 </template>
 

@@ -3,7 +3,6 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, unref, watch } from "vue";
 
 import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
-import { getGalaxyInstance } from "@/app";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { getClientFilters, HistoryFilters, itemPassesFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
@@ -342,7 +341,7 @@ function reloadContents() {
     // once SSE/polling was already initialized. Force a refresh through the
     // same code path SSE pushes use so the user-initiated click actually
     // re-fetches the history and items.
-    refreshHistoryFromPush(getGalaxyInstance()).catch((err) => console.error("Manual history refresh failed:", err));
+    refreshHistoryFromPush().catch((err) => console.error("Manual history refresh failed:", err));
 }
 
 function setInvisible(item: HistoryItemSummary) {

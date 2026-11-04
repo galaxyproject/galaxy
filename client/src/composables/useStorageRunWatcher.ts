@@ -2,7 +2,6 @@ import { computed, readonly, type Ref, ref } from "vue";
 
 import { getStorageOperationRunStatus, type HistoryReference, type StorageOperationRunResponse } from "@/api/histories";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
-import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { useStorageOperationsStore } from "@/stores/storageOperationsStore";
 import { useUserStore } from "@/stores/userStore";
 import { isTerminalRunState } from "@/utils/storageOperations";
@@ -78,7 +77,6 @@ export function useStorageHistoryRunsWatcher(historyId: string, options?: Storag
     if (!watcher) {
         const storageOperationsStore = useStorageOperationsStore();
         const userStore = useUserStore();
-        const quotaUsageStore = useQuotaUsageStore();
         const runSummariesByRunId = ref<RunSummaries>({});
 
         const historyReference: HistoryReference = {
@@ -154,8 +152,7 @@ export function useStorageHistoryRunsWatcher(historyId: string, options?: Storag
             runSummariesByRunId.value = next;
 
             if (hasNewlyTerminalRun) {
-                void userStore.refreshUser(false);
-                quotaUsageStore.requestRefreshDebounced(0);
+                userStore.refreshStorageUsageInBackground();
             }
         };
 

@@ -26,12 +26,11 @@ let lastUpdateTime = null;
 // last time changed history items have been requested
 let lastRequestDate = new Date();
 
-export async function watchHistory(app) {
-    // GalaxyApp
+export async function watchHistory() {
     const { isWatching } = storeToRefs(useHistoryItemsStore());
     try {
         isWatching.value = true;
-        await watchHistoryOnce(app);
+        await watchHistoryOnce();
     } catch (error) {
         // error alerting the user that watch history failed
         console.warn(error);
@@ -39,8 +38,8 @@ export async function watchHistory(app) {
     }
 }
 
-export async function watchHistoryOnce(app) {
-    return _fetchHistoryAndChangedItems(app, { force: false });
+export async function watchHistoryOnce() {
+    return _fetchHistoryAndChangedItems({ force: false });
 }
 
 /**
@@ -48,11 +47,11 @@ export async function watchHistoryOnce(app) {
  * short-circuit. Use this when an out-of-band signal (SSE `history_update`)
  * already told us the history changed — we shouldn't re-gate on update_time.
  */
-export async function refreshHistoryFromPush(app) {
-    return _fetchHistoryAndChangedItems(app, { force: true });
+export async function refreshHistoryFromPush() {
+    return _fetchHistoryAndChangedItems({ force: true });
 }
 
-async function _fetchHistoryAndChangedItems(app, { force }) {
+async function _fetchHistoryAndChangedItems({ force }) {
     const historyStore = useHistoryStore();
     const historyItemsStore = useHistoryItemsStore();
     const datasetStore = useDatasetStore();
@@ -100,9 +99,7 @@ async function _fetchHistoryAndChangedItems(app, { force }) {
     datasetCollectionStore.saveCollections(payload);
 
     if (sizeChanged) {
-        const userStore = useUserStore();
-        await userStore.refreshUser(false);
-        userStore.syncLegacyAppUser(app);
+        useUserStore().refreshStorageUsageThrottled();
     }
 }
 

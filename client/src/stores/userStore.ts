@@ -1,5 +1,6 @@
+import { useDocumentVisibility, useThrottleFn } from "@vueuse/core";
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, effectScope, ref, watch } from "vue";
 
 import { type AnyUser, isAdminUser, isAnonymousUser, isRegisteredUser, type RegisteredUser } from "@/api";
 import { getGalaxyInstance } from "@/app";
@@ -43,15 +44,12 @@ export type ListViewMode = "grid" | "list";
 
 type UserListViewPreferences = Record<string, ListViewMode>;
 
-interface LegacyGalaxyAppUserLike {
-    attributes: Record<string, unknown>;
-}
-
-interface LegacyGalaxyAppLike {
-    user?: LegacyGalaxyAppUserLike;
-}
-
 const RECENT_TOOLS_LIMIT = 10;
+
+/** Minimum time between storage usage refreshes triggered by frequent changes. */
+const STORAGE_REFRESH_THROTTLE_MS = 5000;
+/** Minimum time between storage usage refreshes when the user returns to the tab. */
+const FOCUS_REFRESH_THROTTLE_MS = 60_000;
 
 export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<AnyUser>(null);
@@ -73,25 +71,8 @@ export const useUserStore = defineStore("userStore", () => {
     const recentTools = useUserLocalStorageFromHashId<string[]>("user-store-recent-tools", [], hashedUserId);
 
     let loadPromise: Promise<void> | null = null;
-
-    function requestQuotaRefreshForLoadedQuotaStore() {
-        const quotaUsageStore = useQuotaUsageStore();
-        if (quotaUsageStore.isLoaded) {
-            quotaUsageStore.requestRefreshDebounced();
-        }
-    }
-
-    function shouldRefreshQuotaAfterUserUpdate(previousUser: AnyUser, nextUser: RegisteredUser) {
-        if (!isRegisteredUser(previousUser)) {
-            return true;
-        }
-
-        return (
-            previousUser.total_disk_usage !== nextUser.total_disk_usage ||
-            previousUser.quota_percent !== nextUser.quota_percent ||
-            previousUser.quota !== nextUser.quota
-        );
-    }
+    let lastLoadRequest = 0;
+    let lastAppliedRequest = 0;
 
     function $reset() {
         currentUser.value = null;
@@ -134,13 +115,12 @@ export const useUserStore = defineStore("userStore", () => {
     }
 
     function setUserState(user: AnyUser) {
-        const previousUser = currentUser.value;
-
         if (isRegisteredUser(user)) {
             currentUser.value = user;
-            currentPreferences.value = processUserPreferences(user);
-            if (shouldRefreshQuotaAfterUserUpdate(previousUser, user)) {
-                requestQuotaRefreshForLoadedQuotaStore();
+            const preferences = processUserPreferences(user);
+            // Refreshes return the same preferences most of the time: don't wake their watchers for nothing
+            if (JSON.stringify(preferences) !== JSON.stringify(currentPreferences.value)) {
+                currentPreferences.value = preferences;
             }
         } else if (isAnonymousUser(user)) {
             currentUser.value = user;
@@ -149,35 +129,82 @@ export const useUserStore = defineStore("userStore", () => {
         }
     }
 
-    /**
-     * @deprecated
-     * This function bridges the Pinia user store with the legacy
-     * jQuery-based Galaxy app's `app.user.attributes` object. Once the legacy
-     * app and all its consumers are fully migrated to Vue/Pinia, this sync
-     * will no longer be needed and should be removed along with the
-     * `LegacyGalaxyAppLike` interface.
-     */
-    function syncLegacyAppUser(app?: LegacyGalaxyAppLike | null) {
-        if (!app?.user || !currentUser.value) {
-            return;
-        }
-
-        app.user.attributes = {
-            ...app.user.attributes,
-            ...currentUser.value,
-        };
-    }
-
     function refreshUser(includeHistories = false) {
         loadPromise = null;
         return loadUser(includeHistories);
     }
 
+    /**
+     * Reloads the user, which reports the usage and quota of the default storage, and the usage of
+     * every storage source if anything asked for it. Call it after anything that changes the storage usage.
+     */
+    async function refreshStorageUsage() {
+        const quotaUsageStore = useQuotaUsageStore();
+        await Promise.all([refreshUser(), quotaUsageStore.wasRequested ? quotaUsageStore.loadQuotaUsages(true) : null]);
+    }
+
+    /** Like ``refreshStorageUsage``, without waiting for it; errors are logged. */
+    function refreshStorageUsageInBackground() {
+        refreshStorageUsage().catch((err) => console.error("Error refreshing the storage usage:", err));
+    }
+
+    const throttledRefresh = useThrottleFn(refreshStorageUsageInBackground, STORAGE_REFRESH_THROTTLE_MS, true, true);
+    const refreshOnFocus = useThrottleFn(refreshStorageUsageInBackground, FOCUS_REFRESH_THROTTLE_MS, false, true);
+
+    const documentVisibility = useDocumentVisibility();
+    let watchingStorageUsage = false;
+    let refreshSkippedWhileHidden = false;
+
+    /**
+     * Like ``refreshStorageUsageInBackground``, at most once per window: a workflow finishing many
+     * jobs changes the usage for each. While the tab is hidden, it refreshes once the user returns.
+     */
+    function refreshStorageUsageThrottled() {
+        if (watchingStorageUsage && documentVisibility.value === "hidden") {
+            refreshSkippedWhileHidden = true;
+            return;
+        }
+        void throttledRefresh();
+    }
+    // Owned by the store rather than by the component that starts the watching
+    const storageUsageScope = effectScope();
+
+    /**
+     * Keeps the storage usage current when it changes outside this tab, e.g. in another tab or
+     * by background jobs: refresh when the user returns to the tab.
+     */
+    function startWatchingStorageUsage() {
+        if (watchingStorageUsage) {
+            return;
+        }
+        watchingStorageUsage = true;
+        storageUsageScope.run(() => {
+            watch(documentVisibility, (visibility) => {
+                if (visibility !== "visible") {
+                    return;
+                }
+                if (refreshSkippedWhileHidden) {
+                    // A change is known to be missing: don't wait for the next focus refresh
+                    refreshSkippedWhileHidden = false;
+                    void throttledRefresh();
+                } else {
+                    void refreshOnFocus();
+                }
+            });
+        });
+    }
+
     function loadUser(includeHistories = true) {
         if (!loadPromise) {
+            const request = ++lastLoadRequest;
             const promise = (async () => {
                 const user = await getCurrentUser();
-                setUserState(user);
+                // Overlapping requests can answer out of order. Apply any answer newer than the last one
+                // applied, even while a later request is pending, so that code awaiting this one sees a user.
+                if (request > lastAppliedRequest) {
+                    lastAppliedRequest = request;
+                    setUserState(user);
+                }
                 if (includeHistories) {
                     await useHistoryStore().loadHistories();
                 }
@@ -402,7 +429,10 @@ export const useUserStore = defineStore("userStore", () => {
         recentTools,
         loadUser,
         refreshUser,
-        syncLegacyAppUser,
+        refreshStorageUsage,
+        refreshStorageUsageInBackground,
+        refreshStorageUsageThrottled,
+        startWatchingStorageUsage,
         matchesCurrentUsername,
         matchesCurrentUserId,
         setCurrentUser,

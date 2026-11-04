@@ -10,6 +10,7 @@ import {
     type HistorySortByLiteral,
     type HistorySummary,
     type HistorySummaryExtended,
+    userOwnsHistory,
 } from "@/api";
 import {
     type AnyHistoryEntry,
@@ -19,7 +20,6 @@ import {
     type UpdateHistoryPayload,
 } from "@/api/histories";
 import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
-import { getGalaxyInstance } from "@/app";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useRetryGate } from "@/composables/retryGate";
@@ -36,13 +36,14 @@ import {
     setCurrentHistoryOnServer,
     updateHistoryFields,
 } from "@/stores/services/history.services";
+import { useUserStore } from "@/stores/userStore";
 import { ApiError, isRetryableApiError, rethrowSimple } from "@/utils/simple-error";
 import { sortByObjectProp } from "@/utils/sorting";
 import {
     ACTIVE_POLLING_INTERVAL,
     INACTIVE_POLLING_INTERVAL,
-    refreshHistoryFromPush as refreshHistoryFromPushSuppliedApp,
-    watchHistory as watchHistorySuppliedApp,
+    refreshHistoryFromPush,
+    watchHistory,
 } from "@/watch/watchHistory";
 
 const PAGINATION_LIMIT = 10;
@@ -418,6 +419,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
         await setNextAvailableHistoryId([deletedHistory.id]);
         delete storedHistories.value[deletedHistory.id];
         await handleTotalCountChange(1, true);
+        if (purge) {
+            // Purging frees the space of the histories' datasets
+            useUserStore().refreshStorageUsageInBackground();
+        }
     }
 
     async function deleteHistories(ids: string[], purge = false) {
@@ -436,6 +441,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
             delete storedHistories.value[history.id];
         });
         await handleTotalCountChange(deletedHistories.length, true);
+        if (purge) {
+            // Purging frees the space of the histories' datasets
+            useUserStore().refreshStorageUsageInBackground();
+        }
     }
 
     async function restoreHistory(historyId: string) {
@@ -743,11 +752,6 @@ export const useHistoryStore = defineStore("historyStore", () => {
         listedHistoriesTotal.value[variant] = 0;
     }
 
-    function watchHistory() {
-        const app = getGalaxyInstance();
-        return watchHistorySuppliedApp(app);
-    }
-
     // SSE-driven history updates: when we receive a history_update event,
     // immediately trigger a refresh of the current history
     const SSE_HISTORY_EVENT_TYPES = ["history_update"] as const;
@@ -770,8 +774,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
                 // SSE is itself the signal that the history changed — force the
                 // refresh so the update_time short-circuit in watchHistoryOnce
                 // can't suppress the contents fetch.
-                const app = getGalaxyInstance();
-                refreshHistoryFromPushSuppliedApp(app).catch((err) =>
+                refreshHistoryFromPush().catch((err) =>
                     console.error("Error refreshing current history from SSE push:", err),
                 );
             }
@@ -787,9 +790,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
                     continue;
                 }
                 const filterText = storedFilterTexts.value[id] ?? "";
-                updateContentStats(id).catch((err) =>
-                    console.error(`Error updating content stats for history ${id}:`, err),
-                );
+                const refreshUsageIfResized = watchOwnHistorySize(id);
+                updateContentStats(id)
+                    .then(refreshUsageIfResized)
+                    .catch((err) => console.error(`Error updating content stats for history ${id}:`, err));
                 itemsStore
                     .fetchHistoryItems(id, filterText, 0)
                     .catch((err) => console.error(`Error fetching items for history ${id}:`, err));
@@ -797,6 +801,24 @@ export const useHistoryStore = defineStore("historyStore", () => {
         } catch (e) {
             console.error("Error handling history SSE event:", e);
         }
+    }
+
+    /**
+     * Returns a callback that refreshes the storage usage if the new stats of the user's own history
+     * show another size. Most history events don't change the size (e.g. job states, metadata).
+     */
+    function watchOwnHistorySize(historyId: string) {
+        const history = storedHistories.value[historyId];
+        const userStore = useUserStore();
+        if (!history || !userOwnsHistory(userStore.currentUser, history)) {
+            return () => {};
+        }
+        const previousSize = "size" in history ? history.size : undefined;
+        return (stats: HistoryContentsStats) => {
+            if (stats.size !== previousSize) {
+                userStore.refreshStorageUsageThrottled();
+            }
+        };
     }
 
     // Choose between SSE and polling based on the server config flag
@@ -923,6 +945,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
         const history = data as ArchivedHistoryDetailed;
         setHistory(history);
+        if (purgeHistory) {
+            useUserStore().refreshStorageUsageInBackground();
+        }
         if (!history.archived) {
             return;
         }
