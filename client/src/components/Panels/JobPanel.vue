@@ -347,7 +347,8 @@ async function refreshChangedJobs() {
 
     if (data.length === FETCH_LIMIT) {
         // More changed than one page can represent; reset and reload rather than merge a possibly
-        // incomplete picture. The filter hasn't changed, so nothing else re-triggers loadJobs here.
+        // incomplete picture.
+        filterGeneration++;
         stopRetainingCurrentJobs();
         currentJobIds.value = new Set();
         totalJobCount.value = undefined;
