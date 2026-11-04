@@ -54,7 +54,7 @@ const converters: DatatypeConverter[] = [
 ];
 
 function dataInput(name: string | null, extensions: string[]): ToolDataInput {
-    return { name, extensions, multiple: false };
+    return { name, extensions, multiple: false, type: "data", collection_type: null };
 }
 
 function tool(id: string, dataInputs: ToolDataInput[], name = id): Tool {

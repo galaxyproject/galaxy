@@ -78,7 +78,7 @@ function interactiveTool(
 }
 
 function dataInput(name: string | null, extensions: string[]): ToolDataInput {
-    return { name, extensions, multiple: false };
+    return { name, extensions, multiple: false, type: "data", collection_type: null };
 }
 
 const IGV_TOOL = interactiveTool("interactive_tool_igv", "IGV", "1.0", [dataInput("input", ["bam"])]);

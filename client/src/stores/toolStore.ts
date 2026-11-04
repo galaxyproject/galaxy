@@ -40,13 +40,17 @@ export interface Panel {
     searchable: boolean;
 }
 
-/** A data parameter of a tool, as listed on its panel entry. */
+/** A dataset or collection parameter of a tool, as listed on its panel entry. */
 export interface ToolDataInput {
     /** `|`-joined form path that prefills the input, or null when the form cannot prefill it. */
     name: string | null;
     /** Accepted datatype extensions; `data` accepts any datatype. */
     extensions: string[];
+    /** Always false for a collection input. */
     multiple: boolean;
+    type: "data" | "data_collection";
+    /** Comma-separated accepted collection types; null for a dataset input or a collection input of any type. */
+    collection_type: string | null;
 }
 
 // TODO: Once the backend models are typed, we will replace these with the generated types from the schema.
