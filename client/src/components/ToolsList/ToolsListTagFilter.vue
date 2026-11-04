@@ -30,6 +30,15 @@ const matches = computed(() => {
     return props.tags.filter((tag) => !selected.has(tag.toLowerCase()) && tag.toLowerCase().includes(query));
 });
 const visibleTags = computed(() => matches.value.slice(0, 100));
+
+const searchInput = ref<InstanceType<typeof GFormInput>>();
+
+function pickTag(tag: string) {
+    emit("toggle-tag", tag);
+    search.value = "";
+    // The picked option leaves the list, so focus moves to the search for the next tag
+    searchInput.value?.focus();
+}
 </script>
 
 <template>
@@ -49,6 +58,7 @@ const visibleTags = computed(() => matches.value.slice(0, 100));
 
             <GDropdownText>
                 <GFormInput
+                    ref="searchInput"
                     v-model="search"
                     class="w-100"
                     aria-label="Search tags/categories"
@@ -58,7 +68,7 @@ const visibleTags = computed(() => matches.value.slice(0, 100));
 
             <div class="tag-options">
                 <GDropdownGroup aria-label="Available tags">
-                    <GDropdownItem v-for="tag in visibleTags" :key="tag" @click="emit('toggle-tag', tag)">
+                    <GDropdownItem v-for="tag in visibleTags" :key="tag" keep-open @click="pickTag(tag)">
                         {{ tag }}
                     </GDropdownItem>
                 </GDropdownGroup>

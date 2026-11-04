@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
 import ToolsListTagFilter from "./ToolsListTagFilter.vue";
@@ -33,6 +34,37 @@ describe("ToolsListTagFilter", () => {
         expect(wrapper.findAll("a.dropdown-item")).toHaveLength(1);
         await wrapper.get("a.dropdown-item").trigger("click");
         expect(wrapper.emitted("toggle-tag")).toEqual([["Category 999"]]);
+    });
+
+    it.each(["mouse", "keyboard"])("stays open to pick several tags in a row by %s", async (method) => {
+        const wrapper = mount(ToolsListTagFilter, {
+            localVue,
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+            props: { tags: ["Get Data", "Get Statistics", "Quality Control"], selectedTags: [] as string[] },
+            attachTo: document.body,
+        });
+        const toggle = wrapper.get("button.dropdown-toggle");
+        const input = wrapper.get("input");
+        await toggle.trigger("click");
+
+        for (const tag of ["Get Data", "Quality Control"]) {
+            await input.setValue(tag.toLowerCase());
+            const item = wrapper.get("a.dropdown-item");
+            if (method === "mouse") {
+                await item.trigger("click");
+            } else {
+                await item.trigger("keydown", { key: " " });
+            }
+            await wrapper.setProps({ selectedTags: [...wrapper.props("selectedTags"), tag] });
+            await flushPromises();
+
+            expect(toggle.attributes("aria-expanded")).toBe("true");
+            expect((input.element as HTMLInputElement).value).toBe("");
+            expect(document.activeElement).toBe(input.element);
+        }
+        expect(wrapper.emitted("toggle-tag")).toEqual([["Get Data"], ["Quality Control"]]);
+        expect(wrapper.findAll("a.dropdown-item").map((item) => item.text())).toEqual(["Get Statistics"]);
+        wrapper.unmount();
     });
 
     it("reflects external selection changes and allows removing selected tags", async () => {
