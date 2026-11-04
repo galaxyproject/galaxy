@@ -568,7 +568,7 @@ describe("Index", () => {
                 });
                 stepIds.push(step.id);
             }
-            stateStore.activeNodeId = stepIds[0]!;
+            stateStore.activeNodeId = stepIds[0] ?? null;
             await nextTick();
             return { wrapper, stepIds };
         }
@@ -605,6 +605,20 @@ describe("Index", () => {
                 .vm.$emit("onRefactor", { workflow: refactoredWorkflow(label, version) });
             await flushPromises();
         }
+
+        it("asks to upgrade every sub-workflow step recursively", async () => {
+            const nested = refactoredWorkflow("nested", 0);
+            mockLoadWorkflow.mockResolvedValue({
+                ...nested,
+                steps: { 0: { ...nested.steps[0], type: "subworkflow", tool_id: null, content_id: "nested_workflow" } },
+            });
+            const { wrapper } = await mountWithSteps(0);
+            wrapper.findComponent(activityBarStub).vm.$emit("activityClicked", "workflow-upgrade-subworkflows");
+            await flushPromises();
+            expect(wrapper.findComponent(RefactorConfirmationModal).props("refactorActions")).toEqual([
+                { action_type: "upgrade_subworkflow", step: { order_index: 0 }, recursive: true },
+            ]);
+        });
 
         it("undoes and redoes refactors as unsaved changes, without losing the newest version", async () => {
             const { wrapper } = await mountWithSteps(2);

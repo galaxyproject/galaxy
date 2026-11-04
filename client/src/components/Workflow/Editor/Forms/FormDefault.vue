@@ -44,6 +44,11 @@
                 title="Default file location"
                 help="Optional URL or Galaxy file source URI to use when no dataset is selected at run time."
                 @update:model-value="onDefaultLocation" />
+            <FormSubworkflowVersion
+                v-if="isSubworkflow && contentId"
+                :content-id="contentId"
+                :step-id="stepId"
+                @onAttemptRefactor="(actions: unknown) => emit('onAttemptRefactor', actions)" />
             <FormConditional
                 v-if="isSubworkflow"
                 :step="step"
@@ -98,6 +103,7 @@ import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 import { defaultFileLocation, withDefaultFileLocation } from "../modules/defaultFile";
 
 import FormConditional from "./FormConditional.vue";
+import FormSubworkflowVersion from "./FormSubworkflowVersion.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
