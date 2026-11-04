@@ -1665,6 +1665,9 @@ class ColumnListParameter(SelectToolParameter):
     >>> clp = ColumnListParameter(None, XML('<param name="numerical_column" type="data_column" data_ref="blah" numerical="true"/>'))
     >>> print(clp.name)
     numerical_column
+    >>> multi = ColumnListParameter(None, XML('<param name="columns" type="data_column" data_ref="blah" multiple="true"/>'))
+    >>> multi.to_python("2,3", None)
+    '2,3'
     """
 
     stored_string_is_single_option = False
@@ -1913,6 +1916,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> assert d['options'][1]['name'] == 'Option 5'
     >>> assert d['options'][1]['value'] == 'option5'
     >>> assert p.from_json(['option5'], trans) == ['option5']
+    >>> p.to_python("option5", None)
+    'option5'
     >>> single = DrillDownSelectToolParameter(tool, XML(
     ... '''
     ... <param name="_name" type="drill_down" display="checkbox" hierarchy="exact">
