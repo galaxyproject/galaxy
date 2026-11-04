@@ -8,10 +8,17 @@ from typing import (
 )
 
 import pytest
-from sqlalchemy import event
+from sqlalchemy import (
+    event,
+    select,
+)
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
+from galaxy.exceptions import (
+    ItemAccessibilityException,
+    ItemOwnershipException,
+)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.schema.fields import Security
@@ -20,7 +27,10 @@ from galaxy.schema.invocation import (
     InvocationSerializationView,
     WorkflowInvocationElementView,
 )
-from galaxy.webapps.galaxy.services.invocations import InvocationsService
+from galaxy.webapps.galaxy.services.invocations import (
+    _accessible_invocation_clause,
+    InvocationsService,
+)
 
 ELEMENT = InvocationSerializationParams(view=InvocationSerializationView.element)
 
@@ -36,9 +46,9 @@ class LineageFixture:
         self.workflow = model.Workflow()
         self.workflow.stored_workflow = model.StoredWorkflow(user=self.owner, name="workflow")
         self.session.add(self.workflow)
-        workflows_manager = WorkflowsManager(cast(Any, self.app), cast(Any, None))
+        self.workflows_manager = WorkflowsManager(cast(Any, self.app), cast(Any, None))
         self.service = InvocationsService(
-            self.app.security, cast(Any, None), workflows_manager, cast(Any, None), cast(Any, None)
+            self.app.security, cast(Any, None), self.workflows_manager, cast(Any, None), cast(Any, None)
         )
         self.view_as(self.owner)
 
@@ -165,3 +175,43 @@ def test_lineage_query_count_is_independent_of_batch_size_and_fanout(lineage: Li
         counts.append(len(statements))
     # One query for the sources and one for the latest reruns, whatever the page size.
     assert counts == [2, 2]
+
+
+def test_sql_access_clause_matches_check_security(lineage: LineageFixture) -> None:
+    """The SQL clause used for lineage links must agree with the invocation access check."""
+    other = lineage.user("other")
+    sharee = lineage.user("sharee")
+    private = lineage.history(lineage.owner)
+    importable = lineage.history(lineage.owner, importable=True)
+    shared = lineage.history(lineage.owner)
+    lineage.session.add(model.HistoryUserShareAssociation(history=shared, user=sharee))
+    invocations = [lineage.invocation(history) for history in (private, importable, shared)]
+    lineage.session.commit()
+
+    # Every invocation history has an owner: anonymous users can't run workflows, and the
+    # Python check would otherwise let an anonymous viewer into an ownerless history.
+    viewers: list[tuple[model.User | None, bool]] = [
+        (lineage.owner, False),
+        (other, False),
+        (sharee, False),
+        (other, True),
+        (None, False),
+    ]
+    for user, admin in viewers:
+        lineage.view_as(user, admin=admin)
+        clause = _accessible_invocation_clause(lineage.trans)
+        stmt = select(model.WorkflowInvocation.id).where(
+            model.WorkflowInvocation.id.in_([invocation.id for invocation in invocations])
+        )
+        if clause is not None:
+            stmt = stmt.where(clause)
+        sql_accessible = set(lineage.session.scalars(stmt))
+        for invocation in invocations:
+            try:
+                lineage.workflows_manager.check_security(
+                    lineage.trans, invocation, check_ownership=False, check_accessible=True
+                )
+                python_accessible = True
+            except (ItemAccessibilityException, ItemOwnershipException):
+                python_accessible = False
+            assert (invocation.id in sql_accessible) == python_accessible, (user, admin, invocation.history)
