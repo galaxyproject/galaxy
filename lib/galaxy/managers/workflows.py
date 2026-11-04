@@ -711,8 +711,8 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
     def build_invocations_query(
         self,
         trans: ProvidesUserContext,
-        stored_workflow_id=None,
-        history_id=None,
+        stored_workflow_ids: list[int] | None = None,
+        history_ids: list[int] | None = None,
         job_id=None,
         user_id=None,
         include_terminal=True,
@@ -726,15 +726,17 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         """Get invocations owned by the current user."""
 
         stmt = select(WorkflowInvocation)
-        if stored_workflow_id is not None:
-            stored_workflow = trans.sa_session.get(StoredWorkflow, stored_workflow_id)
-            if not stored_workflow:
+        if stored_workflow_ids:
+            found_ids = trans.sa_session.scalars(
+                select(StoredWorkflow.id).where(StoredWorkflow.id.in_(stored_workflow_ids))
+            ).all()
+            if len(found_ids) != len(set(stored_workflow_ids)):
                 raise exceptions.ObjectNotFound()
-            stmt = stmt.join(Workflow).where(Workflow.stored_workflow_id == stored_workflow_id)
+            stmt = stmt.join(Workflow).where(Workflow.stored_workflow_id.in_(stored_workflow_ids))
         if user_id is not None:
             stmt = stmt.join(History).where(History.user_id == user_id)
-        if history_id is not None:
-            stmt = stmt.where(WorkflowInvocation.history_id == history_id)
+        if history_ids:
+            stmt = stmt.where(WorkflowInvocation.history_id.in_(history_ids))
         if job_id is not None:
             stmt = stmt.join(WorkflowInvocationStep).where(WorkflowInvocationStep.job_id == job_id)
         if not include_terminal:

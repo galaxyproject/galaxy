@@ -2005,10 +2005,12 @@ class InvocationSortByEnum(str, Enum):
 
 
 class InvocationIndexQueryPayload(Model):
-    workflow_id: int | None = Field(
-        None, title="Workflow ID", description="Return only invocations for this Workflow ID"
+    workflow_id: list[int] | None = Field(
+        None, title="Workflow IDs", description="Return only invocations for these Workflow IDs"
     )
-    history_id: int | None = Field(None, title="History ID", description="Return only invocations for this History ID")
+    history_id: list[int] | None = Field(
+        None, title="History IDs", description="Return only invocations for these History IDs"
+    )
     job_id: int | None = Field(None, title="Job ID", description="Return only invocations for this Job ID")
     user_id: int | None = Field(None, title="User ID", description="Return invocations for this User ID")
     sort_by: InvocationSortByEnum | None = Field(
