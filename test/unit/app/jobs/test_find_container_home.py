@@ -1,3 +1,4 @@
+import re
 from types import SimpleNamespace
 from typing import (
     cast,
@@ -129,8 +130,9 @@ def test_container_uses_home_exported_by_tool_or_destination(job_wrapper_kwds):
     "job_wrapper_kwds",
     [{"environment_variables": ["HOME"]}, {"tool_env_names": ["HOME"]}],
 )
-def test_docker_does_not_mount_home_exported_by_tool_or_destination(job_wrapper_kwds):
-    command = (
-        _runner(DockerContainer)._find_container(_job_wrapper(None, **job_wrapper_kwds)).containerize_command("true")
-    )
-    assert "$HOME:$HOME" not in command
+def test_docker_volumes_ignore_home_exported_by_tool_or_destination(job_wrapper_kwds):
+    def volumes(job_wrapper):
+        command = _runner(DockerContainer)._find_container(job_wrapper).containerize_command("true")
+        return re.findall(r"-v (\S+)", command)
+
+    assert volumes(_job_wrapper(None, **job_wrapper_kwds)) == volumes(_job_wrapper(None))
