@@ -5916,7 +5916,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     def _lock_and_load_copies(self) -> list["HistoryDatasetAssociation"]:
         """Lock this HDA's row and return the copies that share its dataset.
 
-        ``copy()`` of an HDA in a non-ready state holds a key share lock on the source row from reading
+        ``copy()`` of an HDA in a swappable state holds a key share lock on the source row from reading
         the dataset until its transaction ends. Once this lock is held, every such copy has either
         committed and is returned here, or will read the dataset this transaction commits.
         """
