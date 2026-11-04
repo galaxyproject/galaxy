@@ -56,22 +56,28 @@ export default defineConfig(({ command }) => ({
         // with its own vue-router 3 copy. Without deduping, galaxy-ui's RouterLink is
         // the vue-router 3 component, which renders nothing under Vue 3.
         dedupe: ["vue-router"],
-        alias: {
+        alias: [
             // Use @vue/compat for Vue 2 compatibility mode
-            vue: "@vue/compat",
+            { find: "vue", replacement: "@vue/compat" },
             // Also alias the direct Vue 2 dist path that some libraries use
-            "vue/dist/vue.esm.js": "@vue/compat",
+            { find: "vue/dist/vue.esm.js", replacement: "@vue/compat" },
             // galaxy-ui is internal-only (no library build) and always
             // resolved from source -- the main client consumes the .vue
-            // files directly.
-            "@galaxyproject/galaxy-ui": resolve(__dirname, "packages/ui/src/index.ts"),
+            // files directly. Exact match: subpaths such as tokens.css resolve
+            // through the workspace symlink and the package's exports map.
+            { find: /^@galaxyproject\/galaxy-ui$/, replacement: resolve(__dirname, "packages/ui/src/index.ts") },
             // galaxy-api-client has a real tsup dist/ build and production
             // uses that via package.json exports. During `vite serve` we
             // resolve to source so edits trigger HMR without a rebuild.
             ...(command === "serve"
-                ? { "@galaxyproject/galaxy-api-client": resolve(__dirname, "packages/api-client/src/index.ts") }
-                : {}),
-        },
+                ? [
+                      {
+                          find: "@galaxyproject/galaxy-api-client",
+                          replacement: resolve(__dirname, "packages/api-client/src/index.ts"),
+                      },
+                  ]
+                : []),
+        ],
     },
     define: {
         // Make jQuery available globally for plugins and legacy code
@@ -134,7 +140,9 @@ export default defineConfig(({ command }) => ({
         emptyOutDir: true,
         // Generate manifest.json for production
         manifest: true,
-        // Disable CSS code splitting - combine all CSS into one file
+        // Disable CSS code splitting - combine all CSS into one file. Every page loads
+        // base.css, and that's how galaxy-ui's tokens (imported by the analysis entry)
+        // reach pages built on other entries; splitting would drop them there.
         cssCodeSplit: false,
         // Generate sourcemaps when GXY_BUILD_SOURCEMAPS is set
         sourcemap: !!process.env.GXY_BUILD_SOURCEMAPS,
