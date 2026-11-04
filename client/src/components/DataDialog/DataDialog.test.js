@@ -85,15 +85,17 @@ describe("services.js/Services", () => {
         const first = items[0];
         expect(first.label).toBe("1: name_1");
         expect(first.download).toBe("http://localhost:/api/histories/0/contents/1/display");
-        expect(first.updateTime).toBeUndefined();
     });
 
-    it("Parses the update time of a record into a Date", () => {
+    it("Parses the update time of a record into a Date, and leaves it undefined without update_time", () => {
         const services = new Services(mockOptions);
         const record = services.getRecord({ hid: 2, id: 2, name: "name_2", update_time: "2026-10-17T09:30:00" });
         expect(record.updateTime).toEqual(new Date("2026-10-17T09:30:00"));
         expect(record.update_time).toBe("2026-10-17T09:30:00");
         expect(record.time).toBe("2026-10-17 09:30");
+
+        const recordWithoutTime = services.getRecord({ hid: 3, id: 3, name: "name_3" });
+        expect(recordWithoutTime.updateTime).toBeUndefined();
     });
 });
 
