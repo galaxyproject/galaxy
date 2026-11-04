@@ -45,7 +45,7 @@ from galaxy.util import now
 from galaxy.web_stack import ApplicationStack
 
 if TYPE_CHECKING:
-    from kombu import Connection
+    from kombu.connection import Connection
 
     from galaxy.web.statsd_client import VanillaGalaxyStatsdClient
 
