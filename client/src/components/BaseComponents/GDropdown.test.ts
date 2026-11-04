@@ -347,6 +347,20 @@ describe("GDropdown.vue", () => {
 
             expect(isMenuOpen(wrapper)).toBe(false);
         });
+
+        it("keep the menu open when a keep-open item is picked by mouse or keyboard", async () => {
+            const wrapper = mountDropdown(
+                `<GDropdownItem keep-open>One</GDropdownItem><GDropdownItem>Two</GDropdownItem>`,
+            );
+            await openMenu(wrapper);
+            const [keepOpenItem] = wrapper.findAll("a.dropdown-item");
+
+            await keepOpenItem!.trigger("click");
+            expect(isMenuOpen(wrapper)).toBe(true);
+            await press(keepOpenItem!, " ");
+            expect(isMenuOpen(wrapper)).toBe(true);
+            expect(wrapper.findComponent(GDropdownItem).emitted("click")).toHaveLength(2);
+        });
     });
 
     it.each(["mouse", "keyboard"])("focuses the requested search field when opened with %s", async (method) => {
