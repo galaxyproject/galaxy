@@ -2,12 +2,17 @@
 
 from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import (
+    Any,
+    cast,
+)
 
 import pytest
 from sqlalchemy import event
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.schema.fields import Security
 from galaxy.schema.invocation import (
@@ -24,13 +29,17 @@ class LineageFixture:
     def __init__(self, monkeypatch: pytest.MonkeyPatch):
         self.app = galaxy_mock.MockApp()
         monkeypatch.setattr(Security, "security", self.app.security, raising=False)
-        self.trans = galaxy_mock.MockTrans(app=self.app)
+        self.mock_trans = galaxy_mock.MockTrans(app=self.app)
+        self.trans = cast(ProvidesUserContext, self.mock_trans)
         self.session = self.app.model.session
         self.owner = self.user("owner")
         self.workflow = model.Workflow()
         self.workflow.stored_workflow = model.StoredWorkflow(user=self.owner, name="workflow")
         self.session.add(self.workflow)
-        self.service = InvocationsService(self.app.security, None, WorkflowsManager(self.app, None), None, None)
+        workflows_manager = WorkflowsManager(cast(Any, self.app), cast(Any, None))
+        self.service = InvocationsService(
+            self.app.security, cast(Any, None), workflows_manager, cast(Any, None), cast(Any, None)
+        )
         self.view_as(self.owner)
 
     def user(self, name: str) -> model.User:
@@ -58,8 +67,8 @@ class LineageFixture:
         return invocation
 
     def view_as(self, user: model.User | None, admin: bool = False) -> None:
-        self.trans.set_user(user)
-        self.trans.user_is_admin = admin
+        self.mock_trans.set_user(user)
+        self.mock_trans.user_is_admin = admin
 
     def lineage(self, invocation: model.WorkflowInvocation) -> tuple[str | None, str | None]:
         # Serialize from fresh state, as a new request would.
@@ -148,7 +157,7 @@ def test_lineage_query_count_is_independent_of_batch_size_and_fanout(lineage: Li
     counts = []
     for page in (small, large):
         lineage.session.expire_all()
-        page = [lineage.session.get(model.WorkflowInvocation, invocation.id) for invocation in page]
+        page = [lineage.session.get_one(model.WorkflowInvocation, invocation.id) for invocation in page]
         lineage.session.refresh(lineage.owner)  # A request has its user loaded already.
         with lineage.count_statements() as statements:
             resolved = lineage.service._invocation_lineage(lineage.trans, page)

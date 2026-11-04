@@ -367,8 +367,9 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
                 sources = sources.where(accessible)
             accessible_source_ids = set(trans.sa_session.scalars(sources))
             for invocation in invocations:
-                if invocation.rerun_of_invocation_id in accessible_source_ids:
-                    lineage[invocation.id]["rerun_of_invocation_id"] = invocation.rerun_of_invocation_id
+                source_id = invocation.rerun_of_invocation_id
+                if source_id is not None and source_id in accessible_source_ids:
+                    lineage[invocation.id]["rerun_of_invocation_id"] = source_id
         rank = (
             func.row_number()
             .over(
