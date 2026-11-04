@@ -15,7 +15,7 @@ export interface DatasetSelectionItem extends SelectionItem {
 export interface CollectionEntry {
     id: string;
     name: string;
-    created_time: string;
+    create_time: string;
     hid: number;
     collection_type?: string;
 }
@@ -75,8 +75,8 @@ export function collectionToItem(entry: CollectionEntry): TimedSelectionItem {
         details: "",
         isLeaf: true,
         url: "",
-        time: entry.created_time,
-        updateTime: toDate(entry.created_time),
+        time: entry.create_time,
+        updateTime: toDate(entry.create_time),
         entry: entry as unknown as Record<string, unknown>,
     };
 }
