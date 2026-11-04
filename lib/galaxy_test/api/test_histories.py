@@ -312,6 +312,13 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             response = self._get("histories", data=data)
             self._assert_status_code_is(response, 200)
 
+    def test_index_query_limit_is_capped(self):
+        response = self._get("histories", data=dict(search="", show_published=False, limit=1000))
+        self._assert_status_code_is(response, 400)
+
+        response = self._get("histories", data=dict(search="", show_published=False, limit=999))
+        self._assert_status_code_is(response, 200)
+
     def test_index_advanced_filter(self):
         # Create the histories with a different user to ensure the test
         # is not conflicted with the current user's histories.

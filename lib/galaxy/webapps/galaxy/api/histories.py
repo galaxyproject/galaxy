@@ -20,9 +20,11 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.exceptions import RequestValidationError
 from pydantic import (
     Discriminator,
     Tag,
+    ValidationError,
 )
 from pydantic.fields import Field
 from pydantic.main import BaseModel
@@ -241,7 +243,7 @@ class FastAPIHistories:
                 trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
             )
         else:
-            payload = HistoryIndexQueryPayload.model_construct(
+            fields: dict[str, Any] = dict(
                 show_own=show_own,
                 show_published=show_published,
                 show_shared=show_shared,
@@ -252,6 +254,11 @@ class FastAPIHistories:
                 offset=offset,
                 search=search,
             )
+            try:
+                # Omitted values take the payload defaults, which cap the page size.
+                payload = HistoryIndexQueryPayload(**{key: value for key, value in fields.items() if value is not None})
+            except ValidationError as e:
+                raise RequestValidationError(e.errors())
             entries, total_matches = self.service.index_query(
                 trans, payload, serialization_params, include_total_count=True
             )
