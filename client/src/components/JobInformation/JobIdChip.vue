@@ -29,35 +29,55 @@ watch(
 </script>
 
 <template>
-    <span class="job-id-chip">
-        <span class="job-id-chip-value" :class="{ 'job-id-chip-value-reveal': justChanged }">{{ props.id }}</span>
-        <DecodedId :id="props.id" />
-        <CopyToClipboard message="Job API ID was copied to your clipboard" :text="props.id" title="Copy Job API ID" />
+    <span class="job-id-chip-container">
+        <span class="job-id-chip">
+            <span class="job-id-chip-value" :class="{ 'job-id-chip-value-reveal': justChanged }">{{ props.id }}</span>
+            <DecodedId :id="props.id" />
+            <CopyToClipboard
+                message="Job API ID was copied to your clipboard"
+                :text="props.id"
+                title="Copy Job API ID" />
+        </span>
     </span>
 </template>
 
 <style scoped lang="scss">
+.job-id-chip-container {
+    display: block;
+    width: 100%;
+    container-type: inline-size;
+}
+
 .job-id-chip {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.4em;
     font-family: "JetBrains Mono", ui-monospace, monospace;
-    font-size: var(--font-size-small);
+    font-size: clamp(0.4rem, 4.5cqi, var(--font-size-small));
     font-weight: 600;
     color: var(--color-blue-600);
     background: var(--color-blue-100);
-    border: 1px solid var(--color-grey-200);
+    border: 0.07em solid var(--color-grey-200);
     border-radius: 999px;
-    padding: 0.15rem 0.6rem;
+    padding: 0.17em 0.69em;
+    width: max-content;
+    max-width: 100%;
     white-space: nowrap;
 
     :deep(svg) {
-        font-size: 0.7rem;
+        font-size: 0.8em;
         color: var(--color-grey-500);
 
         &:hover {
             color: var(--color-blue-600);
         }
+    }
+
+    :deep(.g-button.g-medium) {
+        font-size: inherit;
+        padding: 0.1em;
+        border-width: 0.07em !important;
+        border-radius: 0.2em;
     }
 }
 
