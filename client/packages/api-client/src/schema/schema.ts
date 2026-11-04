@@ -18678,7 +18678,7 @@ export interface components {
             require_exact_tool_versions: boolean | null;
             /**
              * Rerun of invocation ID
-             * @description The encoded ID of the accessible invocation being rerun.
+             * @description The encoded ID of the invocation being rerun. It must be accessible and an invocation of the same workflow (any version).
              */
             rerun_of_invocation_id?: string | null;
             /**

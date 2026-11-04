@@ -376,6 +376,10 @@ class WorkflowsService(ServiceBase):
                 check_ownership=False,
                 check_accessible=True,
             )
+            if rerun_of_invocation.workflow.top_level_stored_workflow.id != stored_workflow.id:
+                raise exceptions.RequestParameterInvalidException(
+                    "A rerun must run the same workflow as the invocation it reruns."
+                )
         run_configs = build_workflow_run_configs(
             trans, workflow, payload.model_dump(exclude_unset=True), rerun_of_invocation=rerun_of_invocation
         )

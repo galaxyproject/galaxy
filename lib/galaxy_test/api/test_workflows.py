@@ -97,6 +97,15 @@ def _default_file_location(test_http_server) -> str:
     return test_http_server.get_url(remote_url=DEFAULT_FILE_DATASET_INPUT_LOCATION, file_path="test-data/1.bed")
 
 
+RERUN_LINEAGE_WORKFLOW = """
+class: GalaxyWorkflow
+inputs:
+  value:
+    type: int
+    default: 1
+steps: {}
+"""
+
 NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX = """
 class: GalaxyWorkflow
 inputs:
@@ -9574,14 +9583,7 @@ input1:
         assert not cached_output["visible"], f"Expected output to be hidden with cached job: {cached_output}"
 
     def test_workflow_invocation_rerun_lineage(self, history_id: str):
-        workflow_id = self.workflow_populator.upload_yaml_workflow(yaml_content="""
-class: GalaxyWorkflow
-inputs:
-  value:
-    type: int
-    default: 1
-steps: {}
-""")
+        workflow_id = self.workflow_populator.upload_yaml_workflow(yaml_content=RERUN_LINEAGE_WORKFLOW)
         original = self.workflow_populator.invoke_workflow(workflow_id, history_id=history_id)
         self._assert_status_code_is(original, 200)
         original_id = original.json()["id"]
@@ -9632,14 +9634,7 @@ steps: {}
 
     @requires_admin
     def test_workflow_invocation_rerun_invalid_source(self, history_id: str):
-        workflow_id = self.workflow_populator.upload_yaml_workflow("""
-class: GalaxyWorkflow
-inputs:
-  value:
-    type: int
-    default: 1
-steps: {}
-""")
+        workflow_id = self.workflow_populator.upload_yaml_workflow(yaml_content=RERUN_LINEAGE_WORKFLOW)
         malformed = self.workflow_populator.invoke_workflow(
             workflow_id, history_id=history_id, request={"rerun_of_invocation_id": "not-an-encoded-id"}
         )
@@ -9655,23 +9650,16 @@ steps: {}
         assert self.workflow_populator.history_invocations(history_id) == []
 
     def test_workflow_invocation_rerun_access(self, history_id: str):
-        workflow_yaml = """
-class: GalaxyWorkflow
-inputs:
-  value:
-    type: int
-    default: 1
-steps: {}
-"""
-        workflow_id = self.workflow_populator.upload_yaml_workflow(yaml_content=workflow_yaml)
+        workflow_id = self.workflow_populator.upload_yaml_workflow(yaml_content=RERUN_LINEAGE_WORKFLOW)
+        # Publish the workflow so the other user's requests are decided by access to the source invocation.
+        self.workflow_populator.make_public(workflow_id)
         original = self.workflow_populator.invoke_workflow(workflow_id, history_id=history_id)
         self._assert_status_code_is(original, 200)
         original_id = original.json()["id"]
         with self._different_user():
-            other_workflow_id = self.workflow_populator.upload_yaml_workflow(yaml_content=workflow_yaml)
             with self.dataset_populator.test_history() as other_history_id:
                 denied = self.workflow_populator.invoke_workflow(
-                    other_workflow_id,
+                    workflow_id,
                     history_id=other_history_id,
                     request={"rerun_of_invocation_id": original_id},
                 )
@@ -9687,7 +9675,7 @@ steps: {}
         with self._different_user():
             with self.dataset_populator.test_history() as other_history_id:
                 rerun = self.workflow_populator.invoke_workflow(
-                    other_workflow_id,
+                    workflow_id,
                     history_id=other_history_id,
                     request={"rerun_of_invocation_id": original_id},
                 )
@@ -9703,6 +9691,32 @@ steps: {}
             details = self.workflow_populator.get_invocation(rerun_id)
             assert details["is_rerun"] is True
             assert details["rerun_of_invocation_id"] is None
+
+    def test_workflow_invocation_rerun_same_workflow(self, history_id: str):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(yaml_content=RERUN_LINEAGE_WORKFLOW)
+        original = self.workflow_populator.invoke_workflow(workflow_id, history_id=history_id)
+        self._assert_status_code_is(original, 200)
+        original_id = original.json()["id"]
+        # An identical copy is still a different workflow.
+        copy_id = self.workflow_populator.upload_yaml_workflow(yaml_content=RERUN_LINEAGE_WORKFLOW)
+        other_workflow = self.workflow_populator.invoke_workflow(
+            copy_id, history_id=history_id, request={"rerun_of_invocation_id": original_id}
+        )
+        self._assert_status_code_is(other_workflow, 400)
+        assert_error_message_contains(other_workflow, "same workflow")
+        assert self.workflow_populator.get_invocation(original_id)["latest_rerun_invocation_id"] is None
+        # A newer version of the same workflow is still a rerun.
+        refactor_response = self.workflow_populator.refactor_workflow(
+            workflow_id, [{"action_type": "update_step_label", "step": {"order_index": 0}, "label": "renamed"}]
+        )
+        refactor_response.raise_for_status()
+        newer_version = self.workflow_populator.invoke_workflow(
+            workflow_id, history_id=history_id, request={"rerun_of_invocation_id": original_id}
+        )
+        self._assert_status_code_is(newer_version, 200)
+        rerun = self.workflow_populator.get_invocation(newer_version.json()["id"])
+        assert rerun["rerun_of_invocation_id"] == original_id
+        assert rerun["workflow_id"] != self.workflow_populator.get_invocation(original_id)["workflow_id"]
 
     @skip_without_tool("cat1")
     @skip_without_tool("identifier_multiple")
