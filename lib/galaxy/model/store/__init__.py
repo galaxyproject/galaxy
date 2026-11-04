@@ -271,6 +271,17 @@ def replace_metadata_file(
     return remap(metadata, remap_objects)
 
 
+def _path_in_archive(archive_root: str, path: str) -> str:
+    """Resolve a path the model store names relative to its archive, refusing links and paths outside it."""
+    archive_path = os.path.abspath(os.path.join(archive_root, path))
+    if os.path.islink(archive_path):
+        raise MalformedContents(f"Invalid dataset path: {archive_path}")
+    real_path = os.path.realpath(archive_path)
+    if not in_directory(real_path, archive_root):
+        raise MalformedContents(f"Invalid dataset path: {real_path}")
+    return real_path
+
+
 class ModelImportStore(metaclass=abc.ABCMeta):
     app: Optional[StoreAppProtocol]
     archive_dir: str
@@ -648,15 +659,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     file_name = dataset_attrs.get("file_name")
                     if file_name:
                         assert file_source_root
-                        # Do security check and move/copy dataset data.
-                        archive_path = os.path.abspath(os.path.join(file_source_root, file_name))
-                        if os.path.islink(archive_path):
-                            raise MalformedContents(f"Invalid dataset path: {archive_path}")
-
-                        temp_dataset_file_name = os.path.realpath(archive_path)
-
-                        if not in_directory(temp_dataset_file_name, file_source_root):
-                            raise MalformedContents(f"Invalid dataset path: {temp_dataset_file_name}")
+                        temp_dataset_file_name = _path_in_archive(file_source_root, file_name)
 
                     has_good_source = False
                     file_metadata = dataset_attrs.get("file_metadata") or {}
@@ -707,7 +710,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                             dataset_extra_files_path = dataset_attrs.get("extra_files_path", None)
                             if dataset_extra_files_path:
                                 assert file_source_root
-                                dataset_extra_files_path = os.path.join(file_source_root, dataset_extra_files_path)
+                                dataset_extra_files_path = _path_in_archive(file_source_root, dataset_extra_files_path)
                                 persist_extra_files(self.object_store, dataset_extra_files_path, dataset_instance)
                             # Only trust file size if the dataset is purged. If we keep the data we should check the file size.
                             dataset_instance.dataset.file_size = None
