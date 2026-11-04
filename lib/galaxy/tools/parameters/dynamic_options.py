@@ -1134,9 +1134,9 @@ def from_url_dependency_values(depends_on: list[str], other_values) -> dict[str,
         root, *path = name.split(".")
         value = _nested_value(other_values.get(root), path)
         if isinstance(value, list):
-            if not value or not all(_is_template_scalar(item) for item in value):
+            if not value or not all(_is_set_scalar(item) for item in value):
                 return None
-        elif not _is_template_scalar(value) or value == "":
+        elif not _is_set_scalar(value):
             return None
         values[name] = value
     return values
@@ -1153,16 +1153,17 @@ def _nested_value(value: Any, path: list[str]) -> Any:
         collected: list[Any] = []
         for instance in value:
             instance_value = _nested_value(instance, path) if isinstance(instance, dict) else None
-            if isinstance(instance_value, list):
+            if isinstance(instance_value, list) and instance_value:
                 collected.extend(instance_value)
             else:
-                collected.append(instance_value)
+                # An empty list stays visible as None, so an unset instance is not dropped.
+                collected.append(instance_value or None)
         return collected
     return None
 
 
-def _is_template_scalar(value: Any) -> bool:
-    return isinstance(value, (str, int, float))
+def _is_set_scalar(value: Any) -> bool:
+    return isinstance(value, (str, int, float)) and value != ""
 
 
 def quote_url_value(value: str) -> str:

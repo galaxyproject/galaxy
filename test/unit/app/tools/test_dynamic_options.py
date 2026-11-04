@@ -160,6 +160,9 @@ def test_from_url_depends_on_repeat_joins_all_instances(recorded_requests):
         [],
         [{"crop": "maize"}, {"crop": None}],
         [{"crop": "maize"}, {}],
+        [{"crop": ""}],
+        [{"crop": ["maize"]}, {"crop": []}],
+        [{"crop": ["maize", ""]}],
     ],
 )
 def test_from_url_depends_on_repeat_unset_value_makes_no_request(recorded_requests, queries):
