@@ -64,6 +64,10 @@ class SingularityHomeTestCases:
         with host_home_probe() as probe_name, self.dataset_populator.test_history() as history_id:
             run_response = self.dataset_populator.run_tool("legacy_home_probe", {"probe_name": probe_name}, history_id)
             self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"], assert_ok=True)
+            home = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset=run_response["outputs"][0]
+            ).strip()
+            assert home, "HOME is unset inside the container"
 
 
 def build_metadata_container():
