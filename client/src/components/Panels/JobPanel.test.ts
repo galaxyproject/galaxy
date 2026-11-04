@@ -159,29 +159,40 @@ describe("JobPanel", () => {
     );
 
     it("refreshes new and changed jobs in a single request instead of a per-job poll", async () => {
-        const singleJobRequests: string[] = [];
-        const jobsRequests: URLSearchParams[] = [];
-        server.use(
-            http.get("/api/jobs/{job_id}", ({ params, response }) => {
-                singleJobRequests.push(params.job_id as string);
-                return response(200).json(buildJob({ id: params.job_id as string, state: "ok" }));
-            }),
-            http.get("/api/jobs", ({ request, response }) => {
-                jobsRequests.push(new URL(request.url).searchParams);
-                return response(200).json(
-                    [buildJob({ id: "job1", state: "running" }), buildJob({ id: "job2", state: "running" })],
-                    { headers: { total_matches: "2" } },
-                );
-            }),
-        );
+        vi.useFakeTimers();
+        try {
+            const singleJobRequests: string[] = [];
+            const jobsRequests: URLSearchParams[] = [];
+            server.use(
+                http.get("/api/jobs/{job_id}", ({ params, response }) => {
+                    singleJobRequests.push(params.job_id as string);
+                    return response(200).json(buildJob({ id: params.job_id as string, state: "ok" }));
+                }),
+                http.get("/api/jobs", ({ request, response }) => {
+                    jobsRequests.push(new URL(request.url).searchParams);
+                    return response(200).json(
+                        [buildJob({ id: "job1", state: "running" }), buildJob({ id: "job2", state: "running" })],
+                        { headers: { total_matches: "2" } },
+                    );
+                }),
+            );
 
-        mountJobPanel();
-        await flushPromises();
-        await scrollOnce();
+            mountJobPanel();
+            await flushPromises();
+            await scrollOnce();
+            await vi.advanceTimersByTimeAsync(3000); // let a periodic refresh tick actually run
+            await flushPromises();
 
-        // No individual job requests: state updates ride the same cursor-bounded list request.
-        expect(singleJobRequests).toEqual([]);
-        expect(jobsRequests.length).toBeGreaterThan(0);
+            // No individual job requests: state updates ride the same cursor-bounded list request.
+            expect(singleJobRequests).toEqual([]);
+            expect(jobsRequests.length).toBeGreaterThan(1);
+            // The refresh tick's own request: bounded by date_range_min, not scoped by state.
+            const refreshRequest = jobsRequests.at(-1);
+            expect(refreshRequest?.has("date_range_min")).toBe(true);
+            expect(refreshRequest?.has("state")).toBe(false);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it("refetches in name mode when the name toggle flips with filter text present", async () => {
