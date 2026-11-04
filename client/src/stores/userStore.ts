@@ -1,4 +1,4 @@
-import { useDocumentVisibility, useThrottleFn } from "@vueuse/core";
+import { useDocumentVisibility, useThrottleFn, watchImmediate } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, effectScope, ref, watch } from "vue";
 
@@ -7,6 +7,7 @@ import { getGalaxyInstance } from "@/app";
 import { useHashedUserId } from "@/composables/hashedUserId";
 import { useKeyedCache } from "@/composables/keyedCache";
 import { useUserLocalStorageFromHashId } from "@/composables/userLocalStorageFromHashedId";
+import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import {
@@ -171,14 +172,26 @@ export const useUserStore = defineStore("userStore", () => {
 
     /**
      * Keeps the storage usage current when it changes outside this tab, e.g. in another tab or
-     * by background jobs: refresh when the user returns to the tab.
+     * by background jobs: refresh when the user returns to the tab. Also loads the usage of the
+     * other storage sources, where there are any.
      */
     function startWatchingStorageUsage() {
         if (watchingStorageUsage) {
             return;
         }
         watchingStorageUsage = true;
+        const configStore = useConfigStore();
         storageUsageScope.run(() => {
+            const hasOtherQuotaSources = computed(
+                () =>
+                    Boolean(configStore.config?.enable_quotas && configStore.config?.quota_source_labels?.length) &&
+                    isRegisteredUser(currentUser.value),
+            );
+            watchImmediate(hasOtherQuotaSources, (hasOtherSources) => {
+                if (hasOtherSources) {
+                    void useQuotaUsageStore().loadQuotaUsages();
+                }
+            });
             watch(documentVisibility, (visibility) => {
                 if (visibility !== "visible") {
                     return;

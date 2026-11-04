@@ -28,6 +28,14 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
     /** Whether anything asked for the usage, whether or not it loaded: it then needs reloading after changes. */
     const wasRequested = ref(false);
 
+    /** Storage sources other than the default one whose quota the user exceeded: jobs are held only then. */
+    const otherSourcesOverQuota = computed(
+        () => quotaUsages.value?.filter((usage) => usage.rawSourceLabel !== null && usage.isOverQuota) ?? [],
+    );
+    const otherSourcesOverQuotaLabels = computed(() =>
+        otherSourcesOverQuota.value.map((usage) => usage.sourceLabel).join(", "),
+    );
+
     const getQuotaUsageBySourceLabel = computed(() => {
         return (sourceLabel?: string | null): QuotaUsage | null | undefined => {
             const key = sourceLabelToKey(sourceLabel);
@@ -133,6 +141,12 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
             try {
                 const usage = await fetchCurrentUserQuotaSourceUsage(sourceLabel);
                 setSourceUsage(sourceLabel, usage);
+                // Keep the list of all sources, which the over-quota warnings use, as current as this one
+                if (usage && quotaUsages.value) {
+                    quotaUsages.value = quotaUsages.value.map((existing) =>
+                        existing.rawSourceLabel === usage.rawSourceLabel ? usage : existing,
+                    );
+                }
                 return usage;
             } catch (e) {
                 setSourceError(sourceLabel, errorMessageAsString(e));
@@ -164,6 +178,8 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
         sourceErrorByKey,
         isLoaded,
         wasRequested,
+        otherSourcesOverQuota,
+        otherSourcesOverQuotaLabels,
         getQuotaUsageBySourceLabel,
         loadQuotaUsages,
         loadQuotaUsageForSource,

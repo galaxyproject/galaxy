@@ -29,4 +29,21 @@ describe("quotaUsageStore", () => {
         expect(requests).toBe(2);
         expect(store.quotaUsages?.map((usage) => usage.totalDiskUsageInBytes)).toEqual([2048]);
     });
+
+    it("stops reporting a source over quota once reloading it alone shows it under quota", async () => {
+        const overQuota = { quota_source_label: "secure", quota_bytes: 1000, total_disk_usage: 1001 };
+        server.use(
+            http.get("/api/users/{user_id}/usage", ({ response }) => response(200).json([overQuota])),
+            http.get("/api/users/{user_id}/usage/{label}", ({ response }) =>
+                response(200).json({ ...overQuota, total_disk_usage: 400 }),
+            ),
+        );
+        const store = useQuotaUsageStore();
+        await store.loadQuotaUsages();
+        expect(store.otherSourcesOverQuota.map((usage) => usage.rawSourceLabel)).toEqual(["secure"]);
+
+        await store.loadQuotaUsageForSource("secure", true);
+
+        expect(store.otherSourcesOverQuota).toEqual([]);
+    });
 });

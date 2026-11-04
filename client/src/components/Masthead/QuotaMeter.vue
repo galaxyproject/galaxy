@@ -1,16 +1,24 @@
 <script setup lang="ts">
+import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink, BProgress, BProgressBar } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import { isRegisteredUser } from "@/api";
 import { useConfig } from "@/composables/config";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 
 const { config } = useConfig();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
+const { otherSourcesOverQuota, otherSourcesOverQuotaLabels } = storeToRefs(useQuotaUsageStore());
+
+const otherSourcesOverQuotaText = computed(
+    () => `${localize("Over quota on these storages:")} ${otherSourcesOverQuotaLabels.value}`,
+);
 
 const hasQuota = computed<boolean>(() => {
     const quotasEnabled = config.value.enable_quotas ?? false;
@@ -62,6 +70,15 @@ const variant = computed(() => {
                 ><span v-else>{{ totalUsageString }}</span>
             </span>
         </BLink>
+        <span
+            v-if="otherSourcesOverQuota.length"
+            v-g-tooltip.hover.bottom
+            class="other-sources-over-quota ml-1"
+            :title="otherSourcesOverQuotaText"
+            data-description="other storage over quota">
+            <FontAwesomeIcon :icon="faExclamationTriangle" />
+            <span class="sr-only">{{ otherSourcesOverQuotaText }}</span>
+        </span>
     </div>
 </template>
 
@@ -71,6 +88,9 @@ const variant = computed(() => {
     height: 100%;
     margin-left: 0.5rem;
     margin-right: 0.5rem;
+    .other-sources-over-quota {
+        color: var(--masthead-text-color);
+    }
     .quota-progress {
         width: 12rem;
         height: 1.4em;

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { faArchive, faBurn, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import { type AnyUser, type HistorySummary, isRegisteredUser, userOwnsHistory } from "@/api";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import localize from "@/utils/localization";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -30,8 +32,23 @@ function isUserOverQuota(user: AnyUser) {
     return (user?.quota_percent ?? 0) >= 100;
 }
 
+// Jobs are paused per storage source, so name the other sources the user exceeded the quota of
+const { otherSourcesOverQuota, otherSourcesOverQuotaLabels } = storeToRefs(useQuotaUsageStore());
+const showOtherSourcesOverQuota = computed(() => ownsHistory.value && otherSourcesOverQuota.value.length > 0);
+// The names follow a colon, so each sentence translates whole
+const otherSourcesOverQuotaMessage = computed(
+    () =>
+        `${localize("You are over your disk quota on these storages:")} ${otherSourcesOverQuotaLabels.value}. ` +
+        localize("Jobs writing there are on hold until your usage there drops below the quota."),
+);
+
 const hasMessages = computed(
-    () => props.history.purged || props.history.deleted || showArchived.value || isOverQuota.value,
+    () =>
+        props.history.purged ||
+        props.history.deleted ||
+        showArchived.value ||
+        isOverQuota.value ||
+        showOtherSourcesOverQuota.value,
 );
 </script>
 
@@ -57,6 +74,10 @@ const hasMessages = computed(
                     "You are over your disk quota. Tool execution is on hold until your disk usage drops below your allocated quota.",
                 )
             }}
+        </GAlert>
+
+        <GAlert v-if="showOtherSourcesOverQuota" variant="warning" data-description="other sources over quota message">
+            {{ otherSourcesOverQuotaMessage }}
         </GAlert>
     </div>
 </template>

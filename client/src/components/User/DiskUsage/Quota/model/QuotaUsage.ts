@@ -45,6 +45,11 @@ export interface QuotaUsage {
      * Whether this ObjectStore has unlimited quota
      */
     isUnlimited: boolean;
+
+    /**
+     * Whether the usage exceeds the quota: jobs writing to this ObjectStore are held only then.
+     */
+    isOverQuota: boolean;
 }
 
 /**
@@ -98,6 +103,11 @@ class QuotaUsageModel implements QuotaUsage {
     }
 
     get isUnlimited(): boolean {
+        // As on the server, a quota of 0 bytes means no quota
         return !this.quotaInBytes;
+    }
+
+    get isOverQuota(): boolean {
+        return !this.isUnlimited && this.totalDiskUsageInBytes > (this.quotaInBytes ?? 0);
     }
 }

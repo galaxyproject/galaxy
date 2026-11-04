@@ -45,4 +45,15 @@ describe("QuotaUsage", () => {
         expect(unlimitedQuotaUsage.isUnlimited).toBe(true);
         expect(limitedQuotaUsage.isUnlimited).toBe(false);
     });
+
+    // As the server, which holds jobs only when the usage exceeds the quota and treats a quota of 0 as none
+    test.each([
+        { case: "at its quota", quota: 1000, usage: 1000, isOverQuota: false },
+        { case: "over its quota", quota: 1000, usage: 1001, isOverQuota: true },
+        { case: "with no quota", quota: undefined, usage: 1001, isOverQuota: false },
+        { case: "with a quota of 0", quota: 0, usage: 1001, isOverQuota: false },
+    ])("is over quota is $isOverQuota for a source $case", ({ quota, usage, isOverQuota }) => {
+        const quotaUsage = toQuotaUsage({ quota_source_label: "a", quota_bytes: quota, total_disk_usage: usage });
+        expect(quotaUsage.isOverQuota).toBe(isOverQuota);
+    });
 });
