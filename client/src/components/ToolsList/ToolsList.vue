@@ -569,7 +569,7 @@ function onToggleView(newView: ListViewMode) {
                         :loading="loadingTags"
                         :error="tagsError"
                         :selected-tags="selectedPickerTags"
-                        :disabled="loading || !canUseFilterPickers"
+                        :disabled="!canUseFilterPickers"
                         @toggle-tag="applyFilter('tag', $event)" />
                 </template>
 

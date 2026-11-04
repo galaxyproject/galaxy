@@ -258,6 +258,16 @@ describe("ToolsList", () => {
         expect(routerPushMock).toHaveBeenLastCalledWith({ path: "/tools/list" });
     });
 
+    it("keeps the tag picker enabled while the results of a pick load", async () => {
+        const toolStore = useToolStore();
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router, propsData: { search: "fastqc" } });
+        await flushPromises();
+        toolStore.loading = true;
+        await flushPromises();
+        expect(wrapper.findComponent(ToolsListTagFilter).props("disabled")).toBe(false);
+        expect(wrapper.get(".tool-tags-dropdown button.dropdown-toggle").attributes("disabled")).toBeUndefined();
+    });
+
     it("keeps the ontology chip visible during ontology search and removes only that filter", async () => {
         const toolStore = useToolStore();
         toolStore.toolSections["ontology:edam_operations"] = {
