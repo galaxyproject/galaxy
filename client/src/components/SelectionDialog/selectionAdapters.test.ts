@@ -87,16 +87,17 @@ describe("datasetToItem", () => {
             tags: ["group:a"],
             update_time: ISO_TIME,
         });
-        const item = datasetToItem(dataset);
-        expect(item).toMatchObject({
+        expect(datasetToItem(dataset)).toEqual({
             id: "d1",
             label: "reads.fastq",
+            details: "",
             isLeaf: true,
+            url: "/api/datasets/d1",
             tags: ["group:a"],
             update_time: ISO_TIME,
+            updateTime: new Date(ISO_TIME),
             entry: dataset,
         });
-        expect(item.updateTime?.getTime()).toBe(Date.parse(ISO_TIME));
     });
 
     it("keeps a dataset without name or update time", () => {
