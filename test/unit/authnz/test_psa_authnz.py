@@ -9,7 +9,10 @@ from datetime import (
 )
 from types import SimpleNamespace
 from typing import Optional
-from unittest.mock import MagicMock
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import jwt
 import pytest
@@ -30,6 +33,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from galaxy import model
+from galaxy.authnz.cilogon import CILogonOpenIdConnect
 from galaxy.authnz.managers import AuthnzManager
 from galaxy.authnz.oidc_utils import decode_access_token as decode_access_token_oidc
 from galaxy.authnz.psa_authnz import (
@@ -398,3 +402,61 @@ def test_oidc_config_custom_auth_pipeline_and_extra(mock_oidc_config_file, mock_
         app_config=mock_app.config,
     )
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline + tuple(custom_auth_pipeline_extra)
+
+
+def test_authenticate_with_extra_scopes_does_not_accumulate(tmp_path, mock_oidc_config_file):
+    backend_config_file = tmp_path / "oidc_backends_config_extra_scopes.xml"
+    backend_config_file.write_text("""<?xml version="1.0"?>
+    <OIDC>
+        <provider name="cilogon">
+            <url>https://cilogon.org</url>
+            <client_id>gxyclient</client_id>
+            <client_secret>dummyclientsecret</client_secret>
+            <redirect_uri>https://galaxy.example.com/authnz/cilogon/callback</redirect_uri>
+            <extra_scopes>profile</extra_scopes>
+        </provider>
+    </OIDC>
+    """)
+    mock_app = MagicMock()
+    mock_app.config = SimpleNamespace(
+        oidc_auth_pipeline=None,
+        oidc_auth_pipeline_extra=None,
+        oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
+    )
+    manager = AuthnzManager(
+        app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=backend_config_file
+    )
+    psa_authnz = PSAAuthnz(
+        provider="cilogon",
+        oidc_config=manager.oidc_config,
+        oidc_backend_config=manager.oidc_backends_config["cilogon"],
+        app_config=mock_app.config,
+    )
+    original_default_scope = CILogonOpenIdConnect.DEFAULT_SCOPE
+    expected_default_scope = list(original_default_scope)
+    observed_scopes = []
+
+    def fake_do_auth(backend):
+        observed_scopes.append(sorted(backend.get_scope()))
+        return MagicMock()
+
+    trans = MagicMock()
+    trans.request.host = "https://galaxy.example.com"
+    try:
+        with (
+            patch("galaxy.authnz.psa_authnz.on_the_fly_config"),
+            patch("galaxy.authnz.psa_authnz.FlowState"),
+            patch("galaxy.authnz.psa_authnz.authentication_id"),
+            patch("galaxy.authnz.psa_authnz.do_auth", side_effect=fake_do_auth),
+        ):
+            for _ in range(3):
+                psa_authnz.authenticate(trans)
+
+        expected_scope = sorted(expected_default_scope + ["profile"])
+        assert observed_scopes == [expected_scope] * 3
+        assert CILogonOpenIdConnect.DEFAULT_SCOPE is original_default_scope
+        assert CILogonOpenIdConnect.DEFAULT_SCOPE == expected_default_scope
+    finally:
+        original_default_scope[:] = expected_default_scope
+        CILogonOpenIdConnect.DEFAULT_SCOPE = original_default_scope
