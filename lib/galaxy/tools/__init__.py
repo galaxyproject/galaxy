@@ -2027,7 +2027,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         return param
 
     def _resolve_param_dependency(self, name: str, param: ToolParameter, context) -> list[Any]:
-        """Find the inputs named by ``name``; ``a.b`` names input ``b`` in section or conditional ``a``."""
+        """Find the inputs named by ``name``; ``a.b`` names input ``b`` in section, conditional or repeat ``a``."""
         root, *path = name.split(".")
         # Let it throw exception, but give some hint what the problem might be
         assert (
@@ -2037,7 +2037,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         for part in path:
             candidates = []
             for target in targets:
-                if isinstance(target, Section):
+                if isinstance(target, (Section, Repeat)):
                     candidates.append(target.inputs.get(part))
                 elif isinstance(target, Conditional):
                     if target.test_param is not None and part == target.test_param.name:

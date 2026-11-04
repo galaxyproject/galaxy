@@ -19,6 +19,17 @@ TOOL_XML = """<tool id="select_from_url_depends_on" name="select_from_url_depend
                 </request_headers>
             </options>
         </param>
+        <repeat name="queries" title="Queries">
+            <param name="query_crop" type="select" optional="true" label="Crop">
+                <options from_url="BASE_URL/crops"/>
+            </param>
+            <param name="query_set" type="select" optional="true" label="Genotype set">
+                <options from_url="BASE_URL/crops/$query_crop/genotype_sets" depends_on="query_crop"/>
+            </param>
+        </repeat>
+        <param name="all_query_sets" type="select" optional="true" label="Genotype sets of all queried crops">
+            <options from_url="BASE_URL/genotype_sets?crops=$queries.query_crop" depends_on="queries.query_crop"/>
+        </param>
     </inputs>
     <outputs>
         <data name="output" format="txt"/>
@@ -71,6 +82,9 @@ class TestSelectFromUrlDependsOn(IntegrationTestCase):
         self.options_server.add_json_route(
             "/crops/wheat/genotype_sets", [["Wheat panel 1", "wheat_panel_1"], ["Wheat panel 2", "wheat_panel_2"]]
         )
+        self.options_server.add_json_route(
+            "/genotype_sets?crops=maize,wheat", [["Maize panel", "maize_panel"], ["Wheat panel 1", "wheat_panel_1"]]
+        )
 
     def _build(self, inputs=None):
         history_id = self.dataset_populator.new_history()
@@ -100,6 +114,24 @@ class TestSelectFromUrlDependsOn(IntegrationTestCase):
             "/crops/wheat/genotype_sets",
         ]
         assert [request.headers["x-crop"] for request in requests] == ["maize", "wheat"]
+
+    def test_repeat_dependencies(self):
+        inputs = self._build({"queries_0|query_crop": "maize", "queries_1|query_crop": "wheat"})
+        query_sets = [
+            {tool_input["name"]: tool_input for tool_input in instance}["query_set"]["options"]
+            for instance in inputs["queries"]["cache"]
+        ]
+        assert query_sets == [
+            [["Maize panel", "maize_panel", False]],
+            [["Wheat panel 1", "wheat_panel_1", False], ["Wheat panel 2", "wheat_panel_2", False]],
+        ]
+        assert inputs["all_query_sets"]["options"] == [
+            ["Maize panel", "maize_panel", False],
+            ["Wheat panel 1", "wheat_panel_1", False],
+        ]
+
+        inputs = self._build({"queries_0|query_crop": "maize", "queries_1|query_crop": None})
+        assert inputs["all_query_sets"]["options"] == []
 
     def test_run_with_dependent_value(self):
         history_id = self.dataset_populator.new_history()

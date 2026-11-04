@@ -1125,15 +1125,14 @@ def from_url_dependency_values(depends_on: list[str], other_values) -> dict[str,
     """Look up the value of each parameter in ``depends_on``.
 
     Names are resolved like the ``ref`` of a ``param_value`` filter, and ``a.b``
-    looks up ``b`` inside section or conditional ``a``. Returns ``None`` if any
+    looks up ``b`` inside section, conditional or repeat ``a``. A name inside a
+    repeat yields the values of all repeat instances. Returns ``None`` if any
     value is unset, a runtime value, or not a plain scalar or list of scalars.
     """
     values: dict[str, Any] = {}
     for name in depends_on:
         root, *path = name.split(".")
-        value = other_values.get(root)
-        for part in path:
-            value = value.get(part) if isinstance(value, dict) else None
+        value = _nested_value(other_values.get(root), path)
         if isinstance(value, list):
             if not value or not all(_is_template_scalar(item) for item in value):
                 return None
@@ -1141,6 +1140,25 @@ def from_url_dependency_values(depends_on: list[str], other_values) -> dict[str,
             return None
         values[name] = value
     return values
+
+
+def _nested_value(value: Any, path: list[str]) -> Any:
+    if not path:
+        return value
+    part, *rest = path
+    if isinstance(value, dict):
+        return _nested_value(value.get(part), rest)
+    if isinstance(value, list):
+        # Repeat state is a list of instance states; collect the value of every instance.
+        collected: list[Any] = []
+        for instance in value:
+            instance_value = _nested_value(instance, path) if isinstance(instance, dict) else None
+            if isinstance(instance_value, list):
+                collected.extend(instance_value)
+            else:
+                collected.append(instance_value)
+        return collected
+    return None
 
 
 def _is_template_scalar(value: Any) -> bool:

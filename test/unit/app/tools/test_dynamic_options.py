@@ -141,6 +141,34 @@ def test_from_url_depends_on_unset_value_makes_no_request(recorded_requests, oth
     assert recorded_requests == []
 
 
+REPEAT_FROM_URL_OPTIONS = """
+<options from_url="https://example.org/genotype_sets?crops=$queries.crop" depends_on="queries.crop"/>
+"""
+
+
+def test_from_url_depends_on_repeat_joins_all_instances(recorded_requests):
+    trans = WorkRequestContext(app=MockApp())
+    other_values = {"queries": [{"crop": "maize"}, {"crop": "rice"}]}
+    get_dependent_from_url_option(REPEAT_FROM_URL_OPTIONS).get_options(trans, other_values)
+    (request,) = recorded_requests
+    assert request["url"] == "https://example.org/genotype_sets?crops=maize,rice"
+
+
+@pytest.mark.parametrize(
+    "queries",
+    [
+        [],
+        [{"crop": "maize"}, {"crop": None}],
+        [{"crop": "maize"}, {}],
+    ],
+)
+def test_from_url_depends_on_repeat_unset_value_makes_no_request(recorded_requests, queries):
+    trans = WorkRequestContext(app=MockApp())
+    options = get_dependent_from_url_option(REPEAT_FROM_URL_OPTIONS).get_options(trans, {"queries": queries})
+    assert options == []
+    assert recorded_requests == []
+
+
 def test_from_url_depends_on_is_a_dependency():
     assert get_dependent_from_url_option().get_dependency_names() == ["crop", "sec.year"]
 
@@ -319,6 +347,12 @@ DEPENDENT_FROM_URL_TOOL = """<tool id="test_tool" name="Test Tool" version="1.0"
                 <param name="variety" type="text"/>
             </when>
         </conditional>
+        <repeat name="queries" title="Queries">
+            <param name="query_crop" type="text"/>
+            <param name="query_set" type="select">
+                <options from_url="https://example.org/crops/$query_crop" depends_on="query_crop"/>
+            </param>
+        </repeat>
         <param name="genotype_set" type="select">
             <options from_url="https://example.org/crops/$crop/$sec.year/$cond.kind/$cond.variety" depends_on="DEPENDS_ON"/>
         </param>
@@ -344,7 +378,13 @@ class TestFromUrlDependsOnRefresh(TestCase, tools_support.UsesTools):
         assert sec.inputs["year"].refresh_on_change
         assert cond.test_param.refresh_on_change
         assert all(case.inputs["variety"].refresh_on_change for case in cond.cases)
+        assert tool.inputs["queries"].inputs["query_crop"].refresh_on_change
         assert not tool.inputs["unrelated"].refresh_on_change
+
+    def test_depends_on_refreshes_input_in_repeat(self):
+        tool = self._init_tool(DEPENDENT_FROM_URL_TOOL.replace("DEPENDS_ON", "queries.query_crop"))
+        assert tool.inputs["queries"].inputs["query_crop"].refresh_on_change
+        assert not tool.inputs["crop"].refresh_on_change
 
     def test_depends_on_unknown_input_fails_to_load(self):
         with pytest.raises(AssertionError, match="Could not find dependency 'sec.month'"):

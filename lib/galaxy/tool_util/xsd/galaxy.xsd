@@ -5582,10 +5582,12 @@ sets of the crop selected in the first one:
 
 Parameters are found the same way as the ``ref`` of a ``param_value``
 [filter](#tool-inputs-param-options-filter): by name, among the parameters
-defined before the select at the same level or in an enclosing section or
-conditional. Use ``section_name.param_name`` or ``conditional_name.param_name``
-to refer to a parameter inside a section or conditional. Parameters
-inside repeats can't be used.
+defined before the select at the same level or in an enclosing section,
+conditional or repeat. A select inside a repeat uses the parameters of its own
+repeat instance. Use ``section_name.param_name``, ``conditional_name.param_name``
+or ``repeat_name.param_name`` to refer to a parameter inside a section,
+conditional or repeat. A parameter inside a repeat gives the values of all repeat
+instances.
 
 Values are inserted as strings, and multiple values are joined with ``,``. In
 ``from_url`` they are percent-encoded (``/`` too) and in ``request_headers`` and
