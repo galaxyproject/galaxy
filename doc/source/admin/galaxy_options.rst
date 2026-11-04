@@ -5252,8 +5252,9 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Hash function to use if 'calculate_dataset_hash' is enabled.
-    Possible values are: 'md5', 'sha1', 'sha256', 'sha512'
+    Hash function to use if 'calculate_dataset_hash' is enabled, and
+    the default one for hashes requested via the API. Possible values
+    are: 'md5', 'sha1', 'sha256', 'sha512'
 :Default: ``sha256``
 :Type: str
 

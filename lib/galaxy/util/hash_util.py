@@ -38,6 +38,12 @@ class HashFunctionNameEnum(str, Enum):
     sha512 = "SHA-512"
 
 
+# Values of the hash functions considered collision-resistant, i.e. whose hashes are safe to
+# match datasets uploaded independently (possibly by different users) on.
+COLLISION_RESISTANT_HASH_FUNCTIONS: frozenset[str] = frozenset(
+    {HashFunctionNameEnum.sha256.value, HashFunctionNameEnum.sha512.value}
+)
+
 # IMPORTANT: Keep this literal type in sync with HashFunctionNameEnum values above
 # as well as with HASH_NAME_ALIAS and HASH_NAME_MAP below.
 HashFunctionNames = Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]

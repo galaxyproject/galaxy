@@ -17,6 +17,7 @@ from galaxy.files.sources.util import (
     fetch_drs_to_file,
     RetryOptions,
 )
+from galaxy.model import DatasetHash
 from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
@@ -96,6 +97,20 @@ class TestDrsApi(ApiTestCase):
             download_response = requests.get(url, headers=headers_as_dict)
             download_response.raise_for_status()
             assert download_response.text == CONTENT
+
+    def test_checksum_from_final_hash(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id, content=CONTENT, wait=True)
+        self.dataset_populator.make_dataset_public(history_id, hda["id"])
+        self.dataset_populator.compute_hash(hda["id"], hash_function="SHA-256", final=True)
+        hashes = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=hda["id"])["hashes"]
+        assert all(h["extra_files_path"] == DatasetHash.FINAL for h in hashes)
+        final_sha256 = next(h["hash_value"] for h in hashes if h["hash_function"] == "SHA-256")
+
+        api_url = self._url_join(f"ga4gh/drs/v1/objects/{hda['drs_id']}")
+        show_response = requests.get(api_url)
+        assert show_response.status_code == 200, show_response.text
+        assert {"type": "SHA-256", "checksum": final_sha256} in show_response.json()["checksums"]
 
     def test_public_data_access_util_code(self):
         history_id = self.dataset_populator.new_history()

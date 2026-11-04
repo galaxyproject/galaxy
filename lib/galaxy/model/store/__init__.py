@@ -474,6 +474,13 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         assert dataset is not None
         if "hashes" in dataset_or_file_attrs:
             for hash_attrs in dataset_or_file_attrs["hashes"]:
+                if hash_attrs["extra_files_path"] == model.DatasetHash.FINAL:
+                    # DatasetHash.FINAL marks a hash as the authoritative value to match this
+                    # dataset on for job-cache purposes; its safety depends on it only ever
+                    # being set by Galaxy's own, live hash computation, never by an imported
+                    # archive's unverified claim. A legitimate FINAL hash can always be
+                    # recomputed afterwards via `final=True` on `PUT /api/datasets/{id}/hash`.
+                    continue
                 hash_obj = model.DatasetHash()
                 hash_obj.hash_value = hash_attrs["hash_value"]
                 hash_obj.hash_function = hash_attrs["hash_function"]

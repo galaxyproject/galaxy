@@ -179,10 +179,15 @@ class DatasetManager(
         if request.user and request.user.user_id:
             user = sa_session.get(model.User, request.user.user_id)
         auth = ObjectStoreAuth(user=user) if user else None
+        hash_function = request.hash_function
         # For files in extra_files_path
         extra_files_path = request.extra_files_path
+        if extra_files_path == DatasetHash.FINAL and dataset.extra_files_path_exists():
+            raise exceptions.RequestParameterInvalidException(
+                "Cannot compute the final hash for a dataset with extra files yet."
+            )
         try:
-            if extra_files_path:
+            if extra_files_path and extra_files_path != DatasetHash.FINAL:
                 extra_dir = dataset.extra_files_path_name
                 file_path = self.app.object_store.get_filename(
                     dataset,
@@ -191,6 +196,10 @@ class DatasetManager(
                     auth=auth,
                 )
             else:
+                # None (primary-file hash with no further guarantee) or DatasetHash.FINAL
+                # (primary-file hash tagged as the authoritative value to match on) both hash
+                # the primary file; only the extra_files_path value stored on the resulting row
+                # differs.
                 file_path = dataset.get_file_name(auth=auth)
         except ObjectInvalid:
             log.warning(
@@ -198,7 +207,6 @@ class DatasetManager(
                 dataset.id,
             )
             return
-        hash_function = request.hash_function
         calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
         dataset_hash = model.DatasetHash(
             hash_function=hash_function,

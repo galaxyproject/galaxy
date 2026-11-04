@@ -333,6 +333,32 @@ def test_import_from_dict():
     assert imported_dataset_source.source_uri == TEST_SOURCE_URI
 
 
+def test_import_from_dict_drops_reserved_final_hash():
+    """An imported archive must not be able to directly claim DatasetHash.FINAL."""
+    fixture_context = setup_fixture_context_with_history()
+    import_dict = one_hda_model_store_dict()
+    import_dict["datasets"][0]["file_metadata"]["hashes"].append(
+        dict(
+            model_class="DatasetHash",
+            hash_function="SHA-256",
+            hash_value="forged-value-from-archive",
+            extra_files_path=model.DatasetHash.FINAL,
+        )
+    )
+    perform_import_from_store_dict(fixture_context, import_dict)
+    import_history = fixture_context.history
+
+    datasets = import_history.datasets
+    assert len(datasets) == 1
+    imported_hda = datasets[0]
+    assert imported_hda.dataset is not None
+    # The legitimate, non-FINAL hash is still imported normally...
+    assert len(imported_hda.dataset.hashes) == 1
+    # ...but the forged FINAL hash is dropped.
+    extra_files_paths = {h.extra_files_path for h in imported_hda.dataset.hashes}
+    assert model.DatasetHash.FINAL not in extra_files_paths
+
+
 def test_import_library_from_dict():
     fixture_context = setup_fixture_context_with_history()
     import_dict = one_ld_library_model_store_dict()
