@@ -88,6 +88,7 @@ from galaxy.schema.schema import (
 from galaxy.schema.workflows import (
     InvokeWorkflowPayload,
     StoredWorkflowDetailed,
+    SubworkflowVersionsResponse,
     WorkflowExtractionByIdsPayload,
     WorkflowExtractionResult,
 )
@@ -1219,6 +1220,21 @@ class FastAPIWorkflows:
         instance: InstanceQueryParam = False,
     ):
         return self.service.get_versions(trans, workflow_id, instance or False)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/subworkflow_versions",
+        summary="List the versions a sub-workflow step using this workflow version can switch to.",
+    )
+    def subworkflow_versions(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        instance: InstanceQueryParam = False,
+    ) -> SubworkflowVersionsResponse:
+        """Pass a sub-workflow step's `content_id` with `instance=true`. Lists the versions of the workflow's stored workflow
+        and, for a workflow imported from a TRS server, the versions that server offers. Switch to one
+        with the `upgrade_subworkflow` refactoring action."""
+        return self.service.subworkflow_versions(trans, workflow_id, instance or False)
 
     @router.get(
         "/api/workflows/{workflow_id}/counts",

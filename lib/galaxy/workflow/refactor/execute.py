@@ -33,6 +33,7 @@ from .schema import (
     RemoveUnlabeledWorkflowOutputs,
     step_reference_union,
     StepReferenceByLabel,
+    StepReferenceByOrderIndex,
     UpdateAnnotationAction,
     UpdateCreatorAction,
     UpdateLicenseAction,
@@ -60,7 +61,13 @@ class WorkflowRefactorExecutor:
     VERTICAL_SPACING = 120
     HORIZONTAL_SPACING = 220
 
-    def __init__(self, raw_workflow_description, workflow, module_injector: WorkflowModuleInjector):
+    def __init__(
+        self,
+        raw_workflow_description,
+        workflow,
+        module_injector: WorkflowModuleInjector,
+        upgrading: frozenset[int] = frozenset(),
+    ):
         # we mostly use the ga representation, but there may be cases where the
         # models/modules of existing workflow are more usable.
         self.raw_workflow_description = raw_workflow_description
@@ -73,8 +80,16 @@ class WorkflowRefactorExecutor:
         )
         # Track positions of newly created input steps during refactoring
         self._new_input_positions: list[Position] = []
+        self._dry_run = False
+        # Stored workflows a recursive sub-workflow upgrade is inside of, this one included.
+        self._upgrading = upgrading
+        # Set when a dry run's recursive upgrade would change a nested sub-workflow.
+        self.nested_changes = False
+        # Set when an action points a sub-workflow step at another workflow version.
+        self.subworkflow_steps_changed = False
 
     def refactor(self, refactor_request: RefactorActions):
+        self._dry_run = refactor_request.dry_run
         action_executions = []
         for action in refactor_request.actions:
             # TODO: we need to regenerate a detached workflow from as_dict after
@@ -446,15 +461,41 @@ class WorkflowRefactorExecutor:
         step_def = self._find_step(action.step)
         assert step_def["content_id"] is not None
         trans = self.module_injector.trans
-        content_id = action.content_id
-        if content_id is None:
-            old_workflow = trans.app.workflow_manager.get_owned_workflow(trans, step_def["content_id"])
-            stored_workflow = old_workflow.stored_workflow
-            content_id = trans.security.encode_id(stored_workflow.latest_workflow.id)
-        step_def["content_id"] = content_id
+        contents_manager = trans.app.workflow_contents_manager
+        current_workflow = trans.app.workflow_manager.get_owned_workflow(trans, step_def["content_id"])
+        new_workflow, warning = contents_manager.resolve_subworkflow_upgrade(
+            trans,
+            current_workflow,
+            content_id=action.content_id,
+            version=action.version,
+            trs_version_id=action.trs_version_id,
+        )
+        if warning:
+            execution.messages.append(
+                RefactorActionExecutionMessage(
+                    message=warning,
+                    message_type=RefactorActionExecutionMessageTypeEnum.subworkflow_versions_unavailable,
+                    step_label=step_def.get("label"),
+                    order_index=step_def["id"],
+                )
+            )
+        # What the step's module is built from, a dry run's detached build of the nested upgrades.
+        module_workflow = new_workflow
+        if action.recursive:
+            upgraded_workflow, nested_executions, nested_changed = contents_manager.upgrade_nested_subworkflows(
+                trans, new_workflow, dry_run=self._dry_run, upgrading=self._upgrading
+            )
+            self._relay_nested_messages(nested_executions, new_workflow, step_def, execution)
+            module_workflow = upgraded_workflow
+            if self._dry_run:
+                self.nested_changes = self.nested_changes or nested_changed
+            else:
+                new_workflow = upgraded_workflow
+        new_content_id = trans.security.encode_id(new_workflow.id)
+        self.subworkflow_steps_changed = self.subworkflow_steps_changed or new_content_id != step_def["content_id"]
+        step_def["content_id"] = new_content_id
         step = self.workflow.steps[step_def["id"]]
-        new_workflow = trans.app.workflow_manager.get_owned_workflow(trans, content_id)
-        step.subworkflow = new_workflow
+        step.subworkflow = module_workflow
         try:
             self._inject_for_updated_step(step, execution)
         except ToolMissingException:
@@ -463,6 +504,19 @@ class WorkflowRefactorExecutor:
             step.module = module_factory.from_workflow_step(trans, step)
 
         self._patch_step(execution, step, step_def)
+
+    def _relay_nested_messages(self, nested_executions, nested_workflow, step_def, execution: RefactorActionExecution):
+        # Nested messages point at steps of the nested workflow; anchor them to the step being upgraded.
+        for nested_execution in nested_executions:
+            for nested_message in nested_execution.messages:
+                execution.messages.append(
+                    RefactorActionExecutionMessage(
+                        message=f"In sub-workflow '{nested_workflow.name}': {nested_message.message}",
+                        message_type=nested_message.message_type,
+                        step_label=step_def.get("label"),
+                        order_index=step_def["id"],
+                    )
+                )
 
     def _apply_upgrade_tool(self, action: UpgradeToolAction, execution: RefactorActionExecution):
         step_def = self._find_step(action.step)
@@ -493,7 +547,8 @@ class WorkflowRefactorExecutor:
         for step_order_index, step in self._as_dict["steps"].items():
             if step.get("type") == "subworkflow":
                 step_action_s = UpgradeSubworkflowAction(
-                    action_type="upgrade_subworkflow", step={"order_index": step_order_index}
+                    action_type="upgrade_subworkflow",
+                    step=StepReferenceByOrderIndex(order_index=step_order_index),
                 )
                 self._apply_upgrade_subworkflow(step_action_s, execution)
             elif step.get("type") == "tool" and self.workflow.steps[step["id"]].user_defined_tool is None:

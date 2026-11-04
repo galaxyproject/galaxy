@@ -7358,6 +7358,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workflows/{workflow_id}/subworkflow_versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the versions a sub-workflow step using this workflow version can switch to.
+         * @description Pass a sub-workflow step's `content_id` with `instance=true`. Lists the versions of the workflow's stored workflow
+         *     and, for a workflow imported from a TRS server, the versions that server offers. Switch to one
+         *     with the `upgrade_subworkflow` refactoring action.
+         */
+        get: operations["subworkflow_versions_api_workflows__workflow_id__subworkflow_versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workflows/{workflow_id}/tags": {
         parameters: {
             query?: never;
@@ -22514,7 +22536,8 @@ export interface components {
             | "tool_version_change"
             | "tool_state_adjustment"
             | "connection_drop_forced"
-            | "workflow_output_drop_forced";
+            | "workflow_output_drop_forced"
+            | "subworkflow_versions_unavailable";
         /** RefactorRequest */
         RefactorRequest: {
             /** Actions */
@@ -25053,6 +25076,89 @@ export interface components {
              */
             workflow_id: string;
         };
+        /** SubworkflowStoredVersion */
+        SubworkflowStoredVersion: {
+            /**
+             * Steps
+             * @description The number of steps in this version.
+             */
+            steps: number;
+            /**
+             * Update Time
+             * Format: date-time
+             */
+            update_time: string;
+            /**
+             * Version
+             * @description The version of the stored workflow, counted from 0 for the oldest.
+             */
+            version: number;
+            /**
+             * Workflow ID
+             * @description The id of this workflow version, the `content_id` of a step using it.
+             * @example 0123456789ABCDEF
+             */
+            workflow_id: string;
+        };
+        /** SubworkflowTrsVersion */
+        SubworkflowTrsVersion: {
+            /** Name */
+            name: string;
+            /**
+             * TRS Version ID
+             * @description The version as it appears in a TRS version URL, the `trs_version_id` of an `upgrade_subworkflow` action.
+             */
+            trs_version_id: string;
+        };
+        /** SubworkflowVersionsResponse */
+        SubworkflowVersionsResponse: {
+            /**
+             * Current Version
+             * @description The version of the stored workflow that the step uses now.
+             */
+            current_version: number;
+            /**
+             * Stored Workflow ID
+             * @example 0123456789ABCDEF
+             */
+            stored_workflow_id: string;
+            /**
+             * TRS Error
+             * @description Why the TRS versions could not be listed, if they could not.
+             */
+            trs_error?: string | null;
+            /**
+             * TRS Tool ID
+             * @description The TRS tool this workflow was imported from, if any.
+             */
+            trs_tool_id?: string | null;
+            /**
+             * TRS Upgrade Version ID
+             * @description The TRS version an `upgrade_subworkflow` action without a target moves to, if any.
+             */
+            trs_upgrade_version_id?: string | null;
+            /**
+             * TRS Version ID
+             * @description The imported TRS version.
+             */
+            trs_version_id?: string | null;
+            /**
+             * TRS Versions
+             * @description The versions the TRS server offers: numbered versions newest first, then the others by name.
+             */
+            trs_versions?: components["schemas"]["SubworkflowTrsVersion"][] | null;
+            /**
+             * Versions
+             * @description The versions of the stored workflow, oldest first.
+             */
+            versions: components["schemas"]["SubworkflowStoredVersion"][];
+            /**
+             * Workflow ID
+             * @description The current workflow version.
+             * @example 0123456789ABCDEF
+             */
+            workflow_id: string;
+        };
         /** SuitableConverter */
         SuitableConverter: {
             /**
@@ -27215,20 +27321,46 @@ export interface components {
                 [key: string]: string | boolean | number;
             };
         };
-        /** UpgradeSubworkflowAction */
+        /**
+         * UpgradeSubworkflowAction
+         * @description Switch a sub-workflow step to another version of its sub-workflow.
+         *
+         *     Without a target, a sub-workflow imported from a TRS server moves to the newest numbered TRS
+         *     version if that is newer than the current one, and any other sub-workflow moves to the newest
+         *     version of its stored workflow.
+         */
         UpgradeSubworkflowAction: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "upgrade_subworkflow";
-            /** Content Id */
+            /**
+             * Content Id
+             * @description The encoded id of the workflow version (not stored workflow) to switch to.
+             */
             content_id?: string | null;
+            /**
+             * Recursive
+             * @description Also upgrade the sub-workflow steps nested inside the target sub-workflow to their newest versions, innermost first, saving a new version of each nested sub-workflow that changes. Sub-workflows imported from a URL or a TRS server are left as published, and so is a target that is not the newest version of its stored workflow. A dry run saves nothing: it reports what the nested upgrades would change, but the returned workflow still points at the target's current nested versions.
+             * @default false
+             */
+            recursive: boolean;
             /**
              * Step
              * @description The target step for this action.
              */
             step: components["schemas"]["StepReferenceByOrderIndex"] | components["schemas"]["StepReferenceByLabel"];
+            /**
+             * Trs Version Id
+             * @description The TRS version to switch a sub-workflow imported from a TRS server to. The version is imported if this user has no copy of it yet, also during a dry run.
+             */
+            trs_version_id?: string | null;
+            /**
+             * Version
+             * @description The version of the sub-workflow's stored workflow to switch to, counted from 0 for the oldest, as listed by `/api/workflows/{workflow_id}/versions`.
+             */
+            version?: number | null;
         };
         /** UpgradeToolAction */
         UpgradeToolAction: {
@@ -56893,6 +57025,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    subworkflow_versions_api_workflows__workflow_id__subworkflow_versions_get: {
+        parameters: {
+            query?: {
+                instance?: boolean | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
+                workflow_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubworkflowVersionsResponse"];
+                };
             };
             /** @description Request Error */
             "4XX": {

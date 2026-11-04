@@ -364,6 +364,43 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         assert isinstance(subworkflow_step["workflow_id"], str)
         self._get(f"workflows/{subworkflow_step['workflow_id']}", {"style": "instance"}).json()
 
+    def test_subworkflow_versions(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        subworkflow_id = self._subworkflow_step_workflow_id(workflow_id)
+        versions = self._subworkflow_versions(subworkflow_id)
+        assert versions["workflow_id"] == subworkflow_id
+        assert versions["current_version"] == 0
+        assert [v["workflow_id"] for v in versions["versions"]] == [subworkflow_id]
+        assert versions["trs_tool_id"] is None
+        assert versions["trs_versions"] is None
+
+        rename = [{"action_type": "update_step_label", "step": {"label": "random_lines"}, "label": "renamed"}]
+        self.workflow_populator.refactor_workflow(versions["stored_workflow_id"], rename).raise_for_status()
+        versions = self._subworkflow_versions(subworkflow_id)
+        assert versions["current_version"] == 0
+        assert [v["version"] for v in versions["versions"]] == [0, 1]
+
+        upgrade = [{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, "version": 1}]
+        self.workflow_populator.refactor_workflow(workflow_id, upgrade).raise_for_status()
+        upgraded_id = self._subworkflow_step_workflow_id(workflow_id)
+        assert upgraded_id == versions["versions"][1]["workflow_id"]
+        assert self._subworkflow_versions(upgraded_id)["current_version"] == 1
+
+        with self._different_user():
+            self._assert_status_code_is(
+                self._get(f"workflows/{subworkflow_id}/subworkflow_versions?instance=true"), 403
+            )
+
+    def _subworkflow_step_workflow_id(self, workflow_id: str) -> str:
+        workflow = self._get(f"workflows/{workflow_id}", {"style": "instance"}).json()
+        (subworkflow_step,) = (step for step in workflow["steps"].values() if step["type"] == "subworkflow")
+        return subworkflow_step["workflow_id"]
+
+    def _subworkflow_versions(self, workflow_id: str) -> dict[str, Any]:
+        response = self._get(f"workflows/{workflow_id}/subworkflow_versions?instance=true")
+        self._assert_status_code_is(response, 200)
+        return response.json()
+
     def test_show_invalid_key_is_400(self):
         show_response = self._get(f"workflows/{self._random_key()}")
         self._assert_status_code_is(show_response, 400)

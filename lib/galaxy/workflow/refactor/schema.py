@@ -7,7 +7,9 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
+    model_validator,
 )
 
 LABEL_DESCRIPTION = "The unique label of the step being referenced."
@@ -207,12 +209,52 @@ class FileDefaultsAction(BaseAction):
     action_type: Literal["fill_defaults"]
 
 
+RECURSIVE_UPGRADE_DESCRIPTION = (
+    "Also upgrade the sub-workflow steps nested inside the target sub-workflow to their newest versions, "
+    "innermost first, saving a new version of each nested sub-workflow that changes. Sub-workflows imported "
+    "from a URL or a TRS server are left as published, and so is a target that is not the newest version "
+    "of its stored workflow. A dry run saves nothing: it reports what the nested upgrades would change, "
+    "but the returned workflow still points at the target's current nested versions."
+)
+
+
 class UpgradeSubworkflowAction(BaseAction):
+    """Switch a sub-workflow step to another version of its sub-workflow.
+
+    Without a target, a sub-workflow imported from a TRS server moves to the newest numbered TRS
+    version if that is newer than the current one, and any other sub-workflow moves to the newest
+    version of its stored workflow.
+    """
+
+    # An unrecognized target would otherwise fall through to the upgrade without a target.
+    model_config = ConfigDict(extra="forbid")
+
     action_type: Literal["upgrade_subworkflow"]
     step: step_reference_union = step_target_field
     # Once we start storing these actions in the database, this needs to be decoded
     # before adding it into the database.
-    content_id: str | None = None
+    content_id: str | None = Field(
+        default=None, description="The encoded id of the workflow version (not stored workflow) to switch to."
+    )
+    version: int | None = Field(
+        default=None,
+        ge=0,
+        description="The version of the sub-workflow's stored workflow to switch to, counted from 0 for the oldest, "
+        "as listed by `/api/workflows/{workflow_id}/versions`.",
+    )
+    trs_version_id: str | None = Field(
+        default=None,
+        description="The TRS version to switch a sub-workflow imported from a TRS server to. "
+        "The version is imported if this user has no copy of it yet, also during a dry run.",
+    )
+    recursive: bool = Field(default=False, description=RECURSIVE_UPGRADE_DESCRIPTION)
+
+    @model_validator(mode="after")
+    def at_most_one_target(self) -> "UpgradeSubworkflowAction":
+        targets = [t for t in (self.content_id, self.version, self.trs_version_id) if t is not None]
+        if len(targets) > 1:
+            raise ValueError("Specify at most one of content_id, version and trs_version_id.")
+        return self
 
 
 class UpgradeToolAction(BaseAction):
@@ -272,6 +314,7 @@ class RefactorActionExecutionMessageTypeEnum(str, Enum):
     tool_state_adjustment = "tool_state_adjustment"
     connection_drop_forced = "connection_drop_forced"
     workflow_output_drop_forced = "workflow_output_drop_forced"
+    subworkflow_versions_unavailable = "subworkflow_versions_unavailable"
 
 
 INPUT_REFERENCE = """

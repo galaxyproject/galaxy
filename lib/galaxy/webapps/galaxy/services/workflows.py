@@ -52,6 +52,7 @@ from galaxy.schema.schema import (
 from galaxy.schema.workflows import (
     InvokeWorkflowPayload,
     StoredWorkflowDetailed,
+    SubworkflowVersionsResponse,
     WorkflowExtractionByIdsPayload,
     WorkflowExtractionPayload,
     WorkflowExtractionResult,
@@ -568,6 +569,17 @@ class WorkflowsService(ServiceBase):
             {"version": i, "update_time": w.update_time.isoformat(), "steps": len(w.steps)}
             for i, w in enumerate(reversed(stored_workflow.workflows))
         ]
+
+    def subworkflow_versions(
+        self, trans: ProvidesHistoryContext, workflow_id: DecodedDatabaseIdField, instance: bool
+    ) -> SubworkflowVersionsResponse:
+        stored_workflow = self._workflows_manager.get_stored_owned_workflow(
+            trans, workflow_id, by_stored_id=not instance
+        )
+        workflow = (
+            stored_workflow.get_internal_version_by_id(workflow_id) if instance else stored_workflow.latest_workflow
+        )
+        return self._workflow_contents_manager.subworkflow_versions(stored_workflow, workflow)
 
     def invocation_counts(self, trans: ProvidesUserContext, workflow_id, instance: bool) -> InvocationsStateCounts:
         stored_workflow: StoredWorkflow = self._workflows_manager.get_stored_accessible_workflow(

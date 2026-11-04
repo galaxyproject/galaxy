@@ -101,6 +101,11 @@ from galaxy.schema.schema import (
     CuratedWorkflowsQueryPayload,
     WorkflowIndexQueryPayload,
 )
+from galaxy.schema.workflows import (
+    SubworkflowStoredVersion,
+    SubworkflowTrsVersion,
+    SubworkflowVersionsResponse,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
 from galaxy.tools.parameters import (
@@ -143,6 +148,8 @@ from galaxy.workflow.refactor.execute import WorkflowRefactorExecutor
 from galaxy.workflow.refactor.schema import (
     RefactorActionExecution,
     RefactorActions,
+    StepReferenceByOrderIndex,
+    UpgradeSubworkflowAction,
 )
 from galaxy.workflow.render import (
     STANDALONE_SVG_TEMPLATE,
@@ -154,7 +161,12 @@ from galaxy.workflow.steps import (
     attach_ordered_steps,
     has_cycles,
 )
-from galaxy.workflow.trs_proxy import TrsProxy
+from galaxy.workflow.trs_proxy import (
+    trs_upgrade_version_id,
+    trs_version_id,
+    TrsProxy,
+    TrsServer,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.engine import ScalarResult
@@ -539,7 +551,8 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         # To properly serialize them we do need a StoredWorkflow, so we create and attach one here.
         # We hide the new StoredWorkflow to avoid cluttering the default workflow view.
         if workflow and workflow.stored_workflow is None and self.check_security(trans, has_workflow=workflow):
-            stored_workflow = StoredWorkflow(user=trans.user, name=workflow.name, workflow=workflow, hidden=True)
+            owner = workflow.top_level_stored_workflow.user
+            stored_workflow = StoredWorkflow(user=owner, name=workflow.name, workflow=workflow, hidden=True)
             trans.sa_session.add(stored_workflow)
             trans.sa_session.commit()
             return stored_workflow
@@ -2547,7 +2560,11 @@ class WorkflowContentsManager(UsesAnnotations):
                 step.label = module.label = default_label
 
     def do_refactor(
-        self, trans: ProvidesHistoryContext, stored_workflow: StoredWorkflow, refactor_request: RefactorRequest
+        self,
+        trans: ProvidesHistoryContext,
+        stored_workflow: StoredWorkflow,
+        refactor_request: RefactorRequest,
+        upgrading: frozenset[int] = frozenset(),
     ) -> tuple[Workflow, list[RefactorActionExecution], bool]:
         """Apply supplied actions to either the latest version of the workflow or a specific version to build a new version."""
         # Get the workflow version to refactor (latest or specific version)
@@ -2575,16 +2592,24 @@ class WorkflowContentsManager(UsesAnnotations):
         scratch_workflow = self._build_detached(
             trans, stored_workflow, raw_workflow_description, workflow_update_options
         )
-        refactor_executor = WorkflowRefactorExecutor(raw_workflow_description, scratch_workflow, module_injector)
+        refactor_executor = WorkflowRefactorExecutor(
+            raw_workflow_description, scratch_workflow, module_injector, upgrading=upgrading | {stored_workflow.id}
+        )
         action_executions = refactor_executor.refactor(refactor_request)
 
         # Export a build like the source, so both sides of the comparison come from the same code.
         dry_run_workflow = self._build_detached(
             trans, stored_workflow, raw_workflow_description, workflow_update_options
         )
+        # A dry run of a recursive upgrade can't point the description at the nested upgrades it
+        # didn't save, so the executor reports them separately.
         changed = (
-            self._refactor_comparison_dict(trans, dry_run_workflow, dry_run_workflow.stored_workflow) != source_dict
+            refactor_executor.nested_changes
+            or self._refactor_comparison_dict(trans, dry_run_workflow, dry_run_workflow.stored_workflow) != source_dict
         )
+        # A recursive upgrade only switches sub-workflow versions, so pending tool substitutions alone save nothing.
+        if upgrading and not (refactor_executor.nested_changes or refactor_executor.subworkflow_steps_changed):
+            changed = False
         if refactor_request.dry_run:
             return dry_run_workflow, action_executions, changed
         # Refactoring an older version always saves, making it the latest version again.
@@ -2644,6 +2669,169 @@ class WorkflowContentsManager(UsesAnnotations):
             dry_run=refactor_request.dry_run,
             changed=changed,
         )
+
+    def resolve_subworkflow_upgrade(
+        self,
+        trans: ProvidesHistoryContext,
+        current: Workflow,
+        content_id: str | None = None,
+        version: int | None = None,
+        trs_version_id: str | None = None,
+    ) -> tuple[Workflow, str | None]:
+        """The workflow version an ``upgrade_subworkflow`` action moves a step using ``current`` to.
+
+        Also returns a warning when a default upgrade could not ask the TRS server for newer versions
+        and keeps the current one.
+        """
+        if content_id is not None:
+            return self.app.workflow_manager.get_owned_workflow(trans, content_id), None
+        stored_workflow = current.stored_workflow or self.app.workflow_manager.attach_stored_workflow(trans, current)
+        if version is not None:
+            return stored_workflow.get_internal_version(version), None
+        if trs_version_id is not None:
+            trs_source = self.subworkflow_trs_source(current)
+            if trs_source is None:
+                raise exceptions.RequestParameterInvalidException(
+                    "A TRS version was requested for a sub-workflow that was not imported from a TRS server."
+                )
+            server, trs_tool_id, current_trs_version_id = trs_source
+            if trs_version_id == current_trs_version_id:
+                return current, None
+            return (
+                self.get_or_import_trs_workflow(trans, stored_workflow.user, server, trs_tool_id, trs_version_id),
+                None,
+            )
+        latest_workflow = stored_workflow.latest_workflow
+        # Newer local versions of an imported workflow take precedence over newer TRS releases.
+        if latest_workflow.id != current.id:
+            return latest_workflow, None
+        return self.__newest_trs_release(trans, stored_workflow.user, current)
+
+    def __newest_trs_release(
+        self, trans: ProvidesHistoryContext, owner: User, current: Workflow
+    ) -> tuple[Workflow, str | None]:
+        """The newer TRS release ``current`` can move to, else ``current``, with a warning if TRS couldn't be used."""
+        current_trs_version_id = (current.source_metadata or {}).get("trs_version_id")
+        try:
+            trs_source = self.subworkflow_trs_source(current)
+            if trs_source is None:
+                return current, None
+            server, trs_tool_id, current_trs_version_id = trs_source
+            upgrade_version_id = trs_upgrade_version_id(server.get_sorted_versions(trs_tool_id), current_trs_version_id)
+            if upgrade_version_id is None:
+                return current, None
+            return self.get_or_import_trs_workflow(trans, owner, server, trs_tool_id, upgrade_version_id), None
+        except exceptions.ItemOwnershipException:
+            raise
+        except exceptions.MessageException as e:
+            return (
+                current,
+                f"Kept TRS version {current_trs_version_id}, a newer one could not be retrieved: {e.err_msg}",
+            )
+
+    def subworkflow_trs_source(self, workflow: Workflow) -> tuple[TrsServer, str, str] | None:
+        """The TRS server, tool id and version ``workflow`` was imported from, if it came from a TRS server."""
+        source_metadata = workflow.source_metadata or {}
+        trs_tool_id = source_metadata.get("trs_tool_id")
+        trs_version_id = source_metadata.get("trs_version_id")
+        if not trs_tool_id or not trs_version_id:
+            return None
+        if trs_url := source_metadata.get("trs_url"):
+            server, _, _ = self.trs_proxy.get_trs_id_and_version_from_trs_url(trs_url=trs_url)
+        elif trs_server := source_metadata.get("trs_server"):
+            try:
+                server = self.trs_proxy.get_server(trs_server)
+            except KeyError:
+                raise exceptions.RequestParameterInvalidException(f"Unknown TRS server '{trs_server}'.")
+        else:
+            return None
+        return server, trs_tool_id, trs_version_id
+
+    @staticmethod
+    def __require_owner(trans: ProvidesHistoryContext, owner: User, message: str) -> None:
+        # A copy or import belongs to whoever makes it, and the owner couldn't use a step pointing at it.
+        if trans.user != owner:
+            raise exceptions.ItemOwnershipException(message)
+
+    def get_or_import_trs_workflow(
+        self, trans: ProvidesHistoryContext, owner: User, server: TrsServer, trs_tool_id: str, trs_version_id: str
+    ) -> Workflow:
+        """The owner's copy of a TRS version, imported as a hidden workflow if there is none yet."""
+        trs_url = server.get_trs_url(trs_tool_id, trs_version_id)
+        stored_workflow = self.get_workflow_by_trs_id_and_version(
+            trs_id=trs_tool_id, trs_version=trs_version_id, user_id=owner.id, trs_url=trs_url
+        )
+        if stored_workflow:
+            return stored_workflow.latest_workflow
+        self.__require_owner(
+            trans, owner, "Only the owner of this workflow can import a new TRS version of its sub-workflow."
+        )
+        return self.__build_subworkflow_from_trs_url(trans, trs_url, frozenset())
+
+    def upgrade_nested_subworkflows(
+        self, trans: ProvidesHistoryContext, workflow: Workflow, dry_run: bool, upgrading: frozenset[int]
+    ) -> tuple[Workflow, list[RefactorActionExecution], bool]:
+        """Upgrade the sub-workflow steps of ``workflow`` recursively, saving a new version if anything changes.
+
+        Returns the upgraded workflow, a detached build of it for a dry run, along with the action
+        executions and whether anything changed. Workflows imported from a URL or a TRS server stay
+        as published, and an older version stays as it is, since saving it would make it the newest.
+        ``upgrading`` holds the stored workflows the recursion is inside of.
+        """
+        stored_workflow = workflow.stored_workflow
+        actions = [
+            UpgradeSubworkflowAction(
+                action_type="upgrade_subworkflow",
+                step=StepReferenceByOrderIndex(order_index=step.order_index),
+                recursive=True,
+            )
+            for step in workflow.steps
+            if step.type == "subworkflow"
+        ]
+        if (
+            not actions
+            or workflow.source_metadata
+            or stored_workflow is None
+            or stored_workflow.latest_workflow.id != workflow.id
+        ):
+            return workflow, [], False
+        if stored_workflow.id in upgrading:
+            # Newest versions can reference each other, e.g. A was added to B after B was added to A.
+            raise exceptions.RequestParameterInvalidException(
+                f"Sub-workflow '{workflow.name}' contains itself through its newest nested versions, "
+                "so its nested sub-workflows can't be upgraded recursively."
+            )
+        self.app.workflow_manager.check_security(trans, stored_workflow, check_ownership=True)
+        return self.do_refactor(
+            trans, stored_workflow, RefactorRequest(actions=actions, dry_run=dry_run), upgrading=upgrading
+        )
+
+    def subworkflow_versions(self, stored_workflow: StoredWorkflow, workflow: Workflow) -> SubworkflowVersionsResponse:
+        """The versions a sub-workflow step using ``workflow``, a version of ``stored_workflow``, can switch to."""
+        response = SubworkflowVersionsResponse(
+            workflow_id=workflow.id,
+            stored_workflow_id=stored_workflow.id,
+            current_version=stored_workflow.version_of(workflow),
+            versions=[
+                SubworkflowStoredVersion(version=i, workflow_id=w.id, update_time=w.update_time, steps=len(w.steps))
+                for i, w in enumerate(reversed(stored_workflow.workflows))
+            ],
+        )
+        try:
+            trs_source = self.subworkflow_trs_source(workflow)
+            if trs_source is not None:
+                server, trs_tool_id, current_trs_version_id = trs_source
+                response.trs_tool_id = trs_tool_id
+                response.trs_version_id = current_trs_version_id
+                sorted_versions = server.get_sorted_versions(trs_tool_id)
+                response.trs_versions = [
+                    SubworkflowTrsVersion(trs_version_id=trs_version_id(v), name=v.get("name") or trs_version_id(v))
+                    for v in sorted_versions
+                ]
+                response.trs_upgrade_version_id = trs_upgrade_version_id(sorted_versions, current_trs_version_id)
+        except exceptions.MessageException as e:
+            response.trs_error = e.err_msg
+        return response
 
     def get_all_tools(self, workflow):
         tools = []
@@ -2738,7 +2926,7 @@ class WorkflowContentsManager(UsesAnnotations):
         return created_workflow.stored_workflow
 
     def get_workflow_by_trs_id_and_version(
-        self, trs_id: str, trs_version: str, user_id: int | None = None
+        self, trs_id: str, trs_version: str, user_id: int | None = None, trs_url: str | None = None
     ) -> model.StoredWorkflow | None:
         sa_session = self.app.model.session
 
@@ -2753,6 +2941,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 )
             )
         )
+        if trs_url:
+            stmnt = stmnt.filter(to_json(sa_session, model.Workflow.source_metadata, ["trs_url"]) == trs_url)
         if user_id:
             stmnt = stmnt.filter(
                 model.StoredWorkflow.user_id == user_id,
