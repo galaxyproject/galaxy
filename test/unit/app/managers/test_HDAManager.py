@@ -244,6 +244,21 @@ class TestHDAManager(HDATestCase):
         other_user.calculate_and_set_disk_usage(model.Dataset.object_store)
         assert other_user.get_disk_usage() == 10
 
+    def test_admin_cleanup_decreases_the_owners_usage(self):
+        self.trans.app.config.allow_user_dataset_purge = True
+        owner, item1 = self._create_charged_hda(size=10)
+        self.admin_user.disk_usage = 100
+        self.trans.sa_session.commit()
+        cleaner = hdas.HDAStorageCleanerManager(self.hda_manager, self.dataset_manager)
+
+        result = cleaner.cleanup_items(self.admin_user, {item1.id})
+
+        assert result.success_item_count == 1
+        assert result.total_free_bytes == 10
+        assert item1.purged
+        assert owner.get_disk_usage() == 0
+        assert self.admin_user.get_disk_usage() == 100
+
     def test_copy_to_the_same_user_charges_nothing(self):
         owner, item1 = self._create_charged_hda(size=10)
         history2 = self.history_manager.create(name="history2", user=owner)

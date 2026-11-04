@@ -8,6 +8,7 @@ history.
 import gettext
 import logging
 import os
+from collections import defaultdict
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -500,9 +501,16 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
                 errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
 
         if hdas_to_purge:
-            freed_sizes = user.sole_dataset_sizes(hdas_to_purge)
-            user.adjust_disk_usage_for_datasets(freed_sizes, -1)
-            total_free_bytes = sum(freed_sizes.values())
+            # An admin can clean up other users' datasets, the usage to decrease is their owners'
+            hdas_by_owner: dict[model.User, list[HistoryDatasetAssociation]] = defaultdict(list)
+            for hda in hdas_to_purge:
+                if (owner := hda.user) is not None:
+                    hdas_by_owner[owner].append(hda)
+            # Lock the owners' rows in the order of their ids, as job finish does
+            for owner in sorted(hdas_by_owner, key=lambda owner: owner.id):
+                freed_sizes = owner.sole_dataset_sizes(hdas_by_owner[owner])
+                owner.adjust_disk_usage_for_datasets(freed_sizes, -1)
+                total_free_bytes += sum(freed_sizes.values())
             for hda in hdas_to_purge:
                 hda.deleted = True
                 hda.purged = True
