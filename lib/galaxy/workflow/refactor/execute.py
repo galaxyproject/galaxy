@@ -463,17 +463,26 @@ class WorkflowRefactorExecutor:
         trans = self.module_injector.trans
         contents_manager = trans.app.workflow_contents_manager
         current_workflow = trans.app.workflow_manager.get_owned_workflow(trans, step_def["content_id"])
-        new_workflow, warning = contents_manager.resolve_subworkflow_upgrade(
+        target = contents_manager.resolve_subworkflow_upgrade(
             trans,
             current_workflow,
             content_id=action.content_id,
+            stored_workflow_id=action.stored_workflow_id,
             version=action.version,
             trs_version_id=action.trs_version_id,
+            dry_run=self._dry_run,
         )
-        if warning:
+        new_workflow = target.workflow
+        # A step can't run a workflow that the recursion is inside of.
+        if new_workflow.top_level_stored_workflow.id in self._upgrading:
+            raise RequestParameterInvalidException(
+                f"Workflow '{new_workflow.name}' contains itself through step {step_def['id'] + 1}, "
+                "so that step can't run it."
+            )
+        if target.warning:
             execution.messages.append(
                 RefactorActionExecutionMessage(
-                    message=warning,
+                    message=target.warning,
                     message_type=RefactorActionExecutionMessageTypeEnum.subworkflow_versions_unavailable,
                     step_label=step_def.get("label"),
                     order_index=step_def["id"],
@@ -481,7 +490,8 @@ class WorkflowRefactorExecutor:
             )
         # What the step's module is built from, a dry run's detached build of the nested upgrades.
         module_workflow = new_workflow
-        if action.recursive:
+        # A copy of another user's workflow keeps the nested versions that user chose.
+        if action.recursive and not target.copied:
             upgraded_workflow, nested_executions, nested_changed = contents_manager.upgrade_nested_subworkflows(
                 trans, new_workflow, dry_run=self._dry_run, upgrading=self._upgrading
             )

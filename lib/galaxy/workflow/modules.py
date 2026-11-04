@@ -859,12 +859,17 @@ class SubWorkflowModule(WorkflowModule):
     @classmethod
     def from_dict(Class, trans: "ProvidesHistoryContext", d, **kwds):
         module = super().from_dict(trans, d, **kwds)
+        detached = kwds.get("detached", False)
         if "subworkflow" in d:
-            detached = kwds.get("detached", False)
             assert not detached  # dry run requires content_id
             module.subworkflow = d["subworkflow"]
         elif "content_id" in d:
-            module.subworkflow = trans.app.workflow_manager.get_owned_workflow(trans, d["content_id"])
+            workflow_manager = trans.app.workflow_manager
+            if detached:
+                # A dry run may preview another user's workflow that saving would copy, see upgrade_subworkflow.
+                module.subworkflow = workflow_manager.get_accessible_workflow(trans, d["content_id"])
+            else:
+                module.subworkflow = workflow_manager.get_owned_workflow(trans, d["content_id"])
         else:
             raise Exception("Step associated subworkflow could not be found.")
         return module

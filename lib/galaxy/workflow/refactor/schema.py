@@ -209,21 +209,15 @@ class FileDefaultsAction(BaseAction):
     action_type: Literal["fill_defaults"]
 
 
-RECURSIVE_UPGRADE_DESCRIPTION = (
-    "Also upgrade the sub-workflow steps nested inside the target sub-workflow to their newest versions, "
-    "innermost first, saving a new version of each nested sub-workflow that changes. Sub-workflows imported "
-    "from a URL or a TRS server are left as published, and so is a target that is not the newest version "
-    "of its stored workflow. A dry run saves nothing: it reports what the nested upgrades would change, "
-    "but the returned workflow still points at the target's current nested versions."
-)
-
-
 class UpgradeSubworkflowAction(BaseAction):
-    """Switch a sub-workflow step to another version of its sub-workflow.
+    """Switch a sub-workflow step to another version of its sub-workflow, or to another workflow.
 
     Without a target, a sub-workflow imported from a TRS server moves to the newest numbered TRS
     version if that is newer than the current one, and any other sub-workflow moves to the newest
     version of its stored workflow.
+
+    A target owned by someone else, e.g. a published workflow, is copied into this user's account as
+    a hidden workflow, and the step uses the copy. A dry run reads the target without copying it.
     """
 
     # An unrecognized target would otherwise fall through to the upgrade without a target.
@@ -234,26 +228,46 @@ class UpgradeSubworkflowAction(BaseAction):
     # Once we start storing these actions in the database, this needs to be decoded
     # before adding it into the database.
     content_id: str | None = Field(
-        default=None, description="The encoded id of the workflow version (not stored workflow) to switch to."
+        default=None,
+        description="The encoded id of the workflow version (not stored workflow) to switch to. "
+        "It may be a version of another workflow this user owns or can access.",
+    )
+    stored_workflow_id: str | None = Field(
+        default=None,
+        description="The encoded id of another stored workflow this user owns or can access, e.g. a published one, "
+        "to switch to. Uses its newest version, or the one given by `version`.",
     )
     version: int | None = Field(
         default=None,
         ge=0,
-        description="The version of the sub-workflow's stored workflow to switch to, counted from 0 for the oldest, "
-        "as listed by `/api/workflows/{workflow_id}/versions`.",
+        description="The version to switch to, counted from 0 for the oldest, as listed by "
+        "`/api/workflows/{workflow_id}/versions`. A version of `stored_workflow_id` if given, "
+        "else of the sub-workflow's own stored workflow.",
     )
     trs_version_id: str | None = Field(
         default=None,
         description="The TRS version to switch a sub-workflow imported from a TRS server to. "
         "The version is imported if this user has no copy of it yet, also during a dry run.",
     )
-    recursive: bool = Field(default=False, description=RECURSIVE_UPGRADE_DESCRIPTION)
+    recursive: bool = Field(
+        default=False,
+        description="Also upgrade the sub-workflow steps nested inside the target sub-workflow to their newest "
+        "versions, innermost first, saving a new version of each nested sub-workflow that changes. Sub-workflows "
+        "imported from a URL or a TRS server are left as published, and so are a target copied from another user and "
+        "a target that is not the newest version of its stored workflow. A dry run saves no nested upgrades: it "
+        "reports what they would change, but the returned workflow still points at the target's current nested "
+        "versions.",
+    )
 
     @model_validator(mode="after")
     def at_most_one_target(self) -> "UpgradeSubworkflowAction":
-        targets = [t for t in (self.content_id, self.version, self.trs_version_id) if t is not None]
+        version = None if self.stored_workflow_id is not None else self.version
+        targets = [t for t in (self.content_id, self.stored_workflow_id, version, self.trs_version_id) if t is not None]
         if len(targets) > 1:
-            raise ValueError("Specify at most one of content_id, version and trs_version_id.")
+            raise ValueError(
+                "Specify at most one of content_id, stored_workflow_id (optionally with version), "
+                "version and trs_version_id."
+            )
         return self
 
 

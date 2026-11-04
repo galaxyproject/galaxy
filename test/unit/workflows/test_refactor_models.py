@@ -123,11 +123,17 @@ def test_executions():
     assert isinstance(execution.messages, (list,))
 
 
-def test_upgrade_subworkflow_takes_one_target():
+@pytest.mark.parametrize(
+    "targets",
+    [
+        {"version": 0, "trs_version_id": "v0.2"},
+        {"content_id": "abc", "stored_workflow_id": "def"},
+        {"content_id": "abc", "version": 0},
+    ],
+)
+def test_upgrade_subworkflow_takes_one_target(targets):
     with pytest.raises(ValidationError, match="at most one of"):
-        UpgradeSubworkflowAction(
-            action_type="upgrade_subworkflow", step={"label": "nested"}, version=0, trs_version_id="v0.2"
-        )
+        UpgradeSubworkflowAction(action_type="upgrade_subworkflow", step={"label": "nested"}, **targets)
 
 
 def test_upgrade_subworkflow_version_is_not_negative():
