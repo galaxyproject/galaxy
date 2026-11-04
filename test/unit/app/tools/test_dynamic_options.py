@@ -172,6 +172,19 @@ def test_from_url_depends_on_repeat_unset_value_makes_no_request(recorded_reques
     assert recorded_requests == []
 
 
+@pytest.mark.parametrize("response", [ValueError("Expecting value"), None])
+def test_from_url_failed_request_gives_no_options(monkeypatch, response):
+    def request(**kwargs):
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    monkeypatch.setattr(dynamic_options, "request", request)
+    trans = WorkRequestContext(app=MockApp())
+    options = get_dependent_from_url_option().get_options(trans, {"crop": "maize", "sec": {"year": 2020}})
+    assert options == []
+
+
 def test_from_url_depends_on_is_a_dependency():
     assert get_dependent_from_url_option().get_dependency_names() == ["crop", "sec.year"]
 

@@ -1025,7 +1025,7 @@ class DynamicOptions:
                     data = []
 
             # We only support the very specific ["name", "value", "selected"] format for now.
-            rval = [to_option(d) for d in data]
+            rval = [to_option(d) for d in data or []]
         if (
             self.file_fields is not None
             or self.tool_data_table is not None
