@@ -31,6 +31,7 @@ import { getUntypedWorkflowParameters, type UntypedParameters } from "@/componen
 import { getModule, getVersions, saveWorkflow } from "@/components/Workflow/Editor/modules/services";
 import { getStateUpgradeMessages, type UpgradeMessage } from "@/components/Workflow/Editor/modules/utilities";
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
+import type { WorkflowInputSection } from "@/components/Workflow/Run/inputSections";
 import { Services } from "@/components/Workflow/services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
@@ -290,6 +291,17 @@ function setHelp(newHelp: string) {
     }
 }
 
+const inputSections = ref<WorkflowInputSection[]>([]);
+const setInputSectionsHandler = new SetValueActionHandler(
+    undoRedoStore,
+    (value) => (inputSections.value = value as WorkflowInputSection[]),
+    () => {},
+    "modify input sections",
+);
+function setInputSections(newInputSections: WorkflowInputSection[]) {
+    setInputSectionsHandler.set(inputSections.value, newInputSections);
+}
+
 const logoUrl = ref<string>("");
 const setLogoUrlHandler = new SetValueActionHandler(
     undoRedoStore,
@@ -416,6 +428,7 @@ const workflowData = computed<Workflow>(() => ({
     readme: readme.value,
     help: help.value,
     doi: doi.value || undefined,
+    input_sections: inputSections.value,
 }));
 
 /** Is true when we are on a fresh workflow editor with no ID yet (uncreated workflow) */
@@ -559,6 +572,15 @@ watch(
     () => logoUrl.value,
     (newLogoUrl, oldLogoUrl) => {
         if (newLogoUrl != oldLogoUrl) {
+            hasChanges.value = true;
+        }
+    },
+);
+
+watch(
+    () => inputSections.value,
+    (newInputSections, oldInputSections) => {
+        if (newInputSections !== oldInputSections) {
             hasChanges.value = true;
         }
     },
@@ -1190,6 +1212,9 @@ async function loadEditorData(data: any) {
     if (data.logo_url !== undefined) {
         logoUrl.value = data.logo_url;
     }
+    if (data.input_sections !== undefined) {
+        inputSections.value = data.input_sections ?? [];
+    }
     if (data.version !== undefined) {
         version.value = data.version;
     }
@@ -1592,6 +1617,8 @@ initializeWorkflowEditor();
                         v-if="activeStep"
                         :step="activeStep"
                         :datatypes="datatypes"
+                        :input-sections="inputSections"
+                        @inputSectionsChanged="setInputSections"
                         @postJobActionsChanged="onChangePostJobActions"
                         @annotationChanged="onAnnotation"
                         @labelChanged="onLabel"

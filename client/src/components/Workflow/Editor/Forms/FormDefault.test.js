@@ -9,6 +9,7 @@ import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import FormCollectionType from "./FormCollectionType.vue";
 import FormDefault from "./FormDefault.vue";
 import FormInputCollection from "./FormInputCollection.vue";
+import FormInputSection from "./FormInputSection.vue";
 
 vi.mock("./FormDatatype.vue", () => ({ default: { render: () => h("div") } }));
 
@@ -90,5 +91,37 @@ describe("FormDefault", () => {
         expect(outputLabelCount).toBe(1);
         const otherLabelCount = wrapper.findAll("#__label__other-name").length;
         expect(otherLabelCount).toBe(1);
+    });
+
+    it("offers input sections only on input steps", async () => {
+        expect(wrapper.findComponent(FormInputSection).exists()).toBe(false);
+        const inputSections = [{ name: "advanced", label: "Advanced options" }];
+        const inputWrapper = mount(FormDefault, {
+            propsData: {
+                datatypes: [],
+                inputSections,
+                step: {
+                    id: 2,
+                    content_id: null,
+                    label: "min_quality",
+                    name: "Input parameter",
+                    type: "parameter_input",
+                    section: "advanced",
+                    config_form: { inputs: [] },
+                    inputs: [],
+                    outputs: [],
+                    tool_state: {},
+                },
+            },
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+        });
+        const sectionForm = inputWrapper.findComponent(FormInputSection);
+        expect(sectionForm.props("inputSections")).toEqual(inputSections);
+        sectionForm.vm.$emit("onUpdateStep", 2, { section: undefined });
+        sectionForm.vm.$emit("onUpdateInputSections", []);
+        expect(inputWrapper.emitted("onUpdateStep")).toEqual([[2, { section: undefined }]]);
+        expect(inputWrapper.emitted("onUpdateInputSections")).toEqual([[[]]]);
+        inputWrapper.unmount();
     });
 });

@@ -110,6 +110,8 @@ export interface NewStep {
     outputs: Array<OutputTerminalSource>;
     position?: StepPosition;
     post_job_actions?: PostJobActions;
+    /** Name of the workflow input section an input step is presented under in the run form. */
+    section?: string | null;
     tool_id?: string;
     tool_uuid?: string;
     tool_state: Record<string, unknown>;

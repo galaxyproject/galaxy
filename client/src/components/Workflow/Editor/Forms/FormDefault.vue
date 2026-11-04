@@ -37,6 +37,14 @@
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
+            <FormInputSection
+                v-if="isWorkflowInput(type)"
+                :step="step"
+                :input-sections="inputSections"
+                @onUpdateStep="(id: number, step: Partial<Step>) => emit('onUpdateStep', id, step)"
+                @onUpdateInputSections="
+                    (sections: WorkflowInputSection[]) => emit('onUpdateInputSections', sections)
+                " />
             <FormConditional
                 v-if="isSubworkflow"
                 :step="step"
@@ -80,7 +88,9 @@ import { storeToRefs } from "pinia";
 import { computed, ref, toRef, watch } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { isWorkflowInput } from "@/components/Workflow/constants";
 import WorkflowIcons from "@/components/Workflow/icons";
+import type { WorkflowInputSection } from "@/components/Workflow/Run/inputSections";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import type { Step } from "@/stores/workflowStepStore";
@@ -94,13 +104,18 @@ import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import FormInputCollection from "@/components/Workflow/Editor/Forms/FormInputCollection.vue";
+import FormInputSection from "@/components/Workflow/Editor/Forms/FormInputSection.vue";
 import FormOutputLabel from "@/components/Workflow/Editor/Forms/FormOutputLabel.vue";
 import FormPickValue from "@/components/Workflow/Editor/Forms/FormPickValue.vue";
 
-const props = defineProps<{
-    step: Step;
-    datatypes: DatatypesMapperModel["datatypes"];
-}>();
+const props = withDefaults(
+    defineProps<{
+        step: Step;
+        datatypes: DatatypesMapperModel["datatypes"];
+        inputSections?: WorkflowInputSection[];
+    }>(),
+    { inputSections: () => [] },
+);
 const emit = defineEmits([
     "onAnnotation",
     "onLabel",
@@ -109,6 +124,7 @@ const emit = defineEmits([
     "onSetData",
     "onUpdateStep",
     "onChangePostJobActions",
+    "onUpdateInputSections",
 ]);
 const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm, stepInputs, postJobActions } =

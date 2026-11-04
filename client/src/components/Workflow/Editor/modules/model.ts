@@ -1,4 +1,5 @@
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
+import type { WorkflowInputSection } from "@/components/Workflow/Run/inputSections";
 import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
@@ -23,6 +24,7 @@ export interface Workflow {
     readme?: string | null;
     help?: string | null;
     doi?: string[];
+    input_sections?: WorkflowInputSection[];
 }
 
 export interface LoadWorkflowOptions {
@@ -147,6 +149,7 @@ export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "versio
     const readme = workflow.readme;
     const help = workflow.help;
     const doi = workflow.doi;
+    const input_sections = workflow.input_sections;
 
     const commentStore = useWorkflowCommentStore(id);
     commentStore.resolveCommentsInFrames();
@@ -154,5 +157,19 @@ export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "versio
 
     const comments = workflow.comments.filter((comment) => !(comment.type === "text" && comment.data.text === ""));
 
-    return { steps, report, license, creator, annotation, name, comments, tags, readme, help, logo_url, doi };
+    return {
+        steps,
+        report,
+        license,
+        creator,
+        annotation,
+        name,
+        comments,
+        tags,
+        readme,
+        help,
+        logo_url,
+        doi,
+        input_sections,
+    };
 }

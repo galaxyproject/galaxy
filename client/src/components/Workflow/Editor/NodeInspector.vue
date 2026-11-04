@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ArrowLeftFromLine, ArrowRightToLine } from "lucide-vue-next";
 import { computed } from "vue";
 
+import type { WorkflowInputSection } from "@/components/Workflow/Run/inputSections";
 import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
 import type { PostJobActions, Step } from "@/stores/workflowStepStore";
 
@@ -20,10 +21,14 @@ import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 import Heading from "@/components/Common/Heading.vue";
 import IdleLoad from "@/components/Common/IdleLoad.vue";
 
-const props = defineProps<{
-    step: Step;
-    datatypes: string[];
-}>();
+const props = withDefaults(
+    defineProps<{
+        step: Step;
+        datatypes: string[];
+        inputSections?: WorkflowInputSection[];
+    }>(),
+    { inputSections: () => [] },
+);
 
 const emit = defineEmits<{
     (e: "postJobActionsChanged", id: number, postJobActions: PostJobActions): void;
@@ -33,6 +38,7 @@ const emit = defineEmits<{
     (e: "stepUpdated", id: number, step: Step): void;
     (e: "editSubworkflow", id: string): void;
     (e: "attemptRefactor", ...args: any[]): void;
+    (e: "inputSectionsChanged", sections: WorkflowInputSection[]): void;
     (e: "close"): void;
 }>();
 
@@ -138,6 +144,8 @@ function updateStored(v: boolean) {
                     class="w-100"
                     :step="props.step"
                     :datatypes="datatypes"
+                    :input-sections="props.inputSections"
+                    @onUpdateInputSections="(s: WorkflowInputSection[]) => emit('inputSectionsChanged', s)"
                     @onSetData="(id: number, d: object) => emit('dataChanged', id, d)"
                     @onUpdateStep="(id: number, s: Step) => emit('stepUpdated', id, s)"
                     @onChangePostJobActions="(id: number, a: PostJobActions) => emit('postJobActionsChanged', id, a)"
