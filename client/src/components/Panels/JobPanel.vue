@@ -164,6 +164,7 @@ watch(filterKey, () => {
     oldestLoaded = undefined;
     newestSeen = undefined;
     hasLoadedOnce = false;
+    lastCheckedAt = undefined;
 });
 
 watch(
@@ -282,6 +283,12 @@ let newestSeen: string | undefined;
  */
 let hasLoadedOnce = false;
 
+/**
+ * Time of the last load/refresh. Backstops `newestSeen` as the refresh cursor's lower bound, since
+ * `newestSeen` alone can't advance when nothing currently matches.
+ */
+let lastCheckedAt: string | undefined;
+
 /** Updates `oldestLoaded`/`newestSeen` from a batch of jobs just fetched. */
 function trackBounds(jobs: JobBaseModel[]) {
     for (const job of jobs) {
@@ -320,18 +327,18 @@ async function refreshChangedJobs() {
         return;
     }
 
-    // No jobs loaded yet for this filter (an empty first page): run the same query again rather
-    // than bounding by a cursor that doesn't exist yet.
-    if (newestSeen !== undefined) {
-        const refreshFrom = new Date(
-            new Date(`${newestSeen}Z`).getTime() - REFRESH_OVERLAP_SECONDS * 1000,
-        ).toISOString();
-        // Take the tighter (later) of the refresh cursor and any user-entered update_time_gt bound.
-        if (!extraProps.date_range_min || Date.parse(refreshFrom) > Date.parse(extraProps.date_range_min)) {
-            extraProps.date_range_min = refreshFrom;
-        }
+    // Lower bound is whichever is later: the newest matching job, or the last time we checked at all.
+    const newestSeenMs = newestSeen !== undefined ? Date.parse(`${newestSeen}Z`) : -Infinity;
+    const lastCheckedAtMs = lastCheckedAt !== undefined ? Date.parse(lastCheckedAt) : -Infinity;
+    const refreshFrom = new Date(
+        Math.max(newestSeenMs, lastCheckedAtMs) - REFRESH_OVERLAP_SECONDS * 1000,
+    ).toISOString();
+    // Take the tighter (later) of the refresh cursor and any user-entered update_time_gt bound.
+    if (!extraProps.date_range_min || Date.parse(refreshFrom) > Date.parse(extraProps.date_range_min)) {
+        extraProps.date_range_min = refreshFrom;
     }
 
+    const requestStartedAt = new Date().toISOString();
     const [data] = await fetchJobs(0, FETCH_LIMIT, extraProps);
     if (requestGeneration !== filterGeneration) {
         // Filters changed while this was in flight; belongs to the discarded generation.
@@ -347,6 +354,7 @@ async function refreshChangedJobs() {
         oldestLoaded = undefined;
         newestSeen = undefined;
         hasLoadedOnce = false;
+        lastCheckedAt = undefined;
         await loadJobs(0, FETCH_LIMIT);
         return;
     }
@@ -355,6 +363,7 @@ async function refreshChangedJobs() {
         jobStore.updateJob(item.id, item);
     }
     trackBounds(data);
+    lastCheckedAt = requestStartedAt;
 }
 
 const refreshWatcher = useResourceWatcher(refreshChangedJobs);
@@ -379,6 +388,7 @@ async function loadJobs(_offset: number, limit: number) {
     loading.value = true;
     let data: JobBaseModel[];
     let totalMatches: number;
+    let requestStartedAt: string;
     try {
         if (showToolNamesInJobPanel.value) {
             await loadTools();
@@ -386,14 +396,13 @@ async function loadJobs(_offset: number, limit: number) {
         // Only the first page needs the count; it doesn't change page to page under the same filters.
         const extraProps = buildFetchExtraProps(userId, isFirstPage);
         // Take the tighter (earlier) of the paging cursor and any user-entered update_time_lt bound.
-        // Compared as parsed dates, not raw strings, for the same case-mismatch reason as the
-        // refresh cursor's own comparison in refreshChangedJobs.
         if (
             oldestLoaded !== undefined &&
             (!extraProps.date_range_max || Date.parse(oldestLoaded) < Date.parse(extraProps.date_range_max))
         ) {
             extraProps.date_range_max = oldestLoaded;
         }
+        requestStartedAt = new Date().toISOString();
         [data, totalMatches] = await fetchJobs(0, limit, extraProps);
     } finally {
         // A discarded page's own cleanup must not clear the spinner out from under a newer,
@@ -416,6 +425,8 @@ async function loadJobs(_offset: number, limit: number) {
 
     if (isFirstPage) {
         totalJobCount.value = totalMatches;
+        // Only page 1 checks the top of the list; later pages query older data and shouldn't count.
+        lastCheckedAt = requestStartedAt;
     }
     // A page shorter than requested means nothing older is left to page to.
     if (data.length < limit) {
