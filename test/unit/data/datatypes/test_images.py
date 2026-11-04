@@ -1,6 +1,9 @@
 import struct
 import zlib
-from typing import Any
+from typing import (
+    Any,
+    cast,
+)
 
 from galaxy.datatypes.images import (
     Dicom,
@@ -14,6 +17,7 @@ from galaxy.datatypes.images import (
     Tiff,
     Xpm,
 )
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import get_test_fname
 from .util import (
     get_dataset,
@@ -268,7 +272,7 @@ def test_decompression_bomb_metadata(tmp_path):
     dataset = MockDataset(1)
     dataset.set_file_name(str(path))
     dataset.dataset = MockDatasetDataset(str(path))
-    Image().set_meta(dataset)
+    Image().set_meta(cast(DatasetProtocol, dataset))
     __assert_empty_metadata(dataset.metadata)
 
 
