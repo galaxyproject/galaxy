@@ -46,7 +46,9 @@ def dataset_collector_descriptions_from_elem(elem, legacy=True):
     if num_discover_dataset_blocks == 0 and legacy:
         collectors = [DEFAULT_DATASET_COLLECTOR_DESCRIPTION]
     else:
-        default_format = elem.attrib.get("format")
+        default_format = (
+            None if elem.tag == "collection" and elem.attrib.get("format_source") else elem.attrib.get("format")
+        )
         collectors = []
         for e in primary_dataset_elems:
             description_attributes = e.attrib
