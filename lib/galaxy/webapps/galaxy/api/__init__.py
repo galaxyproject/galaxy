@@ -98,8 +98,10 @@ from galaxy.work.context import (
     SessionRequestContext,
 )
 
+API_KEY_HEADER_NAME = "x-api-key"
+
 api_key_query = APIKeyQuery(name="key", auto_error=False)
-api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
+api_key_header = APIKeyHeader(name=API_KEY_HEADER_NAME, auto_error=False)
 api_key_cookie = APIKeyCookie(name="galaxysession", auto_error=False)
 api_bearer_token = HTTPBearer(auto_error=False)
 
@@ -174,12 +176,12 @@ def get_api_user(
         ),
     ),
 ) -> User | None:
-    if api_key := key or x_api_key:
-        user = user_manager.by_api_key(api_key=api_key)
-    elif bearer_token:
-        user = user_manager.by_oidc_access_token(access_token=bearer_token.credentials)
-    else:
+    api_key = key or x_api_key
+    access_token = bearer_token.credentials if bearer_token else None
+    if not (api_key or access_token):
+        # Return before the run_as check: anonymous requests never run as anyone.
         return None
+    user = user_manager.by_credentials(api_key, access_token)
     if run_as:
         if user_manager.user_can_do_run_as(user):
             return user_manager.by_id(run_as)

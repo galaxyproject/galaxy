@@ -49,7 +49,7 @@ const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "M
             access your account and should be treated with the same care as your login password.
         </span>
 
-        <GAlert :show="errorMessage" dismissible fade variant="warning" @dismissed="errorMessage = null">
+        <GAlert :show="!!errorMessage" dismissible fade variant="warning" @dismissed="errorMessage = null">
             {{ errorMessage }}
         </GAlert>
 

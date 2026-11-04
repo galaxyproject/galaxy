@@ -211,7 +211,7 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     no_add_to_history: bool | None = Field(
         False,
         title="No Add to History",
-        description="Indicates if the workflow invocation should not be added to the history.",
+        description="If true, workflow inputs from other histories or libraries are not copied into the target history.",
     )
     legacy: bool | None = Field(
         False,
@@ -361,9 +361,9 @@ class OutputLabelHint(Model):
         title="ID",
         description="Decoded ID of the concrete HDA/HDCA output to expose.",
     )
-    kind: Literal["hda", "hdca"] = Field(
+    src: Literal["hda", "hdca"] = Field(
         ...,
-        title="Kind",
+        title="Source",
         description="Whether the output ID identifies an HDA or an HDCA.",
     )
     label: str = Field(
@@ -374,9 +374,9 @@ class OutputLabelHint(Model):
 
 
 class StepLabelHint(Model):
-    kind: Literal["job", "implicit_collection_jobs"] = Field(
+    src: Literal["job", "implicit_collection_jobs"] = Field(
         ...,
-        title="Kind",
+        title="Source",
         description="Whether the ID identifies a plain tool job or an ImplicitCollectionJobs (mapped step).",
     )
     id: DecodedDatabaseIdField = Field(
@@ -586,11 +586,6 @@ class WorkflowExtractionByIdsPayload(Model):
             "markdown is rewritten so each dataset/collection/job directive references the workflow's "
             "inputs/outputs/steps by label."
         ),
-    )
-    report_title: str | None = Field(
-        None,
-        title="Report Title",
-        description="Title for the workflow report built from from_page_id; defaults to the workflow name.",
     )
 
     @model_validator(mode="after")

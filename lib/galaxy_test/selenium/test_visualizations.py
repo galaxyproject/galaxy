@@ -64,6 +64,30 @@ class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
 
     @selenium_test
     @managed_history
+    def test_display_application_links(self):
+        self.dataset_populator.new_dataset(
+            self.current_history_id(), content="chr1\t100\t200\ta\n", file_type="bed", dbkey="hg38", wait=True
+        )
+        details = self.dataset_populator.get_history_dataset_details(self.current_history_id(), hid=1)
+        expected = [
+            (app["label"], [link["text"] for link in app["links"]])
+            for app in details["display_apps"] + details["display_types"]
+        ]
+        assert ("display at UCSC", ["main"]) in expected
+        assert self.dataset_display_applications(1) == expected
+        self.screenshot("dataset_display_application_links")
+
+    @selenium_test
+    @managed_history
+    def test_no_display_application_links(self):
+        self.dataset_populator.new_dataset(
+            self.current_history_id(), content="No display applications.\n", file_type="txt", wait=True
+        )
+        assert self.dataset_display_applications(1) == []
+        self.screenshot("dataset_display_application_links_empty")
+
+    @selenium_test
+    @managed_history
     @skip_without_visualization_plugin("igv")
     def test_igv_loads_correct_genome(self):
         hid = 1
@@ -101,6 +125,21 @@ class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
             self.sleep_for(self.wait_types.UX_TRANSITION)
 
         self.navigate_to_saved_visualizations()
+        self.select_grid_operation("igv with hg18", "Open")
+        # A saved visualization only mounts its frame once it has loaded; Playwright can't enter a missing frame.
+        self.wait_for_selector_visible("iframe#galaxy_visualization")
+
+        # Saving one's own visualization again updates it rather than making a copy.
+        with self.visualization_panel():
+            self._wait_for_igv_container()
+            igv = self.components.igv
+            igv.expand_button.wait_for_and_click()
+            igv.save_button.wait_for_and_click()
+            self.sleep_for(self.wait_types.UX_TRANSITION)
+
+        # Clearing the name input can leave its default title in front, so match part of the title.
+        saved = [v for v in self.api_get("visualizations") if "igv with hg18" in v["title"]]
+        assert len(saved) == 1, saved
 
     def _wait_for_igv_container(self):
         igv = self.components.igv

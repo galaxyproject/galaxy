@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import GFormInput from "./components/Form/GFormInput.vue";
 import GFormLabel from "./components/Form/GFormLabel.vue";
 import GButton from "./components/GButton.vue";
+import GCollapse from "./components/GCollapse.vue";
 import GDropdownItem from "./components/GDropdownItem.vue";
 import GLink from "./components/GLink.vue";
 import GTab from "./components/GTab.vue";
@@ -11,9 +12,10 @@ import GTable from "./components/GTable.vue";
 import GTabs from "./components/GTabs.vue";
 
 /**
- * Class names a consumer styles against, so they are public API: the Tool Shed's shed.css and a few
- * of its scoped :deep() rules restyle these. Renaming one breaks that styling with nothing else failing,
- * so a change here needs the same change in the consumers (see README.md).
+ * Class names a consumer styles or selects against, so they are public API: the Tool Shed's shed.css and a few
+ * of its scoped :deep() rules restyle these, and Galaxy's E2E navigation.yml selects g-collapse-shown.
+ * Renaming one breaks that consumer with nothing else failing, so a change here needs the same change
+ * in the consumers (see README.md).
  */
 describe("galaxy-ui public class names", () => {
     it("GTabs: tabs, nav-tabs, nav-link, active, tab-content", async () => {
@@ -62,5 +64,12 @@ describe("galaxy-ui public class names", () => {
                 .find(".dropdown-item")
                 .exists(),
         ).toBe(true);
+    });
+
+    it("GCollapse: g-collapse-shown", async () => {
+        const wrapper = mount(GCollapse, { props: { visible: true } });
+        await flushPromises();
+
+        expect(wrapper.classes()).toContain("g-collapse-shown");
     });
 });

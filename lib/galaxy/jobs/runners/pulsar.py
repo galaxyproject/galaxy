@@ -43,6 +43,7 @@ from pulsar.client.staging.up import submit_job as pulsar_submit_job
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
@@ -54,6 +55,7 @@ from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
+    ContainerRequiredException,
     JobState,
 )
 from galaxy.model.base import check_database_connection
@@ -61,6 +63,7 @@ from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.tool_util.deps import dependencies
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tool_util.runtime_environment import RUNTIME_ENVIRONMENT_WARNING_FILE
 from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.util import (
     galaxy_directory,
@@ -573,6 +576,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         remote_container = None
 
         fail_or_resubmit = False
+        fail_message = None
         try:
             client = self.get_client_from_wrapper(job_wrapper)
             assert job_wrapper.tool is not None
@@ -596,8 +600,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             try:
                 job_prepare_ret = job_wrapper.prepare(**prepare_kwds)
             except Exception as e:
-                if isinstance(e, ParameterValueError):
-                    log.info("parameter validation error preparing job %d: %s", job_wrapper.job_id, unicodify(e))
+                if isinstance(e, (ParameterValueError, InsufficientPermissionsException)):
+                    log.info("job %d rejected while preparing: %s", job_wrapper.job_id, unicodify(e))
                 else:
                     log.exception("failure preparing job %d", job_wrapper.job_id)
                 job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
@@ -663,6 +667,10 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         except PulsarClientTransportError:
             log.exception("failure running job %d, Pulsar connection failed", job_wrapper.job_id)
             fail_or_resubmit = True
+        except ContainerRequiredException as e:
+            log.info("failure running job %d: %s", job_wrapper.job_id, e)
+            fail_message = str(e)
+            fail_or_resubmit = True
         except Exception:
             log.exception("failure running job %d", job_wrapper.job_id)
             fail_or_resubmit = True
@@ -671,6 +679,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         fail_or_resubmit = fail_or_resubmit or not command_line
         if fail_or_resubmit:
             job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
+            if fail_message:
+                job_state.fail_message = fail_message
             self.work_queue.put((self.fail_job, job_state))
 
         return command_line, client, remote_job_config, compute_environment, remote_container
@@ -741,7 +751,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 if value and isinstance(value, str):
                     params[key] = model.User.expand_user_properties(user, value)
 
-        env = getattr(job_wrapper.job_destination, "env", [])
+        env = job_wrapper.job_destination.env.copy()
         return self.get_client(params, job_id, env)
 
     def get_client_from_state(self, job_state: AsynchronousJobState) -> "BaseJobClient":
@@ -1086,6 +1096,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 dynamic_outputs.append(tool_provided_metadata_dynamic_output)
             output_files = self.get_output_files(job_wrapper)
             work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
+        if any(variable.required for variable in tool.runtime_environment_variables):
+            dynamic_outputs = [*(dynamic_outputs or []), re.escape(RUNTIME_ENVIRONMENT_WARNING_FILE)]
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.tool_working_directory,
             metadata_directory=metadata_directory,
@@ -1313,6 +1325,8 @@ COEXECUTION_DESTINATION_DEFAULTS = {
 
 
 class PulsarCoexecutionJobRunner(PulsarJobRunner):
+    runs_job_script_in_container = True
+
     destination_defaults = COEXECUTION_DESTINATION_DEFAULTS
 
 
@@ -1529,7 +1543,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         elif target == "job_home":
             return "$_GALAXY_JOB_HOME_DIR"
         elif target == "pwd":
-            os.path.join(self.working_directory(), "working")
+            return self.working_directory()
         else:
             raise Exception(f"Unknown target type [{target}]")
 

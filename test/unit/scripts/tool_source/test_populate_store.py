@@ -18,14 +18,20 @@ from typing import (
     Any,
 )
 
+import pytest
+
 # Add Galaxy lib to path for imports
 galaxy_root = Path(__file__).parent.parent.parent.parent.parent
 import sys
 
 sys.path.insert(0, str(galaxy_root / "lib"))
 
+from galaxy.app_unittest_utils.tool_source_support import populate_config
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.tools.source_store import populator
+from galaxy.tools.source_store import (
+    discover,
+    populator,
+)
 from galaxy.tools.source_store.discover import discover_tools as actual_discover_tools
 from galaxy.tools.source_store.factory import _build_default_store
 from galaxy.tools.source_store.freshness import tool_confs_token
@@ -36,6 +42,7 @@ from galaxy.tools.source_store.populator import (
     send_reload_notification,
     ToolFileWatcher,
 )
+from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 
 # --- Fakes for testing ---
 
@@ -315,31 +322,6 @@ class TestToolFileWatcher:
         assert len(notification_sent) == 0
 
 
-def _populate_config(tmp_path, conf):
-    class _Cfg:
-        enable_beta_tool_formats = False
-        tool_source_stores: dict = {}
-        tool_search_index_dir = None
-        root = str(tmp_path)
-        tool_path = str(tmp_path)
-        tool_source_database_connection = f"sqlite:///{tmp_path}/ts.sqlite"
-        data_manager_config_file: str | None = None
-        shed_data_manager_config_file: str | None = None
-        biotools_content_directory = None
-        biotools_use_api = False
-        biotools_service_cache_type = "memory"
-        biotools_service_cache_data_dir = None
-        biotools_service_cache_lock_dir = None
-        biotools_service_cache_url = None
-        biotools_service_cache_table_name = None
-        biotools_service_cache_schema_name = None
-
-        def all_tool_config_files(self):
-            return [str(conf)]
-
-    return _Cfg()
-
-
 def _populate_default(config: Any, **kwds: Any) -> dict[str, int]:
     return populate_store_inline(config, target=DEFAULT_STORE_NAME, **kwds)
 
@@ -363,7 +345,7 @@ class TestIncrementalFastPath:
             tools_dir,
             '<tool file="itest_1.xml"/><tool file="itest_2.xml"/>',
         )
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
 
         r1 = _populate_default(cfg, pattern="itest_", incremental=True)
         assert (r1["stored"], r1["unchanged"]) == (2, 0)
@@ -377,7 +359,7 @@ class TestIncrementalFastPath:
         tools_dir = tmp_path / "shed_tools"
         tool_path = _write_tool(tools_dir / "fastp.xml", "fastp", version="0.20.1+galaxy0")
         conf = _write_tool_conf(tmp_path / "shed_tool_conf.xml", tools_dir)
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
         guid = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.20.1+galaxy0"
 
         _populate_default(
@@ -416,6 +398,32 @@ class TestIncrementalFastPath:
         assert entry.panel_section_id == "test_section_multi"
         assert [(item.tool_id, item.section_id) for item in index.panel_items] == [(guid, "test_section_multi")]
 
+    def test_adhoc_shed_update_replaces_configured_entry_before_conf_catches_up(self, tmp_path):
+        # A shed update indexes the new revision ad hoc while the conf still
+        # names the old one, whose directory the update may already have moved.
+        guid = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.20.1+galaxy0"
+        old_tool = _write_tool(tmp_path / "shed_tools" / "rev1" / "fastp.xml", "fastp", version="0.20.1+galaxy0")
+        conf = _write_tool_conf(
+            tmp_path / "shed_tool_conf.xml",
+            old_tool.parent,
+            f'<section id="s" name="S"><tool file="{old_tool.name}" guid="{guid}">'
+            "<tool_shed>toolshed.g2.bx.psu.edu</tool_shed>"
+            "<repository_name>fastp</repository_name>"
+            "<repository_owner>iuc</repository_owner>"
+            "<installed_changeset_revision>rev1</installed_changeset_revision>"
+            "</tool></section>",
+        )
+        cfg = populate_config(tmp_path, conf)
+        _populate_default(cfg)
+        new_tool = _write_tool(tmp_path / "shed_tools" / "rev2" / "fastp.xml", "fastp", version="0.20.1+galaxy0")
+
+        _populate_default(cfg, paths=[str(new_tool)], path_guids={str(new_tool): guid}, incremental=True)
+
+        _, index = _load_default_index(cfg)
+        assert index.get(guid, "0.20.1+galaxy0").source_path == str(new_tool)
+        assert index.entries[guid].source_path == str(new_tool)
+        assert [(item.tool_id, item.section_id) for item in index.panel_items] == [(guid, "s")]
+
     def test_partial_populate_discovers_only_requested_paths(self, tmp_path, monkeypatch):
         tools_dir = tmp_path / "shed_tools"
         items = []
@@ -427,7 +435,7 @@ class TestIncrementalFastPath:
             tools_dir,
             f'<section id="shed_section" name="Shed Section">{"".join(items)}</section>',
         )
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
         requested = str(tools_dir / "shed_7.xml")
 
         discovered_paths: list[str] = []
@@ -450,7 +458,7 @@ class TestIncrementalFastPath:
         tools_dir = tmp_path / "tools"
         tool = _write_tool(tools_dir / "rescan.xml", "rescan")
         conf = _write_tool_conf(tmp_path / "tool_conf.xml", tools_dir, '<tool file="rescan.xml"/>')
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
         _populate_default(cfg)
 
         assert _populate_default(cfg, paths=[str(tool)], incremental=False)["indexes_written"] == 0
@@ -469,7 +477,7 @@ class TestIncrementalFastPath:
         macros = tools_dir / "macros.xml"
         macros.write_text('<macros><token name="@TOOL_VERSION@">1.0</token></macros>')
         conf = _write_tool_conf(tmp_path / "tool_conf.xml", tools_dir, '<tool file="macro_tool.xml"/>')
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
         _populate_default(cfg)
 
         macros.write_text('<macros><token name="@TOOL_VERSION@">2.0</token></macros>')
@@ -477,6 +485,27 @@ class TestIncrementalFastPath:
 
         _, index = _load_default_index(cfg)
         assert index.entries["macro_tool"].version == "2.0"
+
+    def test_partial_populate_drops_version_an_edited_file_no_longer_defines(self, tmp_path):
+        tools_dir = tmp_path / "tools"
+        tool = _write_tool(tools_dir / "probe.xml", "probe", version="1.1")
+        _write_tool(tools_dir / "other.xml", "other")
+        conf = _write_tool_conf(
+            tmp_path / "tool_conf.xml",
+            tools_dir,
+            '<section id="s" name="S"><tool file="probe.xml"/><tool file="other.xml"/></section>',
+        )
+        cfg = populate_config(tmp_path, conf)
+        _populate_default(cfg)
+
+        _write_tool(tool, "probe", version="1.2")
+        assert _populate_default(cfg, paths=[str(tool)], incremental=False)["indexes_written"] == 1
+
+        _, index = _load_default_index(cfg)
+        assert set(index.entries_by_version["probe"]) == {"1.2"}
+        assert index.entries["probe"].version == "1.2"
+        # The bump keeps the tool's place instead of moving it to the section head.
+        assert [item.tool_id for item in index.panel_items] == ["probe", "other"]
 
     def test_in_process_population_is_atomic_with_tool_removal(self, tmp_path, monkeypatch):
         """A stale scan must commit before a concurrent uninstall can prune it."""
@@ -488,7 +517,7 @@ class TestIncrementalFastPath:
             tools_dir,
             '<tool file="keep.xml"/><tool file="doomed.xml"/>',
         )
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
         _populate_default(cfg)
 
         scan_complete = threading.Event()
@@ -545,7 +574,7 @@ class TestIncrementalFastPath:
             tools_dir,
             '<tool file="manifest_tool.xml"/>',
         )
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
         sidecar = tmp_path / "ts.sqlite.manifest.json"
 
         _populate_default(cfg, pattern="manifest_tool")
@@ -559,6 +588,56 @@ class TestIncrementalFastPath:
         payload = json.loads(sidecar.read_text())
         assert payload["store"] == DEFAULT_STORE_NAME
         assert payload["tool_snapshot"]["default_tool_count"] == 1
+
+
+class TestDefaultTargetConverters:
+    """A populate that writes the default store indexes the datatype converters."""
+
+    @staticmethod
+    def _setup(tmp_path, monkeypatch):
+        converters_dir = tmp_path / "converters"
+        _write_tool(converters_dir / "probe_converter.xml", "CONVERTER_probe")
+        registry = SimpleNamespace(
+            converters_path=str(converters_dir), converters=[("probe_converter.xml", "txt", "tabular")]
+        )
+        monkeypatch.setattr(populator, "_get_datatypes_registry", lambda: registry)
+        monkeypatch.setattr(discover, "_get_datatypes_registry", lambda: registry)
+        tool = _write_tool(tmp_path / "tools" / "probe.xml", "probe")
+        conf = _write_tool_conf(tmp_path / "tool_conf.xml", tool.parent, '<tool file="probe.xml"/>')
+        return populate_config(tmp_path, conf), tool
+
+    def test_default_target_rebuild_keeps_converters(self, tmp_path, monkeypatch):
+        cfg, _ = self._setup(tmp_path, monkeypatch)
+        _populate_default(cfg)
+        assert "CONVERTER_probe" in _load_default_index(cfg)[1].entries
+
+        _populate_default(cfg, prune=True)
+        assert "CONVERTER_probe" in _load_default_index(cfg)[1].entries
+
+    def test_registry_failure_fails_full_rebuild(self, tmp_path, monkeypatch):
+        cfg, _ = self._setup(tmp_path, monkeypatch)
+        monkeypatch.setattr(populator, "_ensure_datatypes_registry", _raise_registry_error)
+        with pytest.raises(RuntimeError, match="no registry"):
+            _populate_default(cfg)
+
+    def test_registry_failure_only_warns_on_partial_populate(self, tmp_path, monkeypatch, caplog):
+        cfg, tool = self._setup(tmp_path, monkeypatch)
+        _populate_default(cfg)
+        monkeypatch.setattr(populator, "_ensure_datatypes_registry", _raise_registry_error)
+        _write_tool(tool, "probe", version="1.1")
+
+        _populate_default(cfg, paths=[str(tool)], incremental=False)
+
+        assert "Could not build a datatypes registry" in caplog.text
+        assert _load_default_index(cfg)[1].entries["probe"].version == "1.1"
+
+
+def _raise_listing_error(store):
+    raise RuntimeError("no listing")
+
+
+def _raise_registry_error(config):
+    raise RuntimeError("no registry")
 
 
 class TestTwinDeterminism:
@@ -581,7 +660,7 @@ class TestTwinDeterminism:
             '<section id="sec_a" name="A"><tool file="twin_a.xml"/></section>'
             '<section id="sec_b" name="B"><tool file="twin_b.xml"/></section>',
         )
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
 
         # Run 2 is the interesting one: the run-1 winner (sec_b) comes back
         # via the unchanged fast path while its twin re-parses — the winner
@@ -603,7 +682,7 @@ class TestFreshnessStamping:
             tools_dir,
             '<tool file="ftest_1.xml"/>',
         )
-        cfg = _populate_config(tmp_path, conf)
+        cfg = populate_config(tmp_path, conf)
 
         _populate_default(cfg, pattern="ftest_", incremental=True)
 
@@ -676,3 +755,60 @@ class TestToolsMissingFromReadOnlyStore:
         _, index = _load_default_index(config)
         assert index.entries["installed"].in_panel is True
         assert "published" not in index.entries
+
+    def test_listing_failure_only_warns_on_full_populate(self, tmp_path, monkeypatch, caplog):
+        shed_conf, _ = self._published_conf(tmp_path)
+        config = self._config(tmp_path, shed_conf, read_only=True)
+        monkeypatch.setattr(SqlAlchemyToolSourceStore, "list_source_paths", _raise_listing_error)
+
+        populate_store_inline(config, prune=True)
+
+        assert f"Skipping tools of {shed_conf} missing from read-only store published: no listing" in caplog.text
+
+    def test_listing_failure_only_warns_on_partial_populate(self, tmp_path, monkeypatch, caplog):
+        shed_conf, installed = self._published_conf(tmp_path)
+        config = self._config(tmp_path, shed_conf, read_only=True)
+        monkeypatch.setattr(SqlAlchemyToolSourceStore, "list_source_paths", _raise_listing_error)
+
+        populate_store_inline(config, paths=[str(installed)])
+
+        assert f"Skipping tools of {shed_conf} missing from read-only store published: no listing" in caplog.text
+
+    def test_confs_sharing_a_read_only_store_list_it_once(self, tmp_path, monkeypatch):
+        confs = {name: tmp_path / f"{name}_tool_conf.xml" for name in ("first", "second")}
+
+        def write_confs(*tool_kinds: str) -> None:
+            for name, conf in confs.items():
+                tools_dir = tmp_path / f"{name}_tools"
+                items = "".join(f'<tool file="{name}_{kind}.xml"/>' for kind in tool_kinds)
+                conf.write_text(
+                    f'<toolbox tool_path="{tools_dir}" store="published">'
+                    f'<section id="{name}" name="{name}">{items}</section></toolbox>'
+                )
+
+        for name in confs:
+            for kind in ("published", "installed"):
+                _write_tool(tmp_path / f"{name}_tools" / f"{name}_{kind}.xml", f"{name}_{kind}")
+        tool_config_file = ",".join(str(conf) for conf in confs.values())
+        write_confs("published")
+        populate_store_inline(self._config(tmp_path, tool_config_file, read_only=False), target="published")
+        write_confs("published", "installed")
+        listings: list[str] = []
+        list_source_paths = SqlAlchemyToolSourceStore.list_source_paths
+
+        def counting_list_source_paths(store: SqlAlchemyToolSourceStore) -> set[str]:
+            if store.read_only:
+                listings.append(store.url)
+            return list_source_paths(store)
+
+        monkeypatch.setattr(SqlAlchemyToolSourceStore, "list_source_paths", counting_list_source_paths)
+
+        populate_store_inline(self._config(tmp_path, tool_config_file, read_only=True), prune=True)
+
+        assert listings == [f"sqlite:///{tmp_path}/published.sqlite"]
+
+        _, index = _load_default_index(self._config(tmp_path, tool_config_file, read_only=True))
+        assert sorted(tool_id for tool_id in index.entries if tool_id.startswith(("first_", "second_"))) == [
+            "first_installed",
+            "second_installed",
+        ]

@@ -86,23 +86,69 @@ base name is checked (many tools use something like `tool-data/xyz.loc` and
 store example `loc` files in a `tool-data/` directory in the tool repository).
 Currently also `.loc.sample` may be used in case the specified `.loc` is absent.
 
-Galaxy uses two tool data table config files:
+### Configuration order
 
-- `tool_data_table_config_path`: by default `tool_data_table_conf.xml` in Galaxy's `config/` directory.
-- `shed_tool_data_table_config`: by default `shed_tool_data_table_conf.xml` in
-Galaxy's `config/` directory. This file lists all tool data tables of tools
-installed from a toolshed. Note that the entries are versioned, i.e. there is a
-separate entry for each tool and tool version.
+`tool_data_table_config_path` lists the files that describe the reference data
+available to tools. Put preferred files first: when several files provide the
+same reference, earlier files take precedence by default.
 
-The tool data table config files can (and do) contain multiple entries for the same data table
-(identified by the same name). These content of the corresponding `loc` files are merged when
-they are loaded.
+`shed_tool_data_table_config` is the file Galaxy updates when you install tools
+from a Tool Shed. Include it in the list to choose its priority; otherwise Galaxy
+reads it last. The other files can be read-only:
+
+```yaml
+galaxy:
+  shed_tool_data_table_config: /srv/galaxy/var/shed_tool_data_table_conf.xml
+  tool_data_table_config_path:
+    - /srv/galaxy/config/tool_data_table_conf.xml
+    - /srv/galaxy/var/shed_tool_data_table_conf.xml
+    - /mnt/idc/read_only_data_table_conf.xml
+```
+
+Relative paths in `tool_data_table_config_path` resolve against `config_dir`;
+`shed_tool_data_table_config` resolves against `managed_config_dir`. Equivalent
+paths, including symlinks, load the managed file once at its first position.
+A missing default managed file keeps its place when later created;
+explicitly configured missing files are errors.
+
+Tables with the same name must have matching columns. Rows retain source, XML,
+and file order, skipping identical rows when merging definitions.
+
+This order applies to tool installation, data-manager updates, and reloads across
+Galaxy processes. Changing the configured source order requires a restart.
 
 When a new tool is installed that uses a data table a new entry is added to
 `shed_tool_data_table_config` and a `loc` file is placed in a versioned
 subdirectory in `tool_data_path` (in a subdirectory that has the name of the
 toolshed). By default this is `tool-data/toolshed.g2.bx.psu.edu/`. Note that
 these directories will also contain tool data table config files, but they are unused.
+
+### Duplicate values
+
+Rows that share a `value` are all kept, so tools can filter them, for example by
+index version. For a tool select, the tool's filters, including sorting filters,
+run first. If several rows still match the submitted value, Galaxy uses the first
+one and logs a warning naming it. The submitted value comes from the select's
+`value` column, which may differ from the table's. Table-backed dropdowns show one
+choice per submitted value, labelled from the first remaining row; dataset choices
+stay separate. The data-table field API applies no tool filters and returns the
+first matching row.
+
+Apart from the tool's filters, only source and row order decide which copy is
+used; local, CVMFS and IDC files are treated alike. This lets references be deployed to IDC while local copies still
+exist. With the IDC file listed after the local file, a local `/local/hg38.fa` row
+keeps precedence over an IDC `/idc/hg38.fa` row when both survive the tool's
+filters, so adding the IDC row leaves existing selections on the local file.
+
+Check the effective order on each server. Unless `shed_tool_data_table_config` is
+listed in `tool_data_table_config_path`, Galaxy reads it last, after an IDC file
+appended to that list, so IDC rows take precedence over rows from installed tools.
+The reference used for an existing submitted value, for example when rerunning a
+job, changes when you:
+
+- reorder config files or rows,
+- remove the first matching row, or
+- add a row for that value to an earlier file, for example through a data manager.
 
 ## The `huggingface` shared data table
 

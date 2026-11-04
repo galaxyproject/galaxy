@@ -144,6 +144,11 @@ describe("LoginForm", () => {
         push.mockRestore();
     });
 
+    it("keeps the password reset link from submitting the form", async () => {
+        const wrapper = await mountLoginForm();
+        expect(wrapper.find("#reset-password-link").attributes("type")).toBe("button");
+    });
+
     it("routes expired-password responses to the current-password form", async () => {
         loginResponse = { expired_user: "expired-user-id" };
         const push = vi.spyOn(router, "push").mockImplementation(async () => {});
@@ -197,6 +202,23 @@ describe("LoginForm", () => {
 
         expect(wrapper.findAll(SELECTORS.REGISTER_TOGGLE).length).toBe(0);
         expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBeTruthy();
+    });
+
+    it("follows the redirect the server returns without re-encoding it", async () => {
+        const target = "https://tools.example.org/back?next=%2Fx";
+        server.use(http.untyped.post(/.*\/user\/login.*/, () => HttpResponse.json({ redirect: target })));
+        const originalHref = window.location.href;
+        try {
+            const wrapper = await mountLoginForm();
+            const inputs = wrapper.findAll("input");
+            await inputs[0]!.setValue("user@example.org");
+            await inputs[1]!.setValue("test_pwd");
+            await wrapper.find("form").trigger("submit");
+            await flushPromises();
+            expect(window.location.href).toBe(target);
+        } finally {
+            window.location.href = originalHref;
+        }
     });
 
     it("connect external provider", async () => {

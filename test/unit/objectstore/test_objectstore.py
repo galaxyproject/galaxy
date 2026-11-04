@@ -1,4 +1,5 @@
 import hashlib
+import io
 import os
 import shutil
 import time
@@ -20,10 +21,16 @@ from unittest.mock import (
 )
 from uuid import uuid4
 
+import boto3
 import pytest
+from botocore.response import StreamingBody
+from botocore.stub import Stubber
 from requests import get
 
-from galaxy.exceptions import ObjectInvalid
+from galaxy.exceptions import (
+    ObjectInvalid,
+    ObjectNotFound,
+)
 from galaxy.objectstore import (
     DeviceSourceMap,
     ObjectStoreAuth,
@@ -52,6 +59,7 @@ from galaxy.objectstore.unittest_utils import (
 )
 from galaxy.util import (
     directory_hash_id,
+    now,
     unlink,
 )
 from galaxy.util.unittest_utils import skip_unless_environ
@@ -853,6 +861,112 @@ def test_get_direct_download_url_disk_store_returns_none():
         assert url is None
 
 
+S3_DIRECT_DOWNLOAD_CONFIG_YAML = get_example("s3_simple.yml").replace(
+    "type: s3", "type: s3\nenable_direct_download: true"
+)
+AZURE_DIRECT_DOWNLOAD_CONFIG_YAML = get_example("azure_simple.yml").replace(
+    "type: azure_blob", "type: azure_blob\nenable_direct_download: true"
+)
+
+
+def _boto3_direct_download_expires_in(object_store) -> int:
+    object_store._client = MagicMock()
+    object_store._client.generate_presigned_url.return_value = "https://s3.example.org/signed"
+    with patch.object(object_store, "_exists", return_value=True):
+        assert object_store.get_direct_download_url(MockDataset(1)) == "https://s3.example.org/signed"
+    return object_store._client.generate_presigned_url.call_args.kwargs["ExpiresIn"]
+
+
+def _s3_direct_download_expires_in(object_store) -> int:
+    object_store._bucket = MagicMock()
+    with patch("galaxy.objectstore.s3.Key", create=True) as key_class:
+        key_class.return_value.generate_url.return_value = "https://s3.example.org/signed"
+        with patch.object(object_store, "_exists", return_value=True):
+            assert object_store.get_direct_download_url(MockDataset(1)) == "https://s3.example.org/signed"
+    return key_class.return_value.generate_url.call_args.kwargs["expires_in"]
+
+
+def _azure_direct_download_expires_in(object_store) -> int:
+    signed_at = now()
+    with (
+        patch("galaxy.objectstore.azure_blob.now", return_value=signed_at),
+        patch("galaxy.objectstore.azure_blob.generate_blob_sas", return_value="sig", create=True) as generate_blob_sas,
+        patch("galaxy.objectstore.azure_blob.BlobSasPermissions", create=True),
+        patch.object(object_store, "_blob_client") as blob_client,
+        patch.object(object_store, "_exists", return_value=True),
+    ):
+        blob_client.return_value.url = "https://azure.example.org/blob"
+        assert object_store.get_direct_download_url(MockDataset(1)) == "https://azure.example.org/blob?sig"
+    return int((generate_blob_sas.call_args.kwargs["expiry"] - signed_at).total_seconds())
+
+
+@patch_object_stores_to_skip_initialize
+def test_boto3_direct_download_url_lifetime():
+    with TestConfig(get_example("boto3_direct_download.yml")) as (directory, object_store):
+        assert _boto3_direct_download_expires_in(object_store) == 3600
+
+
+@patch_object_stores_to_skip_initialize
+def test_s3_direct_download_url_lifetime():
+    with TestConfig(S3_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
+        assert _s3_direct_download_expires_in(object_store) == 3600
+
+
+@patch_object_stores_to_skip_initialize
+def test_azure_direct_download_url_lifetime():
+    with TestConfig(AZURE_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
+        assert _azure_direct_download_expires_in(object_store) == 3600
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_direct_download_expires_in():
+    for config_str in [
+        get_example("boto3_direct_download.xml").replace(
+            'enable_direct_download="true"', 'enable_direct_download="true" direct_download_expires_in="600"'
+        ),
+        get_example("boto3_direct_download.yml").replace(
+            "enable_direct_download: true", "enable_direct_download: true\ndirect_download_expires_in: 600"
+        ),
+    ]:
+        with TestConfig(config_str) as (directory, object_store):
+            _assert_key_has_value(object_store.to_dict(), "direct_download_expires_in", 600)
+            assert _boto3_direct_download_expires_in(object_store) == 600
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_direct_download_expires_in_default():
+    for config_str in [get_example("boto3_direct_download.xml"), get_example("boto3_direct_download.yml")]:
+        with TestConfig(config_str) as (directory, object_store):
+            _assert_key_has_value(object_store.to_dict(), "direct_download_expires_in", 3600)
+
+
+@pytest.mark.parametrize("expires_in", ["0", "1h"])
+@patch_object_stores_to_skip_initialize
+def test_config_parse_direct_download_expires_in_rejects_invalid(expires_in):
+    config_str = get_example("boto3_direct_download.yml").replace(
+        "enable_direct_download: true", f"enable_direct_download: true\ndirect_download_expires_in: {expires_in}"
+    )
+    with pytest.raises(ValueError, match="direct_download_expires_in"):
+        with TestConfig(config_str):
+            pass
+
+
+@patch_object_stores_to_skip_initialize
+def test_s3_direct_download_url_configured_lifetime():
+    config_str = S3_DIRECT_DOWNLOAD_CONFIG_YAML.replace("type: s3", "type: s3\ndirect_download_expires_in: 600")
+    with TestConfig(config_str) as (directory, object_store):
+        assert _s3_direct_download_expires_in(object_store) == 600
+
+
+@patch_object_stores_to_skip_initialize
+def test_azure_direct_download_url_configured_lifetime():
+    config_str = AZURE_DIRECT_DOWNLOAD_CONFIG_YAML.replace(
+        "type: azure_blob", "type: azure_blob\ndirect_download_expires_in: 600"
+    )
+    with TestConfig(config_str) as (directory, object_store):
+        assert _azure_direct_download_expires_in(object_store) == 600
+
+
 BOTO3_TEE_STREAMING_TEST_CONFIG_YAML = """
 type: boto3
 auth:
@@ -874,9 +988,34 @@ extra_dirs:
 """
 
 
+# The examples cache under a relative ``database/``, shared by every test run from the checkout.
+AZURE_TEMP_CACHE_TEST_CONFIG_YAML = get_example("azure_simple.yml").replace("database/", "${temp_directory}/")
+CLOUD_AWS_TEMP_CACHE_TEST_CONFIG_YAML = get_example("cloud_aws_simple.yml").replace("database/", "${temp_directory}/")
+
+
 def _cache_path_for(object_store, dataset):
     rel_path = object_store._construct_path(dataset)
     return object_store._get_cache_path(rel_path, object_store._get_object_id(dataset))
+
+
+def _write_cached(object_store, dataset, content: bytes):
+    cache_path = _cache_path_for(object_store, dataset)
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    with open(cache_path, "wb") as f:
+        f.write(content)
+    return cache_path
+
+
+def _stub_s3_client(object_store):
+    """Give a boto3 store a real S3 client and stub its responses, checking requests against the S3 API."""
+    object_store._client = boto3.client(
+        "s3", region_name="us-east-1", aws_access_key_id="test", aws_secret_access_key="test"
+    )
+    return Stubber(object_store._client)
+
+
+def _get_object_head_params(object_store, dataset, size):
+    return {"Bucket": object_store.bucket, "Key": object_store._construct_path(dataset), "Range": f"bytes=0-{size - 1}"}
 
 
 def _leftover_temp_files(cache_path):
@@ -1274,6 +1413,202 @@ def test_stream_remote_s3_returns_none_for_a_missing_key():
         object_store._bucket.get_key.return_value = None
 
         assert object_store._stream_remote("000/dataset_1.dat") is None
+
+
+def test_get_data_head_disk_store_reads_the_start_of_the_file():
+    with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
+        directory.write("the stored data", "files1/000/dataset_1.dat")
+        assert object_store.get_data_head(MockDataset(1), 10) == b"the stored"
+        assert object_store.get_data_head(MockDataset(1), 100) == b"the stored data"
+
+
+def test_get_data_head_disk_store_fails_for_a_missing_object():
+    with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
+        with pytest.raises(ObjectNotFound):
+            object_store.get_data_head(MockDataset(1), 10)
+
+
+def test_get_data_head_distributed_store_reads_from_the_backend_holding_the_object():
+    with TestConfig(DISTRIBUTED_TEST_CONFIG) as (directory, object_store):
+        dataset = MockDataset(1)
+        working_path = directory.write("the stored data", "job_working_directory/example_output")
+        object_store.update_from_file(dataset, file_name=working_path, create=True)
+        assert object_store.get_data_head(dataset, 10) == b"the stored"
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_boto3_reads_a_byte_range_instead_of_a_stale_cached_copy():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        # Left by creating the object, while the data was written to the bucket from another host.
+        cache_path = _write_cached(object_store, dataset, b"")
+        # More than the range, as from an endpoint that ignores it: only the requested bytes are read.
+        body = StreamingBody(io.BytesIO(b"the stored data"), len(b"the stored data"))
+        # Any request but the ranged GetObject, like pulling the object into the cache, fails the stubber.
+        with _stub_s3_client(object_store) as stubber:
+            stubber.add_response("get_object", {"Body": body}, _get_object_head_params(object_store, dataset, 10))
+            assert object_store.get_data_head(dataset, 10) == b"the stored"
+            stubber.assert_no_pending_responses()
+        assert os.path.getsize(cache_path) == 0
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_boto3_reads_nothing_from_an_empty_object():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        with _stub_s3_client(object_store) as stubber:
+            stubber.add_client_error(
+                "get_object",
+                service_error_code="InvalidRange",
+                http_status_code=416,
+                expected_params=_get_object_head_params(object_store, dataset, 10),
+            )
+            assert object_store.get_data_head(dataset, 10) == b""
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_reads_nothing_for_zero_bytes():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        # No response is stubbed: any request fails the test.
+        with _stub_s3_client(object_store):
+            assert object_store.get_data_head(MockDataset(1), 0) == b""
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_boto3_fails_for_a_missing_object():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        with _stub_s3_client(object_store) as stubber:
+            stubber.add_client_error(
+                "get_object",
+                service_error_code="NoSuchKey",
+                http_status_code=404,
+                expected_params=_get_object_head_params(object_store, dataset, 10),
+            )
+            with pytest.raises(ObjectNotFound):
+                object_store.get_data_head(dataset, 10)
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_boto3_fails_for_a_missing_object_with_an_empty_cached_copy():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        # Created along with the object, so it doesn't show the object was ever written.
+        _write_cached(object_store, dataset, b"")
+        with _stub_s3_client(object_store) as stubber:
+            stubber.add_client_error(
+                "get_object",
+                service_error_code="NoSuchKey",
+                http_status_code=404,
+                expected_params=_get_object_head_params(object_store, dataset, 10),
+            )
+            with pytest.raises(ObjectNotFound):
+                object_store.get_data_head(dataset, 10)
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_azure_reads_a_byte_range_instead_of_a_stale_cached_copy():
+    with TestConfig(AZURE_TEMP_CACHE_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        cache_path = _write_cached(object_store, dataset, b"")
+        blob_client = MagicMock()
+        blob_client.download_blob.return_value.readall.return_value = b"the stored"
+        with patch.object(object_store, "_blob_client", return_value=blob_client) as blob_client_for:
+            assert object_store.get_data_head(dataset, 10) == b"the stored"
+
+        blob_client_for.assert_called_once_with(object_store._construct_path(dataset))
+        blob_client.download_blob.assert_called_once_with(offset=0, length=10)
+        assert os.path.getsize(cache_path) == 0
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_azure_reads_nothing_from_an_empty_blob():
+    azure_exceptions = pytest.importorskip("azure.core.exceptions")
+    with TestConfig(AZURE_TEMP_CACHE_TEST_CONFIG_YAML) as (directory, object_store):
+        blob_client = MagicMock()
+        blob_client.download_blob.side_effect = azure_exceptions.HttpResponseError(
+            response=SimpleNamespace(status_code=416, reason="Range Not Satisfiable")
+        )
+        with patch.object(object_store, "_blob_client", return_value=blob_client):
+            assert object_store.get_data_head(MockDataset(1), 10) == b""
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_azure_fails_for_a_missing_blob():
+    azure_exceptions = pytest.importorskip("azure.core.exceptions")
+    with TestConfig(AZURE_TEMP_CACHE_TEST_CONFIG_YAML) as (directory, object_store):
+        blob_client = MagicMock()
+        blob_client.download_blob.side_effect = azure_exceptions.ResourceNotFoundError(
+            response=SimpleNamespace(status_code=404, reason="The specified blob does not exist.")
+        )
+        with patch.object(object_store, "_blob_client", return_value=blob_client):
+            with pytest.raises(ObjectNotFound):
+                object_store.get_data_head(MockDataset(1), 10)
+
+
+@patch_object_stores_to_skip_initialize
+def test_exists_remotely_azure_reports_a_directory_without_blobs_as_missing():
+    with TestConfig(get_example("azure_simple.yml")) as (directory, object_store):
+        # Like the SDK's pager, an empty iterator is truthy.
+        with patch.object(object_store, "_blobs_from", return_value=iter([])):
+            assert object_store._exists_remotely("000/dataset_1_files/") is False
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_boto3_reads_the_cached_copy_of_an_object_missing_from_the_bucket():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        # As left by a failed push.
+        _write_cached(object_store, dataset, b"the cached data")
+        with _stub_s3_client(object_store) as stubber:
+            stubber.add_client_error(
+                "get_object",
+                service_error_code="NoSuchKey",
+                http_status_code=404,
+                expected_params=_get_object_head_params(object_store, dataset, 10),
+            )
+            assert object_store.get_data_head(dataset, 10) == b"the cached"
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_stops_streaming_once_it_has_enough_bytes():
+    with TestConfig(CLOUD_AWS_TEMP_CACHE_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        _write_cached(object_store, dataset, b"")
+        closed = []
+        chunks = iter([b"the ", b"stored", b" data"])
+        with patch.object(
+            object_store, "_stream_remote", return_value=_remote_stream(chunks, lambda: closed.append(True))
+        ):
+            assert object_store.get_data_head(dataset, 7) == b"the sto"
+        assert closed == [True]
+        assert next(chunks) == b" data"
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_reads_the_cached_copy_when_the_backend_cannot_stream():
+    with TestConfig(PITHOS_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        _write_cached(object_store, dataset, b"the cached data")
+        assert object_store.get_data_head(dataset, 10) == b"the cached"
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_head_refreshes_an_empty_cached_copy_when_the_backend_cannot_stream():
+    with TestConfig(PITHOS_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        _write_cached(object_store, dataset, b"")
+
+        def download(rel_path, *, cache_path, cache_target):
+            with open(cache_path, "wb") as f:
+                f.write(b"the stored data")
+            return True
+
+        with (
+            patch.object(object_store, "_exists", return_value=True),
+            patch.object(object_store, "_download", side_effect=download),
+        ):
+            assert object_store.get_data_head(dataset, 10) == b"the stored"
 
 
 @patch_object_stores_to_skip_initialize
@@ -2040,10 +2375,25 @@ def test_cloud_get_direct_download_url_forwards_response_headers():
             )
         assert url == "https://cloud.example.org/signed"
         key.generate_url.assert_called_once_with(
-            expires_in=86400,
+            expires_in=3600,
             content_disposition='attachment; filename="Galaxy1-[data].txt"',
             content_type="application/octet-stream",
         )
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_get_direct_download_url_configured_lifetime():
+    config_str = CLOUD_DIRECT_DOWNLOAD_CONFIG.replace(
+        'enable_direct_download="true"', 'enable_direct_download="true" direct_download_expires_in="600"'
+    )
+    with TestConfig(config_str) as (directory, object_store):
+        key = _cloud_object()
+        bucket = _cloud_bucket()
+        bucket.objects.get.return_value = key
+        object_store.bucket = bucket
+        with patch.object(object_store, "_exists", return_value=True):
+            object_store.get_direct_download_url(MockDataset(1))
+        assert key.generate_url.call_args.kwargs["expires_in"] == 600
 
 
 @patch_object_stores_to_skip_initialize
@@ -2252,6 +2602,15 @@ def verify_caching_object_store_functionality(tmp_path, object_store, check_get_
     path = object_store.get_filename(hello_world_dataset)
     assert open(path).read() == "Hello World!"
 
+    # Test get_data_head reads the stored data, even over a stale (empty) cached copy
+    assert object_store.get_data_head(hello_world_dataset, 5) == b"Hello"
+    assert object_store.get_data_head(hello_world_dataset, 100) == b"Hello World!"
+    assert object_store.get_data_head(empty_dataset, 5) == b""
+    with pytest.raises(ObjectNotFound):
+        object_store.get_data_head(absent_dataset, 5)
+    _write_cached(object_store, hello_world_dataset, b"")
+    assert object_store.get_data_head(hello_world_dataset, 5) == b"Hello"
+
     # Write non-empty dataset in backend 1, test it is not emtpy & exists.
     # without cache...
     hello_world_dataset_2 = MockDataset(10)
@@ -2412,6 +2771,10 @@ def verify_object_store_functionality(tmp_path, object_store, check_get_url=True
     assert data == "ello W"
     path = object_store.get_filename(hello_world_dataset)
     assert open(path).read() == "Hello World!"
+
+    # Test get_data_head
+    assert object_store.get_data_head(hello_world_dataset, 5) == b"Hello"
+    assert object_store.get_data_head(empty_dataset, 5) == b""
 
     # Test Size
 

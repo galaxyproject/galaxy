@@ -9,7 +9,10 @@ from abc import (
     ABC,
     abstractmethod,
 )
-from typing import TYPE_CHECKING
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 from galaxy.structured_app import MinimalManagerApp
 
@@ -45,6 +48,15 @@ class WorkflowCompletionHook(ABC):
             app: The Galaxy application instance.
         """
         self.app = app
+
+    def validate_config(self, config: Any) -> None:
+        """Validate submitted configuration before creating an invocation.
+
+        Hooks may raise RequestParameterInvalidException for invalid configuration.
+        The default accepts any configuration for compatibility with existing hooks.
+        Validation must not perform the completion action or resolve its destination.
+        """
+        return None
 
     @abstractmethod
     def execute(self, completion: "WorkflowInvocationCompletion") -> None:

@@ -1,6 +1,3 @@
-import json
-import os
-import re
 from typing import (
     ClassVar,
 )
@@ -102,17 +99,13 @@ class TestUnexposedUsersIntegration(UsersIntegrationCase):
     expected_regular_user_list_count = 1
 
 
-class TestAdminResendActivationEmail(integration_util.IntegrationTestCase):
-    email_directory: ClassVar[str]
-
+class TestAdminResendActivationEmail(integration_util.IntegrationTestCase, integration_util.ConfiguresMockEmails):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        cls.email_directory = cls._test_driver.mkdtemp()
+        cls._configure_mock_emails(config)
         config["user_activation_on"] = True
         config["activation_grace_period"] = 3
-        config["email_from"] = "galaxy-noreply@example.com"
-        config["smtp_server"] = f"mock_emails_to_path://{cls.email_directory}/email.json"
 
     def test_email_change_deactivates_and_mails_the_new_address(self):
         old_email = "email-change-before@test.gx"
@@ -132,10 +125,7 @@ class TestAdminResendActivationEmail(integration_util.IntegrationTestCase):
         listed = self._get("users", data={"f_email": new_email}, admin=True).json()
         assert [u for u in listed if u["email"] == new_email][0]["active"] is False
 
-        with open(os.path.join(self.email_directory, "email.json")) as f:
-            email = json.loads(f.read())
-        assert email["to"] == new_email
-        assert email["subject"] == "Galaxy Account Activation"
+        self._read_activation_link(new_email)
 
         # The private role is named for the email and is what dataset permissions
         # are granted against, so it has to follow the address.
@@ -162,25 +152,15 @@ class TestAdminResendActivationEmail(integration_util.IntegrationTestCase):
     def _change_email_and_read_activation_token(self, user, new_email: str) -> str:
         response = self._put(f"users/{user['id']}", data={"email": new_email}, json=True)
         self._assert_status_code_is_ok(response)
-        with open(os.path.join(self.email_directory, "email.json")) as f:
-            email = json.loads(f.read())
-        assert email["to"] == new_email
-        match = re.search(r"(https?://[^/\s]+/user/activate\?[^\s]+)", email["body"])
-        assert match, f"No activation link found in email body:\n{email['body']}"
-        return parse_qs(urlparse(match.group(1)).query)["activation_token"][0]
+        link = self._read_activation_link(new_email)
+        return parse_qs(urlparse(link).query)["activation_token"][0]
 
     def test_resend_activation_includes_qualified_link(self):
         user = self._setup_user("resend-activation@test.gx")
         response = self._post(f"users/{user['id']}/send_activation_email", admin=True)
         self._assert_status_code_is_ok(response)
 
-        with open(os.path.join(self.email_directory, "email.json")) as f:
-            email = json.loads(f.read())
-        assert email["to"] == "resend-activation@test.gx"
-        assert email["subject"] == "Galaxy Account Activation"
-        match = re.search(r"(https?://[^/\s]+/user/activate\?[^\s]+)", email["body"])
-        assert match, f"No qualified activation link found in email body:\n{email['body']}"
-        link = match.group(1)
+        link = self._read_activation_link("resend-activation@test.gx")
         assert "activation_token=" in link
         assert "email=" in link
 

@@ -30,6 +30,27 @@ function mountInput(
 }
 
 describe("ChatInput", () => {
+    it("resumes sending the draft when the busy state clears", async () => {
+        const wrapper = mountInput({ value: "Explain this workflow", busy: true });
+        const button = wrapper.get("button");
+        await button.trigger("click");
+        expect(wrapper.emitted("submit")).toBeUndefined();
+
+        await wrapper.setProps({ busy: false });
+        await button.trigger("click");
+        expect(wrapper.emitted("submit")).toHaveLength(1);
+        wrapper.unmount();
+    });
+
+    it.each([{ value: "" }, { value: "hello" }, { value: "hello", busy: true }, { value: "hello", disabled: true }])(
+        "names the send action in state %j",
+        (props) => {
+            const wrapper = mountInput(props);
+            expect(wrapper.get("button").element).toHaveAccessibleName("Send message");
+            wrapper.unmount();
+        },
+    );
+
     describe("rendering", () => {
         it("renders textarea with provided value", () => {
             const wrapper = mountInput({ value: "hello" });

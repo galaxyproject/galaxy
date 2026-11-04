@@ -31,7 +31,7 @@ const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.val
 
 <template>
     <div>
-        <div class="d-flex justify-content-between">
+        <div class="job-header-row">
             <Heading
                 v-if="!props.noToolName"
                 class="job-header-title"
@@ -53,9 +53,16 @@ const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.val
 </template>
 
 <style lang="scss" scoped>
+.job-header-row {
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+}
+
 .job-header-title {
+    // The heading breaks words as a last resort, so the actions drop below before it gets narrower than this
+    flex: 1 1 12rem;
     min-width: 0;
-    flex-shrink: 1;
 
     // To make it equally sized as the `covered-icon` in `SuccessIconOverlay`
     :deep(svg) {
@@ -69,7 +76,6 @@ const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.val
     justify-content: flex-end;
     gap: 0.5rem;
     flex-wrap: wrap;
-    flex-shrink: 0;
     margin-left: auto;
 }
 </style>

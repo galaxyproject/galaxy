@@ -527,7 +527,8 @@ class FolderManager:
         )
         ldda = aliased(LibraryDatasetDatasetAssociation)
         associated_dataset = aliased(Dataset)
-        stmt = stmt.outerjoin(LibraryDataset.library_dataset_dataset_association.of_type(ldda))
+        # inner join: an upload in progress can commit the library dataset before linking its LDDA
+        stmt = stmt.join(LibraryDataset.library_dataset_dataset_association.of_type(ldda))
         stmt = self._filter_by_dataset_access(stmt, ldda, associated_dataset, security)
         if search_text:
             search_text = search_text.lower()

@@ -161,8 +161,24 @@ def test_dataset_dbkeys_and_extensions_summary(
     make_dataset_collection_element(collection=c1, element=d2)
 
     hdca = make_hdca(collection=c1)
+    assert hdca.dataset_dbkeys_and_extensions_summary.dbkeys == {"hg19"}
+    assert hdca.dataset_dbkeys_and_extensions_summary.extensions == {"bam", "txt"}
+
+
+def test_hdca_dbkeys_and_extensions_view_keeps_summary(
+    session, make_hda, make_dataset_collection, make_dataset_collection_element, make_hdca
+):
+    d1 = make_hda(extension="bam", dbkey="hg19", create_dataset=True, sa_session=session)
+    c1 = make_dataset_collection(collection_type="list")
+    make_dataset_collection_element(collection=c1, element=d1)
+
+    hdca = make_hdca(collection=c1)
+    for _ in range(2):
+        rval = hdca.to_dict(view="dbkeysandextensions")
+        assert rval["dbkey"] == "hg19"
+        assert rval["extension"] == "bam"
     assert hdca.dataset_dbkeys_and_extensions_summary[0] == {"hg19"}
-    assert hdca.dataset_dbkeys_and_extensions_summary[1] == {"bam", "txt"}
+    assert hdca.dataset_dbkeys_and_extensions_summary[1] == {"bam"}
 
 
 def test_populated_optimized_ok(session, make_dataset_collection, make_dataset_collection_element, make_hda):
@@ -224,6 +240,11 @@ def test_history_contents(session, make_history, make_hda):
     assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id]) == ["1", "2", "3", "4"]
     assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id], max_in_filter_length=1) == ["1", "2", "3", "4"]
     assert contents_iter_names(ids=[d1.id, d3.id]) == ["1", "3"]
+    assert contents_iter_names(ids=[d1.id, d2.id, d3.id], object_store_ids=["foobar", "three_store"]) == ["2", "3"]
+    assert contents_iter_names(
+        ids=[d1.id, d2.id, d3.id], object_store_ids=["foobar", "three_store"], max_in_filter_length=1
+    ) == ["2", "3"]
+    assert contents_iter_names(ids=[d1.id], object_store_ids=["foobar"]) == []
 
 
 def test_history_content_views(session, make_history, make_hda):
@@ -337,3 +358,31 @@ def test_task_metrics(make_task):
     assert task.text_metrics[1].metric_name == "BIG_PATH"
     # Ensure big values truncated
     assert len(task.text_metrics[1].metric_value) <= 1023
+
+
+def test_ok_to_edit_metadata_ldda_ignores_hda_job_associations(session, make_hda, make_ldda, make_job):
+    hda = make_hda(create_dataset=True, sa_session=session)
+    ldda = make_ldda(id=hda.id, create_dataset=True, sa_session=session)
+    hda_job = make_job()
+    hda_job.state = m.Job.states.RUNNING
+    hda_job.add_input_dataset("input", hda)
+    session.commit()
+
+    assert not hda.ok_to_edit_metadata()
+    assert ldda.ok_to_edit_metadata()
+
+
+@pytest.mark.parametrize("add_association", ["add_input_library_dataset", "add_output_library_dataset"])
+def test_ok_to_edit_metadata_ldda_in_use(session, make_ldda, make_job, add_association):
+    ldda = make_ldda(create_dataset=True, sa_session=session)
+    job = make_job()
+    job.state = m.Job.states.RUNNING
+    getattr(job, add_association)("dataset", ldda)
+    session.commit()
+
+    assert not ldda.ok_to_edit_metadata()
+
+    job.state = m.Job.states.OK
+    session.commit()
+
+    assert ldda.ok_to_edit_metadata()

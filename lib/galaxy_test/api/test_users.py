@@ -7,7 +7,10 @@ import requests
 
 from galaxy.exceptions import error_codes
 from galaxy_test.api._framework import ApiTestCase
-from galaxy_test.base.api_asserts import assert_object_id_error
+from galaxy_test.base.api_asserts import (
+    assert_error_message_contains,
+    assert_object_id_error,
+)
 from galaxy_test.base.api_util import baseauth_headers
 from galaxy_test.base.decorators import (
     requires_admin,
@@ -610,6 +613,22 @@ class TestUsersApi(ApiTestCase):
             updated_theme = self._get(url).json()["preferences"]["theme"]
             assert updated_theme == "test_theme"
 
+    def test_custom_build_from_unconvertible_dataset(self):
+        user_id = self._get("users/current").json()["id"]
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        with dataset_populator.test_history() as history_id:
+            hda = dataset_populator.new_dataset(history_id, content="chr1\t0\t100\n", file_type="bed", wait=True)
+            response = self._put(
+                f"users/{user_id}/custom_builds/unconvertible_build",
+                data={"name": "Unconvertible build", "len|type": "fasta", "len|value": hda["id"]},
+                json=True,
+            )
+            self._assert_status_code_is(response, 400)
+            self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
+            assert_error_message_contains(response, "Conversion from 'bed' to 'len' not possible")
+            builds = self._get(f"users/{user_id}/custom_builds").json()
+            assert "unconvertible_build" not in [build["id"] for build in builds]
+
     @requires_admin
     @requires_new_user
     def test_show_delete(self):
@@ -757,6 +776,37 @@ class TestUsersApi(ApiTestCase):
         groups_response = self._put(f"users/{unknown_user_id}/groups", {"group_ids": []}, admin=True, json=True)
         self._assert_status_code_is(groups_response, 404)
 
+    @requires_new_user
+    def test_logout_ends_other_sessions_only_with_logout_all(self):
+        email = f"{DatasetPopulator(self.galaxy_interactor).get_random_name()}@bx.psu.edu"
+        self._setup_user(email, password="testpass1")
+        sessions = [requests.Session() for _ in range(4)]
+        try:
+            for session in sessions:
+                self._login_browser_session(session, email, "testpass1")
+            plain, explicit_false, logout_all, survivor = sessions
+
+            self._logout_browser_session(plain)
+            self._assert_browser_session_email(plain, None)
+            self._assert_browser_session_email(survivor, email)
+
+            self._logout_browser_session(explicit_false, logout_all="false")
+            self._assert_browser_session_email(explicit_false, None)
+            self._assert_browser_session_email(survivor, email)
+
+            self._assert_browser_session_email(logout_all, email)
+            self._logout_browser_session(logout_all, logout_all="true")
+            self._assert_browser_session_email(logout_all, None)
+            self._assert_browser_session_email(survivor, None)
+        finally:
+            for session in sessions:
+                session.close()
+
+    def _assert_browser_session_email(self, session: requests.Session, email: str | None) -> None:
+        current_user_response = session.get(urljoin(self.url, "api/users/current"))
+        self._assert_status_code_is(current_user_response, 200)
+        assert current_user_response.json().get("email") == email
+
     @requires_admin
     @requires_new_user
     def test_reset_password(self):
@@ -814,3 +864,21 @@ class TestUsersApi(ApiTestCase):
 
     def _unknown_user_id(self) -> str:
         return self._get("configuration/encode/999999999", admin=True).json()["encoded_id"]
+
+    @requires_admin
+    @requires_new_user
+    def test_custom_build_from_inaccessible_dataset(self):
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        with dataset_populator.test_history() as history_id:
+            hda = dataset_populator.new_dataset(history_id, content=">chr1\nACGT\n", file_type="fasta", wait=True)
+            dataset_populator.make_private(history_id, hda["id"])
+            with self._different_user(email=TEST_USER_EMAIL):
+                user_id = self._get("users/current").json()["id"]
+                response = self._put(
+                    f"users/{user_id}/custom_builds/inaccessible_build",
+                    data={"name": "Inaccessible build", "len|type": "fasta", "len|value": hda["id"]},
+                    json=True,
+                )
+                self._assert_status_code_is(response, 403)
+                builds = self._get(f"users/{user_id}/custom_builds").json()
+                assert "inaccessible_build" not in [build["id"] for build in builds]

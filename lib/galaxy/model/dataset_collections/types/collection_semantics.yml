@@ -506,6 +506,42 @@
     tests:
         workflow_editor: "rejects paired:paired -> list:paired_or_unpaired connection"
 
+- example:
+    label: COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED_NOT_CONSUMES_PAIRED
+    assumptions:
+    - datasets: [d_f, d_r]
+    - tool:
+        in: {i: "collection<list:paired_or_unpaired>"}
+        out: {o: dataset}
+    - collections:
+        C: [paired, {forward: d_f, reverse: d_r}]
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+    is_valid: false
+    tests:
+        workflow_editor: "rejects paired -> list:paired_or_unpaired connection"
+
+- example:
+    label: COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED_NOT_CONSUMES_PAIRED_OR_UNPAIRED
+    assumptions:
+    - datasets: [d_f, d_r]
+    - tool:
+        in: {i: "collection<list:paired_or_unpaired>"}
+        out: {o: dataset}
+    - collections:
+        C: [paired_or_unpaired, {forward: d_f, reverse: d_r}]
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+    is_valid: false
+    tests:
+        workflow_editor: "rejects paired_or_unpaired -> list:paired_or_unpaired connection"
+
 - doc: |
     In addition to explicit collection inputs, tool inputs of ``type`` ``data``
     where ``multiple="true"`` can consume lists directly. This is likewise a

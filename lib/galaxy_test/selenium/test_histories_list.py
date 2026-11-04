@@ -213,9 +213,12 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
-        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
-        self.sleep_for(self.wait_types.UX_RENDER)
+        histories = self.components.histories
+        # The first click selects name (still descending), the second switches to ascending.
+        histories.sort_button(field="Name", direction="ascending").wait_for_and_click()
+        histories.sort_button(field="Name", direction="ascending").wait_for_and_click()
+        histories.sort_button(field="Name", direction="descending").wait_for_visible()
+        histories.list_loading.wait_for_absent()
 
         expected_histories = [self.history2_name, self.history3_name]
 
@@ -298,6 +301,38 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_histories_sorted_in_list([self.history2_name], False)
+
+    @selenium_test
+    def test_tag_editor_stays_open_on_non_first_card(self):
+        self._login()
+        self.navigate_to_histories_page()
+        self.components.histories.history_cards.wait_for_element_count_of_at_least(2)
+
+        history_ids = self.get_history_card_history_ids()
+        history_id = history_ids[-1]
+        card = self.components.histories.history_card.selector(history_id=history_id)
+        tags = [self._get_random_name(len=5), self._get_random_name(len=5)]
+
+        card.tags_toggle.wait_for_and_click()
+        self.tagging_add(tags, auto_closes=False, parent_selector=f"{card.selector} ")
+        for tag in tags:
+            card.tag(tag=tag).wait_for_visible()
+
+        def tags_saved():
+            return set(tags) <= set(self.api_get(f"histories/{history_id}")["tags"])
+
+        self._wait_on(tags_saved, "history tags to be saved", wait_type=self.wait_types.DATABASE_OPERATION)
+        assert self.get_history_card_history_ids() == history_ids
+
+        self.navigate_to_histories_page()
+        for tag in tags:
+            card.tag(tag=tag).wait_for_visible()
+
+    def get_history_card_history_ids(self):
+        return [
+            card.get_attribute("id").removeprefix("g-card-history-")
+            for card in self.components.histories.history_cards.all()
+        ]
 
     def _login(self):
         self.home()

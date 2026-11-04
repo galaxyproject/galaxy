@@ -242,6 +242,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.activation_grace_period = 0
         self.allow_user_dataset_purge = True
         self.allow_local_account_creation = True
+        self.allowed_login_redirect_hosts = []
         self.auth_config_file = "config/auth_conf.xml.sample"
         self.custom_activation_email_message = "custom_activation_email_message"
         self.email_domain_allowlist_content = None
@@ -408,6 +409,9 @@ class MockTrans:
         self.__user = user
 
     user = property(get_user, set_user)
+
+    def get_current_user_roles(self):
+        return self.user.all_roles() if self.user else []
 
     def get_history(self, **kwargs):
         return self.history

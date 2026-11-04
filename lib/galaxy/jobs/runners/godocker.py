@@ -126,6 +126,8 @@ class GodockerJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
 
+    runs_job_script_in_container = True
+
     runner_name = "GodockerJobRunner"
 
     def __init__(self, app, nworkers, **kwargs):

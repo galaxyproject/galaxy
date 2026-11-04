@@ -334,6 +334,8 @@ then collection inputs must match every part of the collection type input defini
 (COLLECTION_INPUT_PAIRED_NOT_CONSUMES_LIST)=
 (COLLECTION_INPUT_LIST_PAIRED_NOT_CONSUMES_PAIRED_PAIRED)=
 (COLLECTION_INPUT_LIST_PAIRED_OR_NOT_PAIRED_NOT_CONSUMES_PAIRED_PAIRED)=
+(COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED_NOT_CONSUMES_PAIRED)=
+(COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED_NOT_CONSUMES_PAIRED_OR_UNPAIRED)=
 <details><summary>Examples</summary>
 
 :::{admonition} Example: `COLLECTION_INPUT_LIST_NOT_CONSUMES_PAIRS` 
@@ -398,6 +400,42 @@ Assuming,
 * $ d_f $, $ d_r $ are datasets
 * $ tool \text{ is } (i: \text{ collection<list:paired\_or\_unpaired> }) \Rightarrow \{ o: \text{ dataset } \} $
 * $ C $ is $ \text{CollectionInstance<}\text{paired}:\text{paired},\left\{ \text{ forward }=\left\{ \text{ forward }=d_f, \text{ reverse }=d_r \right\}, \text{ reverse }=\left\{ \text{ forward }=d_f, \text{ reverse }=d_r \right\} \right\}\text{>} $
+
+
+then
+
+$$tool(i=C)\text{ is invalid}$$
+
+:::
+
+
+
+:::{admonition} Example: `COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED_NOT_CONSUMES_PAIRED` 
+:class: note
+
+Assuming,
+
+* $ d_f $, $ d_r $ are datasets
+* $ tool \text{ is } (i: \text{ collection<list:paired\_or\_unpaired> }) \Rightarrow \{ o: \text{ dataset } \} $
+* $ C $ is $ \text{CollectionInstance<}\text{paired},\left\{ \text{ forward }=d_f, \text{ reverse }=d_r \right\}\text{>} $
+
+
+then
+
+$$tool(i=C)\text{ is invalid}$$
+
+:::
+
+
+
+:::{admonition} Example: `COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED_NOT_CONSUMES_PAIRED_OR_UNPAIRED` 
+:class: note
+
+Assuming,
+
+* $ d_f $, $ d_r $ are datasets
+* $ tool \text{ is } (i: \text{ collection<list:paired\_or\_unpaired> }) \Rightarrow \{ o: \text{ dataset } \} $
+* $ C $ is $ \text{CollectionInstance<}\text{paired\_or\_unpaired},\left\{ \text{ forward }=d_f, \text{ reverse }=d_r \right\}\text{>} $
 
 
 then

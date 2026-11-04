@@ -4,10 +4,37 @@ History
 .. to_doc
 
 ---------
-26.2.dev0
+27.0.dev0
 ---------
 
 
+
+-------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix Tool Shed searches repeating the last page by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23564 <https://github.com/galaxyproject/galaxy/pull/23564>`_
+* Expose stock tool versions through the Tool Shed TRS API by `@jmchilton <https://github.com/jmchilton>`_ in `#23565 <https://github.com/galaxyproject/galaxy/pull/23565>`_
+* Improve tool shed username validation. by `@jmchilton <https://github.com/jmchilton>`_ in `#23955 <https://github.com/galaxyproject/galaxy/pull/23955>`_
+* Improved Rendering of Tool Shed READMEs by `@jmchilton <https://github.com/jmchilton>`_ in `#24053 <https://github.com/galaxyproject/galaxy/pull/24053>`_
+* Don't read files or evaluate Python from untrusted tools in the Tool Shed by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24239 <https://github.com/galaxyproject/galaxy/pull/24239>`_
+
+-------------------
+26.0.2 (2026-10-25)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.1.3 (2026-10-25)
+-------------------
+
+No recorded changes since last release
 
 -------------------
 26.1.1 (2026-08-04)

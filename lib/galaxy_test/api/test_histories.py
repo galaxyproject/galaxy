@@ -792,6 +792,21 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
+    def test_unshare_with_me_removes_from_shared_with_me(self):
+        [recipient_email] = self._setup_recipients(1)
+        history_id = self.create("history-to-unshare-with-me")
+        self._share_with(history_id, [recipient_email])
+
+        with self._different_user(recipient_email):
+            assert history_id in self._shared_with_me_ids()
+            self._assert_status_code_is(self._unshare_with_me(history_id), 204)
+            assert history_id not in self._shared_with_me_ids()
+
+    def _shared_with_me_ids(self) -> list[str]:
+        response = self._get("histories/shared_with_me")
+        self._assert_status_code_is(response, 200)
+        return [h["id"] for h in response.json()]
+
     @requires_new_user
     def test_sharing_with_private_datasets(self):
         history_id = self.dataset_populator.new_history()

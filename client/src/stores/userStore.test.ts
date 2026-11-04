@@ -1,9 +1,12 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
+import { delay } from "msw";
+import { createPinia, setActivePinia, storeToRefs } from "pinia";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { watch } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { useUserStore } from "@/stores/userStore";
 
 const { server, http } = useServerMock();
@@ -143,6 +146,145 @@ describe("userStore", () => {
             userStore.$reset();
 
             expect(userStore.getDecodedId("abc")).toBeNull();
+        });
+    });
+
+    describe("refreshStorageUsage", () => {
+        let requested: string[];
+
+        beforeEach(() => {
+            requested = [];
+            server.use(
+                http.get("/api/users/{user_id}", ({ response }) => {
+                    requested.push("user");
+                    return response(200).json(getFakeRegisteredUser({ total_disk_usage: 2048 }));
+                }),
+                http.get("/api/users/{user_id}/usage", ({ response }) => {
+                    requested.push("usages");
+                    return response(200).json([{ quota_source_label: null, total_disk_usage: 2048 }]);
+                }),
+            );
+        });
+
+        it("reloads the user and the usage of every storage source once that was loaded", async () => {
+            await useQuotaUsageStore().loadQuotaUsages();
+            requested = [];
+
+            await useUserStore().refreshStorageUsage();
+
+            expect(requested.sort()).toEqual(["usages", "user"]);
+            expect(useUserStore().currentUser?.total_disk_usage).toBe(2048);
+        });
+
+        it("doesn't load the usage of every storage source when nothing shows it", async () => {
+            await useUserStore().refreshStorageUsage();
+
+            expect(requested).toEqual(["user"]);
+        });
+
+        it("retries loading the usage of every storage source after that failed", async () => {
+            let failing = true;
+            server.use(
+                http.get("/api/users/{user_id}/usage", ({ response }) => {
+                    if (failing) {
+                        return response("5XX").json({ err_msg: "Server error", err_code: 500 }, { status: 500 });
+                    }
+                    return response(200).json([{ quota_source_label: null, total_disk_usage: 2048 }]);
+                }),
+            );
+            await useQuotaUsageStore().loadQuotaUsages();
+            failing = false;
+
+            await useUserStore().refreshStorageUsage();
+
+            expect(useQuotaUsageStore().quotaUsages?.map((usage) => usage.totalDiskUsageInBytes)).toEqual([2048]);
+        });
+
+        it("reloads the usage of every storage source after the usage of one was loaded", async () => {
+            server.use(
+                http.get("/api/users/{user_id}/usage/{label}", ({ response }) =>
+                    response(200).json({ quota_source_label: "scratch", total_disk_usage: 1024 }),
+                ),
+            );
+            await useQuotaUsageStore().loadQuotaUsageForSource("scratch");
+            requested = [];
+
+            await useUserStore().refreshStorageUsage();
+
+            expect(requested.sort()).toEqual(["usages", "user"]);
+        });
+
+        it("reloads the usage of every storage source when its first load is still running", async () => {
+            const firstLoad = useQuotaUsageStore().loadQuotaUsages();
+
+            await Promise.all([firstLoad, useUserStore().refreshStorageUsage()]);
+            await flushPromises();
+
+            expect(requested.filter((request) => request === "usages")).toEqual(["usages", "usages"]);
+        });
+    });
+
+    describe("refreshUser", () => {
+        it("keeps the newest user when an older request answers last", async () => {
+            let requests = 0;
+            server.use(
+                http.get("/api/users/{user_id}", async ({ response }) => {
+                    requests++;
+                    if (requests === 1) {
+                        await delay(50);
+                        return response(200).json(getFakeRegisteredUser({ total_disk_usage: 1 }));
+                    }
+                    return response(200).json(getFakeRegisteredUser({ total_disk_usage: 2 }));
+                }),
+            );
+            const userStore = useUserStore();
+
+            const olderRefresh = userStore.refreshUser();
+            await userStore.refreshUser();
+            await olderRefresh;
+
+            expect(userStore.currentUser?.total_disk_usage).toBe(2);
+        });
+
+        it("sets the user when a load answers before a later refresh", async () => {
+            const responses = [
+                { delayMs: 10, user: getFakeRegisteredUser({ total_disk_usage: 1 }) },
+                { delayMs: 50, user: getFakeRegisteredUser({ total_disk_usage: 2 }) },
+            ];
+            server.use(
+                http.get("/api/users/{user_id}", async ({ response }) => {
+                    const { delayMs, user } = responses.shift()!;
+                    await delay(delayMs);
+                    return response(200).json(user);
+                }),
+            );
+            const userStore = useUserStore();
+
+            const firstLoad = userStore.loadUser(false);
+            const refresh = userStore.refreshUser();
+            await firstLoad;
+
+            expect(userStore.currentUser?.total_disk_usage).toBe(1);
+            await refresh;
+        });
+
+        it("doesn't notify the preferences' watchers when a refresh returns the same preferences", async () => {
+            const preferences = { favorites: JSON.stringify({ tools: ["cat1"] }) };
+            server.use(
+                http.get("/api/users/{user_id}", ({ response }) =>
+                    response(200).json(getFakeRegisteredUser({ preferences })),
+                ),
+            );
+            const userStore = useUserStore();
+            await userStore.refreshUser();
+            const { currentFavorites } = storeToRefs(userStore);
+            let notifications = 0;
+            watch(currentFavorites, () => notifications++);
+
+            await userStore.refreshUser();
+            await flushPromises();
+
+            expect(notifications).toBe(0);
         });
     });
 });

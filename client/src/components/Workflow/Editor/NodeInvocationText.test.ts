@@ -27,5 +27,7 @@ describe("NodeInvocationText", () => {
         const swatch = wrapper.find("input[type=color]");
         expect(swatch.exists()).toBe(true);
         expect((swatch.element as HTMLInputElement).value).toBe("#ff0000");
+        expect(swatch.classes()).toEqual(expect.arrayContaining(["g-form-input", "g-small", "color-input"]));
+        expect(swatch.attributes("readonly")).toBeDefined();
     });
 });

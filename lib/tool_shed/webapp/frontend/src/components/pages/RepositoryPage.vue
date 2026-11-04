@@ -4,6 +4,7 @@ import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons"
 import { GAlert } from "@galaxyproject/galaxy-ui"
 import { computed, watch, ref } from "vue"
 import { storeToRefs } from "pinia"
+import { useElementSize } from "@vueuse/core"
 import { useRepositoryStore } from "@/stores"
 import LoadingDiv from "@/components/LoadingDiv.vue"
 import PageHeader from "@/components/PageHeader.vue"
@@ -17,6 +18,8 @@ import RepositoryHealth from "@/components/RepositoryHealth.vue"
 import InstallingHowto from "@/components/InstallingHowto.vue"
 import RepositoryLinks from "@/components/RepositoryLinks.vue"
 import RepositoryExplore from "@/components/RepositoryExplore.vue"
+import RepositoryCategories from "@/components/RepositoryCategories.vue"
+import RepositoryShedYml from "@/components/RepositoryShedYml.vue"
 import { type RevisionMetadata, type RepositoryTool as RepositoryToolModel } from "@/schema"
 import { ToolShedApi } from "@/schema"
 import { notifyOnCatch } from "@/util"
@@ -186,6 +189,10 @@ const invalidTools = computed(() => currentMetadata.value?.invalid_tools || [])
 const malicious = computed(() => currentMetadata.value?.malicious || false)
 const canManage = computed(() => repositoryPermissions.value?.can_manage || false)
 const canPush = computed(() => repositoryPermissions.value?.can_push || false)
+
+// The sticky aside's offset needs its height, so one taller than the window can still scroll to its end
+const aside = ref<HTMLElement | null>(null)
+const { height: asideHeight } = useElementSize(aside, undefined, { box: "border-box" })
 </script>
 
 <template>
@@ -324,9 +331,15 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                             </template>
                         </div>
                     </section>
+
+                    <section class="repository-card shed-card">
+                        <div class="shed-card-body">
+                            <repository-shed-yml :repository="repository" />
+                        </div>
+                    </section>
                 </div>
 
-                <aside class="repository-aside">
+                <aside ref="aside" class="repository-aside" :style="{ '--aside-height': `${asideHeight}px` }">
                     <section class="repository-card shed-card">
                         <div class="shed-card-body">
                             <InstallingHowto
@@ -334,6 +347,11 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                                 :repository-name="repositoryName"
                                 :repository-owner="repositoryOwner"
                             />
+                        </div>
+                    </section>
+                    <section class="repository-card shed-card" v-if="repository.categories.length > 0">
+                        <div class="shed-card-body">
+                            <repository-categories :categories="repository.categories" />
                         </div>
                     </section>
                     <section class="repository-card shed-card">
@@ -396,9 +414,11 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
         align-items: start;
     }
 
+    /* Sticks below the masthead while it fits; once taller than the window, it scrolls with the page
+       until its end shows and then sticks there */
     .repository-aside {
         position: sticky;
-        top: calc(var(--shed-masthead-height) + 1rem);
+        top: min(calc(var(--shed-masthead-height) + 1rem), calc(100vh - var(--aside-height, 0px) - 1rem));
     }
 }
 

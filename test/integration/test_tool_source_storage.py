@@ -15,7 +15,11 @@ from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.source_store import ToolIndex
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy.util import galaxy_directory
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    WorkflowPopulator,
+)
 from galaxy_test.driver import integration_util
 
 
@@ -95,7 +99,9 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
         cls._tmpdir = tempfile.mkdtemp(prefix="composite_tss_")
         cls._sqlite_path = os.path.join(cls._tmpdir, "sources.sqlite")
 
-        SqlAlchemyToolSourceStore(url=f"sqlite:///{cls._sqlite_path}").count()
+        # Publish an (empty) index: the cached toolbox refuses read-only
+        # stores that have none.
+        SqlAlchemyToolSourceStore(url=f"sqlite:///{cls._sqlite_path}").store_index(ToolIndex())
 
         cls._conf_path = os.path.join(cls._tmpdir, "extra_tool_conf.xml")
         with open(cls._conf_path, "w") as f:
@@ -208,6 +214,84 @@ class TestCachedToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
         self._test_api_tools_list()
 
 
+class TestCachedToolBoxReloadAfterLocalEdit(BaseToolSourceStorageIntegrationTestCase):
+    """A toolbox reload applies an in-place edit of a local tool's XML."""
+
+    _tool_path: str
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        tmpdir = tempfile.mkdtemp(prefix="cached_reload_edit_")
+        cls._tool_path = os.path.join(tmpdir, "cached_toolbox_probe.xml")
+        cls._write_probe("1.1")
+        conf_path = os.path.join(tmpdir, "local_tool_conf.xml")
+        with open(conf_path, "w") as f:
+            f.write(f'<toolbox tool_path="{tmpdir}"><tool file="cached_toolbox_probe.xml"/></toolbox>')
+        config["use_cached_toolbox"] = True
+        existing_confs = config.get("tool_config_file") or "config/tool_conf.xml.sample"
+        if isinstance(existing_confs, str):
+            config["tool_config_file"] = f"{existing_confs},{conf_path}"
+        else:
+            config["tool_config_file"] = list(existing_confs) + [conf_path]
+
+    @classmethod
+    def _write_probe(cls, version: str) -> None:
+        with open(cls._tool_path, "w") as f:
+            f.write(
+                f'<tool id="cached_toolbox_probe" name="Probe" version="{version}">'
+                f"<command>echo {version} > '$out'</command><inputs/>"
+                '<outputs><data name="out" format="txt"/></outputs></tool>'
+            )
+
+    def test_reload_serves_edited_tool_version(self):
+        response = self._get("tools/cached_toolbox_probe")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["version"] == "1.1"
+
+        self._write_probe("1.2")
+        reload_toolbox(self._app)
+
+        response = self._get("tools/cached_toolbox_probe")
+        self._assert_status_code_is(response, 200)
+        tool = response.json()
+        assert tool["version"] == "1.2"
+        assert tool["versions"] == ["1.2"]
+
+
+class TestCachedToolBoxKeepsConfiguredVersion(BaseToolSourceStorageIntegrationTestCase):
+    """A newer bundled version no conf names stays storage-only and isn't served."""
+
+    # The sample tool conf names filters/grep.xml (1.0.4); keep it out of the toolbox.
+    allow_tool_conf_override = False
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        tmpdir = tempfile.mkdtemp(prefix="cached_configured_version_")
+        conf_path = os.path.join(tmpdir, "grep_tool_conf.xml")
+        tools_dir = os.path.join(galaxy_directory(), "tools")
+        with open(conf_path, "w") as f:
+            f.write(f'<toolbox tool_path="{tools_dir}"><tool file="filters/grep_1.0.1.xml"/></toolbox>')
+        config["use_cached_toolbox"] = True
+        config["tool_config_file"] = f"{config['tool_config_file']},{conf_path}"
+
+    def test_show_serves_configured_version(self):
+        toolbox = self._app.toolbox
+        assert isinstance(toolbox, CachedToolBox)
+        assert toolbox._tool_index is not None
+        indexed = toolbox._tool_index.entries_by_version["Grep1"]
+        # Bundled filters/grep.xml (1.0.4) is indexed but no conf names it.
+        assert indexed["1.0.4"].in_panel is False
+        assert indexed["1.0.1"].in_panel is True
+
+        response = self._get("tools/Grep1")
+        self._assert_status_code_is(response, 200)
+        tool = response.json()
+        assert tool["version"] == "1.0.1"
+        assert tool["versions"] == ["1.0.1"]
+
+
 class TestCachedToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
     """End-to-end coverage of CachedToolBox-served API behaviours.
 
@@ -301,6 +385,27 @@ class TestCachedToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
             assert content.strip() == "Hidden Version 0.1"
+
+    def test_exact_workflow_invocation_reports_missing_tool_version(self):
+        # The cached toolbox's ``get_tool(exact=True)`` falls back to another
+        # indexed version of ``multiple_versions``; invocation must still
+        # report the pinned version missing.
+        workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+        workflow_id = workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  pinned:
+    tool_id: multiple_versions
+    tool_version: "0.3"
+""")
+        with self.dataset_populator.test_history() as history_id:
+            response = workflow_populator.invoke_workflow_raw(
+                workflow_id, {"history_id": history_id, "require_exact_tool_versions": True}
+            )
+        self._assert_status_code_is(response, 400)
+        assert response.json()["err_msg"] == (
+            "Workflow was not invoked; the following required tools are not installed: multiple_versions (version 0.3)"
+        )
 
     # --- Default-panel response shape ---------------------------------------
 

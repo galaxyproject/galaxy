@@ -86,6 +86,9 @@ class ActionLink(Model):
     link: AbsoluteOrRelativeUrl = Field(
         ..., title="Link", description="The link to be opened when the button is clicked."
     )
+    target: Literal["_self", "_blank"] = Field(
+        "_self", title="Target", description="Open the link in the current tab or a new tab."
+    )
 
 
 # Create the corresponding model for the registered category below and

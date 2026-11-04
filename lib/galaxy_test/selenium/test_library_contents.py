@@ -65,6 +65,9 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions, UsesUploadAct
     @requires_new_library
     def test_import_dataset_from_history(self):
         self.admin_login()
+        # The admin is shared with other tests, so its current history can carry any name.
+        history_name = self._get_random_name(prefix="import_from_history")
+        self.history_panel_create_new_with_name(history_name)
         self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.navigate_to_new_library()
@@ -79,14 +82,14 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions, UsesUploadAct
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_history)
         # Need to search for the history and select it before we can select datasets.
         self.sleep_for(self.wait_types.UX_RENDER)
-        self._search_and_select_history(1, "Unnamed history")
+        self._search_and_select_history(self.current_history_id(), history_name)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.libraries_dataset_import_from_history_select(["1.txt"])
         # Add
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("libraries_dataset_import")
         self.libraries_dataset_import_from_history_click_ok()
-        self.assert_num_displayed_items_is(1)
+        self.wait_for_num_displayed_items(1)
 
     @selenium_test
     @requires_admin
@@ -145,7 +148,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions, UsesUploadAct
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_ok_button)
         # Let the progress bar disappear...
         self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
-        self.assert_num_displayed_items_is(1)
+        self.wait_for_num_displayed_items(1)
 
         self.click_label("1.txt")
         self.wait_for_visible(self.navigation.libraries.dataset.selectors.table_rows)
@@ -167,7 +170,28 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions, UsesUploadAct
         self.assert_num_displayed_items_is(0)
         filenames = ["1.axt", "1.bed", "1.bam"]
         self.populate_library_folder_from_import_dir(self.name, filenames)
-        self.assert_num_displayed_items_is(len(filenames))
+        self.wait_for_num_displayed_items(len(filenames))
+
+    @selenium_test
+    @requires_admin
+    @requires_new_library
+    def test_add_datasets_to_selected_history(self):
+        self.admin_login()
+        self.create_new_library()
+        self.home()
+        target_history_id = self.dataset_populator.new_history(name=self._get_random_name())
+        self.history_panel_create_new()
+        other_history_id = self.current_history_id()
+        self.populate_library_folder_from_import_dir(self.name, ["1.bed", "1.axt"])
+        self.libraries_folder_add_to_history(
+            ["1.bed", "1.axt"],
+            history_id=target_history_id,
+            screenshot_name="libraries_add_datasets_to_selected_history",
+        )
+        self.wait_for_current_history_id(target_history_id)
+        contents = self.dataset_populator.get_history_contents(target_history_id)
+        assert sorted(item["name"] for item in contents) == ["1.axt", "1.bed"]
+        assert self.dataset_populator.get_history_contents(other_history_id) == []
 
     @selenium_test
     @requires_admin
@@ -184,9 +208,9 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions, UsesUploadAct
         self.screenshot("libraries_show_details_done")
 
     @retry_during_transitions
-    def _search_and_select_history(self, row_index=1, label_text="Unnamed history"):
+    def _search_and_select_history(self, history_id, label_text):
         self.libraries_dataset_import_from_history_search_for(label_text)
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.libraries.folder.import_datasets_from_history_modal_open_history_by_index(
-            row_index=row_index
+        self.components.libraries.folder.import_datasets_from_history_modal_open_history(
+            history_id=history_id
         ).wait_for_and_click()

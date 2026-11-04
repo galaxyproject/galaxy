@@ -9,6 +9,20 @@ execution:
   environments:
     local_singularity:
       runner: local
+      env:
+        - name: LEGACY_VAR
+          value: legacy
+      job_env:
+        - name: JOB_VAR
+          value: job
+        - name: DECLARED_VAR
+          value: declared
+        - name: EMPTY_VAR
+          value: ''
+      tool_env:
+        - name: TOOL_VAR
+          value: tool
+      singularity_env_CONTAINER_VAR: container
       singularity_enabled: true
       # Since tests run in /tmp/ , we apparently need to forbid the default mounting of /tmp
       singularity_run_extra_arguments: '--no-mount tmp'

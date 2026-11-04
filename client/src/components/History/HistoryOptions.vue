@@ -165,6 +165,7 @@ watch(
 
             <GDropdownItem
                 v-if="!isUnownedHistory"
+                data-description="resume paused jobs"
                 :disabled="!canEditHistory"
                 :title="localize('Resume all Paused Jobs in this History')"
                 @click="resumePausedJobs()">
@@ -203,6 +204,7 @@ watch(
             </GDropdownItem>
 
             <GDropdownItem
+                data-description="export tool references"
                 :title="localize('Export references for all Tools used in this History')"
                 :to="`/histories/citations?id=${history.id}`">
                 <FontAwesomeIcon fixed-width :icon="faStream" />

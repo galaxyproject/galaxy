@@ -13,7 +13,7 @@ import { ERROR_DATASET_STATES, NON_TERMINAL_DATASET_STATES, TERMINAL_DATASET_STA
 import type { HistoryContentsResult } from "@/api/histories";
 import type { components } from "@/api/schema";
 
-import { DatasetStateSummary } from "../Collection/DatasetStateSummary";
+import { DatasetStateSummary, type HDCAWithDatasetStates } from "../Collection/DatasetStateSummary";
 
 type HistoryContentItem = HistoryContentsResult[number];
 
@@ -237,13 +237,7 @@ export function getContentItemState(item: HistoryContentItem | HDADetailed | HDC
 
         // Check dataset states first (higher priority for actual data states)
         if ("elements_states" in item && item.elements_states) {
-            const datasetSummary = new DatasetStateSummary(
-                item as {
-                    elements_states?: Record<string, number>;
-                    elements_deleted?: number;
-                    populated_state?: string | null;
-                },
-            );
+            const datasetSummary = new DatasetStateSummary(item as HDCAWithDatasetStates);
             for (const datasetState of HIERARCHICAL_COLLECTION_DATASET_STATES) {
                 if (datasetSummary.get(datasetState) > 0) {
                     return datasetState;
@@ -261,6 +255,14 @@ export function getContentItemState(item: HistoryContentItem | HDADetailed | HDC
         return item.state;
     }
     return "ok";
+}
+
+/** Whether the item is purged; a collection counts as purged once all its datasets are. */
+export function isContentItemPurged(item: HistoryContentItem | HDADetailed | HDCADetailed | DCESummary): boolean {
+    if (isHDCAItem(item) || isDCEWithCollection(item)) {
+        return new DatasetStateSummary(item as HDCAWithDatasetStates).allElementsPurged;
+    }
+    return "purged" in item && Boolean(item.purged);
 }
 
 export function isTerminalCollectionState(state: string): boolean {

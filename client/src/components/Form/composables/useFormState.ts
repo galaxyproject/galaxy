@@ -15,6 +15,8 @@ export interface FormInputNode {
     options?: Record<string, unknown> | unknown[];
     options_meta?: Record<string, unknown>;
     label?: string;
+    /** Heading of a section or repeat. */
+    title?: string;
     help?: string | null;
     help_format?: string;
     optional?: boolean;

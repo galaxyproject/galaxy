@@ -88,7 +88,28 @@ function handleHistorySelected(history: { id: string }) {
 <style scoped lang="scss">
 @import "@/style/scss/theme/blue.scss";
 
+// let a long history name truncate so the change link stays visible
+.target-history-selector-link {
+    min-width: 0;
+
+    :deep(.history-link-wrapper),
+    :deep(.history-link-wrapper > div),
+    :deep(.history-link),
+    :deep(.history-link-click) {
+        min-width: 0;
+    }
+
+    :deep(.history-link-click) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
 .change-history-link {
+    flex-shrink: 0;
+    white-space: nowrap;
+
     &:hover {
         text-decoration: underline;
         color: $brand-primary;

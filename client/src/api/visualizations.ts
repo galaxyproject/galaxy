@@ -67,3 +67,18 @@ export async function loadVisualizations(options: LoadVisualizationsOptions = {}
 
     return { data, totalMatches };
 }
+
+/** Removes the current user's own share of a visualization shared with them. */
+export async function unshareVisualizationWithMe(id: string): Promise<void> {
+    const { error } = await GalaxyApi().PUT("/api/visualizations/{id}/unshare_with_me", {
+        params: {
+            path: {
+                id,
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+}

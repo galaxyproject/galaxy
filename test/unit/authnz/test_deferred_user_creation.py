@@ -34,13 +34,20 @@ from galaxy.authnz.psa_authnz import (
 from galaxy.authnz.tapis import TapisOAuth2
 
 
+def url_builder(path, **query):
+    # Galaxy served below galaxy_url_prefix=/galaxy
+    return f"/galaxy{path}?{urlencode(query)}" if query else f"/galaxy{path}"
+
+
 @pytest.fixture
 def trans(monkeypatch):
     trans = MockTrans()
+    trans.url_builder = url_builder
     monkeypatch.setattr(trans.app.config, "enable_oidc", True, raising=False)
     monkeypatch.setattr(trans.app.config, "user_activation_on", False, raising=False)
     monkeypatch.setattr(trans.app.config, "oidc_auth_pipeline", None, raising=False)
     monkeypatch.setattr(trans.app.config, "oidc_auth_pipeline_extra", None, raising=False)
+    monkeypatch.setattr(trans.app.config, "enable_account_interface", True, raising=False)
     trans.app.config.fixed_delegated_auth = False
     trans.galaxy_session = model.GalaxySession(is_valid=True)
     trans.sa_session.add(trans.galaxy_session)
@@ -217,12 +224,27 @@ def start(trans, provider):
     return query
 
 
-def callback(trans, query):
+def callback(trans, query, login_redirect_url="/galaxy/"):
     trans.request = Request.blank(
         "https://galaxy.example/authnz/keycloak/callback?"
         + urlencode({"state": query["state"][0], "code": "local-code"})
     )
-    return adapter(trans).callback(query["state"][0], "local-code", trans, "/")
+    return adapter(trans).callback(query["state"][0], "local-code", trans, login_redirect_url)
+
+
+def test_confirmation_url_is_built_from_app_root(trans, provider):
+    redirect, user = callback(trans, start(trans, provider), "/galaxy/workflows/list")
+    assert user is None
+    url = urlsplit(redirect)
+    assert url.path == "/galaxy/login/start"
+    assert parse_qs(url.query)["confirm"] == ["true"]
+
+
+def test_new_identity_goes_to_destination(trans, provider):
+    trans.app.authnz_manager.oidc_backends_config["keycloak"]["require_create_confirmation"] = False
+    redirect, user = callback(trans, start(trans, provider), "/galaxy/workflows/list")
+    assert user.email == "verified@example.com"
+    assert redirect == "/galaxy/workflows/list"
 
 
 @pytest.mark.parametrize("use_unique_user_id", [False, True])

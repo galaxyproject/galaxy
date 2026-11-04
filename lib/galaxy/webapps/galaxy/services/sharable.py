@@ -1,5 +1,6 @@
 import logging
 
+from galaxy import exceptions
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.sharable import (
@@ -111,6 +112,16 @@ class ShareableService:
         galaxy_url = str(trans.url_builder("/", qualified=True)).rstrip("/") if trans.url_builder else None
         self._send_notification_to_users(users_to_notify, item, status, galaxy_url)
         return status
+
+    def unshare_with_me(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> None:
+        """Removes the current user's own share of the item, leaving other shares intact."""
+        if trans.anonymous:
+            raise exceptions.AuthenticationRequired("You must be logged in to remove items shared with you.")
+        item = self.manager.by_id(id)
+        if not self.manager.get_share_assocs(item, user=trans.user):
+            # Same error as a missing item so recipients can't probe for item ids.
+            raise exceptions.ObjectNotFound(f"{self.manager.model_class.__name__} not found")
+        self.manager.unshare_with_recipient(item, trans.user)
 
     def _share_with_options(
         self,

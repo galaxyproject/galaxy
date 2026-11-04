@@ -17,6 +17,7 @@ from galaxy.model.metadata import (
     MetadataTempFile,
 )
 from galaxy.model.store import DirectoryModelExportStore
+from galaxy.tool_util.runtime_environment import required_variable_names
 from galaxy.util import safe_makedirs
 
 if TYPE_CHECKING:
@@ -42,6 +43,11 @@ except Exception:
         out.write(traceback.format_exc())
     raise
 """
+
+
+def job_metadata_directory(working_directory) -> str:
+    """Directory in a job's working directory for external metadata files, temp files included."""
+    return os.path.join(working_directory, "metadata")
 
 
 def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=None, tool_id=None, tool_type=None):
@@ -115,13 +121,17 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
             normalized_path = os.path.normpath(path)
             if remote_metadata_directory and normalized_path.startswith(normalized_remote_metadata_directory):
                 if self.portable:
-                    target_directory = os.path.join(working_directory, "metadata")
+                    target_directory = job_metadata_directory(working_directory)
                 else:
                     target_directory = working_directory
                 return normalized_path.replace(normalized_remote_metadata_directory, target_directory, 1)
             return path
 
-        dataset.metadata.from_JSON_dict(metadata_output_path, path_rewriter=path_rewriter)
+        dataset.metadata.from_JSON_dict(
+            metadata_output_path,
+            path_rewriter=path_rewriter,
+            metadata_tmp_files_dir=job_metadata_directory(working_directory),
+        )
 
     def _metadata_results_from_file(self, dataset, filename_results_code):
         try:
@@ -181,7 +191,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             assert job
         tmp_dir = _init_tmp_dir(tmp_dir)
 
-        metadata_dir = os.path.join(tmp_dir, "metadata")
+        metadata_dir = job_metadata_directory(tmp_dir)
         # may already exist (i.e. metadata collection in the job handler)
         safe_makedirs(metadata_dir)
 
@@ -201,7 +211,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                 return os.path.join(metadata_dir, f"metadata_{what}_{key}")  # noqa: B023
 
             _initialize_metadata_inputs(
-                dataset, _metadata_path, tmp_dir, kwds, real_metadata_object=self.write_object_store_conf
+                dataset, _metadata_path, metadata_dir, kwds, real_metadata_object=self.write_object_store_conf
             )
 
             outputs[name] = {
@@ -261,6 +271,9 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             tool_as_dict: dict[str, Any] = {}
             tool_as_dict["stdio_exit_codes"] = [e.to_dict() for e in tool.stdio_exit_codes]
             tool_as_dict["stdio_regexes"] = [r.to_dict() for r in tool.stdio_regexes]
+            tool_as_dict["required_runtime_environment_variables"] = required_variable_names(
+                tool.runtime_environment_variables
+            )
             tool_as_dict["outputs"] = {name: output.to_dict() for name, output in tool.outputs.items()}
             tool_as_dict["output_collections"] = {
                 name: output.to_dict() for name, output in tool.output_collections.items()

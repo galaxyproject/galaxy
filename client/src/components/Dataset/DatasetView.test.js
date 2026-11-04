@@ -9,6 +9,7 @@ import { createMemoryHistory, createRouter } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { useDatasetStore } from "@/stores/datasetStore";
 
 import DatasetView from "./DatasetView.vue";
 
@@ -147,7 +148,7 @@ async function mountDatasetView(tab = "preview", options = {}) {
 /**
  * Mount the DatasetView component in loading state
  */
-async function mountLoadingDatasetView() {
+async function mountLoadingDatasetView({ pendingFetch = true } = {}) {
     const datasetStore = {
         storedDatasets: {},
     };
@@ -157,9 +158,11 @@ async function mountLoadingDatasetView() {
     router.push = vi.fn();
     router.replace = vi.fn();
 
-    // Never resolve the dataset fetch, so the view stays in its loading state
-    // for the duration of the test instead of racing flushPromises() to completion.
-    server.use(http.get("/api/datasets/:dataset_id", () => new Promise(() => {})));
+    if (pendingFetch) {
+        // Never resolve the dataset fetch, so the view stays in its loading state
+        // for the duration of the test instead of racing flushPromises() to completion.
+        server.use(http.get("/api/datasets/:dataset_id", () => new Promise(() => {})));
+    }
 
     const wrapper = mount(DatasetView, {
         props: {
@@ -358,6 +361,18 @@ describe("DatasetView", () => {
             expect(wrapper.vm.$props.tab).toBe("preview");
         });
 
+        it("blocks the view when the dataset cannot be loaded", async () => {
+            server.use(
+                http.get("/api/datasets/:dataset_id", ({ response }) => {
+                    return response(403).json({ err_msg: "Access denied", err_code: 403002 });
+                }),
+            );
+            const wrapper = await mountLoadingDatasetView({ pendingFetch: false });
+            expect(wrapper.find(".alert-heading").text()).toBe("Dataset Not Available");
+            expect(wrapper.text()).toContain("Access denied");
+            expect(wrapper.find(".dataset-view").exists()).toBe(false);
+        });
+
         it.skip("uses preferred visualization for supported datatypes", async () => {
             const wrapper = await mountDatasetView("preview", { dataset: h5Dataset });
             await flushPromises(); // Wait for preferred visualization check
@@ -382,6 +397,41 @@ describe("DatasetView", () => {
             expect(wrapper.findComponent({ name: "VisualizationFrame" }).exists()).toBe(false);
             expect(wrapper.find("iframe").exists()).toBe(true);
             expect(wrapper.find("iframe").attributes("src")).toBe("blob:http://localhost/test-preview");
+        });
+    });
+
+    describe("Background refresh", () => {
+        it("shows a dataset that is already stored when switching to it", async () => {
+            const wrapper = await mountDatasetView("preview");
+            const otherDataset = { ...mockDataset, id: "other_dataset_id", name: "Other Dataset" };
+            useDatasetStore().saveDatasets([{ ...otherDataset, history_content_type: "dataset" }]);
+
+            await wrapper.setProps({ datasetId: otherDataset.id });
+            await flushPromises();
+            expect(wrapper.find(".dataset-view").exists()).toBe(true);
+            expect(wrapper.find(".dataset-view").text()).toContain("Other Dataset");
+        });
+
+        it("waits for datatype details on the first load", async () => {
+            let releaseDatatype;
+            const datatypeReleased = new Promise((resolve) => {
+                releaseDatatype = resolve;
+            });
+            server.use(
+                http.get("/api/datatypes/:datatype", async ({ response }) => {
+                    await datatypeReleased;
+                    return response(200).json({ extension: "downloadonly", display_behavior: "download" });
+                }),
+            );
+            const wrapper = await mountDatasetView("preview", {
+                dataset: { ...mockDataset, file_ext: "downloadonly" },
+            });
+            expect(wrapper.find(".loading-message").exists()).toBe(true);
+            expect(wrapper.find(".dataset-view").exists()).toBe(false);
+
+            releaseDatatype();
+            await flushPromises();
+            expect(wrapper.find(".auto-download-message").exists()).toBe(true);
         });
     });
 

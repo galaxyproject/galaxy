@@ -14,7 +14,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
-import { BFormInput } from "bootstrap-vue";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
 import { BoxSelect, Workflow } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
@@ -31,6 +30,7 @@ import { AutoLayoutAction } from "../Actions/stepActions";
 import { useSelectionOperations } from "./useSelectionOperations";
 import { useToolLogic } from "./useToolLogic";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
@@ -109,7 +109,26 @@ const fontSize = computed({
 
 const thicknessId = useUid("thickness-");
 
+// Range inputs give strings; the freehand tool reads these as numbers
+const lineThickness = computed({
+    get() {
+        return `${commentOptions.lineThickness}`;
+    },
+    set(value) {
+        commentOptions.lineThickness = parseInt(value);
+    },
+});
+
 const smoothingId = useUid("smoothing-");
+
+const smoothing = computed({
+    get() {
+        return `${commentOptions.smoothing}`;
+    },
+    set(value) {
+        commentOptions.smoothing = parseInt(value);
+    },
+});
 
 function onRemoveAllFreehand() {
     undoRedoStore.applyAction(new RemoveAllFreehandCommentsAction(commentStore));
@@ -307,7 +326,7 @@ function autoLayout() {
                     <span class="font-weight-bold">Snapping Distance</span>
                     {{ toolbarStore.snapDistance }} pixels
                 </label>
-                <BFormInput
+                <GFormInput
                     :id="snappingDistanceId"
                     v-model="snappingDistanceRangeValue"
                     data-option="snapping-distance"
@@ -352,7 +371,7 @@ function autoLayout() {
                     <span class="font-weight-bold">Text Size</span>
                     {{ commentOptions.textSize }}00%
                 </label>
-                <BFormInput
+                <GFormInput
                     :id="fontSizeId"
                     v-model="fontSize"
                     data-option="font-size"
@@ -367,9 +386,9 @@ function autoLayout() {
                     <span class="font-weight-bold">Size</span>
                     {{ commentOptions.lineThickness }} pixels
                 </label>
-                <BFormInput
+                <GFormInput
                     :id="thicknessId"
-                    v-model="commentOptions.lineThickness"
+                    v-model="lineThickness"
                     data-option="line-thickness"
                     type="range"
                     min="4"
@@ -382,9 +401,9 @@ function autoLayout() {
                     <span class="font-weight-bold">Smoothing</span>
                     {{ commentOptions.smoothing }}
                 </label>
-                <BFormInput
+                <GFormInput
                     :id="smoothingId"
-                    v-model="commentOptions.smoothing"
+                    v-model="smoothing"
                     data-option="smoothing"
                     type="range"
                     min="1"

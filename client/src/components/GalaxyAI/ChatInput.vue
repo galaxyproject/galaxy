@@ -152,6 +152,7 @@ function closeMention() {
             @keydown="onKeydown" />
         <GButton
             :disabled="busy || disabled || !props.value.trim()"
+            aria-label="Send message"
             class="send-button"
             color="blue"
             size="large"

@@ -102,3 +102,16 @@ const validFilters = {
 };
 
 export const HistoryFilters = new Filtering(validFilters, undefined, true, "name");
+
+/** Filters for `filterText` that can be tested on the client; `related` needs server-side relations. */
+export function getClientFilters(filterText) {
+    return HistoryFilters.getFiltersForText(filterText).filter(([key]) => !key.includes("related"));
+}
+
+/** Whether `item`, or any of its converted `sub_items`, passes `filters`. */
+export function itemPassesFilters(filters, item) {
+    return (
+        HistoryFilters.testFilters(filters, item) ||
+        Boolean(item.sub_items?.some((subItem) => HistoryFilters.testFilters(filters, subItem)))
+    );
+}

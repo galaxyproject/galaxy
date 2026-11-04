@@ -4,6 +4,7 @@ from typing import (
     NamedTuple,
 )
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
@@ -197,6 +198,19 @@ class RDMFilesSource(BaseFilesSource[RDMFileSourceTemplateConfiguration, RDMFile
 
     def get_container_id_from_path(self, source_path: str) -> str:
         raise NotImplementedError()
+
+    def _ensure_target_in_container(self, target_path: str) -> None:
+        """Raises an error if the target path points to the repository root instead of a container.
+
+        Files can only be uploaded into a container (e.g. a draft record or dataset), so a target
+        path consisting only of a file name means the repository itself was chosen as destination.
+        """
+        if "/" not in target_path.strip("/"):
+            raise RequestParameterInvalidException(
+                f"Cannot write '{target_path.lstrip('/')}' to the root of '{self.label}'. "
+                "Please select an existing draft record (or dataset) in the repository as destination, "
+                "or create a new one."
+            )
 
     def get_authorization_token(self, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]) -> str | None:
         return context.config.token

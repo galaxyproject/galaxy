@@ -73,9 +73,8 @@ class TestErrorReportIntegration(integration_util.IntegrationTestCase):
             return f.read()
 
 
-class TestErrorEmailReportIntegration(integration_util.IntegrationTestCase):
+class TestErrorEmailReportIntegration(integration_util.IntegrationTestCase, integration_util.ConfiguresMockEmails):
     dataset_populator: DatasetPopulator
-    reports_directory: str
     framework_tool_and_types = True
 
     def setUp(self):
@@ -84,15 +83,11 @@ class TestErrorEmailReportIntegration(integration_util.IntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        reports_directory = cls._test_driver.mkdtemp()
-        cls.reports_directory = reports_directory
-        template = string.Template(MOCK_EMAIL_ERROR_REPORTS)
-        reports_yaml = template.safe_substitute({"reports_directory": reports_directory})
-        reports_conf = os.path.join(reports_directory, "error_report.yml")
+        reports_conf = os.path.join(cls._test_driver.mkdtemp(), "error_report.yml")
         with open(reports_conf, "w") as f:
-            f.write(reports_yaml)
+            f.write(MOCK_EMAIL_ERROR_REPORTS)
         config["error_report_file"] = reports_conf
-        config["smtp_server"] = f"mock_emails_to_path://{reports_directory}/email.json"
+        cls._configure_mock_emails(config)
         config["error_email_to"] = "jsonfiles@thefilesystem.org"
 
     def test_tool_error_custom_message_and_email(self):
@@ -103,12 +98,7 @@ class TestErrorEmailReportIntegration(integration_util.IntegrationTestCase):
             self.dataset_populator.report_job_error(
                 job_id, dataset_result["id"], "some new details", "notreal@galaxyproject.org"
             )
-            error_json = self.read_most_recent_error_report()
-            error_dict = json.loads(error_json)
+            error_dict = self._read_mock_email()
             assert error_dict["to"] == "jsonfiles@thefilesystem.org, notreal@galaxyproject.org"
             assert error_dict["subject"] == "Galaxy tool error report from notreal@galaxyproject.org (detect_errors)"
             assert "<h1>Galaxy Tool Error Report</h1>" in error_dict["html"]
-
-    def read_most_recent_error_report(self):
-        with open(os.path.join(self.reports_directory, "email.json")) as f:
-            return f.read()

@@ -7,6 +7,8 @@ import { computed } from "vue";
 import { useKeyedObjects } from "@/composables/keyedObjects";
 import localize from "@/utils/localization";
 
+import { repeatTitle } from "./utilities";
+
 import FormCard from "./FormCard.vue";
 import FormListElementOperations from "./FormListElementOperations.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -102,7 +104,7 @@ function getPrefix(index: number) {
 }
 
 function getTitle(index: number) {
-    return `${index + 1}: ${props.input.title}`;
+    return repeatTitle(index, props.input.title);
 }
 
 /** swap blocks if possible */

@@ -4,10 +4,114 @@ History
 .. to_doc
 
 ---------
-26.2.dev0
+27.0.dev0
 ---------
 
 
+
+-------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Raise InvalidFileFormatError on short rows in UCSC display by `@guerler <https://github.com/guerler>`_ in `#22524 <https://github.com/galaxyproject/galaxy/pull/22524>`_
+* Harden user-defined tool output declarations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23388 <https://github.com/galaxyproject/galaxy/pull/23388>`_
+* Harden tool-provided dynamic output collection by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23404 <https://github.com/galaxyproject/galaxy/pull/23404>`_
+* Fix workflow run-form dropdowns hiding and offering wrong datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23407 <https://github.com/galaxyproject/galaxy/pull/23407>`_
+* Fix invalid \`\`LN:0\`\` field in \`\`@SQ\`\` header lines in \`\`1.bam\`\` test file by `@nsoranzo <https://github.com/nsoranzo>`_ in `#23474 <https://github.com/galaxyproject/galaxy/pull/23474>`_
+* Don't let extended metadata import set the live job's terminal state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23529 <https://github.com/galaxyproject/galaxy/pull/23529>`_
+* Complete subworkflows before their parent invocation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23581 <https://github.com/galaxyproject/galaxy/pull/23581>`_
+* Don't apply newline conversion to binary deferred datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23693 <https://github.com/galaxyproject/galaxy/pull/23693>`_
+* Fix user-defined tool references in workflow steps by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23694 <https://github.com/galaxyproject/galaxy/pull/23694>`_
+* Don't duplicate MetadataFile rows when re-importing edited metadata by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23714 <https://github.com/galaxyproject/galaxy/pull/23714>`_
+* Bug fix - Galaxy would delete composite files it shouldn't during data_fetch.py sometimes. by `@jmchilton <https://github.com/jmchilton>`_ in `#23733 <https://github.com/galaxyproject/galaxy/pull/23733>`_
+* Keep each user's newest session in galaxy-delete-sessions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23752 <https://github.com/galaxyproject/galaxy/pull/23752>`_
+* Distinguish ppm, pgm and pbm image types when sniffing by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#23759 <https://github.com/galaxyproject/galaxy/pull/23759>`_
+* Serve deferred materialization test data from the mock HTTP server by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23794 <https://github.com/galaxyproject/galaxy/pull/23794>`_
+* fix naming of deferred datasets by `@bgruening <https://github.com/bgruening>`_ in `#23810 <https://github.com/galaxyproject/galaxy/pull/23810>`_
+* Fix MP3 fallback misclassifying UTF-16 uploads by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23899 <https://github.com/galaxyproject/galaxy/pull/23899>`_
+* Fix serving and downloading of directory-backed datasets (Zarr, OME-Zarr, Directory subclasses) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23953 <https://github.com/galaxyproject/galaxy/pull/23953>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Bind OIDC account confirmation to the authenticated browser flow by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24084 <https://github.com/galaxyproject/galaxy/pull/24084>`_
+* Fix workflow editor map-over onto \`:paired_or_unpaired\` inputs the server rejects by `@jmchilton <https://github.com/jmchilton>`_ in `#24227 <https://github.com/galaxyproject/galaxy/pull/24227>`_
+* Fix dataset permissions set when upload and discovery jobs finish by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24233 <https://github.com/galaxyproject/galaxy/pull/24233>`_
+* Fix supports_returning() probe always returning False by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24252 <https://github.com/galaxyproject/galaxy/pull/24252>`_
+* Ignore stale user and history object store preferences by `@davelopez <https://github.com/davelopez>`_ in `#24280 <https://github.com/galaxyproject/galaxy/pull/24280>`_
+* Apply default permissions to discovered collection elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24284 <https://github.com/galaxyproject/galaxy/pull/24284>`_
+* Don't overwrite inputs when skipping database operations on nested collections by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24286 <https://github.com/galaxyproject/galaxy/pull/24286>`_
+* Fix ok_to_edit_metadata checking HDA job associations for LDDAs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24306 <https://github.com/galaxyproject/galaxy/pull/24306>`_
+* Lock HDCAs with FOR NO KEY UPDATE when touching update_time by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24404 <https://github.com/galaxyproject/galaxy/pull/24404>`_
+* Import unregistered dataset extensions from model stores as data by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24433 <https://github.com/galaxyproject/galaxy/pull/24433>`_
+
+============
+Enhancements
+============
+
+* Default missing workflow comment colors by `@jmchilton <https://github.com/jmchilton>`_ in `#23482 <https://github.com/galaxyproject/galaxy/pull/23482>`_
+* Backport RMSX datatype registration and viewer 0.0.4 to Galaxy 26.1 by `@Finn2400 <https://github.com/Finn2400>`_ in `#23531 <https://github.com/galaxyproject/galaxy/pull/23531>`_
+* Add TensorBoardEvents datatype and sample file for tfevents by `@IvoLeist <https://github.com/IvoLeist>`_ in `#23553 <https://github.com/galaxyproject/galaxy/pull/23553>`_
+* Add regression test for history export with extra files but no primary file by `@davelopez <https://github.com/davelopez>`_ in `#23872 <https://github.com/galaxyproject/galaxy/pull/23872>`_
+* Add datatypes sniffer: alto/page/abbyy XML and hOCR (HTML) by `@IvoLeist <https://github.com/IvoLeist>`_ in `#23916 <https://github.com/galaxyproject/galaxy/pull/23916>`_
+* backport #23353 (mzlite datatype) by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#24000 <https://github.com/galaxyproject/galaxy/pull/24000>`_
+* Backport test CI time fixes: pytest-xdist and parallel docs build by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24336 <https://github.com/galaxyproject/galaxy/pull/24336>`_
+
+-------------------
+26.0.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Raise InvalidFileFormatError on short rows in UCSC display by `@guerler <https://github.com/guerler>`_ in `#22524 <https://github.com/galaxyproject/galaxy/pull/22524>`_
+* Fix tag creation self-deadlock under SQLite by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22846 <https://github.com/galaxyproject/galaxy/pull/22846>`_
+* Fix fasta preview rendering for sequences larger than 100 KB by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23163 <https://github.com/galaxyproject/galaxy/pull/23163>`_
+* Fix invalid \`\`LN:0\`\` field in \`\`@SQ\`\` header lines in \`\`1.bam\`\` test file by `@nsoranzo <https://github.com/nsoranzo>`_ in `#23474 <https://github.com/galaxyproject/galaxy/pull/23474>`_
+* Don't let extended metadata import set the live job's terminal state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23529 <https://github.com/galaxyproject/galaxy/pull/23529>`_
+* Complete subworkflows before their parent invocation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23581 <https://github.com/galaxyproject/galaxy/pull/23581>`_
+* Bug fix - Galaxy would delete composite files it shouldn't during data_fetch.py sometimes. by `@jmchilton <https://github.com/jmchilton>`_ in `#23733 <https://github.com/galaxyproject/galaxy/pull/23733>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Bind OIDC account confirmation to the authenticated browser flow by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24084 <https://github.com/galaxyproject/galaxy/pull/24084>`_
+* Fix workflow editor map-over onto \`:paired_or_unpaired\` inputs the server rejects by `@jmchilton <https://github.com/jmchilton>`_ in `#24227 <https://github.com/galaxyproject/galaxy/pull/24227>`_
+* Fix dataset permissions set when upload and discovery jobs finish by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24233 <https://github.com/galaxyproject/galaxy/pull/24233>`_
+* Fix supports_returning() probe always returning False by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24252 <https://github.com/galaxyproject/galaxy/pull/24252>`_
+* Ignore stale user and history object store preferences by `@davelopez <https://github.com/davelopez>`_ in `#24280 <https://github.com/galaxyproject/galaxy/pull/24280>`_
+* Apply default permissions to discovered collection elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24284 <https://github.com/galaxyproject/galaxy/pull/24284>`_
+* Don't overwrite inputs when skipping database operations on nested collections by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24286 <https://github.com/galaxyproject/galaxy/pull/24286>`_
+* Fix ok_to_edit_metadata checking HDA job associations for LDDAs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24306 <https://github.com/galaxyproject/galaxy/pull/24306>`_
+* Lock HDCAs with FOR NO KEY UPDATE when touching update_time by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24404 <https://github.com/galaxyproject/galaxy/pull/24404>`_
+* Import unregistered dataset extensions from model stores as data by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24433 <https://github.com/galaxyproject/galaxy/pull/24433>`_
+
+-------------------
+25.1.3 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix dataset collection tag duplication when copying a history by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21984 <https://github.com/galaxyproject/galaxy/pull/21984>`_
+* Fix \`\`preferred_object_store_id\`\` not respected for discovered outputs with extended metadata by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22056 <https://github.com/galaxyproject/galaxy/pull/22056>`_
+* Sequence datatypes: only read first character per line for setting metadata by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#22276 <https://github.com/galaxyproject/galaxy/pull/22276>`_
+* Fix timestamp parsing in job import/export by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22372 <https://github.com/galaxyproject/galaxy/pull/22372>`_
+* Use correct timezone to compare step scheduling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22446 <https://github.com/galaxyproject/galaxy/pull/22446>`_
+* Sniff spatialdata archives whose directory does not end in .zarr by `@nilchia <https://github.com/nilchia>`_ in `#22802 <https://github.com/galaxyproject/galaxy/pull/22802>`_
+* Don't let extended metadata import set the live job's terminal state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23529 <https://github.com/galaxyproject/galaxy/pull/23529>`_
+* Fix CI failures and flaky tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24028 <https://github.com/galaxyproject/galaxy/pull/24028>`_
+* Bind OIDC account confirmation to the authenticated browser flow by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24084 <https://github.com/galaxyproject/galaxy/pull/24084>`_
+* Fix dataset permissions set when upload and discovery jobs finish by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24233 <https://github.com/galaxyproject/galaxy/pull/24233>`_
+* Ignore stale user and history object store preferences by `@davelopez <https://github.com/davelopez>`_ in `#24280 <https://github.com/galaxyproject/galaxy/pull/24280>`_
+* Apply default permissions to discovered collection elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24284 <https://github.com/galaxyproject/galaxy/pull/24284>`_
+* Don't overwrite inputs when skipping database operations on nested collections by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24286 <https://github.com/galaxyproject/galaxy/pull/24286>`_
+* Fix ok_to_edit_metadata checking HDA job associations for LDDAs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24306 <https://github.com/galaxyproject/galaxy/pull/24306>`_
+* Lock HDCAs with FOR NO KEY UPDATE when touching update_time by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24404 <https://github.com/galaxyproject/galaxy/pull/24404>`_
+* Import unregistered dataset extensions from model stores as data by `@mvdbeek <https://github.com/mvdbeek>`_ in `#24433 <https://github.com/galaxyproject/galaxy/pull/24433>`_
 
 -------------------
 26.1.1 (2026-08-04)

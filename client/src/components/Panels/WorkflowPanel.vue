@@ -21,7 +21,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "insertWorkflow", id: string, name: string): void;
-    (e: "insertWorkflowSteps", id: string, stepCount: number): void;
+    (e: "insertWorkflowSteps", id: string, stepCount?: number): void;
     (e: "createWorkflow"): void;
 }>();
 
@@ -180,7 +180,7 @@ function createNew(event: Event) {
                 :current-workflow-id="props.currentWorkflowId"
                 editor-view
                 @insertWorkflow="(id: string, name: string) => emit('insertWorkflow', id, name)"
-                @insertWorkflowSteps="(id: string, stepCount: number) => emit('insertWorkflowSteps', id, stepCount)"
+                @insertWorkflowSteps="(id: string, stepCount?: number) => emit('insertWorkflowSteps', id, stepCount)"
                 @refreshList="refresh" />
 
             <div v-if="allLoaded || filterText !== ''" class="list-end">

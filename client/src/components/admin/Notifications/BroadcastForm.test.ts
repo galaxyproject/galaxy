@@ -125,6 +125,29 @@ describe("BroadcastForm.vue", () => {
         await createBroadcast(wrapper, mockRouter, true);
     });
 
+    it("sends a new-tab target for an action link marked to open in a new tab", async () => {
+        let submittedActionLinks: unknown;
+        server.use(
+            http.post("/api/notifications/broadcast", async ({ request, response }) => {
+                submittedActionLinks = (await request.json()).content.action_links;
+                return response.untyped(HttpResponse.json({}, { status: 200 }));
+            }),
+        );
+        const { wrapper } = await mountBroadcastForm();
+
+        await wrapper.find(SUBJECT_INPUT_SELECTOR).setValue("Test subject");
+        await wrapper.find(MESSAGE_INPUT_SELECTOR).setValue("Test message");
+        await wrapper.find(ACTION_LINK_SELECTOR).trigger("click");
+        await flushPromises();
+        await wrapper.find("#broadcast-action-link-name-0").setValue("Costs");
+        await wrapper.find("#broadcast-action-link-link-0").setValue("/costs/");
+        await wrapper.find("#broadcast-action-link-new-tab-0").setValue(true);
+        await wrapper.find(SUBMIT_BUTTON_SELECTOR).trigger("click");
+        await flushPromises();
+
+        expect(submittedActionLinks).toEqual([{ action_name: "Costs", link: "/costs/", target: "_blank" }]);
+    });
+
     it("should get broadcast data when id is defined", async () => {
         const FAKE_BROADCAST = generateNewBroadcast({ actionLink: true });
         server.use(

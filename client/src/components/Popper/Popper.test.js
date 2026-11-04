@@ -6,6 +6,7 @@ import {
 } from "@tests/vitest/tooltipTestUtils";
 import { mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { nextTick } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, INTERACTIVE_POPOVER_CLOSE_DELAY_MS } from "@/utils/tooltipTiming";
 
@@ -51,6 +52,148 @@ describe("PopperComponent.vue", () => {
         vi.useRealTimers();
         vi.clearAllMocks();
         container.remove();
+    });
+
+    test("omits the header and close control without a title", async () => {
+        const wrapper = mountTarget();
+        await wrapper.setProps({ title: undefined });
+        await wrapper.get("button").trigger("click");
+        expect(wrapper.get(".popper-element").isVisible()).toBe(true);
+        expect(wrapper.find(".popper-header").exists()).toBe(false);
+        expect(wrapper.find(".popper-close").exists()).toBe(false);
+        wrapper.unmount();
+    });
+
+    test("offers a named native close button and returns focus to its trigger", async () => {
+        const wrapper = mountTarget();
+        await wrapper.get("button").trigger("click");
+        const close = wrapper.get(".popper-close");
+        expect(close.element).toHaveAccessibleName("Close");
+        expect(close.element.tagName).toBe("BUTTON");
+        expect(close.attributes("type")).toBe("button");
+        close.element.focus();
+        expect(document.activeElement).toBe(close.element);
+        await close.trigger("click");
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
+        expect(document.activeElement).toBe(wrapper.get("button").element);
+        wrapper.unmount();
+    });
+
+    test("returns focus to the trigger when Escape dismisses the focused popup", async () => {
+        const wrapper = mountTarget();
+        await wrapper.get("button").trigger("click");
+        const close = wrapper.get(".popper-close");
+        close.element.focus();
+        expect(document.activeElement).toBe(close.element);
+        await close.trigger("keydown", { key: "Escape" });
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
+        expect(document.activeElement).toBe(wrapper.get("button").element);
+        wrapper.unmount();
+    });
+
+    test("closes a hover popup on Escape only when focus is inside it", async () => {
+        const wrapper = mountTarget("hover", true);
+        const reference = wrapper.get("button");
+        const popperElement = wrapper.get(".popper-element");
+        await reference.trigger("mouseover");
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        expect(popperElement.isVisible()).toBe(true);
+
+        reference.element.focus();
+        await reference.trigger("keydown", { key: "Escape" });
+        expect(popperElement.isVisible()).toBe(true);
+
+        const close = wrapper.get(".popper-close");
+        close.element.focus();
+        await close.trigger("keydown", { key: "Escape" });
+        expect(popperElement.isVisible()).toBe(false);
+        expect(document.activeElement).toBe(reference.element);
+        wrapper.unmount();
+    });
+
+    test("returns focus to an external reference without stealing focus from elsewhere", async () => {
+        const reference = document.createElement("button");
+        reference.textContent = "Open details";
+        const elsewhere = document.createElement("button");
+        elsewhere.textContent = "Other action";
+        container.append(reference, elsewhere);
+        const wrapper = mount(PopperComponent, {
+            props: { title: "Details", referenceEl: reference, trigger: "click" },
+            attachTo: container,
+        });
+
+        reference.click();
+        await nextTick();
+        const close = wrapper.get(".popper-close");
+        expect(close.element).toHaveAccessibleName("Close");
+        close.element.focus();
+        expect(document.activeElement).toBe(close.element);
+        await close.trigger("click");
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
+        expect(document.activeElement).toBe(reference);
+
+        reference.click();
+        await nextTick();
+        expect(wrapper.get(".popper-element").isVisible()).toBe(true);
+        elsewhere.focus();
+        await close.trigger("click");
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
+        expect(document.activeElement).toBe(elsewhere);
+        wrapper.unmount();
+    });
+
+    test("keeps a hover popup open on Escape when its reference cannot take focus back", async () => {
+        const wrapper = mount(PopperComponent, {
+            props: { interactive: true },
+            slots: {
+                reference: "<span>Icon</span>",
+                default: '<a href="#more">Read more</a>',
+            },
+            attachTo: container,
+        });
+        await wrapper.get(".popper-reference-container").trigger("mouseover");
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        const link = wrapper.get("a");
+        link.element.focus();
+        await link.trigger("keydown", { key: "Escape" });
+        expect(wrapper.get(".popper-element").isVisible()).toBe(true);
+        expect(document.activeElement).toBe(link.element);
+        wrapper.unmount();
+    });
+
+    test("keeps a hover popup open on Escape when its external reference is not focusable", async () => {
+        const reference = document.createElement("span");
+        container.append(reference);
+        const wrapper = mount(PopperComponent, {
+            props: { referenceEl: reference, interactive: true },
+            slots: { default: '<a href="#more">Read more</a>' },
+            attachTo: container,
+        });
+        reference.dispatchEvent(new MouseEvent("mouseover"));
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        const link = wrapper.get("a");
+        link.element.focus();
+        await link.trigger("keydown", { key: "Escape" });
+        expect(wrapper.get(".popper-element").isVisible()).toBe(true);
+        wrapper.unmount();
+    });
+
+    test("returns focus to the first enabled, tabbable control in the reference", async () => {
+        const wrapper = mount(PopperComponent, {
+            props: { title: "Details", trigger: "click" },
+            slots: {
+                reference:
+                    '<span><button disabled>Disabled</button><span tabindex="-1">Skipped</span><button class="target">Open</button></span>',
+            },
+            attachTo: container,
+        });
+        await wrapper.get(".target").trigger("click");
+        const close = wrapper.get(".popper-close");
+        close.element.focus();
+        await close.trigger("keydown", { key: "Escape" });
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
+        expect(document.activeElement).toBe(wrapper.get(".target").element);
+        wrapper.unmount();
     });
 
     test("renders component with default props", async () => {

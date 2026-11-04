@@ -35,6 +35,7 @@ from galaxy.webapps.base.controller import (
     UsesFormDefinitionsMixin,
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from .authnz import is_allowed_login_redirect
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -209,7 +210,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
                 # If password is about to expire, modify message to state that.
                 expiredate = datetime.today() - user.last_password_change + pw_expires
                 return {"message": f"Your password will expire in {expiredate.days} day(s).", "status": "warning"}
-        return {"message": "Success.", "redirect": self.__get_redirect_url(redirect)}
+        return {"message": "Success.", "redirect": self.__get_redirect_url(trans, redirect)}
 
     @web.expose
     def resend_verification(self, trans: GalaxyWebTransaction, **kwargs):
@@ -258,7 +259,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
             return self.message_exception(trans, message)
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event("User logged out")
-        trans.handle_user_logout(logout_all=logout_all)
+        trans.handle_user_logout(logout_all=util.string_as_bool(logout_all))
         success_response = {"message": "Success."}  # This is a little weird as a response.
         if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
             success_response["redirect_uri"] = trans.app.config.remote_user_logout_href
@@ -360,17 +361,17 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
             return self.message_exception(trans, message)
         return {"message": "If an account exists for this email address a confirmation email will be dispatched."}
 
-    def __get_redirect_url(self, redirect):
+    def __get_redirect_url(self, trans, redirect):
         if not redirect or redirect == "None":
             return None
         root_url = url_for("/", qualified=True)
-        # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
-        # or to enter a logout/login loop
-        if not util.compare_urls(root_url, redirect, compare_path=False) or util.compare_urls(
-            url_for(controller="user", action="logout", qualified=True), redirect
-        ):
-            log.warning("Redirect URL is outside of Galaxy, will redirect to Galaxy root instead: %s", redirect)
-            redirect = root_url
-        elif util.compare_urls(url_for(controller="user", action="logout", qualified=True), redirect):
-            redirect = root_url
+        logout_url = url_for(controller="user", action="logout", qualified=True)
+        # Accept paths on this server, absolute URLs back to it, and the hosts admins allow
+        # in allowed_login_redirect_hosts. Never send the user into a logout/login loop.
+        if not is_allowed_login_redirect(trans, redirect, base_url=root_url):
+            return root_url
+        # The client prepends galaxy_url_prefix to paths on this server.
+        destination = url_for("/").rstrip("/") + redirect if util.is_safe_local_redirect(redirect) else redirect
+        if util.compare_urls(logout_url, destination):
+            return root_url
         return redirect

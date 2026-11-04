@@ -49,9 +49,6 @@ class AppInfo:
 
 
 class ToolInfo:
-    # TODO: Introduce tool XML syntax to annotate the optional environment
-    # variables they can consume (e.g. JVM options, license keys, etc..)
-    # and add these to env_path_through
 
     def __init__(
         self,

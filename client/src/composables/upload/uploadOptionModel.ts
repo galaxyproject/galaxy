@@ -26,7 +26,7 @@ export const uploadOptionDefinitions: UploadOptionDefinition[] = [
         label: "POSIX",
         headerTooltip: "Toggle all: Convert line endings to POSIX standard",
         rowTooltip: "Convert line endings to POSIX standard",
-        defaultValue: false,
+        defaultValue: true,
     },
     {
         key: "deferred",
@@ -62,7 +62,7 @@ export function isUploadOptionVisible(key: UploadOptionKey, visibility: UploadOp
 
 export const uploadOptionDefaults = {
     spaceToTab: uploadOptionDefinitions.find((option) => option.key === "spaceToTab")?.defaultValue ?? false,
-    toPosixLines: uploadOptionDefinitions.find((option) => option.key === "toPosixLines")?.defaultValue ?? false,
+    toPosixLines: uploadOptionDefinitions.find((option) => option.key === "toPosixLines")?.defaultValue ?? true,
     deferred: uploadOptionDefinitions.find((option) => option.key === "deferred")?.defaultValue ?? false,
     autoDecompress: uploadOptionDefinitions.find((option) => option.key === "autoDecompress")?.defaultValue ?? true,
 } as const;

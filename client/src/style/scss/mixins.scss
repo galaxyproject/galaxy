@@ -29,6 +29,14 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
     height: 100%;
 }
 
+// Column flex item that fills its flex parent's remaining height
+@mixin fill-column() {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+}
+
 @mixin absfill() {
     position: absolute;
     top: 0;

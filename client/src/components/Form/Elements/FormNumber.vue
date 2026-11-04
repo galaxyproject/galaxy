@@ -3,6 +3,7 @@
         <GAlert
             v-if="errorMessage"
             class="mt-2"
+            data-description="form number alert"
             :show="dismissCountDown"
             variant="info"
             dismissible
@@ -148,7 +149,7 @@ export default {
             this.resetAlert();
             if (this.isOutOfRange(value)) {
                 this.showOutOfRangeWarning(value);
-                this.currentValue = value > this.max ? this.max : this.min;
+                this.currentValue = this.isAboveMax(value) ? this.max : this.min;
             }
             if (this.isFloat) {
                 this.decimalPlaces = this.getNumberOfDecimals(this.currentValue);
@@ -193,15 +194,18 @@ export default {
             event.preventDefault();
             return false;
         },
+        isAboveMax(value) {
+            return typeof this.max == "number" && value > this.max;
+        },
+        isBelowMin(value) {
+            return typeof this.min == "number" && value < this.min;
+        },
         isOutOfRange(value) {
-            /* If value=null, then value is within range. */
-            return (
-                (typeof this.max == "number" && value > this.max) || (typeof this.min == "number" && value < this.min)
-            );
+            // An empty field is unset, not 0.
+            return value !== "" && isDefined(value) && (this.isAboveMax(value) || this.isBelowMin(value));
         },
         showOutOfRangeWarning(value) {
-            const rangeDetail =
-                typeof this.max == "number" && value > this.max ? `${value} > ${this.max}` : `${value} < ${this.min}`;
+            const rangeDetail = this.isAboveMax(value) ? `${value} > ${this.max}` : `${value} < ${this.min}`;
             const warningMessage = `${value} is out of range! (${rangeDetail})`;
             this.showAlert(warningMessage);
         },

@@ -1,5 +1,6 @@
 import { GalaxyApi } from "@/api";
 import { purgeDataset, undeleteDataset } from "@/api/datasets";
+import { useUserStore } from "@/stores/userStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export interface ItemSizeSummary {
@@ -131,6 +132,7 @@ export async function purgeHistoryById(historyId: string): Promise<PurgeableItem
     if (error) {
         rethrowSimple(error);
     }
+    useUserStore().refreshStorageUsageInBackground();
     return data as PurgeableItemSizeSummary;
 }
 
@@ -141,4 +143,5 @@ export async function undeleteDatasetById(datasetId: string): Promise<ItemSizeSu
 
 export async function purgeDatasetById(datasetId: string): Promise<void> {
     await purgeDataset(datasetId);
+    useUserStore().refreshStorageUsageInBackground();
 }

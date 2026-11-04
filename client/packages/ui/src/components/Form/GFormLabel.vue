@@ -68,30 +68,31 @@ const stateClasses = computed(() => {
         color: var(--color-grey-300);
     }
 
+    // Same state tokens as GSelect; >= 3:1 on white (WCAG 1.4.11)
     &.valid {
         :deep(input) {
-            border-color: var(--color-green-500) !important;
+            border-color: var(--color-green-700) !important;
 
             &:focus {
-                box-shadow: 0 0 0 0.2rem rgb(from var(--color-green-500) r g b / 0.33);
+                box-shadow: 0 0 0 0.2rem rgb(from var(--color-green-700) r g b / 0.33);
             }
 
             &:focus-visible {
-                box-shadow: 0 0 0 0.2rem var(--color-green-500);
+                box-shadow: 0 0 0 0.2rem var(--color-green-700);
             }
         }
     }
 
     &.invalid {
         :deep(input) {
-            border-color: var(--color-red-500) !important;
+            border-color: var(--color-red-600) !important;
 
             &:focus {
-                box-shadow: 0 0 0 0.2rem rgb(from var(--color-red-500) r g b / 0.33);
+                box-shadow: 0 0 0 0.2rem rgb(from var(--color-red-600) r g b / 0.33);
             }
 
             &:focus-visible {
-                box-shadow: 0 0 0 0.2rem var(--color-red-500);
+                box-shadow: 0 0 0 0.2rem var(--color-red-600);
             }
         }
     }
@@ -108,11 +109,11 @@ const stateClasses = computed(() => {
             transform: translateY(-50%);
 
             &.valid {
-                color: var(--color-green-500);
+                color: var(--color-green-700);
             }
 
             &.invalid {
-                color: var(--color-red-500);
+                color: var(--color-red-600);
             }
         }
     }

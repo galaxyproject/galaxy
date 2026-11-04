@@ -23,6 +23,7 @@ from typing_extensions import (
 )
 
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
+from galaxy.tool_util_models.runtime_environment import RuntimeEnvironmentVariable
 from galaxy.tool_util_models.testing_types import (
     AssertionList,
     DirectCredential,
@@ -47,7 +48,10 @@ from galaxy.tool_util_models.tool_source import (
 )
 from galaxy.util import Element
 from galaxy.util.path import safe_walk
-from .util import _parse_name
+from .util import (
+    _parse_name,
+    text_input_is_optional,
+)
 
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.requirements import (
@@ -167,6 +171,10 @@ class ToolSource(metaclass=ABCMeta):
         """Return whether this source may enable tool-provided metadata."""
         return False
 
+    def is_yaml_origin(self) -> bool:
+        """Return whether this is a GalaxyTool/GalaxyUserTool source, following the canonical parameter contract."""
+        return False
+
     def parse_tool_module(self) -> tuple[str, str] | None:
         """Load Tool class from a custom module. (Optional).
 
@@ -266,6 +274,10 @@ class ToolSource(metaclass=ABCMeta):
     def parse_tmp_directory_vars(self):
         """Directories to override if a tmp_target is not None."""
         return ["TMPDIR", "TMP", "TEMP"]
+
+    def parse_runtime_environment_variables(self, *, strict: bool = True) -> list[RuntimeEnvironmentVariable]:
+        """Runtime variable names consumed by an installed tool."""
+        return []
 
     def parse_docker_env_pass_through(self):
         return [
@@ -548,6 +560,15 @@ class InputSource(metaclass=ABCMeta):
         keys to be supported depend on the parameter type.
         """
 
+    def parse_boolean_default(self, default: bool | None, *, allow_none: bool = True) -> bool | None:
+        """Return the declared Boolean default using this source's syntax."""
+        value: bool | None
+        if allow_none:
+            value = self.get_bool_or_none("checked", default)
+        else:
+            value = self.get_bool("checked", default)
+        return value
+
     def parse_label(self):
         return self.get("label")
 
@@ -589,6 +610,10 @@ class InputSource(metaclass=ABCMeta):
         if default is None:
             default = self.default_optional
         return self.get_bool("optional", default)
+
+    def parse_text_optional(self) -> tuple[bool, bool]:
+        """Return text optionality and whether it was inferred from validators accepting ""."""
+        return text_input_is_optional(self)
 
     def parse_dynamic_options(self) -> DynamicOptions | None:
         """Return an optional element describing dynamic options.
@@ -904,7 +929,7 @@ def resolve_element_tests(as_dict):
 class TestCollectionOutputDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
-    def __init__(self, name, attrib, element_tests, element_count: int | None = None):
+    def __init__(self, name, attrib, element_tests, element_count: int | None = None, metadata: dict | None = None):
         self.name = name
         self.collection_type = attrib.get("type", None)
         if element_count is not None:
@@ -918,6 +943,7 @@ class TestCollectionOutputDef:
         self.max = int(max) if max is not None else None
         self.attrib = attrib
         self.element_tests = element_tests
+        self.metadata = metadata or {}
 
     @staticmethod
     def from_dict(as_dict):
@@ -926,6 +952,7 @@ class TestCollectionOutputDef:
             attrib=as_dict.get("attributes", {}),
             element_tests=as_dict.get("element_tests"),
             element_count=as_dict.get("element_count"),
+            metadata=as_dict.get("metadata"),
         )
 
     @staticmethod
@@ -941,4 +968,10 @@ class TestCollectionOutputDef:
         return TestCollectionOutputDef.from_dict(as_dict)
 
     def to_dict(self):
-        return dict(name=self.name, attributes=self.attrib, element_tests=self.element_tests, element_count=self.count)
+        return dict(
+            name=self.name,
+            attributes=self.attrib,
+            element_tests=self.element_tests,
+            element_count=self.count,
+            metadata=self.metadata,
+        )

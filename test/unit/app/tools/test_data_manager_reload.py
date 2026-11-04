@@ -65,7 +65,10 @@ def test_reload_resolves_duplicate_values_like_other_processes(tmp_path):
 
     peer_tool_data_tables = ToolDataTableManager(tmp_path, config_path)
     assert table.data == peer_tool_data_tables["all_fasta"].data
-    assert table.data == [["hg38", "Human (hg38)", "/local/hg38.fa"]]
+    assert table.data == [
+        ["hg38", "Human (hg38)", "/local/hg38.fa"],
+        ["hg38", "Human (hg38)", "/idc/hg38.fa"],
+    ]
     assert queue_worker.control_tasks == [("reload_tool_data_tables", True, {"table_name": "all_fasta"})]
 
 

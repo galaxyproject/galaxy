@@ -14,6 +14,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.schema.schema import (
     ExportObjectType,
@@ -55,6 +56,13 @@ class ExportToFileSourceHook(WorkflowCompletionHook):
     """
 
     plugin_type = "export_to_file_source"
+
+    def validate_config(self, config: Any) -> None:
+        if not isinstance(config, dict):
+            raise RequestParameterInvalidException("export_to_file_source configuration must be an object")
+        target_uri = config.get("target_uri")
+        if not isinstance(target_uri, str) or not target_uri.strip():
+            raise RequestParameterInvalidException("export_to_file_source requires a nonempty string target_uri")
 
     def execute(self, completion: "WorkflowInvocationCompletion") -> None:
         """

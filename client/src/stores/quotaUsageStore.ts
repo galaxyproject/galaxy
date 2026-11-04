@@ -5,7 +5,6 @@ import { fetchCurrentUserQuotaSourceUsage, fetchCurrentUserQuotaUsages, type Quo
 import { errorMessageAsString } from "@/utils/simple-error";
 
 const DEFAULT_SOURCE_KEY = "__null__";
-const REFRESH_DEBOUNCE_MS = 5000;
 
 function sourceLabelToKey(sourceLabel?: string | null): string {
     return sourceLabel ?? DEFAULT_SOURCE_KEY;
@@ -22,11 +21,12 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
     const sourceErrorByKey = ref<Record<string, string | undefined>>({});
 
     let inFlightAllPromise: Promise<QuotaUsage[] | undefined> | null = null;
+    let queuedReloadPromise: Promise<QuotaUsage[] | undefined> | null = null;
     const inFlightBySourcePromise = new Map<string, Promise<QuotaUsage | null>>();
 
-    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
-
     const isLoaded = computed(() => quotaUsages.value !== undefined);
+    /** Whether anything asked for the usage, whether or not it loaded: it then needs reloading after changes. */
+    const wasRequested = ref(false);
 
     const getQuotaUsageBySourceLabel = computed(() => {
         return (sourceLabel?: string | null): QuotaUsage | null | undefined => {
@@ -68,6 +68,15 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
     }
 
     async function loadQuotaUsages(reload = false): Promise<QuotaUsage[] | undefined> {
+        wasRequested.value = true;
+        if (inFlightAllPromise && reload) {
+            // The request in flight may predate the change that asks for a reload: reload once it's done
+            queuedReloadPromise ??= inFlightAllPromise.then(() => {
+                queuedReloadPromise = null;
+                return loadQuotaUsages(true);
+            });
+            return queuedReloadPromise;
+        }
         if (inFlightAllPromise) {
             return inFlightAllPromise;
         }
@@ -98,6 +107,7 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
     }
 
     async function loadQuotaUsageForSource(sourceLabel?: string | null, reload = false): Promise<QuotaUsage | null> {
+        wasRequested.value = true;
         const key = sourceLabelToKey(sourceLabel);
 
         if (!reload && sourceUsageByKey.value[key] !== undefined) {
@@ -142,30 +152,7 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
         sourceUsageByKey.value = {};
         errorMessage.value = undefined;
         sourceErrorByKey.value = {};
-    }
-
-    async function refreshNow() {
-        if (refreshTimer) {
-            clearTimeout(refreshTimer);
-            refreshTimer = null;
-        }
-
-        await loadQuotaUsages(true);
-    }
-
-    function requestRefreshDebounced(delayMs = REFRESH_DEBOUNCE_MS) {
-        if (refreshTimer) {
-            clearTimeout(refreshTimer);
-        }
-
-        refreshTimer = setTimeout(() => {
-            refreshTimer = null;
-            void loadQuotaUsages(true);
-        }, delayMs);
-    }
-
-    async function applyRecalculationCompletedRefresh() {
-        await refreshNow();
+        wasRequested.value = false;
     }
 
     return {
@@ -176,12 +163,10 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
         errorMessage,
         sourceErrorByKey,
         isLoaded,
+        wasRequested,
         getQuotaUsageBySourceLabel,
         loadQuotaUsages,
         loadQuotaUsageForSource,
-        requestRefreshDebounced,
-        refreshNow,
-        applyRecalculationCompletedRefresh,
         invalidate,
     };
 });

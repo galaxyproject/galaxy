@@ -4,20 +4,23 @@
  */
 import { NON_TERMINAL_DATASET_STATES } from "@/api/datasets";
 
-interface HDCAWithDatasetStates {
+export interface HDCAWithDatasetStates {
     elements_states?: Record<string, number>;
     elements_deleted?: number;
+    elements_purged?: number;
     populated_state?: string | null;
 }
 
 export class DatasetStateSummary {
     elements_states: Record<string, number>;
     elements_deleted: number;
+    elements_purged: number;
     populated_state: string | null;
 
     constructor(hdca: HDCAWithDatasetStates = {}) {
         this.elements_states = hdca.elements_states || {};
         this.elements_deleted = hdca.elements_deleted || 0;
+        this.elements_purged = hdca.elements_purged || 0;
         this.populated_state = hdca.populated_state || null;
     }
 
@@ -27,6 +30,15 @@ export class DatasetStateSummary {
 
     get datasetCount(): number {
         return Object.values(this.elements_states).reduce((sum, count) => sum + count, 0);
+    }
+
+    /** Deleted elements that are not purged (purged elements are counted as deleted too). */
+    get deletedNotPurgedCount(): number {
+        return Math.max(this.elements_deleted - this.elements_purged, 0);
+    }
+
+    get allElementsPurged(): boolean {
+        return this.datasetCount > 0 && this.elements_purged >= this.datasetCount;
     }
 
     private getCount(states: string[]): number {

@@ -26,13 +26,13 @@ describe("vGTooltip", () => {
         document.body.innerHTML = "";
     });
 
-    function createTooltipTarget(title = "Tooltip text") {
+    function createTooltipTarget(title = "Tooltip text", modifiers: Record<string, boolean> = { hover: true }) {
         const element = document.createElement("button");
         element.setAttribute("title", title);
         document.body.appendChild(element);
 
         const binding = {
-            modifiers: { hover: true },
+            modifiers,
             value: undefined,
             arg: undefined,
         } as unknown as DirectiveBinding<unknown>;
@@ -147,6 +147,44 @@ describe("vGTooltip", () => {
         const element = createTooltipTarget();
 
         element.dispatchEvent(new Event("focusin"));
+        expect(getRenderedTooltip()).not.toBeNull();
+
+        vGTooltip.unmounted?.(element, bindingForCleanup(), unusedVNode, null);
+    });
+
+    // happy-dom treats any focus as :focus-visible, so pointer focus is stubbed
+    function focusWithPointer(element: HTMLElement) {
+        const matches = element.matches.bind(element);
+        vi.spyOn(element, "matches").mockImplementation((selector) =>
+            selector === ":focus-visible" ? false : matches(selector),
+        );
+        element.focus();
+    }
+
+    test("shows on keyboard focus", () => {
+        const element = createTooltipTarget();
+
+        element.focus();
+        expect(getRenderedTooltip()).not.toBeNull();
+
+        vGTooltip.unmounted?.(element, bindingForCleanup(), unusedVNode, null);
+    });
+
+    test("keeps a pending hover show when the hovered element takes pointer focus", async () => {
+        const element = createTooltipTarget();
+
+        element.dispatchEvent(new Event("mouseenter"));
+        focusWithPointer(element);
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        expect(getRenderedTooltip()).not.toBeNull();
+
+        vGTooltip.unmounted?.(element, bindingForCleanup(), unusedVNode, null);
+    });
+
+    test("shows a focus-only tooltip on pointer focus", () => {
+        const element = createTooltipTarget("Tooltip text", { focus: true });
+
+        focusWithPointer(element);
         expect(getRenderedTooltip()).not.toBeNull();
 
         vGTooltip.unmounted?.(element, bindingForCleanup(), unusedVNode, null);

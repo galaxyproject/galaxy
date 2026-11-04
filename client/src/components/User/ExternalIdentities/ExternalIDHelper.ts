@@ -68,15 +68,22 @@ export async function submitOIDCLogon(idp: string, redirectParam: string | null 
  * CILogon login.
  * @param useIDPHint If true, append ?idphint=
  * @param idpHint    The entityID to hint with (ignored when useIDPHint = false)
+ * @param redirectParam Where to send the user after login
  */
-export async function submitCILogon(useIDPHint = false, idpHint?: string): Promise<string | null> {
+export async function submitCILogon(
+    useIDPHint = false,
+    idpHint?: string,
+    redirectParam: string | null = null,
+): Promise<string | null> {
     let url = withPrefix("/authnz/cilogon/login/");
     if (useIDPHint && idpHint) {
         url += `?idphint=${encodeURIComponent(idpHint)}`;
     }
+    const formData = new FormData();
+    formData.append("next", redirectParam ?? "");
 
     try {
-        const { data } = await axios.post<{ redirect_uri?: string }>(url);
+        const { data } = await axios.post<{ redirect_uri?: string }>(url, formData);
         return data.redirect_uri ?? null;
     } catch (error) {
         rethrowSimple(error);

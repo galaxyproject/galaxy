@@ -118,6 +118,25 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
             ), f"Element {element['element_identifier']} has wrong content"
 
     @selenium_test
+    def test_upload_paired_list_in_sorted_order(self):
+        uploader = self.upload_context("local-file")
+        uploader.stage_local_file(self.get_filename("2.tabular"))
+        uploader.stage_local_file(self.get_filename("1.tabular"))
+        uploader.sort_by("name")
+        assert self.components.upload_activity.row_name_input(row=1).wait_for_value() == "1.tabular"
+        uploader.to_paired_list("Test Sorted Pair").start()
+
+        self.history_panel_wait_for_hid_ok(1)
+        history_id = self.current_history_id()
+        collection = self.dataset_populator.get_history_collection_details(history_id, hid=1)
+        pair_elements = collection["elements"][0]["object"]["elements"]
+        assert [element["element_identifier"] for element in pair_elements] == ["forward", "reverse"]
+        for element, file_name in zip(pair_elements, ["1.tabular", "2.tabular"]):
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=element["object"]["id"])
+            with open(self.get_filename(file_name)) as f:
+                assert content.rstrip() == f.read().rstrip(), f"{element['element_identifier']} is not {file_name}"
+
+    @selenium_test
     def test_upload_pair(self):
         uploader = self.upload_context("local-file")
         uploader.stage_local_file(self.get_filename("1.tabular"))

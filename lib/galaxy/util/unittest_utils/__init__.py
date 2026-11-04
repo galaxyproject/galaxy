@@ -3,6 +3,7 @@ import re
 from collections.abc import Callable
 from datetime import datetime
 from functools import wraps
+from shutil import which
 from typing import (
     TypeVar,
 )
@@ -12,7 +13,6 @@ import pytest
 from typing_extensions import ParamSpec
 
 from galaxy.util import requests
-from galaxy.util.commands import which
 from galaxy.util.tool_shed.tool_shed_registry import DEFAULT_TOOL_SHED_URL
 
 
@@ -106,7 +106,11 @@ skip_if_workflowhub_down = skip_if_site_down(
         r"(responded with HTTP (403|429|5\d\d)|did not respond in time|could not be reached)"
     ),
 )
-skip_if_quay_down = skip_if_site_down("https://quay.io/")
+# Quay's homepage can be available while API requests are rate-limited or fail during pagination.
+skip_if_quay_down = skip_if_site_down(
+    "https://quay.io/",
+    unavailable_pattern=r"\b(?:429 Client|5\d\d Server) Error: [^\n]* for url: https://quay\.io/api/",
+)
 skip_if_galaxy_depot_down = skip_if_site_down("https://depot.galaxyproject.org/")
 skip_if_toolshed_down = skip_if_site_down(DEFAULT_TOOL_SHED_URL)
 

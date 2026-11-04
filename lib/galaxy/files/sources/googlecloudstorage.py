@@ -1,5 +1,6 @@
 import logging
 
+from galaxy.exceptions import ConfigurationError
 from galaxy.files.models import FilesSourceRuntimeContext
 from galaxy.files.sources._fsspec import (
     CacheOptionsDictType,
@@ -24,6 +25,8 @@ class GoogleCloudStorageFileSourceTemplateConfiguration(FsspecBaseFileSourceTemp
     bucket_name: str | TemplateExpansion
     root_path: str | TemplateExpansion | None = None
     project: str | TemplateExpansion | None = None
+    # True bills `project`; a project id string bills that project instead (gcsfs semantics).
+    requester_pays: bool | str | TemplateExpansion | None = False
     anonymous: bool | TemplateExpansion | None = True
     service_account_json: str | TemplateExpansion | None = None
     # OAuth credentials
@@ -38,6 +41,7 @@ class GoogleCloudStorageFileSourceConfiguration(FsspecBaseFileSourceConfiguratio
     bucket_name: str
     root_path: str | None = None
     project: str | None = None
+    requester_pays: bool | str | None = False
     anonymous: bool | None = True
     service_account_json: str | None = None
     # OAuth credentials
@@ -67,6 +71,17 @@ class GoogleCloudStorageFilesSource(
             raise self.required_package_exception
 
         config = context.config
+        if config.requester_pays:
+            # GCS only bills authenticated callers, and gcsfs silently drops a missing userProject.
+            if config.anonymous:
+                raise ConfigurationError(
+                    f"Requester-pays access to {self.label} needs credentials to bill; set anonymous to false."
+                )
+            if config.requester_pays is True and not config.project:
+                raise ConfigurationError(
+                    f"Requester-pays access to {self.label} needs a project to bill; set project or pass a "
+                    "project id as requester_pays."
+                )
         token: str | dict[str, str | None] | None
 
         if config.anonymous:
@@ -91,6 +106,7 @@ class GoogleCloudStorageFilesSource(
         fs = GCSFileSystem(
             project=config.project,
             token=token,
+            requester_pays=config.requester_pays or False,
             **cache_options,
         )
         return fs

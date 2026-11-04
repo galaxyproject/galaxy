@@ -3,6 +3,10 @@ import logging
 from types import SimpleNamespace
 
 import pytest
+from kombu.serialization import (
+    dumps,
+    loads,
+)
 
 from galaxy.celery import (
     celery_app,
@@ -14,6 +18,7 @@ from galaxy.celery import (
     TASKS_MODULES,
 )
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.schema.tasks import PurgeDatasetsTaskRequest
 from galaxy.workflow import curated
 
 
@@ -145,3 +150,12 @@ def test_iwc_refresh_task_reports_a_skip_when_another_process_is_refreshing(tmp_
 
     assert "already refreshing" in caplog.text
     assert "could not refresh" not in caplog.text
+
+
+def test_control_replies_encode_pydantic_task_arguments():
+    # Workers echo task arguments in inspect active/scheduled replies, encoded with the control mailbox serializer.
+    request = PurgeDatasetsTaskRequest(dataset_ids=[1, 2])
+    reply = {"worker@host": [{"request": {"kwargs": {"request": request}}}]}
+    content_type, content_encoding, body = dumps(reply, serializer=celery_app.control.mailbox.serializer)
+    decoded = loads(body, content_type, content_encoding)
+    assert decoded["worker@host"][0]["request"]["kwargs"]["request"] == request

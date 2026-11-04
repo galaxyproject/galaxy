@@ -45,7 +45,13 @@ from galaxy.tools.parameters.basic import (
 )
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
-from galaxy.workflow.modules import WorkflowModuleInjector
+from galaxy.workflow.modules import (
+    disconnected_required_subworkflow_inputs,
+    disconnected_subworkflow_inputs_message,
+    step_cannot_run_exception,
+    workflow_step_name,
+    WorkflowModuleInjector,
+)
 from galaxy.workflow.resources import get_resource_mapper_function
 
 if TYPE_CHECKING:
@@ -204,7 +210,7 @@ def _normalize_step_parameters(
         if param_dict:
             if step.type == "parameter_input" and "input" not in param_dict:
                 raise exceptions.RequestParameterInvalidException(
-                    f"{step.label or step.order_index + 1}: legacy workflow parameter inputs must specify an 'input' value. "
+                    f"{workflow_step_name(step)}: legacy workflow parameter inputs must specify an 'input' value. "
                     "Prefer passing the parameter value directly in 'inputs'."
                 )
             normalized_param_map[step.id] = param_dict
@@ -330,9 +336,24 @@ def _get_input_or_not_found(
     item: InputT | None = trans.sa_session.get(model_class, trans.security.decode_id(data_request.id))
     if item is None:
         raise exceptions.ObjectNotFound(
-            f"{step.label or step.order_index + 1}: workflow input '{data_request.id}' ({data_request.src}) not found"
+            f"{workflow_step_name(step)}: workflow input '{data_request.id}' ({data_request.src}) not found"
         )
     return item
+
+
+def _validate_subworkflow_input_connections(workflow: "Workflow", step_path: tuple[str, ...] = ()) -> None:
+    for step in workflow.steps:
+        if step.type != "subworkflow":
+            continue
+        subworkflow = step.subworkflow
+        assert subworkflow
+        subworkflow_step_path = (*step_path, workflow_step_name(step))
+        disconnected_input_steps = disconnected_required_subworkflow_inputs(step, subworkflow)
+        if disconnected_input_steps:
+            raise exceptions.RequestParameterInvalidException(
+                f"{' > '.join(subworkflow_step_path)}: {disconnected_subworkflow_inputs_message(disconnected_input_steps)}"
+            )
+        _validate_subworkflow_input_connections(subworkflow, subworkflow_step_path)
 
 
 def build_workflow_run_configs(
@@ -347,12 +368,13 @@ def build_workflow_run_configs(
         raise exceptions.MessageException("Workflow cannot be run because it does not have any steps")
     if workflow.has_cycles:
         raise exceptions.MessageException("Workflow cannot be run because it contains cycles")
+    _validate_subworkflow_input_connections(workflow)
 
     if "step_parameters" in payload and "parameters" in payload:
         raise exceptions.RequestParameterInvalidException(
             "Cannot specify both legacy parameters and step_parameters attributes."
         )
-    if "inputs" in payload and "ds_map" in payload:
+    if payload.get("inputs") is not None and payload.get("ds_map"):
         raise exceptions.RequestParameterInvalidException("Cannot specify both legacy ds_map and input attributes.")
 
     if payload.get("effective_outputs"):
@@ -380,7 +402,7 @@ def build_workflow_run_configs(
             if validation_error:
                 raise exceptions.RequestParameterInvalidException(validation_error)
 
-    add_to_history = "no_add_to_history" not in payload
+    add_to_history = not payload.get("no_add_to_history", False)
     legacy = payload.get("legacy", False)
     already_normalized = payload.get("parameters_normalized", False)
     raw_parameters = payload.get("parameters") or {}
@@ -440,21 +462,22 @@ def build_workflow_run_configs(
             if step.type == "parameter_input":
                 if isinstance(input_dict, dict):
                     raise exceptions.RequestParameterInvalidException(
-                        f"{step.label or step.order_index + 1}: workflow parameter inputs cannot be dictionaries. "
+                        f"{workflow_step_name(step)}: workflow parameter inputs cannot be dictionaries. "
                         "Pass the parameter value directly in 'inputs', without a 'parameter_value' wrapper."
                     )
                 module_injector.inject(step)
                 assert step.module
-                input_param = step.module.get_runtime_inputs(step.module)["input"]
+                try:
+                    input_param = step.module.get_runtime_inputs(step.module)["input"]
+                except ParameterValueError as e:
+                    raise step_cannot_run_exception(step, e) from e
                 try:
                     input_param.validate(input_dict, trans=trans)
                     if isinstance(input_param, TextToolParameter) and input_param.multiple:
                         # Store the validated values, not the submitted ones.
                         normalized_inputs[key] = input_param.to_python(input_dict, trans.app)
                 except ParameterValueError as e:
-                    raise exceptions.RequestParameterInvalidException(
-                        f"{step.label or step.order_index + 1}: {e.message_suffix}"
-                    )
+                    raise exceptions.RequestParameterInvalidException(f"{workflow_step_name(step)}: {e.message_suffix}")
                 continue
             try:
                 added_to_history = False

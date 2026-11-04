@@ -30,6 +30,7 @@ from pydantic import (
 )
 from sqlalchemy import (
     and_,
+    delete,
     desc,
     false,
     func,
@@ -109,7 +110,6 @@ from galaxy.tools.parameters import (
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
-    ParameterValueError,
 )
 from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
@@ -198,6 +198,20 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         super().__init__(app)
         self.app = app
         self.dynamic_tool_manager = dynamic_tool_manager
+
+    def unshare_with_recipient(
+        self, item: StoredWorkflow, user: model.User
+    ) -> model.StoredWorkflowUserShareAssociation:
+        """Delete the recipient's own share along with their tool panel bookmark of the workflow."""
+        user_share_assoc = super().unshare_with(item, user, flush=False)
+        self.session().execute(
+            delete(model.StoredWorkflowMenuEntry).where(
+                model.StoredWorkflowMenuEntry.stored_workflow_id == item.id,
+                model.StoredWorkflowMenuEntry.user_id == user.id,
+            )
+        )
+        self.session().commit()
+        return user_share_assoc
 
     def copy_workflow_for_user(self, user: model.User, workflow: model.Workflow) -> model.Workflow:
         """Copy ``workflow`` for ``user``, with private copies of the user-defined tools they don't own."""
@@ -494,9 +508,11 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             raise exceptions.ObjectNotFound("No such workflow found.")
         return stored_workflow
 
-    def get_stored_accessible_workflow(self, trans: ProvidesUserContext, workflow_id, by_stored_id=True):
-        """Get a stored workflow from a encoded stored workflow id and
-        make sure it accessible to the user.
+    def get_stored_accessible_workflow(
+        self, trans: ProvidesUserContext, workflow_id, by_stored_id=True
+    ) -> StoredWorkflow:
+        """Get a stored workflow from an encoded id or UUID and
+        make sure it is accessible to the user.
         """
         stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
 
@@ -506,9 +522,15 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                 user=trans.user, stored_workflow=stored_workflow
             )
             if get_count(trans.sa_session, stmt) == 0:
-                message = "Workflow is not owned by or shared with current user"
+                message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
 
+        return stored_workflow
+
+    def get_stored_owned_workflow(self, trans: ProvidesUserContext, workflow_id, by_stored_id=True) -> StoredWorkflow:
+        """Get a stored workflow and make sure the user owns it (or is an admin)."""
+        stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
+        self.check_security(trans, stored_workflow, check_ownership=True)
         return stored_workflow
 
     def attach_stored_workflow(self, trans: ProvidesUserContext, workflow):
@@ -523,8 +545,8 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             return stored_workflow
 
     def get_owned_workflow(self, trans: ProvidesUserContext, encoded_workflow_id):
-        """Get a workflow (non-stored) from a encoded workflow id and
-        make sure it accessible to the user.
+        """Get a workflow (non-stored) from an encoded workflow id and
+        make sure it is owned by the user (or the user is an admin).
         """
         workflow_id = decode_id(self.app, encoded_workflow_id)
         workflow = trans.sa_session.get(Workflow, workflow_id)
@@ -919,7 +941,10 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow.stored_workflow = stored
         stored.latest_workflow = workflow
         stored.user = trans.user
-        stored.published = workflow_create_options.publish
+        # An update builds embedded subworkflows with WorkflowUpdateOptions, which has no `publish`.
+        stored.published = (
+            isinstance(workflow_create_options, WorkflowCreateOptions) and workflow_create_options.publish
+        )
         stored.hidden = hidden
         if data["annotation"]:
             annotation = sanitize_html(data["annotation"])
@@ -1111,6 +1136,10 @@ class WorkflowContentsManager(UsesAnnotations):
                     dry_run=dry_run,
                     resolving_urls=resolving_urls,
                 )
+            if step_dict.get("type") == "tool" and step_dict.get("tool_representation"):
+                # Creating embedded tools commits the session. Resolve them before
+                # outputs or post-job actions add partially built steps to it.
+                step_dict["tool_uuid"] = ToolModule.resolve_tool_uuid(trans, step_dict)
 
         module_kwds = workflow_state_resolution_options.model_dump()
         module_kwds.update(kwds)  # TODO: maybe drop this?
@@ -1316,11 +1345,6 @@ class WorkflowContentsManager(UsesAnnotations):
                 if e.tool_id not in missing_tools:
                     missing_tools.append(e.tool_id)
                 continue
-            except ParameterValueError as e:
-                step_name = step.label or str(step.order_index + 1)
-                raise exceptions.RequestParameterInvalidException(
-                    f"Workflow step '{step_name}' cannot be run: {e.message_suffix}"
-                ) from e
             if step.upgrade_messages:
                 has_upgrade_messages = True
             if step.type in ("tool", "subworkflow", None):
@@ -2639,7 +2663,9 @@ class WorkflowContentsManager(UsesAnnotations):
                             }
                         )
             elif step.type == "subworkflow":
-                tools.extend(self.get_all_tools(step.subworkflow))
+                for tool in self.get_all_tools(step.subworkflow):
+                    if tool not in tools:
+                        tools.append(tool)
         return tools
 
     def get_or_create_workflow_from_trs(

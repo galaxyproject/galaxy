@@ -2,6 +2,7 @@ import inspect
 import os
 import tempfile
 from collections import Counter
+from unittest import mock
 
 import pytest
 from Cheetah.Template import Template
@@ -33,7 +34,9 @@ from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.tool_util.parser.util import ParameterParseException
 from galaxy.tool_util.parser.xml import XmlToolSource
+from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
+from galaxy.tool_util_models.runtime_environment import RuntimeEnvironmentVariable
 from galaxy.util import (
     ElementTree,
     submodules,
@@ -177,6 +180,22 @@ GENERAL_REQUIREMENT_WO_VERSION = """
     <requirements>
         <requirement type="package">bwa</requirement>
         <requirement type="package" version="1.2.5"></requirement>
+    </requirements>
+</tool>
+"""
+
+GENERAL_RUNTIME_ENVIRONMENT_RESERVED = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+    <requirements>
+        <runtime_environment_variable name="PATH" />
+    </requirements>
+</tool>
+"""
+
+GENERAL_RUNTIME_ENVIRONMENT_SECRET = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+    <requirements>
+        <runtime_environment_variable name="SERVICE_TOKEN" description="Service token" />
     </requirements>
 </tool>
 """
@@ -1768,6 +1787,24 @@ def test_general_requirement_without_version(lint_ctx):
     assert len(lint_ctx.error_messages) == 1
 
 
+def test_general_runtime_environment_reserved_name(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_RUNTIME_ENVIRONMENT_RESERVED)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert len(lint_ctx.error_messages) == 1
+    assert "Reserved runtime environment variable name: PATH" in lint_ctx.error_messages[0].message
+
+
+def test_general_runtime_environment_secret_name(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_RUNTIME_ENVIRONMENT_SECRET)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert (
+        "Runtime environment variable SERVICE_TOKEN looks like a secret; use <credentials> instead."
+        in lint_ctx.warn_messages
+    )
+    assert "Runtime environment variable SERVICE_TOKEN: Service token" in lint_ctx.info_messages
+    assert not lint_ctx.error_messages
+
+
 def test_general_valid(lint_ctx):
     tool_source = get_xml_tool_source(GENERAL_VALID)
     run_lint_module(lint_ctx, general, tool_source)
@@ -3329,7 +3366,7 @@ inputs:
   type: boolean
   truevalue: booltrue
   falsevalue: boolfalse
-  checked: false
+  value: false
 outputs:
   out_file1:
     format: txt
@@ -3534,6 +3571,7 @@ def test_list_linters():
         "RequirementVersionMissing",
         "RequirementVersionWhitespace",
         "ResourceRequirementExpression",
+        "RuntimeEnvironmentVariables",
         "StdIOAbsence",
         "StdIOAbsenceLegacy",
         "StdIORegex",
@@ -3790,3 +3828,14 @@ def test_inputs_drill_down_from_file_deprecated(lint_ctx):
         "Drill down parameter [table] uses deprecated 'from_file' attribute.",
     ]
     assert not lint_ctx.error_messages
+
+
+def test_general_user_tool_runtime_environment_rejected(lint_ctx):
+    tool_source = YamlToolSource({"class": "GalaxyUserTool"})
+    with mock.patch.object(
+        tool_source,
+        "parse_runtime_environment_variables",
+        return_value=[RuntimeEnvironmentVariable(name="LICENSE_SERVER")],
+    ):
+        general.RuntimeEnvironmentVariables.lint(tool_source, lint_ctx)
+    assert "User-defined tools cannot declare runtime_environment_variable" in lint_ctx.error_messages

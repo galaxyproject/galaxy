@@ -77,12 +77,12 @@ def build_singularity_run_command(
     pid: bool = DEFAULT_PID,
     contain: bool = DEFAULT_CONTAIN,
     no_mount: list[str] | None = DEFAULT_NO_MOUNT,
+    home: str | None = None,
 ) -> str:
     volumes = volumes or []
     env = env or []
     command_parts = []
     # http://singularity.lbl.gov/docs-environment-metadata
-    home = None
     for key, value in env:
         if key == "HOME":
             home = value
@@ -110,7 +110,7 @@ def build_singularity_run_command(
     for volume in volumes:
         command_parts.extend(["-B", str(volume)])
     if home is not None:
-        command_parts.extend(["--home", f"{home}:{home}"])
+        command_parts.extend(["--home", f'"{home}:{home}"'])
     if run_extra_arguments:
         command_parts.append(run_extra_arguments)
     full_image = image

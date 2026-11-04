@@ -4,10 +4,54 @@ History
 .. to_doc
 
 ---------
-26.2.dev0
+27.0.dev0
 ---------
 
 
+
+-------------------
+26.1.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix unusable admin quota forms on large instances by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23673 <https://github.com/galaxyproject/galaxy/pull/23673>`_
+* Fix remote files ctime crash and eLabFTW listing and sorting by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23770 <https://github.com/galaxyproject/galaxy/pull/23770>`_
+* Fix 500 on reading pages with non-ASCII slugs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23854 <https://github.com/galaxyproject/galaxy/pull/23854>`_
+* Validate workflow parameter inputs and support scalar batches by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23887 <https://github.com/galaxyproject/galaxy/pull/23887>`_
+
+============
+Enhancements
+============
+
+* Add embedded authoring reference for user-defined tools by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23365 <https://github.com/galaxyproject/galaxy/pull/23365>`_
+* Default missing workflow comment colors by `@jmchilton <https://github.com/jmchilton>`_ in `#23482 <https://github.com/galaxyproject/galaxy/pull/23482>`_
+
+-------------------
+26.0.2 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix 500 on reading pages with non-ASCII slugs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23854 <https://github.com/galaxyproject/galaxy/pull/23854>`_
+
+-------------------
+25.1.3 (2026-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Backport FastAPI/Starlette upgrade for BadHost (CVE-2026-48710) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22778 <https://github.com/galaxyproject/galaxy/pull/22778>`_
+* Fix 500 on reading pages with non-ASCII slugs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23854 <https://github.com/galaxyproject/galaxy/pull/23854>`_
 
 -------------------
 26.1.1 (2026-08-04)

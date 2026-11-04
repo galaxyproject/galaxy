@@ -1,5 +1,6 @@
 from selenium.webdriver.common.by import By
 
+from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -220,6 +221,35 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
 
         self.workflow_index_open()
         self.components.workflows.workflows_list_empty.wait_for_visible()
+
+    @selenium_test
+    def test_workflow_bookmark_and_delete_by_exact_title(self):
+        # The newer sibling also matches a search for ``name`` and is listed first.
+        name = self._get_random_name()
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE, name=name)
+        copy_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE, name=f"{name} (copy)")
+        self.workflow_index_open()
+
+        self.workflow_bookmark_by_name(name)
+        bookmarked_ids = self._wait_on(
+            lambda: [w["id"] for w in self.workflow_populator.index(search=name) if w["show_in_tool_panel"]],
+            "a bookmarked workflow",
+            wait_type=self.wait_types.DATABASE_OPERATION,
+        )
+        assert bookmarked_ids == [workflow_id]
+
+        self.workflow_delete_by_name(name)
+
+        def single_remaining_ids():
+            ids = self.workflow_populator.index_ids(search=name)
+            return ids if len(ids) == 1 else None
+
+        remaining_ids = self._wait_on(
+            single_remaining_ids,
+            f"exactly one of [{name}] and [{name} (copy)] left",
+            wait_type=self.wait_types.DATABASE_OPERATION,
+        )
+        assert remaining_ids == [copy_id]
 
     @selenium_test
     def test_workflow_bookmark_filtering(self):

@@ -315,6 +315,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         user: model.User | None = None,
         object_store: ObjectStore | None = None,
         tag_handler: Optional["GalaxyTagHandlerSession"] = None,
+        commit: bool = True,
     ) -> None:
         if object_store is None:
             if app is not None:
@@ -331,6 +332,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.import_options = import_options or ImportOptions()
         self.dataset_state_serialized = True
         self.tag_handler = tag_handler
+        # With commit=False the import only flushes and the caller owns the transaction.
+        self.commit = commit
         if self.defines_new_history():
             self.import_history_encoded_id = self.new_history_properties().get("encoded_id")
         else:
@@ -571,6 +574,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         value = dataset_attrs[attribute]
                         if attribute == "metadata":
                             value = replace_metadata_file(value, dataset_instance, self.sa_session)
+                        elif attribute == "extension":
+                            value = self._registered_extension(value)
                         setattr(dataset_instance, attribute, value)
 
                 handle_dataset_object_edit(dataset_instance, dataset_attrs)
@@ -598,7 +603,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     # Create dataset and HDA.
                     dataset_instance = model.HistoryDatasetAssociation(
                         name=dataset_attrs["name"],
-                        extension=dataset_attrs["extension"],
+                        extension=self._registered_extension(dataset_attrs["extension"]),
                         info=dataset_attrs["info"],
                         blurb=dataset_attrs["blurb"],
                         peek=dataset_attrs["peek"],
@@ -619,7 +624,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     # Create dataset and LDDA.
                     dataset_instance = model.LibraryDatasetDatasetAssociation(
                         name=dataset_attrs["name"],
-                        extension=dataset_attrs["extension"],
+                        extension=self._registered_extension(dataset_attrs["extension"]),
                         info=dataset_attrs["info"],
                         blurb=dataset_attrs["blurb"],
                         peek=dataset_attrs["peek"],
@@ -854,7 +859,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     ld.library_dataset_dataset_association = ldda
                 self._session_add(ld)
 
-            self.sa_session.commit()
+            self._flush()
             return library_folder
 
         libraries_attrs = self.library_properties()
@@ -997,6 +1002,20 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     object_import_tracker.hdcas_by_id[collection_attrs["id"]] = hdca
             else:
                 import_collection(collection_attrs)
+
+    def _registered_extension(self, extension: str | None) -> str | None:
+        """Return ``extension``, or ``data`` if it is not a registered datatype.
+
+        ``auto`` is kept, deferred datasets resolve it on materialization.
+        """
+        if (
+            self.app is None
+            or not extension
+            or extension == "auto"
+            or self.app.datatypes_registry.get_datatype_by_extension(extension) is not None
+        ):
+            return extension
+        return "data"
 
     def _attach_raw_id_if_editing(
         self,
@@ -1466,7 +1485,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.sa_session.add(obj)
 
     def _flush(self) -> None:
-        self.sa_session.commit()
+        if self.commit:
+            self.sa_session.commit()
+        else:
+            self.sa_session.flush()
 
 
 def _copied_from_object_key(

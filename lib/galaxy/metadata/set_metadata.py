@@ -46,6 +46,7 @@ from galaxy.job_execution.output_collect import (
     validate_unnamed_outputs,
 )
 from galaxy.job_execution.setup import TOOL_PROVIDED_JOB_METADATA_KEYS
+from galaxy.metadata import job_metadata_directory
 from galaxy.model import (
     Dataset,
     DatasetInstance,
@@ -73,6 +74,7 @@ from galaxy.tool_util.output_checker import (
     MaxDiscoveredFilesJobMessage,
     output_discovery_job_message,
     OutputCollectionSecurityJobMessage,
+    runtime_environment_job_messages,
 )
 from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
@@ -202,7 +204,7 @@ def set_metadata_portable(
 ):
     is_celery_task = tool_job_working_directory is not None
     tool_job_working_directory = Path(tool_job_working_directory or os.path.abspath(os.getcwd()))
-    metadata_tmp_files_dir = os.path.join(tool_job_working_directory, "metadata")
+    metadata_tmp_files_dir = job_metadata_directory(tool_job_working_directory)
     metadata_params = get_metadata_params(tool_job_working_directory)
     if not is_celery_task:
         if not extended_metadata_collection:
@@ -311,6 +313,11 @@ def set_metadata_portable(
 
         check_output_detected_state, tool_stdout, tool_stderr, job_messages = check_output(
             stdio_regexes, stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code
+        )
+        job_messages.extend(
+            runtime_environment_job_messages(
+                str(tool_job_working_directory), tool_dict.get("required_runtime_environment_variables", [])
+            )
         )
         if check_output_detected_state == DETECTED_JOB_STATE.OK and not tool_provided_metadata.has_failed_outputs():
             final_job_state = Job.states.OK

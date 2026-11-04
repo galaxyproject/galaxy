@@ -180,6 +180,23 @@ describe("filtering", () => {
         expect(HistoryFilters.applyFiltersToText({ deleted: "any" }, "deleted:any visible:true", true)).toEqual(
             "visible:true deleted:any",
         );
+        // a caller removing a filter has no real value to give it, so an empty string must
+        // still remove the key instead of being rejected as an invalid filter value
+        expect(HistoryFilters.applyFiltersToText({ tag: "" }, "tag:first state:success", true)).toEqual(
+            "state:success",
+        );
+    });
+    test("parses a key:value pair whose value itself contains a colon, like a timestamp", () => {
+        // splitKeyOpValue's regex used to match the LAST `:`/`>`/`<` in the pair instead of the
+        // first, so a value like a full timestamp (which has its own colons) got misparsed
+        expect(HistoryFilters.getFilterValue("update_time>2024-01-01T10:30:00", "update_time_gt")).toBe(
+            "2024-01-01t10:30:00",
+        );
+    });
+    test("parses a quoted value containing its own colon, like a name:value tag", () => {
+        // Same bug, different shape: a quoted tag value (e.g. clicking a `project:lung` tag chip)
+        // also has its own colon, which the greedy regex matched instead of the key's.
+        expect(HistoryFilters.getFilterValue("tag:'project:lung'", "tag")).toBe("project:lung");
     });
     test("set a single valid filter to existing filterText", () => {
         expect(HistoryFilters.setFilterValue("", "deleted", "any")).toEqual("deleted:any visible:true");

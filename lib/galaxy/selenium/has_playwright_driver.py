@@ -425,10 +425,9 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             List of PlaywrightElement objects
         """
         selector = self._target_to_playwright_selector(selector_template)
-        locator = self._frame_or_page.locator(selector)
-        # Get all element handles and wrap them
-        count = locator.count()
-        return [PlaywrightElement(locator.nth(i).element_handle(), self) for i in range(count)]
+        # One snapshot, like Selenium: count() then nth(i) waits out the default timeout if the list shrinks.
+        handles = self._frame_or_page.locator(selector).element_handles()
+        return [PlaywrightElement(handle, self) for handle in handles]
 
     def find_element(self, selector_template: HasElementLocator) -> WebElementProtocol:
         """
@@ -925,9 +924,11 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
         Uses a real DataTransfer so setData/getData work across the sequence,
         unlike synthetic DragEvents where Chrome restricts getData to return empty.
+        As in a real drag, dragenter comes a task after dragstart, once state that
+        dragstart's handlers set asynchronously has landed.
         """
         return self._frame_or_page.evaluate_handle(
-            """([source, target]) => {
+            """async ([source, target]) => {
                 const dataTransfer = new DataTransfer();
                 const drag = (element, type) =>
                     element.dispatchEvent(
@@ -940,8 +941,10 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
                 source.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
                 drag(source, "dragstart");
-                drag(target, "dragenter");
-                drag(target, "dragover");
+                await new Promise((resolve) => setTimeout(resolve));
+                const over = ancestors.find((node) => node.isConnected) || ancestors[0];
+                drag(over, "dragenter");
+                drag(over, "dragover");
                 return { source, ancestors, dataTransfer };
             }""",
             [source, target],

@@ -19,6 +19,7 @@ import { selectionToArray } from "@/components/FilesDialog/utilities";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
+import { useUploadTableSorting } from "@/composables/upload/uploadTableSorting";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
 import { useUrlTracker } from "@/composables/urlTracker";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -186,6 +187,8 @@ const hasPagination = computed(() => {
     }
     return totalMatches.value > perPage.value;
 });
+
+const { tableSortProps, tableSortEvents } = useUploadTableSorting(libraryDatasetItems);
 
 const hasItems = computed(() => libraryDatasetItems.value.length > 0);
 const hasSelection = computed(() => selectionCount.value > 0);
@@ -762,7 +765,10 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     @row-click="onLibraryRowClick">
                     <template v-slot:cell(name)="{ item }">
                         <FontAwesomeIcon :icon="faDatabase" class="mr-2 text-primary" />
-                        <strong data-test-id="data-library-browser-library-label" :data-label="item.name">
+                        <strong
+                            class="data-library-browser-library-label"
+                            data-test-id="data-library-browser-library-label"
+                            :data-label="item.name">
                             {{ item.name }}
                         </strong>
                     </template>
@@ -834,6 +840,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <template v-slot:cell(name)="{ item }">
                         <div class="d-flex align-items-center">
                             <span
+                                class="data-library-browser-item-label"
                                 data-test-id="data-library-browser-item-label"
                                 :data-label="item.label"
                                 :data-entry-kind="item.isLeaf ? 'file' : 'directory'">
@@ -898,7 +905,14 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
             </div>
 
             <div ref="tableContainerRef" class="file-table-container">
-                <GTable striped compact :items="libraryDatasetItems" :fields="tableFields" class="file-table">
+                <GTable
+                    v-bind="tableSortProps"
+                    striped
+                    compact
+                    :items="libraryDatasetItems"
+                    :fields="tableFields"
+                    class="file-table"
+                    v-on="tableSortEvents">
                     <template v-slot:cell(name)="{ item }">
                         <span class="font-weight-medium">{{ item.name }}</span>
                     </template>
@@ -999,6 +1013,11 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
         &:hover {
             background-color: rgba($brand-primary, 0.05);
         }
+    }
+
+    .data-library-browser-library-label,
+    .data-library-browser-item-label {
+        @include upload-browser-label;
     }
 }
 

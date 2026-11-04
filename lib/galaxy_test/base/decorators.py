@@ -93,7 +93,7 @@ def requires_new_library(method):
 
 
 def requires_new_published_objects(method):
-    method = _wrap_method_with_galaxy_requirement(method, "new_published_objects")
+    return _wrap_method_with_galaxy_requirement(method, "new_published_objects")
 
 
 def requires_admin(method):

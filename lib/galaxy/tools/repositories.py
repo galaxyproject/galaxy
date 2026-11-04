@@ -69,25 +69,17 @@ class ValidationContext:
 
     @staticmethod
     @contextmanager
-    def from_app(app, work_dir=None):
-        cleanup = False
-        if not work_dir:
-            work_dir = tempfile.mkdtemp()
-            cleanup = True
-        tool_data_tables = ToolDataTableManager(work_dir)
-        try:
+    def from_app(app):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as work_dir:
             with ValidationContext(
                 app_name=app.name,
                 security=app.security,
                 model=getattr(app, "model", None),
                 tool_data_path=work_dir,
                 shed_tool_data_path=work_dir,
-                tool_data_tables=tool_data_tables,
+                tool_data_tables=ToolDataTableManager(work_dir),
                 registry=getattr(app, "datatypes_registry", None),
                 hgweb_config_manager=getattr(app, "hgweb_config_manager", None),
                 biotools_metadata_source=getattr(app, "biotools_metadata_source", None),
             ) as app:
                 yield app
-        finally:
-            if cleanup:
-                shutil.rmtree(work_dir, ignore_errors=True)

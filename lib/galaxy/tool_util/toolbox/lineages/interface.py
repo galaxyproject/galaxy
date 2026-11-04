@@ -6,7 +6,7 @@ from typing import (
 
 from sortedcontainers import SortedSet
 
-from galaxy.tool_util.version import parse_version
+from galaxy.tool_util.version import parse_tool_version
 from galaxy.util.tool_version import remove_version_from_guid
 
 if TYPE_CHECKING:
@@ -48,7 +48,7 @@ class ToolLineage:
 
     def __init__(self, tool_id: str) -> None:
         self.tool_id = tool_id
-        self.tool_versions = SortedSet(key=parse_version)
+        self.tool_versions = SortedSet(key=parse_tool_version)
 
     @property
     def tool_ids(self) -> list[str]:

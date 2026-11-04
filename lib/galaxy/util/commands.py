@@ -6,13 +6,13 @@ import shlex
 import subprocess
 import sys as _sys
 import tempfile
+from shutil import which
 from typing import (
     Any,
 )
 
 from galaxy.util import (
     unicodify,
-    which,
 )
 
 log = logging.getLogger(__name__)

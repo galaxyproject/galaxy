@@ -1,0 +1,23 @@
+<tool id="runtime_environment" name="Runtime environment" version="1.0" profile="24.0">
+    <requirements>
+        <container type="docker">busybox:1.36.1-glibc</container>
+        <runtime_environment_variable name="DECLARED_VAR" description="A setting from the job environment" />
+        <runtime_environment_variable name="EMPTY_VAR" required="true" />
+        <runtime_environment_variable name="MISSING_VAR" required="true" />
+        <runtime_environment_variable name="OPTIONAL_VAR" />
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+{
+printf 'LEGACY_VAR=%s\n' "\${LEGACY_VAR-unset}";
+printf 'JOB_VAR=%s\n' "\${JOB_VAR-unset}";
+printf 'TOOL_VAR=%s\n' "\${TOOL_VAR-unset}";
+printf 'DECLARED_VAR=%s\n' "\${DECLARED_VAR-unset}";
+printf 'EMPTY_VAR=%s\n' "\${EMPTY_VAR-unset}";
+printf 'CONTAINER_VAR=%s\n' "\${CONTAINER_VAR-unset}";
+} > '$out'
+    ]]></command>
+    <inputs />
+    <outputs><data name="out" format="txt" /></outputs>
+    <tests><test><output name="out"><assert_contents><has_text text="DECLARED_VAR=unset" /></assert_contents></output></test></tests>
+    <help>Report environment scopes and required runtime variable warnings.</help>
+</tool>

@@ -82,3 +82,38 @@ export function safeRedirectPath(path: unknown): string | undefined {
     }
     return path;
 }
+
+/**
+ * Guards a post-login redirect target like `safeRedirectPath`, and also accepts an
+ * absolute https URL whose host -- with the port, if it is not 443 -- is one of
+ * `allowedHosts`, the admin-configured `allowed_login_redirect_hosts`. Mirrors
+ * `is_safe_login_redirect` on the server.
+ * @param target
+ * @param allowedHosts
+ * @returns The target if Galaxy may send the user there after login, otherwise undefined.
+ */
+export function safeLoginRedirect(target: unknown, allowedHosts: string[]): string | undefined {
+    const path = safeRedirectPath(target);
+    if (path || !allowedHosts.length || typeof target !== "string") {
+        return path;
+    }
+    // Backslashes and credentials in the authority ("https://allowed@evil") are refused
+    // rather than trusting every URL parser to agree on where the host ends.
+    if (target !== target.trim() || controlCharacters.test(target) || target.includes("\\")) {
+        return undefined;
+    }
+    const authority = /^https:\/\/([^/?#]+)/i.exec(target)?.[1];
+    if (!authority || authority.includes("@")) {
+        return undefined;
+    }
+    try {
+        new URL(target);
+    } catch {
+        return undefined;
+    }
+    // Compare the authority as written, as the server does: URL.host would map
+    // spellings such as punycode or full-width dots that the server refuses.
+    const host = authority.toLowerCase().replace(/:443$/, "");
+    const allowed = allowedHosts.map((allowedHost) => allowedHost.toLowerCase());
+    return allowed.includes(host) ? target : undefined;
+}

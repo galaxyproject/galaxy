@@ -63,7 +63,7 @@ def test_history_dataset_copy(num_datasets=NUM_DATASETS, include_metadata_file=I
 
 def test_history_collection_copy(list_size=NUM_DATASETS):
     with _setup_mapping_and_user() as (test_config, object_store, model, old_history):
-        for i in range(NUM_COLLECTIONS):
+        for _ in range(NUM_COLLECTIONS):
             hdas = []
             for i in range(list_size * 2):
                 hda_path = test_config.write("moo", f"test_metadata_original_{i}")

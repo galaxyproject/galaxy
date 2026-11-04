@@ -41,6 +41,7 @@ from typing import (
     TypeVar,
 )
 
+from galaxy.selenium.web_element_protocol import WebElementProtocol
 from .framework import NavigatesGalaxyMixin
 
 T = TypeVar("T", bound="UploadItem")
@@ -146,9 +147,9 @@ class PasteContentUploadItem(UploadItem):
 
 class RemoteFileUploadItem(UploadItem):
     def stage_remote_file(
-        self, source_label: str, file_label: str, metadata: UploadMetadata | None = None
+        self, source_label: str, file_label: str, metadata: UploadMetadata | None = None, path: str = ""
     ) -> "RemoteFileUploadItem":
-        return self.context.stage_remote_file(source_label, file_label, metadata)
+        return self.context.stage_remote_file(source_label, file_label, metadata, path)
 
 
 class DataLibraryUploadItem(UploadItem):
@@ -192,7 +193,7 @@ class _UploadStaging:
         return self._create_item(PasteContentUploadItem, metadata)
 
     def stage_remote_file(
-        self, source_label: str, file_label: str, metadata: UploadMetadata | None = None
+        self, source_label: str, file_label: str, metadata: UploadMetadata | None = None, path: str = ""
     ) -> RemoteFileUploadItem:
         raise NotImplementedError("stage_remote_file must be implemented by subclasses")
 
@@ -248,6 +249,11 @@ class _UploadStaging:
 
         return item
 
+    def sort_by(self, field: str) -> "_UploadStaging":
+        """Click a staged-items table header to sort by that column."""
+        self.components.upload_activity.table_sortable_header(field=field).wait_for_and_click()
+        return self
+
     def _row_number(self, index: int) -> int:
         return index + 1
 
@@ -278,7 +284,8 @@ class _UploadStaging:
 
     def start(self) -> None:
         self._pre_start()
-        self._button_group.start_button.wait_for_and_click()
+        # Start is a GButton that is only aria-disabled, so a plain click wait passes while it does nothing
+        self._button_group.start_button_enabled.wait_for_and_click()
 
     def cancel(self) -> None:
         self._button_group.cancel_button.wait_for_and_click()
@@ -315,22 +322,43 @@ class UploadContext(_UploadStaging):
         self._apply_collection_config()
 
     def stage_remote_file(
-        self, source_label: str, file_label: str, metadata: UploadMetadata | None = None
+        self, source_label: str, file_label: str, metadata: UploadMetadata | None = None, path: str = ""
     ) -> RemoteFileUploadItem:
         if self._current_method_id != "remote-files":
             raise AssertionError("stage_remote_file is only available for the remote-files method")
 
-        self.components.upload_activity.remote_files_browser_label(label=source_label).wait_for_and_click()
-        self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_visible()
-        self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_and_click()
+        self.open_remote_folder(source_label, path)
+        self._select_remote_file(file_label)
         self.components.upload_activity.remote_files_add_selected.wait_for_and_click()
         return self._create_item(RemoteFileUploadItem, metadata)
+
+    def open_remote_folder(self, source_label: str, path: str = "") -> None:
+        """Open file source ``source_label``, then each folder of ``path`` (e.g. ``species/Homo_sapiens``)."""
+        upload = self.components.upload_activity
+        upload.remote_files_browser_label(label=source_label).wait_for_and_click()
+        for folder in filter(None, path.split("/")):
+            self._search_remote_files(folder)
+            upload.remote_files_browser_label(label=folder).wait_for_and_click()
+            upload.remote_files_current_folder(folder=folder).wait_for_visible()
+
+    def _search_remote_files(self, text: str) -> None:
+        """Type ``text`` into the browser's search and wait until its debounced query has loaded."""
+        # a click on a row the debounced search is about to replace is lost or lands on another row
+        upload = self.components.upload_activity
+        upload.remote_files_search.wait_for_and_clear_and_send_keys(text)
+        upload.remote_files_search_settled(query=text).wait_for_present()
+
+    def _select_remote_file(self, file_label: str) -> None:
+        # search first: a large source pages its files
+        self._search_remote_files(file_label)
+        self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_and_click()
 
     def stage_remote_files(
         self,
         source_label: str,
         file_labels: list[str],
         metadata_list: list[UploadMetadata | None] | None = None,
+        path: str = "",
     ) -> list[RemoteFileUploadItem]:
         if self._current_method_id != "remote-files":
             raise AssertionError("stage_remote_files is only available for the remote-files method")
@@ -340,11 +368,10 @@ class UploadContext(_UploadStaging):
                 f"metadata_list length ({len(metadata_list)}) must match file_labels length ({len(file_labels)})"
             )
 
-        self.components.upload_activity.remote_files_browser_label(label=source_label).wait_for_and_click()
+        self.open_remote_folder(source_label, path)
 
         for file_label in file_labels:
-            self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_visible()
-            self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_and_click()
+            self._select_remote_file(file_label)
 
         self.components.upload_activity.remote_files_add_selected.wait_for_and_click()
 
@@ -356,13 +383,35 @@ class UploadContext(_UploadStaging):
         return items
 
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
-        if self._current_method_id != "data-library":
-            raise AssertionError("stage_data_library_dataset is only available for the data-library method")
+        return self.stage_data_library_datasets(library_label, [dataset_label])[0]
 
-        self.components.upload_activity.data_library_library_label(label=library_label).wait_for_and_click()
-        self.components.upload_activity.data_library_item_label(label=dataset_label).wait_for_and_click()
-        self.components.upload_activity.data_library_add_selected.wait_for_and_click()
-        return self._create_item(DataLibraryUploadItem)
+    def stage_data_library_datasets(
+        self,
+        library_label: str,
+        dataset_labels: list[str],
+        folder_label: str | None = None,
+        select_all: bool = False,
+    ) -> list[DataLibraryUploadItem]:
+        """Stage datasets from a library root or ``folder_label``; ``select_all`` expects exactly ``dataset_labels``."""
+        if self._current_method_id != "data-library":
+            raise AssertionError("stage_data_library_datasets is only available for the data-library method")
+
+        upload_activity = self.components.upload_activity
+        upload_activity.data_library_library_label(label=library_label).wait_for_and_click()
+        if folder_label is not None:
+            upload_activity.data_library_item_label(label=folder_label).wait_for_and_click()
+        datasets = [upload_activity.data_library_item_label(label=label) for label in dataset_labels]
+        if select_all:
+            # wait for the folder to load so select-all doesn't hit the previous view
+            for dataset in datasets:
+                dataset.wait_for_visible()
+            upload_activity.data_library_select_all.wait_for_and_click()
+        else:
+            for dataset in datasets:
+                dataset.wait_for_and_click()
+        # GButton is only aria-disabled until the selection registers, so a plain click wait can no-op
+        upload_activity.data_library_add_selected_enabled.wait_for_and_click()
+        return [self._create_item(DataLibraryUploadItem) for _ in dataset_labels]
 
     def select_composite(self, composite_type: str) -> "UploadContext":
         if self._current_method_id != "composite-file":
@@ -477,8 +526,8 @@ class UploadContext(_UploadStaging):
 
     def select_target_history(self, history_id: str) -> "UploadContext":
         self.components.upload_activity.target_history_change_link.wait_for_and_click()
-        self.components.upload_activity.history_selector_modal_item(history_id=history_id).wait_for_and_click()
-        self.components.upload_activity.history_selector_modal.wait_for_absent_or_hidden()
+        self.components.history_selector_modal.item(history_id=history_id).wait_for_and_click()
+        self.components.history_selector_modal._.wait_for_absent_or_hidden()
         return self
 
     def to_list(self, name: str) -> "UploadContext":
@@ -676,6 +725,10 @@ class BaseUploadContext:
         self._context.to_paired_list(name)
         return self
 
+    def sort_by(self: TUploadContext, field: str) -> TUploadContext:
+        self._context.sort_by(field)
+        return self
+
     def _start_and_wait_for_uploaded_hids(self) -> list[int]:
         staged_item_count = self._context._item_count
         if staged_item_count < 1:
@@ -733,17 +786,22 @@ class PasteLinksContext(BaseUploadContext):
 
 class RemoteFilesContext(BaseUploadContext):
     def stage_remote_file(
-        self, source_label: str, file_label: str, metadata: UploadMetadata | None = None
+        self, source_label: str, file_label: str, metadata: UploadMetadata | None = None, path: str = ""
     ) -> RemoteFileUploadItem:
-        return self._context.stage_remote_file(source_label, file_label, metadata)
+        return self._context.stage_remote_file(source_label, file_label, metadata, path)
 
     def stage_remote_files(
         self,
         source_label: str,
         file_labels: list[str],
         metadata_list: list[UploadMetadata | None] | None = None,
+        path: str = "",
     ) -> "RemoteFilesContext":
-        self._context.stage_remote_files(source_label, file_labels, metadata_list)
+        self._context.stage_remote_files(source_label, file_labels, metadata_list, path)
+        return self
+
+    def open_remote_folder(self, source_label: str, path: str = "") -> "RemoteFilesContext":
+        self._context.open_remote_folder(source_label, path)
         return self
 
 
@@ -768,6 +826,16 @@ class CompositeFileContext(BaseUploadContext):
 class DataLibraryContext(BaseUploadContext):
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
         return self._context.stage_data_library_dataset(library_label, dataset_label)
+
+    def stage_data_library_datasets(
+        self,
+        library_label: str,
+        dataset_labels: list[str],
+        folder_label: str | None = None,
+        select_all: bool = False,
+    ) -> "DataLibraryContext":
+        self._context.stage_data_library_datasets(library_label, dataset_labels, folder_label, select_all)
+        return self
 
 
 class ExploreZipContext(BaseUploadContext):
@@ -986,6 +1054,15 @@ class UsesUploadActivity(NavigatesGalaxyMixin):
         base_context = UploadContext(method_id, self)
         context_class = _CONTEXT_CLASS_MAP[method_id]
         return context_class(base_context)  # type: ignore[return-value]
+
+    def assert_label_within_its_column(self, label: WebElementProtocol, what: str) -> None:
+        """Assert browser row ``label`` doesn't run past the right edge of its table cell."""
+        overflow = self.execute_script(
+            "const label = arguments[0];"
+            'return label.getBoundingClientRect().right - label.closest("td").getBoundingClientRect().right;',
+            label,
+        )
+        assert overflow <= 0, f"{what} runs {overflow}px past the Name column"
 
     def _rule_import_context(self) -> RuleImportContext:
         context = getattr(self, "_active_rule_import_context", None)

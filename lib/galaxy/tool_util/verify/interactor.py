@@ -295,6 +295,35 @@ def raise_for_status(response: Response) -> None:
         raise requests.exceptions.HTTPError(f"{e} - Response body: {body}", response=response) from e
 
 
+DISCOVERED_OUTPUT_PREFIX = "__new_primary_file_"
+
+
+def discovered_output_name(name: str, designation: str) -> str:
+    """Job output association name of a dataset discovered for output ``name``."""
+    return f"{DISCOVERED_OUTPUT_PREFIX}{name}|{designation}__"
+
+
+def is_discovered_output(output_name: str, name: str | None = None) -> bool:
+    """Whether ``output_name`` is a discovered dataset, optionally of output ``name``."""
+    prefix = DISCOVERED_OUTPUT_PREFIX if name is None else f"{DISCOVERED_OUTPUT_PREFIX}{name}|"
+    return output_name.startswith(prefix)
+
+
+def split_declared_job_outputs(job_outputs: list[dict[str, Any]]) -> tuple[OutputsDict, dict[str, Any]]:
+    """Split job outputs into declared datasets and collections."""
+    outputs = OutputsDict()
+    output_collections: dict[str, Any] = {}
+    for job_output in job_outputs:
+        # Discovered datasets appear once the job finishes; legacy submit responses never list them.
+        if is_discovered_output(job_output["name"]):
+            continue
+        if "dataset" in job_output:
+            outputs[job_output["name"]] = job_output["dataset"]
+        else:
+            output_collections[job_output["name"]] = job_output["dataset_collection_instance"]
+    return outputs, output_collections
+
+
 class GalaxyInteractorApi:
     # api_key and cookies can also be manually set by UsesApiTestCaseMixin._different_user()
     api_key: str | None
@@ -443,7 +472,7 @@ class GalaxyInteractorApi:
         outputs = outputs_response.json()
         found_datasets = 0
         for output in outputs:
-            if output["name"] == name or output["name"].startswith(f"__new_primary_file_{name}|"):
+            if output["name"] == name or is_discovered_output(output["name"], name):
                 found_datasets += 1
         if expected_count is not None and expected_count != found_datasets:
             raise AssertionError(
@@ -460,7 +489,7 @@ class GalaxyInteractorApi:
         for designation, (primary_outfile, primary_attributes) in primary_datasets.items():
             primary_output = None
             for output in outputs:
-                if output["name"] == f"__new_primary_file_{name}|{designation}__":
+                if output["name"] == discovered_output_name(name, designation):
                     primary_output = output
                     break
 
@@ -906,8 +935,8 @@ class GalaxyInteractorApi:
             submit_with_legacy_api = True
         if submit_with_legacy_api:
             inputs_tree = testdef.inputs.copy()
-            for key, value in inputs_tree.items():
-                values = [value] if not isinstance(value, list) else value
+            for key, values in inputs_tree.items():
+                values = [values] if not isinstance(values, list) else values
                 new_values = []
                 for value in values:
                     if isinstance(value, TestCollectionDef):
@@ -1032,13 +1061,7 @@ class GalaxyInteractorApi:
                 )
             job_id = job_refs[0]["id"]
             jobs = [self.__get_job(job_id).json()]
-            outputs = OutputsDict()
-            output_collections: dict[str, Any] = {}
-            for job_output in self.job_outputs(job_id):
-                if "dataset" in job_output:
-                    outputs[job_output["name"]] = job_output["dataset"]
-                else:
-                    output_collections[job_output["name"]] = job_output["dataset_collection_instance"]
+            outputs, output_collections = split_declared_job_outputs(self.job_outputs(job_id))
         else:
             outputs = self.__dictify_outputs(submit_response_object)
             output_collections = self.__dictify_output_collections(submit_response_object)
@@ -1657,6 +1680,10 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
         raise AssertionError(message)
     if output_collection_def.max and output_collection_def.max < actual_element_count:
         message = f"Output collection '{name}': expected to have at most {output_collection_def.max} elements, but it had {actual_element_count}."
+        raise AssertionError(message)
+    expected_name = output_collection_def.metadata.get("name")
+    if expected_name is not None and expected_name != data_collection.get("name"):
+        message = f"Output collection '{name}': expected to have name [{expected_name}], but it had name [{data_collection.get('name')}]."
         raise AssertionError(message)
 
     def get_element(elements, id):

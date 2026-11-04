@@ -29,6 +29,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_PIN_LABELS,
     DEFAULT_SORT,
 )
+from galaxy.tool_util.runtime_environment import parse_runtime_environment_variables
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.testing_types import (
     AssertionList,
@@ -434,6 +435,12 @@ class XmlToolSource(ToolSource):
         as_dict["includes"] = parse_include_exclude_list("include")
         as_dict["excludes"] = parse_include_exclude_list("exclude")
         return RequiredFiles.from_dict(as_dict)
+
+    def parse_runtime_environment_variables(self, *, strict: bool = True):
+        return parse_runtime_environment_variables(
+            (dict(element.items()) for element in self.root.findall("requirements/runtime_environment_variable")),
+            strict=strict,
+        )
 
     def parse_requirements(self):
         return requirements.parse_requirements_from_xml(self.root, parse_resources_and_credentials=True)

@@ -3,12 +3,16 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { components } from "@/api/schema";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
+import { getAppRoot } from "@/onload/loadConfig";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
 import BroadcastsOverlay from "./BroadcastsOverlay.vue";
+
+vi.mock("@/onload/loadConfig", () => ({ getAppRoot: vi.fn(() => "/") }));
 
 const localVue = getLocalVue(true);
 
@@ -69,9 +73,54 @@ async function mountBroadcastsOverlayWith(broadcasts: BroadcastNotification[] = 
     return wrapper;
 }
 
+function broadcastWithActionLink(actionLink: components["schemas"]["ActionLink"]): BroadcastNotification {
+    return generateBroadcastNotification({
+        content: { category: "broadcast", subject: "Subject", message: "Message", action_links: [actionLink] },
+    });
+}
+
 const messageCssSelector = ".broadcast-container .message";
+const actionLinkSelector = ".action-links a";
 
 describe("BroadcastsOverlay.vue", () => {
+    beforeEach(() => {
+        vi.mocked(getAppRoot).mockReturnValue("/");
+    });
+
+    it("opens a relative action link in a new tab under the app root", async () => {
+        vi.mocked(getAppRoot).mockReturnValue("/galaxy/");
+        const wrapper = await mountBroadcastsOverlayWith([
+            broadcastWithActionLink({ action_name: "Costs", link: "/costs/", target: "_blank" }),
+        ]);
+
+        const link = wrapper.find(actionLinkSelector);
+        expect(link.attributes("href")).toBe("/galaxy/costs/");
+        expect(link.attributes("target")).toBe("_blank");
+        expect(link.attributes("rel")).toBe("noopener noreferrer");
+        expect(link.text()).toContain("opens in a new tab");
+    });
+
+    it("opens an external action link in a new tab", async () => {
+        const wrapper = await mountBroadcastsOverlayWith([
+            broadcastWithActionLink({ action_name: "External", link: "https://example.org", target: "_blank" }),
+        ]);
+
+        const link = wrapper.find(actionLinkSelector);
+        expect(link.attributes("href")).toBe("https://example.org");
+        expect(link.attributes("target")).toBe("_blank");
+    });
+
+    it("opens an action link in the current tab when the target is _self", async () => {
+        const wrapper = await mountBroadcastsOverlayWith([
+            broadcastWithActionLink({ action_name: "External", link: "https://example.org", target: "_self" }),
+        ]);
+
+        const link = wrapper.find(actionLinkSelector);
+        expect(link.attributes("target")).toBeUndefined();
+        expect(link.attributes("rel")).toBeUndefined();
+        expect(link.text()).not.toContain("opens in a new tab");
+    });
+
     it("should not render anything when there is no broadcast", async () => {
         const wrapper = await mountBroadcastsOverlayWith();
 

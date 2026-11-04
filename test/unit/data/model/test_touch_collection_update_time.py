@@ -354,3 +354,66 @@ class TestTouchCollectionUpdateTime:
         # Should not affect empty collections
         dataset.touch_collection_update_time()
         session.commit()
+
+
+class TestJobFinalStateTouchesCollections:
+    """Test that finishing a job updates the collections containing its outputs."""
+
+    def test_set_final_state(self, session, hda, user):
+        job = model.Job()
+        job.user = user
+        job.state = model.Job.states.RUNNING
+        job_id = persist(session, job)
+        job = session.get(model.Job, job_id)
+        hda.dataset.job_id = job.id
+        session.commit()
+        # Not associated with the job directly, like the implicit output collection of a mapped tool
+        hdca = create_nested_collection_hierarchy(session, hda)
+        original_time = hdca.update_time
+
+        job.set_final_state(model.Job.states.OK)
+        session.commit()
+
+        session.refresh(hdca)
+        assert hdca.update_time > original_time
+
+    def test_set_final_state_survives_touch_failure(self, session, hda, user):
+        job = model.Job()
+        job.user = user
+        job.state = model.Job.states.RUNNING
+        job_id = persist(session, job)
+        job = session.get(model.Job, job_id)
+        hda.dataset.job_id = job.id
+        session.commit()
+        create_nested_collection_hierarchy(session, hda)
+
+        with patch.object(model.Dataset, "_touch_collection_update_time_cte", side_effect=Exception("touch failed")):
+            job.set_final_state(model.Job.states.OK)
+        session.commit()
+
+        session.expire(job)
+        assert job.state == model.Job.states.OK
+
+    def test_set_final_state_multiple_outputs(self, session, hda, user):
+        job = model.Job()
+        job.user = user
+        job.state = model.Job.states.RUNNING
+        job_id = persist(session, job)
+        job = session.get(model.Job, job_id)
+        other_dataset = model.Dataset(state="ok")
+        other_hda = model.HistoryDatasetAssociation(dataset=other_dataset, history=hda.history, name="Other", hid=2)
+        other_hda = session.get(model.HistoryDatasetAssociation, persist(session, other_hda))
+        hda.dataset.job_id = job.id
+        other_hda.dataset.job_id = job.id
+        session.commit()
+        nested_hdca = create_nested_collection_hierarchy(session, hda)
+        simple_hdca = create_simple_collection_hierarchy(session, other_hda)
+        original_times = (nested_hdca.update_time, simple_hdca.update_time)
+
+        job.set_final_state(model.Job.states.OK)
+        session.commit()
+
+        session.refresh(nested_hdca)
+        session.refresh(simple_hdca)
+        assert nested_hdca.update_time > original_times[0]
+        assert simple_hdca.update_time > original_times[1]

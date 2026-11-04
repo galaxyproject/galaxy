@@ -98,7 +98,8 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
                     history_id: batch.historyId,
                     hide_source_items: batch.hideSourceItems,
                     instance_type: "history",
-                    copy_elements: true,
+                    // the batch's datasets were created by this upload, so they become the elements
+                    copy_elements: false,
                     fields: "auto",
                 },
                 signal,

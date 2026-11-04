@@ -689,7 +689,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 path += ldda.name
                 while path in seen:
                     path += "_"
-                path = f"{path}.{ldda.extension}"
+                path = f"{path}.{ldda.datatype.get_download_extension(ldda)}"
                 seen.append(path)
                 zpath = os.path.split(path)[-1]  # comes as base_name/fname
                 outfname, zpathext = os.path.splitext(zpath)
@@ -771,7 +771,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 fStat = os.stat(dataset.get_file_name())
                 trans.response.set_content_type(ldda.get_mime())
                 trans.response.headers["Content-Length"] = str(fStat.st_size)
-                fname = f"{ldda.name}.{ldda.extension}"
+                fname = f"{ldda.name}.{ldda.datatype.get_download_extension(ldda)}"
                 fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = f'attachment; filename="{fname}"'
                 try:

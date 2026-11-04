@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faPen, faSave, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput, BFormTextarea } from "bootstrap-vue";
+import { BFormTextarea } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -11,6 +11,7 @@ import l from "@/utils/localization";
 
 import type { DetailsLayoutSummarized } from "./types";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -60,6 +61,9 @@ const localProps = ref<EditableDetails>({
 // Props lag behind a save that is still in flight, so this snapshot can be stale.
 const openedWith = ref<EditableDetails>({ ...localProps.value });
 
+// GFormInput does not trim, so a blank or padded name is trimmed before it is saved
+const trimmedName = computed(() => localProps.value.name.trim());
+
 const clickToEditName = computed({
     get: () => props.name ?? "",
     set: (newName) => {
@@ -101,7 +105,7 @@ function onSave() {
     // Emit only the edited fields, so a stale snapshot never overwrites values saved in the meantime.
     const changes: Partial<EditableDetails> = {};
     if (localProps.value.name !== openedWith.value.name) {
-        changes.name = localProps.value.name;
+        changes.name = trimmedName.value;
     }
     if (localProps.value.annotation !== openedWith.value.annotation) {
         changes.annotation = localProps.value.annotation;
@@ -211,13 +215,11 @@ function selectText() {
         </div>
 
         <div v-else class="mt-3" data-description="edit form">
-            <BFormInput
+            <GFormInput
                 ref="name"
                 v-model="localProps.name"
                 class="mb-2"
                 placeholder="Name"
-                trim
-                max-rows="4"
                 data-description="name input"
                 @keyup.enter="onSave"
                 @keyup.esc="onToggle"
@@ -241,7 +243,7 @@ function selectText() {
                 data-description="editor save button"
                 size="small"
                 color="blue"
-                :disabled="!localProps.name"
+                :disabled="!trimmedName"
                 @click="onSave">
                 <FontAwesomeIcon :icon="faSave" fixed-width />
                 <span v-localize>Save</span>

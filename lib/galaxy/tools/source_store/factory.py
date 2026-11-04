@@ -95,7 +95,7 @@ def build_named_store(
             log.debug("tool_source_stores[%r] candidate rejected: %s", name, diagnostic)
         if resolved is None:
             reason = f"no compatible external tool source store for {name!r} under {external_store_directory}"
-            log.warning("%s; tools from this conf will parse eagerly", reason)
+            log.warning("%s; the cached toolbox will not load without it", reason)
             return UnavailableToolSourceStore(reason)
         url = str(
             URL.create(

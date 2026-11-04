@@ -5,6 +5,7 @@ order to test something that cannot be tested with the default functional/api
 testing configuration.
 """
 
+import json
 import os
 import re
 import string
@@ -408,6 +409,31 @@ class ConfigureAllowedUrlHeaders:
         with open(url_headers_conf_path, "w") as f:
             f.write(allowed_url_headers_conf)
         config["url_headers_config_file"] = url_headers_conf_path
+
+
+class ConfiguresMockEmails:
+    """Have Galaxy write each email it sends to ``email_path`` as JSON instead of mailing it."""
+
+    email_path: ClassVar[str]
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_mock_emails(cls, config: dict[str, Any]):
+        cls.email_path = os.path.join(cls._test_driver.mkdtemp(), "email.json")
+        config["email_from"] = "galaxy-noreply@example.com"
+        config["smtp_server"] = f"mock_emails_to_path://{cls.email_path}"
+
+    def _read_mock_email(self) -> dict[str, Any]:
+        with open(self.email_path) as f:
+            return json.load(f)
+
+    def _read_activation_link(self, email_address: str) -> str:
+        email = self._read_mock_email()
+        assert email["to"] == email_address
+        assert email["subject"] == "Galaxy Account Activation"
+        match = re.search(r"(https?://[^/\s]+/user/activate\?\S+)", email["body"])
+        assert match, f"No activation link found in email body:\n{email['body']}"
+        return match.group(1)
 
 
 class UsesFakeAIProvider:

@@ -24,6 +24,10 @@ from galaxy.tool_util.deps.container_classes import (
     Container,
     TRAP_KILL_CONTAINER,
 )
+from galaxy.tool_util.runtime_environment import (
+    required_environment_checks,
+    RUNTIME_ENVIRONMENT_WARNING_FILE,
+)
 
 if typing.TYPE_CHECKING:
     from galaxy.jobs import MinimalJobWrapper
@@ -73,7 +77,16 @@ def build_command(
     # job_id = job_wrapper.job_id
     # log.debug( 'Tool evaluation for job (%s) produced command-line: %s' % ( job_id, base_command_line ) )
 
+    for_pulsar = "pulsar_version" in remote_command_params
     commands_builder = CommandsBuilder(base_command_line)
+    working_directory = remote_job_directory or job_wrapper.working_directory
+    # outputs is writable inside wrapped containers for both Galaxy and Pulsar job directories.
+    warning_path = join(working_directory, "outputs", RUNTIME_ENVIRONMENT_WARNING_FILE)
+    warning_checks = ""
+    if job_wrapper.tool:
+        warning_checks = required_environment_checks(job_wrapper.tool.runtime_environment_variables, warning_path)
+        if warning_checks:
+            commands_builder.prepend_command(warning_checks)
 
     # Dependency resolution and task splitting are prepended to the
     # command - so they need to appear in the following order to ensure that
@@ -88,7 +101,6 @@ def build_command(
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
     __handle_task_splitting(commands_builder, job_wrapper)
-    for_pulsar = "pulsar_version" in remote_command_params
     if container:
         if core_job_metric_plugin := runner.app.job_metrics.default_job_instrumenter.get_configured_plugin("core"):
             directory = join(job_wrapper.working_directory, "metadata") if for_pulsar else job_wrapper.working_directory
@@ -138,8 +150,15 @@ def build_command(
     if container_monitor_command := job_wrapper.container_monitor_command(container):
         commands_builder.prepend_command(container_monitor_command)
 
-    working_directory = remote_job_directory or job_wrapper.working_directory
     commands_builder.capture_return_code(default_exit_code_file(working_directory, job_wrapper.job_id))
+    if warning_checks and for_pulsar:
+        # Pulsar stages metadata, not outputs, back to Galaxy; copy outside the container.
+        metadata_warning_path = shlex.quote(join(working_directory, "metadata", RUNTIME_ENVIRONMENT_WARNING_FILE))
+        quoted_warning_path = shlex.quote(warning_path)
+        commands_builder.append_command(
+            f"if [ -f {quoted_warning_path} ] && [ ! -L {quoted_warning_path} ]; "
+            f"then cp {quoted_warning_path} {metadata_warning_path}; fi"
+        )
 
     if job_wrapper.is_cwl_job:
         # Minimal metadata needed by the relocate script

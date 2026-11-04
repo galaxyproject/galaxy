@@ -704,9 +704,10 @@ export class InputCollectionTerminal extends BaseInputTerminal {
             } else {
                 let reason = "Incompatible collection type(s) for attachment.";
                 if (this.collectionTypes.length == 1) {
+                    const inputCollectionType = this.collectionTypes[0]?.collectionType;
                     if (
                         otherCollectionType.collectionType?.endsWith("paired_or_unpaired") &&
-                        this.collectionTypes[0]?.collectionType?.endsWith("paired")
+                        (inputCollectionType == "paired" || inputCollectionType?.endsWith(":paired"))
                     ) {
                         reason =
                             "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output.";
@@ -857,24 +858,24 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
                     // we need to find which of the possible input collection types is connected
                     if ("collectionTypes" in inputTerminal) {
                         // collection_type_source must point at input collection terminal.
-                        // Direction here is input_type.accepts(output_type): the
-                        // receiver is the declared input collection type; the
-                        // argument is the connected output's shape.
-                        const connectedCollectionType = inputTerminal.collectionTypes.find(
-                            (collectionType) =>
-                                collectionType.accepts(otherCollectionType) ||
-                                otherCollectionType.canMapOver(collectionType),
+                        // Map-over is checked first, as on the server; direct edges use
+                        // input_type.accepts(output_type).
+                        const mappedOverCollectionType = inputTerminal.collectionTypes.find((collectionType) =>
+                            otherCollectionType.canMapOver(collectionType),
                         );
-                        if (connectedCollectionType) {
-                            if (connectedCollectionType.collectionType === "any") {
-                                // if the input collection type is "any" this output's collection type
-                                // is exactly the same as the connected output
-                                return otherCollectionType;
-                            } else {
-                                // else we pick the matching input collection type
-                                // so that the map over logic applies correctly
-                                return connectedCollectionType;
-                            }
+                        if (mappedOverCollectionType) {
+                            // pick the input collection type mapped over
+                            // so that the map over logic applies correctly
+                            return mappedOverCollectionType;
+                        }
+                        if (
+                            inputTerminal.collectionTypes.some((collectionType) =>
+                                collectionType.accepts(otherCollectionType),
+                            )
+                        ) {
+                            // without map over, this output's collection type
+                            // is exactly the same as the connected output
+                            return otherCollectionType;
                         }
                     }
                 }

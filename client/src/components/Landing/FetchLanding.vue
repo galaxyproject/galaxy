@@ -73,7 +73,9 @@ const { fetchAndWatch, fetchComplete, fetchError, waitingOnFetch } = useFetchJob
         </template>
         <template v-slot>
             <LoadingSpan v-if="!currentHistoryId" />
-            <GAlert v-else-if="fetchComplete" variant="success" show> Data imported successfully. </GAlert>
+            <GAlert v-else-if="fetchComplete" variant="success" show data-description="fetch landing success">
+                Data imported successfully.
+            </GAlert>
             <GAlert v-else-if="fetchError" variant="danger" show> Error importing data: {{ fetchError }} </GAlert>
             <GAlert v-else-if="waitingOnFetch" variant="info" show>
                 <LoadingSpan message="Importing data" />

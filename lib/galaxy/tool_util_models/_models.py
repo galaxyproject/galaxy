@@ -43,6 +43,7 @@ from ._base import (
 )
 from .assertions import assertions
 from .parameters import ToolParameterT
+from .runtime_environment import RuntimeEnvironmentVariable as RuntimeEnvironmentVariable
 from .test_job import Job
 from .tool_outputs import (
     IncomingToolOutput,
@@ -563,6 +564,7 @@ class UserToolSource(UserToolSourceAuthoringView):
 
 
 class YamlToolSource(_DynamicToolSourceBase):
+    runtime_environment_variables: list[RuntimeEnvironmentVariable] = []
     class_: Annotated[Literal["GalaxyTool"], Field(alias="class")]
     container: Annotated[
         str | None,
@@ -955,6 +957,11 @@ class CollectionAttributes(StrictModel):
     collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
 
 
+class CollectionMetadata(StrictModel):
+    model_config = ConfigDict(extra="forbid", title="CollectionMetadata")
+    name: Annotated[str | None, Field(title="Name", description="Expected name of the output collection.")] = None
+
+
 class TestCollectionOutputAssertions(StrictModel):
     model_config = ConfigDict(extra="forbid", title="TestCollectionOutputAssertions")
     class_: Literal["Collection"] | None = Field("Collection", alias="class", title="Class")
@@ -969,6 +976,7 @@ class TestCollectionOutputAssertions(StrictModel):
     element_count: Annotated[int | None, Field(title="Element Count")] = None
     attributes: Annotated[CollectionAttributes | None, Field(title="Attributes")] = None
     collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
+    metadata: Annotated[CollectionMetadata | None, Field(title="Metadata")] = None
 
 
 TestOutputLiteral = bool | int | float | str

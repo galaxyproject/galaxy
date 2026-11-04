@@ -67,20 +67,22 @@ async function submit(key: string, operation: string) {
     }
 }
 
-async function loadDatasetAttributes() {
-    loading.value = true;
-
+async function fetchForms() {
     try {
-        const data = await fetchDatasetAttributes(props.datasetId);
-
-        datasetAttributes.value = data;
+        datasetAttributes.value = await fetchDatasetAttributes(props.datasetId);
+        return true;
     } catch (e) {
         const error = e as AxiosError<{ err_msg?: string }>;
-        loadingFailed.value = true;
+
         onError(error.response?.data?.err_msg || "Unable to fetch available dataset attributes.");
-    } finally {
-        loading.value = false;
+        return false;
     }
+}
+
+async function loadDatasetAttributes() {
+    loading.value = true;
+    loadingFailed.value = !(await fetchForms());
+    loading.value = false;
 }
 
 onMounted(async () => {
@@ -206,7 +208,7 @@ onMounted(async () => {
                     </div>
                 </GTab>
 
-                <GTab v-if="!datasetAttributes['permission_disable']">
+                <GTab v-if="!datasetAttributes['permission_disable']" title-link-class="dataset-edit-permissions-tab">
                     <template v-slot:title>
                         <FontAwesomeIcon :icon="faUser" class="mr-1" />
                         {{ localize("Permissions") }}

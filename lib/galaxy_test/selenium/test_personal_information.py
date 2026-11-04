@@ -51,24 +51,14 @@ class TestManageInformation(SeleniumTestCase):
         email = self._get_random_email()
         self.register(email)
         self.navigate_to_user_preferences()
-        self.sleep_for(self.wait_types.UX_RENDER)
 
         # rendered email should be equal
         assert_email(email)
 
-        self.components.preferences.manage_information.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-
         new_email = self._get_random_email()
         # new email should be different from initially registered
         assert email != new_email
-        email_input_field = self.components.preferences.email_input.wait_for_visible()
-
-        self.clear_input_field_and_write(email_input_field, new_email)
-        self.components.change_user_email.submit.wait_for_and_click()
-
-        # UX_RENDER time sometimes is not enough
-        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.manage_information_save(email=new_email)
 
         # email should be changed
         assert_email(new_email)
@@ -81,24 +71,19 @@ class TestManageInformation(SeleniumTestCase):
         def assert_public_name(expected_name):
             assert expected_name == get_name_input_field().get_attribute("value")
 
-        public_name = "user-public-name"
+        public_name = self._get_random_name(prefix="user-public-name-")
         self.register(username=public_name)
         self.navigate_to_manage_information()
-        self.sleep_for(self.wait_types.UX_RENDER)
 
         # make sure that public name is the same as registered
         assert_public_name(public_name)
-        new_public_name = "new-public-name"
-        # change public name
-        self.clear_input_field_and_write(get_name_input_field(), new_public_name)
-        self.components.change_user_email.submit.wait_for_and_click()
-
-        self.sleep_for(self.wait_types.UX_TRANSITION)
+        new_public_name = self._get_random_name(prefix="new-public-name-")
+        self.manage_information_save(username=new_public_name)
 
         self.navigate_to_manage_information()
-        self.sleep_for(self.wait_types.UX_RENDER)
         # public name field should render new public name
         assert_public_name(new_public_name)
+        self.screenshot("manage_information_public_name_saved")
 
     @selenium_test
     def test_user_address(self):
@@ -137,9 +122,42 @@ class TestManageInformation(SeleniumTestCase):
             input_field = self.get_address_input_field(input_field_label)
             assert input_field.get_attribute("value") == address_fields[input_field_label]
 
-    def navigate_to_manage_information(self):
-        self.navigate_to_user_preferences()
-        self.components.preferences.manage_information.wait_for_and_click()
+    @selenium_test
+    def test_new_datasets_private_switch(self):
+        # A fresh user, so the shared test user's dataset permissions stay as they are.
+        email = self._get_random_email()
+        self.register(email)
+        # new_user_dataset_access_role_default_private defaults to true
+        assert self.user_preferences_new_datasets_private() is True
+        self.user_preferences_set_new_datasets_private(False)
+        assert self.user_preferences_new_datasets_private() is False
+        self.screenshot("user_preferences_new_datasets_private_off")
+        permissions, roles = self._new_history_dataset_permissions()
+        self.screenshot("dataset_edit_permissions_public")
+        assert permissions["access"] == []
+        assert roles == {"manage": [email], "access": []}
+
+        self.user_preferences_set_new_datasets_private(True)
+        assert self.user_preferences_new_datasets_private() is True
+        self.screenshot("user_preferences_new_datasets_private_on")
+        permissions, roles = self._new_history_dataset_permissions()
+        self.screenshot("dataset_edit_permissions_private")
+        # the access role is the user's private role, which also manages the dataset
+        assert len(permissions["manage"]) == 1
+        assert permissions["access"] == permissions["manage"]
+        assert roles == {"manage": [email], "access": [email]}
+
+    def _new_history_dataset_permissions(self) -> tuple[dict[str, list], dict[str, list[str]]]:
+        self.home()
+        self.history_panel_create_new()
+        history_id = self.current_history_id()
+        hda = self.dataset_populator.new_dataset(history_id, content="a\n", wait=True)
+        self.home()
+        self.history_panel_wait_for_hid_ok(1)
+        self.history_panel_item_edit(hid=1)
+        roles = self.edit_dataset_permission_roles()
+        details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=hda["id"])
+        return details["permissions"], roles
 
     def clear_input_field_and_write(self, element, new_input_text):
         element.clear()

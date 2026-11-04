@@ -243,6 +243,7 @@ onMounted(() => {
         if (config.interactivetools_enable) {
             useEntryPointStore().startWatchingEntryPoints();
         }
+        userStore.startWatchingStorageUsage();
         if (config.enable_notification_system) {
             useNotificationsStore().startWatchingNotifications();
         }

@@ -1,4 +1,5 @@
 import os
+import shlex
 import string
 from abc import (
     ABCMeta,
@@ -317,6 +318,50 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> list[str]:
     return list(target_to_volume.values())
 
 
+# Job directory subdirectories mounted into tool containers by default, Galaxy creates them with the job directory.
+JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES = ("inputs", "configs", "outputs")
+
+
+def _job_directory_subdirectories(job_info: "JobInfo") -> list[str]:
+    """Return the job directory subdirectories that tool containers need by default.
+
+    The job directory itself is not mounted. Besides these subdirectories it holds the job
+    script, the files metadata is set from (possibly including object store credentials) and,
+    for Pulsar, the launch_config with the job's Galaxy callback credentials - none of which
+    the tool needs, and some of which run outside of the container.
+    """
+    if job_info.job_directory_type == "pulsar":
+        # Pulsar stages inputs, config files and unstructured files (e.g. referenced
+        # by .loc files) into these.
+        return [*JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES, "unstructured"]
+    return list(JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES)
+
+
+def _job_directory_volumes(job_info: "JobInfo", tool_info: "ToolInfo") -> str:
+    if job_info.job_type != "tool":
+        # Prolog and epilog containers (e.g. containerized metadata) run Galaxy's own code on the job directory.
+        return "$job_directory:ro,$job_directory/outputs:rw"
+    # Tools before profile 20.01 may move their config files elsewhere (e.g. ``mv $script_file script.R``), see #9234.
+    legacy_configs = job_info.job_directory_type != "pulsar" and Version(str(tool_info.profile)) <= Version("19.09")
+    volumes = ["$job_directory/tool_script.sh:ro"]
+    for name in _job_directory_subdirectories(job_info):
+        mode = "rw" if name == "outputs" or (name == "configs" and legacy_configs) else "ro"
+        volumes.append(f"$job_directory/{name}:{mode}")
+    return ",".join(volumes)
+
+
+def _create_job_directory_subdirectories_command(job_info: "JobInfo") -> str:
+    """Create the Pulsar unstructured directory, which Pulsar only creates when staging unstructured files.
+
+    Volume sources must exist: Singularity refuses to start without them and Docker would
+    create them as root. Galaxy and Pulsar create the other default subdirectories along
+    with the job directory.
+    """
+    if not job_info.job_directory or job_info.job_type != "tool" or job_info.job_directory_type != "pulsar":
+        return ""
+    return f"mkdir -p {shlex.quote(os.path.join(job_info.job_directory, 'unstructured'))}"
+
+
 class HasDockerLikeVolumes:
     """Mixin to share functionality related to Docker volume handling.
 
@@ -374,11 +419,11 @@ class HasDockerLikeVolumes:
 
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
             # We have a Pulsar job directory, so everything needed (excluding index
-            # files) should be available in job_directory...
-            defaults = "$job_directory:ro"
+            # files) should be available in its subdirectories...
+            defaults = _job_directory_volumes(self.job_info, self.tool_info)
             if self.job_info.tool_directory:
                 defaults += ",$tool_directory:ro"
-            defaults += ",$job_directory/outputs:rw,$working_directory:rw"
+            defaults += ",$working_directory:rw"
         else:
             if self.job_info.tmp_directory is not None:
                 defaults = "$tmp_directory:rw"
@@ -393,9 +438,7 @@ class HasDockerLikeVolumes:
             if self.job_info.tool_directory:
                 defaults += ",$tool_directory:ro"
             if self.job_info.job_directory:
-                defaults += ",$job_directory:ro,$job_directory/outputs:rw"
-                if Version(str(self.tool_info.profile)) <= Version("19.09"):
-                    defaults += ",$job_directory/configs:rw"
+                defaults += f",{_job_directory_volumes(self.job_info, self.tool_info)}"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
             defaults += ",$working_directory:rw"
@@ -419,7 +462,7 @@ class HasDockerLikeVolumes:
 
         # Not all tools have a tool_directory - strip this out if supplied by
         # job_conf.
-        if (tool_directory_index := volumes_str.find("$tool_directory")) > 0:
+        if (tool_directory_index := volumes_str.find("$tool_directory")) >= 0:
             end_index = volumes_str.find(",", tool_directory_index)
             if end_index < 0:
                 end_index = len(volumes_str)
@@ -462,12 +505,17 @@ class DockerContainer(Container, HasDockerLikeVolumes):
 
     def containerize_command(self, command: str) -> str:
         env_directives = []
-        for pass_through_var in self.tool_info.env_pass_through:
-            env_directives.append(f'"{pass_through_var}=${pass_through_var}"')
+        pass_through = []
+        sudo = asbool(self.prop("sudo", docker_util.DEFAULT_SUDO))
+        for name in dict.fromkeys(self.tool_info.env_pass_through):
+            if sudo:
+                # sudo resets the environment, so expand set values on the host; unset names stay bare and are omitted.
+                env_directives.append(f'"{name}${{{name}+=${name}}}"')
+            else:
+                env_directives.append(name)
+                pass_through.append(f'if [ "${{{name}+x}}" = x ]; then export {name}; fi')
 
-        # Allow destinations to explicitly set environment variables just for
-        # docker container. Better approach is to set for destination and then
-        # pass through only what tool needs however. (See todo in ToolInfo.)
+        # Legacy runtime-specific values override the variables forwarded by name.
         for key, value in self.destination_info.items():
             if key.startswith("docker_env_"):
                 env = key[len("docker_env_") :]
@@ -515,11 +563,15 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         # https://stackoverflow.com/questions/34228864/stop-and-delete-docker-container-if-its-running
         # Standard error is:
         #    Error response from daemon: Cannot kill container: 2b0b961527574ebc873256b481bbe72e: No such container: 2b0b961527574ebc873256b481bbe72e
+        pass_through_commands = "\n".join(pass_through)
+        create_job_directory_subdirectories_command = _create_job_directory_subdirectories_command(self.job_info)
         return f"""
 _on_exit() {{
   {kill_command} &> /dev/null
 }}
 {TRAP_KILL_CONTAINER}
+{pass_through_commands}
+{create_job_directory_subdirectories_command}
 {cache_command}
 {run_command}"""
 
@@ -590,12 +642,11 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
 
     def containerize_command(self, command: str) -> str:
         env = []
-        for pass_through_var in self.tool_info.env_pass_through:
-            env.append((pass_through_var, f"${pass_through_var}"))
+        pass_through = []
+        for name in dict.fromkeys(self.tool_info.env_pass_through):
+            pass_through.append(f'if [ "${{{name}+x}}" = x ]; then export SINGULARITYENV_{name}="${name}"; fi')
 
-        # Allow destinations to explicitly set environment variables just for
-        # docker container. Better approach is to set for destination and then
-        # pass through only what tool needs however. (See todo in ToolInfo.)
+        # Legacy runtime-specific values override the variables forwarded by name.
         for key, value in self.destination_info.items():
             if key.startswith("singularity_env_"):
                 real_key = key[len("singularity_env_") :]
@@ -614,6 +665,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             self.container_id,
             volumes=volumes,
             env=env,
+            home="$HOME" if "HOME" in self.tool_info.env_pass_through else None,
             working_directory=working_directory,
             run_extra_arguments=self.prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
             guest_ports=self.tool_info.guest_ports,
@@ -625,7 +677,10 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             no_mount=self.prop("no_mount", singularity_util.DEFAULT_NO_MOUNT),
             **self.get_singularity_target_kwds(),
         )
-        return run_command
+        create_job_directory_subdirectories_command = _create_job_directory_subdirectories_command(self.job_info)
+        if create_job_directory_subdirectories_command:
+            pass_through.append(create_job_directory_subdirectories_command)
+        return "\n".join(["(", *pass_through, run_command, ")"])
 
 
 CONTAINER_CLASSES: dict[str, type[Container]] = dict(

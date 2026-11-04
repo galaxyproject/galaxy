@@ -31,7 +31,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import object_session
 
 from galaxy import model
-from galaxy.exceptions import ConfigurationError
+from galaxy.exceptions import (
+    ConfigurationError,
+    InsufficientPermissionsException,
+)
 from galaxy.job_execution.output_collect import (
     default_exit_code_file,
     read_exit_code_from,
@@ -100,6 +103,10 @@ GALAXY_LIB_ADJUST_TEMPLATE = """GALAXY_LIB="%s"; if [ "$GALAXY_LIB" != "None" ];
 GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then . "$GALAXY_VIRTUAL_ENV/bin/activate"; fi;"""
 
 
+class ContainerRequiredException(Exception):
+    """No container was found for a job that requires one."""
+
+
 class RunnerParams(ParamsWithSpecs):
     def _param_unknown_error(self, name):
         raise Exception(JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE % name)
@@ -113,6 +120,8 @@ class RunnerParams(ParamsWithSpecs):
 
 class BaseJobRunner:
     runner_name = "BaseJobRunner"
+    runs_job_script_in_container = False
+    """The entire job script executes inside the tool container."""
 
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
     #: Whether ``recover()`` knows how to resume a job left in the FINISHING state by an
@@ -384,8 +393,8 @@ class BaseJobRunner:
                 modify_command_for_container=modify_command_for_container,
                 stream_stdout_stderr=stream_stdout_stderr,
             )
-        except (ParameterValueError, ExpressionTemplateError) as e:
-            log.info("(%s) validation error preparing job: %s", job_id, unicodify(e))
+        except (ParameterValueError, ExpressionTemplateError, InsufficientPermissionsException) as e:
+            log.info("(%s) job rejected while preparing: %s", job_id, unicodify(e))
             job_wrapper.fail(unicodify(e), exception=False)
             return False
         except Exception as e:
@@ -418,8 +427,6 @@ class BaseJobRunner:
         stream_stdout_stderr=False,
     ):
         container = self._find_container(job_wrapper)
-        if not container and job_wrapper.requires_containerization:
-            raise Exception("Failed to find a container when required, contact Galaxy admin.")
         metadata_container = self._get_metadata_container(job_wrapper)
         return build_command(
             self,
@@ -592,8 +599,7 @@ class BaseJobRunner:
         env_setup_commands = kwds.get("env_setup_commands", [])
         env_setup_commands.append(job_wrapper.get_env_setup_clause() or "")
         destination = job_wrapper.job_destination
-        envs = destination.env
-        envs.extend(job_wrapper.environment_variables)
+        envs = [*destination.env, *job_wrapper.environment_variables]
         for env in envs:
             env_setup_commands.append(env_to_statement(env))
         command_line = job_wrapper.runner_command_line
@@ -648,7 +654,7 @@ class BaseJobRunner:
             tool.containers,
             tool.requirements,
             tool.requires_galaxy_python_environment,
-            tool.docker_env_pass_through,
+            list(dict.fromkeys([*tool.docker_env_pass_through, *job_wrapper.job_destination.tool_env_names])),
             guest_ports=guest_ports,
             tool_id=tool.id,
             tool_version=tool.version,
@@ -668,6 +674,10 @@ class BaseJobRunner:
         container = self.app.container_finder.find_container(tool_info, destination_info, job_info)
         if container:
             job_wrapper.set_container(container)
+        elif job_wrapper.requires_containerization:
+            # Checked here rather than in build_command_line so that runners building
+            # their own command lines (e.g. Pulsar) enforce it too.
+            raise ContainerRequiredException("Failed to find a container when required, contact Galaxy admin.")
         return container
 
     def _get_metadata_container(

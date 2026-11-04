@@ -29,37 +29,31 @@
         </div>
         <div v-else>
             <BForm @submit.prevent="submit">
-                <BFormGroup v-slot="{ ariaDescribedby }" :label="howLabel">
-                    <BFormRadioGroup
-                        v-model="importType"
-                        :aria-describedby="ariaDescribedby"
-                        name="import-type"
-                        stacked>
-                        <BFormRadio value="externalUrl">
-                            Export URL from another Galaxy instance
-                            <FontAwesomeIcon :icon="faExternalLinkAlt" />
-                        </BFormRadio>
-                        <BFormRadio value="upload">
-                            Upload local file from your computer
-                            <FontAwesomeIcon :icon="faUpload" />
-                        </BFormRadio>
-                        <BFormRadio v-if="hasFileSources" value="remoteFilesUri">
-                            Select a repository (e.g. Galaxy's FTP)
-                            <FontAwesomeIcon :icon="faFolderOpen" />
-                        </BFormRadio>
-                    </BFormRadioGroup>
-                </BFormGroup>
+                <GRadioGroup v-model="importType" stacked class="mb-3" name="import-type" :label="howLabel">
+                    <GRadio value="externalUrl">
+                        Export URL from another Galaxy instance
+                        <FontAwesomeIcon :icon="faExternalLinkAlt" />
+                    </GRadio>
+                    <GRadio value="upload">
+                        Upload local file from your computer
+                        <FontAwesomeIcon :icon="faUpload" />
+                    </GRadio>
+                    <GRadio v-if="hasFileSources" value="remoteFilesUri">
+                        Select a repository (e.g. Galaxy's FTP)
+                        <FontAwesomeIcon :icon="faFolderOpen" />
+                    </GRadio>
+                </GRadioGroup>
 
-                <BFormGroup v-if="invocationImport" v-slot="{ ariaDescribedby }" :label="whereLabel">
-                    <BFormRadioGroup
-                        v-model="importTarget"
-                        :aria-describedby="ariaDescribedby"
-                        name="import-target"
-                        stacked>
-                        <BFormRadio value="newHistory"> Import into a new history. </BFormRadio>
-                        <BFormRadio value="currentHistory"> Import into the current history. </BFormRadio>
-                    </BFormRadioGroup>
-                </BFormGroup>
+                <GRadioGroup
+                    v-if="invocationImport"
+                    v-model="importTarget"
+                    stacked
+                    class="mb-3"
+                    name="import-target"
+                    :label="whereLabel">
+                    <GRadio value="newHistory"> Import into a new history. </GRadio>
+                    <GRadio value="currentHistory"> Import into the current history. </GRadio>
+                </GRadioGroup>
 
                 <BFormGroup v-if="importType === 'externalUrl'" :label="urlLabel">
                     <GAlert v-if="showImportUrlWarning" variant="warning" show>
@@ -94,7 +88,7 @@ import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-sol
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
-import { BForm, BFormFile, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
+import { BForm, BFormFile, BFormGroup, BFormInput } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import { fetchFileSources } from "@/api/remoteFiles";
@@ -105,6 +99,8 @@ import { capitalizeFirstLetter } from "@/utils/strings";
 
 import GAlert from "./BaseComponents/GAlert.vue";
 import GButton from "./BaseComponents/GButton.vue";
+import GRadio from "./BaseComponents/GRadio.vue";
+import GRadioGroup from "./BaseComponents/GRadioGroup.vue";
 import ExternalLink from "./ExternalLink.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 import ImportSuccess from "@/components/ImportSuccess.vue";
@@ -117,8 +113,6 @@ export default {
         BFormFile,
         BFormGroup,
         BFormInput,
-        BFormRadio,
-        BFormRadioGroup,
         FilesInput,
         FontAwesomeIcon,
         ImportSuccess,
@@ -127,6 +121,8 @@ export default {
         ExternalLink,
         GAlert,
         GButton,
+        GRadio,
+        GRadioGroup,
     },
     props: {
         invocationImport: {

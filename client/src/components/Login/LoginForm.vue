@@ -117,7 +117,7 @@ async function submitLogin() {
         } else if (connectExternalProvider.value) {
             window.location.href = withPrefix("/user/external_ids?connect_external=true");
         } else if (response.data.redirect) {
-            window.location.href = withPrefix(encodeURI(response.data.redirect));
+            window.location.href = withPrefix(response.data.redirect);
         } else {
             window.location.href = withPrefix("/");
         }
@@ -206,7 +206,7 @@ function goToResetPassword() {
                                         <BFormText v-if="showResetLink" class="text-nowrap">
                                             <span v-localize>Forgot password?</span>
 
-                                            <GLink id="reset-password-link" @click="goToResetPassword">
+                                            <GLink id="reset-password-link" type="button" @click="goToResetPassword">
                                                 <span v-localize>Click here to reset your password.</span>
                                             </GLink>
                                         </BFormText>
