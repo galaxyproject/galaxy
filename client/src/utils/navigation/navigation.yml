@@ -1445,6 +1445,7 @@ invocations:
     activity_expand: ".activity-panel-footer"
     invocations_table: '#invocations-grid .grid-table'
     invocations_table_rows: '#invocations-grid .grid-table [data-description="grid item"]'
+    invocations_table_cell_filter: '#invocations-grid [data-description="grid cell ${row}-${column}"] [data-description="grid cell filter ${key}"]'
     invocations_panel_list: '[data-description="Workflow Invocations"] .scroll-list'
     invocations_panel_list_items: '[data-description="Workflow Invocations"] .scroll-list .g-card[id^="g-card-invocation-"]'
     pager: '[data-description="grid pager"]'

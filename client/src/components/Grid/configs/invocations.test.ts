@@ -6,7 +6,7 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
-import { getData } from "./invocations";
+import { FREE_TEXT_UNSUPPORTED, getData, getInvocationQueryParams } from "./invocations";
 
 const { server, http } = useServerMock();
 
@@ -19,10 +19,12 @@ const INVOCATIONS = [
 
 const workflowRequests = vi.fn();
 const historyRequests = vi.fn();
+const invocationQueries = vi.fn();
 
 function mockServer(workflowFails = false, historyFails = false) {
     server.use(
-        http.get("/api/invocations", ({ response }) => {
+        http.get("/api/invocations", ({ request, response }) => {
+            invocationQueries(Object.fromEntries(new URL(request.url).searchParams));
             return response.untyped(HttpResponse.json(INVOCATIONS, { headers: { total_matches: "4" } }));
         }),
         http.get("/api/histories/{history_id}", ({ params, response }) => {
@@ -49,6 +51,7 @@ describe("invocations grid getData", () => {
         setActivePinia(createPinia());
         workflowRequests.mockReset();
         historyRequests.mockReset();
+        invocationQueries.mockReset();
     });
 
     afterEach(() => {
@@ -97,5 +100,41 @@ describe("invocations grid getData", () => {
         await getData(0, 25, "", "create_time", true);
         await flushPromises();
         expect(historyRequests).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe("invocations grid filtering", () => {
+    it.each([
+        ["", {}],
+        ["workflow:f2db41e1fa331b3e", { workflow_id: "f2db41e1fa331b3e" }],
+        ["history:1cd8e2f6b131e891", { history_id: "1cd8e2f6b131e891" }],
+        [
+            "workflow:f2db41e1fa331b3e history:1cd8e2f6b131e891",
+            { workflow_id: "f2db41e1fa331b3e", history_id: "1cd8e2f6b131e891" },
+        ],
+    ])("maps %j to %j", (search, expected) => {
+        expect(getInvocationQueryParams(search)).toEqual(expected);
+    });
+
+    it.each(["my workflow", "workflow:f2db41e1fa331b3e rnaseq", "text:rnaseq"])("rejects free text in %j", (search) => {
+        expect(() => getInvocationQueryParams(search)).toThrow(FREE_TEXT_UNSUPPORTED);
+    });
+
+    it("sends filters as API query parameters", async () => {
+        setActivePinia(createPinia());
+        invocationQueries.mockReset();
+        mockServer();
+
+        await getData(0, 25, "workflow:f2db41e1fa331b3e history:1cd8e2f6b131e891", "create_time", true, {
+            user_id: "user-1",
+        });
+
+        expect(invocationQueries).toHaveBeenCalledWith(
+            expect.objectContaining({
+                workflow_id: "f2db41e1fa331b3e",
+                history_id: "1cd8e2f6b131e891",
+                user_id: "user-1",
+            }),
+        );
     });
 });
