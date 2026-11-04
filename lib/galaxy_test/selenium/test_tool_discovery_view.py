@@ -118,8 +118,11 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
         self.screenshot("tools_list_tag_picker_disabled")
 
     def _pick_tool_tag(self, tools_list, tag):
-        tools_list.tag_picker_toggle.wait_for_and_click()
-        tools_list.tag_picker_search.wait_for_and_send_keys(tag)
+        toggle = tools_list.tag_picker_toggle.wait_for_visible()
+        # The picker stays open after a pick, and clicking its toggle again would close it
+        if toggle.get_attribute("aria-expanded") != "true":
+            toggle.click()
+        tools_list.tag_picker_search.wait_for_and_clear_and_send_keys(tag)
         tools_list.tag_picker_option(tag=tag).wait_for_and_click()
 
     @playwright_only("Validates /tools/list tag autocomplete behavior with Playwright backend.")
