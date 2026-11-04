@@ -1,6 +1,6 @@
 import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
 import { SELECTION_STATES } from "./selectionTypes";
@@ -24,6 +24,10 @@ describe("SelectionDialog.vue", () => {
             props: mockOptions,
             global: localVue,
         });
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
@@ -166,7 +170,12 @@ describe("SelectionDialog.vue", () => {
         expect(nth(cells, 1).text()).toBe("-");
     });
 
-    it("filters on the displayed values, not on the parsed time or the raw entry", async () => {
+    it.each([
+        ["the parsed update time", "gmt"],
+        ["the raw entry", "object"],
+        ["the selection state", "unselected"],
+    ])("does not search %s (%j)", async (_field, text) => {
+        vi.useFakeTimers();
         await wrapper.setProps({
             optionsShow: true,
             items: [
@@ -178,19 +187,14 @@ describe("SelectionDialog.vue", () => {
                     updateTime: new Date("2026-10-17T09:30:00Z"),
                     entry: { id: "1" },
                 },
+                { id: "2", label: `${text}.txt`, isLeaf: true },
             ],
         });
-        const search = wrapper.findComponent(DataDialogSearch);
-        const rows = () => wrapper.findAll("td[id^='g-table-cell-label-']");
 
-        for (const text of ["gmt", "object", "unselected"]) {
-            search.vm.$emit("input", text);
-            await nextTick();
-            expect(rows()).toHaveLength(0);
-        }
+        await wrapper.get("input[type='text']").setValue(text);
+        await vi.advanceTimersByTimeAsync(500);
 
-        search.vm.$emit("input", "reads");
-        await nextTick();
-        expect(rows()).toHaveLength(1);
+        const labels = wrapper.findAll("td[id^='g-table-cell-label-']").map((cell) => cell.text());
+        expect(labels).toEqual([`${text}.txt`]);
     });
 });
