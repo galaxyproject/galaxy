@@ -2712,6 +2712,10 @@ class ToolModule(WorkflowModule):
                 tool_like = trans.app.toolbox.get_tool(
                     tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
                 )
+            if not tool_like and exact_tools and self.tool_version and not tool_uuid:
+                # ``exact`` means exact tool id; accept an unversioned shed guid
+                # or short id that names an installed version.
+                tool_like = trans.app.toolbox.get_tool_at_version(tool_id, self.tool_version)
             if tool_like:
                 self.tool = trans.app.toolbox.materialize_tool(tool_like, reason="validation")
         if self.tool:

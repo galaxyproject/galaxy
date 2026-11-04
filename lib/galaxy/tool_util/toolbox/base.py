@@ -1003,6 +1003,22 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             self.get_tool(tool_id, tool_version=tool_version, tool_uuid=tool_uuid, exact=exact, user=user) is not None
         )
 
+    def get_tool_at_version(self, tool_id: str, tool_version: str) -> ToolLike | None:
+        """Resolve ``tool_id`` only at ``tool_version``.
+
+        ``get_tool(..., exact=True)`` requires an exact tool id, so it misses an
+        unversioned Tool Shed guid or a short id even when the requested version
+        is installed. This follows lineage like a non-exact lookup but, unlike
+        one, never falls back to another version.
+        """
+        # Try the exact id first: a non-exact lookup of a short id shared by
+        # several repositories may settle on another repository's version.
+        for exact in (True, False):
+            tool = self.get_tool(tool_id, tool_version=tool_version, exact=exact)
+            if tool is not None and tool.version == str(tool_version):
+                return tool
+        return None
+
     def get_unprivileged_tool(self, user: "User", tool_uuid: UUID | str) -> Optional["Tool"]:
         return None
 
