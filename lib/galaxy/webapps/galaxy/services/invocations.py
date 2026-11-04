@@ -289,12 +289,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         params: InvocationSerializationParams,
         default_view: InvocationSerializationView = InvocationSerializationView.element,
     ):
-        view = params.view or default_view
-        step_details = params.step_details
-        legacy_job_state = params.legacy_job_state
-        as_dict = invocation.to_dict(view.value, step_details=step_details, legacy_job_state=legacy_job_state)
-        as_dict["messages"] = invocation.messages
-        return WorkflowInvocationResponse(**as_dict)
+        return self.serialize_workflow_invocations([invocation], params, default_view=default_view)[0]
 
     def serialize_workflow_invocations(
         self,
@@ -302,7 +297,15 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         params: InvocationSerializationParams,
         default_view: InvocationSerializationView = InvocationSerializationView.collection,
     ):
-        return [self.serialize_workflow_invocation(i, params, default_view=default_view) for i in invocations]
+        view = params.view or default_view
+        responses = []
+        for invocation in invocations:
+            as_dict = invocation.to_dict(
+                view.value, step_details=params.step_details, legacy_job_state=params.legacy_job_state
+            )
+            as_dict["messages"] = invocation.messages
+            responses.append(WorkflowInvocationResponse(**as_dict))
+        return responses
 
     def serialize_workflow_invocation_step(
         self,
