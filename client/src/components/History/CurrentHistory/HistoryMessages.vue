@@ -3,7 +3,7 @@ import { faArchive, faBurn, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import { type AnyUser, type HistorySummary, userOwnsHistory } from "@/api";
+import { type AnyUser, type HistorySummary, isRegisteredUser, userOwnsHistory } from "@/api";
 import localize from "@/utils/localization";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -19,8 +19,16 @@ const ownsHistory = computed(() => userOwnsHistory(props.currentUser, props.hist
 const showArchived = computed(() => props.history.archived && ownsHistory.value);
 
 // The quota concerns the user, not the history: only warn about it on their own histories.
-// The server caps the percentage at 100, which it reaches once usage hits the quota.
-const isOverQuota = computed(() => ownsHistory.value && (props.currentUser?.quota_percent ?? 0) >= 100);
+const isOverQuota = computed(() => ownsHistory.value && isUserOverQuota(props.currentUser));
+
+/** Jobs are held once the usage exceeds the quota, not when it equals it. */
+function isUserOverQuota(user: AnyUser) {
+    if (isRegisteredUser(user) && typeof user.quota_bytes === "number") {
+        return user.total_disk_usage > user.quota_bytes;
+    }
+    // Anonymous users only get the percentage, which the server caps at 100
+    return (user?.quota_percent ?? 0) >= 100;
+}
 
 const hasMessages = computed(
     () => props.history.purged || props.history.deleted || showArchived.value || isOverQuota.value,

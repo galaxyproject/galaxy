@@ -40,6 +40,18 @@ describe("HistoryMessages", () => {
         expect(wrapper.find(OVER_QUOTA_MESSAGE).exists()).toBe(true);
     });
 
+    it.each([
+        { title: "warns a registered user whose usage exceeds the quota", usage: 1001, warns: true },
+        { title: "doesn't warn a registered user whose usage equals the quota", usage: 1000, warns: false },
+    ])("$title", ({ usage, warns }) => {
+        // The server reports 100% in both cases: it caps the percentage
+        const user = getFakeRegisteredUser({ total_disk_usage: usage, quota_bytes: 1000, quota_percent: 100 });
+
+        const wrapper = mountHistoryMessages(user);
+
+        expect(wrapper.find(OVER_QUOTA_MESSAGE).exists()).toBe(warns);
+    });
+
     it("doesn't warn about the user's quota on someone else's history", () => {
         const user = { ...CURRENT_USER, quota_percent: 100 };
         const history = { ...getFakeHistorySummary(), user_id: "another_user_id" };
