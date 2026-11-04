@@ -178,6 +178,36 @@ def _describe_tool_references(tools: list[dict[str, Any]], require_exact_tool_ve
     return ", ".join(dict.fromkeys(descriptions))
 
 
+def _describe_missing_tools(
+    toolbox: AbstractToolBox, tools: list[dict[str, Any]], require_exact_tool_versions: bool, user: User | None
+) -> str:
+    """Like ``_describe_tool_references``, but an exact-version description also names
+    the versions installed under that id, so a version mismatch isn't mistaken for a
+    tool that isn't installed at all."""
+    if not require_exact_tool_versions:
+        return _describe_tool_references(tools, require_exact_tool_versions)
+    descriptions = []
+    for tool in tools:
+        installed = _installed_tool_versions(toolbox, tool, user)
+        installed_note = f", installed: {', '.join(installed)}" if installed else ""
+        descriptions.append(f"{tool['tool_id']} (version {tool['tool_version']}{installed_note})")
+    return ", ".join(dict.fromkeys(descriptions))
+
+
+def _installed_tool_versions(toolbox: AbstractToolBox, tool_reference: dict[str, Any], user: User | None) -> list[str]:
+    """Versions installed under the referenced id (or its lineage) that ``user`` may access, oldest first."""
+    if not tool_reference["tool_id"] or tool_reference["tool_uuid"]:
+        return []
+    tools = toolbox.get_tool(tool_reference["tool_id"], get_all_versions=True) or []
+    return list(
+        dict.fromkeys(
+            str(tool.version)
+            for tool in tools
+            if tool.version and tool.allow_user_access(user, attempting_access=False)
+        )
+    )
+
+
 def _find_workflow_tool(
     toolbox: AbstractToolBox, tool_reference: dict[str, Any], require_exact_tool_versions: bool, user: User | None
 ) -> ToolLike | None:
@@ -674,7 +704,7 @@ class WorkflowsService(ServiceBase):
         if missing_tools:
             raise exceptions.MessageException(
                 "Workflow was not invoked; the following required tools are not installed: "
-                + _describe_tool_references(missing_tools, require_exact_tool_versions)
+                + _describe_missing_tools(toolbox, missing_tools, require_exact_tool_versions, trans.user)
             )
         if incompatible_tools:
             raise exceptions.MessageException(
