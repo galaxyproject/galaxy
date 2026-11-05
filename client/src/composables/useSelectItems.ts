@@ -20,14 +20,11 @@ import {
 import { errorMessageAsString } from "@/utils/simple-error";
 
 export interface UseSelectItemsOptions {
-    /** Delay before a filter change loads, in ms; the dialog's search inputs already debounce, so the default is 0. */
-    filterDebounce?: number;
     /** Item fields searched when the provider returns all items at once; default: every field that holds displayed text. */
     filterKeys?: string[];
-    /** Load the root level right away. */
-    immediate?: boolean;
-    perPage?: number;
 }
+
+const PER_PAGE = 25;
 
 /** Item fields without displayed text, left out of the local search like the dialog table does. */
 const FILTER_IGNORED_FIELDS = ["entry", "selectionState", "updateTime"];
@@ -74,7 +71,7 @@ export function useSelectItems<Raw>(
     provider: MaybeRefOrGetter<SelectItemsProvider<Raw>>,
     options: UseSelectItemsOptions = {},
 ) {
-    const perPage = ref(options.perPage ?? 25);
+    const perPage = ref(PER_PAGE);
 
     const currentPage = ref(1);
     const currentFilter = ref("");
@@ -92,7 +89,6 @@ export function useSelectItems<Raw>(
 
     let controller: AbortController | undefined;
     let requestId = 0;
-    let filterTimer: ReturnType<typeof setTimeout> | undefined;
     /** False until the current level answers, so changes before that cannot be served locally. */
     let pagingKnown = false;
 
@@ -187,20 +183,6 @@ export function useSelectItems<Raw>(
         }
     }
 
-    function applyFilter(text: string) {
-        if (text === currentFilter.value) {
-            return;
-        }
-        currentFilter.value = text;
-        currentPage.value = 1;
-        loadIfServerPaged();
-    }
-
-    function cancelPendingFilter() {
-        clearTimeout(filterTimer);
-        filterTimer = undefined;
-    }
-
     const page = computed({
         get: () => currentPage.value,
         set: (value: number) => {
@@ -214,11 +196,10 @@ export function useSelectItems<Raw>(
     const filter = computed({
         get: () => currentFilter.value,
         set: (text: string) => {
-            if (options.filterDebounce) {
-                cancelPendingFilter();
-                filterTimer = setTimeout(() => applyFilter(text), options.filterDebounce);
-            } else {
-                applyFilter(text);
+            if (text !== currentFilter.value) {
+                currentFilter.value = text;
+                currentPage.value = 1;
+                loadIfServerPaged();
             }
         },
     });
@@ -233,7 +214,6 @@ export function useSelectItems<Raw>(
 
     /** Moves to another level: filter and sort are per level, so both reset. */
     function moveTo(nextLevels: PathLevel[], nextPage: number) {
-        cancelPendingFilter();
         levels.value = nextLevels;
         pagingKnown = false;
         // the previous level's rows must not be clicked while the next one loads
@@ -293,16 +273,13 @@ export function useSelectItems<Raw>(
 
     if (getCurrentScope()) {
         onScopeDispose(() => {
-            cancelPendingFilter();
             // invalidates the running request, so its abort is not reported as an error
             requestId++;
             controller?.abort();
         });
     }
 
-    if (options.immediate ?? true) {
-        void load();
-    }
+    void load();
 
     return {
         back,

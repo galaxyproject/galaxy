@@ -1,6 +1,6 @@
 import { nth } from "@tests/vitest/helpers";
 import flushPromises from "flush-promises";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { effectScope } from "vue";
 
 import {
@@ -73,10 +73,6 @@ function clientProvider(all: Raw[]) {
 }
 
 describe("useSelectItems", () => {
-    afterEach(() => {
-        vi.useRealTimers();
-    });
-
     it("drops a response that arrives after a newer query", async () => {
         const { provider, calls } = deferredProvider();
         const state = useSelectItems(provider);
@@ -121,28 +117,28 @@ describe("useSelectItems", () => {
     });
 
     it("loads one page per page change when the provider returns a total", async () => {
-        const { provider, load } = serverProvider(records(30));
-        const state = useSelectItems(provider, { perPage: 10 });
+        const { provider, load } = serverProvider(records(75));
+        const state = useSelectItems(provider);
         await flushPromises();
         expect(state.serverPaging.value).toBe(true);
-        expect(state.total.value).toBe(30);
-        expect(state.items.value.map((item) => item.id)).toEqual(records(10).map((raw) => raw.id));
+        expect(state.total.value).toBe(75);
+        expect(state.items.value.map((item) => item.id)).toEqual(records(25).map((raw) => raw.id));
 
         state.page.value = 3;
         await flushPromises();
         expect(load).toHaveBeenCalledTimes(2);
-        expect(load.mock.calls[1]![0]).toMatchObject({ page: 3, perPage: 10, filter: "" });
-        expect(state.items.value[0]!.id).toBe("item-21");
+        expect(load.mock.calls[1]![0]).toMatchObject({ page: 3, perPage: 25, filter: "" });
+        expect(state.items.value[0]!.id).toBe("item-51");
     });
 
     it("loads once and pages, filters and sorts locally when the provider returns no total", async () => {
-        const all = [...records(30), { id: "zz", name: "zebra" }];
+        const all = [...records(75), { id: "zz", name: "zebra" }];
         const { provider, load } = clientProvider(all);
-        const state = useSelectItems(provider, { perPage: 10 });
+        const state = useSelectItems(provider);
         await flushPromises();
         expect(state.serverPaging.value).toBe(false);
-        expect(state.total.value).toBe(31);
-        expect(state.items.value).toHaveLength(10);
+        expect(state.total.value).toBe(76);
+        expect(state.items.value).toHaveLength(25);
 
         state.page.value = 4;
         expect(state.items.value.map((item) => item.id)).toEqual(["zz"]);
@@ -177,7 +173,7 @@ describe("useSelectItems", () => {
 
     it("resets the page and loads exactly once when the filter changes", async () => {
         const { provider, load } = serverProvider(records(30));
-        const state = useSelectItems(provider, { perPage: 10 });
+        const state = useSelectItems(provider);
         await flushPromises();
         state.page.value = 2;
         await flushPromises();
@@ -190,30 +186,14 @@ describe("useSelectItems", () => {
         expect(load.mock.calls[0]![0]).toMatchObject({ page: 1, filter: "item 1" });
     });
 
-    it("debounces the filter when asked to", async () => {
-        vi.useFakeTimers();
-        const { provider, load } = serverProvider(records(5));
-        const state = useSelectItems(provider, { filterDebounce: 300 });
-        await vi.runAllTimersAsync();
-        load.mockClear();
-
-        state.filter.value = "i";
-        state.filter.value = "it";
-        state.filter.value = "ite";
-        expect(load).not.toHaveBeenCalled();
-        await vi.advanceTimersByTimeAsync(300);
-        expect(load).toHaveBeenCalledTimes(1);
-        expect(load.mock.calls[0]![0].filter).toBe("ite");
-    });
-
     it("opens a folder at page 1 and returns to the page it was opened from", async () => {
-        const folders = records(30, "folder").map((raw) => ({ ...raw, folder: true }));
+        const folders = records(60, "folder").map((raw) => ({ ...raw, folder: true }));
         const load = vi.fn(async (query: SelectItemsQuery) => {
             const all = query.path.length ? records(3, "file") : folders;
             const start = (query.page - 1) * query.perPage;
             return { items: all.slice(start, start + query.perPage), total: all.length };
         });
-        const state = useSelectItems({ load, map: toItem }, { perPage: 10 });
+        const state = useSelectItems({ load, map: toItem });
         await flushPromises();
         state.page.value = 2;
         await flushPromises();
@@ -241,8 +221,8 @@ describe("useSelectItems", () => {
     });
 
     it("keeps the selection across pages and derives each row's state from it", async () => {
-        const { provider } = serverProvider(records(30));
-        const state = useSelectItems(provider, { perPage: 10 });
+        const { provider } = serverProvider(records(60));
+        const state = useSelectItems(provider);
         await flushPromises();
 
         state.toggle(state.items.value[0]!);
@@ -252,14 +232,14 @@ describe("useSelectItems", () => {
         state.page.value = 2;
         await flushPromises();
         state.selectAll(true);
-        expect(state.selected.value).toHaveLength(11);
+        expect(state.selected.value).toHaveLength(26);
 
         state.page.value = 1;
         await flushPromises();
         expect(state.items.value[0]!.selectionState).toBe(SELECTION_STATES.SELECTED);
 
         state.toggle(state.items.value[0]!);
-        expect(state.selected.value).toHaveLength(10);
+        expect(state.selected.value).toHaveLength(25);
 
         state.selectAll(false);
         expect(state.selected.value).toEqual([]);
@@ -328,21 +308,6 @@ describe("useSelectItems", () => {
         nth(calls, 0).reject(new DOMException("The operation was aborted.", "AbortError"));
         await flushPromises();
         expect(state.error.value).toBe("");
-    });
-
-    it("drops a pending debounced filter when the level changes", async () => {
-        vi.useFakeTimers();
-        const folders = records(2, "folder").map((raw) => ({ ...raw, folder: true }));
-        const { provider, load } = serverProvider(folders);
-        const state = useSelectItems(provider, { filterDebounce: 300 });
-        await vi.runAllTimersAsync();
-
-        state.filter.value = "folder 2";
-        state.open(nth(state.items.value, 0));
-        await vi.advanceTimersByTimeAsync(300);
-        expect(state.filter.value).toBe("");
-        expect(load).toHaveBeenCalledTimes(2);
-        expect(nth(load.mock.calls, -1)[0]).toMatchObject({ filter: "", path: [{ id: "folder-1" }] });
     });
 
     it.each([false, true])("sorts missing values last locally (descending: %s)", async (desc) => {
