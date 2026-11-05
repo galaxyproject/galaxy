@@ -1,7 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 import { computed, ref } from "vue";
 
@@ -34,7 +33,6 @@ vi.mock("./service", () => ({
 
 describe("HistoryStorageOverview", () => {
     it("keeps selection off on the active vs deleted chart", async () => {
-        setActivePinia(createPinia());
         const wrapper = mount(HistoryStorageOverview as object, {
             props: { historyId: "history-id" },
             global: {
