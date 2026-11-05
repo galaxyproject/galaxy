@@ -228,9 +228,10 @@ export const useUserStore = defineStore("userStore", () => {
     /**
      * Call it after anything that changes the storage usage, e.g. a purge or a history growing.
      * While live updates are connected, the server announces the change itself, so it does nothing.
+     * Anonymous users get no usage events, so their usage is still refreshed.
      */
     function refreshStorageUsageUnlessLive() {
-        if (!(liveUpdatesEnabled && sseConnected.value)) {
+        if (!(liveUpdatesEnabled && sseConnected.value && isRegisteredUser(currentUser.value))) {
             refreshStorageUsageThrottled();
         }
     }

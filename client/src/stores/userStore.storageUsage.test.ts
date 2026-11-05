@@ -3,6 +3,7 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { AnonymousUser } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 
 import { emitSse, setSseConnected, sseMockFactory, useVisibilityPatch } from "./_testing/sseStoreSupport";
@@ -198,31 +199,45 @@ describe("userStore — watching the storage usage", () => {
         });
     });
 
+    const ANONYMOUS_USER: AnonymousUser = { isAnonymous: true, total_disk_usage: 0, nice_total_disk_usage: "0 bytes" };
+
     it.each([
         {
             title: "leaves a usage change to the server's event while live updates are connected",
             enableSse: true,
             connected: true,
+            user: getFakeRegisteredUser(),
             requests: 0,
         },
         {
             title: "refreshes after a usage change while live updates are disconnected",
             enableSse: true,
             connected: false,
+            user: getFakeRegisteredUser(),
             requests: 1,
         },
         {
             title: "refreshes after a usage change without live updates",
             enableSse: false,
             connected: false,
+            user: getFakeRegisteredUser(),
             requests: 1,
         },
-    ])("$title", async ({ enableSse, connected, requests }) => {
+        {
+            title: "refreshes after an anonymous user's usage change, which the server doesn't announce",
+            enableSse: true,
+            connected: true,
+            user: ANONYMOUS_USER,
+            requests: 1,
+        },
+    ])("$title", async ({ enableSse, connected, user, requests }) => {
+        const userStore = useUserStore();
+        userStore.currentUser = user;
         await startWatching({ enableSse });
         setSseConnected(sseState, connected);
         await flushPromises();
 
-        useUserStore().refreshStorageUsageUnlessLive();
+        userStore.refreshStorageUsageUnlessLive();
         await flushPromises();
 
         expect(userRequests).toBe(requests);
