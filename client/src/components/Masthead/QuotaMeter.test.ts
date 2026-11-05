@@ -2,24 +2,44 @@ import { createTestingPinia } from "@pinia/testing";
 import { getFakeQuotaUsageData, getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
-import { mount } from "@vue/test-utils";
+import { advanceTooltipHoverDelay } from "@tests/vitest/tooltipTestUtils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { RegisteredUser } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import { vGTooltip } from "@/directives/vGTooltip";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { useUserStore } from "@/stores/userStore";
+import { DEFAULT_TOOLTIP_HOVER_DELAY_MS } from "@/utils/tooltipTiming";
 
 import QuotaMeter from "./QuotaMeter.vue";
 
 vi.mock("@/api/schema");
 
-const localVue = getLocalVue();
+// The real tooltip directive, which the test setup replaces with a no-op
+const baseLocalVue = getLocalVue();
+const localVue = { ...baseLocalVue, directives: { ...baseLocalVue.directives, "g-tooltip": vGTooltip } };
 const { server, http } = useServerMock();
 
 const OTHER_SOURCES_HINT = "[data-description='other storage over quota']";
+const SOURCE_USAGE = "[data-description='quota source usage']";
+const SOURCE_NAME = "[data-description='quota source name']";
+const DASHBOARD_BUTTON = "[data-description='storage dashboard button']";
+
+/** Hovers the meter and returns the text of the tooltip it shows, if any. */
+async function hoverForTooltip(wrapper: VueWrapper) {
+    vi.useFakeTimers();
+    try {
+        await wrapper.trigger("mouseenter");
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+    } finally {
+        vi.useRealTimers();
+    }
+    return document.body.querySelector(".g-tooltip-d")?.textContent ?? null;
+}
 
 async function createQuotaMeterWrapper(config: any, user: RegisteredUser) {
     setupMockConfig(config);
@@ -29,6 +49,7 @@ async function createQuotaMeterWrapper(config: any, user: RegisteredUser) {
     const wrapper = mount(QuotaMeter as object, {
         global: localVue,
         pinia,
+        attachTo: document.body,
     });
     await flushPromises();
     return wrapper;
@@ -62,10 +83,12 @@ describe("QuotaMeter.vue", () => {
         }
     });
 
-    it("displays tooltip", async () => {
-        const config = { enable_quotas: true };
-        const wrapper = await createQuotaMeterWrapper(config, FAKE_USER);
-        expect(wrapper.attributes("title")).toContain("Storage");
+    it("shows a tooltip on hover", async () => {
+        const wrapper = await createQuotaMeterWrapper({ enable_quotas: true }, FAKE_USER);
+        const tooltip = await hoverForTooltip(wrapper);
+        wrapper.unmount();
+
+        expect(tooltip).toBe("Storage and Usage Details");
     });
 
     it("shows total usage when there is no quota", async () => {
@@ -86,8 +109,14 @@ describe("QuotaMeter.vue", () => {
     describe("with other storage sources", () => {
         const SOURCE_QUOTA = 1000;
 
+        let wrapper: VueWrapper;
+
+        afterEach(() => {
+            wrapper.unmount();
+        });
+
         /** Mounts the meter with storage sources that each have a quota of ``SOURCE_QUOTA`` bytes. */
-        async function mountWithSourceUsages(usageBySource: Record<string, number>) {
+        async function mountWithSourceUsages(usageBySource: Record<string, number>, { enableQuotas = true } = {}) {
             server.use(
                 http.get("/api/users/{user_id}/usage", ({ response }) => {
                     return response(200).json(
@@ -97,24 +126,50 @@ describe("QuotaMeter.vue", () => {
                     );
                 }),
             );
-            setupMockConfig({ enable_quotas: true, quota_source_labels: Object.keys(usageBySource) });
+            setupMockConfig({ enable_quotas: enableQuotas, quota_source_labels: Object.keys(usageBySource) });
             const pinia = createPinia();
             setActivePinia(pinia);
             useUserStore().currentUser = FAKE_USER;
+            // The popover moves itself to the document body
+            wrapper = mount(QuotaMeter as object, { global: withPlugins(localVue, pinia), attachTo: document.body });
+            // As in the app, the usage per source arrives after the meter is shown
             await useQuotaUsageStore().loadQuotaUsages();
-            const wrapper = mount(QuotaMeter as object, { global: withPlugins(localVue, pinia) });
             await flushPromises();
-            return wrapper;
         }
 
         it("names the sources whose quota the user exceeded", async () => {
-            const wrapper = await mountWithSourceUsages({ scratch: 1001, archive: 400 });
+            await mountWithSourceUsages({ scratch: 1001, archive: 400 });
 
-            expect(wrapper.find(OTHER_SOURCES_HINT).attributes("title")).toBe("Over quota on these storages: scratch");
+            expect(wrapper.find(OTHER_SOURCES_HINT).text()).toBe("Over quota on these storages: scratch");
+        });
+
+        it("lists every source in a popover, marking those over quota", async () => {
+            await mountWithSourceUsages({ scratch: 1001, archive: 400, secure: 1500 });
+
+            const names = (selector: string) =>
+                Array.from(
+                    document.body.querySelectorAll(selector),
+                    (row) => row.querySelector(SOURCE_NAME)?.textContent,
+                );
+            expect(names(SOURCE_USAGE)).toEqual(["scratch", "archive", "secure"]);
+            expect(names(`${SOURCE_USAGE}.over-quota`)).toEqual(["scratch", "secure"]);
+        });
+
+        it("replaces the tooltip with the popover, which links to the storage dashboard", async () => {
+            await mountWithSourceUsages({ scratch: 400, archive: 400 });
+
+            expect(await hoverForTooltip(wrapper)).toBeNull();
+            expect(document.body.querySelector(DASHBOARD_BUTTON)?.getAttribute("href")).toBe("/storage");
+        });
+
+        it("lists no sources when quotas are off, though other pages load their usage", async () => {
+            await mountWithSourceUsages({ scratch: 400, archive: 400 }, { enableQuotas: false });
+
+            expect(document.body.querySelector(SOURCE_USAGE)).toBeNull();
         });
 
         it("shows no hint while no source exceeds its quota", async () => {
-            const wrapper = await mountWithSourceUsages({ scratch: SOURCE_QUOTA, archive: 400 });
+            await mountWithSourceUsages({ scratch: SOURCE_QUOTA, archive: 400 });
 
             expect(wrapper.find(OTHER_SOURCES_HINT).exists()).toBe(false);
         });

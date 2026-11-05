@@ -28,7 +28,7 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
     /** Whether anything asked for the usage, whether or not it loaded: it then needs reloading after changes. */
     const wasRequested = ref(false);
 
-    /** Storage sources other than the default one whose quota the user exceeded: jobs are held only then. */
+    /** Storage sources other than the default one whose quota the user exceeded. */
     const otherSourcesOverQuota = computed(
         () => quotaUsages.value?.filter((usage) => usage.rawSourceLabel !== null && usage.isOverQuota) ?? [],
     );

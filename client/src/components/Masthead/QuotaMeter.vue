@@ -12,12 +12,21 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 
+import QuotaSourcesPopover from "./QuotaSourcesPopover.vue";
+
 const { config } = useConfig();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
-const { otherSourcesOverQuota, otherSourcesOverQuotaLabels } = storeToRefs(useQuotaUsageStore());
+const { quotaUsages, otherSourcesOverQuota, otherSourcesOverQuotaLabels } = storeToRefs(useQuotaUsageStore());
+
+const LINK_ID = "quota-meter-link";
 
 const otherSourcesOverQuotaText = computed(
     () => `${localize("Over quota on these storages:")} ${otherSourcesOverQuotaLabels.value}`,
+);
+
+// Other pages load the usage per storage source for anyone: list it only for users with quotas on several sources
+const showSourcesPopover = computed(
+    () => Boolean(config.value.enable_quotas) && !isAnonymous.value && (quotaUsages.value?.length ?? 0) > 1,
 );
 
 const hasQuota = computed<boolean>(() => {
@@ -42,9 +51,14 @@ const usage = computed(() => {
 
 const quotaLink = computed(() => (isAnonymous.value ? "/login/start" : "/storage"));
 
-const quotaTitle = computed(() =>
-    localize(isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details"),
-);
+// The popover listing the sources takes the place of the tooltip. An empty title in the binding turns it off; a
+// title attribute wouldn't, as the directive keeps showing the first one it saw.
+const quotaTitle = computed(() => {
+    if (showSourcesPopover.value) {
+        return "";
+    }
+    return localize(isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details");
+});
 
 const variant = computed(() => {
     if (!hasQuota.value || usage.value < 80) {
@@ -57,8 +71,8 @@ const variant = computed(() => {
 </script>
 
 <template>
-    <div v-g-tooltip.hover.bottom class="quota-meter d-flex align-items-center" :title="quotaTitle">
-        <BLink class="quota-progress" :to="quotaLink" data-description="storage dashboard link">
+    <div v-g-tooltip.hover.bottom="{ title: quotaTitle }" class="quota-meter d-flex align-items-center">
+        <BLink :id="LINK_ID" class="quota-progress" :to="quotaLink" data-description="storage dashboard link">
             <BProgress :max="100">
                 <BProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
             </BProgress>
@@ -67,18 +81,17 @@ const variant = computed(() => {
                 }}<span v-if="hasQuota"
                     ><span>{{ usage.toFixed(0) }}%</span>{{ " "
                     }}<span v-if="quotaLimit !== null">of {{ quotaLimit }}</span></span
-                ><span v-else>{{ totalUsageString }}</span>
+                ><span v-else>{{ totalUsageString }}</span
+                ><span
+                    v-if="otherSourcesOverQuota.length"
+                    class="other-sources-over-quota ml-1"
+                    data-description="other storage over quota">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" />
+                    <span class="sr-only">{{ otherSourcesOverQuotaText }}</span>
+                </span>
             </span>
         </BLink>
-        <span
-            v-if="otherSourcesOverQuota.length"
-            v-g-tooltip.hover.bottom
-            class="other-sources-over-quota ml-1"
-            :title="otherSourcesOverQuotaText"
-            data-description="other storage over quota">
-            <FontAwesomeIcon :icon="faExclamationTriangle" />
-            <span class="sr-only">{{ otherSourcesOverQuotaText }}</span>
-        </span>
+        <QuotaSourcesPopover v-if="showSourcesPopover" :target="LINK_ID" :quota-usages="quotaUsages" />
     </div>
 </template>
 
@@ -89,7 +102,7 @@ const variant = computed(() => {
     margin-left: 0.5rem;
     margin-right: 0.5rem;
     .other-sources-over-quota {
-        color: var(--masthead-text-color);
+        color: var(--color-red-600);
     }
     .quota-progress {
         width: 12rem;
