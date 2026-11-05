@@ -150,4 +150,37 @@ describe("GTable sorting", () => {
 
         expect(wrapper.emitted("sort-changed")).toBeUndefined();
     });
+
+    it("follows sortBy and sortDesc changes from the parent", async () => {
+        const wrapper = mountSortable();
+
+        await wrapper.setProps({ sortBy: "id", sortDesc: true } as never);
+
+        const [name, id] = wrapper.findAll("thead th");
+        expect(name!.attributes("aria-sort")).toBe("none");
+        expect(id!.attributes("aria-sort")).toBe("descending");
+        expect(wrapper.findAll("tbody tr td:first-child").map((cell) => cell.text())).toEqual(["second", "first"]);
+    });
+
+    it("shows no sorted column once the parent clears sortBy", async () => {
+        const wrapper = mountSortable();
+
+        await wrapper.setProps({ sortBy: "" } as never);
+
+        const [name, id] = wrapper.findAll("thead th");
+        expect(name!.attributes("aria-sort")).toBe("none");
+        expect(id!.attributes("aria-sort")).toBe("none");
+    });
+
+    it.each([
+        ["", "none"],
+        [undefined, "ascending"],
+    ])("shows the update_time column as sorted only when sortBy is unset (%j)", (sortBy, ariaSort) => {
+        const wrapper = mount(GTable as object, {
+            props: { items, fields: [{ key: "update_time", label: "Updated", sortable: true }], sortBy },
+            attachTo: document.body,
+        });
+
+        expect(wrapper.get("thead th").attributes("aria-sort")).toBe(ariaSort);
+    });
 });

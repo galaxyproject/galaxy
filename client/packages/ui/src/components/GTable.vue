@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { faEllipsisV, faSort, faSortDown, faSortUp, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon, type FontAwesomeIconProps } from "@fortawesome/vue-fontawesome";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useUid } from "../composables/uid";
 import { vGTooltip } from "../directives/vGTooltip";
@@ -235,8 +235,8 @@ interface Props {
     showEmpty?: boolean;
 
     /**
-     * Current sort field key
-     * @default ""
+     * Current sort field key; "" for no sorted column. The table follows later changes.
+     * @default "update_time"
      */
     sortBy?: string;
 
@@ -313,7 +313,7 @@ const props = withDefaults(defineProps<Props>(), {
     indeterminateItems: () => [],
     showEmpty: false,
     showSelectAll: false,
-    sortBy: "",
+    sortBy: "update_time",
     sortDesc: false,
     striped: true,
     stacked: false,
@@ -357,8 +357,22 @@ const emit = defineEmits<{
     (e: "row-click", event: RowClickEvent<T>): void;
 }>();
 
-const sortBy = ref<string>(props.sortBy || "update_time");
-const sortDesc = ref<boolean>(props.sortDesc ?? false);
+const sortBy = ref<string>(props.sortBy);
+const sortDesc = ref<boolean>(props.sortDesc);
+
+// a parent that owns the sort (e.g. resets it on navigation) keeps the header in step
+watch(
+    () => props.sortBy,
+    (value) => {
+        sortBy.value = value;
+    },
+);
+watch(
+    () => props.sortDesc,
+    (value) => {
+        sortDesc.value = value;
+    },
+);
 const expandedRows = ref<Set<number>>(new Set());
 
 const stackedClass = computed(() => {
