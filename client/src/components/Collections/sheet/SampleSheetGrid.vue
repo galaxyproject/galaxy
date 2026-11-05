@@ -2,7 +2,7 @@
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ColDef, ValueSetterParams } from "ag-grid-community";
-import { BCol, BFormInput, BInputGroup, BLink, BRow } from "bootstrap-vue";
+import { BCol, BInputGroup, BLink, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type {
@@ -45,6 +45,7 @@ import {
     useSampleSheetGrid,
 } from "./useSampleSheetGrid";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import UploadSelect from "@/components/Upload/UploadSelect.vue";
 import UploadSelectExtension from "@/components/Upload/UploadSelectExtension.vue";
 
@@ -444,10 +445,10 @@ defineExpose({ attemptCreate });
             </BCol>
             <BCol cols="4">
                 <BInputGroup prepend="Collection Name" class="mb-2" size="sm">
-                    <BFormInput
+                    <GFormInput
                         v-model="name"
                         :placeholder="localize('Enter a name for your new sample sheet')"
-                        size="sm"
+                        size="small"
                         required />
                 </BInputGroup>
             </BCol>
