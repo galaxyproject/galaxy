@@ -154,6 +154,24 @@ const baseRules = {
     "import-x/first": "error",
     "import-x/newline-after-import": "error",
     "import-x/no-duplicates": "error",
+
+    // Vue 2 libraries have to be marked with legacyComponent() to keep their
+    // compat behavior under Galaxy's MODE 3, so each has one marked import path.
+    "no-restricted-imports": [
+        "error",
+        {
+            paths: [
+                {
+                    name: "vue-json-pretty",
+                    message: "Import @/components/Common/legacy/VueJsonPretty, which keeps it on compat MODE 2.",
+                },
+                {
+                    name: "@handsontable/vue",
+                    message: "Import @/components/Common/legacy/HotTable, which keeps it on compat MODE 2.",
+                },
+            ],
+        },
+    ],
 };
 
 const typeImportRules = {
@@ -186,6 +204,10 @@ export default defineConfig(
             },
         },
         rules: baseRules,
+    },
+    {
+        files: ["src/components/Common/legacy/**"],
+        rules: { "no-restricted-imports": "off" },
     },
     {
         files: ["**/*.test.js", "**/*.test.ts", "**/tests/vitest/**"],

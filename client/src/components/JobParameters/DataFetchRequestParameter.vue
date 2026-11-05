@@ -2,15 +2,11 @@
 import "vue-json-pretty/lib/styles.css";
 
 import { computed } from "vue";
-import RawVueJsonPretty from "vue-json-pretty";
 
-import { legacyComponent } from "@/legacy-libraries";
+import VueJsonPretty from "@/components/Common/legacy/VueJsonPretty";
 import { useHelpTermsStore } from "@/stores/helpTermsStore";
 
 import HelpText from "@/components/Help/HelpText.vue";
-
-// vue-json-pretty 1.x is a Vue 2 component.
-const VueJsonPretty = legacyComponent(RawVueJsonPretty);
 
 const { hasHelpText } = useHelpTermsStore();
 
