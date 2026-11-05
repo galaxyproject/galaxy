@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { ref } from "vue";
 
 import type { QuotaUsage } from "@/components/User/DiskUsage/Quota/model";
 import { useQuotaSourceNames } from "@/composables/quotaSourceNames";
@@ -18,6 +19,10 @@ defineProps<{
 
 const { quotaSourceName } = useQuotaSourceNames();
 
+// The popover keeps its content mounted while hidden: list the sources only once open, since naming them loads
+// the storages.
+const isShown = ref(false);
+
 function sourceKey(usage: QuotaUsage): string {
     return usage.rawSourceLabel ?? "__default__";
 }
@@ -32,13 +37,14 @@ function usageText(usage: QuotaUsage): string {
 
 <template>
     <GPopover
+        v-model:show="isShown"
         interactive
         :target="target"
         triggers="hover"
         placement="bottom"
         :title="localize('Storage usage')"
         custom-class="quota-sources-popover">
-        <ul class="list-unstyled mb-2">
+        <ul v-if="isShown" class="list-unstyled mb-2">
             <li
                 v-for="usage in quotaUsages"
                 :key="sourceKey(usage)"

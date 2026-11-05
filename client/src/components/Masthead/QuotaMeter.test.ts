@@ -3,7 +3,7 @@ import { getFakeQuotaUsageData, getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { advanceTooltipHoverDelay } from "@tests/vitest/tooltipTestUtils";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -28,16 +28,36 @@ const OTHER_SOURCES_HINT = "[data-description='other storage over quota']";
 const SOURCE_USAGE = "[data-description='quota source usage']";
 const SOURCE_NAME = "[data-description='quota source name']";
 const DASHBOARD_BUTTON = "[data-description='storage dashboard button']";
+const METER_LINK = "[data-description='storage dashboard link']";
 
-/** Hovers the meter and returns the text of the tooltip it shows, if any. */
-async function hoverForTooltip(wrapper: VueWrapper) {
+// Meters attach to the document body, where a leftover one's link would take the popover's target id
+const mountedWrappers: VueWrapper[] = [];
+
+function mountQuotaMeter(options: Parameters<typeof mount>[1]) {
+    const wrapper = mount(QuotaMeter as object, { ...options, attachTo: document.body });
+    mountedWrappers.push(wrapper);
+    return wrapper;
+}
+
+afterEach(() => {
+    mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount());
+});
+
+/** Hovers the element for as long as tooltips and popovers wait before opening. */
+async function hover(element: VueWrapper | DOMWrapper<Element>) {
     vi.useFakeTimers();
     try {
-        await wrapper.trigger("mouseenter");
+        await element.trigger("mouseenter");
         await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
     } finally {
         vi.useRealTimers();
     }
+    await flushPromises();
+}
+
+/** Hovers the meter and returns the text of the tooltip it shows, if any. */
+async function hoverForTooltip(wrapper: VueWrapper) {
+    await hover(wrapper);
     return document.body.querySelector(".g-tooltip-d")?.textContent ?? null;
 }
 
@@ -46,11 +66,7 @@ async function createQuotaMeterWrapper(config: any, user: RegisteredUser) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     const userStore = useUserStore();
     userStore.currentUser = user;
-    const wrapper = mount(QuotaMeter as object, {
-        global: localVue,
-        pinia,
-        attachTo: document.body,
-    });
+    const wrapper = mountQuotaMeter({ global: localVue, pinia });
     await flushPromises();
     return wrapper;
 }
@@ -86,7 +102,6 @@ describe("QuotaMeter.vue", () => {
     it("shows a tooltip on hover", async () => {
         const wrapper = await createQuotaMeterWrapper({ enable_quotas: true }, FAKE_USER);
         const tooltip = await hoverForTooltip(wrapper);
-        wrapper.unmount();
 
         expect(tooltip).toBe("Storage and Usage Details");
     });
@@ -118,13 +133,11 @@ describe("QuotaMeter.vue", () => {
         ].map((storage) => ({ ...storage, private: false, badges: [] }));
 
         let wrapper: VueWrapper;
-
-        afterEach(() => {
-            wrapper.unmount();
-        });
+        let storageRequests: number;
 
         /** Mounts the meter with storage sources that each have a quota of ``SOURCE_QUOTA`` bytes. */
         async function mountWithSourceUsages(usageBySource: Record<string, number>, { enableQuotas = true } = {}) {
+            storageRequests = 0;
             server.use(
                 http.get("/api/users/{user_id}/usage", ({ response }) => {
                     return response(200).json(
@@ -133,14 +146,16 @@ describe("QuotaMeter.vue", () => {
                         ),
                     );
                 }),
-                http.get("/api/object_stores", ({ response }) => response(200).json(STORAGES)),
+                http.get("/api/object_stores", ({ response }) => {
+                    storageRequests++;
+                    return response(200).json(STORAGES);
+                }),
             );
             setupMockConfig({ enable_quotas: enableQuotas, quota_source_labels: Object.keys(usageBySource) });
             const pinia = createPinia();
             setActivePinia(pinia);
             useUserStore().currentUser = FAKE_USER;
-            // The popover moves itself to the document body
-            wrapper = mount(QuotaMeter as object, { global: withPlugins(localVue, pinia), attachTo: document.body });
+            wrapper = mountQuotaMeter({ global: withPlugins(localVue, pinia) });
             // As in the app, the usage per source arrives after the meter is shown
             await useQuotaUsageStore().loadQuotaUsages();
             await flushPromises();
@@ -154,6 +169,7 @@ describe("QuotaMeter.vue", () => {
 
         it("lists every source in a popover by its storages' names, marking those over quota", async () => {
             await mountWithSourceUsages({ scratch: 1001, archive: 400, secure: 1500 });
+            await hover(wrapper.find(METER_LINK));
 
             const names = (selector: string) =>
                 Array.from(
@@ -169,6 +185,15 @@ describe("QuotaMeter.vue", () => {
 
             expect(await hoverForTooltip(wrapper)).toBeNull();
             expect(document.body.querySelector(DASHBOARD_BUTTON)?.getAttribute("href")).toBe("/storage");
+        });
+
+        it("loads the storages to name the sources only once the popover opens", async () => {
+            await mountWithSourceUsages({ scratch: 400, archive: 400 });
+            expect(storageRequests).toBe(0);
+
+            await hover(wrapper.find(METER_LINK));
+
+            expect(storageRequests).toBe(1);
         });
 
         it("lists no sources when quotas are off, though other pages load their usage", async () => {
