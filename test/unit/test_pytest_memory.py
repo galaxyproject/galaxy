@@ -1,7 +1,7 @@
-"""Check that the repository's pytest configuration doesn't keep test state alive.
+"""Check that the unit tests' pytest configuration doesn't keep test state alive.
 
-Each test runs a small pytest session in a subprocess with copies of the root
-``conftest.py`` and ``pytest.ini``.
+Each test runs a small pytest session in a subprocess with copies of the unit
+tests' ``conftest.py`` and the root ``pytest.ini``.
 """
 
 import os
@@ -64,7 +64,7 @@ def test_unclosed_connection_is_released():
 
 
 def run_pytest(tmp_path, test_module, *python_args):
-    shutil.copy(GALAXY_ROOT / "conftest.py", tmp_path / "conftest.py")
+    shutil.copy(GALAXY_ROOT / "test" / "unit" / "conftest.py", tmp_path / "conftest.py")
     shutil.copy(GALAXY_ROOT / "pytest.ini", tmp_path / "pytest.ini")
     (tmp_path / "test_module.py").write_text(test_module)
     env = {k: v for k, v in os.environ.items() if k != "PYTEST_ADDOPTS"}
