@@ -6,6 +6,10 @@ from sqlalchemy import update
 
 from galaxy import model
 from galaxy.model.unittest_utils.utils import random_email
+from galaxy.model.user_quota_updates import (
+    send_user_quota_updates_on_commit,
+    UserQuotaUpdates,
+)
 from galaxy.objectstore import (
     BaseObjectStore,
     build_object_store_from_config,
@@ -553,6 +557,20 @@ class TestCalculateUsage(BaseModelTestCase):
             (None, 10),
             ("alt_source", 0),
         ]
+
+    def test_relabel_announces_the_usage_change_to_the_owner(self):
+        quota_agent = DatabaseQuotaAgent(self.model)
+        d = self._add_dataset(10)
+        sent: list[UserQuotaUpdates] = []
+        send_user_quota_updates_on_commit(self.model.session, sent.append)
+        # Without a listener installed until now, the updates queued by earlier tests are still pending
+        self.model.session.commit()
+        sent.clear()
+
+        quota_agent.relabel_quota_for_dataset(d.dataset, None, "alt_source")
+        self.model.session.commit()
+
+        assert sent == [UserQuotaUpdates(user_ids={self.u.id})]
 
     def _refresh_user_and_assert_disk_usage_is(self, usage, label=None):
         u = self.u
