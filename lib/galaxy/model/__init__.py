@@ -1243,6 +1243,8 @@ WHERE user_id = :user_id and quota_source_label = :label
     def adjust_total_disk_usage(self, amount, quota_source_label, preserve_update_time: bool = False):
         assert amount is not None
         if amount != 0:
+            if session := object_session(self):
+                queue_user_quota_update(session, [self.id])
             if quota_source_label is None:
                 if not inspect(self).has_identity:
                     # Not in the database yet, the usage is written when the user is flushed
@@ -6723,7 +6725,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
         """Remove this HDA's quota_amount from user's quota."""
         if user and quota_source_info.use:
             user.adjust_total_disk_usage(-self.quota_amount(user), quota_source_info.label)
-            queue_user_quota_update(required_object_session(user), [user.id])
 
     def quota_amount(self, user):
         """

@@ -181,6 +181,14 @@ class TestHistorySSEIntegration(IntegrationTestCase):
             user_b_history_id not in seen_ids
         ), f"User A received history_update for user B's history ({user_b_history_id}): {history_events}"
 
+    def test_user_quota_update_after_job_finishes(self):
+        """A finished job charges its outputs to its owner's usage, so it pushes ``user_quota_update`` to them."""
+        history_id = self.dataset_populator.new_history(name=f"test_history_{uuid4()}")
+
+        with self._listening(self.galaxy_interactor.api_key) as listener:
+            self.dataset_populator.new_dataset(history_id, content="usage test", wait=True)
+            listener.wait_for_event("user_quota_update")
+
     def test_user_quota_update_after_dataset_purge(self):
         """Purging a dataset lowers its owner's usage, so it pushes ``user_quota_update`` to them."""
         history_id = self.dataset_populator.new_history(name=f"test_history_{uuid4()}")

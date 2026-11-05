@@ -64,7 +64,6 @@ from galaxy.model.dereference import (
     derefence_collection_to_model,
     dereference_to_model,
 )
-from galaxy.model.user_quota_updates import queue_user_quota_update
 from galaxy.schema.schema import DatasetSourceType
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
@@ -289,7 +288,6 @@ class HDAManager(
         if user:
             freed_sizes = user.sole_dataset_sizes(hdas)
             user.adjust_disk_usage_for_datasets(freed_sizes, -1, preserve_update_time=preserve_owner_update_time)
-            queue_user_quota_update(self.session(), [user.id])
         for hda in hdas:
             hda.deleted = True
             hda.purged = True
