@@ -1,4 +1,4 @@
-"""Integration tests for ``data_inputs`` on interactive tools in ``GET /api/tools``."""
+"""Integration tests for ``GET /api/tools/data_inputs``."""
 
 from typing import Any
 
@@ -12,7 +12,10 @@ TABULAR_INPUT_TOOL = "interactivetool_tabular_input"
 ANY_INPUT_TOOL = "interactivetool_any_input"
 REPEAT_INPUT_TOOL = "interactivetool_repeat_input"
 CONDITIONAL_INPUT_TOOL = "interactivetool_conditional_input"
+HIDDEN_INPUT_TOOL = "interactivetool_hidden_input"
+LOGIN_INPUT_TOOL = "interactivetool_login_input"
 SIMPLE_TOOL = "interactivetool_simple"
+REGULAR_TOOL = "cat_data_and_sleep"
 
 
 class TestInteractiveToolDataInputs(IntegrationTestCase):
@@ -29,8 +32,8 @@ class TestInteractiveToolDataInputs(IntegrationTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_history_id = self.dataset_populator.new_history()
 
-    def test_listing_carries_data_inputs(self):
-        data_inputs = self._listed_data_inputs()
+    def test_interactive_tool_data_inputs(self):
+        data_inputs = self._data_inputs(tool_type="interactive")
         assert data_inputs[TABULAR_INPUT_TOOL] == [
             {"name": "infile", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None}
         ]
@@ -49,7 +52,33 @@ class TestInteractiveToolDataInputs(IntegrationTestCase):
         assert data_inputs[CONDITIONAL_INPUT_TOOL] == [
             {"name": None, "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None}
         ]
-        assert data_inputs[SIMPLE_TOOL] == []
+        # Tools without data inputs are left out.
+        assert SIMPLE_TOOL not in data_inputs
+        assert REGULAR_TOOL not in data_inputs
+
+    def test_data_inputs_of_every_tool_type(self):
+        data_inputs = self._data_inputs()
+        assert TABULAR_INPUT_TOOL in data_inputs
+        assert [data_input["name"] for data_input in data_inputs[REGULAR_TOOL]] == ["input1", "queries_0|input2"]
+
+    def test_data_inputs_cover_only_listed_tools(self):
+        response = self._get("tools", data={"in_panel": "False"})
+        self._assert_status_code_is(response, 200)
+        listed_tool_ids = {tool["id"] for tool in response.json()}
+        assert set(self._data_inputs()) <= listed_tool_ids
+
+    def test_data_inputs_apply_the_listing_filters(self):
+        # The hidden tool is loaded, so its absence below comes from the filter.
+        self._assert_status_code_is(self._get(f"tools/{HIDDEN_INPUT_TOOL}"), 200)
+        tool_ids = set(self._data_inputs(tool_type="interactive"))
+        assert LOGIN_INPUT_TOOL in tool_ids
+        assert HIDDEN_INPUT_TOOL not in tool_ids
+        with self._different_user(anon=True):
+            anonymous_tool_ids = set(self._data_inputs(tool_type="interactive"))
+        # The unrestricted tool guards against passing on an empty response.
+        assert TABULAR_INPUT_TOOL in anonymous_tool_ids
+        assert LOGIN_INPUT_TOOL not in anonymous_tool_ids
+        assert HIDDEN_INPUT_TOOL not in anonymous_tool_ids
 
     def test_input_name_prefills_the_tool_form(self):
         dataset_id = self._new_dataset("1\t2\n", "tabular")
@@ -67,10 +96,10 @@ class TestInteractiveToolDataInputs(IntegrationTestCase):
         infile = next(i for i in user_inputs["cache"][0] if i["name"] == "infile")
         assert infile["value"]["values"][0]["id"] == dataset_id
 
-    def _listed_data_inputs(self) -> dict[str, list[dict[str, Any]]]:
-        response = self._get("tools", data={"in_panel": "False"})
+    def _data_inputs(self, tool_type: str | None = None) -> dict[str, list[dict[str, Any]]]:
+        response = self._get("tools/data_inputs", data={"tool_type": tool_type} if tool_type else None)
         self._assert_status_code_is(response, 200)
-        return {tool["id"]: tool["data_inputs"] for tool in response.json()}
+        return response.json()
 
     def _new_dataset(self, content: str, file_type: str) -> str:
         hda = self.dataset_populator.new_dataset(
