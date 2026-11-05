@@ -32,9 +32,6 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
     const otherSourcesOverQuota = computed(
         () => quotaUsages.value?.filter((usage) => usage.rawSourceLabel !== null && usage.isOverQuota) ?? [],
     );
-    const otherSourcesOverQuotaLabels = computed(() =>
-        otherSourcesOverQuota.value.map((usage) => usage.sourceLabel).join(", "),
-    );
 
     const getQuotaUsageBySourceLabel = computed(() => {
         return (sourceLabel?: string | null): QuotaUsage | null | undefined => {
@@ -179,7 +176,6 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
         isLoaded,
         wasRequested,
         otherSourcesOverQuota,
-        otherSourcesOverQuotaLabels,
         getQuotaUsageBySourceLabel,
         loadQuotaUsages,
         loadQuotaUsageForSource,

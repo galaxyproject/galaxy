@@ -3,6 +3,7 @@ import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { QuotaUsage } from "@/components/User/DiskUsage/Quota/model";
+import { useQuotaSourceNames } from "@/composables/quotaSourceNames";
 import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -15,9 +16,7 @@ defineProps<{
     quotaUsages?: QuotaUsage[];
 }>();
 
-function sourceName(usage: QuotaUsage): string {
-    return usage.rawSourceLabel ?? localize("Default storage");
-}
+const { quotaSourceName } = useQuotaSourceNames();
 
 function sourceKey(usage: QuotaUsage): string {
     return usage.rawSourceLabel ?? "__default__";
@@ -47,7 +46,9 @@ function usageText(usage: QuotaUsage): string {
                 :class="{ 'over-quota': usage.isOverQuota }"
                 data-description="quota source usage">
                 <div class="d-flex justify-content-between">
-                    <span class="font-weight-bold" data-description="quota source name">{{ sourceName(usage) }}</span>
+                    <span class="font-weight-bold" data-description="quota source name">{{
+                        quotaSourceName(usage.rawSourceLabel)
+                    }}</span>
                     <span class="ml-3 text-nowrap">{{ usageText(usage) }}</span>
                 </div>
                 <QuotaUsageBar :quota-usage="usage" embedded compact />

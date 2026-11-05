@@ -2,26 +2,32 @@
 import { BProgress, BProgressBar } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { useQuotaSourceNames } from "@/composables/quotaSourceNames";
 import localize from "@/utils/localization";
 
-import { DEFAULT_QUOTA_SOURCE_LABEL, type QuotaUsage } from "./model/QuotaUsage";
+import type { QuotaUsage } from "./model/QuotaUsage";
 
 interface QuotaUsageBarProps {
     quotaUsage: QuotaUsage;
     embedded?: boolean;
     compact?: boolean;
+    /** Name the default source too, as when it is shown among others */
+    showDefaultSourceName?: boolean;
 }
 
 const props = withDefaults(defineProps<QuotaUsageBarProps>(), {
     embedded: false,
     compact: false,
+    showDefaultSourceName: false,
 });
 
-const storageSourceText = ref(localize("storage source"));
+const { quotaSourceName } = useQuotaSourceNames();
+const sourceName = computed(() => quotaSourceName(props.quotaUsage.rawSourceLabel));
+
 const percentOfDiskQuotaUsedText = ref(localize("% of disk quota used"));
 
 const isDefaultQuota = computed(() => {
-    return props.quotaUsage.sourceLabel === DEFAULT_QUOTA_SOURCE_LABEL;
+    return props.quotaUsage.rawSourceLabel === null;
 });
 const quotaHasLimit = computed(() => {
     return !props.quotaUsage.isUnlimited;
@@ -60,11 +66,13 @@ defineExpose({
         class="quota-usage-bar mx-auto"
         :quota-source-label="quotaUsage.rawSourceLabel"
         :class="{ 'w-75': !embedded, 'my-5': !embedded, 'my-1': embedded }">
-        <component :is="sourceTag" v-if="!isDefaultQuota && !embedded" class="quota-storage-source">
+        <component
+            :is="sourceTag"
+            v-if="!embedded && (!isDefaultQuota || showDefaultSourceName)"
+            class="quota-storage-source">
             <span class="storage-source-label">
-                <b>{{ quotaUsage.sourceLabel }}</b>
+                <b>{{ sourceName }}</b>
             </span>
-            {{ storageSourceText }}
         </component>
         <component
             :is="usageTag"
@@ -81,7 +89,7 @@ defineExpose({
             <BProgressBar
                 :value="quotaUsage.quotaPercent"
                 :variant="progressVariant"
-                :aria-label="`${quotaUsage.sourceLabel} disk quota used`" />
+                :aria-label="`${sourceName} disk quota used`" />
         </BProgress>
     </div>
 </template>

@@ -109,6 +109,14 @@ describe("QuotaMeter.vue", () => {
     describe("with other storage sources", () => {
         const SOURCE_QUOTA = 1000;
 
+        /** The storages each quota source belongs to: two share ``scratch``, none uses ``archive``. */
+        const STORAGES = [
+            { object_store_id: "default", name: "Default Storage", quota: { enabled: true } },
+            { object_store_id: "scratch", name: "Scratch Storage", quota: { source: "scratch", enabled: true } },
+            { object_store_id: "fast_scratch", name: "Fast Scratch", quota: { source: "scratch", enabled: true } },
+            { object_store_id: "secure", name: "Secure Storage", quota: { source: "secure", enabled: true } },
+        ].map((storage) => ({ ...storage, private: false, badges: [] }));
+
         let wrapper: VueWrapper;
 
         afterEach(() => {
@@ -125,6 +133,7 @@ describe("QuotaMeter.vue", () => {
                         ),
                     );
                 }),
+                http.get("/api/object_stores", ({ response }) => response(200).json(STORAGES)),
             );
             setupMockConfig({ enable_quotas: enableQuotas, quota_source_labels: Object.keys(usageBySource) });
             const pinia = createPinia();
@@ -138,12 +147,12 @@ describe("QuotaMeter.vue", () => {
         }
 
         it("names the sources whose quota the user exceeded", async () => {
-            await mountWithSourceUsages({ scratch: 1001, archive: 400 });
+            await mountWithSourceUsages({ secure: 1001, archive: 400 });
 
-            expect(wrapper.find(OTHER_SOURCES_HINT).text()).toBe("Over quota on these storages: scratch");
+            expect(wrapper.find(OTHER_SOURCES_HINT).text()).toBe("Over quota on these storages: Secure Storage");
         });
 
-        it("lists every source in a popover, marking those over quota", async () => {
+        it("lists every source in a popover by its storages' names, marking those over quota", async () => {
             await mountWithSourceUsages({ scratch: 1001, archive: 400, secure: 1500 });
 
             const names = (selector: string) =>
@@ -151,8 +160,8 @@ describe("QuotaMeter.vue", () => {
                     document.body.querySelectorAll(selector),
                     (row) => row.querySelector(SOURCE_NAME)?.textContent,
                 );
-            expect(names(SOURCE_USAGE)).toEqual(["scratch", "archive", "secure"]);
-            expect(names(`${SOURCE_USAGE}.over-quota`)).toEqual(["scratch", "secure"]);
+            expect(names(SOURCE_USAGE)).toEqual(["Scratch Storage / Fast Scratch", "archive", "Secure Storage"]);
+            expect(names(`${SOURCE_USAGE}.over-quota`)).toEqual(["Scratch Storage / Fast Scratch", "Secure Storage"]);
         });
 
         it("replaces the tooltip with the popover, which links to the storage dashboard", async () => {

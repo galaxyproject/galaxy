@@ -5,6 +5,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import { type AnyUser, type HistorySummary, isRegisteredUser, userOwnsHistory } from "@/api";
+import { useQuotaSourceNames } from "@/composables/quotaSourceNames";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import localize from "@/utils/localization";
 
@@ -33,12 +34,13 @@ function isUserOverQuota(user: AnyUser) {
 }
 
 // Jobs are paused per storage source, so name the other sources the user exceeded the quota of
-const { otherSourcesOverQuota, otherSourcesOverQuotaLabels } = storeToRefs(useQuotaUsageStore());
+const { otherSourcesOverQuota } = storeToRefs(useQuotaUsageStore());
+const { otherSourcesOverQuotaNames } = useQuotaSourceNames();
 const showOtherSourcesOverQuota = computed(() => ownsHistory.value && otherSourcesOverQuota.value.length > 0);
 // The names follow a colon, so each sentence translates whole
 const otherSourcesOverQuotaMessage = computed(
     () =>
-        `${localize("You are over your disk quota on these storages:")} ${otherSourcesOverQuotaLabels.value}. ` +
+        `${localize("You are over your disk quota on these storages:")} ${otherSourcesOverQuotaNames.value}. ` +
         localize("Jobs writing there are on hold until your usage there drops below the quota."),
 );
 

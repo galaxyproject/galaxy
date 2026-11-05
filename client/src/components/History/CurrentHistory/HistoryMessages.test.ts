@@ -1,16 +1,19 @@
 import { getFakeHistorySummary, getFakeQuotaUsageData, getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { describe, expect, it } from "vitest";
 
 import type { AnonymousUser, AnyUser, HistorySummary } from "@/api";
+import { useServerMock } from "@/api/client/__mocks__";
 import { toQuotaUsage, type UserQuotaUsageData } from "@/components/User/DiskUsage/Quota/model/QuotaUsage";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 
 import HistoryMessages from "./HistoryMessages.vue";
 
 const localVue = getLocalVue();
+const { server, http } = useServerMock();
 
 const MESSAGES = "[data-description='history messages']";
 const OVER_QUOTA_MESSAGE = "[data-description='over quota message']";
@@ -92,7 +95,20 @@ describe("HistoryMessages", () => {
         expect(wrapper.find(MESSAGES).exists()).toBe(expectedShown);
     });
 
-    it("names the other storage sources whose quota the user exceeded", () => {
+    it("names the other storage sources whose quota the user exceeded after their storages", async () => {
+        server.use(
+            http.get("/api/object_stores", ({ response }) =>
+                response(200).json([
+                    {
+                        object_store_id: "scratch",
+                        name: "Scratch Storage",
+                        quota: { source: "scratch", enabled: true },
+                        private: false,
+                        badges: [],
+                    },
+                ]),
+            ),
+        );
         const usages = [
             getFakeQuotaUsageData(null, 200),
             getFakeQuotaUsageData("scratch", 1001),
@@ -102,7 +118,10 @@ describe("HistoryMessages", () => {
         const wrapper = mountHistoryMessages(getFakeRegisteredUser({ quota_percent: 20 }), undefined, usages);
 
         expect(wrapper.find(OVER_QUOTA_MESSAGE).exists()).toBe(false);
-        expect(wrapper.find(OTHER_SOURCES_OVER_QUOTA_MESSAGE).text()).toContain("scratch, archive");
+        await flushPromises();
+
+        // No storage uses the archive source, so it keeps its label
+        expect(wrapper.find(OTHER_SOURCES_OVER_QUOTA_MESSAGE).text()).toContain("Scratch Storage, archive");
     });
 
     it("shows no messages while the other storage sources don't exceed their quota", () => {

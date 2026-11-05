@@ -7,6 +7,7 @@ import { computed } from "vue";
 
 import { isRegisteredUser } from "@/api";
 import { useConfig } from "@/composables/config";
+import { useQuotaSourceNames } from "@/composables/quotaSourceNames";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -16,12 +17,13 @@ import QuotaSourcesPopover from "./QuotaSourcesPopover.vue";
 
 const { config } = useConfig();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
-const { quotaUsages, otherSourcesOverQuota, otherSourcesOverQuotaLabels } = storeToRefs(useQuotaUsageStore());
+const { quotaUsages, otherSourcesOverQuota } = storeToRefs(useQuotaUsageStore());
+const { otherSourcesOverQuotaNames } = useQuotaSourceNames();
 
 const LINK_ID = "quota-meter-link";
 
 const otherSourcesOverQuotaText = computed(
-    () => `${localize("Over quota on these storages:")} ${otherSourcesOverQuotaLabels.value}`,
+    () => `${localize("Over quota on these storages:")} ${otherSourcesOverQuotaNames.value}`,
 );
 
 // Other pages load the usage per storage source for anyone: list it only for users with quotas on several sources

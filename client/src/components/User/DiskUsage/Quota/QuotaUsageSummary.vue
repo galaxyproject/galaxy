@@ -22,6 +22,8 @@ const niceTotalQuota = computed(() => {
     return bytesToString(totalQuotaInBytes.value, true, undefined);
 });
 
+const hasSeveralSources = computed(() => props.quotaUsages.length > 1);
+
 const allSourcesUnlimited = computed(() => {
     const allUnlimited = props.quotaUsages.every((usage) => usage.isUnlimited);
     return allUnlimited;
@@ -53,7 +55,10 @@ defineExpose({
         </div>
 
         <div v-for="quotaUsage in props.quotaUsages" :key="quotaUsage.sourceLabel">
-            <QuotaUsageBar :quota-usage="quotaUsage" class="quota-usage-bar" />
+            <QuotaUsageBar
+                :quota-usage="quotaUsage"
+                :show-default-source-name="hasSeveralSources"
+                class="quota-usage-bar" />
         </div>
     </div>
 </template>
