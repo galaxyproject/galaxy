@@ -24,9 +24,10 @@ from galaxy.tool_util_models.parameters import (
 class ToolDataInput(BaseModel):
     name: str | None = Field(
         ...,
-        description="The `|`-joined path of the parameter, usable as a tool form URL parameter; inputs in a "
-        "repeat use its first element (`queries_0|input`). Null when the tool form cannot prefill it (an input in a "
-        "conditional case that is not the default one).",
+        description="The `|`-joined path of the parameter; inputs in a repeat use its first element "
+        "(`queries_0|input`). For a `data` input it works as a tool form URL parameter that preselects a dataset; "
+        "the form cannot prefill a `data_collection` input from the URL. Null for an input in a conditional case "
+        "that is not the default one, which the form cannot reach.",
     )
     extensions: list[str] = Field(
         ...,
