@@ -109,7 +109,7 @@ describe("datasetToItem", () => {
 
 describe("collectionToItem", () => {
     it("maps a collection to a leaf item", () => {
-        const collection = { id: "c1", name: "pairs", hid: 3, created_time: ISO_TIME };
+        const collection = { id: "c1", name: "pairs", hid: 3, create_time: ISO_TIME };
         expect(collectionToItem(collection)).toEqual({
             id: "c1",
             label: "pairs",

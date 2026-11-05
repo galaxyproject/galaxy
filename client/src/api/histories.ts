@@ -67,6 +67,8 @@ export interface GetHistoriesOptions {
     search: string;
     sortBy: HistorySortByLiteral;
     sortDesc: boolean;
+    /** Cancels the request, e.g. when a newer search supersedes it. */
+    signal: AbortSignal;
 }
 
 /**
@@ -212,9 +214,11 @@ export async function getHistories<T = AnyHistoryEntry>(
         showShared = false,
         showArchived = false,
         keys = "username",
+        signal,
     } = options || {};
 
     const { response, data, error } = await GalaxyApi().GET("/api/histories", {
+        signal,
         params: {
             query: {
                 view: "summary",

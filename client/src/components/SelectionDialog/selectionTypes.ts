@@ -29,3 +29,27 @@ export interface ItemsProviderContext {
 }
 
 export type ItemsProvider = (ctx: ItemsProviderContext) => Promise<SelectionItem[]>;
+
+/** What a provider is asked for: one page of one level, plus the signal that cancels it. */
+export interface SelectItemsQuery {
+    /** Opened folders, root first; empty at the root level. */
+    path: readonly SelectionItem[];
+    page: number;
+    perPage: number;
+    filter: string;
+    sortBy?: string;
+    sortDesc?: boolean;
+    signal: AbortSignal;
+}
+
+export interface SelectItemsPage<Raw> {
+    items: Raw[];
+    /** Total matches when the source pages and filters server-side; undefined means all items were returned. */
+    total?: number;
+}
+
+/** Data source of a selection dialog: fetches raw records for a query and maps each one to a SelectionItem. */
+export interface SelectItemsProvider<Raw = unknown> {
+    load(query: SelectItemsQuery): Promise<SelectItemsPage<Raw>>;
+    map(raw: Raw, query: SelectItemsQuery): SelectionItem;
+}

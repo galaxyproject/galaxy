@@ -11,8 +11,8 @@ import {
     type RemoteEntry,
 } from "@/api/remoteFiles";
 import type { TableField } from "@/components/Common/GTable.types";
-import { fileSourcePluginToItem, isSamePath, isSubPath } from "@/components/FilesDialog/utilities";
-import { filesDialogEntryToItem } from "@/components/SelectionDialog/selectionAdapters";
+import { isSamePath, isSubPath } from "@/components/FilesDialog/utilities";
+import { filesDialogEntryToItem, fileSourcePluginToItem } from "@/components/SelectionDialog/selectionAdapters";
 import {
     type ItemsProvider,
     type ItemsProviderContext,
