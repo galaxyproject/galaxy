@@ -92,6 +92,23 @@ describe("getMyHistories", () => {
             show_published: "false",
         });
     });
+
+    it("passes the abort signal to the request, so a superseded search is cancelled", async () => {
+        const signals: AbortSignal[] = [];
+        server.use(
+            http.get("/api/histories", ({ request, response }) => {
+                signals.push(request.signal);
+                return response(200).json([], { headers: { total_matches: "0" } });
+            }),
+        );
+        const controller = new AbortController();
+
+        await getMyHistories({ signal: controller.signal });
+        controller.abort();
+
+        expect(signals).toHaveLength(1);
+        expect(signals[0]!.aborted).toBe(true);
+    });
 });
 
 describe("getSharedHistories", () => {
