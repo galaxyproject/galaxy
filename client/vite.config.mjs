@@ -101,8 +101,8 @@ export default defineConfig(({ command }) => ({
                     // builds, where a leading comment turns a single-root component into a
                     // Fragment and breaks attribute fallthrough.
                     comments: false,
-                    // Templates compile with Vue 3 semantics. Runtime compat for the Vue 2
-                    // libraries still lives in src/compat-config.js.
+                    // Templates compile with Vue 3 semantics. Runtime compat still lives in
+                    // src/compat-config.js.
                     compatConfig: {
                         MODE: 3,
                     },
