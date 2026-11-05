@@ -2,11 +2,13 @@
 // keep compat's Vue 2 behavior for their own components, so compat-config.js
 // can turn flags off for Galaxy code without breaking them.
 //
-// compat reads `instance.type.compatConfig` before the global config, but only
-// for keys it has: a flag set `false` globally would fall through to a component
-// marked only `{ MODE: 2 }`. So the marker lists every per-component flag as
-// on, and these components keep Vue 2 behavior whatever the global config says.
-// COMPONENT_ASYNC stays as the global config has it (off).
+// compat reads each key, MODE included, from `instance.type.compatConfig` when
+// it's there and from the global config otherwise. With MODE 2, a flag is on
+// unless the value it finds is `false`, so `{ MODE: 2 }` alone would only lose
+// flags the global config sets to `false`. The marker lists every
+// per-component flag as on anyway, so a global `false` added later can't reach
+// these components. COMPONENT_ASYNC is left out on purpose: they take the
+// global `false` for it.
 import Vue from "vue";
 
 const PER_COMPONENT_FLAGS = [
