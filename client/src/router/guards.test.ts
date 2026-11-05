@@ -67,4 +67,9 @@ describe("redirectLoggedIn", () => {
         setUser("f2db41e1fa331b3e");
         expect(runGuard({ redirect: "/login/start" })).toBe("/");
     });
+
+    it("lets a logged-in user through when a password reset token is present", () => {
+        setUser("f2db41e1fa331b3e");
+        expect(runGuard({ token: "d2c18db6f9e2f1d27f2a03e8224fb610" })).toBeUndefined();
+    });
 });
