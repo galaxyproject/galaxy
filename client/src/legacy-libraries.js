@@ -70,8 +70,5 @@ export function legacyComponent(component, seen = new Set()) {
 // plugin in vite.config.mjs covers the production chunking.
 const originalExtend = Vue.extend;
 Vue.extend = function legacyExtend(definition = {}) {
-    if (definition && typeof definition === "object" && !definition.compatConfig) {
-        definition.compatConfig = LEGACY_COMPAT_CONFIG;
-    }
-    return originalExtend.call(this, definition);
+    return originalExtend.call(this, legacyComponent(definition));
 };
