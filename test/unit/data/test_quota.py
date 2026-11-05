@@ -572,6 +572,20 @@ class TestCalculateUsage(BaseModelTestCase):
 
         assert sent == [UserQuotaUpdates(user_ids={self.u.id})]
 
+    def test_adjusting_a_new_user_announces_nothing(self):
+        sent: list[UserQuotaUpdates] = []
+        send_user_quota_updates_on_commit(self.model.session, sent.append)
+        # Without a listener installed until now, the updates queued by earlier tests are still pending
+        self.model.session.commit()
+        sent.clear()
+        user = model.User(email=random_email(), password="password")
+        self.model.session.add(user)
+
+        user.adjust_total_disk_usage(10, None)
+        self.model.session.commit()
+
+        assert sent == []
+
     def _refresh_user_and_assert_disk_usage_is(self, usage, label=None):
         u = self.u
         self.model.context.refresh(u)

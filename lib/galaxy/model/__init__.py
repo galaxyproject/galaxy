@@ -1243,7 +1243,8 @@ WHERE user_id = :user_id and quota_source_label = :label
     def adjust_total_disk_usage(self, amount, quota_source_label, preserve_update_time: bool = False):
         assert amount is not None
         if amount != 0:
-            if session := object_session(self):
+            # A user that isn't in the database yet has no browser to tell
+            if self.id is not None and (session := object_session(self)):
                 queue_user_quota_update(session, [self.id])
             if quota_source_label is None:
                 if not inspect(self).has_identity:
