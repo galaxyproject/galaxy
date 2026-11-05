@@ -119,6 +119,8 @@ const DEFAULT_PANEL_VIEW_ID = "default";
 export const useToolStore = defineStore("toolStore", () => {
     // Set only by the bulk load: `toolsById` can also hold single tools from `fetchToolForId`.
     const allToolsLoaded = ref(false);
+    // Shared by concurrent callers so the bulk list is downloaded once.
+    let allToolsRequest: Promise<void> | null = null;
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
     const defaultPanelView: Ref<string> = ref("");
     const loading = ref(false);
@@ -278,14 +280,27 @@ export const useToolStore = defineStore("toolStore", () => {
 
             // Fetch all tools by IDs if not already fetched.
             if (!allToolsLoaded.value) {
-                const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { in_panel: false } });
-                saveAllTools(data as Tool[]);
+                await fetchAllTools();
             }
         } catch (e) {
             rethrowSimple(e);
         } finally {
             loading.value = false;
         }
+    }
+
+    function fetchAllTools(): Promise<void> {
+        if (!allToolsRequest) {
+            allToolsRequest = (async () => {
+                try {
+                    const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { in_panel: false } });
+                    saveAllTools(data as Tool[]);
+                } finally {
+                    allToolsRequest = null;
+                }
+            })();
+        }
+        return allToolsRequest;
     }
 
     /**
