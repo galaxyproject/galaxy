@@ -1,11 +1,15 @@
+import json
 import os
 import subprocess
+
+import pytest
 
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.tool_util.provided_metadata import NullToolProvidedMetadata
 from galaxy.util import (
     galaxy_directory,
     safe_makedirs,
@@ -159,6 +163,58 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         self._write_job_files()
         self.exec_metadata_command(command)
         # Emulate job stuff here...
+
+    @pytest.mark.parametrize("strategy", ["directory", "extended"])
+    @pytest.mark.parametrize("discovery_format", [None, "tabular", "captured", "missing_source"])
+    def test_collection_format_source(self, strategy, discovery_format):
+        self.app.config.metadata_strategy = strategy
+        discovery = {"pattern": r"(?P<name>result)\.txt"}
+        expected_format = "interval"
+        format_source = "input"
+        if discovery_format == "captured":
+            discovery["pattern"] = r"(?P<name>result)\.(?P<ext>txt)"
+            expected_format = "txt"
+        elif discovery_format == "tabular":
+            discovery["format"] = discovery_format
+            expected_format = discovery_format
+        elif discovery_format == "missing_source":
+            format_source = "unavailable"
+            expected_format = "txt"
+        attributes = " ".join(f'{key}="{value}"' for key, value in discovery.items())
+        self._init_tool(f"""<tool id="sources" name="Collection sources" version="1.0">
+            <command>exit 0</command>
+            <inputs><param name="input" type="data" format="interval" /></inputs>
+            <outputs><collection name="output" type="list" format="txt" format_source="{format_source}">
+                <discover_datasets {attributes} />
+            </collection></outputs>
+        </tool>""".replace("(?P<", "(?P&lt;"))
+        input_dataset = self._create_output_dataset(extension="interval")
+        self._write_output_dataset_contents(input_dataset, "10\t20\tchr1\n")
+        self.job.add_input_dataset("input", input_dataset)
+        collection = model.DatasetCollection(collection_type="list", populated=False)
+        hdca = self._create_output_dataset_collection(collection=collection)
+        self._write_work_dir_file("result.txt", "10\t20\tchr1\n")
+        if strategy == "extended":
+            command = self.metadata_command({}, {"output": hdca})
+            self._write_job_files()
+            self.exec_metadata_command(command)
+            populated_path = os.path.join(self.job_working_directory, "metadata", "outputs_populated")
+            with open(os.path.join(populated_path, "datasets_attrs.txt")) as f:
+                datasets = json.load(f)
+            assert [dataset_attrs["extension"] for dataset_attrs in datasets] == [expected_format]
+        else:
+            self.tool.discover_outputs(
+                {},
+                {"output": hdca},
+                NullToolProvidedMetadata(),
+                self.tool_working_directory,
+                self.job,
+                input_ext="interval",
+                input_dbkey="?",
+                inp_data={"input": input_dataset},
+            )
+            self.app.model.session.flush()
+            assert [dataset.extension for dataset in hdca.collection.dataset_instances] == [expected_format]
 
     def _create_output_dataset_collection(self, **kwd):
         output_dataset_collection = model.HistoryDatasetCollectionAssociation(**kwd)

@@ -294,6 +294,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         user: Optional[model.User] = None,
         object_store: Optional[ObjectStore] = None,
         tag_handler: Optional["GalaxyTagHandlerSession"] = None,
+        commit: bool = True,
     ) -> None:
         if object_store is None:
             if app is not None:
@@ -310,6 +311,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.import_options = import_options or ImportOptions()
         self.dataset_state_serialized = True
         self.tag_handler = tag_handler
+        # With commit=False the import only flushes and the caller owns the transaction.
+        self.commit = commit
         if self.defines_new_history():
             self.import_history_encoded_id = self.new_history_properties().get("encoded_id")
         else:
@@ -818,7 +821,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     ld.library_dataset_dataset_association = ldda
                 self._session_add(ld)
 
-            self.sa_session.commit()
+            self._flush()
             return library_folder
 
         libraries_attrs = self.library_properties()
@@ -1437,7 +1440,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.sa_session.add(obj)
 
     def _flush(self) -> None:
-        self.sa_session.commit()
+        if self.commit:
+            self.sa_session.commit()
+        else:
+            self.sa_session.flush()
 
 
 def _copied_from_object_key(
