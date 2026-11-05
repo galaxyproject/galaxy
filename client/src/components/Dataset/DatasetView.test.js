@@ -67,7 +67,7 @@ const pausedDataset = { ...mockDataset, state: "paused" };
 // Dataset with preferred visualization
 const h5Dataset = { ...mockDataset, file_ext: "h5" };
 
-function setupPinia(datasetStore) {
+function setupPinia(datasetStore, datatypesMapper = testDatatypesMapper) {
     const pinia = createTestingPinia({
         createSpy: vi.fn,
         initialState: {
@@ -82,7 +82,7 @@ function setupPinia(datasetStore) {
                 },
             },
             datatypesMapperStore: {
-                datatypesMapper: testDatatypesMapper,
+                datatypesMapper,
             },
         },
         stubActions: false,
@@ -100,7 +100,7 @@ async function mountDatasetView(tab = "preview", options = {}) {
             [DATASET_ID]: options.dataset || mockDataset,
         },
     };
-    const pinia = setupPinia(datasetStore);
+    const pinia = setupPinia(datasetStore, "datatypesMapper" in options ? options.datatypesMapper : undefined);
 
     const router = createRouter({ history: createMemoryHistory(), routes: [] });
     router.push = vi.fn();
@@ -461,6 +461,18 @@ describe("DatasetView", () => {
             expect(wrapper.find(".alert-heading").text()).toBe("Dataset Not Available");
             expect(wrapper.text()).toContain("Access denied");
             expect(wrapper.find(".dataset-view").exists()).toBe(false);
+        });
+
+        it("shows the dataset with a warning when the datatypes fail to load", async () => {
+            server.use(
+                http.untyped.get("/api/datatypes/types_and_mapping", () =>
+                    HttpResponse.json({ err_msg: "Datatypes unavailable", err_code: 500 }, { status: 500 }),
+                ),
+            );
+            const wrapper = await mountDatasetView("preview", { datatypesMapper: null });
+            expect(wrapper.text()).not.toContain("Loading dataset details");
+            expect(wrapper.find(".dataset-view").exists()).toBe(true);
+            expect(wrapper.find(".datatypes-load-error").text()).toContain("Datatypes unavailable");
         });
 
         it.skip("uses preferred visualization for supported datatypes", async () => {

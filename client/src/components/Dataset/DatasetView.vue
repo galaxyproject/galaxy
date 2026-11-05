@@ -11,6 +11,7 @@ import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useDatatypeStore } from "@/stores/datatypeStore";
 import STATES from "@/utils/datasetStates";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
@@ -52,6 +53,7 @@ const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
 
 // Track datatype loading state
 const isDatatypeLoading = ref(false);
+const datatypesLoadError = ref<string | null>(null);
 
 // Consolidated loading state
 const isLoading = computed(() => {
@@ -101,11 +103,17 @@ watch(
     async () => {
         if (dataset.value && dataset.value.file_ext) {
             isDatatypeLoading.value = true;
-            await Promise.all([
-                datatypeStore.fetchDatatypeDetails(dataset.value.file_ext),
-                datatypesMapperStore.createMapper(),
-            ]);
-            isDatatypeLoading.value = false;
+            try {
+                await Promise.all([
+                    datatypeStore.fetchDatatypeDetails(dataset.value.file_ext),
+                    datatypesMapperStore.createMapper(),
+                ]);
+                datatypesLoadError.value = null;
+            } catch (error) {
+                datatypesLoadError.value = errorMessageAsString(error);
+            } finally {
+                isDatatypeLoading.value = false;
+            }
         }
     },
     { immediate: true },
@@ -219,6 +227,10 @@ watch(
                 <FontAwesomeIcon :icon="faBug" class="mr-1" /> Error
             </BNavItem>
         </BNav>
+        <!-- Without the datatypes mapper, binary and image datasets fall back to the text preview. -->
+        <GAlert v-if="datatypesLoadError" variant="warning" class="datatypes-load-error m-2" show>
+            Unable to load datatypes: {{ datatypesLoadError }}
+        </GAlert>
         <div v-if="tab === 'preview'" class="tab-content-panel">
             <VisualizationDisplay
                 v-if="preferredVisualization"
