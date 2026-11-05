@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import axios, { type AxiosError } from "axios";
 import { BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import {
@@ -50,10 +50,26 @@ const messageVariant = ref<string | null>(null);
 const cILogonIdps = ref<Idp[]>([]);
 const selected = ref<Idp | null>(null);
 const rememberIdp = ref(false);
+/** IdPs whose icon has loaded; the rest show a text button. */
+const loadedIcons = ref(new Set<string>());
 
 const oIDCIdps = computed<OIDCConfig>(() => (isConfigLoaded.value ? config.value.oidc : {}));
 
 const filteredOIDCIdps = computed(() => getFilteredOIDCIdps(oIDCIdps.value, props.excludeIdps));
+
+watch(
+    filteredOIDCIdps,
+    (idps) => {
+        Object.entries(idps).forEach(([idp, cfg]) => {
+            if (cfg.icon && !loadedIcons.value.has(idp)) {
+                const img = new Image();
+                img.onload = () => loadedIcons.value.add(idp);
+                img.src = cfg.icon;
+            }
+        });
+    },
+    { immediate: true },
+);
 
 const cILogonConfigured = computed(() => getNeedShowCilogonInstitutionList(oIDCIdps.value));
 
@@ -227,7 +243,7 @@ function getIdpPreference() {
                 :class="!props.columnDisplay && props.loginPage ? 'oidc-idps-column' : 'oidc-idps-grid'">
                 <div v-for="(iDPInfo, idp) in filteredOIDCIdps" :key="idp">
                     <GButton
-                        v-if="iDPInfo['icon']"
+                        v-if="iDPInfo['icon'] && loadedIcons.has(idp)"
                         transparent
                         class="d-block oidc-button p-0"
                         :disabled="loading"
