@@ -8,7 +8,7 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { RegisteredUser } from "@/api";
+import type { AnonymousUser, RegisteredUser } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { vGTooltip } from "@/directives/vGTooltip";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
@@ -29,6 +29,8 @@ const SOURCE_USAGE = "[data-description='quota source usage']";
 const SOURCE_NAME = "[data-description='quota source name']";
 const DASHBOARD_BUTTON = "[data-description='storage dashboard button']";
 const METER_LINK = "[data-description='storage dashboard link']";
+const ANONYMOUS_OVER_QUOTA = "[data-description='anonymous over quota']";
+const LOG_IN_BUTTON = "[data-description='log in button']";
 
 // Meters attach to the document body, where a leftover one's link would take the popover's target id
 const mountedWrappers: VueWrapper[] = [];
@@ -210,6 +212,48 @@ describe("QuotaMeter.vue", () => {
             await mountWithSourceUsages({ scratch: SOURCE_QUOTA, archive: 400 });
 
             expect(wrapper.find(OTHER_SOURCES_HINT).exists()).toBe(false);
+        });
+    });
+
+    describe("for anonymous users on a server with other storage sources", () => {
+        /** Mounts the meter for an anonymous user, who gets no usage per source from the server. */
+        async function mountAnonymous(quotaPercent: number) {
+            setupMockConfig({ enable_quotas: true, quota_source_labels: ["scratch"] });
+            const pinia = createPinia();
+            setActivePinia(pinia);
+            const user: AnonymousUser = {
+                isAnonymous: true,
+                total_disk_usage: 2048,
+                nice_total_disk_usage: "2 KB",
+                quota_percent: quotaPercent,
+            };
+            useUserStore().currentUser = user;
+            const wrapper = mountQuotaMeter({ global: withPlugins(localVue, pinia) });
+            await flushPromises();
+            await hover(wrapper.find(METER_LINK));
+            return wrapper;
+        }
+
+        it("offers to log in to see the usage of each storage, in place of the tooltip", async () => {
+            const wrapper = await mountAnonymous(40);
+
+            expect(document.body.querySelector(LOG_IN_BUTTON)?.getAttribute("href")).toBe("/login/start");
+            expect(document.body.querySelector(DASHBOARD_BUTTON)).toBeNull();
+            expect(await hoverForTooltip(wrapper)).toBeNull();
+        });
+
+        it("says when the default storage is over quota", async () => {
+            await mountAnonymous(100);
+
+            expect(document.body.querySelector(ANONYMOUS_OVER_QUOTA)?.textContent?.trim()).toBe(
+                "Over quota on the default storage: jobs writing there are on hold",
+            );
+        });
+
+        it("says nothing about the quota while under it", async () => {
+            await mountAnonymous(99);
+
+            expect(document.body.querySelector(ANONYMOUS_OVER_QUOTA)).toBeNull();
         });
     });
 });

@@ -5,7 +5,7 @@ import { BLink, BProgress, BProgressBar } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
-import { isRegisteredUser } from "@/api";
+import { isRegisteredUser, isUserOverQuota } from "@/api";
 import { useConfig } from "@/composables/config";
 import { useQuotaSourceNames } from "@/composables/quotaSourceNames";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
@@ -26,10 +26,18 @@ const otherSourcesOverQuotaText = computed(
     () => `${localize("Over quota on these storages:")} ${otherSourcesOverQuotaNames.value}`,
 );
 
-// Other pages load the usage per storage source for anyone: list it only for users with quotas on several sources
-const showSourcesPopover = computed(
-    () => Boolean(config.value.enable_quotas) && !isAnonymous.value && (quotaUsages.value?.length ?? 0) > 1,
-);
+// Other pages load the usage per storage source for anyone: list it only for users with quotas on several sources.
+// The server gives anonymous users no usage per source, so they only learn there are several.
+const showSourcesPopover = computed(() => {
+    if (!config.value.enable_quotas) {
+        return false;
+    }
+    if (isAnonymous.value) {
+        return (config.value.quota_source_labels?.length ?? 0) > 0;
+    }
+    return (quotaUsages.value?.length ?? 0) > 1;
+});
+const isOverQuota = computed(() => isUserOverQuota(currentUser.value));
 
 const hasQuota = computed<boolean>(() => {
     const quotasEnabled = config.value.enable_quotas ?? false;
@@ -93,7 +101,12 @@ const variant = computed(() => {
                 </span>
             </span>
         </BLink>
-        <QuotaSourcesPopover v-if="showSourcesPopover" :target="LINK_ID" :quota-usages="quotaUsages" />
+        <QuotaSourcesPopover
+            v-if="showSourcesPopover"
+            :target="LINK_ID"
+            :quota-usages="quotaUsages"
+            :is-anonymous="isAnonymous"
+            :is-over-quota="isOverQuota" />
     </div>
 </template>
 

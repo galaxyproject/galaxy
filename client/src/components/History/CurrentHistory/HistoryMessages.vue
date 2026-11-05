@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
-import { type AnyUser, type HistorySummary, isRegisteredUser, userOwnsHistory } from "@/api";
+import { type AnyUser, type HistorySummary, isUserOverQuota, userOwnsHistory } from "@/api";
 import { useQuotaSourceNames } from "@/composables/quotaSourceNames";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import localize from "@/utils/localization";
@@ -23,15 +23,6 @@ const showArchived = computed(() => props.history.archived && ownsHistory.value)
 
 // The quota concerns the user, not the history: only warn about it on their own histories.
 const isOverQuota = computed(() => ownsHistory.value && isUserOverQuota(props.currentUser));
-
-/** Jobs are held once the usage exceeds the quota, not when it equals it. */
-function isUserOverQuota(user: AnyUser) {
-    if (isRegisteredUser(user) && typeof user.quota_bytes === "number") {
-        return user.total_disk_usage > user.quota_bytes;
-    }
-    // Anonymous users only get the percentage, which the server caps at 100
-    return (user?.quota_percent ?? 0) >= 100;
-}
 
 // Jobs are paused per storage source, so name the other sources the user exceeded the quota of
 const { otherSourcesOverQuota } = storeToRefs(useQuotaUsageStore());

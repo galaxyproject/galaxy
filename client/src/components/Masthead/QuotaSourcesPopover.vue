@@ -15,6 +15,10 @@ defineProps<{
     /** Id of the element the popover opens from */
     target: string;
     quotaUsages?: QuotaUsage[];
+    /** The server gives anonymous users no usage per source: they only get the default one and a way to log in */
+    isAnonymous?: boolean;
+    /** Whether the user exceeded the quota of the default storage */
+    isOverQuota?: boolean;
 }>();
 
 const { quotaSourceName } = useQuotaSourceNames();
@@ -44,7 +48,19 @@ function usageText(usage: QuotaUsage): string {
         placement="bottom"
         :title="localize('Storage usage')"
         custom-class="quota-sources-popover">
-        <ul v-if="isShown" class="list-unstyled mb-2">
+        <template v-if="isAnonymous">
+            <div v-if="isOverQuota" class="text-danger small mb-2" data-description="anonymous over quota">
+                <FontAwesomeIcon :icon="faExclamationTriangle" />
+                {{ localize("Over quota on the default storage: jobs writing there are on hold") }}
+            </div>
+            <p class="mb-2" data-description="log in for storage usage">
+                {{ localize("Log in to see your usage and quota on each storage.") }}
+            </p>
+            <GButton class="w-100" color="blue" size="small" to="/login/start" data-description="log in button">
+                {{ localize("Log in") }}
+            </GButton>
+        </template>
+        <ul v-else-if="isShown" class="list-unstyled mb-2">
             <li
                 v-for="usage in quotaUsages"
                 :key="sourceKey(usage)"
@@ -64,7 +80,13 @@ function usageText(usage: QuotaUsage): string {
                 </div>
             </li>
         </ul>
-        <GButton class="w-100" color="blue" size="small" to="/storage" data-description="storage dashboard button">
+        <GButton
+            v-if="!isAnonymous"
+            class="w-100"
+            color="blue"
+            size="small"
+            to="/storage"
+            data-description="storage dashboard button">
             {{ localize("Open Storage Dashboard") }}
         </GButton>
     </GPopover>
