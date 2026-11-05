@@ -130,3 +130,14 @@ def test_is_zipfile_strict_accepts_zip_and_empty_zip(tmp_path):
     zipfile.ZipFile(empty, "w").close()
     assert is_zipfile_strict(path)
     assert is_zipfile_strict(empty)
+
+
+def test_tar_fixture_with_zip_last_member_is_tar():
+    path = "test-data/tar_with_zip_last_member.tar"
+    assert not is_zipfile_strict(path)
+    assert check_zip(path) == (False, False)
+    fmt, fh = get_fileobj_raw(path, "rb")
+    with fh:
+        assert fmt is None
+    with CompressedFile(path) as cf:
+        assert cf.file_type == "tar"

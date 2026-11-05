@@ -708,6 +708,15 @@ class TestToolsUpload(ApiTestCase):
         assert details["file_ext"] == "tar"
         assert details["file_size"] == os.path.getsize(tar_path)
 
+    def test_upload_tar_with_zip_last_member_not_decompressed(self, history_id):
+        tar_path = TestDataResolver().get_filename("tar_with_zip_last_member.tar")
+        with open(tar_path, "rb") as fh:
+            details = self._upload_and_get_details(
+                fh, api="fetch", history_id=history_id, auto_decompress=True, assert_ok=True
+            )
+        assert details["file_ext"] == "tar"
+        assert details["file_size"] == os.path.getsize(tar_path)
+
     def _assert_content_matches_hash(self, content: bytes, expected_hash: str):
         with tempfile.NamedTemporaryFile("wb") as temp:
             temp.write(content)
