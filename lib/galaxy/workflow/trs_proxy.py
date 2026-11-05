@@ -34,6 +34,7 @@ DEFAULT_TRS_SERVERS = [
 GA4GH_GALAXY_DESCRIPTOR = "GALAXY"
 # (connect, read) timeout in seconds for requests to TRS servers. Galaxy proxies these requests while
 # the user waits in the import form, so give up on an unresponsive server and report the failure.
+# These limit each connection attempt and each wait for data from the server, not the whole request.
 TRS_REQUEST_TIMEOUT = (10, 30)
 TRS_URL_REGEX = (
     r"(?P<trs_base_url>https?:\/\/.+)\/ga4gh\/trs\/v2\/tools\/(?P<tool_id>.+)\/versions\/(?P<version_id>[^\/]+).*"
@@ -157,8 +158,10 @@ class TrsServer:
         try:
             response = requests.get(url, params=params, timeout=TRS_REQUEST_TIMEOUT)
         except requests.exceptions.Timeout as e:
+            log.warning("Request to TRS server %s timed out: %s", self._trs_url, e)
             raise InternalServerError(f"TRS server {self._trs_url} did not respond in time.") from e
         except requests.exceptions.ConnectionError as e:
+            log.warning("Request to TRS server %s failed: %s", self._trs_url, e)
             raise InternalServerError(f"TRS server {self._trs_url} could not be reached.") from e
         if response.ok:
             return response.json()

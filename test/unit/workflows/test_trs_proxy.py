@@ -281,11 +281,12 @@ def test_slow_server_reported_as_timeout():
 
 
 @pytest.mark.parametrize("trs_error,reason", UNRESPONSIVE_SERVER_ERRORS)
-def test_unresponsive_server_reported_as_message_exception(trs_error, reason):
+def test_unresponsive_server_reported_as_message_exception(trs_error, reason, caplog):
     with _mock_get(trs_error):
         with pytest.raises(MessageException) as exc_info:
             get_trs_proxy().server_from_url("https://workflowhub.eu").get_tool("138")
     assert exc_info.value.err_msg == f"TRS server https://workflowhub.eu {reason}."
+    assert str(trs_error) in caplog.text
 
 
 def _message_sent_to_client(exception):
