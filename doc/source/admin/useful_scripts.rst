@@ -40,20 +40,50 @@ To safely delete unused histories and their associated records, please use the `
 Deleting old galaxy_session records
 -----------------------------------
 
-Each time Galaxy is accessed, a galaxy_session record is created, even when the user is anonymous. Over time, Galaxy accumulates such records. Deleting such records will declutter the database and free up space. 
+Run cleanup during a quiet period, starting with a preview. Old sessions can
+still be in use: deleting them may end a browser login or remove anonymous access
+to a history. The examples below preserve anonymous sessions linked to histories
+and sessions needed by jobs without a user.
 
-To safely delete such records, please use the galaxy-delete-sessions script. By default, a galaxy_session record should be at least a month old to be considered safe to delete (which is determined by the value of its ``update_time`` field). Each user's most recent galaxy_session record is never deleted, however old: it keeps that user's browser logged in, determines which history is opened on their next login, and is the source of the last-login time in the admin users list.
+``galaxy-data`` installs the command in Galaxy's Python environment (``.venv``
+below). For a source checkout without it, substitute
+``.venv/bin/python lib/galaxy/model/scripts/delete_galaxy_sessions.py``.
+Replace the example configuration and cutoff with your own.
+
+Preview a limited scan; ``--dry-run`` does not change any records:
 
 .. code-block:: console
 
-    $ python  $GALAXY_ROOT/lib/galaxy/model/scripts/delete_galaxy_sessions.py
-    usage: delete_galaxy_sessions.py [-h] [--updated UPDATED]
-    
-    Remove old galaxy_session records from database.
-    
-    options:
-      -h, --help         show this help message and exit
-      --updated UPDATED  most recent `updated` date/time in ISO format (for example, March 11, 1952 is represented as '1952-03-11'
+    $ .venv/bin/galaxy-delete-sessions --config config/galaxy-test.yml --updated 2026-08-07 \
+        --anonymous-only --preserve-anonymous-histories --preserve-sessions-with-jobs \
+        --batch-size 100 --max-batches 5 --dry-run
+
+If the results look right, try a small cleanup run:
+
+.. code-block:: console
+
+    $ .venv/bin/galaxy-delete-sessions --config config/galaxy-test.yml --updated 2026-08-07 \
+        --anonymous-only --preserve-anonymous-histories --preserve-sessions-with-jobs \
+        --batch-size 100 --max-batches 5 --pause 1
+
+Check database load before removing the limit:
+
+.. code-block:: console
+
+    $ .venv/bin/galaxy-delete-sessions --config config/galaxy-test.yml --updated 2026-08-07 \
+        --anonymous-only --preserve-anonymous-histories --preserve-sessions-with-jobs \
+        --batch-size 1000 --pause 0.5
+
+Without the retention flags, linked sessions and older registered-user sessions
+are eligible too. The newest session per user and undated sessions are always kept;
+the default age is 30 days. Batch size counts scanned sessions, including protected
+ones. Even previews can be expensive; use ``--help`` for timeout and pacing options.
+
+Each batch commits separately. After stopping, resume with the reported
+``--after-id`` and ``--through-id``, keeping the same cutoff and retention flags,
+or restart from the beginning. Histories and datasets remain, but session links
+are removed. Deletion makes space reusable; it does not immediately shrink files
+or run VACUUM/REINDEX. Requires PostgreSQL 12+ or SQLite 3.35+.
 
 Deleting old job metrics
 -------------------------
