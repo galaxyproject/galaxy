@@ -119,7 +119,6 @@ export function buildTopNDatasetsBySizeData(datasetsSizeSummary: ItemSizeSummary
 }
 
 export const byteFormattingForChart = {
-    "enable-selection": true,
     labelFormatter: bytesLabelFormatter,
     yAxisLabelExpr: BYTES_AXIS_LABEL_EXPR,
 };

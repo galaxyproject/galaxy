@@ -46,8 +46,7 @@ describe("HistoryStorageOverview", () => {
 
         const charts = wrapper.findAllComponents({ name: "BarChart" });
         expect(charts).toHaveLength(2);
-        // Each chart also gets the shared byte formatting object, whose own "enable-selection"
-        // must not override what the template sets explicitly.
+        // Only the top-datasets chart lets you click through to a dataset.
         expect(charts[0]!.props("enableSelection")).toBe(true);
         expect(charts[1]!.props("enableSelection")).toBe(false);
         expect(charts[1]!.props("labelFormatter")).toBeTypeOf("function");
