@@ -611,7 +611,6 @@
 </template>
 
 <script>
-import RawHotTable from "@handsontable/vue";
 import axios from "axios";
 import { BRow } from "bootstrap-vue";
 import { escape } from "lodash";
@@ -619,9 +618,9 @@ import { mapActions } from "pinia";
 
 import { ERROR_STATES, NON_TERMINAL_STATES } from "@/api/jobs";
 import { fetchDatasetsToJobId, fetchJobErrorMessage } from "@/api/tools";
+import HotTable from "@/components/Common/legacy/HotTable";
 import RuleDefs from "@/components/RuleBuilder/rule-definitions";
 import UploadUtils from "@/components/Upload/utils";
-import { legacyComponent } from "@/legacy-libraries";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
 import _l from "@/utils/localization";
@@ -659,9 +658,6 @@ const stripUiKeys = function (entry) {
     }
     return clean;
 };
-
-// @handsontable/vue 2.x is a Vue 2 component.
-const HotTable = legacyComponent(RawHotTable);
 
 export default {
     components: {
