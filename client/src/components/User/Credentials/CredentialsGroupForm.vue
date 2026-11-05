@@ -22,7 +22,7 @@
  *   :service-definition="serviceDefinition" />
  */
 
-import { BFormGroup, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormGroup, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type {
@@ -33,6 +33,7 @@ import type {
 } from "@/api/userCredentials";
 import { SECRET_PLACEHOLDER } from "@/stores/userToolsServiceCredentialsStore";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 type SecretField = ServiceCredentialGroupPayload["secrets"][number];
@@ -291,8 +292,9 @@ watch(
             :id="`${props.groupData.groupId}-name`"
             label="Group Name"
             description="Enter a unique name for this group"
-            :invalid-feedback="getGroupNameErrorMessage()">
-            <BFormInput
+            :invalid-feedback="getGroupNameErrorMessage()"
+            :state="getGroupNameState()">
+            <GFormInput
                 :id="`${props.groupData.groupId}-name-input`"
                 v-model="groupName"
                 type="text"
@@ -308,7 +310,7 @@ watch(
                 :id="getFieldId(variable.name, 'variable')"
                 :label="getVariableTitle(variable.name, 'variable')"
                 :description="getVariableDescription(variable.name, 'variable')">
-                <BFormInput
+                <GFormInput
                     :id="getInputId(variable.name, 'variable')"
                     v-model="variable.value"
                     type="text"
@@ -329,7 +331,7 @@ watch(
                 :label="getVariableTitle(secret.name, 'secret')"
                 :description="getVariableDescription(secret.name, 'secret')">
                 <BInputGroup class="mb-2">
-                    <BFormInput
+                    <GFormInput
                         :id="getInputId(secret.name, 'secret')"
                         v-model="secret.value"
                         type="password"
