@@ -204,7 +204,9 @@ async function onImport() {
 
 // Lifecycle hooks
 onMounted(() => {
-    createMapper();
+    createMapper().catch((error) => {
+        Toast.error(errorMessageAsString(error), "Unable to load datatypes");
+    });
 });
 </script>
 
