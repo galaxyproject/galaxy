@@ -15,6 +15,7 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { SKIP_PENDING_REQUESTS_HEADER } from "@/api/pendingRequests";
+import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize";
 import { discardActiveConnectionsBeforeAuthNavigation } from "@/composables/useAuthNavigation";
 import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
@@ -68,10 +69,13 @@ const confirmURL = ref(urlParams.has("confirm") && urlParams.get("confirm") == "
 
 const excludeIdps = computed(() => (connectExternalProvider.value ? [connectExternalProvider.value] : undefined));
 
-/** This decides if all login options should be displayed in column style
- * (one below the other) or horizontally.
- */
-const loginColumnDisplay = computed(() => Boolean(props.showWelcomeWithLogin && props.welcomeUrl));
+const showWelcome = computed(() => Boolean(props.showWelcomeWithLogin && props.welcomeUrl));
+const loginFormRoot = ref<HTMLElement | null>(null);
+const { width: loginFormWidth } = useAnimationFrameSize(loginFormRoot);
+const isNarrow = computed(() => loginFormWidth.value > 0 && loginFormWidth.value < 800);
+
+/** Stack login options vertically beside the welcome page or on narrow screens. */
+const loginColumnDisplay = computed(() => showWelcome.value || isNarrow.value);
 
 async function submitLogin() {
     let redirect: string | null;
@@ -151,10 +155,10 @@ function goToResetPassword() {
 </script>
 
 <template>
-    <div class="login-form">
-        <div class="d-flex justify-content-md-center">
+    <div ref="loginFormRoot" class="login-form" :class="{ 'login-form-welcome': showWelcome }">
+        <div class="d-flex justify-content-md-center" :class="{ 'flex-wrap justify-content-center': isNarrow }">
             <template v-if="!confirmURL">
-                <div>
+                <div :class="{ 'login-column': showWelcome }">
                     <GAlert :show="!!messageText" :variant="messageVariant">
                         <span v-sanitize-html="messageText" />
                     </GAlert>
@@ -166,13 +170,20 @@ function goToResetPassword() {
                     </GAlert>
 
                     <div>
-                        <BCard no-body style="width: fit-content">
+                        <BCard
+                            no-body
+                            style="width: fit-content"
+                            :class="{ 'login-card-narrow': disableLocalAccounts || loginColumnDisplay }">
                             <BCardHeader v-if="!connectExternalProvider">
                                 <span>{{ localize("Welcome to Galaxy, please log in") }}</span>
                             </BCardHeader>
 
                             <BCardBody :class="{ 'd-flex w-100': !loginColumnDisplay }">
-                                <BForm v-if="!disableLocalAccounts" id="login" @submit.prevent="submitLogin()">
+                                <BForm
+                                    v-if="!disableLocalAccounts"
+                                    id="login"
+                                    :class="{ 'login-local-row': !loginColumnDisplay }"
+                                    @submit.prevent="submitLogin()">
                                     <!-- standard internal galaxy login -->
                                     <BFormGroup
                                         :label="localize('Public Name or Email Address')"
@@ -209,6 +220,7 @@ function goToResetPassword() {
                                             <GLink
                                                 id="reset-password-link"
                                                 class="text-left"
+                                                thin
                                                 type="button"
                                                 @click="goToResetPassword">
                                                 <span v-localize>Click here to reset your password.</span>
@@ -233,18 +245,18 @@ function goToResetPassword() {
 
                                     <hr v-else-if="!disableLocalAccounts" class="w-100" />
 
-                                    <div class="m-1 w-100">
+                                    <div class="m-1" :class="{ 'w-100': loginColumnDisplay || disableLocalAccounts }">
                                         <!-- OIDC login-->
                                         <ExternalLogin
                                             login-page
                                             :exclude-idps="excludeIdps"
-                                            :column-display="loginColumnDisplay"
+                                            :column-display="loginColumnDisplay || disableLocalAccounts"
                                             :disable-local-accounts="disableLocalAccounts" />
                                     </div>
                                 </template>
                             </BCardBody>
 
-                            <BCardFooter>
+                            <BCardFooter class="login-footer">
                                 <span v-if="!connectExternalProvider">
                                     Don't have an account?
                                     <GLink
@@ -277,7 +289,7 @@ function goToResetPassword() {
                     @setRedirect="setRedirect" />
             </template>
 
-            <div v-if="showWelcomeWithLogin && props.welcomeUrl" class="w-100">
+            <div v-if="showWelcome && props.welcomeUrl" class="w-100">
                 <BEmbed type="iframe" :src="withPrefix(props.welcomeUrl)" aspect="1by1" />
             </div>
         </div>
@@ -289,6 +301,31 @@ function goToResetPassword() {
     overflow: visible;
 }
 .login-form {
-    margin: 0rem 10rem;
+    margin: 0 1rem;
+    @media (min-width: 1200px) {
+        margin: 0 10rem;
+    }
+}
+.login-form-welcome {
+    margin: 0 2rem;
+    > div {
+        gap: 2rem;
+    }
+}
+.login-local-row {
+    flex: 0 1 auto;
+    min-width: 16rem;
+}
+.login-column {
+    flex-shrink: 0;
+    max-width: 24rem;
+}
+/* Footer wraps to the body's width instead of widening the card. */
+.login-footer {
+    width: 0;
+    min-width: 100%;
+}
+.login-card-narrow {
+    max-width: 22rem;
 }
 </style>

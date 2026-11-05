@@ -166,13 +166,17 @@ function getIdpPreference() {
 </script>
 
 <template>
-    <div class="h-100">
+    <div class="h-100" :class="{ 'd-flex flex-column': !props.columnDisplay }">
         <GAlert v-if="messageText" class="text-nowrap" show :variant="messageVariant">
             {{ messageText }}
         </GAlert>
 
-        <div :class="{ 'd-flex h-100': !props.columnDisplay }">
-            <BForm v-if="cILogonConfigured" id="externalLogin" class="cilogon">
+        <div :class="{ 'd-flex flex-grow-1': !props.columnDisplay }">
+            <BForm
+                v-if="cILogonConfigured"
+                id="externalLogin"
+                class="cilogon"
+                :class="{ 'cilogon-row': !props.columnDisplay }">
                 <div>
                     <BFormGroup :label="`Use ${props.loginPage ? `existing` : ``} institutional login`">
                         <Multiselect
@@ -266,17 +270,20 @@ function getIdpPreference() {
 .card-body {
     overflow: visible;
 }
+.cilogon-row {
+    max-width: 22rem;
+}
 /* Enforce idps to appear in a column */
 .oidc-idps-column {
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
     gap: 0.5rem;
     height: 100%;
     justify-content: center;
     .oidc-button {
         width: 100%;
-        display: flex !important;
-        justify-content: center;
+        text-align: center;
     }
 }
 /* Flexible grid for idps */
