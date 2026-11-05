@@ -212,13 +212,28 @@ export const useUserStore = defineStore("userStore", () => {
         }
     }
 
+    /** Whether a refresh should wait until the user returns to the tab. */
+    function isWatchingHiddenTab() {
+        return watchingStorageUsage && documentVisibility.value === "hidden";
+    }
+
+    /** Whether the server announces this user's usage changes. Anonymous users get no usage events. */
+    function receivesUsageEvents() {
+        return liveUpdatesEnabled && sseConnected.value && isRegisteredUser(currentUser.value);
+    }
+
+    /** Whether live updates should be connected but aren't, e.g. after the tab was hidden. */
+    function liveUpdatesDisconnected() {
+        return liveUpdatesEnabled && !sseConnected.value;
+    }
+
     /**
      * Like ``refreshStorageUsageInBackground``, at most once per window: a workflow finishing many
      * jobs changes the usage, and sends an event, for each. While the tab is hidden, it refreshes
      * once the user returns.
      */
     function refreshStorageUsageThrottled() {
-        if (watchingStorageUsage && documentVisibility.value === "hidden") {
+        if (isWatchingHiddenTab()) {
             refreshSkippedWhileHidden = true;
             return;
         }
@@ -227,12 +242,51 @@ export const useUserStore = defineStore("userStore", () => {
 
     /**
      * Call it after anything that changes the storage usage, e.g. a purge or a history growing.
-     * While live updates are connected, the server announces the change itself, so it does nothing.
-     * Anonymous users get no usage events, so their usage is still refreshed.
+     * It does nothing when the server announces the change itself.
      */
     function refreshStorageUsageUnlessLive() {
-        if (!(liveUpdatesEnabled && sseConnected.value && isRegisteredUser(currentUser.value))) {
+        if (!receivesUsageEvents()) {
             refreshStorageUsageThrottled();
+        }
+    }
+
+    /**
+     * Refreshes when the user returns, since quota events miss changes made outside Galaxy's code,
+     * e.g. by cleanup scripts.
+     */
+    function onVisibilityChange(visibility: DocumentVisibilityState) {
+        if (visibility !== "visible") {
+            return;
+        }
+        if (liveUpdatesDisconnected()) {
+            // Live updates reconnect when the user returns, and catch up then
+            catchUpOnWakeReconnect = true;
+            refreshSkippedWhileHidden = false;
+            setTimeout(catchUpIfNotReconnected, WAKE_RECONNECT_TIMEOUT_MS);
+        } else if (refreshSkippedWhileHidden) {
+            // A change is known to be missing: don't wait for the next focus refresh
+            refreshSkippedWhileHidden = false;
+            void throttledRefresh();
+        } else {
+            void refreshOnFocus();
+        }
+    }
+
+    let connectedBefore = false;
+
+    /** Catches up on the events lost while disconnected. The first connection has nothing to catch up on. */
+    function onLiveUpdatesConnectionChange(isConnected: boolean) {
+        if (!isConnected) {
+            return;
+        }
+        const isReconnect = connectedBefore;
+        connectedBefore = true;
+        if (catchUpOnWakeReconnect) {
+            catchUpOnWakeReconnect = false;
+            refreshStorageUsageThrottled();
+        } else if (isReconnect) {
+            // Every open tab reconnects at once when Galaxy restarts
+            refreshAfterRandomDelay(RECONNECT_REFRESH_MAX_DELAY_MS);
         }
     }
 
@@ -248,46 +302,16 @@ export const useUserStore = defineStore("userStore", () => {
             return;
         }
         watchingStorageUsage = true;
-        storageUsageScope.run(() => {
-            // Quota events don't cover changes made outside Galaxy's code, e.g. by cleanup scripts
-            watch(documentVisibility, (visibility) => {
-                if (visibility !== "visible") {
-                    return;
-                }
-                if (liveUpdatesEnabled && !sseConnected.value) {
-                    // Live updates reconnect when the user returns, and catch up then
-                    catchUpOnWakeReconnect = true;
-                    refreshSkippedWhileHidden = false;
-                    setTimeout(catchUpIfNotReconnected, WAKE_RECONNECT_TIMEOUT_MS);
-                } else if (refreshSkippedWhileHidden) {
-                    // A change is known to be missing: don't wait for the next focus refresh
-                    refreshSkippedWhileHidden = false;
-                    void throttledRefresh();
-                } else {
-                    void refreshOnFocus();
-                }
-            });
-        });
+        storageUsageScope.run(() => watch(documentVisibility, onVisibilityChange));
         const configStore = useConfigStore();
         await until(() => configStore.isLoaded).toBe(true);
-        storageUsageScope.run(() => {
-            if (configStore.config?.enable_sse_updates) {
-                liveUpdatesEnabled = true;
-                connectQuotaEvents();
-                let connectedBefore = sseConnected.value;
-                watch(sseConnected, (isConnected) => {
-                    // Events sent while disconnected are lost; the first connection has nothing to catch up on
-                    if (isConnected && catchUpOnWakeReconnect) {
-                        catchUpOnWakeReconnect = false;
-                        refreshStorageUsageThrottled();
-                    } else if (isConnected && connectedBefore) {
-                        // Every open tab reconnects at once when Galaxy restarts
-                        refreshAfterRandomDelay(RECONNECT_REFRESH_MAX_DELAY_MS);
-                    }
-                    connectedBefore ||= isConnected;
-                });
-            }
-        });
+        if (!configStore.config?.enable_sse_updates) {
+            return;
+        }
+        liveUpdatesEnabled = true;
+        connectQuotaEvents();
+        connectedBefore = sseConnected.value;
+        storageUsageScope.run(() => watch(sseConnected, onLiveUpdatesConnectionChange));
     }
 
     function loadUser(includeHistories = true) {
