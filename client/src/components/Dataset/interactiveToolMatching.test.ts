@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import type { DatatypeConverter } from "@/api/datatypes";
+import type { ToolDataInput } from "@/api/tools";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { Tool, ToolDataInput } from "@/stores/toolStore";
+import type { Tool } from "@/stores/toolStore";
 
 import { matchInteractiveTools } from "./interactiveToolMatching";
 
@@ -57,12 +58,25 @@ function dataInput(name: string | null, extensions: string[]): ToolDataInput {
     return { name, extensions, multiple: false, type: "data", collection_type: null };
 }
 
-function tool(id: string, dataInputs: ToolDataInput[], name = id): Tool {
-    return { id, name, version: "1.0", data_inputs: dataInputs } as Tool;
+interface ListedTool {
+    tool: Tool;
+    /** Undefined when the data inputs route leaves the tool out. */
+    dataInputs?: ToolDataInput[];
 }
 
-function summary(extension: string, tools: Tool[]) {
-    return matchInteractiveTools(tools, extension, mapper, converters).map((result) => [
+function tool(id: string, dataInputs: ToolDataInput[], name = id): ListedTool {
+    return { tool: { id, name, version: "1.0" } as Tool, dataInputs };
+}
+
+function summary(extension: string, listedTools: ListedTool[]) {
+    const dataInputsById: Record<string, ToolDataInput[]> = {};
+    for (const { tool, dataInputs } of listedTools) {
+        if (dataInputs) {
+            dataInputsById[tool.id] = dataInputs;
+        }
+    }
+    const tools = listedTools.map(({ tool }) => tool);
+    return matchInteractiveTools(tools, dataInputsById, extension, mapper, converters).map((result) => [
         result.tool.id,
         result.match,
         result.inputName,
@@ -97,7 +111,7 @@ describe("matchInteractiveTools", () => {
     });
 
     it("leaves out tools without listed data inputs", () => {
-        const tools = [{ id: "unlisted", name: "unlisted", version: "1.0" } as Tool];
+        const tools = [{ tool: { id: "unlisted", name: "unlisted", version: "1.0" } as Tool }];
         expect(summary("tabular", tools)).toEqual([]);
     });
 

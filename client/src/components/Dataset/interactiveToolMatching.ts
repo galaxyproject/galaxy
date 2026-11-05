@@ -1,6 +1,7 @@
 import type { DatatypeConverter } from "@/api/datatypes";
+import type { ToolDataInput } from "@/api/tools";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { Tool, ToolDataInput } from "@/stores/toolStore";
+import type { Tool } from "@/stores/toolStore";
 
 /** How a dataset fits a tool input: its own datatype, a converted one, or an input that accepts any datatype. */
 export type InteractiveToolMatch = "direct" | "converted" | "generic";
@@ -45,11 +46,12 @@ function compareCandidates(a: InteractiveToolForDataset, b: InteractiveToolForDa
 
 /**
  * Interactive tools with a dataset input that accepts a dataset of `extension`, best match first, then by name.
- * Each tool is matched through its best input; on a tie the input the form can prefill wins. Collection inputs
- * are skipped.
+ * Each tool is matched through its best input in `dataInputsById`; on a tie the input the form can prefill wins.
+ * Collection inputs are skipped.
  */
 export function matchInteractiveTools(
     tools: Tool[],
+    dataInputsById: Record<string, ToolDataInput[]>,
     extension: string,
     mapper: DatatypesMapperModel,
     converters: DatatypeConverter[],
@@ -58,7 +60,7 @@ export function matchInteractiveTools(
     const results: InteractiveToolForDataset[] = [];
     for (const tool of tools) {
         const candidates: InteractiveToolForDataset[] = [];
-        for (const input of tool.data_inputs ?? []) {
+        for (const input of dataInputsById[tool.id] ?? []) {
             if (input.type !== "data") {
                 continue;
             }

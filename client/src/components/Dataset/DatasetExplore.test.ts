@@ -4,10 +4,11 @@ import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type DatatypeConverter, fetchDatatypeConverters } from "@/api/datatypes";
+import { fetchToolDataInputs, type ToolDataInput } from "@/api/tools";
 import { getDatatypesMapper } from "@/components/Datatypes";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
-import { type Tool, type ToolDataInput, useToolStore } from "@/stores/toolStore";
+import { type Tool, useToolStore } from "@/stores/toolStore";
 
 import DatasetExplore from "./DatasetExplore.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
@@ -22,11 +23,17 @@ vi.mock("@/api/datatypes", () => ({
     fetchDatatypeConverters: vi.fn(),
 }));
 
+vi.mock("@/api/tools", async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    fetchToolDataInputs: vi.fn(),
+}));
+
 vi.mock("@/components/Datatypes", () => ({
     getDatatypesMapper: vi.fn(),
 }));
 
 const mockFetchConverters = vi.mocked(fetchDatatypeConverters);
+const mockFetchToolDataInputs = vi.mocked(fetchToolDataInputs);
 const mockGetDatatypesMapper = vi.mocked(getDatatypesMapper);
 
 enableAutoUnmount(afterEach);
@@ -59,6 +66,9 @@ const mapper = new DatatypesMapperModel({
 
 const CONVERTERS: DatatypeConverter[] = [{ source: "tabular", target: "csv", tool_id: "CONVERTER_tabular_to_csv" }];
 
+/** What GET /api/tools/data_inputs returns for the tools built with `interactiveTool`. */
+const DATA_INPUTS: Record<string, ToolDataInput[]> = {};
+
 function interactiveTool(
     id: string,
     name: string,
@@ -66,13 +76,13 @@ function interactiveTool(
     dataInputs: ToolDataInput[],
     extra: Partial<Tool> = {},
 ): Tool {
+    DATA_INPUTS[id] = dataInputs;
     return {
         model_class: "InteractiveTool",
         id,
         name,
         version,
         description: "",
-        data_inputs: dataInputs,
         ...extra,
     } as Tool;
 }
@@ -109,9 +119,10 @@ function setupStores(tools: Tool[]) {
     return localVue;
 }
 
-async function mountComponent(tools: Tool[] = TOOLS) {
+async function mountComponent(tools: Tool[] = TOOLS, dataInputs: Record<string, ToolDataInput[]> = DATA_INPUTS) {
     const localVue = setupStores(tools);
     mockFetchConverters.mockResolvedValue(CONVERTERS);
+    mockFetchToolDataInputs.mockResolvedValue(dataInputs);
     const wrapper = mount(DatasetExplore as object, {
         props: { datasetId: DATASET_ID, datasetExtension: "tabular" },
         // isVisible() reads computed styles, which need the element in the document.
@@ -155,6 +166,20 @@ describe("DatasetExplore", () => {
         expect(row(wrapper, "interactive_tool_openrefine").find("img").attributes("src")).toBe(
             "/api/tools/interactive_tool_openrefine/icon",
         );
+    });
+
+    it("fetches the data inputs of interactive tools only", async () => {
+        await mountComponent();
+        expect(mockFetchToolDataInputs).toHaveBeenCalledTimes(1);
+        expect(mockFetchToolDataInputs).toHaveBeenCalledWith("interactive");
+    });
+
+    it("leaves out tools the data inputs response does not list", async () => {
+        const withoutOpenRefine = { ...DATA_INPUTS };
+        delete withoutOpenRefine.interactive_tool_openrefine;
+        const wrapper = await mountComponent(TOOLS, withoutOpenRefine);
+        expect(row(wrapper, "interactive_tool_openrefine").exists()).toBe(false);
+        expect(row(wrapper, `${RADIANT_ID}/1.0`).exists()).toBe(true);
     });
 
     it("collapses the general-purpose group until toggled", async () => {
@@ -253,6 +278,7 @@ describe("DatasetExplore", () => {
 
     it("shows an error when loading fails", async () => {
         const localVue = setupStores(TOOLS);
+        mockFetchToolDataInputs.mockResolvedValue(DATA_INPUTS);
         mockFetchConverters.mockRejectedValue(new Error("Converters unavailable"));
         const wrapper = mount(DatasetExplore as object, {
             props: { datasetId: DATASET_ID, datasetExtension: "tabular" },
@@ -264,9 +290,23 @@ describe("DatasetExplore", () => {
         expect(wrapper.find("[data-tool-id]").exists()).toBe(false);
     });
 
+    it("shows an error when the data inputs fail to load", async () => {
+        const localVue = setupStores(TOOLS);
+        mockFetchConverters.mockResolvedValue(CONVERTERS);
+        mockFetchToolDataInputs.mockRejectedValue(new Error("Toolbox unavailable"));
+        const wrapper = mount(DatasetExplore as object, {
+            props: { datasetId: DATASET_ID, datasetExtension: "tabular" },
+            global: { ...localVue, stubs: { DelayedInput: true, FontAwesomeIcon: true } },
+        });
+        await flushPromises();
+        expect(wrapper.find(".alert-danger").text()).toBe("Toolbox unavailable");
+        expect(wrapper.find("[data-tool-id]").exists()).toBe(false);
+    });
+
     it("shows an error when a datatypes load started elsewhere fails", async () => {
         const localVue = setupStores(TOOLS);
         mockFetchConverters.mockResolvedValue(CONVERTERS);
+        mockFetchToolDataInputs.mockResolvedValue(DATA_INPUTS);
         mockGetDatatypesMapper.mockRejectedValue(new Error("Datatypes unavailable"));
         const datatypesMapperStore = useDatatypesMapperStore();
         datatypesMapperStore.datatypesMapper = null;

@@ -5,6 +5,7 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { type DatatypeConverter, fetchDatatypeConverters } from "@/api/datatypes";
+import { fetchToolDataInputs, type ToolDataInput } from "@/api/tools";
 import { useUid } from "@/composables/utils/uid";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
@@ -51,6 +52,7 @@ const genericListId = useUid("dataset-explore-generic-");
 
 const toolsLoaded = ref(false);
 const converters = ref<DatatypeConverter[] | null>(null);
+const dataInputsById = ref<Record<string, ToolDataInput[]>>({});
 const errorMessage = ref("");
 const query = ref("");
 const genericExpanded = ref(false);
@@ -66,17 +68,21 @@ const tools = computed<ExploreTool[]>(() => {
         return [];
     }
     const interactiveTools = filterLatestToolVersions(toolStore.getInteractiveTools());
-    return matchInteractiveTools(interactiveTools, props.datasetExtension, mapper, converters.value).map(
-        ({ tool, inputName, match }) => ({
-            id: tool.id,
-            name: tool.name,
-            description: tool.description,
-            version: tool.version,
-            icon: tool.icon,
-            inputName,
-            match,
-        }),
-    );
+    return matchInteractiveTools(
+        interactiveTools,
+        dataInputsById.value,
+        props.datasetExtension,
+        mapper,
+        converters.value,
+    ).map(({ tool, inputName, match }) => ({
+        id: tool.id,
+        name: tool.name,
+        description: tool.description,
+        version: tool.version,
+        icon: tool.icon,
+        inputName,
+        match,
+    }));
 });
 
 const searching = computed(() => Boolean(query.value.trim()));
@@ -123,11 +129,13 @@ function launchTool(tool: ExploreTool) {
 
 async function loadTools() {
     try {
-        const [, loadedConverters] = await Promise.all([
+        const [, loadedDataInputs, loadedConverters] = await Promise.all([
             toolStore.fetchTools(),
+            fetchToolDataInputs("interactive"),
             fetchDatatypeConverters(),
             datatypesMapperStore.createMapper(),
         ]);
+        dataInputsById.value = loadedDataInputs;
         converters.value = loadedConverters;
         toolsLoaded.value = true;
     } catch (e) {
