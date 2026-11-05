@@ -5739,6 +5739,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/data_inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Return the dataset and collection inputs of the tools the user can see, by tool id.
+         * @description Covers the tools `GET /api/tools?in_panel=false` lists; tools without data inputs are left out.
+         */
+        get: operations["tools__data_inputs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tools/fetch": {
         parameters: {
             query?: never;
@@ -25988,6 +26008,35 @@ export interface components {
              * @description The name of the field
              */
             name: string;
+        };
+        /** ToolDataInput */
+        ToolDataInput: {
+            /**
+             * Collection Type
+             * @description Collection types a `data_collection` input accepts, comma-separated (`list,paired`); null for a `data` input and for a collection input that accepts any collection type.
+             */
+            collection_type: string | null;
+            /**
+             * Extensions
+             * @description Datatype extensions the input accepts; `data` accepts any datatype.
+             */
+            extensions: string[];
+            /**
+             * Multiple
+             * @description Whether the input accepts several datasets; false for a collection input.
+             */
+            multiple: boolean;
+            /**
+             * Name
+             * @description The `|`-joined path of the parameter; inputs in a repeat use its first element (`queries_0|input`). For a `data` input it works as a tool form URL parameter that preselects a dataset; the form cannot prefill a `data_collection` input from the URL. Null for an input in a conditional case that is not the default one, which the form cannot reach.
+             */
+            name: string | null;
+            /**
+             * Type
+             * @description The parameter type: a dataset input or a collection input.
+             * @enum {string}
+             */
+            type: "data" | "data_collection";
         };
         /** ToolDataItem */
         ToolDataItem: {
@@ -51709,6 +51758,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InstalledToolShedRepository"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__data_inputs: {
+        parameters: {
+            query?: {
+                /** @description Only include tools of this `tool_type`, e.g. `interactive`. */
+                tool_type?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["ToolDataInput"][];
+                    };
                 };
             };
             /** @description Request Error */
