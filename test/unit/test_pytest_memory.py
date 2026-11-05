@@ -10,6 +10,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 GALAXY_ROOT = Path(__file__).parents[2]
 
 CLASS_STATE_MODULE = """
@@ -39,6 +41,25 @@ def test_state_of_finished_class_tests_is_released():
     gc.collect()
     assert len(STATE_REFS) == 2
     assert [ref() for ref in STATE_REFS] == [None, None]
+"""
+
+UNCLOSED_SQLITE_MODULE = """
+import gc
+import sqlite3
+
+
+def live_connections():
+    return [o for o in gc.get_objects() if isinstance(o, sqlite3.Connection)]
+
+
+def test_leaves_connection_unclosed():
+    sqlite3.connect(":memory:")
+    gc.collect()
+
+
+def test_unclosed_connection_is_released():
+    gc.collect()
+    assert live_connections() == []
 """
 
 
@@ -71,3 +92,9 @@ def run_pytest(tmp_path, test_module, *python_args):
 
 def test_test_class_instance_state_is_released_after_teardown(tmp_path):
     run_pytest(tmp_path, CLASS_STATE_MODULE)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 13), reason="sqlite3 warns about unclosed connections since Python 3.13")
+def test_unclosed_sqlite_connection_warning_does_not_keep_connection_alive(tmp_path):
+    # pytest-cov un-ignores this ResourceWarning for the whole session, as -W does here.
+    run_pytest(tmp_path, UNCLOSED_SQLITE_MODULE, "-W", "default::ResourceWarning")
