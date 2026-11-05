@@ -26,8 +26,8 @@ const otherSourcesOverQuotaText = computed(
     () => `${localize("Over quota on these storages:")} ${otherSourcesOverQuotaNames.value}`,
 );
 
-// Other pages load the usage per storage source for anyone: list it only for users with quotas on several sources.
-// The server gives anonymous users no usage per source, so they only learn there are several.
+// Only with quotas on several storages: other pages load the usage per storage even with quotas off. The server gives
+// anonymous users no usage per storage, so for them the configured quota sources tell.
 const showSourcesPopover = computed(() => {
     if (!config.value.enable_quotas) {
         return false;
@@ -37,7 +37,7 @@ const showSourcesPopover = computed(() => {
     }
     return (quotaUsages.value?.length ?? 0) > 1;
 });
-const isOverQuota = computed(() => isUserOverQuota(currentUser.value));
+const isOverDefaultQuota = computed(() => isUserOverQuota(currentUser.value));
 
 const hasQuota = computed<boolean>(() => {
     const quotasEnabled = config.value.enable_quotas ?? false;
@@ -106,7 +106,7 @@ const variant = computed(() => {
             :target="LINK_ID"
             :quota-usages="quotaUsages"
             :is-anonymous="isAnonymous"
-            :is-over-quota="isOverQuota" />
+            :is-over-default-quota="isOverDefaultQuota" />
     </div>
 </template>
 

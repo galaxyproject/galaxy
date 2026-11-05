@@ -19,7 +19,7 @@ defineProps<{
     /** The server gives anonymous users no usage per source: they only get the default one and a way to log in */
     isAnonymous?: boolean;
     /** Whether the user exceeded the quota of the default storage */
-    isOverQuota?: boolean;
+    isOverDefaultQuota?: boolean;
 }>();
 
 const { quotaSourceName } = useQuotaSourceNames();
@@ -46,7 +46,7 @@ function usageText(usage: QuotaUsage): string {
         :title="localize('Storage usage')"
         custom-class="quota-sources-popover">
         <template v-if="isAnonymous">
-            <div v-if="isOverQuota" class="text-danger small mb-2" data-description="anonymous over quota">
+            <div v-if="isOverDefaultQuota" class="text-danger small mb-2" data-description="anonymous over quota">
                 <FontAwesomeIcon :icon="faExclamationTriangle" />
                 {{ localize("Over quota on the default storage: jobs writing there are on hold") }}
             </div>
