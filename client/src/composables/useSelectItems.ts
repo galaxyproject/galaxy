@@ -28,13 +28,24 @@ const PER_PAGE = 25;
 
 const DEFAULT_FILTER_KEYS = ["label", "details", "tags"];
 
-interface PathLevel {
-    item: SelectionItem;
-    /** Page the level was opened from, restored by `back()`. */
+type SortFormatter = TableField["formatter"];
+
+/** Page, filter and sort of one level. */
+interface LevelView {
     page: number;
+    filter: string;
+    sortBy?: string;
+    sortDesc: boolean;
+    sortFormatter?: SortFormatter;
 }
 
-type SortFormatter = TableField["formatter"];
+const DEFAULT_VIEW: LevelView = { page: 1, filter: "", sortBy: undefined, sortDesc: false, sortFormatter: undefined };
+
+interface PathLevel {
+    item: SelectionItem;
+    /** View of the level the item was opened from, restored by `back()`. */
+    parentView: LevelView;
+}
 
 /** Same order as GTable's local sort: formatted values, missing values last in both directions. */
 function compareItems(a: SelectionItem, b: SelectionItem, key: string, desc: boolean, formatter?: SortFormatter) {
@@ -208,18 +219,27 @@ export function useSelectItems<Raw>(
         loadIfServerPaged();
     }
 
-    /** Moves to another level: filter and sort are per level, so both reset. */
-    function moveTo(nextLevels: PathLevel[], nextPage: number) {
+    function currentView(): LevelView {
+        return {
+            page: currentPage.value,
+            filter: currentFilter.value,
+            sortBy: sortBy.value,
+            sortDesc: sortDesc.value,
+            sortFormatter: sortFormatter.value,
+        };
+    }
+
+    function moveTo(nextLevels: PathLevel[], view: LevelView) {
         levels.value = nextLevels;
         pagingKnown = false;
         // the previous level's rows must not be clicked while the next one loads
         loadedItems.value = [];
         serverTotal.value = undefined;
-        currentPage.value = nextPage;
-        currentFilter.value = "";
-        sortBy.value = undefined;
-        sortDesc.value = false;
-        sortFormatter.value = undefined;
+        currentPage.value = view.page;
+        currentFilter.value = view.filter;
+        sortBy.value = view.sortBy;
+        sortDesc.value = view.sortDesc;
+        sortFormatter.value = view.sortFormatter;
         void load();
     }
 
@@ -227,13 +247,13 @@ export function useSelectItems<Raw>(
         if (loading.value && !pagingKnown) {
             return;
         }
-        moveTo([...levels.value, { item, page: currentPage.value }], 1);
+        moveTo([...levels.value, { item, parentView: currentView() }], DEFAULT_VIEW);
     }
 
     function back() {
         const popped = levels.value[levels.value.length - 1];
         if (popped) {
-            moveTo(levels.value.slice(0, -1), popped.page);
+            moveTo(levels.value.slice(0, -1), popped.parentView);
         }
     }
 
@@ -264,7 +284,7 @@ export function useSelectItems<Raw>(
 
     watch(
         () => toValue(provider),
-        () => moveTo([], 1),
+        () => moveTo([], DEFAULT_VIEW),
     );
 
     if (getCurrentScope()) {

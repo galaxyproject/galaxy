@@ -208,7 +208,7 @@ describe("useSelectItems", () => {
         expect(load.mock.calls[0]![0]).toMatchObject({ page: 1, filter: "item 1" });
     });
 
-    it("opens a folder at page 1 and returns to the page it was opened from", async () => {
+    it("opens a folder unfiltered and unsorted, and returns to the page, filter and sort it was opened from", async () => {
         const folders = records(60, "folder").map((raw) => ({ ...raw, folder: true }));
         const load = vi.fn(async (query: SelectItemsQuery) => {
             const all = query.path.length ? records(3, "file") : folders;
@@ -223,6 +223,8 @@ describe("useSelectItems", () => {
         await flushPromises();
         state.page.value = 2;
         await flushPromises();
+        state.setSort("label", true);
+        await flushPromises();
 
         const folder = state.items.value[0]!;
         state.open(folder);
@@ -230,7 +232,8 @@ describe("useSelectItems", () => {
         expect(state.path.value.map((item) => item.id)).toEqual([folder.id]);
         expect(state.page.value).toBe(1);
         expect(state.filter.value).toBe("");
-        expect(load.mock.lastCall![0]).toMatchObject({ page: 1, filter: "", path: [folder] });
+        expect(state.sortBy.value).toBeUndefined();
+        expect(load.mock.lastCall![0]).toMatchObject({ page: 1, filter: "", sortBy: undefined, path: [folder] });
         expect(state.items.value.map((item) => item.id)).toEqual(["file-1", "file-2", "file-3"]);
 
         const callsBeforeBack = load.mock.calls.length;
@@ -239,7 +242,38 @@ describe("useSelectItems", () => {
         expect(load.mock.calls.length).toBe(callsBeforeBack + 1);
         expect(state.path.value).toEqual([]);
         expect(state.page.value).toBe(2);
-        expect(load.mock.lastCall![0]).toMatchObject({ page: 2, path: [] });
+        expect(state.filter.value).toBe("folder");
+        expect(state.sortBy.value).toBe("label");
+        expect(state.sortDesc.value).toBe(true);
+        expect(load.mock.lastCall![0]).toMatchObject({
+            page: 2,
+            filter: "folder",
+            sortBy: "label",
+            sortDesc: true,
+            path: [],
+        });
+    });
+
+    it("restores the local sort formatter on back", async () => {
+        const load = vi.fn(async (query: SelectItemsQuery) => ({
+            items: query.path.length
+                ? []
+                : [
+                      { id: "a", name: "a", size: 1 },
+                      { id: "b", name: "b", size: 2 },
+                      { id: "f", name: "f", folder: true, size: 3 },
+                  ],
+        }));
+        const state = useSelectItems({ load, map: toItem });
+        await flushPromises();
+        state.setSort("size", false, (value: number) => nth(["z", "a", "m"], value - 1));
+        expect(state.items.value.map((item) => item.id)).toEqual(["b", "f", "a"]);
+
+        state.open(nth(state.items.value, 1));
+        await flushPromises();
+        state.back();
+        await flushPromises();
+        expect(state.items.value.map((item) => item.id)).toEqual(["b", "f", "a"]);
     });
 
     it("keeps the selection across pages and derives each row's state from it", async () => {
