@@ -103,6 +103,9 @@ const listBusy = computed(() => props.isBusy || Boolean(selection?.loading.value
 const listError = computed(() => props.errorMessage || selection?.error.value || "");
 const listReady = computed(() => (selection ? selection.loaded.value : props.optionsShow));
 const listUndo = computed(() => props.undoShow || Boolean(selection?.path.value.length));
+// the state owns the sort and changes it per level, so the header follows it ("" = unsorted)
+const listSortBy = computed(() => (selection ? (selection.sortBy.value ?? "") : undefined));
+const listSortDesc = computed(() => selection?.sortDesc.value);
 const listFilter = computed({
     get: () => (selection ? selection.filter.value : filter.value),
     set: (value: string) => {
@@ -281,6 +284,8 @@ defineExpose({
             :options-show="listReady"
             :per-page="listPerPage"
             :selectable="props.selectable"
+            :sort-by="listSortBy"
+            :sort-desc="listSortDesc"
             :total-items="listTotal"
             @click="onClick"
             @open="onOpen"

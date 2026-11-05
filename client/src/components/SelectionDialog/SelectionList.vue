@@ -31,6 +31,9 @@ interface Props {
     optionsShow?: boolean;
     perPage?: number;
     selectable?: boolean;
+    /** Sorted field shown in the header; "" for none, unset for GTable's default. */
+    sortBy?: string;
+    sortDesc?: boolean;
     totalItems?: number;
 }
 
@@ -47,6 +50,8 @@ const props = withDefaults(defineProps<Props>(), {
     optionsShow: false,
     perPage: undefined,
     selectable: false,
+    sortBy: undefined,
+    sortDesc: undefined,
     totalItems: 0,
 });
 
@@ -142,6 +147,8 @@ function formatTime(date?: Date) {
                 :selectable="selectable"
                 :selected-items="selectedItems"
                 :show-select-all="selectable"
+                :sort-by="sortBy"
+                :sort-desc="sortDesc"
                 @row-click="onRowClick"
                 @row-select="onRowSelect"
                 @select-all="emit('select-all', $event)"

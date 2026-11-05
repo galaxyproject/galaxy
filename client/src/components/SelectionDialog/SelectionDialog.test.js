@@ -337,4 +337,38 @@ describe("SelectionDialog.vue with a provider", () => {
         await flushPromises();
         expect(rowLabels(wrapper)).toEqual(["b", "a"]);
     });
+
+    it("keeps the header sort in step with the query across levels", async () => {
+        const load = vi.fn(async ({ path }) => {
+            const items = path.length ? [{ id: `${path[0].id}-file` }] : [{ id: "f1" }, { id: "f2" }];
+            return { items, total: items.length };
+        });
+        const map = (raw) => ({ id: raw.id, label: raw.id, details: "", isLeaf: raw.id.endsWith("-file"), url: "" });
+        const wrapper = mountWith({ load, map }, { fields: [{ key: "label", label: "Name" }] });
+        await flushPromises();
+        const nameSort = () => wrapper.get("thead th").attributes("aria-sort");
+        const openFolder = async (index) => {
+            await wrapper.findAll("button.selection-dialog-folder")[index].trigger("click");
+            await flushPromises();
+        };
+        expect(nameSort()).toBe("none");
+
+        await openFolder(0);
+        await wrapper.get("thead th").trigger("click");
+        await wrapper.get("thead th").trigger("click");
+        await flushPromises();
+        expect(load.mock.lastCall[0]).toMatchObject({ sortBy: "label", sortDesc: true });
+        expect(nameSort()).toBe("descending");
+
+        await wrapper.get("[data-description='selection dialog undo']").trigger("click");
+        await flushPromises();
+        await openFolder(1);
+        expect(load.mock.lastCall[0].sortBy).toBeUndefined();
+        expect(nameSort()).toBe("none");
+
+        await wrapper.get("thead th").trigger("click");
+        await flushPromises();
+        expect(load.mock.lastCall[0]).toMatchObject({ sortBy: "label", sortDesc: false });
+        expect(nameSort()).toBe("ascending");
+    });
 });
