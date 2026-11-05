@@ -194,6 +194,45 @@ class TestToolBox(BaseToolBoxTestCase):
             },
         ]
 
+    def test_data_inputs_by_tool_id(self):
+        self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
+        self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        data_inputs = self.toolbox.data_inputs_by_tool_id(mock_trans())
+        assert {tool_id: [i.model_dump() for i in inputs] for tool_id, inputs in data_inputs.items()} == {
+            "test_tool": [
+                {
+                    "name": "param1",
+                    "extensions": ["tabular"],
+                    "multiple": False,
+                    "type": "data",
+                    "collection_type": None,
+                },
+                {
+                    "name": "repeat1_0|param2",
+                    "extensions": ["tabular"],
+                    "multiple": False,
+                    "type": "data",
+                    "collection_type": None,
+                },
+            ]
+        }
+
+    def test_data_inputs_by_tool_id_restricted_to_tool_type(self):
+        self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
+        self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        assert list(self.toolbox.data_inputs_by_tool_id(mock_trans(), tool_type="default")) == ["test_tool"]
+        assert self.toolbox.data_inputs_by_tool_id(mock_trans(), tool_type="interactive") == {}
+
+    def test_data_inputs_by_tool_id_skips_tools_without_data_inputs(self):
+        self._init_tool_in_section()
+        assert self.toolbox.data_inputs_by_tool_id(mock_trans()) == {}
+
+    def test_data_inputs_by_tool_id_applies_panel_filters(self):
+        self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
+        self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        self.toolbox.get_tool("test_tool").allow_user_access = lambda user, attempting_access: False
+        assert self.toolbox.data_inputs_by_tool_id(mock_trans()) == {}
+
     def test_panel_entry_link_uses_url_prefix(self):
         self._init_tool_in_section()
         self.app.config.galaxy_url_prefix = "/galaxy/"

@@ -99,7 +99,10 @@ from galaxy.tool_util.parameters import (
     RequestInternalDereferencedToolState,
     UnmodelableToolInputs,
 )
-from galaxy.tool_util.parameters.data_inputs import data_inputs_for_parameters
+from galaxy.tool_util.parameters.data_inputs import (
+    data_inputs_for_parameters,
+    ToolDataInput,
+)
 from galaxy.tool_util.parser import (
     get_tool_source,
     RequiredFiles,
@@ -129,6 +132,7 @@ from galaxy.tool_util.provided_metadata import (
 from galaxy.tool_util.toolbox import (
     AbstractToolBox,
     AbstractToolTagManager,
+    panel_item_types,
     ToolLoadConfigurationConflict,
     ToolLoadError,
     ToolSection,
@@ -743,6 +747,21 @@ class ToolBox(AbstractToolBox):
 
     def has_reloaded(self, other_toolbox):
         return self._reload_count != other_toolbox._reload_count
+
+    def data_inputs_by_tool_id(
+        self, trans: "ProvidesUserContext", tool_type: str | None = None
+    ) -> dict[str, list[ToolDataInput]]:
+        """Data inputs of the tools ``to_dict(in_panel=False)`` lists, skipping tools without any."""
+        filter_method = self._build_filter_method(trans)
+        mapping: dict[str, list[ToolDataInput]] = {}
+        for _, tool in self.tools():
+            if tool_type is not None and tool.tool_type != tool_type:
+                continue
+            if not filter_method(tool, panel_item_types.TOOL):
+                continue
+            if data_inputs := tool.data_inputs:
+                mapping[tool.id] = data_inputs
+        return mapping
 
     @contextmanager
     def batch_index_writes(self) -> Iterator[None]:
@@ -2965,6 +2984,11 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             os.remove(temp_file)
         return tarball_archive
 
+    @property
+    def data_inputs(self) -> list[ToolDataInput]:
+        """Dataset and collection inputs of the tool; empty when its inputs have no parameter model."""
+        return data_inputs_for_parameters(self.parameters) if self.parameters is not None else []
+
     def to_panel_entry(self, trans: "ProvidesUserContext") -> dict[str, Any]:
         """The complete per-tool panel/listing payload — see
         :class:`galaxy.tool_util.toolbox.entry.ToolPanelEntry` for the
@@ -2990,7 +3014,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             panel_section_id=panel_section_id,
             panel_section_name=panel_section_name,
             form_style="regular" if regular_form else "special",
-            data_inputs=data_inputs_for_parameters(self.parameters) if self.parameters is not None else [],
+            data_inputs=self.data_inputs,
         )
         if self.dynamic_tool_uuid:
             kwargs["uuid"] = str(self.dynamic_tool_uuid)

@@ -40,6 +40,7 @@ from galaxy.tool_util.deps.requirements import (
     ToolRequirements,
 )
 from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
+from galaxy.tool_util.parameters.data_inputs import ToolDataInput
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.base import (
     MaterializationReasonName,
@@ -179,6 +180,10 @@ class CachedTool:
     @property
     def tool_type(self) -> str:
         return self._entry.tool_type
+
+    @property
+    def data_inputs(self) -> list[ToolDataInput]:
+        return self._entry.data_inputs
 
     @property
     def tags(self) -> list[str]:
