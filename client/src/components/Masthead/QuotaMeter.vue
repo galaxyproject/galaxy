@@ -117,7 +117,9 @@ const variant = computed(() => {
     margin-left: 0.5rem;
     margin-right: 0.5rem;
     .other-sources-over-quota {
-        color: var(--masthead-text-color);
+        color: var(--color-yellow-500);
+        // A dark outline keeps the icon visible on the light bar and on the red one alike
+        filter: drop-shadow(0 0 0.5px var(--color-grey-900)) drop-shadow(0 0 0.5px var(--color-grey-900));
     }
     .quota-progress {
         width: 12rem;
