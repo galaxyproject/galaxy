@@ -170,6 +170,15 @@ inputs:
 steps: []
 """
 
+WORKFLOW_OUTPUT_FILTER_SELECT_SINGLE_VALUE = """
+class: GalaxyWorkflow
+steps:
+  - tool_id: output_filter_select
+    state:
+      sel_mult: AA
+      sel: CC
+"""
+
 
 class RunsWorkflowFixtures:
     workflow_populator: WorkflowPopulator
@@ -2557,6 +2566,21 @@ steps:
         assert len(outputs) == 2
         assert outputs[0]["name"] == "out_1"
         assert outputs[1]["name"] == "out_2"
+
+    @skip_without_tool("output_filter_select")
+    def test_export_editor_filtered_outputs_single_value_multiple_select(self):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OUTPUT_FILTER_SELECT_SINGLE_VALUE)
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        outputs = downloaded_workflow["steps"]["0"]["outputs"]
+        assert [output["name"] for output in outputs] == ["AA", "CC"]
+
+    @skip_without_tool("output_filter_select")
+    def test_run_filtered_outputs_single_value_multiple_select(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(WORKFLOW_OUTPUT_FILTER_SELECT_SINGLE_VALUE, history_id=history_id, assert_ok=True)
+            [job] = self._history_jobs(history_id)
+            job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert sorted(job_details["outputs"].keys()) == ["AA", "CC"]
 
     @skip_without_tool("collection_type_source")
     def test_export_editor_collection_type_source(self):
