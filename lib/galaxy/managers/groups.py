@@ -119,6 +119,9 @@ class GroupsManager:
             raise RequestParameterInvalidException(
                 f"Group '{group.name}' has not been deleted, so it cannot be purged."
             )
+        trans.app.security_agent.queue_user_quota_update_for_group_changes(
+            [uga.user_id for uga in group.users], [group.id]
+        )
         # Delete UserGroupAssociations
         for uga in group.users:
             sa_session.delete(uga)

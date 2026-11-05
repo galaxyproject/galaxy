@@ -12,6 +12,7 @@ from typing import (
 from sqlalchemy import (
     and_,
     select,
+    union,
 )
 
 from galaxy import (
@@ -23,9 +24,13 @@ from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     Group,
+    GroupQuotaAssociation,
     Quota,
     User,
+    UserGroupAssociation,
+    UserQuotaAssociation,
 )
+from galaxy.model.user_quota_updates import queue_user_quota_update
 from galaxy.quota import DatabaseQuotaAgent
 from galaxy.quota._schema import (
     CreateQuotaParams,
@@ -78,6 +83,7 @@ class QuotaManager:
         self.sa_session.add(quota)
         # If this is a default quota, create the DefaultQuotaAssociation
         if params.default != DefaultQuotaValues.NO:
+            queue_user_quota_update(self.sa_session, broadcast=True)
             self.quota_agent.set_default_quota(params.default, quota)
             message = f"Default quota '{quota.name}' has been created."
         else:
@@ -100,6 +106,7 @@ class QuotaManager:
                 gqa = model.GroupQuotaAssociation(group, quota)
                 self.sa_session.add(gqa)
             message = f"Quota '{quota.name}' has been created with {len(in_users)} associated users and {len(in_groups)} associated groups."
+            self._queue_users_and_groups(in_users, in_groups)
 
         self.sa_session.commit()
 
@@ -146,6 +153,9 @@ class QuotaManager:
             ]
             if None in in_groups:
                 raise ActionInputError("One or more invalid group id has been provided.")
+            # Before replacing the associations, so the users the quota no longer applies to are told too
+            self._queue_quota_update(quota)
+            self._queue_users_and_groups(in_users, in_groups)
             self.quota_agent.set_entity_quota_associations(quotas=[quota], users=in_users, groups=in_groups)
             self.sa_session.refresh(quota)
             if len(quota.users) != len(in_users) and len(quota.groups) != len(in_groups):
@@ -187,6 +197,7 @@ class QuotaManager:
         quota.amount = new_amount
         quota.operation = params.operation
         self.sa_session.add(quota)
+        self._queue_quota_update(quota)
         self.sa_session.commit()
         if old_display_amount != quota.display_amount or old_operation != quota.operation:
             return f"Quota '{quota.name}' is now '{quota.operation}{quota.display_amount}'."
@@ -198,12 +209,14 @@ class QuotaManager:
         else:
             message = None
             if params.default != "no":
+                queue_user_quota_update(self.sa_session, broadcast=True)
                 self.quota_agent.set_default_quota(params.default, quota)
                 message = f"Quota '{quota.name}' is now the default for {params.default} users."
             elif quota.default:
                 message = f"Quota '{quota.name}' is no longer the default for {quota.default[0].type} users."
                 for dqa in quota.default:
                     self.sa_session.delete(dqa)
+                queue_user_quota_update(self.sa_session, broadcast=True)
                 self.sa_session.commit()
             return message
 
@@ -213,6 +226,7 @@ class QuotaManager:
             message = f"Quota '{quota.name}' is no longer the default for {quota.default[0].type} users."
             for dqa in quota.default:
                 self.sa_session.delete(dqa)
+            queue_user_quota_update(self.sa_session, broadcast=True)
             self.sa_session.commit()
         return message
 
@@ -232,6 +246,7 @@ class QuotaManager:
         for q in quotas:
             q.deleted = True
             self.sa_session.add(q)
+            self._queue_quota_update(q)
             names.append(q.name)
         self.sa_session.commit()
         message += ", ".join(names)
@@ -251,6 +266,7 @@ class QuotaManager:
         for q in quotas:
             q.deleted = False
             self.sa_session.add(q)
+            self._queue_quota_update(q)
             names.append(q.name)
         self.sa_session.commit()
         message += ", ".join(names)
@@ -284,6 +300,28 @@ class QuotaManager:
         self.sa_session.commit()
         message += ", ".join(names)
         return message
+
+    def _queue_quota_update(self, quota: Quota) -> None:
+        """Announce a change of ``quota`` to the users it applies to, or to everyone for a default quota."""
+        if quota.default:
+            queue_user_quota_update(self.sa_session, broadcast=True)
+            return
+        direct_user_ids = select(UserQuotaAssociation.user_id).where(UserQuotaAssociation.quota_id == quota.id)
+        group_user_ids = (
+            select(UserGroupAssociation.user_id)
+            .join(GroupQuotaAssociation, GroupQuotaAssociation.group_id == UserGroupAssociation.group_id)
+            .where(GroupQuotaAssociation.quota_id == quota.id)
+        )
+        queue_user_quota_update(self.sa_session, self.sa_session.scalars(union(direct_user_ids, group_user_ids)))
+
+    def _queue_users_and_groups(self, users: list[User], groups: list[Group]) -> None:
+        """Announce a quota change to these users and to the members of these groups."""
+        queue_user_quota_update(self.sa_session, [user.id for user in users])
+        if groups:
+            stmt = select(UserGroupAssociation.user_id).where(
+                UserGroupAssociation.group_id.in_([group.id for group in groups])
+            )
+            queue_user_quota_update(self.sa_session, self.sa_session.scalars(stmt))
 
     def get_quota(self, trans: ProvidesUserContext, id: int, deleted: bool | None = None) -> model.Quota:
         return base.get_object(trans, id, "Quota", check_ownership=False, check_accessible=False, deleted=deleted)

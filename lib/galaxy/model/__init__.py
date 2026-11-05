@@ -178,6 +178,7 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.model.tag_filter import build_tag_filter
+from galaxy.model.user_quota_updates import queue_user_quota_update
 from galaxy.objectstore import (
     ObjectStoreAuth,
     USER_OBJECTS_SCHEME,
@@ -1359,6 +1360,8 @@ ON CONFLICT
         """
         Calculates and sets user disk usage.
         """
+        # Queued first, since the calculation commits
+        queue_user_quota_update(required_object_session(self), [self.id])
         self._calculate_or_set_disk_usage(object_store=object_store)
 
     def _calculate_or_set_disk_usage(self, object_store: "BaseObjectStore"):
@@ -6720,6 +6723,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
         """Remove this HDA's quota_amount from user's quota."""
         if user and quota_source_info.use:
             user.adjust_total_disk_usage(-self.quota_amount(user), quota_source_info.label)
+            queue_user_quota_update(required_object_session(user), [user.id])
 
     def quota_amount(self, user):
         """

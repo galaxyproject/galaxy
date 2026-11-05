@@ -366,7 +366,7 @@ WHERE default_quota_association.type = :default_type
                     self.sa_session.delete(a)
                     flush_needed = True
                 if flush_needed:
-                    self.sa_session.commit()
+                    self.sa_session.flush()
             for user in users:
                 uqa = self.model.UserQuotaAssociation(user, quota)
                 self.sa_session.add(uqa)
