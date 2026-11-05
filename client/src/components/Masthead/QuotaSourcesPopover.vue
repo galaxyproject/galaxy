@@ -5,6 +5,7 @@ import { ref } from "vue";
 
 import type { QuotaUsage } from "@/components/User/DiskUsage/Quota/model";
 import { useQuotaSourceNames } from "@/composables/quotaSourceNames";
+import { sourceLabelToKey } from "@/stores/quotaUsageStore";
 import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -26,10 +27,6 @@ const { quotaSourceName } = useQuotaSourceNames();
 // The popover keeps its content mounted while hidden: list the sources only once open, since naming them loads
 // the storages.
 const isShown = ref(false);
-
-function sourceKey(usage: QuotaUsage): string {
-    return usage.rawSourceLabel ?? "__default__";
-}
 
 function usageText(usage: QuotaUsage): string {
     if (usage.isUnlimited) {
@@ -63,7 +60,7 @@ function usageText(usage: QuotaUsage): string {
         <ul v-else-if="isShown" class="list-unstyled mb-2">
             <li
                 v-for="usage in quotaUsages"
-                :key="sourceKey(usage)"
+                :key="sourceLabelToKey(usage.rawSourceLabel)"
                 class="quota-source mb-2"
                 :class="{ 'over-quota': usage.isOverQuota }"
                 data-description="quota source usage">

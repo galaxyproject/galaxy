@@ -11,24 +11,12 @@ import localize from "@/utils/localization";
 export function useQuotaSourceNames() {
     const quotaUsageStore = useQuotaUsageStore();
 
-    // The storages load when the store is first used, so only once a name is needed: most pages show none.
-    const storeNamesBySource = computed(() => {
-        const namesBySource: Record<string, string[]> = {};
-        for (const store of useObjectStoreStore().selectableObjectStores ?? []) {
-            const source = store.quota.source;
-            // A storage with its quota disabled doesn't count toward its source
-            if (source && store.quota.enabled && store.name) {
-                (namesBySource[source] ??= []).push(store.name);
-            }
-        }
-        return namesBySource;
-    });
-
     function quotaSourceName(sourceLabel: string | null): string {
         if (sourceLabel === null) {
             return localize("Default storage");
         }
-        return storeNamesBySource.value[sourceLabel]?.join(" / ") ?? sourceLabel;
+        // The storages load when the store is first used, so only once a name is needed: most pages show none.
+        return useObjectStoreStore().storeNamesByQuotaSource[sourceLabel]?.join(" / ") ?? sourceLabel;
     }
 
     /** Names of the storage sources other than the default one whose quota the user exceeded. */

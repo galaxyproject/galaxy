@@ -6,7 +6,8 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 const DEFAULT_SOURCE_KEY = "__null__";
 
-function sourceLabelToKey(sourceLabel?: string | null): string {
+/** Key of a quota source in records, where the default source has no label. */
+export function sourceLabelToKey(sourceLabel?: string | null): string {
     return sourceLabel ?? DEFAULT_SOURCE_KEY;
 }
 
