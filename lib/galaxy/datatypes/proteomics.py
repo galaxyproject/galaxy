@@ -134,6 +134,9 @@ class MzTab(Text):
     >>> fname = get_test_fname('test.mztab2')
     >>> MzTab().sniff(fname)
     False
+    >>> fname = get_test_fname('test.mztabm')
+    >>> MzTab().sniff(fname)
+    False
     """
 
     edam_data = "data_3681"
@@ -184,7 +187,7 @@ class MzTab(Text):
 
 class MzTab2(MzTab):
     """
-    This is version 2.x.x-M of mzTab (mzTab-M) a lightweight, tab-delimited file format for reporting mass spectrometry-based metabolomics results
+    This is version 2.0.0-M of mzTab (mzTab-M) a lightweight, tab-delimited file format for reporting mass spectrometry-based metabolomics results
     https://github.com/HUPO-PSI/mzTab-M
 
     >>> from galaxy.datatypes.sniff import get_test_fname
@@ -194,13 +197,16 @@ class MzTab2(MzTab):
     >>> fname = get_test_fname('test.mztab')
     >>> MzTab2().sniff(fname)
     False
+    >>> fname = get_test_fname('test.mztabm')
+    >>> MzTab2().sniff(fname)
+    False
     """
 
     edam_data = "data_4058"
     file_ext = "mztab2"
     # section names (except MTD)
     _sections = ["SMH", "SML", "SFH", "SMF", "SEH", "SME", "COM"]
-    _version_re = r"(2)(\.[0-9]+)?(\.[0-9]+)?-M$"
+    _version_re = r"^2\.0\.0-M$"
     # mandatory metadata fields and list of allowed entries (in lower case)
     # (or None if everything is allowed)
     _man_mtd = {"mzTab-ID": None}
@@ -225,7 +231,7 @@ class MzTab2(MzTab):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.get_file_name())
-            dataset.blurb = "mzTab-M Format"
+            dataset.blurb = "mzTab-M v2.0.0 Format"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
