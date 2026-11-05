@@ -152,7 +152,7 @@ export const useUserStore = defineStore("userStore", () => {
 
     /**
      * Reloads the user, which reports the usage and quota of the default storage, and the usage of
-     * every storage source if anything asked for it. Call it after anything that changes the storage usage.
+     * every storage source if anything asked for it.
      */
     async function refreshStorageUsage() {
         const quotaUsageStore = useQuotaUsageStore();
@@ -226,11 +226,11 @@ export const useUserStore = defineStore("userStore", () => {
     }
 
     /**
-     * Refreshes after the current history changed size, which hints at a usage change. With live
-     * updates, the server announces every usage change instead, so the hint isn't needed.
+     * Call it after anything that changes the storage usage, e.g. a purge or a history growing.
+     * While live updates are connected, the server announces the change itself, so it does nothing.
      */
-    function refreshStorageUsageForHistorySizeChange() {
-        if (!liveUpdatesEnabled) {
+    function refreshStorageUsageUnlessLive() {
+        if (!(liveUpdatesEnabled && sseConnected.value)) {
             refreshStorageUsageThrottled();
         }
     }
@@ -525,9 +525,7 @@ export const useUserStore = defineStore("userStore", () => {
         loadUser,
         refreshUser,
         refreshStorageUsage,
-        refreshStorageUsageInBackground,
-        refreshStorageUsageThrottled,
-        refreshStorageUsageForHistorySizeChange,
+        refreshStorageUsageUnlessLive,
         startWatchingStorageUsage,
         matchesCurrentUsername,
         matchesCurrentUserId,

@@ -420,7 +420,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         await handleTotalCountChange(1, true);
         if (purge) {
             // Purging frees the space of the histories' datasets
-            useUserStore().refreshStorageUsageInBackground();
+            useUserStore().refreshStorageUsageUnlessLive();
         }
     }
 
@@ -442,7 +442,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         await handleTotalCountChange(deletedHistories.length, true);
         if (purge) {
             // Purging frees the space of the histories' datasets
-            useUserStore().refreshStorageUsageInBackground();
+            useUserStore().refreshStorageUsageUnlessLive();
         }
     }
 
@@ -926,7 +926,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         const history = data as ArchivedHistoryDetailed;
         setHistory(history);
         if (purgeHistory) {
-            useUserStore().refreshStorageUsageInBackground();
+            useUserStore().refreshStorageUsageUnlessLive();
         }
         if (!history.archived) {
             return;

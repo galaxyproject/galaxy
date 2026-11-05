@@ -200,15 +200,29 @@ describe("userStore — watching the storage usage", () => {
 
     it.each([
         {
-            title: "ignores a history size change with live updates, which report usage changes",
+            title: "leaves a usage change to the server's event while live updates are connected",
             enableSse: true,
+            connected: true,
             requests: 0,
         },
-        { title: "refreshes after a history size change without live updates", enableSse: false, requests: 1 },
-    ])("$title", async ({ enableSse, requests }) => {
+        {
+            title: "refreshes after a usage change while live updates are disconnected",
+            enableSse: true,
+            connected: false,
+            requests: 1,
+        },
+        {
+            title: "refreshes after a usage change without live updates",
+            enableSse: false,
+            connected: false,
+            requests: 1,
+        },
+    ])("$title", async ({ enableSse, connected, requests }) => {
         await startWatching({ enableSse });
+        setSseConnected(sseState, connected);
+        await flushPromises();
 
-        useUserStore().refreshStorageUsageForHistorySizeChange();
+        useUserStore().refreshStorageUsageUnlessLive();
         await flushPromises();
 
         expect(userRequests).toBe(requests);
@@ -238,7 +252,7 @@ describe("userStore — watching the storage usage", () => {
 
         visibility.set("hidden");
         await flushPromises();
-        useUserStore().refreshStorageUsageThrottled();
+        useUserStore().refreshStorageUsageUnlessLive();
         await flushPromises();
         expect(userRequests).toBe(1);
 
