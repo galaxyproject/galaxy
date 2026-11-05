@@ -170,7 +170,7 @@ describe("userStore — watching the storage usage", () => {
             expect(userRequests).toBe(1);
         });
 
-        it("still refreshes when the user returns to the tab, as not every server sends quota events", async () => {
+        it("still refreshes when the user returns to the tab, for changes made outside Galaxy's code", async () => {
             await startWatching({ enableSse: true });
             setSseConnected(sseState, true);
             await flushPromises();
@@ -196,6 +196,22 @@ describe("userStore — watching the storage usage", () => {
             expect(userRequests).toBe(2);
             expect(sseState.connect).not.toHaveBeenCalled();
         });
+    });
+
+    it.each([
+        {
+            title: "ignores a history size change with live updates, which report usage changes",
+            enableSse: true,
+            requests: 0,
+        },
+        { title: "refreshes after a history size change without live updates", enableSse: false, requests: 1 },
+    ])("$title", async ({ enableSse, requests }) => {
+        await startWatching({ enableSse });
+
+        useUserStore().refreshStorageUsageForHistorySizeChange();
+        await flushPromises();
+
+        expect(userRequests).toBe(requests);
     });
 
     it("refreshes when the user returns to the tab even if the configuration fails to load", async () => {

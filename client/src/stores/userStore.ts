@@ -224,6 +224,17 @@ export const useUserStore = defineStore("userStore", () => {
         }
         void throttledRefresh();
     }
+
+    /**
+     * Refreshes after the current history changed size, which hints at a usage change. With live
+     * updates, the server announces every usage change instead, so the hint isn't needed.
+     */
+    function refreshStorageUsageForHistorySizeChange() {
+        if (!liveUpdatesEnabled) {
+            refreshStorageUsageThrottled();
+        }
+    }
+
     // Watchers created after an ``await`` belong to no scope; this one ends with the store
     const storageUsageScope = effectScope();
 
@@ -237,7 +248,7 @@ export const useUserStore = defineStore("userStore", () => {
         }
         watchingStorageUsage = true;
         storageUsageScope.run(() => {
-            // Quota events don't cover every usage change (e.g. finished jobs), so returning still refreshes
+            // Quota events don't cover changes made outside Galaxy's code, e.g. by cleanup scripts
             watch(documentVisibility, (visibility) => {
                 if (visibility !== "visible") {
                     return;
@@ -516,6 +527,7 @@ export const useUserStore = defineStore("userStore", () => {
         refreshStorageUsage,
         refreshStorageUsageInBackground,
         refreshStorageUsageThrottled,
+        refreshStorageUsageForHistorySizeChange,
         startWatchingStorageUsage,
         matchesCurrentUsername,
         matchesCurrentUserId,

@@ -10,7 +10,6 @@ import {
     type HistorySortByLiteral,
     type HistorySummary,
     type HistorySummaryExtended,
-    userOwnsHistory,
 } from "@/api";
 import {
     type AnyHistoryEntry,
@@ -790,10 +789,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
                     continue;
                 }
                 const filterText = storedFilterTexts.value[id] ?? "";
-                const refreshUsageIfResized = watchOwnHistorySize(id);
-                updateContentStats(id)
-                    .then(refreshUsageIfResized)
-                    .catch((err) => console.error(`Error updating content stats for history ${id}:`, err));
+                updateContentStats(id).catch((err) =>
+                    console.error(`Error updating content stats for history ${id}:`, err),
+                );
                 itemsStore
                     .fetchHistoryItems(id, filterText, 0)
                     .catch((err) => console.error(`Error fetching items for history ${id}:`, err));
@@ -801,24 +799,6 @@ export const useHistoryStore = defineStore("historyStore", () => {
         } catch (e) {
             console.error("Error handling history SSE event:", e);
         }
-    }
-
-    /**
-     * Returns a callback that refreshes the storage usage if the new stats of the user's own history
-     * show another size. Most history events don't change the size (e.g. job states, metadata).
-     */
-    function watchOwnHistorySize(historyId: string) {
-        const history = storedHistories.value[historyId];
-        const userStore = useUserStore();
-        if (!history || !userOwnsHistory(userStore.currentUser, history)) {
-            return () => {};
-        }
-        const previousSize = "size" in history ? history.size : undefined;
-        return (stats: HistoryContentsStats) => {
-            if (stats.size !== previousSize) {
-                userStore.refreshStorageUsageThrottled();
-            }
-        };
     }
 
     // Choose between SSE and polling based on the server config flag
