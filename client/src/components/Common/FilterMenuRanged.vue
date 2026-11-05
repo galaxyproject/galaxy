@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { BFormDatepicker, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormDatepicker, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { ErrorType, ValidFilter } from "@/utils/filtering";
+
+import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 
 type FilterType = string | boolean | undefined;
 
@@ -34,6 +36,11 @@ const localValueGt = ref(valueGt.value);
 const localValueLt = ref(valueLt.value);
 
 const isDateType = computed(() => props.filter.type == Date);
+
+// GFormInput holds text, while the filters dict also types its values as boolean
+function asText(value: FilterType) {
+    return value === undefined ? null : String(value);
+}
 
 function hasError(field: string) {
     if (props.error && props.error.index == field) {
@@ -87,14 +94,15 @@ watch(
 
         <BInputGroup>
             <!---------------------------- GREATER THAN ---------------------------->
-            <BFormInput
+            <GFormInput
                 :id="`${props.identifier}-advanced-filter-${localNameGt}`"
-                v-model="localValueGt"
                 v-g-tooltip.focus.v-danger="hasError(localNameGt)"
-                size="sm"
+                :model-value="asText(localValueGt)"
+                size="small"
                 :state="hasError(localNameGt) ? false : null"
                 :placeholder="localPlaceholder('gt')"
                 :disabled="props.disabled"
+                @update:model-value="localValueGt = $event ?? undefined"
                 @keyup.enter="emit('on-enter')"
                 @keyup.esc="emit('on-esc')" />
 
@@ -104,14 +112,15 @@ watch(
             <!--------------------------------------------------------------------->
 
             <!---------------------------- LESSER THAN ---------------------------->
-            <BFormInput
+            <GFormInput
                 :id="`${props.identifier}-advanced-filter-${localNameLt}`"
-                v-model="localValueLt"
                 v-g-tooltip.focus.v-danger="hasError(localNameLt)"
-                size="sm"
+                :model-value="asText(localValueLt)"
+                size="small"
                 :state="hasError(localNameLt) ? false : null"
                 :placeholder="localPlaceholder('lt')"
                 :disabled="props.disabled"
+                @update:model-value="localValueLt = $event ?? undefined"
                 @keyup.enter="emit('on-enter')"
                 @keyup.esc="emit('on-esc')" />
 
