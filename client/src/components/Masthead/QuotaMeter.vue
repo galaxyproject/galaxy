@@ -104,7 +104,7 @@ const variant = computed(() => {
     margin-left: 0.5rem;
     margin-right: 0.5rem;
     .other-sources-over-quota {
-        color: var(--color-red-600);
+        color: var(--masthead-text-color);
     }
     .quota-progress {
         width: 12rem;
