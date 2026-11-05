@@ -17,7 +17,9 @@ from galaxy.objectstore.unittest_utils import (
 from galaxy.quota import DatabaseQuotaAgent
 from .test_galaxy_mapping import (
     BaseModelTestCase,
+    create_postgres_test_database,
     MockObjectStore,
+    skip_if_not_postgres_base,
 )
 
 
@@ -82,14 +84,31 @@ class TestCalculateUsage(BaseModelTestCase):
         self.u = u
         self.h = h
 
-    def _add_dataset(self, total_size, object_store_id=None):
+    def _add_dataset(self, total_size, object_store_id=None, history=None):
         d1 = model.HistoryDatasetAssociation(
-            extension="txt", history=self.h, create_dataset=True, sa_session=self.model.session
+            extension="txt", history=history or self.h, create_dataset=True, sa_session=self.model.session
         )
         d1.dataset.total_size = total_size
         d1.dataset.object_store_id = object_store_id
         self.persist(d1)
         return d1
+
+    def _copy_to_history(self, hda, history):
+        copy = model.HistoryDatasetAssociation(extension="txt", history=history, dataset=hda.dataset)
+        self.persist(copy)
+        return copy
+
+    def _add_to_library(self, hda):
+        ldda = model.LibraryDatasetDatasetAssociation(extension="txt", dataset=hda.dataset)
+        self.persist(ldda)
+        return ldda
+
+    def _alt_source_object_store(self):
+        quota_source_map = QuotaSourceMap()
+        alt_source = QuotaSourceMap()
+        alt_source.default_quota_source = "alt_source"
+        quota_source_map.backends["alt_source_store"] = alt_source
+        return cast(BaseObjectStore, MockObjectStore(quota_source_map))
 
     def test_calculate_usage(self):
         u = self.u
@@ -352,6 +371,106 @@ class TestCalculateUsage(BaseModelTestCase):
         self._refresh_user_and_assert_disk_usage_is(25, "alt_source")
         self._refresh_user_and_assert_disk_usage_is(0, None)
 
+    def test_calculate_usage_excludes_library_datasets(self):
+        u = self.u
+        self._add_dataset(10, "files")
+        in_library = self._add_dataset(20, "files")
+        self._add_to_library(in_library)
+        in_two_libraries = self._add_dataset(40, "files")
+        self._add_to_library(in_two_libraries)
+        self._add_to_library(in_two_libraries)
+
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
+        u.calculate_and_set_disk_usage(self.object_store)
+        self._refresh_user_and_assert_disk_usage_is(10)
+        assert {r.object_store_id: int(r.total_disk_usage) for r in u.dictify_objectstore_usage()} == {"files": 10}
+
+    def test_calculate_usage_excludes_purged_hdas_and_histories(self):
+        u = self.u
+        self._add_dataset(10)
+        deleted = self._add_dataset(20)
+        deleted.deleted = True
+        self.persist(deleted)
+        purged = self._add_dataset(40)
+        purged.deleted = True
+        purged.purged = True
+        self.persist(purged)
+        purged_history = model.History(name="Purged history", user=u)
+        purged_history.deleted = True
+        purged_history.purged = True
+        self.persist(purged_history)
+        self._add_dataset(80, history=purged_history)
+        # a purged copy does not hide the dataset while another copy is unpurged
+        kept = self._add_dataset(160)
+        purged_copy = self._copy_to_history(kept, self.h)
+        purged_copy.purged = True
+        self.persist(purged_copy)
+
+        assert u.calculate_disk_usage_default_source(self.object_store) == 190
+        u.calculate_and_set_disk_usage(self.object_store)
+        self._refresh_user_and_assert_disk_usage_is(190)
+
+    def test_calculate_usage_dataset_shared_with_other_user(self):
+        u = self.u
+        other_user = model.User(email=f"calc_usage_other{uuid.uuid1()}@example.com", password="password")
+        other_history = model.History(name="Other user history", user=other_user)
+        self.persist(other_user, other_history)
+        shared = self._add_dataset(10)
+        self._copy_to_history(shared, other_history)
+        self._add_dataset(20, history=other_history)
+
+        assert u.calculate_disk_usage_default_source(self.object_store) == 10
+        assert other_user.calculate_disk_usage_default_source(self.object_store) == 30
+        u.calculate_and_set_disk_usage(self.object_store)
+        other_user.calculate_and_set_disk_usage(self.object_store)
+        self._refresh_user_and_assert_disk_usage_is(10)
+        self.model.context.refresh(other_user)
+        assert other_user.disk_usage == 30
+
+    def test_calculate_usage_falls_back_to_file_size(self):
+        u = self.u
+        d = self._add_dataset(None)
+        d.dataset.file_size = 7
+        self.persist(d)
+        self._add_dataset(None)
+
+        assert u.calculate_disk_usage_default_source(self.object_store) == 7
+        u.calculate_and_set_disk_usage(self.object_store)
+        self._refresh_user_and_assert_disk_usage_is(7)
+
+    def test_calculate_usage_alt_quota_excludes_library_purged_and_user_objects(self):
+        u = self.u
+        self._add_dataset(10)
+        self._add_to_library(self._add_dataset(20))
+        self._add_dataset(40, "alt_source_store")
+        self._add_to_library(self._add_dataset(80, "alt_source_store"))
+        purged = self._add_dataset(160, "alt_source_store")
+        purged.purged = True
+        self.persist(purged)
+        self._add_dataset(320, "user_objects://user/provided/storage")
+        object_store = self._alt_source_object_store()
+
+        u.calculate_and_set_disk_usage(object_store)
+        self._refresh_user_and_assert_disk_usage_is(10)
+        self._refresh_user_and_assert_disk_usage_is(40, "alt_source")
+        assert {r.object_store_id: int(r.total_disk_usage) for r in u.dictify_objectstore_usage()} == {
+            "alt_source_store": 40,
+            "user_objects://user/provided/storage": 320,
+        }
+
+    def test_calculate_usage_alt_quota_without_datasets(self):
+        u = self.u
+        self._add_dataset(10)
+        object_store = self._alt_source_object_store()
+
+        u.calculate_and_set_disk_usage(object_store)
+        self.model.context.refresh(u)
+        usages = u.dictify_usage()
+        assert [(usage.quota_source_label, usage.total_disk_usage) for usage in usages] == [
+            (None, 10),
+            ("alt_source", 0),
+        ]
+
     def _refresh_user_and_assert_disk_usage_is(self, usage, label=None):
         u = self.u
         self.model.context.refresh(u)
@@ -362,6 +481,13 @@ class TestCalculateUsage(BaseModelTestCase):
             for uqbu in usages:
                 if uqbu.quota_source_label == label:
                     assert int(uqbu.total_disk_usage) == int(usage)
+
+
+@skip_if_not_postgres_base
+class TestCalculateUsagePostgres(TestCalculateUsage):
+    @classmethod
+    def _db_uri(cls):
+        return create_postgres_test_database()
 
 
 class TestQuota(BaseModelTestCase):
