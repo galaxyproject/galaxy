@@ -81,6 +81,7 @@ async function loadHistories(query: SelectItemsQuery) {
         search: query.filter,
         sortBy,
         sortDesc: query.sortDesc ?? true,
+        signal: query.signal,
     });
 
     return { items: data, total };

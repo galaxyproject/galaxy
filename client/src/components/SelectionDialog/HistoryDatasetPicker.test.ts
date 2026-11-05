@@ -170,6 +170,22 @@ describe("HistoryDatasetPicker", () => {
         expect(rowLabels(wrapper)).toHaveLength(11);
     });
 
+    it("cancels a superseded history request through the query's abort signal", async () => {
+        const signals: AbortSignal[] = [];
+        server.use(
+            http.get("/api/histories", ({ request, response }) => {
+                signals.push(request.signal);
+                return response(200).json([HISTORY], { headers: { total_matches: "1" } });
+            }),
+        );
+        const wrapper = await mountPicker();
+
+        await search(wrapper, "history");
+        expect(signals).toHaveLength(2);
+        expect(nth(signals, 0).aborted).toBe(true);
+        expect(nth(signals, 1).aborted).toBe(false);
+    });
+
     it("opens a history, searches and selects its datasets, and returns them on OK", async () => {
         const { datasetQueries } = mockApi();
         const wrapper = await mountPicker();
