@@ -2405,6 +2405,8 @@ class PickValueModule(WorkflowModule):
         object_store_populator = ObjectStorePopulator(trans.app, trans.user)
         hda.set_skipped(object_store_populator, replace_dataset=False)
         trans.sa_session.add(hda)
+        # The callers reference the HDA by id
+        trans.sa_session.flush()
         return hda
 
     def _create_collection_from_list(self, trans: "ProvidesHistoryContext", invocation_step, hdas):
