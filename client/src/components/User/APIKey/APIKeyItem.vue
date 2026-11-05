@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faEye, faEyeSlash, faKey, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput, BInputGroup, BInputGroupAppend, BInputGroupPrepend, BInputGroupText } from "bootstrap-vue";
+import { BInputGroup, BInputGroupAppend, BInputGroupPrepend, BInputGroupText } from "bootstrap-vue";
 import { ref } from "vue";
 
 import type { APIKeyModel } from "@/api/users";
@@ -11,6 +11,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import services from "./model/service";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
@@ -61,9 +62,9 @@ async function attemptKeyDeletion() {
                             </BInputGroupText>
                         </BInputGroupPrepend>
 
-                        <BFormInput
+                        <GFormInput
                             :type="hover ? 'text' : 'password'"
-                            :value="props.item.key"
+                            :model-value="props.item.key"
                             disabled
                             data-test-id="api-key-input" />
 
