@@ -124,12 +124,16 @@ describe("QuotaMeter.vue", () => {
     describe("with other storage sources", () => {
         const SOURCE_QUOTA = 1000;
 
-        /** The storages each quota source belongs to: two share ``scratch``, none uses ``archive``. */
+        /**
+         * The storages each quota source belongs to: two share ``scratch``, none uses ``archive``, and one with its
+         * quota disabled doesn't count toward ``secure``.
+         */
         const STORAGES = [
             { object_store_id: "default", name: "Default Storage", quota: { enabled: true } },
             { object_store_id: "scratch", name: "Scratch Storage", quota: { source: "scratch", enabled: true } },
             { object_store_id: "fast_scratch", name: "Fast Scratch", quota: { source: "scratch", enabled: true } },
             { object_store_id: "secure", name: "Secure Storage", quota: { source: "secure", enabled: true } },
+            { object_store_id: "unmetered", name: "Unmetered Storage", quota: { source: "secure", enabled: false } },
         ].map((storage) => ({ ...storage, private: false, badges: [] }));
 
         let wrapper: VueWrapper;

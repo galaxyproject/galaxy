@@ -16,7 +16,8 @@ export function useQuotaSourceNames() {
         const namesBySource: Record<string, string[]> = {};
         for (const store of useObjectStoreStore().selectableObjectStores ?? []) {
             const source = store.quota.source;
-            if (source && store.name) {
+            // A storage with its quota disabled doesn't count toward its source
+            if (source && store.quota.enabled && store.name) {
                 (namesBySource[source] ??= []).push(store.name);
             }
         }
