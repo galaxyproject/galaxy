@@ -57,12 +57,10 @@ const errorMessage = ref("");
 const query = ref("");
 const genericExpanded = ref(false);
 
-// The mapper may still be loading for another component, so wait for it reactively.
-const loading = computed(
-    () => !errorMessage.value && (!toolsLoaded.value || !converters.value || !datatypesMapperStore.datatypesMapper),
-);
+const loading = computed(() => !errorMessage.value && (!toolsLoaded.value || !converters.value));
 
 const tools = computed<ExploreTool[]>(() => {
+    // Only narrows the type: `loadTools` awaits `createMapper()` before it sets `toolsLoaded`.
     const mapper = datatypesMapperStore.datatypesMapper;
     if (!toolsLoaded.value || !converters.value || !mapper) {
         return [];
