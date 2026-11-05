@@ -3,6 +3,7 @@ Original implementation by David Montague (@dmontagu)
 https://github.com/dmontagu/fastapi-utils
 """
 
+import json
 from collections.abc import (
     AsyncIterator,
     Callable,
@@ -506,6 +507,10 @@ def test_cbv_custom_constructor_fallback() -> None:
 
 
 def test_cbv_streaming_fallback() -> None:
+    from fastapi.routing import (
+        APIRoute,
+        iter_route_contexts,
+    )
     from pydantic import BaseModel
 
     class Item(BaseModel):
@@ -522,10 +527,13 @@ def test_cbv_streaming_fallback() -> None:
 
     app = FastAPI()
     app.include_router(router)
+    route = next(iter_route_contexts(router.routes)).original_route
+    assert isinstance(route, APIRoute)
+    assert route.stream_item_type is Item
     with TestClient(app) as client:
         response = client.get("/stream")
         assert response.status_code == 200
-        assert response.text.splitlines() == ['{"value":1}', '{"value":2}']
+        assert [json.loads(line) for line in response.text.splitlines()] == [{"value": 1}, {"value": 2}]
 
 
 def test_cbv_body_and_route_defaults_compatibility() -> None:
