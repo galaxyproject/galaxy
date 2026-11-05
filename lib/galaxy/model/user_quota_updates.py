@@ -3,10 +3,13 @@
 Code that changes a user's usage or the quotas that apply to them calls :func:`queue_user_quota_update`
 on the session it writes with. :func:`send_user_quota_updates_on_commit`, installed once by the app,
 hands what was queued to a sender after each commit, so browsers only refetch the usage once the
-change is in the database. A rollback discards it.
+change is in the database. A rollback discards it. :class:`UserQuotaUpdateBatcher` merges what the
+commits of a process hand over and sends it at most once per interval, so a workflow finishing many
+jobs sends a few messages instead of one per job.
 """
 
 import logging
+import threading
 from collections.abc import (
     Callable,
     Iterable,
@@ -34,6 +37,10 @@ class UserQuotaUpdates:
     user_ids: set[int] = field(default_factory=set)
     broadcast: bool = False
 
+    def merge(self, other: "UserQuotaUpdates") -> None:
+        self.user_ids.update(other.user_ids)
+        self.broadcast = self.broadcast or other.broadcast
+
 
 def queue_user_quota_update(
     session: Session | scoped_session[Session], user_ids: Iterable[int] = (), broadcast: bool = False
@@ -42,9 +49,7 @@ def queue_user_quota_update(
     user_ids = set(user_ids)
     if not user_ids and not broadcast:
         return
-    updates = session.info.setdefault(_INFO_KEY, UserQuotaUpdates())
-    updates.user_ids.update(user_ids)
-    updates.broadcast = updates.broadcast or broadcast
+    session.info.setdefault(_INFO_KEY, UserQuotaUpdates()).merge(UserQuotaUpdates(user_ids, broadcast))
 
 
 def send_user_quota_updates_on_commit(
@@ -70,3 +75,41 @@ def send_user_quota_updates_on_commit(
 
     event.listen(session, "after_commit", after_commit)
     event.listen(session, "after_rollback", after_rollback)
+
+
+class UserQuotaUpdateBatcher:
+    """Merges the updates added to it and sends them together, ``interval`` seconds after the first one.
+
+    Sending happens on a timer thread, so the committing thread, e.g. a job handler, never waits for it.
+    """
+
+    def __init__(self, send: Callable[[UserQuotaUpdates], None], interval: float = 1.0) -> None:
+        self._send = send
+        self._interval = interval
+        self._lock = threading.Lock()
+        self._pending: UserQuotaUpdates | None = None
+        self._timer: threading.Timer | None = None
+
+    def add(self, updates: UserQuotaUpdates) -> None:
+        with self._lock:
+            if self._pending is None:
+                self._pending = UserQuotaUpdates()
+            self._pending.merge(updates)
+            if self._timer is None:
+                self._timer = threading.Timer(self._interval, self.flush)
+                self._timer.daemon = True
+                self._timer.start()
+
+    def flush(self) -> None:
+        """Send what is pending now, e.g. on shutdown."""
+        with self._lock:
+            pending, self._pending = self._pending, None
+            if self._timer is not None:
+                self._timer.cancel()
+                self._timer = None
+        if pending is None:
+            return
+        try:
+            self._send(pending)
+        except Exception:
+            log.exception("Failed to send user quota updates")

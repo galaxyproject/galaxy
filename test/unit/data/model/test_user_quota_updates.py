@@ -1,3 +1,5 @@
+import threading
+
 import pytest
 from sqlalchemy import (
     create_engine,
@@ -11,6 +13,7 @@ from sqlalchemy.orm import (
 from galaxy.model.user_quota_updates import (
     queue_user_quota_update,
     send_user_quota_updates_on_commit,
+    UserQuotaUpdateBatcher,
     UserQuotaUpdates,
 )
 
@@ -87,3 +90,47 @@ def test_failing_sender_does_not_fail_commit():
 
     assert attempts == [UserQuotaUpdates(user_ids={1})]
     session.remove()
+
+
+def test_batcher_sends_updates_added_within_the_interval_together(sent):
+    # Long enough that only the explicit flush sends
+    batcher = UserQuotaUpdateBatcher(sent.append, interval=60)
+    batcher.add(UserQuotaUpdates(user_ids={1}))
+    batcher.add(UserQuotaUpdates(user_ids={2}, broadcast=True))
+    assert sent == []
+
+    batcher.flush()
+    batcher.flush()
+
+    assert sent == [UserQuotaUpdates(user_ids={1, 2}, broadcast=True)]
+
+
+def test_batcher_sends_after_the_interval():
+    delivered = threading.Event()
+    sent: list[UserQuotaUpdates] = []
+
+    def send(updates: UserQuotaUpdates) -> None:
+        sent.append(updates)
+        delivered.set()
+
+    batcher = UserQuotaUpdateBatcher(send, interval=0.01)
+    batcher.add(UserQuotaUpdates(user_ids={1}))
+
+    assert delivered.wait(timeout=5)
+    assert sent == [UserQuotaUpdates(user_ids={1})]
+
+
+def test_batcher_survives_a_failing_sender():
+    attempts: list[UserQuotaUpdates] = []
+
+    def fail(updates: UserQuotaUpdates) -> None:
+        attempts.append(updates)
+        raise RuntimeError("broker down")
+
+    batcher = UserQuotaUpdateBatcher(fail, interval=60)
+    batcher.add(UserQuotaUpdates(user_ids={1}))
+    batcher.flush()
+    batcher.add(UserQuotaUpdates(user_ids={2}))
+    batcher.flush()
+
+    assert attempts == [UserQuotaUpdates(user_ids={1}), UserQuotaUpdates(user_ids={2})]
