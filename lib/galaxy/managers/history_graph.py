@@ -349,14 +349,14 @@ class HistoryGraphBuilder:
             .join(Job, Job.id == JobToOutputDatasetAssociation.job_id)
             .where(
                 JobToOutputDatasetAssociation.dataset_id.in_(dataset_ids),
-                Job.tool_request_id.isnot(None),
                 Job.tool_id.isnot(None),
                 Job.tool_id.notin_(SYNTHETIC_TOOL_IDS),
             )
         )
         candidates: dict[int, dict[int, str]] = {}  # hda_id -> {tr_id: tool_id}
         for row in self.sa_session.execute(stmt):
-            candidates.setdefault(row.hda_id, {})[row.tool_request_id] = row.tool_id
+            if row.tool_request_id is not None:
+                candidates.setdefault(row.hda_id, {})[row.tool_request_id] = row.tool_id
 
         result: dict[tuple[str, int], tuple[int, str]] = {}
         for hda_id, tr_map in candidates.items():
@@ -383,14 +383,14 @@ class HistoryGraphBuilder:
             .join(Job, Job.id == JobToOutputDatasetCollectionAssociation.job_id)
             .where(
                 JobToOutputDatasetCollectionAssociation.dataset_collection_id.in_(collection_ids),
-                Job.tool_request_id.isnot(None),
                 Job.tool_id.isnot(None),
                 Job.tool_id.notin_(SYNTHETIC_TOOL_IDS),
             )
         )
         candidates: dict[int, dict[int, str]] = {}  # hdca_id -> {tr_id: tool_id}
         for row in self.sa_session.execute(stmt):
-            candidates.setdefault(row.hdca_id, {})[row.tool_request_id] = row.tool_id
+            if row.tool_request_id is not None:
+                candidates.setdefault(row.hdca_id, {})[row.tool_request_id] = row.tool_id
 
         result: dict[tuple[str, int], tuple[int, str]] = {}
         for hdca_id, tr_map in candidates.items():
