@@ -9,7 +9,10 @@ from dataclasses import (
     dataclass,
     field,
 )
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+)
 from typing import (
     Optional,
     TYPE_CHECKING,
@@ -233,6 +236,14 @@ class ToolSourceStore(ABC):
         """
         return None
 
+    def populate_lease(self) -> "PopulateLease | None":
+        """Return the lease that lets one process at a time populate this store.
+
+        ``None`` when the store cannot coordinate processes; callers then
+        populate without coordination.
+        """
+        return None
+
     def dispose(self) -> None:  # noqa: B027 — intentional empty default
         """Drop pooled connections and cached state so the next read reopens.
 
@@ -250,6 +261,42 @@ class ToolSourceStore(ABC):
         Default is a no-op; backends holding an engine or cache override, and
         the composite store propagates.
         """
+
+
+class PopulateLease(ABC):
+    """A record, kept in the store, of which process is populating it.
+
+    Processes sharing one store use it so that only one of them runs a full
+    populate while the others wait for its result. The holder renews the
+    lease while it works; a lease that is not renewed before it expires
+    (its holder died) can be taken over.
+
+    Operations that cannot reach the lease raise :class:`PopulateLeaseError`.
+    """
+
+    @abstractmethod
+    def last_populated_at(self) -> datetime | None:
+        """When a holder last released the lease after a successful populate."""
+
+    @abstractmethod
+    def try_acquire(self, holder: str, ttl: timedelta) -> bool:
+        """Take the lease if it is free, expired, or already ``holder``'s."""
+
+    @abstractmethod
+    def renew(self, holder: str, ttl: timedelta) -> bool:
+        """Extend ``holder``'s lease. ``False`` if another process took it over."""
+
+    @abstractmethod
+    def release(self, holder: str, populated: bool) -> None:
+        """Free ``holder``'s lease, recording a successful populate if ``populated``."""
+
+
+class PopulateLeaseError(Exception):
+    """The populate lease could not be read or written."""
+
+
+class PopulateLeaseBusy(PopulateLeaseError):
+    """A lease operation failed transiently, e.g. the database stayed locked."""
 
 
 class ConfigurationError(Exception):

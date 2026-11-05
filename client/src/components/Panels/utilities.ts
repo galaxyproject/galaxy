@@ -182,6 +182,12 @@ interface SearchMatch {
     order: number;
 }
 
+/** Shortest query that triggers a tool search; short tool names like `jq` must be findable */
+export const MIN_TOOL_QUERY_LENGTH = 2;
+
+/** Most non-favorite search results rendered before the user asks to show all; each row mounts a component */
+export const TOOL_SEARCH_RESULTS_LIMIT = 100;
+
 const TOOL_SEARCH_KEYS: SearchCommonKeys = {
     exact: 5,
     startsWith: 4,
