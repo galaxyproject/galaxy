@@ -1,8 +1,13 @@
 import os
 import shutil
+import tarfile
 import tempfile
 import zipfile
 
+from galaxy.util.checkers import (
+    check_zip,
+    is_zipfile_strict,
+)
 from galaxy.util.compression_utils import (
     CompressedFile,
     get_fileobj_raw,
@@ -90,3 +95,38 @@ def test_compressed_file_tar_with_stray_zip_end_record(tmp_path):
         assert cf.file_type == "tar"
         outdir = cf.extract(str(tmp_path))
     assert os.path.isfile(os.path.join(outdir, "member.bin"))
+
+
+def _tar_with_trailing_zip(tmp_path):
+    inner = tmp_path / "inner.zip"
+    with zipfile.ZipFile(inner, "w") as zf:
+        zf.writestr("inner.txt", "inner\n")
+    member = tmp_path / "member.txt"
+    member.write_text("outer\n")
+    path = tmp_path / "outer.tar"
+    with tarfile.open(path, "w") as tf:
+        tf.add(member, arcname="member.txt")
+        tf.add(inner, arcname="inner.zip")
+    return str(path)
+
+
+def test_tar_whose_last_member_is_zip_is_not_zip(tmp_path):
+    path = _tar_with_trailing_zip(tmp_path)
+    assert zipfile.is_zipfile(path)
+    assert not is_zipfile_strict(path)
+    fmt, fh = get_fileobj_raw(path, "rb")
+    with fh:
+        assert fmt is None
+    assert not check_zip(path)[0]
+    with CompressedFile(path) as cf:
+        assert cf.file_type == "tar"
+
+
+def test_is_zipfile_strict_accepts_zip_and_empty_zip(tmp_path):
+    path = str(tmp_path / "a.zip")
+    with zipfile.ZipFile(path, "w") as zf:
+        zf.writestr("a.txt", "a")
+    empty = str(tmp_path / "empty.zip")
+    zipfile.ZipFile(empty, "w").close()
+    assert is_zipfile_strict(path)
+    assert is_zipfile_strict(empty)
