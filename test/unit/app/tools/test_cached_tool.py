@@ -1139,6 +1139,25 @@ def test_invalidate_index_cache_refreshes_materialised_tool_on_content_change():
     assert box.materialize_tool(refreshed, reason="execution") is not original
 
 
+@pytest.mark.parametrize("source_hash", ["hash_v1", "hash_v2"], ids=["conf_change", "content_change"])
+def test_invalidate_index_cache_refreshes_cached_panel_entries(source_hash):
+    box, _holder = _materialising_box("hash_v1")
+    trans = MagicMock(user_is_admin=False)
+    admin_trans = MagicMock(user_is_admin=True)
+    for t in (trans, admin_trans):
+        assert box.get_tool_to_dict(t, box.get_tool("tool1"))["name"] == "Bowtie2"
+
+    reloaded = ToolIndex()
+    reloaded.add_entry(
+        _entry(id="tool1", version="1.0", name="Renamed", source_hash=source_hash, source_path="/t/tool1.xml")
+    )
+    box._store.load_index.return_value = reloaded
+    box.invalidate_index_cache()
+
+    for t in (trans, admin_trans):
+        assert box.get_tool_to_dict(t, box.get_tool("tool1"))["name"] == "Renamed"
+
+
 def test_invalidate_index_cache_keeps_materialised_tool_when_content_unchanged():
     box, _holder = _materialising_box("hash_v1")
     proxy = box.get_tool("tool1")
