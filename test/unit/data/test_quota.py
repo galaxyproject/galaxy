@@ -373,17 +373,17 @@ class TestCalculateUsage(BaseModelTestCase):
 
     def test_calculate_usage_excludes_library_datasets(self):
         u = self.u
-        self._add_dataset(10)
-        in_library = self._add_dataset(20)
+        self._add_dataset(10, "files")
+        in_library = self._add_dataset(20, "files")
         self._add_to_library(in_library)
-        in_two_libraries = self._add_dataset(40)
+        in_two_libraries = self._add_dataset(40, "files")
         self._add_to_library(in_two_libraries)
         self._add_to_library(in_two_libraries)
 
         assert u.calculate_disk_usage_default_source(self.object_store) == 10
         u.calculate_and_set_disk_usage(self.object_store)
         self._refresh_user_and_assert_disk_usage_is(10)
-        assert {r.object_store_id: int(r.total_disk_usage) for r in u.dictify_objectstore_usage()} == {}
+        assert {r.object_store_id: int(r.total_disk_usage) for r in u.dictify_objectstore_usage()} == {"files": 10}
 
     def test_calculate_usage_excludes_purged_hdas_and_histories(self):
         u = self.u
