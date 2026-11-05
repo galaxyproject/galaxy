@@ -49,6 +49,16 @@ describe("datatypesMapperStore", () => {
         expect(store.loading).toBe(false);
     });
 
+    it("keeps the shared load out of the store state", async () => {
+        mockGetDatatypesMapper.mockResolvedValue(MAPPER);
+        const store = useDatatypesMapperStore();
+
+        const load = store.createMapper();
+
+        expect(Object.keys(store.$state).sort()).toEqual(["datatypesMapper", "loading"]);
+        await load;
+    });
+
     it("retries after a failed load", async () => {
         mockGetDatatypesMapper.mockRejectedValueOnce(new Error("load failed")).mockResolvedValueOnce(MAPPER);
         const store = useDatatypesMapperStore();
