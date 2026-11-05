@@ -21,6 +21,7 @@ Galaxy Deployment & Administration
    authentication
    ai_agents
    enable_headers_in_fetch_requests
+   visualization_packages
    tool_panel
    tool_source_storage
    data_tables
