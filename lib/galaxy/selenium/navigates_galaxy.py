@@ -2656,7 +2656,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         if kind == "boolean":
             return str(field.find_element(By.CSS_SELECTOR, "input[type=checkbox]").is_selected()).lower()
         if kind == "checkboxes":
-            boxes = field.find_elements(By.CSS_SELECTOR, '[role="group"] input[type=checkbox]')
+            boxes = field.find_elements(By.CSS_SELECTOR, ".g-checkbox-group input[type=checkbox]")
             return ", ".join(box.get_attribute("value") or "" for box in boxes if box.is_selected())
         if kind == "radio":
             radios = field.find_elements(By.CSS_SELECTOR, "input[type=radio]")
