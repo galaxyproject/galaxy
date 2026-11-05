@@ -174,25 +174,12 @@ class TestToolBox(BaseToolBoxTestCase):
             assert tool.to_panel_entry(trans) == tool.to_dict(trans)
             assert ("config_file" in tool.to_panel_entry(trans)) is is_admin
 
-    def test_panel_entry_without_data_inputs(self):
-        self._init_tool_in_section()
-        tool = self.toolbox.get_tool("test_tool")
-        assert tool.to_panel_entry(mock_trans())["data_inputs"] == []
-
-    def test_panel_entry_lists_data_inputs(self):
+    def test_panel_entry_leaves_out_data_inputs(self):
         self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
         self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
         tool = self.toolbox.get_tool("test_tool")
-        assert tool.to_panel_entry(mock_trans())["data_inputs"] == [
-            {"name": "param1", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None},
-            {
-                "name": "repeat1_0|param2",
-                "extensions": ["tabular"],
-                "multiple": False,
-                "type": "data",
-                "collection_type": None,
-            },
-        ]
+        assert tool.data_inputs
+        assert "data_inputs" not in tool.to_panel_entry(mock_trans())
 
     def test_data_inputs_by_tool_id(self):
         self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)

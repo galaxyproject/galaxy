@@ -80,6 +80,12 @@ class TestInteractiveToolDataInputs(IntegrationTestCase):
         assert LOGIN_INPUT_TOOL not in anonymous_tool_ids
         assert HIDDEN_INPUT_TOOL not in anonymous_tool_ids
 
+    def test_tool_listing_leaves_out_data_inputs(self):
+        response = self._get("tools", data={"in_panel": "False"})
+        self._assert_status_code_is(response, 200)
+        tool = next(tool for tool in response.json() if tool["id"] == TABULAR_INPUT_TOOL)
+        assert "data_inputs" not in tool
+
     def test_input_name_prefills_the_tool_form(self):
         dataset_id = self._new_dataset("1\t2\n", "tabular")
         # A newer tabular dataset would be the default, so the preselection must come from the input name.

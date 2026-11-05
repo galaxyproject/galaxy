@@ -23,8 +23,6 @@ from pydantic import (
     ConfigDict,
 )
 
-from galaxy.tool_util.parameters.data_inputs import ToolDataInput
-
 
 class ToolShedRepositoryInfo(BaseModel):
     name: str | None
@@ -55,8 +53,6 @@ class ToolPanelEntry(BaseModel):
     panel_section_id: str | None
     panel_section_name: str | None
     form_style: Literal["regular", "special"]
-    # Empty when the tool has no data inputs or no parameter model.
-    data_inputs: list[ToolDataInput]
     # Present only for dynamic tools.
     uuid: str | None = None
     # Present only for shed-installed tools.

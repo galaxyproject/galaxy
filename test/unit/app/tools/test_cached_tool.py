@@ -276,19 +276,15 @@ def test_to_panel_entry_carries_client_contract_fields():
     assert d["versions"] == ["2.5.0"]
     assert d["tool_shed_repository"]["changeset_revision"] == "abc123"
     assert "config_file" not in d
-    assert d["data_inputs"] == []
 
 
-def test_to_panel_entry_carries_indexed_data_inputs():
+def test_to_panel_entry_leaves_out_indexed_data_inputs():
     e = _entry(
         data_inputs=[
             {"name": "infile", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None}
         ]
     )
-    d = _stub(e).to_panel_entry(trans=None)
-    assert d["data_inputs"] == [
-        {"name": "infile", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None}
-    ]
+    assert "data_inputs" not in _stub(e).to_panel_entry(trans=None)
 
 
 def test_data_inputs_come_from_the_index_entry():

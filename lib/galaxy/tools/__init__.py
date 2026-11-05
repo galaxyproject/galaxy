@@ -3014,7 +3014,6 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             panel_section_id=panel_section_id,
             panel_section_name=panel_section_name,
             form_style="regular" if regular_form else "special",
-            data_inputs=self.data_inputs,
         )
         if self.dynamic_tool_uuid:
             kwargs["uuid"] = str(self.dynamic_tool_uuid)
