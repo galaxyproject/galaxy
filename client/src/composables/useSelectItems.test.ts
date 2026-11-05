@@ -154,20 +154,42 @@ describe("useSelectItems", () => {
         expect(load).toHaveBeenCalledTimes(1);
     });
 
-    it("searches the displayed fields locally, not the raw entry or derived values", async () => {
-        const { provider } = clientProvider([
-            { id: "a", name: "alpha" },
-            { id: "b", name: "beta" },
-        ]);
-        const state = useSelectItems(provider);
-        await flushPromises();
-        state.toggle(state.items.value[0]!);
+    it.each(["f0", "url", "true", "selected", "object"])(
+        "searches only the label, details and tags locally, not %j",
+        async (text) => {
+            const { provider } = clientProvider([
+                { id: "f0a1b2c3d4e5f607", name: "alpha" },
+                { id: "f0b2c3d4e5f60718", name: "beta" },
+            ]);
+            const state = useSelectItems(provider);
+            await flushPromises();
+            state.toggle(state.items.value[0]!);
 
-        state.filter.value = "url-b";
-        expect(state.items.value.map((item) => item.id)).toEqual(["b"]);
-        state.filter.value = "selected";
-        expect(state.items.value).toEqual([]);
-        state.filter.value = "object";
+            state.filter.value = text;
+            expect(state.items.value).toEqual([]);
+        },
+    );
+
+    it("searches the details and tags locally", async () => {
+        const load = vi.fn(async () => ({ items: [{ id: "f0a1b2c3d4e5f607", name: "alpha" }] }));
+        const map = (raw: Raw): SelectionItem => ({ ...toItem(raw), details: "fastq reads", tags: ["name:rna"] });
+        const state = useSelectItems({ load, map });
+        await flushPromises();
+
+        state.filter.value = "reads";
+        expect(state.items.value).toHaveLength(1);
+        state.filter.value = "name:rna";
+        expect(state.items.value).toHaveLength(1);
+    });
+
+    it("searches the given filterKeys locally", async () => {
+        const { provider } = clientProvider([{ id: "f0a1b2c3d4e5f607", name: "alpha" }]);
+        const state = useSelectItems(provider, { filterKeys: ["id"] });
+        await flushPromises();
+
+        state.filter.value = "f0a1";
+        expect(state.items.value).toHaveLength(1);
+        state.filter.value = "alpha";
         expect(state.items.value).toEqual([]);
     });
 

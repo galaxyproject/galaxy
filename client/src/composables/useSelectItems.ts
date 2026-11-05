@@ -20,14 +20,13 @@ import {
 import { errorMessageAsString } from "@/utils/simple-error";
 
 export interface UseSelectItemsOptions {
-    /** Item fields searched when the provider returns all items at once; default: every field that holds displayed text. */
+    /** Item fields searched when the provider returns all items at once; default: the displayed text (label, details, tags). */
     filterKeys?: string[];
 }
 
 const PER_PAGE = 25;
 
-/** Item fields without displayed text, left out of the local search like the dialog table does. */
-const FILTER_IGNORED_FIELDS = ["entry", "selectionState", "updateTime"];
+const DEFAULT_FILTER_KEYS = ["label", "details", "tags"];
 
 interface PathLevel {
     item: SelectionItem;
@@ -72,6 +71,7 @@ export function useSelectItems<Raw>(
     options: UseSelectItemsOptions = {},
 ) {
     const perPage = ref(PER_PAGE);
+    const filterKeys = options.filterKeys ?? DEFAULT_FILTER_KEYS;
 
     const currentPage = ref(1);
     const currentFilter = ref("");
@@ -104,14 +104,10 @@ export function useSelectItems<Raw>(
         const text = currentFilter.value.trim().toLowerCase();
         if (text) {
             items = items.filter((item) =>
-                Object.entries(item).some(
-                    ([key, value]) =>
-                        value != null &&
-                        (options.filterKeys
-                            ? options.filterKeys.includes(key)
-                            : !FILTER_IGNORED_FIELDS.includes(key)) &&
-                        String(value).toLowerCase().includes(text),
-                ),
+                filterKeys.some((key) => {
+                    const value = (item as unknown as Record<string, unknown>)[key];
+                    return value != null && String(value).toLowerCase().includes(text);
+                }),
             );
         }
         const key = sortBy.value;
