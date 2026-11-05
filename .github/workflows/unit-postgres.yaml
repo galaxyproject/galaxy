@@ -67,5 +67,5 @@ jobs:
       - name: Run disk usage and quota tests with PostgreSQL
         env:
           GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE: 'postgresql://postgres:postgres@localhost:5432/'
-        run: ./run_tests.sh -unit test/unit/data/test_quota.py
+        run: ./run_tests.sh -unit test/unit/data/test_quota.py -- -k Postgres
         working-directory: 'galaxy root'
