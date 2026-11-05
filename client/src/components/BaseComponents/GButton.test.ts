@@ -364,12 +364,7 @@ describe("GButton.vue pressed", () => {
 
 describe("GButton.vue attributes", () => {
     it("puts a consumer's class and style on the button once", () => {
-        // As Vue 3 does, put class and style in $attrs.
-        const component = {
-            ...(GButton as object),
-            compatConfig: { ...(GButton as { compatConfig?: object }).compatConfig, INSTANCE_ATTRS_CLASS_STYLE: false },
-        };
-        const wrapper = mount(component, {
+        const wrapper = mount(GButton as object, {
             props: { color: "blue" },
             attrs: { class: "consumer-class", style: "margin: 1px;" },
             global: localVue,

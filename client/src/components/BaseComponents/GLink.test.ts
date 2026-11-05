@@ -123,12 +123,7 @@ describe("GLink.vue clicks", () => {
 
 describe("GLink.vue attributes", () => {
     it("puts a consumer's class and style on the link once", () => {
-        // As Vue 3 does, put class and style in $attrs.
-        const component = {
-            ...(GLink as object),
-            compatConfig: { ...(GLink as { compatConfig?: object }).compatConfig, INSTANCE_ATTRS_CLASS_STYLE: false },
-        };
-        const wrapper = mount(component, {
+        const wrapper = mount(GLink as object, {
             props: { href: "/somewhere" },
             attrs: { class: "consumer-class", style: "margin: 1px;" },
             global: localVue,

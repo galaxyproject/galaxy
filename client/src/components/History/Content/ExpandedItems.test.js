@@ -9,13 +9,8 @@ const localVue = getLocalVue();
 
 describe("ExpandedItems", () => {
     it("hands its expansion helpers to the default slot without $scopedSlots", async () => {
-        // compat reads compatConfig off the mounted component itself, so this copy runs as Vue 3 will.
-        const component = {
-            ...ExpandedItems,
-            compatConfig: { ...ExpandedItems.compatConfig, INSTANCE_SCOPED_SLOTS: false },
-        };
         const item = { id: "item_id" };
-        const wrapper = mount(component, {
+        const wrapper = mount(ExpandedItems, {
             props: { scopeKey: "history_id", getItemKey: (i) => i.id },
             slots: {
                 default: ({ isExpanded, setExpanded, expandedCount }) =>
