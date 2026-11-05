@@ -3,7 +3,7 @@ import { ERROR_STATES, type ShowFullJobResponse } from "@/api/jobs";
 import type { ServiceCredentialsContext } from "@/api/userCredentials";
 import type { FormInputNode } from "@/components/Form/composables/useFormState";
 import type { Tool, ToolPanelItem, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 export type HdcaUploadTarget = components["schemas"]["HdcaDataItemsTarget"];
 export type HdasUploadTarget = components["schemas"]["DataElementsTarget"];
@@ -19,6 +19,7 @@ export type NestedElementItem = NestedElementItems[number];
 export type FetchTargets = FetchDataPayload["targets"];
 export type AnyFetchTarget = FetchTargets[number];
 export type ToolRequestDetailedModel = components["schemas"]["ToolRequestDetailedModel"];
+export type ToolDataInput = components["schemas"]["ToolDataInput"];
 
 export type ApiDataElement = FileDataElement | PastedDataElement | UrlDataElement;
 
@@ -100,6 +101,20 @@ export function nestedElement(identifier: string, elements: NestedElement["eleme
         space_to_tab: false,
     };
     return nestedElement;
+}
+
+/**
+ * Get the data inputs of the tools the user can see, by tool id, optionally of one `tool_type` only.
+ * Tools without data inputs are left out.
+ */
+export async function fetchToolDataInputs(toolType?: string): Promise<Record<string, ToolDataInput[]>> {
+    const { data, error } = await GalaxyApi().GET("/api/tools/data_inputs", {
+        params: { query: { tool_type: toolType } },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
 }
 
 export async function fetchDatasetsToJobId(payload: FetchDataPayload) {
