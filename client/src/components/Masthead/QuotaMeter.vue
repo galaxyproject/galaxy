@@ -14,6 +14,8 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 
+import QuotaSourcesList from "./QuotaSourcesList.vue";
+import QuotaSourcesLogin from "./QuotaSourcesLogin.vue";
 import QuotaSourcesPopover from "./QuotaSourcesPopover.vue";
 
 const { config } = useConfig();
@@ -95,12 +97,10 @@ const variant = computed(() => {
                 </span>
             </span>
         </BLink>
-        <QuotaSourcesPopover
-            v-if="showSourcesPopover"
-            :target="LINK_ID"
-            :quota-usages="quotaUsages"
-            :is-anonymous="isAnonymous"
-            :is-over-default-quota="isOverDefaultQuota" />
+        <QuotaSourcesPopover v-if="showSourcesPopover" v-slot="{ isShown }" :target="LINK_ID">
+            <QuotaSourcesLogin v-if="isAnonymous" :is-over-default-quota="isOverDefaultQuota" />
+            <QuotaSourcesList v-else :quota-usages="quotaUsages ?? []" :show-sources="isShown" />
+        </QuotaSourcesPopover>
     </div>
 </template>
 
