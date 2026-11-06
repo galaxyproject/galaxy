@@ -91,7 +91,7 @@ outputs:
 """
 
 
-class TestWorkflowInvocation(integration_util.IntegrationTestCase, UsesShedApi):
+class BaseWorkflowInvocationTestCase(integration_util.IntegrationTestCase, UsesShedApi):
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
     require_admin_user = False
@@ -106,6 +106,29 @@ class TestWorkflowInvocation(integration_util.IntegrationTestCase, UsesShedApi):
     def sa_session(self):
         return self._app.model.session
 
+    def _assert_missing_tools(
+        self, workflow_id: str, history_id: str, expected_tools: str, *, require_exact_tool_versions: bool
+    ) -> None:
+        invocation_response = self.workflow_populator.invoke_workflow(
+            workflow_id, history_id=history_id, request={"require_exact_tool_versions": require_exact_tool_versions}
+        )
+        self._assert_status_code_is(invocation_response, 400)
+        assert invocation_response.json()["err_msg"] == (
+            f"Workflow was not invoked; the following required tools are not installed: {expected_tools}"
+        )
+
+    def _upload_compose_text_param_workflow(self, tool_id: str, tool_version: str) -> str:
+        return self.workflow_populator.upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+steps:
+  compose_text_param:
+    tool_id: {tool_id}
+    tool_version: "{tool_version}"
+    label: compose_text_param
+""")
+
+
+class TestWorkflowInvocation(BaseWorkflowInvocationTestCase):
     def test_run_workflow_optional_data_skips_step(self) -> None:
         self.install_repository("iuc", "map_param_value", "5ac8a4bf7a8d")
         with self.dataset_populator.test_history() as history_id:
@@ -336,27 +359,6 @@ steps:
         assert stored_workflow
         assert not stored_workflow.latest_workflow.has_errors
 
-    def _assert_missing_tools(
-        self, workflow_id: str, history_id: str, expected_tools: str, *, require_exact_tool_versions: bool
-    ) -> None:
-        invocation_response = self.workflow_populator.invoke_workflow(
-            workflow_id, history_id=history_id, request={"require_exact_tool_versions": require_exact_tool_versions}
-        )
-        self._assert_status_code_is(invocation_response, 400)
-        assert invocation_response.json()["err_msg"] == (
-            f"Workflow was not invoked; the following required tools are not installed: {expected_tools}"
-        )
-
-    def _upload_compose_text_param_workflow(self, tool_id: str, tool_version: str) -> str:
-        return self.workflow_populator.upload_yaml_workflow(f"""
-class: GalaxyWorkflow
-steps:
-  compose_text_param:
-    tool_id: {tool_id}
-    tool_version: "{tool_version}"
-    label: compose_text_param
-""")
-
     def test_workflow_run_collection_with_auto_extension(self):
         """Workflow with collection input whose datasets have ext='auto' should delay and succeed."""
         with self.dataset_populator.test_history() as history_id:
@@ -400,5 +402,29 @@ steps:
 class TestCachedWorkflowInvocation(
     integration_util.CachedToolBoxIntegrationMixin,
     TestWorkflowInvocation,
+):
+    pass
+
+
+class TestWorkflowInvocationTwoInstalledVersions(BaseWorkflowInvocationTestCase):
+    def setUp(self):
+        super().setUp()
+        self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
+        self.install_repository("iuc", "compose_text_param", "e188c9826e0f")  # 0.1.1
+
+    def test_run_workflow_with_versioned_shed_tool_id_naming_other_installed_version(self):
+        with self.dataset_populator.test_history() as history_id:
+            workflow_id = self._upload_compose_text_param_workflow(f"{UNVERSIONED_COMPOSE_TEXT_PARAM}/0.1.1", "0.1.0")
+            self._assert_missing_tools(
+                workflow_id,
+                history_id,
+                f"{UNVERSIONED_COMPOSE_TEXT_PARAM}/0.1.1 (version 0.1.0, but the tool id names version 0.1.1)",
+                require_exact_tool_versions=True,
+            )
+
+
+class TestCachedWorkflowInvocationTwoInstalledVersions(
+    integration_util.CachedToolBoxIntegrationMixin,
+    TestWorkflowInvocationTwoInstalledVersions,
 ):
     pass

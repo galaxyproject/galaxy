@@ -63,6 +63,7 @@ from galaxy.tool_util.toolbox.base import (
 )
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.tool_shed.tool_shed_registry import Registry
+from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
@@ -188,10 +189,31 @@ def _describe_missing_tools(
         return _describe_tool_references(tools, require_exact_tool_versions)
     descriptions = []
     for tool in tools:
-        installed = _installed_tool_versions(toolbox, tool, user)
-        installed_note = f", installed: {', '.join(installed)}" if installed else ""
-        descriptions.append(f"{tool['tool_id']} (version {tool['tool_version']}{installed_note})")
+        named_version = _version_named_by_tool_id(toolbox, tool)
+        if named_version:
+            note = f", but the tool id names version {named_version}"
+        else:
+            installed = _installed_tool_versions(toolbox, tool, user)
+            note = f", installed: {', '.join(installed)}" if installed else ""
+        descriptions.append(f"{tool['tool_id']} (version {tool['tool_version']}{note})")
     return ", ".join(dict.fromkeys(descriptions))
+
+
+def _version_named_by_tool_id(toolbox: AbstractToolBox, tool_reference: dict[str, Any]) -> str | None:
+    """The version a versioned Tool Shed guid names, when the step asks for another
+    installed version of the same tool, e.g. ``…/compose_text_param/0.1.1`` with
+    ``tool_version: 0.1.0``."""
+    tool_id = tool_reference["tool_id"]
+    tool_version = tool_reference["tool_version"]
+    if not tool_id or not tool_version or tool_reference["tool_uuid"]:
+        return None
+    named_tool = toolbox.get_tool(tool_id, exact=True)
+    if named_tool is None or not named_tool.id or str(named_tool.version) == str(tool_version):
+        return None
+    versionless_id = remove_version_from_guid(named_tool.id)
+    if versionless_id and toolbox.get_tool_at_version(versionless_id, tool_version):
+        return str(named_tool.version)
+    return None
 
 
 def _installed_tool_versions(toolbox: AbstractToolBox, tool_reference: dict[str, Any], user: User | None) -> list[str]:
