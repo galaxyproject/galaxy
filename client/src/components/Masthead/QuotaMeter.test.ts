@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { AnonymousUser, RegisteredUser } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import type { UserQuotaUsageData } from "@/components/User/DiskUsage/Quota/model/QuotaUsage";
 import { vGTooltip } from "@/directives/vGTooltip";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { useUserStore } from "@/stores/userStore";
@@ -128,23 +129,17 @@ describe("QuotaMeter.vue", () => {
         let wrapper: VueWrapper;
         let storageRequests: number;
 
-        /** Mounts the meter with storage sources that each have a quota of ``SOURCE_QUOTA`` bytes. */
-        async function mountWithSourceUsages(usageBySource: Record<string, number>, { enableQuotas = true } = {}) {
+        /** Mounts the meter with the usages and config as the server reports them. */
+        async function mountWithUsages(usages: UserQuotaUsageData[], config: object) {
             storageRequests = 0;
             server.use(
-                http.get("/api/users/{user_id}/usage", ({ response }) => {
-                    return response(200).json(
-                        Object.entries(usageBySource).map(([label, usage]) =>
-                            getFakeQuotaUsageData(label, usage, SOURCE_QUOTA),
-                        ),
-                    );
-                }),
+                http.get("/api/users/{user_id}/usage", ({ response }) => response(200).json(usages)),
                 http.get("/api/object_stores", ({ response }) => {
                     storageRequests++;
                     return response(200).json(STORAGES);
                 }),
             );
-            setupMockConfig({ enable_quotas: enableQuotas, quota_source_labels: Object.keys(usageBySource) });
+            setupMockConfig(config);
             const pinia = createPinia();
             setActivePinia(pinia);
             useUserStore().currentUser = FAKE_USER;
@@ -152,6 +147,17 @@ describe("QuotaMeter.vue", () => {
             // As in the app, the usage per source arrives after the meter is shown
             await useQuotaUsageStore().loadQuotaUsages();
             await flushPromises();
+        }
+
+        /** Mounts the meter with storage sources that each have a quota of ``SOURCE_QUOTA`` bytes. */
+        async function mountWithSourceUsages(usageBySource: Record<string, number>, { enableQuotas = true } = {}) {
+            const usages = Object.entries(usageBySource).map(([label, usage]) =>
+                getFakeQuotaUsageData(label, usage, SOURCE_QUOTA),
+            );
+            await mountWithUsages(usages, {
+                enable_quotas: enableQuotas,
+                quota_source_labels: Object.keys(usageBySource),
+            });
         }
 
         it("names the sources whose quota the user exceeded", async () => {
@@ -189,10 +195,21 @@ describe("QuotaMeter.vue", () => {
             expect(storageRequests).toBe(1);
         });
 
-        it("lists no sources when quotas are off, though other pages load their usage", async () => {
+        it("keeps the tooltip and lists no sources when quotas are off, though other pages load their usage", async () => {
             await mountWithSourceUsages({ scratch: 400, archive: 400 }, { enableQuotas: false });
+            await hover(wrapper.find(METER_LINK));
 
             expect(document.body.querySelector(SOURCE_USAGE)).toBeNull();
+            expect(await hoverForTooltip(wrapper)).toBe("Storage and Usage Details");
+        });
+
+        it("keeps the tooltip for a registered user with only the default source", async () => {
+            await mountWithUsages([getFakeQuotaUsageData(null, 400)], {
+                enable_quotas: true,
+                quota_source_labels: [],
+            });
+
+            expect(await hoverForTooltip(wrapper)).toBe("Storage and Usage Details");
         });
 
         it("shows no hint while no source exceeds its quota", async () => {
@@ -204,8 +221,8 @@ describe("QuotaMeter.vue", () => {
 
     describe("for anonymous users on a server with other storage sources", () => {
         /** Mounts the meter for an anonymous user, who gets no usage per source from the server. */
-        async function mountAnonymous(quotaPercent: number) {
-            setupMockConfig({ enable_quotas: true, quota_source_labels: ["scratch"] });
+        async function mountAnonymous(quotaPercent: number, quotaSourceLabels = ["scratch"]) {
+            setupMockConfig({ enable_quotas: true, quota_source_labels: quotaSourceLabels });
             const pinia = createPinia();
             setActivePinia(pinia);
             const user: AnonymousUser = {
@@ -227,6 +244,13 @@ describe("QuotaMeter.vue", () => {
             expect(document.body.querySelector(LOG_IN_BUTTON)?.getAttribute("href")).toBe("/login/start");
             expect(document.body.querySelector(DASHBOARD_BUTTON)).toBeNull();
             expect(await hoverForTooltip(wrapper)).toBeNull();
+        });
+
+        it("keeps the login tooltip on a server without other sources", async () => {
+            const wrapper = await mountAnonymous(40, []);
+
+            expect(await hoverForTooltip(wrapper)).toBe("Login to Access Storage Details");
+            expect(document.body.querySelector(LOG_IN_BUTTON)).toBeNull();
         });
 
         it("says when the default storage is over quota", async () => {
