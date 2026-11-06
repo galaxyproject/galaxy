@@ -2435,8 +2435,8 @@ steps:
 
         # select two nodes
         editor = self.components.workflow_editor
-        cat_node_1 = editor.node.by_id(id=1).wait_for_present()
-        cat_node_2 = editor.node.by_id(id=2).wait_for_present()
+        cat_node_1 = editor.node._(label="first_cat").wait_for_present()
+        cat_node_2 = editor.node._(label="second_cat").wait_for_present()
 
         self.action_chains().move_to_element(cat_node_1).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
         self.action_chains().move_to_element(cat_node_2).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
@@ -2458,9 +2458,7 @@ steps:
         self.workflow_index_search_for(new_workflow_name)
         self.components.workflows.edit_button.wait_for_and_click()
 
-        self.assert_connected("first_cat#out_file1", "second_cat#input1")
-
-        pass
+        self.workflow_editor_assert_connected("first_cat#out_file1", "second_cat#input1")
 
     def create_and_wait_for_new_workflow_in_editor(self, annotation: str | None = None) -> str:
         editor = self.components.workflow_editor
