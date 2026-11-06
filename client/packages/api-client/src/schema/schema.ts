@@ -28726,7 +28726,7 @@ export interface components {
             description: string;
             /**
              * Identifier
-             * @description Stable identifier of the widget.
+             * @description Identifier of the widget.
              */
             id: string;
             /**
