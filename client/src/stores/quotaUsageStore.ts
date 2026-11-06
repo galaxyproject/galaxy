@@ -47,6 +47,12 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
             ...sourceUsageByKey.value,
             [key]: usage,
         };
+        // The over-quota warnings read the list of all sources
+        if (usage && quotaUsages.value) {
+            quotaUsages.value = quotaUsages.value.map((existing) =>
+                existing.rawSourceLabel === usage.rawSourceLabel ? usage : existing,
+            );
+        }
     }
 
     function setSourceLoading(sourceLabel: string | null | undefined, loading: boolean) {
@@ -139,12 +145,6 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
             try {
                 const usage = await fetchCurrentUserQuotaSourceUsage(sourceLabel);
                 setSourceUsage(sourceLabel, usage);
-                // Keep the list of all sources, which the over-quota warnings use, as current as this one
-                if (usage && quotaUsages.value) {
-                    quotaUsages.value = quotaUsages.value.map((existing) =>
-                        existing.rawSourceLabel === usage.rawSourceLabel ? usage : existing,
-                    );
-                }
                 return usage;
             } catch (e) {
                 setSourceError(sourceLabel, errorMessageAsString(e));
