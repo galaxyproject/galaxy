@@ -1,13 +1,10 @@
 import { faPlus, faRedo } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { GalaxyApi } from "@/api";
 import type { WorkflowInvocation } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
-import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import _l from "@/utils/localization";
-import { rethrowSimple } from "@/utils/simple-error";
 
 import {
     historyColumnFilter,
@@ -15,6 +12,7 @@ import {
     resolveInvocationFilters,
     workflowColumnFilter,
 } from "./invocationFilters";
+import { fetchInvocations } from "./invocationsIndex";
 import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
@@ -55,37 +53,7 @@ export async function getData(
         params["user_id"] = extraProps["user_id"];
     }
 
-    const { response, data, error } = await GalaxyApi().GET("/api/invocations", { params: { query: params } });
-    if (error) {
-        rethrowSimple(error);
-    }
-    fetchHistoriesAndWorkflows(data);
-    const headers = response.headers;
-    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
-    return [data, totalMatches] as const;
-}
-
-/**
- * Fetch histories and workflows for the given invocations, if not already loaded,
- * so that they are cached and names are available for display in the grid
- */
-function fetchHistoriesAndWorkflows(invocations: Array<WorkflowInvocation>) {
-    const historyStore = useHistoryStore();
-    const workflowStore = useWorkflowStore();
-
-    const historyIds: Set<string> = new Set();
-    const workflowIds: Set<string> = new Set();
-    invocations.forEach((invocation) => {
-        historyIds.add(invocation.history_id);
-        workflowIds.add(invocation.workflow_id);
-    });
-    // Loads on a miss, with retry backoff; failures are recorded in the store.
-    historyIds.forEach((history_id) => historyStore.getHistoryById(history_id));
-    workflowIds.forEach((workflow_id) =>
-        workflowStore
-            .fetchWorkflowForInstanceIdCached(workflow_id)
-            .catch((e) => console.warn(`Failed to load workflow ${workflow_id}`, e)),
-    );
+    return fetchInvocations(params);
 }
 
 /**

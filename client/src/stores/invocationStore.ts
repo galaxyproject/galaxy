@@ -11,7 +11,7 @@ import {
     type WorkflowInvocationRequest,
     type WorkflowJobMetric,
 } from "@/api/invocations";
-import { getData as getInvocationsData } from "@/components/Grid/configs/invocations";
+import { fetchInvocations } from "@/components/Grid/configs/invocationsIndex";
 import { numTerminal } from "@/components/WorkflowInvocationState/util";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
@@ -312,7 +312,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
      * Fetches the `limit` most recently created invocations and merges them into the shared
      * invocation cache (no separate copy of the data is kept -- only the ordered list of ids).
      *
-     * Reuses the invocations grid's `getData`, which also populates the history and workflow name
+     * Reuses the invocations grid's `fetchInvocations`, which also populates the history and workflow name
      * caches needed to display an invocation. Concurrent calls share a single request.
      */
     async function fetchLatestInvocations(limit = 15): Promise<WorkflowInvocation[]> {
@@ -322,7 +322,13 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         isLoadingLatestInvocations.value = true;
         latestInvocationsPromise = (async () => {
             try {
-                const [invocations] = await getInvocationsData(0, limit, "", "create_time", true);
+                const [invocations] = await fetchInvocations({
+                    limit,
+                    offset: 0,
+                    sort_by: "create_time",
+                    sort_desc: true,
+                    include_nested_invocations: false,
+                });
                 const ids: string[] = [];
                 for (const invocation of invocations) {
                     updateInvocation(invocation.id, invocation);
