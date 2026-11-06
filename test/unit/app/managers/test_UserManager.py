@@ -4,6 +4,7 @@ User Manager testing.
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
 
+import logging
 from typing import (
     cast,
     TYPE_CHECKING,
@@ -21,6 +22,7 @@ from galaxy import (
     model,
     schema,
 )
+from galaxy.config import COMPLIANCE_LOGGER_NAME
 from galaxy.managers import (
     base as base_manager,
     histories,
@@ -614,6 +616,18 @@ class TestUserManager(BaseTestCase):
         self.user_manager.purge(user2)
 
         assert self._oidc_tokens_for(user2) == []
+
+    def test_purge_logs_compliance_event_with_user_id(self, caplog):
+        self.log("purging a user should log the user ID, not their PII, to the compliance logger")
+        self.trans.app.config.allow_user_deletion = True
+        user2 = self.user_manager.create(**user2_data)
+        self.user_manager.delete(user2)
+
+        with caplog.at_level(logging.INFO, logger=COMPLIANCE_LOGGER_NAME):
+            self.user_manager.purge(user2)
+
+        compliance_messages = [r.getMessage() for r in caplog.records if r.name == COMPLIANCE_LOGGER_NAME]
+        assert compliance_messages == [f"delete-user-event: {user2.id}"]
 
     def test_new_remote_user_default_access_private(self):
         self.app.config.use_remote_user = True
