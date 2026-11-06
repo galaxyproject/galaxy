@@ -495,7 +495,8 @@ class JobSearch:
         history_id: int | None = None,
         require_name_match: bool = True,
         element_identifiers: dict[str, str] | None = None,
-        dynamic_tool_id: int | None = None,
+        *,
+        dynamic_tool_id: int | None,
     ) -> Job | None:
         """Search for jobs producing same results using the 'inputs' part of a tool POST.
 
@@ -572,7 +573,8 @@ class JobSearch:
         history_id: int | None = None,
         require_name_match: bool = True,
         require_identifier_match: bool = True,
-        dynamic_tool_id: int | None = None,
+        *,
+        dynamic_tool_id: int | None,
     ) -> Job | None:
         search_timer = ExecutionTimer()
 
@@ -716,7 +718,7 @@ class JobSearch:
         job_state: JobStatesT | None,
         wildcard_param_dump,
         history_id: int | None,
-        dynamic_tool_id: int | None = None,
+        dynamic_tool_id: int | None,
     ) -> "Select[tuple[int]]":
         """Build subquery that selects a job with correct job parameters."""
         # Apply job-level filters BEFORE the CTE so they are included in the
