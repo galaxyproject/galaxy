@@ -75,12 +75,14 @@ const workflowListOptions = {
 /**
  * Invocations can reference the user's own visible, deleted and hidden workflows, and workflows
  * shared with or published by others. The index lists deleted and hidden workflows only on request,
- * one kind per call, so this takes three lookups.
+ * one kind per call. Own and shared workflows get their own lookup, so that recently updated
+ * published workflows can't use up the limit.
  */
 export async function findWorkflowsByName(name: string): Promise<WorkflowSummary[]> {
     const search = nameSearch(name);
     const options = { ...workflowListOptions, limit: NAME_MATCH_LIMIT };
     const results = await Promise.all([
+        loadWorkflows({ ...options, filterText: search }),
         loadWorkflows({ ...options, filterText: search, showPublished: true }),
         loadWorkflows({ ...options, filterText: `${search} is:deleted` }),
         loadWorkflows({ ...options, filterText: search, showHidden: true }),

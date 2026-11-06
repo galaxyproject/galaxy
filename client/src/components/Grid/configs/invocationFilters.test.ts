@@ -8,6 +8,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import {
     historyColumnFilter,
+    NAME_MATCH_LIMIT,
     nameSearch,
     RECENT_LIMIT,
     resolveInvocationFilters,
@@ -99,6 +100,22 @@ describe("resolveInvocationFilters", () => {
         expect(workflowQueries).toHaveBeenCalledWith(
             expect.objectContaining({ search: "name:rna", show_hidden: "true" }),
         );
+    });
+
+    it("keeps the user's own workflows when published ones fill the match limit", async () => {
+        const published = Array.from({ length: NAME_MATCH_LIMIT }, (_, index) => ({ id: `published-${index}` }));
+        server.use(
+            http.get("/api/workflows", ({ request, response }) => {
+                const query = new URL(request.url).searchParams;
+                const visible = query.get("search") === "name:rna" && query.get("show_hidden") !== "true";
+                const items = !visible ? [] : query.get("show_published") === "true" ? published : [{ id: "own" }];
+                return response.untyped(HttpResponse.json(items, { headers: { total_matches: String(items.length) } }));
+            }),
+        );
+
+        const params = await resolveInvocationFilters("workflow:rna");
+
+        expect(params?.workflow_id).toContain("own");
     });
 
     it("looks up active, deleted and purged histories by exact name", async () => {
