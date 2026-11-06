@@ -1,4 +1,4 @@
-import { computed, type ComputedRef, type Ref, ref } from "vue";
+import { computed, type ComputedRef, type Ref, ref, watch } from "vue";
 
 /**
  * Options for configuring pagination
@@ -64,6 +64,13 @@ export function usePagination<T>(
     });
 
     const showPagination = computed(() => totalItems.value > itemsPerPage.value);
+
+    watch(totalItems, (total) => {
+        const lastPage = Math.max(Math.ceil(total / itemsPerPage.value), 1);
+        if (currentPage.value > lastPage) {
+            currentPage.value = lastPage;
+        }
+    });
 
     function onPageChange(page: number) {
         currentPage.value = page;
