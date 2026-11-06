@@ -77,7 +77,19 @@ class HistoryQuery:
 
         hdca_collection_type = hdca.collection.collection_type
         for collection_type_description in collection_type_descriptions:
+            if collection_type_description.collection_type.startswith("sample_sheet"):
+                # a split never yields a sample_sheet
+                continue
             # See note about the way this is sorted above.
             if collection_type_description.is_subcollection_of_type(hdca_collection_type):
                 return collection_type_description
         return False
+
+    def map_over_type(self, hdca: HdcaLike) -> Optional[str]:
+        """Literal type ``hdca`` is split into for the input type ``can_map_over`` picks, or ``None``."""
+        collection_type_description = self.can_map_over(hdca)
+        if not collection_type_description:
+            return None
+        factory = collection_type_description.collection_type_description_factory
+        hdca_type_description = factory.for_collection_type(hdca.collection.collection_type)
+        return hdca_type_description.split_collection_type(collection_type_description.collection_type)

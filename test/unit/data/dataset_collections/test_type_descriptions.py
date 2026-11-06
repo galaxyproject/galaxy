@@ -179,6 +179,27 @@ def test_effective_collection_type_paired_or_unpaired_non_paired():
     assert c_t("list:list").effective_collection_type("paired_or_unpaired") == "list:list"
 
 
+@pytest.mark.parametrize(
+    "collection_type,subcollection_type,split_type",
+    [
+        ("list", "paired_or_unpaired", "single_datasets"),
+        ("list:list", "paired_or_unpaired", "single_datasets"),
+        ("list:paired", "paired_or_unpaired", "paired"),
+        ("list:list:paired", "paired_or_unpaired", "paired"),
+        ("list:paired_or_unpaired", "paired_or_unpaired", "paired_or_unpaired"),
+        ("list:paired", "paired", "paired"),
+        ("list:list", "list", "list"),
+        ("list:list", "list:paired_or_unpaired", "list"),
+        ("list:list:paired", "list:paired_or_unpaired", "list:paired"),
+        ("list:list:list", "list:paired_or_unpaired", "list"),
+        ("list:list:paired_or_unpaired", "list:paired_or_unpaired", "list:paired_or_unpaired"),
+        ("list:list:list:paired", "list:list:paired_or_unpaired", "list:list:paired"),
+    ],
+)
+def test_split_collection_type(collection_type, subcollection_type, split_type):
+    assert c_t(collection_type).split_collection_type(subcollection_type) == split_type
+
+
 def test_validate():
     c_t("list").validate()
     c_t("list:paired").validate()

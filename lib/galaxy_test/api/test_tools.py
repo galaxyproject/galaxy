@@ -2825,6 +2825,40 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert len(response_object["jobs"]) == 2
             assert len(response_object["implicit_collections"]) == 1
 
+    @skip_without_tool("collection_creates_list")
+    def test_can_map_over_dce_on_collection_param(self):
+        with self.dataset_populator.test_history() as history_id:
+            inner_list_ids = [
+                self.dataset_collection_populator.create_list_in_history(history_id, wait=True).json()[
+                    "output_collections"
+                ][0]["id"]
+                for _ in range(2)
+            ]
+            list_of_lists_id = self.dataset_collection_populator.create_nested_collection(
+                history_id, collection_type="list:list", collection=inner_list_ids
+            ).json()["id"]
+            outer = self.dataset_collection_populator.create_nested_collection(
+                history_id, collection_type="list:list:list", collection=[list_of_lists_id]
+            ).json()
+            dce = outer["elements"][0]
+            assert dce["object"]["collection_type"] == "list:list"
+
+            inputs = {
+                "input1": {
+                    "batch": True,
+                    "values": [{"src": "dce", "id": dce["id"], "map_over_type": "list"}],
+                },
+            }
+            response_object = self._run("collection_creates_list", history_id, inputs, assert_ok=True)
+            assert len(response_object["jobs"]) == 2
+            assert len(response_object["implicit_collections"]) == 1
+            self.dataset_populator.wait_for_jobs(response_object["jobs"], assert_ok=True)
+            implicit = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=response_object["implicit_collections"][0]["id"], wait=False
+            )
+            assert implicit["collection_type"] == "list:list"
+            assert [e["element_identifier"] for e in implicit["elements"]] == ["test0", "test1"]
+
     @skip_without_tool("identifier_source")
     def test_default_identifier_source_map_over(self):
         with self.dataset_populator.test_history() as history_id:

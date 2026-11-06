@@ -1,0 +1,63 @@
+- doc: |
+    A list:list mapped over a list:paired_or_unpaired tool input produces a
+    flat list (MAPPING_LIST_LIST_OVER_LIST_PAIRED_OR_UNPAIRED).
+  job:
+    input1:
+      class: Collection
+      collection_type: list:list
+      elements:
+        - identifier: outer1
+          class: Collection
+          type: list
+          elements:
+            - identifier: inner1
+              class: File
+              contents: "inner 1"
+            - identifier: inner2
+              class: File
+              contents: "inner 2"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: list
+      elements:
+        outer1:
+          asserts:
+            - that: has_text
+              text: "inner 1"
+            - that: has_text
+              text: "inner 2"
+
+- doc: |
+    A list:list:paired mapped over a list:paired_or_unpaired tool input
+    produces a flat list.
+  job:
+    input1:
+      class: Collection
+      collection_type: list:list:paired
+      elements:
+        - identifier: outer1
+          class: Collection
+          type: list:paired
+          elements:
+            - identifier: inner1
+              class: Collection
+              type: paired
+              elements:
+                - identifier: forward
+                  class: File
+                  contents: "forward 1"
+                - identifier: reverse
+                  class: File
+                  contents: "reverse 1"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: list
+      elements:
+        outer1:
+          asserts:
+            - that: has_text
+              text: "forward 1"
+            - that: has_text
+              text: "reverse 1"
