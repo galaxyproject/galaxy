@@ -691,8 +691,9 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
         assertDefined(this.insertSubworkflowSubAction);
         assertDefined(this.deleteSelectionSubAction);
 
-        this.insertSubworkflowSubAction.redo();
+        // same order as `extract`: the subworkflow step may reuse the id of a deleted selected step
         this.deleteSelectionSubAction.redo();
+        this.insertSubworkflowSubAction.redo();
 
         this.reconnect();
     }

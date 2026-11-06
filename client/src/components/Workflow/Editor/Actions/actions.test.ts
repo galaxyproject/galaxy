@@ -267,6 +267,20 @@ describe("Workflow Undo Redo Actions", () => {
                 stateStore.setStepMultiSelected(2, true);
             });
 
+            it("undoes and redoes when the subworkflow reuses a deleted step's id", async () => {
+                vi.mocked(getModule).mockResolvedValue({ tool_state: {}, inputs: [], outputs: [], config_form: {} });
+                const before = getWorkflowSnapshot(workflow);
+
+                await applyExtract();
+                expect(stepStore.steps[2]?.type).toBe("subworkflow");
+                const after = getWorkflowSnapshot(workflow);
+
+                undoRedoStore.undo();
+                expect(getWorkflowSnapshot(workflow)).toEqual(before);
+                undoRedoStore.redo();
+                expect(getWorkflowSnapshot(workflow)).toEqual(after);
+            });
+
             it("rolls back, records the error and ignores undo/redo when it fails", async () => {
                 vi.mocked(getModule).mockRejectedValue(new Error("module failed"));
                 const before = getWorkflowSnapshot(workflow);
