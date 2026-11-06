@@ -5,6 +5,7 @@ from yaml import safe_load
 from galaxy.files.templates.examples import get_example
 from galaxy.files.templates.manager import raw_config_to_catalog
 from galaxy.files.templates.models import (
+    DSpaceFileSourceConfiguration,
     FileSourceTemplate,
     FileSourceTemplateCatalog,
     FtpFileSourceConfiguration,
@@ -12,6 +13,7 @@ from galaxy.files.templates.models import (
     PosixFileSourceConfiguration,
     S3FSFileSourceConfiguration,
     template_to_configuration,
+    WebdavFileSourceConfiguration,
 )
 from galaxy.util.config_templates import (
     read_oauth2_info_from_configuration,
@@ -310,6 +312,37 @@ def test_production_aws_public_bucket_strips_s3_scheme():
     )
     assert isinstance(configuration_obj, S3FSFileSourceConfiguration)
     assert configuration_obj.bucket == "1000genomes"
+
+
+def test_production_dspace():
+    dspace_template = _get_example_template("production_dspace.yml")
+    for token in ("abc", ""):
+        configuration_obj = template_to_configuration(
+            dspace_template,
+            {"api_url": "https://demo.dspace.org/server/api"},
+            {"token": token},
+            user_details={},
+            environment={},
+        )
+        assert isinstance(configuration_obj, DSpaceFileSourceConfiguration)
+        assert configuration_obj.api_url == "https://demo.dspace.org/server/api"
+        assert configuration_obj.token == token
+
+
+def test_production_dcache():
+    dcache_template = _get_example_template("production_dcache.yml")
+    for token in ("abc", ""):
+        configuration_obj = template_to_configuration(
+            dcache_template,
+            {"base_url": "https://hifis-storage-ht.desy.de:2880", "root": "/OpenPortal/public-data"},
+            {"token": token},
+            user_details={},
+            environment={},
+        )
+        assert isinstance(configuration_obj, WebdavFileSourceConfiguration)
+        assert configuration_obj.root == "/OpenPortal/public-data"
+        assert configuration_obj.token == token
+        assert configuration_obj.login is None
 
 
 def test_production_github_oauth():

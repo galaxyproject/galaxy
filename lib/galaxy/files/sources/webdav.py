@@ -1,12 +1,19 @@
+from dataclasses import dataclass
 from typing import (
     Annotated,
+    TYPE_CHECKING,
 )
+from urllib.parse import urlsplit
 
 from pydantic import (
     Field,
+    field_validator,
 )
 
+from galaxy.files import USER_FILE_SOURCES_SCHEME
 from galaxy.files.models import FilesSourceRuntimeContext
+from galaxy.files.uris import refuse_a_private_address
+from galaxy.util.config_parsers import IpAllowedListEntryT
 from galaxy.util.config_templates import TemplateExpansion
 from ._fsspec import (
     CacheOptionsDictType,
@@ -20,12 +27,32 @@ try:
 except ImportError:
     WebdavFileSystem = None
 
+if TYPE_CHECKING:
+    import httpx
+
+EXAMPLE_URL = "https://webdav.example.org"
+
+
+@dataclass(frozen=True)
+class RefusePrivateAddresses:
+    """An httpx request hook; a dataclass, so its repr is stable and fsspec can still cache the filesystem."""
+
+    trusted_host: str | None
+    allowlist: tuple[IpAllowedListEntryT, ...]
+    label: str
+
+    def __call__(self, request: "httpx.Request") -> None:
+        # servers like dCache redirect downloads to other hosts
+        if request.url.host != self.trusted_host:
+            refuse_a_private_address(str(request.url), list(self.allowlist), self.label, EXAMPLE_URL)
+
 
 class WebDavFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
     root: str | TemplateExpansion | None = None
     base_url: str | TemplateExpansion
     login: str | TemplateExpansion | None = None
     password: str | TemplateExpansion | None = None
+    token: str | TemplateExpansion | None = None
 
 
 class WebDavFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
@@ -39,6 +66,18 @@ class WebDavFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     ]
     login: str | None = None
     password: str | None = None
+    token: Annotated[
+        str | None,
+        Field(
+            title="Bearer token",
+            description="Optional bearer token, used instead of login and password, for servers such as dCache.",
+        ),
+    ] = None
+
+    @field_validator("token")
+    @classmethod
+    def strip_token(cls, value: str | None) -> str | None:
+        return (value or "").strip() or None
 
 
 class WebDavFilesSource(FsspecFilesSource[WebDavFileSourceTemplateConfiguration, WebDavFileSourceConfiguration]):
@@ -70,8 +109,22 @@ class WebDavFilesSource(FsspecFilesSource[WebDavFileSourceTemplateConfiguration,
             raise self.required_package_exception
 
         config = context.config
-        auth = (config.login, config.password) if config.login or config.password else None
-        return WebdavFileSystem(self._webdav_endpoint(config.base_url, config.root), auth=auth)
+        endpoint = self._webdav_endpoint(config.base_url, config.root)
+        auth = (config.login, config.password) if not config.token and (config.login or config.password) else None
+        headers = {"Authorization": f"Bearer {config.token}"} if config.token else None
+        # a server an admin configured is trusted; one a user typed into a template is checked like any other
+        trusted_host = None if self.get_scheme() == USER_FILE_SOURCES_SCHEME else urlsplit(endpoint).hostname
+        check = RefusePrivateAddresses(
+            trusted_host, tuple(self._file_sources_config.fetch_url_allowlist or []), self.label
+        )
+        return WebdavFileSystem(
+            endpoint,
+            auth=auth,
+            headers=headers,
+            event_hooks={"request": [check]},
+            # fsspec keeps every cached instance for the life of the process, one per token and thread
+            skip_instance_cache=config.token is not None,
+        )
 
     def _to_filesystem_path(self, path: str, config: WebDavFileSourceConfiguration) -> str:
         if path in ("", "/"):

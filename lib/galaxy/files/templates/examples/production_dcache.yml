@@ -1,0 +1,28 @@
+- id: dcache
+  version: 0
+  name: dCache
+  description: |
+    Browse and import files from a [dCache](https://www.dcache.org) storage system through its WebDAV door.
+  variables:
+    base_url:
+      label: dCache WebDAV address
+      type: string
+      help: |
+        The address of the dCache WebDAV door, including the port, e.g. https://hifis-storage-ht.desy.de:2880.
+    root:
+      label: Folder
+      type: string
+      help: |
+        The dCache folder to start in, e.g. /OpenPortal/public-data.
+  secrets:
+    token:
+      label: Token
+      optional: true
+      help: |
+        Optional. Without a token, you can browse and import public files. With a token, such as a macaroon
+        or an OIDC access token, you also see the files your dCache account can access.
+  configuration:
+    type: webdav
+    base_url: "{{ variables.base_url }}"
+    root: "{{ variables.root }}"
+    token: "{{ secrets.token }}"
