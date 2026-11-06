@@ -229,6 +229,37 @@ describe("GridList", () => {
         expect(wrapper.find("[data-description='grid column filter count']").text()).toBe("1");
     });
 
+    it("keeps column filters available when a pick matches nothing", async () => {
+        const testGrid = createTestGrid();
+        testGrid.filtering = new Filtering({ link: { handler: equals("link", "link"), menuItem: false } });
+        const search = vi.fn(async () => [{ id: "link-1", name: "Link one" }]);
+        testGrid.fields[1]!.filter = { key: "link", plural: "links", search };
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+        await wrapper.find("[data-description='grid column filter link'] button").trigger("click");
+        await flushPromises();
+        vi.mocked(testGrid.getData).mockResolvedValue([[], 0]);
+        await wrapper.find("input[data-description='grid column filter option link-1']").setValue(true);
+        await flushPromises();
+
+        expect(wrapper.text()).toContain("Nothing found with:");
+        expect(wrapper.findAll("[data-description='grid item']")).toHaveLength(0);
+        expect(wrapper.find("[data-description='grid column filter link']").exists()).toBe(true);
+        expect(wrapper.find("[data-description='grid column filter search']").exists()).toBe(true);
+    });
+
+    it("hides the table when there is no data and no filter", async () => {
+        const testGrid = createTestGrid();
+        testGrid.filtering = new Filtering({ link: { handler: equals("link", "link"), menuItem: false } });
+        testGrid.fields[1]!.filter = { key: "link", plural: "links", search: vi.fn(async () => []) };
+        vi.mocked(testGrid.getData).mockResolvedValue([[], 0]);
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+
+        expect(wrapper.find(".grid-table").exists()).toBe(false);
+        expect(wrapper.text()).toContain("No data available.");
+    });
+
     it("pagination", async () => {
         const testGrid = createTestGrid();
         const wrapper = createTarget({

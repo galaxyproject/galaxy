@@ -114,6 +114,12 @@ const hasInvalidFilters = computed(
     () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value || {}).length > 0,
 );
 
+// column filters stay reachable when the current filters match nothing
+const hasColumnFilters = computed(() => props.gridConfig.fields.some((fieldEntry) => fieldEntry.filter));
+const showTable = computed(
+    () => !hasInvalidFilters.value && (isAvailable.value || (hasColumnFilters.value && !!filterText.value)),
+);
+
 // hide message helper
 const hideMessage = useDebounceFn(() => {
     operationMessage.value = "";
@@ -457,7 +463,7 @@ watch(operationMessage, () => {
         <div v-if="initDataLoading" class="position-relative h-100" data-description="grid initial loading">
             <LoadingOverlay />
         </div>
-        <span v-else-if="!isAvailable || hasInvalidFilters">
+        <span v-if="!initDataLoading && (!isAvailable || hasInvalidFilters)">
             <GAlert v-if="!hasInvalidFilters" variant="info" show>
                 <span v-if="filterText">
                     <span v-localize>Nothing found with:</span>
@@ -487,7 +493,7 @@ watch(operationMessage, () => {
                 </a>
             </GAlert>
         </span>
-        <template v-else>
+        <template v-if="!initDataLoading && showTable">
             <div class="position-relative">
                 <LoadingOverlay v-if="resultsLoading" />
                 <table class="grid-table">
