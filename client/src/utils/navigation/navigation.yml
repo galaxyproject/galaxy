@@ -1450,6 +1450,7 @@ invocations:
     column_filter_options: '#invocations-grid [data-description="grid column filter ${key}"] .grid-column-filter-option'
     column_filter_option: '#invocations-grid [data-description="grid column filter ${key}"] input[data-description="grid column filter option ${id}"]'
     active_column_filters: '#invocations-grid [data-description="grid active column filter ${key}"]'
+    active_column_filter: '#invocations-grid [data-description="grid active column filter ${key}"][data-option-id="${id}"]'
     invocations_panel_list: '[data-description="Workflow Invocations"] .scroll-list'
     invocations_panel_list_items: '[data-description="Workflow Invocations"] .scroll-list .g-card[id^="g-card-invocation-"]'
     pager: '[data-description="grid pager"]'

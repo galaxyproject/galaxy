@@ -46,7 +46,7 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
     def test_filter_by_workflow_and_history(self):
         workflow_name = self._get_random_name(prefix="filter workflow ")
         history_name = self._get_random_name(prefix="filter history ")
-        first_history_id = self.dataset_populator.new_history(name=history_name)
+        first_history_id = self.dataset_populator.new_history()
         first_workflow_id = self.workflow_populator.run_workflow(
             WORKFLOW_RENAME_ON_INPUT,
             history_id=first_history_id,
@@ -55,7 +55,7 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
             invocations=2,
         ).workflow_id
         # run_workflow uploads the workflow again, so this is a second stored workflow
-        second_history_id = self.dataset_populator.new_history()
+        second_history_id = self.dataset_populator.new_history(name=history_name)
         second_workflow_id = self.workflow_populator.run_workflow(
             WORKFLOW_RENAME_ON_INPUT,
             history_id=second_history_id,
@@ -65,12 +65,20 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
         # both workflows share a name, like a workflow imported twice
         for workflow_id in (first_workflow_id, second_workflow_id):
             self.workflow_populator.update_workflow_fields(workflow_id, {"name": workflow_name}).raise_for_status()
+        # keeps its own name, so the name and history filters have a run to exclude
+        self.workflow_populator.run_workflow(
+            WORKFLOW_RENAME_ON_INPUT,
+            history_id=first_history_id,
+            assert_ok=True,
+            wait=True,
+        )
         self.navigate_to_invocations_grid()
         invocations = self.components.invocations
         invocations.invocations_table.wait_for_visible()
-        self._assert_showing_n_invocations(3)
+        self._assert_showing_n_invocations(4)
 
         invocations.column_filter_toggle(key="workflow_id").wait_for_and_click()
+        self._assert_n_elements(invocations.column_filter_options(key="workflow_id"), 3)
         invocations.column_filter_search(key="workflow_id").wait_for_and_send_keys(workflow_name)
         self._assert_n_elements(invocations.column_filter_options(key="workflow_id"), 2)
         invocations.column_filter_option(key="workflow_id", id=second_workflow_id).wait_for_and_click()
@@ -81,21 +89,33 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
         self._assert_n_elements(invocations.active_column_filters(key="workflow_id"), 2)
         self.screenshot("invocations_column_filter_workflows")
 
-        # the chips list the picked workflows in order; removing the second workflow's leaves the first's runs
-        invocations.active_column_filters(key="workflow_id").all()[0].click()
+        invocations.active_column_filter(key="workflow_id", id=second_workflow_id).wait_for_and_click()
         self._assert_showing_n_invocations(2)
         self._assert_filter_text(f"workflow_id:{first_workflow_id}")
+        invocations.active_column_filter(key="workflow_id", id=first_workflow_id).wait_for_and_click()
+        self._assert_showing_n_invocations(4)
 
         invocations.column_filter_toggle(key="history_id").wait_for_and_click()
         invocations.column_filter_search(key="history_id").wait_for_and_send_keys(history_name)
         self._assert_n_elements(invocations.column_filter_options(key="history_id"), 1)
-        invocations.column_filter_option(key="history_id", id=first_history_id).wait_for_and_click()
-        self._assert_showing_n_invocations(2)
+        invocations.column_filter_option(key="history_id", id=second_history_id).wait_for_and_click()
+        self._assert_showing_n_invocations(1)
         self._assert_n_elements(invocations.active_column_filters(key="history_id"), 1)
 
         self.published_grid_search_for(f"workflow:'{workflow_name}'")
         self._assert_showing_n_invocations(3)
-        self._assert_n_elements(invocations.active_column_filters(key="workflow_id"), 0)
+        self._assert_n_elements(invocations.active_column_filters(key="history_id"), 0)
+
+        # picking in a column removes the name filter of that kind
+        invocations.column_filter_toggle(key="workflow_id").wait_for_and_click()
+        invocations.column_filter_option(key="workflow_id", id=first_workflow_id).wait_for_and_click()
+        self._assert_showing_n_invocations(2)
+        self._assert_filter_text(f"workflow_id:{first_workflow_id}")
+
+        # column filters stay available when nothing matches
+        self.published_grid_search_for("workflow:no-such-workflow")
+        self._assert_showing_n_invocations(0)
+        invocations.column_filter_toggle(key="workflow_id").wait_for_visible()
 
     @retry_assertion_during_transitions
     def _assert_n_elements(self, component, n):

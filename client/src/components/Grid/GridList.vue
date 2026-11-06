@@ -464,6 +464,7 @@ watch(operationMessage, () => {
                     color="blue"
                     :title="localize('Remove this filter')"
                     :data-description="`grid active column filter ${chip.filter.key}`"
+                    :data-option-id="chip.option.id"
                     @click="removeColumnFilterOption(chip.filter, chip.option)">
                     <span>{{ chip.title }}: {{ chip.option.name }}</span>
                     <FontAwesomeIcon :icon="faTimes" class="ml-1" />
