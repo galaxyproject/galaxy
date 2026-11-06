@@ -5,6 +5,7 @@ More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 
 import copy
 import errno
+import functools
 import logging
 import os
 import re
@@ -48,6 +49,7 @@ from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
 )
+from galaxy.job_execution.setup import write_job_files_manifest
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
@@ -543,7 +545,19 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 guest_ports=job_wrapper.guest_ports,
                 tool_directory_required_files=tool_directory_required_files,
             )
-            external_job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
+            remote_metadata = PulsarJobRunner.__remote_metadata(client)
+            remote_extended_metadata = bool(remote_metadata and job_wrapper.external_output_metadata.extended)
+            external_job_id = pulsar_submit_job(
+                client,
+                client_job_description,
+                remote_job_config,
+                staging_manifest_callback=functools.partial(
+                    write_job_files_manifest,
+                    job_wrapper.working_directory,
+                    remote_metadata=remote_metadata,
+                    remote_extended_metadata=remote_extended_metadata,
+                ),
+            )
             log.info(f"Pulsar job submitted with job_id {external_job_id}")
             job = job_wrapper.get_job()
             # Set the job destination here (unlike other runners) because there are likely additional job destination
