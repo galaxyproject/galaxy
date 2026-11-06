@@ -18,9 +18,8 @@ describe("legacy-libraries marker", () => {
         }
     });
 
-    // compat-config.js turns COMPONENT_V_MODEL and ATTR_FALSE_VALUE off, so
-    // without the marker BFormTextarea's v-model would bind modelValue against
-    // its value/input model and BButton would render disabled="false". The
+    // Without the marker, bootstrap-vue runs under Galaxy's MODE 3 and throws as
+    // soon as it touches a Vue 2 API that's off (its listeners mixin first). The
     // FormText next to them checks that Galaxy's own components still get the
     // Vue 3 modelValue contract, i.e. the marker stays on bootstrap-vue.
     it("keeps bootstrap-vue's v-model and attributes working with Galaxy's flags off", async () => {
