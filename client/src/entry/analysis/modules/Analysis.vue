@@ -51,9 +51,14 @@ const isNoPaddingPath = computed(() => {
  * Every `/galaxyai` route renders one and the same GalaxyAI instance: it rewrites its own route as a
  * conversation is created (`/galaxyai` to `/galaxyai/<id>`) or reset (`/galaxyai/new`) and follows
  * those changes through its `exchangeId` prop, so the live conversation stays in place. All other
- * routes get a fresh component per path.
+ * routes get a fresh component per path, while invocation query selections keep their live view.
  */
-const routerViewKey = computed(() => (route.path.startsWith("/galaxyai") ? "/galaxyai" : route.fullPath));
+const routerViewKey = computed(() => {
+    if (route.path.startsWith("/galaxyai")) {
+        return "/galaxyai";
+    }
+    return route.meta.reuseOnQueryChange ? route.path : route.fullPath;
+});
 
 const showCenter = ref(false);
 const { showPanels } = usePanels();

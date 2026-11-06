@@ -3,6 +3,7 @@ import { BPagination } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { JobBaseModel, JobState } from "@/api/jobs";
+import { useInvocationSelection } from "@/composables/invocationSelection";
 import { statePlaceholders } from "@/composables/useInvocationGraph";
 
 import GButton from "../BaseComponents/GButton.vue";
@@ -16,7 +17,36 @@ const PER_PAGE = 10;
 const props = defineProps<{
     jobs: JobBaseModel[];
     invocationId: string;
+    stepIndex?: number;
 }>();
+
+const emit = defineEmits<{ (e: "select"): void }>();
+
+const selection = useInvocationSelection();
+const selectedJob = computed(() =>
+    selection && selection.stepIndex.value === props.stepIndex ? selection.job.value : undefined,
+);
+function selectJob(id: string | undefined) {
+    if (
+        selection &&
+        props.stepIndex !== undefined &&
+        (id !== undefined || selection.stepIndex.value === props.stepIndex)
+    ) {
+        emit("select");
+        // Switching cards clears the old card's subordinate selection first.
+        selection.stepIndex.value = props.stepIndex;
+        selection.stepTab.value = "jobs";
+        selection.output.value = undefined;
+        selection.job.value = id;
+    }
+}
+
+function filterState(state: JobState) {
+    currentState.value = state;
+    if (selection && selection.stepIndex.value === props.stepIndex) {
+        selection.job.value = undefined;
+    }
+}
 
 const firstJob = computed(() => props.jobs[0]);
 const jobCount = computed(() => props.jobs.length);
@@ -56,6 +86,18 @@ watch(
     () => {
         currentPage.value = 1;
     },
+    { flush: "sync" },
+);
+
+watch(
+    [selectedJob, () => props.jobs],
+    () => {
+        const job = props.jobs.find((job) => job.id === selectedJob.value);
+        if (job) {
+            currentState.value = job.state;
+        }
+    },
+    { immediate: true },
 );
 
 // For a running workflow, if the available states change, ensure the current state is still valid
@@ -81,10 +123,12 @@ watch(
                     v-for="(stateJobs, state) in jobsByState"
                     :key="state"
                     outline
+                    data-description="invocation job state filter"
+                    :data-state="state"
                     color="blue"
                     :title="`Click to view ${statePlaceholders[state] || state} jobs`"
                     :pressed="currentState === state"
-                    @click="currentState = state">
+                    @click="filterState(state)">
                     <InvocationStepStateDisplay :state="state" :job-count="stateJobs.length" />
                 </GButton>
             </nav>
@@ -107,6 +151,9 @@ watch(
             v-model:sort-desc="sortDesc"
             :jobs="currentStateJobs"
             :invocation-id="props.invocationId"
-            :per-page="PER_PAGE" />
+            :per-page="PER_PAGE"
+            :selected-job="selectedJob"
+            :selection-enabled="Boolean(selection)"
+            @select-job="selectJob" />
     </div>
 </template>

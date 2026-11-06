@@ -10,7 +10,6 @@ import { useViewportBoundingBox } from "@/composables/viewportBoundingBox";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
-import { assertDefined } from "@/utils/assertions";
 import type { Vector } from "@/utils/geometry";
 
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
@@ -128,31 +127,30 @@ const isDragging = ref(false);
 provide("isDragging", isDragging);
 provide("transform", transform);
 
+const readyScrollTarget = computed(() => {
+    if (props.scrollToId === null || elementBounding.width.value <= 0 || elementBounding.height.value <= 0) {
+        return null;
+    }
+    const bounds = stateStore.stepPosition[props.scrollToId];
+    return bounds && bounds.width > 0 && bounds.height > 0 ? props.scrollToId : null;
+});
 watch(
-    () => props.scrollToId,
-    () => {
-        if (props.scrollToId !== null) {
-            const scrollToPosition = stateStore.stepPosition[props.scrollToId];
-            const step = stepStore.getStep(props.scrollToId);
-
-            assertDefined(scrollToPosition);
-            assertDefined(step);
-
-            const { width: stepWidth, height: stepHeight } = scrollToPosition;
-            const { position: stepPosition } = step;
-            if (stepPosition) {
-                const { width, height } = reactive(elementBounding);
-                const centerScreenX = width / 2;
-                const centerScreenY = height / 2;
-                const offsetX = centerScreenX - (stepPosition.left + stepWidth / 2);
-                const offsetY = centerScreenY - (stepPosition.top + stepHeight / 2);
-                zoomTo(1, { x: offsetX, y: offsetY });
-            } else {
-                console.log("Step has no position");
-            }
-            emit("scrollTo");
+    readyScrollTarget,
+    (id) => {
+        if (id === null) {
+            return;
         }
+        const bounds = stateStore.stepPosition[id];
+        const position = stepStore.getStep(id)?.position;
+        if (!bounds || !position) {
+            return;
+        }
+        const offsetX = elementBounding.width.value / 2 - (position.left + bounds.width / 2);
+        const offsetY = elementBounding.height.value / 2 - (position.top + bounds.height / 2);
+        zoomTo(1, { x: offsetX, y: offsetY });
+        emit("scrollTo");
     },
+    { immediate: true },
 );
 
 function zoomTo(zoomLevel: number, panTo: XYPosition | null = null, origin?: Vector) {

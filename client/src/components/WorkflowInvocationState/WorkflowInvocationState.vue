@@ -7,6 +7,7 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import { type InvocationStep, isWorkflowInvocationElementView } from "@/api/invocations";
+import { provideInvocationSelection } from "@/composables/invocationSelection";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -50,6 +51,7 @@ interface Props {
     isSubworkflow?: boolean;
     isFullPage?: boolean;
     success?: boolean;
+    syncSelection?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -71,6 +73,8 @@ const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
 const cancellingInvocation = ref(false);
 const isPolling = ref(false);
+// Selection sync drops `success` from the URL without remounting; keep the banner for this visit.
+const justInvoked = props.success;
 
 const tabContent = ref<HTMLElement | null>(null);
 const { height: tabContentHeight } = useElementSize(tabContent);
@@ -125,6 +129,8 @@ const invocation = computed(() => {
         return null;
     }
 });
+provideInvocationSelection(invocation, Boolean(props.syncSelection));
+
 const invocationState = computed(() => invocation.value?.state || "new");
 const invocationAndJobTerminal = computed(() => invocationSchedulingTerminal.value && jobStatesTerminal.value);
 const invocationSchedulingTerminal = computed(() => {
@@ -326,7 +332,7 @@ async function onCancel() {
             v-if="props.isFullPage"
             :invocation="invocation"
             :workflow-id="invocation.workflow_id"
-            :success="props.success"
+            :success="justInvoked"
             collapsible
             :collapsed="headerCollapsed"
             @toggle="toggleHeaderCollapse">

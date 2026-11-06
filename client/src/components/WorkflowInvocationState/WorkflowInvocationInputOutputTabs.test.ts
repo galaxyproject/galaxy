@@ -3,15 +3,19 @@ import { nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
+import { ref } from "vue";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
+import { type InvocationSelection, useInvocationSelection } from "@/composables/invocationSelection";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
+import GenericItem from "@/components/History/Content/GenericItem.vue";
 
 const { server, http } = useServerMock();
+vi.mock("@/composables/invocationSelection", () => ({ useInvocationSelection: vi.fn() }));
 
 const selectors = {
     parametersTable: "[data-description='input table']",
@@ -191,4 +195,78 @@ describe("WorkflowInvocationInputOutputTabs", () => {
             expect(testOutput.find(selectors.nonTerminalInvocationOutputLoading).exists()).toBe(!terminal);
         }
     }
+});
+
+describe("workflow output URL selection", () => {
+    it("expands named datasets and collections and follows selection changes without remounting", async () => {
+        const selection: InvocationSelection = {
+            stepIndex: ref(null),
+            stepTab: ref(undefined),
+            job: ref(undefined),
+            output: ref("dataset"),
+        };
+        vi.mocked(useInvocationSelection).mockReturnValue(selection);
+        const wrapper = mount(WorkflowInvocationInputOutputTabs, {
+            props: {
+                invocation: {
+                    ...invocationData,
+                    outputs: { dataset: { id: "dataset-id", src: "hda", workflow_step_id: "step-1" } },
+                    output_collections: {
+                        collection: { id: "collection-id", src: "hdca", workflow_step_id: "step-2" },
+                    },
+                } as WorkflowInvocationElementView,
+                tab: "outputs",
+                terminal: true,
+            },
+            global: {
+                plugins: [createTestingPinia({ createSpy: vi.fn })],
+                stubs: { GenericHistoryItem: true },
+            },
+        });
+        const items = wrapper.findAllComponents(GenericItem);
+        expect(items[0]!.props("expanded")).toBe(true);
+        expect(items[1]!.props("expanded")).toBeUndefined();
+        selection.output.value = "collection";
+        await flushPromises();
+        expect(items[0]!.props("expanded")).toBeUndefined();
+        expect(items[1]!.props("expanded")).toBe(true);
+        // Collapsing a different output must not clear the current URL target.
+        items[0]!.vm.$emit("update:expanded", false);
+        await flushPromises();
+        expect(selection.output.value).toBe("collection");
+        items[0]!.vm.$emit("update:expanded", true);
+        await flushPromises();
+        expect(selection.output.value).toBe("dataset");
+        items[0]!.vm.$emit("update:expanded", false);
+        await flushPromises();
+        expect(selection.output.value).toBeUndefined();
+        selection.output.value = "unknown";
+        await flushPromises();
+        expect(items.every((item) => !item.props("expanded"))).toBe(true);
+        expect(selection.output.value).toBeUndefined();
+        wrapper.unmount();
+        vi.mocked(useInvocationSelection).mockReturnValue(undefined);
+    });
+
+    it("keeps an output link that a running invocation may still produce", async () => {
+        const selection: InvocationSelection = {
+            stepIndex: ref(null),
+            stepTab: ref(undefined),
+            job: ref(undefined),
+            output: ref("later"),
+        };
+        vi.mocked(useInvocationSelection).mockReturnValue(selection);
+        const wrapper = mount(WorkflowInvocationInputOutputTabs, {
+            props: {
+                invocation: { ...invocationData, outputs: {}, output_collections: {} } as WorkflowInvocationElementView,
+                tab: "outputs",
+                terminal: false,
+            },
+            global: { plugins: [createTestingPinia({ createSpy: vi.fn })] },
+        });
+        await flushPromises();
+        expect(selection.output.value).toBe("later");
+        wrapper.unmount();
+        vi.mocked(useInvocationSelection).mockReturnValue(undefined);
+    });
 });
