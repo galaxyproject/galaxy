@@ -10,6 +10,7 @@ import { defineConfig } from "vite";
 import { buildMetadataPlugin } from "./vite-plugin-build-metadata.js";
 import { galaxyDevServerPlugin } from "./vite-plugin-galaxy-dev-server.js";
 import { galaxyLegacyPlugin } from "./vite-plugin-galaxy-legacy.js";
+import { legacyLibrariesFirstPlugin } from "./vite-plugin-legacy-libraries-first.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8"));
@@ -92,19 +93,7 @@ export default defineConfig(({ command }) => ({
         __license__: JSON.stringify(packageJson.license),
     },
     plugins: [
-        // bootstrap-vue captures Vue.extend when its vue.js module is evaluated,
-        // and in the production bundle that module lands in a chunk the entry
-        // imports, i.e. before compat-config.js runs. Make it import the legacy
-        // marker first, so the hook is in place whatever the chunking.
-        {
-            name: "galaxy-legacy-libraries-first",
-            enforce: "pre",
-            transform(code, id) {
-                if (id.replace(/\\/g, "/").includes("/bootstrap-vue/esm/vue.js")) {
-                    return { code: `import "@/legacy-libraries.js";\n${code}`, map: null };
-                }
-            },
-        },
+        legacyLibrariesFirstPlugin(),
         vue({
             template: {
                 compilerOptions: {
