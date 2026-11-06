@@ -12,7 +12,9 @@ from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.schema.invocation import FailureReason
+from galaxy.tool_util.parameters import input_models_for_tool_source
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tool_util.unittest_utils.parameters import parameter_tool_source
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.tools.parameters.meta import to_decoded_json
@@ -1104,6 +1106,46 @@ class _PersistableFakeTool(_CaptureFakeTool):
     version = "1.0"
     dynamic_tool = None
     tool_source = bunch.Bunch(to_string=lambda: "<tool/>")
+
+
+def test_capture_persists_request_for_implicit_false_branch():
+    """An omitted false XML branch must not prevent mapped workflow request capture."""
+    tool = _PersistableFakeTool()
+    tool.tool_source = parameter_tool_source("gx_conditional_boolean_implicit")
+    tool.parameters = input_models_for_tool_source(tool.tool_source).parameters
+    trans = MockTrans()
+    history = model.History(name="target")
+    trans.sa_session.add(history)
+    collection_info = bunch.Bunch(collections={"input": bunch.Bunch(id=7)}, subcollection_types={})
+    job_state = {"input": {"src": "hda", "id": 13}, "conditional_parameter": {"test_parameter": False}}
+
+    def resolve(iteration_elements):
+        return (
+            bunch.Bunch(
+                inputs={
+                    "input": None,
+                    "conditional_parameter": {"test_parameter": False, "__current_case__": 1},
+                }
+            ),
+            None,
+            None,
+        )
+
+    template, combinations, request = modules._capture_workflow_tool_request_state(
+        trans, tool, None, collection_info, history, resolve, [job_state]
+    )
+
+    assert request is not None
+    assert request.id is not None
+    assert request.request_state == "validated"
+    assert request.request == {
+        "input": {"__class__": "Batch", "values": [{"src": "hdca", "id": 7}], "linked": True},
+        "conditional_parameter": {"test_parameter": False},
+    }
+    assert template is not None
+    assert template.input_state == request.request
+    assert combinations is not None
+    assert [combination.input_state for combination in combinations] == [job_state]
 
 
 def test_capture_propagates_failure_flushing_unrelated_pending_objects():
