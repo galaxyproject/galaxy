@@ -515,10 +515,8 @@ class TestToolBox(BaseToolBoxTestCase):
         # Non-exact lookups resolve an unversioned guid through its lineage.
         assert self.toolbox.get_tool(unversioned, tool_version="0.1").id == f"{unversioned}/0.1"
         assert self.toolbox.has_tool(unversioned, tool_version="0.1")
-        # ``exact`` means exact tool id, so the same unversioned guid misses...
         assert self.toolbox.get_tool(unversioned, tool_version="0.1", exact=True) is None
         assert not self.toolbox.has_tool(unversioned, tool_version="0.1", exact=True)
-        # ... while the versioned guid hits.
         assert self.toolbox.has_tool(f"{unversioned}/0.1", tool_version="0.1", exact=True)
 
     def test_get_tool_at_version(self):
@@ -533,7 +531,6 @@ class TestToolBox(BaseToolBoxTestCase):
             # A non-exact lookup falls back to the newest version; this doesn't.
             assert self.toolbox.get_tool_at_version(tool_id, "3") is None
         assert self.toolbox.get_tool_at_version(f"{unversioned}/0.2", "0.2").id == f"{unversioned}/0.2"
-        # get_tool(exact=True) resolves both of these to another version of the tool.
         assert self.toolbox.get_tool_at_version(f"{unversioned}/0.2", "0.1") is None
         assert self.toolbox.get_tool_at_version(f"{unversioned}/0.2", "3") is None
         assert self.toolbox.get_tool_at_version("not_a_test_tool", "0.1") is None

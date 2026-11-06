@@ -237,8 +237,6 @@ def _find_workflow_tool(
     tool_version = tool_reference["tool_version"]
     tool_uuid = tool_reference["tool_uuid"]
     if require_exact_tool_versions and tool_version and not tool_uuid:
-        # ``get_tool(exact=True)`` means exact tool id, and may still settle on
-        # another version of that tool.
         return toolbox.get_tool_at_version(tool_id, tool_version)
     # Availability comes from has_tool: for exact requests the cached
     # toolbox's get_tool can resolve a different version of the tool.

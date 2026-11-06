@@ -1011,7 +1011,6 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
 
         ``tool_id`` may be the tool's id, its short (old) id or, for a Tool Shed
         tool, its versionless guid. A versioned guid names only its own version.
-        Unlike ``get_tool``, this never settles on another version.
         """
         tool_version = str(tool_version)
         # Try the exact id first: a non-exact lookup of a short id shared by

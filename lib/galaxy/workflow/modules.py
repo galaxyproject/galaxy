@@ -2717,10 +2717,8 @@ class ToolModule(WorkflowModule):
                     tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
                 )
                 if exact_tools and self.tool_version and not tool_uuid:
-                    # ``exact`` above means exact tool id: an unversioned guid or short id
-                    # misses, and ``…/0.2`` with version 0.1 resolves to 0.1. The step's tool
-                    # is the one its id names at its version. A different version stays only
-                    # for the workflow-safe update check below, which swaps it or drops it.
+                    # A different version stays only for the workflow-safe update check
+                    # below, which swaps it or drops it.
                     named_tool = trans.app.toolbox.get_tool_at_version(tool_id, self.tool_version)
                     if named_tool or (tool_like and str(tool_like.version) == self.tool_version):
                         tool_like = named_tool
