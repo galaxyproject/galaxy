@@ -483,6 +483,10 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
         return !this.asyncOperationDone.value;
     }
 
+    get name() {
+        return `move selection into sub-workflow "${this.partialWorkflow.name}"`;
+    }
+
     services;
 
     stateStore;
