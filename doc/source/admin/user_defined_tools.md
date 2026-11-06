@@ -33,6 +33,7 @@ To enable this feature:
 1. Set `enable_beta_tool_formats: true` in your Galaxy configuration.
 2. Create a role of type `Custom Tool Execution` in the admin user interface.
 3. Assign users or groups to this role.
+4. Review `user_defined_tool_allowed_containers`, which by default only allows BioContainers images (see [Allowed container images](#allowed-container-images)).
 
 Galaxy checks the role again when a job is prepared, so removing a user from the role, or deleting the role, also fails that user's queued user-defined tool jobs.
 
@@ -127,6 +128,39 @@ If your site publishes a convention for selecting a resource profile — a tool 
 Every user-defined tool names the image it runs in, and that reference is resolved by the `explicit` family of container resolvers: the identifier is handed to the container runtime as written rather than being resolved from package requirements. Which container types are usable, and whether images are converted and cached ahead of time, is a per-destination decision — see [Container Resolvers in Galaxy](./container_resolvers.rst).
 
 Set `require_container: true` on any destination that accepts user-defined tools. Without it, a tool whose image cannot be resolved runs directly on the host instead of failing.
+
+### Allowed container images
+
+The `user_defined_tool_allowed_containers` option lists the images user-defined tools may name. The default allows only BioContainers:
+
+```yaml
+user_defined_tool_allowed_containers:
+  - quay.io/biocontainers/*
+```
+
+BioContainers images are built by the Bioconda build system from reviewed recipes, so the whole namespace can be trusted at once. Add other images one at a time:
+
+```yaml
+user_defined_tool_allowed_containers:
+  - quay.io/biocontainers/*     # any image below the namespace, at any depth, any tag or digest
+  - docker.io/library/python    # this image, any tag or digest
+  - ghcr.io/someorg/tool:1.2    # this image, only tag 1.2 (and no digest)
+  - ghcr.io/someorg/tool@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef  # only this digest
+```
+
+Each entry and each tool's `container` are parsed into registry, repository, tag and digest and compared part by part, never as string prefixes:
+
+- An unqualified name is on Docker Hub, and a single-component Docker Hub name is in `library/`: `python:3.13` is `docker.io/library/python:3.13`. A `docker://` prefix is ignored, and registry host names are compared case-insensitively.
+- `<registry>/<path>/*` allows any repository strictly below `<path>` on that registry. `quay.io/biocontainers/*` does not allow `quay.io/biocontainers-evil/x`, `quay.io.evil.com/biocontainers/x`, or `quay.io/biocontainers` itself. `<registry>/*` allows a whole registry, and `<path>/*` without a registry a Docker Hub namespace.
+- An entry with a tag allows only references with that tag and without a digest. An entry with a digest allows only references with that digest, whatever tag they also carry. Container runtimes pull the digest of a reference that has both and ignore its tag, so a tag entry cannot allow `image:<tag>@<any digest>`.
+- References with any other scheme, such as `oras://`, never match: user-defined tool images are Docker image references, which the explicit Singularity resolvers pull with a `docker://` prefix.
+- A lone `*` allows any image. An empty list allows none, so no user-defined tool can be created or run. Leaving the option unset uses the default.
+
+Galaxy resolves an unqualified name against Docker Hub, as Docker does. Podman may instead search the registries listed in its `unqualified-search-registries` setting, so a tool allowed to use `python:3.13` because `docker.io/library/python` is listed could pull `python` from another registry. On destinations that run Podman, either set `unqualified-search-registries = ["docker.io"]` or do not list Docker Hub images. The default list is not affected: an unqualified name never matches `quay.io/biocontainers/*`.
+
+Galaxy checks the image when a tool is created, through the API, the tool editor, a workflow import or the tool-authoring assistant, and refuses the tool with a message listing the allowed entries. It checks again before each job of a user-defined tool runs, against the image the tool declares rather than whatever a container resolver maps it to, so tools created before an image was removed from the list fail with a message instead of running. The check also applies to `GalaxyUserTool` tools an administrator loads from disk. Galaxy refuses to start if an entry is malformed.
+
+This check gives users an early, clear error and protects servers whose compute nodes can reach any registry. It cannot stop a compromised compute node from pulling other images; to enforce the list at the network level, route the compute nodes' registry traffic through a proxy that only serves the allowed upstreams.
 
 ## Limitations
 

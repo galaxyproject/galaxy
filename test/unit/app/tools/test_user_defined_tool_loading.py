@@ -21,7 +21,7 @@ REPRESENTATION: dict[str, Any] = {
     "id": "cat_user_tool",
     "name": "Cat user tool",
     "version": "1.0.0",
-    "container": "busybox",
+    "container": "quay.io/biocontainers/coreutils:9.5",
     "shell_command": "cat '$(inputs.input.path)' > output.txt",
     "inputs": [{"type": "data", "name": "input", "format": "txt"}],
     "outputs": [{"type": "data", "name": "output", "from_work_dir": "output.txt"}],
@@ -44,8 +44,8 @@ class TestUserDefinedToolLoading(BaseToolBoxTestCase):
         session.commit()
         return user
 
-    def _create(self, user: model.User) -> model.DynamicTool:
-        payload = DynamicUnprivilegedToolCreatePayload(representation=UserToolSource(**REPRESENTATION))
+    def _create(self, user: model.User, **overrides: Any) -> model.DynamicTool:
+        payload = DynamicUnprivilegedToolCreatePayload(representation=UserToolSource(**{**REPRESENTATION, **overrides}))
         return self.dynamic_tool_manager.create_unprivileged_tool(user, payload)
 
     def _job(self, user: model.User, dynamic_tool: model.DynamicTool) -> model.Job:
@@ -149,3 +149,20 @@ class TestUserDefinedToolLoading(BaseToolBoxTestCase):
             self.toolbox.get_unprivileged_tool(owner, dynamic_tool.uuid)
         assert "tool editor" in str(exc_info.value)
         assert self.toolbox.tool_for_job(self._job(owner, dynamic_tool), check_access=False) is None
+
+    def test_create_reports_malformed_container_as_invalid(self):
+        with pytest.raises(exceptions.RequestParameterInvalidException, match="Invalid container") as exc_info:
+            self._create(self._executor(), container="quay.io/biocontainers/coreutils:9.5 ")
+        assert "is not allowed" not in str(exc_info.value)
+
+    def test_create_uses_configured_allowlist(self):
+        self.app.config.user_defined_tool_allowed_containers = ["docker.io/library/busybox"]
+        self.dynamic_tool_manager = DynamicToolManager(self.app)
+        assert self._create(self._executor(), container="busybox:1.37").active
+        with pytest.raises(exceptions.RequestParameterInvalidException, match="is not allowed"):
+            self._create(self._executor())
+
+    def test_malformed_allowlist_entry_is_a_configuration_error(self):
+        self.app.config.user_defined_tool_allowed_containers = ["quay.io/bio*"]
+        with pytest.raises(exceptions.ConfigurationError, match="user_defined_tool_allowed_containers"):
+            DynamicToolManager(self.app)

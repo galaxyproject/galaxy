@@ -491,5 +491,6 @@ class GalaxyAppConfigurationAttributes:
     enable_failed_jobs_working_directory_cleanup: bool
     failed_jobs_working_directory_cleanup_days: int
     failed_jobs_working_directory_cleanup_interval: int
+    user_defined_tool_allowed_containers: list[str]
     enable_beta_tool_formats: bool
     require_container_for_user_defined_tools: bool

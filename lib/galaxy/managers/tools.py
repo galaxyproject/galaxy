@@ -23,7 +23,13 @@ from galaxy.model import (
     User,
     UserDynamicToolAssociation,
 )
+from galaxy.structured_app import BasicSharedApp
 from galaxy.tool_util.cwl import tool_proxy
+from galaxy.tool_util.deps.image_references import (
+    ContainerAllowlist,
+    ImageReferenceError,
+    parse_image_reference,
+)
 from galaxy.tool_util.lint import lint_user_tool_source
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util.toolbox import AbstractToolBox
@@ -93,6 +99,24 @@ class DynamicToolManager(ModelManager[DynamicTool]):
     """Manages dynamic tools stored in Galaxy's database."""
 
     model_class = DynamicTool
+
+    def __init__(self, app: BasicSharedApp):
+        super().__init__(app)
+        try:
+            self.container_allowlist = ContainerAllowlist(app.config.user_defined_tool_allowed_containers)
+        except ImageReferenceError as e:
+            raise exceptions.ConfigurationError(f"Invalid user_defined_tool_allowed_containers entry: {e}") from e
+
+    def ensure_container_allowed(self, container: str) -> None:
+        if not self.container_allowlist.allows(container):
+            try:
+                parse_image_reference(container)
+            except ImageReferenceError as e:
+                raise exceptions.RequestParameterInvalidException(f"Invalid container: {e}") from e
+            raise exceptions.RequestParameterInvalidException(
+                f"Container '{container}' is not allowed for user defined tools on this Galaxy server. "
+                f"Allowed containers: {self.container_allowlist.describe()}"
+            )
 
     def ensure_can_use_unprivileged_tool(self, user: model.User | None):
         if user is None or not any(
@@ -208,6 +232,7 @@ class DynamicToolManager(ModelManager[DynamicTool]):
         self.ensure_can_use_unprivileged_tool(user)
         if lint_errors := lint_user_tool_source(tool_payload.representation):
             raise exceptions.RequestParameterInvalidException("Tool failed lint checks: " + "; ".join(lint_errors))
+        self.ensure_container_allowed(tool_payload.representation.container)
         _validate_tool_templates(tool_payload.representation)
         dynamic_tool = self.create(
             tool_format=tool_payload.representation.class_,
