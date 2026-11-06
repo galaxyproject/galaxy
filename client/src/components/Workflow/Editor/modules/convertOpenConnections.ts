@@ -100,6 +100,7 @@ async function inputConnectionToStep(
     searchStore: WorkflowSearchStore,
     index: number,
     allStepLabels: Set<string>,
+    stepId: number,
 ): Promise<Step> {
     const outputStep = ensureDefined(allSteps[link.id]);
     const outputConnection = ensureDefined(outputStep.outputs.find((o) => o.name === link.output_name));
@@ -131,14 +132,14 @@ async function inputConnectionToStep(
 
     const response = await getModule(
         { name: type, type, content_id: type, tool_state: state },
-        link.id,
+        stepId,
         (_state: boolean) => {},
     );
 
     const updatedStep = {
         ...baseStep,
         label,
-        id: link.id,
+        id: stepId,
         tool_state: response.tool_state,
         inputs: response.inputs,
         outputs: response.outputs,
@@ -185,16 +186,23 @@ function outputConnectionsToWorkflowOutputs(
     openConnections.forEach(({ connection, name, nodeId }, index) => {
         const step = ensureDefined(newSteps.find((step) => step.id === connection.id));
 
+        // subworkflow outputs are addressed by label, so every reconnected output needs one
         const existingOutput = step.workflow_outputs?.find((output) => output.output_name === connection.output_name);
-        const newOutputName = existingOutput?.output_name ?? prettifyOutputName(index + indexOffset, allOutputLabels);
-        allOutputLabels.add(newOutputName);
+        let newOutputName = existingOutput?.label;
 
-        if (!existingOutput) {
-            step.workflow_outputs = step.workflow_outputs ?? [];
-            step.workflow_outputs.push({
-                output_name: connection.output_name,
-                label: newOutputName,
-            });
+        if (!newOutputName) {
+            newOutputName = prettifyOutputName(index + indexOffset, allOutputLabels);
+            allOutputLabels.add(newOutputName);
+
+            if (existingOutput) {
+                existingOutput.label = newOutputName;
+            } else {
+                step.workflow_outputs = step.workflow_outputs ?? [];
+                step.workflow_outputs.push({
+                    output_name: connection.output_name,
+                    label: newOutputName,
+                });
+            }
         }
 
         const newConnection = {
@@ -215,7 +223,10 @@ function outputConnectionsToWorkflowOutputs(
 
 export type InputReconnectionMap = {
     label: string;
+    /** the outside output this input replaces */
     connection: ConnectionOutputLink;
+    /** id of the generated input step */
+    stepId: number;
 }[];
 
 export type OutputReconnectionMap = {
@@ -251,32 +262,43 @@ export async function convertOpenConnections(
         }),
     );
 
-    const uniqueOpenConnections = openInputConnections.reduce<ConnectionOutputLink[]>((accumulator, connection) => {
-        if (!accumulator.find((c) => c.id === connection.id)) {
-            accumulator.push(connection);
-        }
+    // one input step per distinct outside output
+    const outputKey = (connection: ConnectionOutputLink) => `${connection.id}:${connection.output_name}`;
+    const uniqueOpenConnections = [
+        ...new Map(openInputConnections.map((connection) => [outputKey(connection), { ...connection }])).values(),
+    ];
 
-        return accumulator;
-    }, []);
+    // fresh ids, since one outside step can now produce several input steps
+    const firstInputStepId = Math.max(-1, ...Object.values(allSteps).map((step) => step.id)) + 1;
 
     const inputBaseSteps = await Promise.all(
         uniqueOpenConnections.map((connection, index) =>
-            inputConnectionToStep(connection, allSteps, searchStore, index, allLabelsInSelection),
+            inputConnectionToStep(
+                connection,
+                allSteps,
+                searchStore,
+                index,
+                allLabelsInSelection,
+                firstInputStepId + index,
+            ),
         ),
     );
 
-    const unmodifiedConnections = structuredClone(openInputConnections);
+    const inputStepByOutput = new Map(
+        uniqueOpenConnections.map((connection, index) => [outputKey(connection), ensureDefined(inputBaseSteps[index])]),
+    );
 
-    // modify the connections to have the correct output name
+    // point the copied steps' open connections at their input steps
     openInputConnections.forEach((connection) => {
-        const step = inputBaseSteps.find((s) => s.id === connection.id);
-        const name = step?.outputs[0]?.name;
-        connection.output_name = ensureDefined(name);
+        const inputStep = ensureDefined(inputStepByOutput.get(outputKey(connection)));
+        connection.id = inputStep.id;
+        connection.output_name = ensureDefined(inputStep.outputs[0]?.name);
     });
 
-    const inputReconnectionMap: InputReconnectionMap = inputBaseSteps.map((step, index) => {
-        assertDefined(step.label);
-        return { label: step.label, connection: ensureDefined(unmodifiedConnections[index]) };
+    const inputReconnectionMap: InputReconnectionMap = uniqueOpenConnections.map((connection, index) => {
+        const inputStep = ensureDefined(inputBaseSteps[index]);
+        assertDefined(inputStep.label);
+        return { label: inputStep.label, connection, stepId: inputStep.id };
     });
 
     // convert output connections to outputs

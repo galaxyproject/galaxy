@@ -17,6 +17,13 @@ vi.mock("@/components/Workflow/Editor/modules/services", () => ({
 
 const searchStore = { findOutputPosition: () => ({ x: 0, y: 0 }) } as unknown as WorkflowSearchStore;
 
+function toolStepWithOutputs(id: number, outputNames: string[]): Step {
+    return {
+        ...mockToolStep(id),
+        outputs: outputNames.map((name) => ({ name, extensions: ["input"], type: "data", optional: false })),
+    };
+}
+
 describe("convertOpenConnections", () => {
     it("rewrites open input connections on copies, leaving the editor's steps untouched", async () => {
         const allSteps: Record<number, Step> = {
@@ -25,10 +32,70 @@ describe("convertOpenConnections", () => {
         };
         const before = structuredClone(allSteps);
 
-        const { stepArray } = await convertOpenConnections([1], allSteps, searchStore);
+        const { stepArray, inputReconnectionMap } = await convertOpenConnections([1], allSteps, searchStore);
 
         expect(allSteps).toEqual(before);
-        const copiedStep = stepArray.find((step) => step.type === "tool");
-        expect(copiedStep?.input_connections.input1).toEqual([{ id: 0, output_name: "output" }]);
+        const copiedStep = stepArray.find((step) => step.id === 1);
+        const inputStepId = inputReconnectionMap[0]?.stepId;
+        expect(copiedStep?.input_connections.input1).toEqual([{ id: inputStepId, output_name: "output" }]);
+    });
+
+    it("creates one input per distinct outside output and reconnects each to its own source", async () => {
+        const allSteps: Record<number, Step> = {
+            0: toolStepWithOutputs(0, ["a", "b"]),
+            1: {
+                ...mockToolStep(1),
+                input_connections: { in_a: [{ id: 0, output_name: "a" }], in_b: [{ id: 0, output_name: "b" }] },
+            },
+            2: { ...mockToolStep(2), input_connections: { input1: [{ id: 0, output_name: "a" }] } },
+        };
+
+        const { stepArray, inputReconnectionMap } = await convertOpenConnections([1, 2], allSteps, searchStore);
+
+        const inputSteps = stepArray.filter((step) => step.type === "data_input");
+        expect(inputSteps).toHaveLength(2);
+        expect(inputReconnectionMap.map(({ connection }) => connection)).toEqual([
+            { id: 0, output_name: "a" },
+            { id: 0, output_name: "b" },
+        ]);
+
+        const [inputA, inputB] = inputReconnectionMap;
+        expect(inputSteps.map((step) => step.id)).toEqual([inputA?.stepId, inputB?.stepId]);
+        expect(inputSteps.map((step) => step.label)).toEqual([inputA?.label, inputB?.label]);
+
+        const step1 = stepArray.find((step) => step.id === 1);
+        const step2 = stepArray.find((step) => step.id === 2);
+        expect(step1?.input_connections.in_a).toEqual([{ id: inputA?.stepId, output_name: "output" }]);
+        expect(step1?.input_connections.in_b).toEqual([{ id: inputB?.stepId, output_name: "output" }]);
+        expect(step2?.input_connections.input1).toEqual([{ id: inputA?.stepId, output_name: "output" }]);
+    });
+
+    it("reconnects outputs by workflow output label, labeling unlabeled ones", async () => {
+        const allSteps: Record<number, Step> = {
+            0: {
+                ...toolStepWithOutputs(0, ["labeled", "unlabeled"]),
+                workflow_outputs: [
+                    { output_name: "labeled", label: "my_label" },
+                    { output_name: "unlabeled", label: null },
+                ],
+            },
+            1: {
+                ...mockToolStep(1),
+                input_connections: {
+                    in_labeled: [{ id: 0, output_name: "labeled" }],
+                    in_unlabeled: [{ id: 0, output_name: "unlabeled" }],
+                },
+            },
+        };
+
+        const { stepArray, outputReconnectionMap } = await convertOpenConnections([0], allSteps, searchStore);
+
+        const [labeled, unlabeled] = outputReconnectionMap;
+        expect(labeled?.connection.output_name).toBe("my_label");
+
+        const generatedLabel = unlabeled?.connection.output_name;
+        const copiedOutputs = stepArray.find((step) => step.id === 0)?.workflow_outputs;
+        expect(copiedOutputs?.find((output) => output.output_name === "unlabeled")?.label).toBe(generatedLabel);
+        expect(generatedLabel).not.toBe("unlabeled");
     });
 });

@@ -264,12 +264,10 @@ function onRenameInputExtract(id: number, to: string) {
 
     step.label = to;
 
-    const connection = workflowExtractionData.value.inputReconnectionMap.find(
-        ({ label: _, connection }) => connection.id === id,
-    );
+    const mappedInput = workflowExtractionData.value.inputReconnectionMap.find(({ stepId }) => stepId === id);
 
-    if (connection) {
-        connection.label = to;
+    if (mappedInput) {
+        mappedInput.label = to;
     }
 }
 
@@ -284,13 +282,12 @@ function onRenameOutputExtract(id: number, name: string, to: string) {
 
     output.label = to;
 
-    const mappedConnection = workflowExtractionData.value.outputReconnectionMap.find(
-        ({ connection, internalOutputName }) => connection.id === id && internalOutputName === name,
-    );
-
-    if (mappedConnection) {
-        mappedConnection.connection.output_name = to;
-    }
+    // one output can feed several outside steps
+    workflowExtractionData.value.outputReconnectionMap
+        .filter(({ connection, internalOutputName }) => connection.id === id && internalOutputName === name)
+        .forEach((mappedConnection) => {
+            mappedConnection.connection.output_name = to;
+        });
 }
 
 async function onOkExtract() {
