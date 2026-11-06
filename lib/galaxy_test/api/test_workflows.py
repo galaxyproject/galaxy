@@ -641,6 +641,35 @@ steps:
         workflow_index = self._get("workflows?show_hidden=false").json()
         assert not [w for w in workflow_index if w["id"] == workflow_id]
 
+    def test_index_name_lookups_used_by_invocation_filters(self):
+        name = f"lookup_{uuid4().hex}"
+        my_email = f"{uuid4()}@test.com"
+
+        def lookup(search, limit=50, **flags):
+            query = {"search": search, "sort_by": "update_time", "sort_desc": True, "limit": limit, **flags}
+            response = self._get("workflows", data=query)
+            self._assert_status_code_is(response, 200)
+            return {workflow["id"] for workflow in response.json()}
+
+        with self._different_user(email=my_email):
+            own_id = self.workflow_populator.simple_workflow(name)
+            deleted_id = self.workflow_populator.simple_workflow(name)
+            self._assert_status_code_is(self._delete(f"workflows/{deleted_id}"), 204)
+            hidden_id = self.workflow_populator.simple_workflow(name)
+            self.workflow_populator.update_workflow_fields(hidden_id, {"hidden": True}).raise_for_status()
+        with self._different_user(email=f"{uuid4()}@test.com"):
+            shared_id = self.workflow_populator.simple_workflow(name)
+            self.workflow_populator.share_with_user(shared_id, my_email)
+            published_id = self.workflow_populator.simple_workflow(name, publish=True)
+
+        with self._different_user(email=my_email):
+            assert lookup(f"name:{name}", show_published=False) == {own_id, shared_id}
+            assert lookup(f"name:{name}", show_published=True) == {own_id, shared_id, published_id}
+            assert lookup(f"name:{name} is:deleted", show_published=False) == {deleted_id}
+            assert lookup(f"name:{name}", show_published=False, show_hidden=True) == {hidden_id}
+            # a newer published workflow can take the only slot from the user's own
+            assert lookup(f"name:{name}", limit=1, show_published=True) == {published_id}
+
     def test_index_ordering(self):
         # ordered by update_time on the stored workflows with all user's workflows
         # before workflows shared with user.
