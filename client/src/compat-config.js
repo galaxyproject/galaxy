@@ -41,8 +41,8 @@ configureCompat({
     // A render function gets the instance proxy as its first argument, not
     // Vue 2's `h`; import `h` from "vue" instead. Galaxy's SFCs compile to
     // Vue 3 render functions and never hit this, so only hand-written renders
-    // (mostly test stubs) care. vue-json-pretty is marked in
-    // DataFetchRequestParameter.vue, since its compiled template reads `_self._c`.
+    // (mostly test stubs) care. vue-json-pretty's compiled template reads
+    // `_self._c`, so it's marked in components/Common/legacy/VueJsonPretty.js.
     RENDER_FUNCTION: false,
     // No Vue 2 vnode fields (`data`, `tag`, `componentOptions`, ...) or private
     // instance properties on Galaxy components.
@@ -53,6 +53,8 @@ configureCompat({
     // `this` in prop defaults, numeric keyCode modifiers and Vue.config.keyCodes,
     // filters, Vue 2 directive hook names, and a non-function `data`. Only
     // bootstrap-vue still hits these, and legacy-libraries.js keeps them on there.
+    // OPTIONS_DATA_FN is the exception: compat only checks it on the root app's
+    // `data`, never per component, so it's global-only.
     OPTIONS_BEFORE_DESTROY: false,
     OPTIONS_DESTROYED: false,
     PROPS_DEFAULT_THIS: false,
