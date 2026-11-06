@@ -136,8 +136,11 @@ const redoKeys = logicOr(ctrl_shift_z, meta_shift_z);
 /** Tracks when the workflow is being fetched or an operation is ongoing */
 const loadingWorkflow = ref(false);
 
-whenever(logicAnd(undoKeys, logicNot(redoKeys)), () => !loadingWorkflow.value && undo());
-whenever(redoKeys, () => !loadingWorkflow.value && redo());
+// an open modal dialog covers the canvas, so its Ctrl+Z belongs to the dialog's inputs
+const canUseUndoKeys = () => !loadingWorkflow.value && !document.querySelector("dialog[open]");
+
+whenever(logicAnd(undoKeys, logicNot(redoKeys)), () => canUseUndoKeys() && undo());
+whenever(redoKeys, () => canUseUndoKeys() && redo());
 
 const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
 

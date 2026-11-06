@@ -52,6 +52,11 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
 
     function undo() {
         flushLazyAction();
+
+        if (undoActionStack.value.at(-1)?.isPending) {
+            return;
+        }
+
         const action = undoActionStack.value.pop();
 
         if (action !== undefined) {
@@ -61,6 +66,10 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     }
 
     function redo() {
+        if (redoActionStack.value.at(-1)?.isPending) {
+            return;
+        }
+
         const action = redoActionStack.value.pop();
 
         if (action !== undefined) {

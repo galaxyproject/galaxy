@@ -281,6 +281,25 @@ describe("Workflow Undo Redo Actions", () => {
                 expect(getWorkflowSnapshot(workflow)).toEqual(after);
             });
 
+            it("ignores undo while the move is still running", async () => {
+                let finishModule: (value: unknown) => void = () => {};
+                vi.mocked(getModule).mockReturnValue(new Promise((resolve) => (finishModule = resolve)) as never);
+                const before = getWorkflowSnapshot(workflow);
+
+                const action = new ExtractSubworkflowAction(partialWorkflow(), [], []);
+                undoRedoStore.applyAction(action);
+                await until(() => stepStore.steps[2]?.type === "subworkflow").toBe(true);
+                const duringMove = getWorkflowSnapshot(workflow);
+
+                undoRedoStore.undo();
+                expect(getWorkflowSnapshot(workflow)).toEqual(duringMove);
+
+                finishModule({ tool_state: {}, inputs: [], outputs: [], config_form: {} });
+                await until(() => action.asyncOperationDone.value).toBe(true);
+                undoRedoStore.undo();
+                expect(getWorkflowSnapshot(workflow)).toEqual(before);
+            });
+
             it("rolls back, records the error and ignores undo/redo when it fails", async () => {
                 vi.mocked(getModule).mockRejectedValue(new Error("module failed"));
                 const before = getWorkflowSnapshot(workflow);

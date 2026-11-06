@@ -478,6 +478,10 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
     /** Set when `run` fails; the action is then rolled back and undo/redo are no-ops */
     asyncOperationError: Error | null = null;
 
+    get isPending() {
+        return !this.asyncOperationDone.value;
+    }
+
     services;
 
     stateStore;
