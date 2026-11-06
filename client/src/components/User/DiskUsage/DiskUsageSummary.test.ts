@@ -46,6 +46,10 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
         http.get("/api/users/{user_id}/usage", ({ response }) => {
             return response(200).json(fakeQuotaUsages);
         }),
+        // The quota bars name the sources after their storages
+        http.get("/api/object_stores", ({ response }) => {
+            return response(200).json([]);
+        }),
     );
 
     const pinia = createPinia();

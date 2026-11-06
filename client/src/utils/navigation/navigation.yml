@@ -58,6 +58,19 @@ masthead:
     storage_dashboard_link:
       selector: 'storage dashboard link'
       type: data-description
+    other_storage_over_quota:
+      selector: 'other storage over quota'
+      type: data-description
+    quota_source_usage:
+      selector: 'quota source usage'
+      type: data-description
+    quota_source_over_quota:
+      selector: 'quota source over quota'
+      type: data-description
+    storage_dashboard_button: '.quota-sources-popover [data-description="storage dashboard button"]'
+    quota_sources_log_in_button:
+      selector: 'log in button'
+      type: data-description
     user: '#user.loggedin-only > a.nav-link'
     username:
       type: xpath
@@ -409,6 +422,9 @@ history_panel:
     tag_area_input: '.details .stateless-tags .headless-multiselect input'
     tag_close_btn: '.tags-display .tag-delete-button'
     tags: '.tag span'
+    other_sources_over_quota:
+      selector: 'other sources over quota message'
+      type: data-description
 
     annotation_icon: '.actions .history-annotate-btn'
     annotation_area: '.details .history-annotation'
@@ -464,6 +480,7 @@ storage_dashboard:
     refresh_disk_usage: '#refresh-disk-usage'
     recalculating: '.refreshing-alert'
     explore_usage_link: '[data-description="explore-storage card"] button'
+    source_label: '.storage-source-label'
 
   # Free up disk space; review_link/no_items take a cleanup id (e.g. deleted_datasets), the rest are the shared dialogs
   cleanup:

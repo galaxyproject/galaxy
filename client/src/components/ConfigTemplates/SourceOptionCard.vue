@@ -7,7 +7,7 @@ import type { UserConcreteObjectStoreModel } from "@/api";
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
 import type { ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
 import type { CardAction } from "@/components/Common/GCard.types";
-import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
+import { sourceLabelToKey, useQuotaUsageStore } from "@/stores/quotaUsageStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -74,7 +74,7 @@ const quotaSourceLabel = computed(() => {
 
     return null;
 });
-const quotaSourceKey = computed(() => quotaSourceLabel.value ?? "__null__");
+const quotaSourceKey = computed(() => sourceLabelToKey(quotaSourceLabel.value));
 
 const quotaUsageStore = useQuotaUsageStore();
 

@@ -6,7 +6,8 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 const DEFAULT_SOURCE_KEY = "__null__";
 
-function sourceLabelToKey(sourceLabel?: string | null): string {
+/** Key of a quota source in records, where the default source has no label. */
+export function sourceLabelToKey(sourceLabel?: string | null): string {
     return sourceLabel ?? DEFAULT_SOURCE_KEY;
 }
 
@@ -28,6 +29,11 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
     /** Whether anything asked for the usage, whether or not it loaded: it then needs reloading after changes. */
     const wasRequested = ref(false);
 
+    /** Storage sources other than the default one whose quota the user exceeded. */
+    const otherSourcesOverQuota = computed(
+        () => quotaUsages.value?.filter((usage) => usage.rawSourceLabel !== null && usage.isOverQuota) ?? [],
+    );
+
     const getQuotaUsageBySourceLabel = computed(() => {
         return (sourceLabel?: string | null): QuotaUsage | null | undefined => {
             const key = sourceLabelToKey(sourceLabel);
@@ -41,6 +47,12 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
             ...sourceUsageByKey.value,
             [key]: usage,
         };
+        // The over-quota warnings read the list of all sources
+        if (usage && quotaUsages.value) {
+            quotaUsages.value = quotaUsages.value.map((existing) =>
+                existing.rawSourceLabel === usage.rawSourceLabel ? usage : existing,
+            );
+        }
     }
 
     function setSourceLoading(sourceLabel: string | null | undefined, loading: boolean) {
@@ -164,6 +176,7 @@ export const useQuotaUsageStore = defineStore("quotaUsageStore", () => {
         sourceErrorByKey,
         isLoaded,
         wasRequested,
+        otherSourcesOverQuota,
         getQuotaUsageBySourceLabel,
         loadQuotaUsages,
         loadQuotaUsageForSource,
