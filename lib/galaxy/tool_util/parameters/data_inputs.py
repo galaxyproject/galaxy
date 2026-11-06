@@ -1,0 +1,80 @@
+"""Summaries of a tool's dataset and collection inputs, derived from its parameter models."""
+
+from collections.abc import (
+    Iterable,
+    Iterator,
+)
+from typing import Literal
+
+from pydantic import (
+    BaseModel,
+    Field,
+)
+
+from galaxy.tool_util_models.parameters import (
+    ConditionalParameterModel,
+    DataCollectionParameterModel,
+    DataParameterModel,
+    RepeatParameterModel,
+    SectionParameterModel,
+    ToolParameterT,
+)
+
+
+class ToolDataInput(BaseModel):
+    name: str | None = Field(
+        ...,
+        description="The `|`-joined path of the parameter; inputs in a repeat use its first element "
+        "(`queries_0|input`). For a `data` input it works as a tool form URL parameter that preselects a dataset; "
+        "the form cannot prefill a `data_collection` input from the URL. Null for an input in a conditional case "
+        "that is not the default one, which the form cannot reach.",
+    )
+    extensions: list[str] = Field(
+        ...,
+        description="Datatype extensions the input accepts; `data` accepts any datatype.",
+    )
+    multiple: bool = Field(..., description="Whether the input accepts several datasets; false for a collection input.")
+    type: Literal["data", "data_collection"] = Field(
+        ..., description="The parameter type: a dataset input or a collection input."
+    )
+    collection_type: str | None = Field(
+        ...,
+        description="Collection types a `data_collection` input accepts, comma-separated (`list,paired`); null for a "
+        "`data` input and for a collection input that accepts any collection type.",
+    )
+
+
+def data_inputs_for_parameters(parameters: Iterable[ToolParameterT]) -> list[ToolDataInput]:
+    """List every ``data`` and ``data_collection`` parameter of a tool, in input order."""
+    return list(_walk(parameters, ""))
+
+
+def _walk(parameters: Iterable[ToolParameterT], prefix: str | None) -> Iterator[ToolDataInput]:
+    for parameter in parameters:
+        name = None if prefix is None else f"{prefix}{parameter.name}"
+        if isinstance(parameter, DataParameterModel):
+            yield ToolDataInput(
+                name=name,
+                extensions=list(parameter.extensions),
+                multiple=parameter.multiple,
+                type="data",
+                collection_type=None,
+            )
+        elif isinstance(parameter, DataCollectionParameterModel):
+            yield ToolDataInput(
+                name=name,
+                extensions=list(parameter.extensions),
+                multiple=False,
+                type="data_collection",
+                collection_type=parameter.collection_type,
+            )
+        elif isinstance(parameter, SectionParameterModel):
+            yield from _walk(parameter.parameters, None if name is None else f"{name}|")
+        elif isinstance(parameter, RepeatParameterModel):
+            # The build API creates repeat element N for incoming ``<name>_N|...`` keys.
+            yield from _walk(parameter.parameters, None if name is None else f"{name}_0|")
+        elif isinstance(parameter, ConditionalParameterModel):
+            # The build API only fills the default case when the test parameter is absent.
+            for when in parameter.whens:
+                case_prefix = f"{name}|" if name is not None and when.is_default_when else None
+                yield from _walk(when.parameters, case_prefix)

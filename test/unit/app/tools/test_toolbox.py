@@ -22,6 +22,7 @@ from galaxy import (
 from galaxy.app import UniverseApplication
 from galaxy.app_unittest_utils.galaxy_mock import MockTrans
 from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
+from galaxy.app_unittest_utils.tools_support import SIMPLE_CAT_TOOL_CONTENTS
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.tool_util.ontologies import ontology_data
@@ -177,6 +178,52 @@ class TestToolBox(BaseToolBoxTestCase):
             trans = mock_trans(is_admin=is_admin)
             assert tool.to_panel_entry(trans) == tool.to_dict(trans)
             assert ("config_file" in tool.to_panel_entry(trans)) is is_admin
+
+    def test_panel_entry_leaves_out_data_inputs(self):
+        self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
+        self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        tool = self.toolbox.get_tool("test_tool")
+        assert tool.data_inputs
+        assert "data_inputs" not in tool.to_panel_entry(mock_trans())
+
+    def test_data_inputs_by_tool_id(self):
+        self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
+        self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        data_inputs = self.toolbox.data_inputs_by_tool_id(mock_trans())
+        assert {tool_id: [i.model_dump() for i in inputs] for tool_id, inputs in data_inputs.items()} == {
+            "test_tool": [
+                {
+                    "name": "param1",
+                    "extensions": ["tabular"],
+                    "multiple": False,
+                    "type": "data",
+                    "collection_type": None,
+                },
+                {
+                    "name": "repeat1_0|param2",
+                    "extensions": ["tabular"],
+                    "multiple": False,
+                    "type": "data",
+                    "collection_type": None,
+                },
+            ]
+        }
+
+    def test_data_inputs_by_tool_id_restricted_to_tool_type(self):
+        self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
+        self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        assert list(self.toolbox.data_inputs_by_tool_id(mock_trans(), tool_type="default")) == ["test_tool"]
+        assert self.toolbox.data_inputs_by_tool_id(mock_trans(), tool_type="interactive") == {}
+
+    def test_data_inputs_by_tool_id_skips_tools_without_data_inputs(self):
+        self._init_tool_in_section()
+        assert self.toolbox.data_inputs_by_tool_id(mock_trans()) == {}
+
+    def test_data_inputs_by_tool_id_applies_panel_filters(self):
+        self._init_tool(tool_contents=SIMPLE_CAT_TOOL_CONTENTS)
+        self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        self.toolbox.get_tool("test_tool").allow_user_access = lambda user, attempting_access: False
+        assert self.toolbox.data_inputs_by_tool_id(mock_trans()) == {}
 
     def test_panel_entry_link_uses_url_prefix(self):
         self._init_tool_in_section()

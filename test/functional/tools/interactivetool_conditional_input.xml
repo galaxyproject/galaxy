@@ -1,0 +1,34 @@
+<tool id="interactivetool_conditional_input" name="interactivetool_conditional_input" tool_type="interactive" version="0.1">
+    <requirements>
+        <container type="docker">galaxy/test-http-example:0.1</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Conditional input IT for $__user_email__" requires_domain="True">
+            <port>7000</port>
+            <url>/</url>
+        </entry_point>
+    </entry_points>
+    <command detect_errors="exit_code"><![CDATA[
+        cd /;
+        python -m SimpleHTTPServer 7000
+    ]]>
+    </command>
+    <inputs>
+        <conditional name="source">
+            <param name="mode" type="select" label="Input source">
+                <option value="empty">Start empty</option>
+                <option value="dataset">From a dataset</option>
+            </param>
+            <when value="empty" />
+            <when value="dataset">
+                <param name="infile" type="data" format="tabular" label="Tabular dataset" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

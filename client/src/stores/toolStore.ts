@@ -117,6 +117,10 @@ const MY_PANEL_VIEW: Panel = {
 const DEFAULT_PANEL_VIEW_ID = "default";
 
 export const useToolStore = defineStore("toolStore", () => {
+    // Set only by the bulk load: `toolsById` can also hold single tools from `fetchToolForId`.
+    const allToolsLoaded = ref(false);
+    // Shared by concurrent callers so the bulk list is downloaded once.
+    let allToolsRequest: Promise<void> | null = null;
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
     const defaultPanelView: Ref<string> = ref("");
     const loading = ref(false);
@@ -275,15 +279,28 @@ export const useToolStore = defineStore("toolStore", () => {
             }
 
             // Fetch all tools by IDs if not already fetched.
-            if (Object.keys(toolsById.value).length === 0) {
-                const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { in_panel: false } });
-                saveAllTools(data as Tool[]);
+            if (!allToolsLoaded.value) {
+                await fetchAllTools();
             }
         } catch (e) {
             rethrowSimple(e);
         } finally {
             loading.value = false;
         }
+    }
+
+    function fetchAllTools(): Promise<void> {
+        if (!allToolsRequest) {
+            allToolsRequest = (async () => {
+                try {
+                    const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { in_panel: false } });
+                    saveAllTools(data as Tool[]);
+                } finally {
+                    allToolsRequest = null;
+                }
+            })();
+        }
+        return allToolsRequest;
     }
 
     /**
@@ -361,13 +378,15 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     function saveAllTools(toolsData: Tool[]) {
+        // Merge: the bulk list omits hidden tools that `fetchToolForId` may have cached.
         toolsById.value = toolsData.reduce(
             (acc, item) => {
                 acc[item.id] = item;
                 return acc;
             },
-            {} as Record<string, Tool>,
+            { ...toolsById.value } as Record<string, Tool>,
         );
+        allToolsLoaded.value = true;
         // The bulk /api/tools payload doesn't carry tool_tags; reset the loaded
         // flag so the next mount of the My Tools panel re-fetches the mapping.
         toolTagsLoaded.value = false;
@@ -407,6 +426,7 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     return {
+        allToolsLoaded,
         currentPanelView,
         currentToolSections,
         defaultPanelView,

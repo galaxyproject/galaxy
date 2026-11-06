@@ -9,6 +9,9 @@ interface State {
     loading: boolean;
 }
 
+// Shared by concurrent callers; a promise is not store state, so it lives here.
+let pendingLoad: Promise<void> | null = null;
+
 export const useDatatypesMapperStore = defineStore("datatypesMapperStore", {
     state: (): State => ({
         datatypesMapper: null,
@@ -16,16 +19,23 @@ export const useDatatypesMapperStore = defineStore("datatypesMapperStore", {
     }),
     actions: {
         async createMapper() {
-            if (!this.loading && !this.datatypesMapper) {
-                this.loading = true;
-                try {
-                    this.datatypesMapper = await getDatatypesMapper(false);
-                } catch (error) {
-                    rethrowSimple(error);
-                } finally {
-                    this.loading = false;
-                }
+            if (this.datatypesMapper) {
+                return;
             }
+            if (!pendingLoad) {
+                this.loading = true;
+                pendingLoad = (async () => {
+                    try {
+                        this.datatypesMapper = await getDatatypesMapper(false);
+                    } catch (error) {
+                        rethrowSimple(error);
+                    } finally {
+                        this.loading = false;
+                        pendingLoad = null;
+                    }
+                })();
+            }
+            return pendingLoad;
         },
     },
 });

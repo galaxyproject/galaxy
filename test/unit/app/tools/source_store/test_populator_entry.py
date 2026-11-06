@@ -103,3 +103,31 @@ def test_entry_survives_unparseable_tests(tmp_path):
     assert entry is not None
     assert entry.id == "bad_test_tool"
     assert entry.test_count == 0
+
+
+_TOOL_XML_DATA_INPUTS = """<tool id="data_tool" name="Data Tool" version="1.0">
+  <command>echo</command>
+  <inputs>
+    <param name="infile" type="data" format="tabular" />
+    <repeat name="rep" title="Repeat">
+      <param name="more" type="data" format="data" multiple="true" />
+    </repeat>
+  </inputs>
+  <outputs/>
+</tool>
+"""
+
+
+def test_entry_captures_data_inputs(tmp_path):
+    entry = _build(tmp_path, _TOOL_XML_DATA_INPUTS)
+    assert entry is not None
+    assert [data_input.model_dump() for data_input in entry.data_inputs] == [
+        {"name": "infile", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None},
+        {"name": "rep_0|more", "extensions": ["data"], "multiple": True, "type": "data", "collection_type": None},
+    ]
+
+
+def test_entry_data_inputs_empty_without_inputs(tmp_path):
+    entry = _build(tmp_path, _TOOL_XML_NO_HELP)
+    assert entry is not None
+    assert entry.data_inputs == []

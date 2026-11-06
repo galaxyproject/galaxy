@@ -5,15 +5,27 @@ import flushPromises from "flush-promises";
 import { http as mswHttp, HttpResponse } from "msw";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ref } from "vue";
 import { createMemoryHistory, createRouter } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useDatasetStore } from "@/stores/datasetStore";
 
+import DatasetExplore from "./DatasetExplore.vue";
 import DatasetView from "./DatasetView.vue";
 
 const { server, http } = useServerMock();
+
+const mockConfig = ref({});
+const mockConfigLoaded = ref(true);
+
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
+        config: mockConfig,
+        isConfigLoaded: mockConfigLoaded,
+    })),
+}));
 
 // Mock the datatypeVisualizationsStore
 vi.mock("@/stores/datatypeVisualizationsStore", () => ({
@@ -55,7 +67,7 @@ const pausedDataset = { ...mockDataset, state: "paused" };
 // Dataset with preferred visualization
 const h5Dataset = { ...mockDataset, file_ext: "h5" };
 
-function setupPinia(datasetStore) {
+function setupPinia(datasetStore, datatypesMapper = testDatatypesMapper) {
     const pinia = createTestingPinia({
         createSpy: vi.fn,
         initialState: {
@@ -70,7 +82,7 @@ function setupPinia(datasetStore) {
                 },
             },
             datatypesMapperStore: {
-                datatypesMapper: testDatatypesMapper,
+                datatypesMapper,
             },
         },
         stubActions: false,
@@ -88,7 +100,7 @@ async function mountDatasetView(tab = "preview", options = {}) {
             [DATASET_ID]: options.dataset || mockDataset,
         },
     };
-    const pinia = setupPinia(datasetStore);
+    const pinia = setupPinia(datasetStore, "datatypesMapper" in options ? options.datatypesMapper : undefined);
 
     const router = createRouter({ history: createMemoryHistory(), routes: [] });
     router.push = vi.fn();
@@ -123,6 +135,7 @@ async function mountDatasetView(tab = "preview", options = {}) {
                 props: ["title"],
             },
             DatasetDetails: true,
+            DatasetExplore: true,
             VisualizationsList: true,
             DatasetAttributes: true,
             DatasetError: true,
@@ -192,6 +205,8 @@ async function mountLoadingDatasetView({ pendingFetch = true } = {}) {
 
 describe("DatasetView", () => {
     beforeEach(() => {
+        mockConfig.value = {};
+        mockConfigLoaded.value = true;
         class IO {
             constructor() {}
             observe() {}
@@ -320,6 +335,81 @@ describe("DatasetView", () => {
         });
     });
 
+    describe("Explore tab", () => {
+        const exploreTabSelector = ".nav-item[title='Launch interactive tools that accept this dataset']";
+        const EXPLORE_UNAVAILABLE = "Interactive tools are not available for this dataset.";
+
+        it("shows the Explore tab when interactive tools are enabled", async () => {
+            mockConfig.value = { interactivetools_enable: true };
+            const wrapper = await mountDatasetView("preview");
+            const exploreTab = wrapper.find(exploreTabSelector);
+            expect(exploreTab.exists()).toBe(true);
+            expect(exploreTab.text()).toContain("Explore");
+        });
+
+        it("hides the Explore tab when interactive tools are disabled", async () => {
+            mockConfig.value = { interactivetools_enable: false };
+            const wrapper = await mountDatasetView("preview");
+            expect(wrapper.find(exploreTabSelector).exists()).toBe(false);
+        });
+
+        it("hides the Explore tab for datasets that are not ok", async () => {
+            mockConfig.value = { interactivetools_enable: true };
+            const wrapper = await mountDatasetView("error", { dataset: errorDataset });
+            expect(wrapper.find(exploreTabSelector).exists()).toBe(false);
+        });
+
+        it("renders DatasetExplore on the explore tab", async () => {
+            mockConfig.value = { interactivetools_enable: true };
+            const wrapper = await mountDatasetView("explore");
+            const explore = wrapper.findComponent(DatasetExplore);
+            expect(explore.exists()).toBe(true);
+            expect(explore.props("datasetId")).toBe(DATASET_ID);
+            expect(explore.props("datasetExtension")).toBe("txt");
+        });
+
+        it("remounts DatasetExplore when the dataset changes", async () => {
+            mockConfig.value = { interactivetools_enable: true };
+            const wrapper = await mountDatasetView("explore");
+            const firstUid = wrapper.findComponent(DatasetExplore).vm.$.uid;
+
+            const otherId = "other_dataset_id";
+            wrapper.vm.$pinia.state.value.datasetStore.storedDatasets[otherId] = { ...mockDataset, id: otherId };
+            await wrapper.setProps({ datasetId: otherId });
+            await flushPromises();
+
+            const explore = wrapper.findComponent(DatasetExplore);
+            expect(explore.props("datasetId")).toBe(otherId);
+            expect(explore.vm.$.uid).not.toBe(firstUid);
+        });
+
+        it("does not render DatasetExplore on the explore tab when interactive tools are disabled", async () => {
+            mockConfig.value = { interactivetools_enable: false };
+            const wrapper = await mountDatasetView("explore");
+            expect(wrapper.findComponent(DatasetExplore).exists()).toBe(false);
+            expect(wrapper.find(".tab-content-panel").text()).toContain(EXPLORE_UNAVAILABLE);
+        });
+
+        it("shows the not available message on the explore tab for a dataset that is not ok", async () => {
+            mockConfig.value = { interactivetools_enable: true };
+            const wrapper = await mountDatasetView("explore", { dataset: errorDataset });
+            expect(wrapper.findComponent(DatasetExplore).exists()).toBe(false);
+            expect(wrapper.find(".tab-content-panel").text()).toContain(EXPLORE_UNAVAILABLE);
+        });
+
+        it("does not show the not available message while the config is loading", async () => {
+            mockConfigLoaded.value = false;
+            const wrapper = await mountDatasetView("explore");
+            expect(wrapper.find(".tab-content-panel").text()).not.toContain(EXPLORE_UNAVAILABLE);
+        });
+
+        it("does not show the not available message when the explore tab is available", async () => {
+            mockConfig.value = { interactivetools_enable: true };
+            const wrapper = await mountDatasetView("explore");
+            expect(wrapper.find(".tab-content-panel").text()).not.toContain(EXPLORE_UNAVAILABLE);
+        });
+    });
+
     describe("Error state handling", () => {
         it("shows error tab for datasets with error state", async () => {
             const wrapper = await mountDatasetView("error", { dataset: errorDataset });
@@ -371,6 +461,18 @@ describe("DatasetView", () => {
             expect(wrapper.find(".alert-heading").text()).toBe("Dataset Not Available");
             expect(wrapper.text()).toContain("Access denied");
             expect(wrapper.find(".dataset-view").exists()).toBe(false);
+        });
+
+        it("shows the dataset with a warning when the datatypes fail to load", async () => {
+            server.use(
+                http.untyped.get("/api/datatypes/types_and_mapping", () =>
+                    HttpResponse.json({ err_msg: "Datatypes unavailable", err_code: 500 }, { status: 500 }),
+                ),
+            );
+            const wrapper = await mountDatasetView("preview", { datatypesMapper: null });
+            expect(wrapper.text()).not.toContain("Loading dataset details");
+            expect(wrapper.find(".dataset-view").exists()).toBe(true);
+            expect(wrapper.find(".datatypes-load-error").text()).toContain("Datatypes unavailable");
         });
 
         it.skip("uses preferred visualization for supported datatypes", async () => {

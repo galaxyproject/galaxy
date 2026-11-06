@@ -285,6 +285,26 @@ def test_to_panel_entry_carries_client_contract_fields():
     assert "config_file" not in d
 
 
+def test_to_panel_entry_leaves_out_indexed_data_inputs():
+    e = _entry(
+        data_inputs=[
+            {"name": "infile", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None}
+        ]
+    )
+    assert "data_inputs" not in _stub(e).to_panel_entry(trans=None)
+
+
+def test_data_inputs_come_from_the_index_entry():
+    e = _entry(
+        data_inputs=[
+            {"name": "infile", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None}
+        ]
+    )
+    assert [data_input.model_dump() for data_input in _stub(e).data_inputs] == [
+        {"name": "infile", "extensions": ["tabular"], "multiple": False, "type": "data", "collection_type": None}
+    ]
+
+
 def test_to_panel_entry_includes_config_file_for_admin():
     trans = MagicMock()
     trans.user_is_admin = True

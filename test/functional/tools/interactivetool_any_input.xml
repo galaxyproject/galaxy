@@ -1,0 +1,25 @@
+<tool id="interactivetool_any_input" name="interactivetool_any_input" tool_type="interactive" version="0.1">
+    <requirements>
+        <container type="docker">galaxy/test-http-example:0.1</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Any input IT for $__user_email__" requires_domain="True">
+            <port>7000</port>
+            <url>/</url>
+        </entry_point>
+    </entry_points>
+    <command detect_errors="exit_code"><![CDATA[
+        cd /;
+        python -m SimpleHTTPServer 7000
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="data" label="Any dataset" />
+    </inputs>
+    <outputs>
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

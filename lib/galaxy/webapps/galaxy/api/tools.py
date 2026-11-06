@@ -64,6 +64,7 @@ from galaxy.tool_util.parameters import (
     TestCaseToolState,
     ToolParameterT,
 )
+from galaxy.tool_util.parameters.data_inputs import ToolDataInput
 from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tool_util_models import (
     lift_user_tool_source,
@@ -168,6 +169,11 @@ ToolVersionPathParam: str = Path(
     description="The full version string defined on the Galaxy tool wrapper.",
 )
 ToolVersionQueryParam: str | None = Query(default=None, title="Tool Version", description="")
+ToolTypeQueryParam: str | None = Query(
+    default=None,
+    title="Tool Type",
+    description="Only include tools of this `tool_type`, e.g. `interactive`.",
+)
 
 
 async def get_files(request: Request, files: list[UploadFile] | None = None):
@@ -447,6 +453,19 @@ class FetchTools:
     )
     def tool_tags(self, trans: ProvidesHistoryContext = DependsOnTrans) -> dict[str, list[str]]:
         return self.service.curated_tool_tags_by_id(trans)
+
+    @router.get(
+        "/api/tools/data_inputs",
+        operation_id="tools__data_inputs",
+        summary="Return the dataset and collection inputs of the tools the user can see, by tool id.",
+        description="Covers the tools `GET /api/tools?in_panel=false` lists; tools without data inputs are left out.",
+    )
+    def data_inputs(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        tool_type: str | None = ToolTypeQueryParam,
+    ) -> dict[str, list[ToolDataInput]]:
+        return self.service.data_inputs_by_tool_id(trans, tool_type=tool_type)
 
     @router.get(
         "/api/tools/{tool_id}/interop",

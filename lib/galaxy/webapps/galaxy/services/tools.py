@@ -54,6 +54,7 @@ from galaxy.schema.fetch_data import (
 from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_util.parameters import ToolParameterT
+from galaxy.tool_util.parameters.data_inputs import ToolDataInput
 from galaxy.tool_util.toolbox.base import (
     MaterializationReasonName,
     ToolLike,
@@ -231,6 +232,12 @@ class ToolsService(ServiceBase):
             if tool.tool_tags:
                 mapping[tool.id] = list(tool.tool_tags)
         return mapping
+
+    def data_inputs_by_tool_id(
+        self, trans: ProvidesUserContext, tool_type: str | None = None
+    ) -> dict[str, list[ToolDataInput]]:
+        """Sidecar for the Explore tab; keeps per-tool data inputs out of the bulk /api/tools payload."""
+        return trans.app.toolbox.data_inputs_by_tool_id(trans, tool_type=tool_type)
 
     def file_landing_to_tool_landing(
         self,

@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -45,10 +45,10 @@ const localVue = getLocalVue();
 
 const { server, http } = useServerMock();
 
-function setUpDatatypesStore() {
+function setUpDatatypesStore(datatypesMapper = testDatatypesMapper) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     const datatypesStore = useDatatypesMapperStore();
-    datatypesStore.datatypesMapper = testDatatypesMapper;
+    datatypesStore.datatypesMapper = datatypesMapper;
     return pinia;
 }
 
@@ -90,6 +90,22 @@ describe("HistoryDatasetDisplay", () => {
         vi.mocked(Toast.success).mockReset();
         vi.mocked(Toast.error).mockReset();
         mockHistoryStore.currentHistoryId = "current_history_id";
+    });
+
+    it("shows an error toast when the datatypes fail to load", async () => {
+        server.use(
+            http.get("/api/datatypes/types_and_mapping", ({ response }) =>
+                response("5XX").json({ err_msg: "Datatypes unavailable", err_code: 500 }, { status: 500 }),
+            ),
+            http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(textMetaData)),
+            http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(text)),
+        );
+        wrapper = mount(HistoryDatasetDisplay, {
+            props: { datasetId: textDatasetId },
+            global: withPlugins(localVue, setUpDatatypesStore(null)),
+        });
+        await flushPromises();
+        expect(Toast.error).toHaveBeenCalledWith("Datatypes unavailable", "Unable to load datatypes");
     });
 
     it("should render table", async () => {

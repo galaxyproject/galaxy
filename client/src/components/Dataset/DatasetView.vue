@@ -1,22 +1,26 @@
 <script setup lang="ts">
-import { faBug, faChartBar, faEye, faFileAlt, faInfoCircle, faPen } from "@fortawesome/free-solid-svg-icons";
+import { faBug, faChartBar, faEye, faFileAlt, faInfoCircle, faLaptop, faPen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink, BNav, BNavItem } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import { useConfig } from "@/composables/config";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useDatatypeStore } from "@/stores/datatypeStore";
 import STATES from "@/utils/datasetStates";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import DatasetAsImage from "./DatasetAsImage/DatasetAsImage.vue";
 import DatasetDisplay from "./DatasetDisplay.vue";
+import DatasetExplore from "./DatasetExplore.vue";
 import DatasetState from "./DatasetState.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Heading from "@/components/Common/Heading.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
@@ -26,11 +30,12 @@ import VisualizationDisplay from "@/components/Visualizations/VisualizationDispl
 const datasetStore = useDatasetStore();
 const datatypeStore = useDatatypeStore();
 const datatypesMapperStore = useDatatypesMapperStore();
+const { config, isConfigLoaded } = useConfig();
 const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("dataset-header-collapsed");
 
 interface Props {
     datasetId: string;
-    tab?: "details" | "edit" | "error" | "preview" | "raw" | "visualize";
+    tab?: "details" | "edit" | "error" | "explore" | "preview" | "raw" | "visualize";
     displayOnly?: boolean;
 }
 
@@ -48,6 +53,7 @@ const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
 
 // Track datatype loading state
 const isDatatypeLoading = ref(false);
+const datatypesLoadError = ref<string | null>(null);
 
 // Consolidated loading state
 const isLoading = computed(() => {
@@ -89,6 +95,7 @@ const preferredVisualization = computed(
 // Match dataset state
 const showError = computed(() => dataset.value && STATES.ERROR === dataset.value.state);
 const showOk = computed(() => dataset.value && STATES.OK_STATES.includes(dataset.value.state));
+const showExplore = computed(() => showOk.value && config.value?.interactivetools_enable);
 
 // Watch for changes to the dataset to fetch datatype info
 watch(
@@ -96,11 +103,17 @@ watch(
     async () => {
         if (dataset.value && dataset.value.file_ext) {
             isDatatypeLoading.value = true;
-            await Promise.all([
-                datatypeStore.fetchDatatypeDetails(dataset.value.file_ext),
-                datatypesMapperStore.createMapper(),
-            ]);
-            isDatatypeLoading.value = false;
+            try {
+                await Promise.all([
+                    datatypeStore.fetchDatatypeDetails(dataset.value.file_ext),
+                    datatypesMapperStore.createMapper(),
+                ]);
+                datatypesLoadError.value = null;
+            } catch (error) {
+                datatypesLoadError.value = errorMessageAsString(error);
+            } finally {
+                isDatatypeLoading.value = false;
+            }
         }
     },
     { immediate: true },
@@ -188,6 +201,13 @@ watch(
                 <FontAwesomeIcon :icon="faChartBar" class="mr-1" /> Visualize
             </BNavItem>
             <BNavItem
+                v-if="showExplore"
+                title="Launch interactive tools that accept this dataset"
+                :active="tab === 'explore'"
+                :to="`/datasets/${datasetId}/explore`">
+                <FontAwesomeIcon :icon="faLaptop" class="mr-1" /> Explore
+            </BNavItem>
+            <BNavItem
                 title="View detailed information about this dataset"
                 :active="tab === 'details'"
                 :to="`/datasets/${datasetId}/details`">
@@ -207,6 +227,10 @@ watch(
                 <FontAwesomeIcon :icon="faBug" class="mr-1" /> Error
             </BNavItem>
         </BNav>
+        <!-- Without the datatypes mapper, binary and image datasets fall back to the text preview. -->
+        <GAlert v-if="datatypesLoadError" variant="warning" class="datatypes-load-error m-2" show>
+            Unable to load datatypes: {{ datatypesLoadError }}
+        </GAlert>
         <div v-if="tab === 'preview'" class="tab-content-panel">
             <VisualizationDisplay
                 v-if="preferredVisualization"
@@ -249,6 +273,18 @@ watch(
         </div>
         <div v-else-if="tab === 'visualize'" class="tab-content-panel">
             <VisualizationsList :dataset-id="datasetId" />
+        </div>
+        <div v-else-if="tab === 'explore'" class="tab-content-panel">
+            <!-- Keyed so the search text and expanded group do not carry over to another dataset. -->
+            <DatasetExplore
+                v-if="showExplore"
+                :key="datasetId"
+                :dataset-id="datasetId"
+                :dataset-extension="dataset.file_ext" />
+            <!-- Direct links reach this tab without the nav item; wait for config so enabled servers never flash it. -->
+            <GAlert v-else-if="isConfigLoaded" v-localize variant="info" class="m-2" show>
+                Interactive tools are not available for this dataset.
+            </GAlert>
         </div>
         <div v-else-if="tab === 'edit'" class="tab-content-panel mt-2">
             <DatasetAttributes :dataset-id="datasetId" />
