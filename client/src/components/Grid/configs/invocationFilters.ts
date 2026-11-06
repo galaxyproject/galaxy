@@ -1,8 +1,11 @@
+import { uniqBy } from "lodash";
+
 import { type AnyHistoryEntry, getHistories } from "@/api/histories";
 import { loadWorkflows, type WorkflowSummary } from "@/api/workflows";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
 import Filtering, { equals, isQuoted, type ValidFilter } from "@/utils/filtering";
+import { pluralize } from "@/utils/strings";
 
 import type { FieldFilter, FilterOption } from "./types";
 
@@ -57,14 +60,6 @@ export function nameSearch(value: string): string {
     return words.length > 0 ? words.map((word) => `name:${word}`).join(" ") : `name:'${value}'`;
 }
 
-function uniqueById<T extends { id: string }>(lists: T[][]): T[] {
-    const byId = new Map<string, T>();
-    for (const item of lists.flat()) {
-        byId.set(item.id, item);
-    }
-    return [...byId.values()];
-}
-
 const workflowListOptions = {
     sortBy: "update_time" as const,
     sortDesc: true,
@@ -88,7 +83,10 @@ export async function findWorkflowsByName(name: string): Promise<WorkflowSummary
         loadWorkflows({ ...options, filterText: `${search} is:deleted` }),
         loadWorkflows({ ...options, filterText: search, showHidden: true }),
     ]);
-    return uniqueById(results.map(({ data }) => data));
+    return uniqBy(
+        results.flatMap(({ data }) => data),
+        "id",
+    );
 }
 
 /**
@@ -103,7 +101,10 @@ export async function findHistoriesByName(name: string): Promise<AnyHistoryEntry
         getHistories({ ...options, search: `${search} is:deleted` }),
         getHistories({ ...options, search: `${search} is:purged` }),
     ]);
-    return uniqueById(results.map(({ data }) => data));
+    return uniqBy(
+        results.flatMap(({ data }) => data),
+        "id",
+    );
 }
 
 function splitIds(value: string): string[] {
@@ -153,10 +154,6 @@ async function lookUpInvocationFilters(search: string): Promise<InvocationFilter
     return nothingMatched ? null : params;
 }
 
-function plural(count: number, singular: string, pluralForm: string) {
-    return `${count} ${count === 1 ? singular : pluralForm}`;
-}
-
 function workflowOption(workflow: WorkflowSummary): FilterOption {
     const owned = useUserStore().matchesCurrentUsername(workflow.owner);
     const notes = [
@@ -171,7 +168,7 @@ function workflowOption(workflow: WorkflowSummary): FilterOption {
         detail: () => {
             // /counts covers every user's runs, so only fetch it for the user's own workflows
             const runs = owned ? useInvocationStore().getInvocationCountByWorkflowId(workflow.id) : undefined;
-            const runText = typeof runs === "number" ? plural(runs, "run", "runs") : undefined;
+            const runText = typeof runs === "number" ? `${runs} ${pluralize(runs, "run")}` : undefined;
             return [runText, ...notes].filter(Boolean).join(" · ") || undefined;
         },
     };
@@ -179,7 +176,7 @@ function workflowOption(workflow: WorkflowSummary): FilterOption {
 
 function historyOption(history: AnyHistoryEntry): FilterOption {
     const state = history.purged ? "purged" : history.deleted ? "deleted" : history.archived ? "archived" : undefined;
-    const itemText = "count" in history ? plural(history.count, "item", "items") : undefined;
+    const itemText = "count" in history ? `${history.count} ${pluralize(history.count, "item")}` : undefined;
     return {
         id: history.id,
         name: history.name,
