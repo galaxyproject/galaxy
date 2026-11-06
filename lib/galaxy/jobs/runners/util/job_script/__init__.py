@@ -41,12 +41,16 @@ fi
 
 # Copy working, outputs, and configs before tool execution so that these can be restored on job resubmission
 # xref https://github.com/galaxyproject/galaxy/issues/3289
+# Any existing _$dir is restored over $dir, so _$dir must only ever appear complete: the backup is copied to the
+# sibling _$dir.partial and renamed into place only if the copy succeeded. A _$dir.partial left by an interrupted
+# run is removed first, otherwise cp -R would copy into it instead of creating it.
 PREPARE_DIRS_TEMPLATE = """for dir in working outputs configs; do
     mkdir -p "{working_directory}/$dir"
     if [ -d "{working_directory}/_$dir" ]; then
         rm -rf "{working_directory}/$dir"; cp -R "{working_directory}/_$dir" "{working_directory}/$dir"
     else
-        cp -R "{working_directory}/$dir" "{working_directory}/_$dir"
+        rm -rf "{working_directory}/_$dir.partial"
+        cp -R "{working_directory}/$dir" "{working_directory}/_$dir.partial" && mv "{working_directory}/_$dir.partial" "{working_directory}/_$dir"
     fi
 done
 """

@@ -1,7 +1,12 @@
 import os
 import subprocess
 
-from galaxy.jobs.runners.util.job_script import MEMORY_STATEMENT_DEFAULT_TEMPLATE
+import pytest
+
+from galaxy.jobs.runners.util.job_script import (
+    MEMORY_STATEMENT_DEFAULT_TEMPLATE,
+    PREPARE_DIRS_TEMPLATE,
+)
 from galaxy.tool_util.deps.dependencies import ToolInfo
 
 MEMORY_VARIABLES = (
@@ -88,3 +93,29 @@ def test_memory_floor_never_exceeds_allocation(tmp_path):
 def test_memory_gb_variables_are_available_to_containers():
     assert "GALAXY_MEMORY_GB" in ToolInfo().env_pass_through
     assert "GALAXY_MEMORY_GB_PER_SLOT" in ToolInfo().env_pass_through
+
+
+def _run_prepare_dirs(job_directory):
+    subprocess.run(["bash", "-c", PREPARE_DIRS_TEMPLATE.format(working_directory=job_directory)], capture_output=True)
+
+
+def _tree(directory):
+    return {str(path.relative_to(directory)): path.read_bytes() for path in directory.rglob("*") if path.is_file()}
+
+
+def test_prepare_dirs_backup_only_appears_after_successful_copy(tmp_path):
+    if os.geteuid() == 0:
+        pytest.skip("root can read files without read permission")
+    configs = tmp_path / "configs"
+    configs.mkdir()
+    (configs / "registry.xml").write_text("<registry/>")
+    unreadable = configs / "unreadable"
+    unreadable.write_text("secret")
+    unreadable.chmod(0)
+
+    _run_prepare_dirs(tmp_path)
+    assert not (tmp_path / "_configs").exists()
+
+    unreadable.chmod(0o600)
+    _run_prepare_dirs(tmp_path)
+    assert _tree(tmp_path / "_configs") == _tree(configs)
