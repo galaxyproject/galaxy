@@ -233,4 +233,43 @@ describe("column filters", () => {
             ["batch 2", "1 item · deleted"],
         ]);
     });
+
+    it("marks hidden workflows", async () => {
+        mockIndexes({ "name:rna+hidden": [{ id: "hidden", name: "RNA-seq", owner: "alice", hidden: true }] }, {});
+
+        const [option] = await workflowColumnFilter.search("rna");
+
+        expect(option?.detail?.()).toBe("by alice · hidden");
+    });
+
+    it("marks a history with its most final state", async () => {
+        mockIndexes(
+            {},
+            {
+                "name:batch": [{ id: "archived", name: "batch", count: 1, archived: true }],
+                "name:batch is:deleted": [{ id: "deleted", name: "batch", count: 1, deleted: true, archived: true }],
+                "name:batch is:purged": [{ id: "purged", name: "batch", count: 1, purged: true, deleted: true }],
+            },
+        );
+
+        const options = await historyColumnFilter.search("batch");
+
+        expect(options.map((option) => option.detail?.())).toEqual([
+            "1 item · archived",
+            "1 item · deleted",
+            "1 item · purged",
+        ]);
+    });
+
+    it("lists the most recently updated histories before anything is typed", async () => {
+        mockIndexes({}, { "": [{ id: "active", name: "batch", count: 2 }] });
+
+        const options = await historyColumnFilter.search("");
+
+        expect(historyQueries).toHaveBeenCalledTimes(1);
+        expect(historyQueries).toHaveBeenCalledWith(
+            expect.objectContaining({ limit: String(RECENT_LIMIT), sort_by: "update_time", sort_desc: "true" }),
+        );
+        expect(options.map((option) => option.id)).toEqual(["active"]);
+    });
 });

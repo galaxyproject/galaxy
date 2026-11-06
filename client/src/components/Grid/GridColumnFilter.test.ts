@@ -1,3 +1,4 @@
+import { deferred } from "@tests/vitest/deferred";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -55,6 +56,7 @@ describe("GridColumnFilter", () => {
         expect(filter.search).toHaveBeenCalledWith("");
 
         await wrapper.find("[data-description='grid column filter search']").setValue(" rna ");
+        expect(filter.search).toHaveBeenCalledTimes(1);
         vi.advanceTimersByTime(300);
         await flushPromises();
         expect(filter.search).toHaveBeenLastCalledWith("rna");
@@ -81,5 +83,34 @@ describe("GridColumnFilter", () => {
         await flushPromises();
 
         expect(wrapper.find(".grid-column-filter-options").text()).toBe('No workflows match "missing"');
+    });
+
+    it("keeps the newest search's results when an older one answers later", async () => {
+        const { wrapper, filter } = mountFilter();
+        await open(wrapper);
+        const older = deferred<FilterOption[]>();
+        const newer = deferred<FilterOption[]>();
+        vi.mocked(filter.search).mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
+        const input = wrapper.find("[data-description='grid column filter search']");
+        await input.setValue("older");
+        vi.advanceTimersByTime(300);
+        await input.setValue("newer");
+        vi.advanceTimersByTime(300);
+        await flushPromises();
+
+        newer.resolve([{ id: "newer", name: "Newer" }]);
+        await flushPromises();
+        older.resolve([{ id: "older", name: "Older" }]);
+        await flushPromises();
+
+        expect(optionNames(wrapper)).toEqual(["Newer"]);
+    });
+
+    it("reports a failed search", async () => {
+        const { wrapper, filter } = mountFilter();
+        vi.mocked(filter.search).mockRejectedValueOnce(new Error("boom"));
+        await open(wrapper);
+
+        expect(wrapper.find(".grid-column-filter-options").text()).toContain("Failed to load workflows: Error: boom");
     });
 });
