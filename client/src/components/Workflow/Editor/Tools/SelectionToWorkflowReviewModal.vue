@@ -152,6 +152,13 @@ function isStepExpanded(step: Step) {
 // mounted on demand, so open via `show`; GModal's initial `show=false` would close a dialog opened directly
 const visible = ref(false);
 
+const canCreate = computed(
+    () =>
+        props.workflowNameValid &&
+        allInputLabels.value.every(inputLabelValid) &&
+        allOutputLabels.value.every(outputLabelValid),
+);
+
 function showModal() {
     visible.value = true;
 }
@@ -165,6 +172,8 @@ defineExpose({
     <GModal
         id="selection-to-workflow-review-modal"
         v-model:show="visible"
+        :ok-disabled="!canCreate"
+        ok-disabled-title="Fix the workflow name and input/output labels first"
         title="Review extracted Sub-Workflow"
         confirm
         ok-text="Create Subworkflow"
