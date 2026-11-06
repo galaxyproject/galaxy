@@ -329,6 +329,25 @@ def test_verify_collection_rejects_unpopulated_child():
     assert str(exc_info.value) == "Output collection 'plots/sample1': collection is not populated."
 
 
+def test_verify_collection_reports_deepest_unpopulated_collection():
+    output_def = TestCollectionOutputDef.from_dict({"name": "plots"})
+    inner = {"collection_type": "list", "elements": [], "populated": False}
+    outer = {
+        "collection_type": "list:list",
+        "elements": [{"element_identifier": "inner", "element_type": "dataset_collection", "object": inner}],
+        "populated": False,
+    }
+    collection = {
+        "collection_type": "list:list:list",
+        "elements": [{"element_identifier": "outer", "element_type": "dataset_collection", "object": outer}],
+        "populated_state": "ok",
+        "populated": False,
+    }
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, collection, lambda *a, **k: None)
+    assert str(exc_info.value) == "Output collection 'plots/outer/inner': collection is not populated."
+
+
 def test_verify_collection_accepts_populated_child():
     output_def = TestCollectionOutputDef.from_dict({"name": "plots", "attributes": {"type": "list:list"}})
     collection = _nested_data_collection()
