@@ -1090,6 +1090,21 @@ def test_get_tool_short_id_missing_version_honors_exact():
     assert default_tool.id == guid
 
 
+def test_get_tool_short_id_prefers_guid_with_requested_version():
+    box = _registry_box()
+    prefix = "toolshed.example.com/repos/owner/repo/cat"
+    for version in ("1.0", "2.0"):
+        box._tool_index.add_entry(_entry(id=f"{prefix}/{version}", version=version))
+    box._shed_short_id_to_guids = {"cat": {f"{prefix}/1.0", f"{prefix}/2.0"}}
+    for exact in (True, False):
+        tool = box.get_tool("cat", tool_version="1.0", exact=exact)
+        assert isinstance(tool, CachedTool)
+        assert tool.id == f"{prefix}/1.0"
+    newest = box.get_tool("cat", tool_version="9.9", exact=False)
+    assert isinstance(newest, CachedTool)
+    assert newest.id == f"{prefix}/2.0"
+
+
 def _materialising_box(source_hash):
     box = _registry_box()
     box._guid_sibling_versions_cache = None

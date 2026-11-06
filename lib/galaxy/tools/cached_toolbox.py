@@ -1156,11 +1156,13 @@ class CachedToolBox(ToolBox):
         # Cached shed installs need their own short-id lookup and version sort.
         if self._tool_index and self._shed_short_id_to_guids and tool_id in self._shed_short_id_to_guids:
             candidates: list[tuple[tuple[int, Any], ToolLike]] = []
-            for guid in sorted(self._shed_short_id_to_guids[tool_id]):
-                entry = self._tool_index.get_configured(guid, tool_version)
-                if entry is None and tool_version and not exact:
-                    # Inexact requests may use this guid's default version.
-                    entry = self._tool_index.entries.get(guid)
+            guids = sorted(self._shed_short_id_to_guids[tool_id])
+            entries = [self._tool_index.get_configured(guid, tool_version) for guid in guids]
+            if tool_version and not exact and not any(entries):
+                # Inexact requests may use a default version, but only when no
+                # guid has the requested one.
+                entries = [self._tool_index.entries.get(guid) for guid in guids]
+            for entry in entries:
                 if entry is not None:
                     cached = self._cached_tool_for_entry(entry)
                     ver_key: tuple[int, Any]
