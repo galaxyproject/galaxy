@@ -106,6 +106,7 @@ import { computed, onMounted, ref } from "vue";
 
 import { copyDataset } from "@/api/datasets";
 import { getFields, getItems } from "@/components/Markdown/Utilities/tabularData";
+import { toastDatatypesLoadError } from "@/composables/datatypesMapper";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatasetStore } from "@/stores/datasetStore";
@@ -204,9 +205,7 @@ async function onImport() {
 
 // Lifecycle hooks
 onMounted(() => {
-    createMapper().catch((error) => {
-        Toast.error(errorMessageAsString(error), "Unable to load datatypes");
-    });
+    createMapper().catch(toastDatatypesLoadError);
 });
 </script>
 
