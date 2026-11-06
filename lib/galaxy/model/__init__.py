@@ -128,7 +128,10 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_keyed_dict
-from sqlalchemy.orm.session import Session
+from sqlalchemy.orm.session import (
+    Session,
+    SessionTransaction,
+)
 from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
     deprecated,
@@ -5814,6 +5817,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     hidden_beneath_collection_instance: Mapped[Optional["HistoryDatasetCollectionAssociation"]]
     tags: Mapped[list["HistoryDatasetAssociationTagAssociation"]]
     copied_to_history_dataset_associations: Mapped[list["HistoryDatasetAssociation"]]
+    _copy_lock_transaction: Optional[SessionTransaction] = None
 
     def __init__(
         self,
@@ -5937,6 +5941,10 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         committed first, this HDA is reloaded so the copy shares the new dataset.
         """
         session = required_object_session(self)
+        # A held lock lasts until the transaction ends; Galaxy takes no savepoints that could release it.
+        transaction = session.get_transaction()
+        if transaction is not None and transaction is self._copy_lock_transaction:
+            return
         with session.no_autoflush:
             dataset_id = session.scalar(
                 select(HistoryDatasetAssociation.dataset_id)
@@ -5945,6 +5953,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             )
             if dataset_id != self.dataset_id:
                 refresh_unmodified(self)
+        self._copy_lock_transaction = session.get_transaction()
 
     def copy(self, parent_id=None, copy_tags=None, flush=True, copy_hid=True, new_name=None):
         """

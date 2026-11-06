@@ -6,6 +6,7 @@ from collections.abc import Iterator
 import pytest
 from sqlalchemy import (
     Engine,
+    event,
     text,
 )
 from sqlalchemy.orm import Session
@@ -301,3 +302,27 @@ def test_copy_from_job_locks_outputs_in_id_order(engine):
     assert not errors, errors
     _assert_copy_on_cached_dataset(engine, copy_low_id, cached_low_id)
     _assert_copy_on_cached_dataset(engine, copy_high_id, cached_high_id)
+
+
+@skip_unless_postgres
+def test_repeat_copies_lock_source_once_per_transaction(engine, queued_and_cached):
+    queued_id, _ = queued_and_cached
+    locks: list[str] = []
+
+    def record_lock(conn, cursor, statement, parameters, context, executemany):
+        if "FOR KEY SHARE" in statement:
+            locks.append(statement)
+
+    event.listen(engine, "before_cursor_execute", record_lock)
+    try:
+        with _session(engine) as session:
+            source = session.get(model.HistoryDatasetAssociation, queued_id)
+            assert source
+            source.copy(flush=False)
+            source.copy(flush=False)
+            assert len(locks) == 1
+            session.commit()
+            source.copy(flush=False)
+            assert len(locks) == 2
+    finally:
+        event.remove(engine, "before_cursor_execute", record_lock)
