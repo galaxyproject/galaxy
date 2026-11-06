@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeStorage } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -80,7 +81,11 @@ describe("QuotaUsageSummary.vue", () => {
 
     describe("source names", () => {
         async function sourceNamesShownFor(quotaUsages: QuotaUsage[]) {
-            server.use(http.get("/api/object_stores", ({ response }) => response(200).json([])));
+            server.use(
+                http.get("/api/object_stores", ({ response }) =>
+                    response(200).json([getFakeStorage("first", "First Storage", { source: "source 1" })]),
+                ),
+            );
             const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
             const wrapper = mount(QuotaUsageSummary as object, {
                 props: { quotaUsages },
@@ -92,7 +97,7 @@ describe("QuotaUsageSummary.vue", () => {
 
         it("names the default source when other sources are shown", async () => {
             const names = await sourceNamesShownFor([DEFAULT_SOURCE_USAGE, ...FAKE_QUOTA_USAGES_LIST]);
-            expect(names).toEqual(["Default storage", "source 1", "source 2", "Unlimited source"]);
+            expect(names).toEqual(["Default storage", "First Storage", "source 2", "Unlimited source"]);
         });
 
         it("leaves the default source unnamed when it is the only one", async () => {
