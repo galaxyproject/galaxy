@@ -71,12 +71,14 @@ const baseRules = {
     // Bootstrap-vue isn't registered globally, so its components have to be
     // imported where they're used. Only checks bootstrap-vue names.
     "vue/no-undef-components": ["error", { ignorePatterns: ["^(?!b-|B[A-Z])"] }],
-    // client/patches/bootstrap-vue@2.23.1.patch doesn't fix v-model on these under
-    // Vue 3 compat, so they'd silently stop updating their bound values.
+    // One entry for every restricted import: a second "no-restricted-imports"
+    // key in this object would silently replace the first.
     "no-restricted-imports": [
         "error",
         {
             paths: [
+                // client/patches/bootstrap-vue@2.23.1.patch doesn't fix v-model on these under
+                // Vue 3 compat, so they'd silently stop updating their bound values.
                 {
                     name: "bootstrap-vue",
                     importNames: [
@@ -89,6 +91,16 @@ const baseRules = {
                     ],
                     message:
                         "Unpatched under Vue 3 compat; use GCheckbox, GCheckboxGroup, GRadio, GRadioGroup or GSelect.",
+                },
+                // Vue 2 libraries have to be marked with legacyComponent() to keep their
+                // compat behavior, so each has one marked import path.
+                {
+                    name: "vue-json-pretty",
+                    message: "Import @/components/Common/legacy/VueJsonPretty, which keeps it on compat MODE 2.",
+                },
+                {
+                    name: "@handsontable/vue",
+                    message: "Import @/components/Common/legacy/HotTable, which keeps it on compat MODE 2.",
                 },
             ],
         },
@@ -178,24 +190,6 @@ const baseRules = {
     "import-x/first": "error",
     "import-x/newline-after-import": "error",
     "import-x/no-duplicates": "error",
-
-    // Vue 2 libraries have to be marked with legacyComponent() to keep their
-    // compat behavior under Galaxy's MODE 3, so each has one marked import path.
-    "no-restricted-imports": [
-        "error",
-        {
-            paths: [
-                {
-                    name: "vue-json-pretty",
-                    message: "Import @/components/Common/legacy/VueJsonPretty, which keeps it on compat MODE 2.",
-                },
-                {
-                    name: "@handsontable/vue",
-                    message: "Import @/components/Common/legacy/HotTable, which keeps it on compat MODE 2.",
-                },
-            ],
-        },
-    ],
 };
 
 const typeImportRules = {
