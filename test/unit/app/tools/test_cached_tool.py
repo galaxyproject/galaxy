@@ -1122,6 +1122,17 @@ def test_get_tool_short_id_prefers_guid_with_requested_version():
     assert newest.id == f"{prefix}/2.0"
 
 
+def test_get_tool_all_versions_of_shed_guid_includes_sibling_versions():
+    box = _registry_box()
+    box._guid_sibling_versions_cache = None
+    prefix = "toolshed.example.com/repos/owner/repo/cat"
+    for version in ("2.0", "1.0"):
+        box._tool_index.add_entry(_entry(id=f"{prefix}/{version}", version=version))
+    for version in ("1.0", "2.0"):
+        tools = box.get_tool(f"{prefix}/{version}", get_all_versions=True)
+        assert [tool.id for tool in tools] == [f"{prefix}/1.0", f"{prefix}/2.0"]
+
+
 def _materialising_box(source_hash):
     box = _registry_box()
     box._guid_sibling_versions_cache = None

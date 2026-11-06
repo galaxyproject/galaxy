@@ -1130,17 +1130,22 @@ class CachedToolBox(ToolBox):
                     except Exception:
                         return (1, v)
 
-                versions = sorted(
-                    self._tool_index.configured_versions(tool_id).keys(),
-                    key=_ver_key,
-                )
-                tools: list[ToolLike] = []
-                for ver in versions:
-                    entry = self._tool_index.get(tool_id, ver)
-                    if entry is not None:
-                        tools.append(self._cached_tool_for_entry(entry))
-                if tools:
-                    return tools
+                # A shed guid names one version; its lineage spans every
+                # guid sharing the versionless prefix.
+                lineage_ids = [tool_id]
+                versionless = remove_version_from_guid(tool_id) if is_shed_guid(tool_id) else None
+                if versionless:
+                    for sibling_id, _ in self._guid_sibling_versions().get(versionless, ()):
+                        if sibling_id not in lineage_ids:
+                            lineage_ids.append(sibling_id)
+                version_entries = [
+                    entry
+                    for lineage_id in lineage_ids
+                    for entry in self._tool_index.configured_versions(lineage_id).values()
+                ]
+                version_entries.sort(key=lambda entry: _ver_key(entry.version or ""))
+                if version_entries:
+                    return [self._cached_tool_for_entry(entry) for entry in version_entries]
             else:
                 entry = self._tool_index.get_configured(tool_id, tool_version)
                 if entry is not None:
