@@ -1520,6 +1520,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 param_dump=json_internal,
                 require_name_match=False,
                 element_identifiers=element_identifiers,
+                dynamic_tool_id=job.dynamic_tool_id,
             )
             if job_to_copy and isinstance(job_to_copy, Job):
                 job.copy_from_job(job_to_copy, copy_outputs=True)

@@ -495,12 +495,17 @@ class JobSearch:
         history_id: int | None = None,
         require_name_match: bool = True,
         element_identifiers: dict[str, str] | None = None,
+        dynamic_tool_id: int | None = None,
     ) -> Job | None:
         """Search for jobs producing same results using the 'inputs' part of a tool POST.
 
         ``element_identifiers`` maps input names to the element identifiers the request saw, for inputs
         that ``param`` holds as plain datasets. When given, the job must have seen the same identifiers,
         even if ``require_name_match`` is False.
+
+        ``dynamic_tool_id`` is the stored revision of a dynamic (e.g. user-defined) tool. Revisions share
+        ``tool_id`` and ``tool_version``, so only a job run with the same revision can be reused; ``None``
+        matches only jobs of tools that are not dynamic.
         """
         input_data: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
@@ -552,6 +557,7 @@ class JobSearch:
             history_id=history_id,
             require_name_match=require_name_match,
             require_identifier_match=require_name_match or element_identifiers is not None,
+            dynamic_tool_id=dynamic_tool_id,
         )
 
     def __search(
@@ -566,6 +572,7 @@ class JobSearch:
         history_id: int | None = None,
         require_name_match: bool = True,
         require_identifier_match: bool = True,
+        dynamic_tool_id: int | None = None,
     ) -> Job | None:
         search_timer = ExecutionTimer()
 
@@ -631,7 +638,9 @@ class JobSearch:
                     return None
 
         stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids)
-        stmt = self._filter_jobs(stmt, tool_id, user.id, tool_version, job_state, wildcard_param_dump, history_id)
+        stmt = self._filter_jobs(
+            stmt, tool_id, user.id, tool_version, job_state, wildcard_param_dump, history_id, dynamic_tool_id
+        )
         stmt = self._exclude_jobs_with_deleted_outputs(stmt)
 
         for job in self.sa_session.execute(stmt):
@@ -707,6 +716,7 @@ class JobSearch:
         job_state: JobStatesT | None,
         wildcard_param_dump,
         history_id: int | None,
+        dynamic_tool_id: int | None = None,
     ) -> "Select[tuple[int]]":
         """Build subquery that selects a job with correct job parameters."""
         # Apply job-level filters BEFORE the CTE so they are included in the
@@ -725,6 +735,11 @@ class JobSearch:
         )
         if tool_version:
             stmt = stmt.where(Job.tool_version == str(tool_version))
+        # Dynamic tool revisions share tool_id and tool_version, so the revision has to match too.
+        if dynamic_tool_id is None:
+            stmt = stmt.where(Job.dynamic_tool_id.is_(None))
+        else:
+            stmt = stmt.where(Job.dynamic_tool_id == dynamic_tool_id)
 
         if history_id is not None:
             stmt = stmt.where(Job.history_id == history_id)

@@ -2424,6 +2424,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                     param=param,
                     param_dump=param_dump,
                     require_name_match=require_name_match,
+                    dynamic_tool_id=self.dynamic_tool_id,
                 )
             else:
                 completed_jobs[i] = None
