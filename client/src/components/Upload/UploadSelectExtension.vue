@@ -1,13 +1,11 @@
 <script setup>
-import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
 import { findExtension } from "./utils";
 
+import UploadDatatypeWarning from "./UploadDatatypeWarning.vue";
 import UploadExtension from "./UploadExtension.vue";
 import UploadSelect from "./UploadSelect.vue";
-import Popper from "@/components/Popper/Popper.vue";
 
 const props = defineProps({
     disabled: {
@@ -39,22 +37,15 @@ const warnText = computed(() => details.value.upload_warning);
             what="file type"
             placeholder="Select Type"
             :warn="warnText ? true : false"
-            @input="(newValue) => emit('input', newValue)" />
-        <Popper v-if="warnText" placement="bottom" mode="light">
-            <template v-slot:reference>
-                <FontAwesomeIcon :icon="faExclamationCircle" class="selection-warning" />
+            @input="(newValue) => emit('input', newValue)">
+            <template v-slot:option="{ option }">
+                {{ option.text }}
+                <UploadDatatypeWarning :message="option.upload_warning" />
             </template>
-            <div class="p-2">
-                {{ warnText }}
-            </div>
-        </Popper>
+        </UploadSelect>
         <UploadExtension :extension="value" :list-extensions="listExtensions" />
+        <span role="status">
+            <UploadDatatypeWarning :message="warnText" />
+        </span>
     </span>
 </template>
-
-<style lang="scss" scoped>
-@import "@/style/scss/theme/blue.scss";
-.selection-warning {
-    color: $brand-warning;
-}
-</style>
