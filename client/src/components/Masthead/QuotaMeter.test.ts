@@ -27,6 +27,7 @@ const { server, http } = useServerMock();
 const OTHER_SOURCES_HINT = "[data-description='other storage over quota']";
 const SOURCE_USAGE = "[data-description='quota source usage']";
 const SOURCE_NAME = "[data-description='quota source name']";
+const SOURCE_OVER_QUOTA = "[data-description='quota source over quota']";
 const DASHBOARD_BUTTON = "[data-description='storage dashboard button']";
 const METER_LINK = "[data-description='storage dashboard link']";
 const ANONYMOUS_OVER_QUOTA = "[data-description='anonymous over quota']";
@@ -172,22 +173,43 @@ describe("QuotaMeter.vue", () => {
             expect(wrapper.find(OTHER_SOURCES_HINT).text()).toBe("Over quota on these storages: Secure Storage");
         });
 
+        /** The rows of the open popover, as the user reads them. */
+        function popoverRows() {
+            return Array.from(document.body.querySelectorAll(SOURCE_USAGE), (row) => ({
+                name: row.querySelector(SOURCE_NAME)?.textContent,
+                text: row.textContent,
+                hold: row.querySelector(SOURCE_OVER_QUOTA)?.textContent?.trim(),
+            }));
+        }
+
         it("lists every source in a popover by its storages' names, marking those over quota", async () => {
             await mountWithSourceUsages({ scratch: 1001, archive: 400, secure: 1500 });
             await hover(wrapper.find(METER_LINK));
 
-            const names = (selector: string) =>
-                Array.from(
-                    document.body.querySelectorAll(selector),
-                    (row) => row.querySelector(SOURCE_NAME)?.textContent,
-                );
-            expect(names(SOURCE_USAGE)).toEqual([
-                "Default storage",
-                "Scratch Storage / Fast Scratch",
-                "archive",
-                "Secure Storage",
+            const rows = popoverRows();
+            const HOLD = "Over quota: jobs writing here are on hold";
+            expect(rows.map(({ name, hold }) => [name, hold])).toEqual([
+                ["Default storage", undefined],
+                ["Scratch Storage / Fast Scratch", HOLD],
+                ["archive", undefined],
+                ["Secure Storage", HOLD],
             ]);
-            expect(names(`${SOURCE_USAGE}.over-quota`)).toEqual(["Scratch Storage / Fast Scratch", "Secure Storage"]);
+        });
+
+        it("shows each source's usage in the popover", async () => {
+            await mountWithUsages(
+                [
+                    getFakeQuotaUsageData(null, 400, SOURCE_QUOTA),
+                    getFakeQuotaUsageData("scratch", 1024, 2048),
+                    { quota_source_label: "archive", total_disk_usage: 1024 },
+                ],
+                { enable_quotas: true, quota_source_labels: ["scratch", "archive"] },
+            );
+            await hover(wrapper.find(METER_LINK));
+
+            const rows = popoverRows();
+            expect(rows[1]?.text).toContain("1 KB of 2 KB");
+            expect(rows[2]?.text).toContain("1 KB (unlimited)");
         });
 
         it("replaces the tooltip with the popover, which links to the storage dashboard", async () => {

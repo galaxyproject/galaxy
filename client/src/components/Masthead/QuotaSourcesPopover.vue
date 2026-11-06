@@ -62,7 +62,6 @@ function usageText(usage: QuotaUsage): string {
                 v-for="usage in quotaUsages"
                 :key="sourceLabelToKey(usage.rawSourceLabel)"
                 class="quota-source mb-2"
-                :class="{ 'over-quota': usage.isOverQuota }"
                 data-description="quota source usage">
                 <div class="d-flex justify-content-between">
                     <span class="font-weight-bold" data-description="quota source name">{{
