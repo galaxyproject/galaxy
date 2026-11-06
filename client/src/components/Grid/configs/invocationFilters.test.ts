@@ -9,6 +9,7 @@ import { useUserStore } from "@/stores/userStore";
 import {
     historyColumnFilter,
     NAME_MATCH_LIMIT,
+    NAME_MATCH_TTL_MS,
     nameSearch,
     RECENT_LIMIT,
     resolveInvocationFilters,
@@ -135,6 +136,25 @@ describe("resolveInvocationFilters", () => {
         expect(historyQueries).toHaveBeenCalledWith(
             expect.objectContaining({ search: "name:'My data'", show_archived: "true", show_own: "true" }),
         );
+    });
+
+    it("repeats name lookups only when the text changes or the last ones are old", async () => {
+        mockIndexes({ "name:paging": [{ id: "visible", name: "paging" }] }, {});
+        const now = vi.spyOn(Date, "now").mockReturnValue(1_000_000);
+
+        const first = await resolveInvocationFilters("workflow:paging");
+        const lookups = workflowQueries.mock.calls.length;
+        expect(await resolveInvocationFilters("workflow:paging")).toEqual(first);
+        expect(workflowQueries).toHaveBeenCalledTimes(lookups);
+
+        await resolveInvocationFilters("workflow:other");
+        await resolveInvocationFilters("workflow:paging");
+        expect(workflowQueries).toHaveBeenCalledTimes(3 * lookups);
+
+        now.mockReturnValue(1_000_000 + NAME_MATCH_TTL_MS);
+        await resolveInvocationFilters("workflow:paging");
+        expect(workflowQueries).toHaveBeenCalledTimes(4 * lookups);
+        now.mockRestore();
     });
 
     it("returns null when a name matches nothing", async () => {

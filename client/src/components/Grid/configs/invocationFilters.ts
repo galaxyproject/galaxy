@@ -12,6 +12,9 @@ export const NAME_MATCH_LIMIT = 50;
 /** Number of most recently updated items a column filter lists before anything is typed. */
 export const RECENT_LIMIT = 20;
 
+/** How long a page or sort change can reuse the last resolved filter text. */
+export const NAME_MATCH_TTL_MS = 60_000;
+
 /**
  * `workflow` and `history` match by name (substring, or exact when quoted) and are resolved to ids
  * through the workflow and history list APIs. `workflow_id` and `history_id` take comma-separated
@@ -118,11 +121,22 @@ function combine(ids: string[] | undefined, matches: Array<{ id: string }> | und
     return ids ? ids.filter((id) => matchIds.includes(id)) : matchIds;
 }
 
+let lastResolved: { search: string; params: InvocationFilterParams | null; time: number } | undefined;
+
 /**
  * Translate the grid's filter text into `/api/invocations` query parameters, looking up names.
  * Returns `null` when the filters match no workflow or history, so no invocation can match.
  */
 export async function resolveInvocationFilters(search: string): Promise<InvocationFilterParams | null> {
+    if (lastResolved?.search === search && Date.now() - lastResolved.time < NAME_MATCH_TTL_MS) {
+        return lastResolved.params;
+    }
+    const params = await lookUpInvocationFilters(search);
+    lastResolved = { search, params, time: Date.now() };
+    return params;
+}
+
+async function lookUpInvocationFilters(search: string): Promise<InvocationFilterParams | null> {
     const filters = Object.fromEntries(invocationsFiltering.getFiltersForText(search));
     const [workflows, histories] = await Promise.all([
         filters.workflow ? findWorkflowsByName(filters.workflow) : undefined,
