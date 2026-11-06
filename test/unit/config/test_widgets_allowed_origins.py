@@ -9,7 +9,8 @@ def _config(**kwargs) -> GalaxyAppConfiguration:
 
 
 @pytest.mark.parametrize(
-    "origins", [None, "", "https://example.org", " https://a.example.org, https://b.example.org:8080 "]
+    "origins",
+    [None, "", "https://example.org", "http://localhost:8080", " https://a.example.org, https://b.example.org:8080 "],
 )
 def test_accepts_origins(origins):
     assert _config(widgets_allowed_origins=origins).widgets_allowed_origins == origins
@@ -25,6 +26,14 @@ def test_accepts_origins(origins):
         "https://example.org\x7f",
         "https://a.example.org https://b.example.org",
         "https://a.example.org, https://b.example.org\tx",
+        "*",
+        "https:",
+        "https://*.example.org",
+        "https://example.org/path",
+        "https://user@example.org",
+        "ftp://example.org",
+        "example.org",
+        "'self'",
     ],
 )
 def test_rejects_malformed_origins(origins):
