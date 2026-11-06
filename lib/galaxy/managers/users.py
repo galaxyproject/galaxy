@@ -601,6 +601,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             if not token_result or not token_result.expiration_time > now():
                 return None, "Invalid or expired password reset token, please request a new one."
             user = token_result.user
+            if not user.active:
+                # email ownership proved by token redemption
+                user.active = True
             message = self.__set_password(trans, user, password, confirm)
             if message:
                 return None, message

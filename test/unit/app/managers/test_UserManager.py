@@ -214,6 +214,19 @@ class TestUserManager(BaseTestCase):
         )
         assert message == "Invalid or expired password reset token, please request a new one."
 
+    def test_change_password_via_token_activates_inactive_user(self):
+        user = self.user_manager.create(**user2_data)
+        user.active = False
+        self.trans.sa_session.add(user)
+        self.trans.sa_session.commit()
+        assert not user.active
+        _, prt = self.user_manager.get_reset_token(self.trans, user.email)
+        result_user, message = self.user_manager.change_password(
+            self.trans, token=prt.token, password=changed_password, confirm=changed_password
+        )
+        assert result_user is not None
+        assert user.active
+
     def test_set_password_invalidates_sessions_of_a_caller_without_one(self):
         user = self.user_manager.create(**user2_data)
         session = model.GalaxySession(user=user, is_valid=True)
