@@ -168,7 +168,7 @@ nodejs-wheel-binaries==22.20.0
 numpy==2.2.6 ; python_full_version < '3.11'
 numpy==2.4.6 ; python_full_version == '3.11.*'
 numpy==2.5.4 ; python_full_version >= '3.12'
-oauthlib==4.0.0
+oauthlib==4.0.1
 openai==3.42.0
 openapi-pydantic==0.6.0
 openpyxl==3.1.5
