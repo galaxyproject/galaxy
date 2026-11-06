@@ -56,3 +56,32 @@ describe("GDropdownItem.vue", () => {
         expect(wrapper.emitted("click")).toBeUndefined();
     });
 });
+
+describe("GDropdownItem.vue checked", () => {
+    function mountItem(props: object) {
+        return mount(GDropdownItem as object, {
+            props,
+            slots: { default: "Item" },
+            global: localVue,
+        });
+    }
+
+    it.each([
+        [{ checked: true }, "true"],
+        [{ checked: false }, "false"],
+        [{ to: "/histories/list", checked: true }, "true"],
+        [{ to: "/histories/list", checked: false }, "false"],
+    ])("renders %o as a menu checkbox item", (props, ariaChecked) => {
+        const item = mountItem(props).get(".dropdown-item");
+
+        expect(item.attributes("role")).toBe("menuitemcheckbox");
+        expect(item.attributes("aria-checked")).toBe(ariaChecked);
+    });
+
+    it("stays a plain menu item without the checked prop", () => {
+        const item = mountItem({}).get(".dropdown-item");
+
+        expect(item.attributes("role")).toBe("menuitem");
+        expect(item.attributes("aria-checked")).toBeUndefined();
+    });
+});

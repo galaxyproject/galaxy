@@ -210,8 +210,7 @@ defineExpose({
                     <GDropdownItem
                         v-for="column in columnOptions"
                         :key="column.key"
-                        role="menuitemcheckbox"
-                        :aria-checked="isColumnVisible(column.key) ? 'true' : 'false'"
+                        :checked="isColumnVisible(column.key)"
                         :disabled="column.key === 'name'"
                         @click="column.key !== 'name' && onToggleColumn(column.key)">
                         <!-- The item is the checkbox: a click cancelled on the input itself would leave it showing a stale state -->
