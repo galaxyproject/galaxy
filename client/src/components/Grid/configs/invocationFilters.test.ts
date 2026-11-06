@@ -8,6 +8,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import {
     historyColumnFilter,
+    invocationsFiltering,
     NAME_MATCH_LIMIT,
     NAME_MATCH_TTL_MS,
     nameSearch,
@@ -167,6 +168,17 @@ describe("resolveInvocationFilters", () => {
         await resolveInvocationFilters("workflow:paging");
         expect(workflowQueries).toHaveBeenCalledTimes(4 * lookups);
         now.mockRestore();
+    });
+
+    it("keeps a quoted name with a colon in one term", async () => {
+        mockIndexes({ "name:'Foo bar: baz'": [{ id: "visible", name: "Foo bar: baz" }] }, {});
+
+        expect(await resolveInvocationFilters("workflow:'Foo bar: baz'")).toEqual({ workflow_id: ["visible"] });
+        expect(
+            Object.fromEntries(
+                invocationsFiltering.getFiltersForText("workflow:'Foo bar: baz' history:x", true, false),
+            ),
+        ).toEqual({ workflow: "'Foo bar: baz'", history: "x" });
     });
 
     it("returns null when a name matches nothing", async () => {
