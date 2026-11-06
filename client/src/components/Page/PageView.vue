@@ -2,12 +2,13 @@
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, provide, ref } from "vue";
+import { computed, onMounted, provide, ref, toRef } from "vue";
 import { useRouter } from "vue-router";
 
 import type { PublishedItem as PublishedItemType } from "@/components/Common/models/PublishedItem";
 import { PAGE_LABELS, PUBLISHED_LABELS } from "@/components/Page/constants";
 import { useConfig } from "@/composables/config";
+import { embedKey } from "@/composables/embed";
 import { useUserStore } from "@/stores/userStore";
 import { urlData } from "@/utils/url";
 
@@ -41,7 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const router = useRouter();
 
-provide("embed", props.embed);
+provide(embedKey, toRef(props, "embed"));
 
 const { config, isConfigLoaded } = useConfig();
 const userStore = useUserStore();

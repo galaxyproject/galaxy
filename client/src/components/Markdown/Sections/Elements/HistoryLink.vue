@@ -3,8 +3,9 @@ import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icon
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BLink } from "bootstrap-vue";
-import { computed, inject, ref } from "vue";
+import { computed, ref } from "vue";
 
+import { useEmbed } from "@/composables/embed";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
 //@ts-ignore
@@ -19,7 +20,7 @@ const { getHistoryNameById } = useHistoryStore();
 
 const props = defineProps<Props>();
 
-const embed = inject("embed", false);
+const embed = useEmbed();
 const historyUrl = computed(() => withPrefix(`/histories/view?id=${props.historyId}`));
 
 const imported = ref(false);
