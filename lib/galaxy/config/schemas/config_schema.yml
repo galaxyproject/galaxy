@@ -2199,9 +2199,11 @@ mapping:
         type: str
         required: false
         desc: |
-          Comma-separated origins allowed to embed Galaxy Widgets.
+          Comma-separated origins, besides Galaxy itself, allowed to embed
+          Galaxy Widgets such as the history graph.
 
-          Unset allows any origin; widgets are meant to be read-only views.
+          Page and workflow widgets can be embedded from any origin, like
+          the published page and workflow embeds.
 
       nginx_upload_store:
         type: str
