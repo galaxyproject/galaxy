@@ -105,6 +105,7 @@ def test_workflow_accepts(parameters):
     [
         {},
         {"workflow_id": "not-hex"},
+        {"workflow_id": "1a", "version": -1},
         {"workflow_id": "1a", "zoom": "large"},
         {"workflow_id": "1a", "initial_x": 1},
         {"workflow_id": "1a", "embed": True},
