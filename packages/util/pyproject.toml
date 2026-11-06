@@ -49,6 +49,9 @@ image-util = [
 jstree = [
     "dictobj",
 ]
+markdown-convert = [
+    "Markdown",
+]
 template = [
     "CT3>=3.3.3",
     "fissix; python_version>='3.13'",
@@ -60,6 +63,7 @@ config-template = [
     "pydantic>=2.7.4",
 ]
 test = [
+    "Markdown",
     "pytest",
     "pytest-httpserver",
     "responses",

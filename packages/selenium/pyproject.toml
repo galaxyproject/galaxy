@@ -17,7 +17,7 @@ authors = [
 ]
 dependencies = [
     "galaxy-navigation",
-    "galaxy-util",
+    "galaxy-util[markdown-convert]",
     "axe-selenium-python",
     "PyYAML",
     "requests",
