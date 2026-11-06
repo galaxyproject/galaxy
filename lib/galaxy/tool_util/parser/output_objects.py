@@ -420,6 +420,31 @@ def tool_output_is_collection(tool_output: ToolOutputBase) -> "TypeIs[ToolOutput
     return tool_output.collection
 
 
+def output_uses_tool_provided_metadata(output: ToolOutputBase) -> bool:
+    """Whether an output explicitly opts in to reading galaxy.json."""
+    if isinstance(output, ToolOutputCollection):
+        if any(
+            description.discover_via == "tool_provided_metadata"
+            for description in output.structure.dataset_collector_descriptions or []
+        ):
+            return True
+        return any(output_uses_tool_provided_metadata(child) for child in output.outputs.values())
+
+    assert isinstance(output, (ToolOutput, ToolExpressionOutput))
+    if output.format == "auto":
+        return True
+    return any(
+        description.discover_via == "tool_provided_metadata" for description in output.dataset_collector_descriptions
+    )
+
+
+def tool_requests_provided_metadata(tool_source: "ToolSource", outputs: Sequence[ToolOutputBase]) -> bool:
+    """Whether the tool or one of its outputs explicitly opts in to reading galaxy.json."""
+    return tool_source.parse_provided_metadata_is_explicit() or any(
+        output_uses_tool_provided_metadata(output) for output in outputs
+    )
+
+
 class ToolOutputCollectionStructure:
     collection_type: str | None
     collection_type_source: str | None
