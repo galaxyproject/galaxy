@@ -553,6 +553,90 @@ class TestToolsApi(ApiTestCase, TestsTools):
             # not include it. Search by "1" must surface it.
             assert 1 in returned_hids, returned_hids
 
+    def _hidden_hdas(self, history_id: str, count: int) -> list[dict[str, Any]]:
+        hdas = self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x\n"}] * count)
+        for hda in hdas:
+            self.dataset_populator.hide_dataset(hda["id"])
+        return hdas
+
+    def _build_inputs(self, tool_id: str, history_id: str, inputs: dict[str, Any]) -> list[dict[str, Any]]:
+        return self.dataset_populator.build_tool_state(tool_id, history_id, inputs=inputs)["inputs"]
+
+    @staticmethod
+    def _batch(items: list[dict[str, Any]], src: str = "hda") -> dict[str, Any]:
+        return {"batch": True, "values": [{"src": src, "id": item["id"]} for item in items]}
+
+    @staticmethod
+    def _hda_option_ids(input_dict: dict[str, Any]) -> list[str]:
+        return sorted(entry["id"] for entry in input_dict["options"]["hda"])
+
+    @skip_without_tool("cat1")
+    def test_build_labels_every_batch_value(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdas = self._hidden_hdas(history_id, 3)
+            inputs = self._build_inputs("cat1", history_id, {"input1": self._batch(hdas)})
+            input1 = next(i for i in inputs if i["name"] == "input1")
+            assert self._hda_option_ids(input1) == sorted(hda["id"] for hda in hdas)
+            assert all(entry["name"].startswith("(hidden) ") for entry in input1["options"]["hda"])
+
+    @skip_without_tool("cat1")
+    def test_build_labels_every_batch_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdcas = [self._create_hdca(history_id, "list", hidden=True) for _ in range(2)]
+            inputs = self._build_inputs("cat1", history_id, {"input1": self._batch(hdcas, src="hdca")})
+            input1 = next(i for i in inputs if i["name"] == "input1")
+            assert sorted(entry["id"] for entry in input1["options"]["hdca"]) == sorted(hdca["id"] for hdca in hdcas)
+
+    @skip_without_tool("cat1")
+    def test_build_skips_batch_collection_with_deleted_elements(self):
+        with self.dataset_populator.test_history() as history_id:
+            first, with_deleted = (self._create_hdca(history_id, "list", hidden=True) for _ in range(2))
+            details = self.dataset_populator.get_history_collection_details(history_id, content_id=with_deleted["id"])
+            self.dataset_populator.delete_dataset(history_id, details["elements"][0]["object"]["id"])
+            inputs = self._build_inputs("cat1", history_id, {"input1": self._batch([first, with_deleted], src="hdca")})
+            input1 = next(i for i in inputs if i["name"] == "input1")
+            assert [entry["id"] for entry in input1["options"]["hdca"]] == [first["id"]]
+
+    @skip_without_tool("cat1")
+    def test_build_skips_batch_values_of_other_users(self):
+        with self.dataset_populator.test_history() as history_id:
+            own = self._hidden_hdas(history_id, 1)
+            with self._different_user_and_history() as other_history_id:
+                other = self._hidden_hdas(other_history_id, 1)
+            inputs = self._build_inputs("cat1", history_id, {"input1": self._batch(own + other)})
+            input1 = next(i for i in inputs if i["name"] == "input1")
+            assert self._hda_option_ids(input1) == [own[0]["id"]]
+
+    @skip_without_tool("top_level_data")
+    def test_build_labels_batch_values_in_active_conditional_case_only(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdas = self._hidden_hdas(history_id, 2)
+            inputs = self._build_inputs(
+                "top_level_data", history_id, {"library|type": "yes", "library|f1": self._batch(hdas)}
+            )
+            library = next(i for i in inputs if i["name"] == "library")
+            active, inactive = (next(i for i in case["inputs"] if i["name"] == "f1") for case in library["cases"])
+            assert self._hda_option_ids(active) == sorted(hda["id"] for hda in hdas)
+            assert self._hda_option_ids(inactive) == []
+
+    @skip_without_tool("identifier_single_in_repeat")
+    def test_build_labels_batch_values_in_repeat(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdas = self._hidden_hdas(history_id, 2)
+            inputs = self._build_inputs(
+                "identifier_single_in_repeat",
+                history_id,
+                {
+                    "the_repeat_0|the_data|cond_param": "true",
+                    "the_repeat_0|the_data|input1": self._batch(hdas),
+                },
+            )
+            the_repeat = next(i for i in inputs if i["name"] == "the_repeat")
+            the_data = next(i for i in the_repeat["cache"][0] if i["name"] == "the_data")
+            active, inactive = (next(i for i in case["inputs"] if i["name"] == "input1") for case in the_data["cases"])
+            assert self._hda_option_ids(active) == sorted(hda["id"] for hda in hdas)
+            assert self._hda_option_ids(inactive) == []
+
     def _create_hdca(
         self,
         history_id: str,
