@@ -2460,6 +2460,32 @@ steps:
 
         self.workflow_editor_assert_connected("first_cat#out_file1", "second_cat#input1")
 
+    @selenium_test
+    def test_selection_to_subworkflow(self):
+        self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES)
+        self.assert_workflow_has_changes_and_save()
+
+        # select the middle step, which has an input and an output connection outside the selection
+        editor = self.components.workflow_editor
+        second_cat = editor.node._(label="second_cat").wait_for_present()
+        self.action_chains().move_to_element(second_cat).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+
+        subworkflow_name = "Moved from selection"
+
+        editor.tool_bar.selection_to_workflow.wait_for_and_click()
+        editor.tool_bar.selection_to_workflow_name.wait_for_and_click()
+        editor.tool_bar.selection_to_workflow_name.wait_for_and_send_keys(Keys.BACKSPACE * 40)
+        editor.tool_bar.selection_to_workflow_name.wait_for_and_send_keys(subworkflow_name)
+        editor.tool_bar.selection_to_workflow_move.wait_for_and_click()
+        editor.tool_bar.selection_to_workflow_confirm.wait_for_and_click()
+        editor.tool_bar.selection_to_workflow_review_confirm.wait_for_and_click()
+
+        # the selection is replaced by a subworkflow step, reconnected on both sides
+        editor.node._(label=subworkflow_name).wait_for_present()
+        editor.node._(label="second_cat").wait_for_absent()
+        self.workflow_editor_assert_connected("first_cat#out_file1", f"{subworkflow_name}#Input Dataset 1")
+        self.workflow_editor_assert_connected(f"{subworkflow_name}#Subworkflow output 1", "random_line_label#input")
+
     def create_and_wait_for_new_workflow_in_editor(self, annotation: str | None = None) -> str:
         editor = self.components.workflow_editor
         name = self.workflow_create_new(annotation=annotation)

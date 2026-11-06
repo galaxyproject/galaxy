@@ -163,6 +163,7 @@ defineExpose({
 
 <template>
     <GModal
+        id="selection-to-workflow-review-modal"
         v-model:show="visible"
         title="Review extracted Sub-Workflow"
         confirm
