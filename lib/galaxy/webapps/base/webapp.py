@@ -288,9 +288,12 @@ def _is_widget_request(path: str) -> bool:
     return path.startswith("/widgets/")
 
 
-def _widgets_frame_ancestors(config) -> str:
-    origins = listify(getattr(config, "widgets_allowed_origins", None), do_strip=True)
-    return " ".join(["frame-ancestors", *(["'self'", *origins] if origins else ["*"])])
+def _widgets_frame_ancestors(config, path: str) -> str:
+    if path.startswith(("/widgets/pages/", "/widgets/workflows/")):
+        sources = ["*"]
+    else:
+        sources = ["'self'", *listify(getattr(config, "widgets_allowed_origins", None), do_strip=True)]
+    return " ".join(["frame-ancestors", *sources])
 
 
 def config_allows_origin(origin_raw, config):
@@ -339,7 +342,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         config = self.app.config
         self.debug = asbool(config.get("debug", False))
         if _is_widget_request(self.request.path_info):
-            self.response.headers["Content-Security-Policy"] = _widgets_frame_ancestors(config)
+            self.response.headers["Content-Security-Policy"] = _widgets_frame_ancestors(config, self.request.path_info)
         elif x_frame_options := getattr(config, "x_frame_options", None):
             if not _is_embed_request(self.request.path_info, self.environ.get("QUERY_STRING", "")):
                 self.response.headers["X-Frame-Options"] = x_frame_options

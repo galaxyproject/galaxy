@@ -12,10 +12,17 @@ class TestWidgetsApi(ApiTestCase):
         self._assert_status_code_is(response, 200)
         assert {"history_graph", "page", "workflow"} <= {widget["id"] for widget in response.json()}
 
-    @pytest.mark.parametrize("path", ["widgets/histories/1a/graph", "widgets/pages/1a", "widgets/workflows/1a"])
-    def test_widgets_app(self, path):
+    @pytest.mark.parametrize(
+        "path, frame_ancestors",
+        [
+            ("widgets/histories/1a/graph", "frame-ancestors 'self'"),
+            ("widgets/pages/1a", "frame-ancestors *"),
+            ("widgets/workflows/1a", "frame-ancestors *"),
+        ],
+    )
+    def test_widgets_app(self, path, frame_ancestors):
         response = get(urljoin(self.url, path))
         self._assert_status_code_is(response, 200)
         assert "widgets.bundled.js" in response.text
-        assert response.headers["Content-Security-Policy"] == "frame-ancestors *"
+        assert response.headers["Content-Security-Policy"] == frame_ancestors
         assert "X-Frame-Options" not in response.headers

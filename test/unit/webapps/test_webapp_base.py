@@ -157,17 +157,26 @@ def test_published_embeds_are_unrestricted(path):
     assert "Content-Security-Policy" not in headers
 
 
-@pytest.mark.parametrize("path", ["/widgets/histories/1/graph", "/widgets/pages/1", "/widgets/workflows/1"])
+@pytest.mark.parametrize("origins", [None, "https://a.example.org"])
+@pytest.mark.parametrize("path", ["/widgets/pages/1", "/widgets/workflows/1"])
 @pytest.mark.parametrize("url_prefix", ["/", "/galaxy"])
-def test_widgets_allow_any_origin_by_default(url_prefix, path):
-    client, root_path = _frame_headers_client(url_prefix)
+def test_page_and_workflow_widgets_allow_any_origin(url_prefix, path, origins):
+    client, root_path = _frame_headers_client(url_prefix, widgets_allowed_origins=origins)
     headers = client.get(f"{root_path}{path}").headers
     assert headers["Content-Security-Policy"] == "frame-ancestors *"
     assert "X-Frame-Options" not in headers
 
 
 @pytest.mark.parametrize("url_prefix", ["/", "/galaxy"])
-def test_widgets_allow_configured_origins(url_prefix):
+def test_history_graph_widget_allows_only_galaxy_by_default(url_prefix):
+    client, root_path = _frame_headers_client(url_prefix)
+    headers = client.get(f"{root_path}/widgets/histories/1/graph").headers
+    assert headers["Content-Security-Policy"] == "frame-ancestors 'self'"
+    assert "X-Frame-Options" not in headers
+
+
+@pytest.mark.parametrize("url_prefix", ["/", "/galaxy"])
+def test_history_graph_widget_allows_configured_origins(url_prefix):
     client, root_path = _frame_headers_client(
         url_prefix, widgets_allowed_origins="https://a.example.org, https://b.example.org"
     )
