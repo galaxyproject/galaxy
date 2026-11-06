@@ -245,18 +245,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             return trans.show_ok_message(f"{count} datasets have been deleted permanently", refresh_frames=["history"])
         return trans.show_error_message("Cannot purge deleted datasets from this session.")
 
-    @web.expose_api_anonymous
-    def resume_paused_jobs(self, trans: GalaxyWebTransaction, current=False, ids=None, **kwargs):
-        """Resume paused jobs for the active history -- this does not require a logged in user."""
-        if not ids and string_as_bool(current):
-            history = trans.get_history()
-            if history:
-                history.resume_paused_jobs()
-                return {"message": "Your jobs have been resumed.", "status": "success"}
-        raise exceptions.RequestParameterInvalidException(
-            "You can currently only resume all the datasets of the current history."
-        )
-
     @web.expose_api
     @web.require_login("rename histories")
     def rename(self, trans: GalaxyWebTransaction, payload=None, **kwd):
