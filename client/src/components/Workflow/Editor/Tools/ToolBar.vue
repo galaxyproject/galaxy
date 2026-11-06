@@ -254,9 +254,13 @@ function onRenameExtract(name: string) {
     newWorkflowName.value = name;
 }
 
-function onCancelExtract() {
-    // drop the steps `extractSubworkflow` added, restoring the user's own selection
+/** Drop the steps `extractSubworkflow` added, restoring the user's own selection */
+function deselectExpandedSteps() {
     workflowExtractionData.value?.expandedSteps.forEach((stepId) => stateStore.setStepMultiSelected(stepId, false));
+}
+
+function onCancelExtract() {
+    deselectExpandedSteps();
     workflowExtractionData.value = null;
 }
 
@@ -302,6 +306,7 @@ async function onOkExtract() {
     try {
         await moveSelectionToSubworkflow(partialWorkflow, inputReconnectionMap, outputReconnectionMap);
     } catch (error) {
+        deselectExpandedSteps();
         console.error(error);
         Toast.error(errorMessageAsString(error), "Failed to create sub-workflow");
     } finally {
