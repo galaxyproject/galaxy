@@ -2449,6 +2449,7 @@ steps:
         editor.tool_bar.selection_to_workflow_name.wait_for_and_send_keys(Keys.BACKSPACE * 20)
         editor.tool_bar.selection_to_workflow_name.wait_for_and_send_keys(new_workflow_name)
         editor.tool_bar.selection_to_workflow_copy.wait_for_and_click()
+        editor.tool_bar.selection_to_workflow_confirm.wait_for_and_click()
 
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
 

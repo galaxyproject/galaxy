@@ -46,6 +46,8 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
+import GRadio from "@/components/BaseComponents/GRadio.vue";
+import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
 import SelectionToWorkflowReviewModal from "@/components/Workflow/Editor/Tools/SelectionToWorkflowReviewModal.vue";
 
@@ -309,6 +311,16 @@ async function onOkExtract() {
 
 const workflowNameValid = computed(() => newWorkflowName.value.trim() !== "");
 
+const toWorkflowMode = ref<"copy" | "move">("copy");
+
+function onConfirmToWorkflow() {
+    if (toWorkflowMode.value === "copy") {
+        onClickCopy();
+    } else {
+        onClickExtract();
+    }
+}
+
 function autoLayout() {
     undoRedoStore.applyAction(new AutoLayoutAction(workflowId));
 }
@@ -472,7 +484,12 @@ function autoLayout() {
                     </GButton>
                 </span>
 
-                <GModal id="selection-to-workflow-modal" ref="toWorkflowModal" title="Selection To Workflow">
+                <GModal
+                    id="selection-to-workflow-modal"
+                    ref="toWorkflowModal"
+                    title="Selection To Workflow"
+                    size="small"
+                    footer>
                     <GFormLabel
                         class="mb-2"
                         title="New Workflow Name"
@@ -481,22 +498,41 @@ function autoLayout() {
                         <GFormInput v-model="newWorkflowName" />
                     </GFormLabel>
 
-                    <div class="d-flex flex-column flex-gapy-1">
+                    <GRadioGroup
+                        v-model="toWorkflowMode"
+                        stacked
+                        name="selection-to-workflow-mode"
+                        label="What to do with the selection">
+                        <GRadio value="copy" data-description="selection to workflow copy">
+                            <span>
+                                Copy into a new workflow <FontAwesomeIcon :icon="faPlus" />
+                                <small class="d-block text-muted"
+                                    >Creates a new workflow from the selection. Opens separately; this workflow stays
+                                    unchanged</small
+                                >
+                            </span>
+                        </GRadio>
+                        <GRadio value="move" data-description="selection to workflow move">
+                            <span>
+                                Move into a sub-workflow <FontAwesomeIcon :icon="faSitemap" />
+                                <small class="d-block text-muted">
+                                    Replaces the selection here with a sub-workflow step, after a review
+                                </small>
+                            </span>
+                        </GRadio>
+                    </GRadioGroup>
+
+                    <template v-slot:footer>
                         <GButton
-                            title="Create a new workflow from the selected steps and comments"
+                            color="blue"
+                            class="float-right"
                             :disabled="!workflowNameValid"
-                            @click="onClickCopy">
-                            Copy selection into new Workflow
-                            <FontAwesomeIcon :icon="faPlus" />
+                            data-description="selection to workflow confirm"
+                            @click="onConfirmToWorkflow">
+                            <FontAwesomeIcon :icon="toWorkflowMode === 'copy' ? faPlus : faSitemap" />
+                            {{ toWorkflowMode === "copy" ? "Copy" : "Review Sub-Workflow..." }}
                         </GButton>
-                        <GButton
-                            title="Move the selected steps and comments into a new sub-workflow"
-                            :disabled="!workflowNameValid"
-                            @click="onClickExtract">
-                            Move selection to Sub-Workflow
-                            <FontAwesomeIcon :icon="faSitemap" />
-                        </GButton>
-                    </div>
+                    </template>
                 </GModal>
 
                 <GModal ref="workflowCreatedModal" title="New Workflow Created">
