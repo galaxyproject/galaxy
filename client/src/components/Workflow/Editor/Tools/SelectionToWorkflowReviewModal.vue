@@ -149,10 +149,11 @@ function isStepExpanded(step: Step) {
     return props.expandedSteps.has(step.id);
 }
 
-const modal = ref<InstanceType<typeof GModal>>();
+// mounted on demand, so open via `show`; GModal's initial `show=false` would close a dialog opened directly
+const visible = ref(false);
 
 function showModal() {
-    modal.value?.showModal();
+    visible.value = true;
 }
 
 defineExpose({
@@ -162,7 +163,7 @@ defineExpose({
 
 <template>
     <GModal
-        ref="modal"
+        v-model:show="visible"
         title="Review extracted Sub-Workflow"
         confirm
         ok-text="Create Subworkflow"

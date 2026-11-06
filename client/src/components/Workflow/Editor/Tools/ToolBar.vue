@@ -516,8 +516,8 @@ function autoLayout() {
                     @ok="onOkExtract"
                     @rename="onRenameExtract"
                     @cancel="onCancelExtract"
-                    @renameInput="onRenameInputExtract"
-                    @renameOutput="onRenameOutputExtract" />
+                    @rename-input="onRenameInputExtract"
+                    @rename-output="onRenameOutputExtract" />
             </div>
 
             <div
