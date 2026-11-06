@@ -123,7 +123,19 @@ async function inputConnectionToStep(
         left: position.x + OUTPUT_TO_NODE_POSITION_CORRECTION.left,
         top: position.y + OUTPUT_TO_NODE_POSITION_CORRECTION.top,
     });
-    const state = { parameter_type: subType, optional: outputConnection.optional };
+    // carry over what the source output produces, so the generated input accepts the same thing
+    const state: Record<string, unknown> = { optional: outputConnection.optional };
+    if (type === "data_collection_input") {
+        const collectionType = (outputConnection as CollectionOutput).collection_type;
+        if (collectionType) {
+            state.collection_type = collectionType;
+        }
+    } else if (type === "parameter_input") {
+        state.parameter_type = subType;
+        if ((outputConnection as ParameterOutput).multiple) {
+            state.multiple = true;
+        }
+    }
 
     const response = await getModule(
         { name: type, type, content_id: type, tool_state: state },

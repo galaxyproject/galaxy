@@ -5,6 +5,7 @@ import type { WorkflowSearchStore } from "@/stores/workflowSearchStore";
 import type { Step } from "@/stores/workflowStepStore";
 
 import { convertOpenConnections } from "./convertOpenConnections";
+import { getModule } from "./services";
 
 vi.mock("@/components/Workflow/Editor/modules/services", () => ({
     getModule: vi.fn(async () => ({
@@ -111,5 +112,31 @@ describe("convertOpenConnections", () => {
 
         expect(outputReconnectionMap).toEqual([]);
         expect(stepArray.find((step) => step.id === 0)?.workflow_outputs).toEqual(allSteps[0]?.workflow_outputs);
+    });
+
+    it("keeps the collection type of a collection feeding the selection", async () => {
+        const collectionOutput = {
+            name: "pairs",
+            extensions: ["input"],
+            optional: false,
+            collection: true,
+            collection_type: "list:paired",
+            collection_type_source: null,
+        };
+        const allSteps: Record<number, Step> = {
+            0: { ...mockToolStep(0), outputs: [collectionOutput] },
+            1: { ...mockToolStep(1), input_connections: { input1: [{ id: 0, output_name: "pairs" }] } },
+        };
+
+        await convertOpenConnections([1], allSteps, searchStore);
+
+        expect(vi.mocked(getModule)).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: "data_collection_input",
+                tool_state: expect.objectContaining({ collection_type: "list:paired" }),
+            }),
+            expect.anything(),
+            expect.anything(),
+        );
     });
 });
