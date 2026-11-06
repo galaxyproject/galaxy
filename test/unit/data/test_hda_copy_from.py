@@ -181,6 +181,8 @@ def test_copy_committed_after_swap_starts_follows_swap(engine, queued_and_cached
                 output = runner.get(model.HistoryDatasetAssociation, queued_id)
                 cached = runner.get(model.HistoryDatasetAssociation, cached_id)
                 assert output and cached
+                # Loaded before the swap takes its lock, so this collection is stale by then.
+                assert not output.copied_to_history_dataset_associations
                 output.copy_from(cached, include_metadata=True)
                 runner.commit()
 

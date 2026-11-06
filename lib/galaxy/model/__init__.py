@@ -5920,20 +5920,14 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         the dataset until its transaction ends. Once this lock is held, every such copy has either
         committed and is returned here, or will read the dataset this transaction commits.
         """
-        copies = list(self.copied_to_history_dataset_associations)
         if self.id is not None:
             session = required_object_session(self)
             session.execute(
                 select(HistoryDatasetAssociation.id).where(HistoryDatasetAssociation.id == self.id).with_for_update()
             )
-            committed_copies = session.scalars(
-                select(HistoryDatasetAssociation).where(
-                    HistoryDatasetAssociation.copied_from_history_dataset_association_id == self.id,
-                    HistoryDatasetAssociation.dataset_id == self.dataset_id,
-                )
-            )
-            copies.extend(hda for hda in committed_copies if hda not in copies)
-        return copies
+            # A collection loaded before this lock misses copies committed since.
+            session.expire(self, ["copied_to_history_dataset_associations"])
+        return list(self.copied_to_history_dataset_associations)
 
     def _lock_source_of_copy(self) -> None:
         """Pin the dataset a copy of this HDA will share against a concurrent ``copy_from``.
