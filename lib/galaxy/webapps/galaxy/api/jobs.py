@@ -5,10 +5,7 @@ API operations on a jobs.
 """
 
 import logging
-from datetime import (
-    date,
-    datetime,
-)
+from datetime import date
 from typing import (
     Annotated,
     Any,
@@ -19,6 +16,7 @@ from fastapi import (
     Depends,
     Path,
     Query,
+    Response,
 )
 from fastapi.responses import PlainTextResponse
 from pydantic import Field
@@ -101,6 +99,12 @@ UserDetailsQueryParam: bool = Query(
     description="If true, and requester is an admin, will return external job id and user email. This is only available to admins.",
 )
 
+IncludeTotalCountQueryParam: bool = Query(
+    default=False,
+    title="Include total count",
+    description="If true, the total number of jobs matching the query is returned in the `total_matches` response header.",
+)
+
 UserIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="User ID",
@@ -127,6 +131,13 @@ ToolIdLikeQueryParam = Query(
     alias="tool_id_like",
     title="Tool ID Pattern(s)",
     description="Limit listing of jobs to those that match one of the included tool ID sql-like patterns. If none, all are returned",
+)
+
+ExcludeToolIdsQueryParam = Query(
+    default=None,
+    alias="exclude_tool_id",
+    title="Exclude Tool ID(s)",
+    description="Exclude jobs whose tool_id matches one of the given values. If none, no jobs are excluded on this basis.",
 )
 
 DateRangeMinQueryParam: OffsetNaiveDatetime | date | None = Query(
@@ -284,6 +295,7 @@ class FastAPIJobs:
     @router.get("/api/jobs")
     def index(
         self,
+        response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         states: list[str] | None = Depends(query_parameter_as_list(StateQueryParam)),
         user_details: bool = UserDetailsQueryParam,
@@ -291,8 +303,9 @@ class FastAPIJobs:
         view: JobIndexViewEnum = ViewQueryParam,
         tool_ids: list[str] | None = Depends(query_parameter_as_list(ToolIdQueryParam)),
         tool_ids_like: list[str] | None = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
-        date_range_min: datetime | date | None = DateRangeMinQueryParam,
-        date_range_max: datetime | date | None = DateRangeMaxQueryParam,
+        exclude_tool_id: list[str] | None = Depends(query_parameter_as_list(ExcludeToolIdsQueryParam)),
+        date_range_min: OffsetNaiveDatetime | date | None = DateRangeMinQueryParam,
+        date_range_max: OffsetNaiveDatetime | date | None = DateRangeMaxQueryParam,
         history_id: DecodedDatabaseIdField | None = HistoryIdQueryParam,
         workflow_id: DecodedDatabaseIdField | None = WorkflowIdQueryParam,
         invocation_id: DecodedDatabaseIdField | None = InvocationIdQueryParam,
@@ -302,6 +315,7 @@ class FastAPIJobs:
         search: str | None = SearchQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
+        include_total_count: bool = IncludeTotalCountQueryParam,
     ) -> list[ShowFullJobResponse | EncodedJobDetails | JobSummary]:
         payload = JobIndexPayload.model_construct(
             states=states,
@@ -310,6 +324,7 @@ class FastAPIJobs:
             view=view,
             tool_ids=tool_ids,
             tool_ids_like=tool_ids_like,
+            exclude_tool_id=exclude_tool_id,
             date_range_min=date_range_min,
             date_range_max=date_range_max,
             history_id=history_id,
@@ -322,7 +337,11 @@ class FastAPIJobs:
             limit=limit,
             offset=offset,
         )
-        return self.service.index(trans, payload)
+        jobs, total_matches = self.service.index(trans, payload, include_total_count=include_total_count)
+        if total_matches is not None:
+            response.headers["total_matches"] = str(total_matches)
+        # Ignoring type checking here because `service.index` returns plain dicts, not response models.
+        return jobs  # type: ignore[return-value]
 
     @router.get(
         "/api/jobs/{job_id}/common_problems",
