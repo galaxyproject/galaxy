@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { sourceLabelToKey } from "@/stores/quotaUsageStore";
 import { bytesToString } from "@/utils/utils";
 
 import type { QuotaUsage } from "./model";
@@ -54,7 +55,7 @@ defineExpose({
             </div>
         </div>
 
-        <div v-for="quotaUsage in props.quotaUsages" :key="quotaUsage.sourceLabel">
+        <div v-for="quotaUsage in props.quotaUsages" :key="sourceLabelToKey(quotaUsage.rawSourceLabel)">
             <QuotaUsageBar
                 :quota-usage="quotaUsage"
                 :show-default-source-name="hasSeveralSources"

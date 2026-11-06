@@ -56,7 +56,7 @@ describe("QuotaUsageBar.vue", () => {
         // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
         expect((wrapper.vm as any).isDefaultQuota).toBe(false);
         expect(storageSourceLabel.exists()).toBe(true);
-        expect(storageSourceLabel.text()).toBe(NON_DEFAULT_QUOTA_USAGE.sourceLabel);
+        expect(storageSourceLabel.text()).toBe(NON_DEFAULT_QUOTA_USAGE.rawSourceLabel);
     });
 
     it("names a source labelled like the default one", async () => {

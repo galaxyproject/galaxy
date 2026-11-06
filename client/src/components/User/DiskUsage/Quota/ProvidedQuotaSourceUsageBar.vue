@@ -14,7 +14,7 @@
 import { computed, watch } from "vue";
 
 import type { ConcreteObjectStoreModel } from "@/api";
-import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
+import { sourceLabelToKey, useQuotaUsageStore } from "@/stores/quotaUsageStore";
 
 import QuotaUsageBar from "./QuotaUsageBar.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -35,7 +35,7 @@ const loadingMessage = "Loading Galaxy storage information";
 const quotaUsageStore = useQuotaUsageStore();
 
 const quotaSourceLabel = computed(() => props.objectStore.quota.source ?? null);
-const quotaSourceKey = computed(() => quotaSourceLabel.value ?? "__null__");
+const quotaSourceKey = computed(() => sourceLabelToKey(quotaSourceLabel.value));
 
 const quotaUsage = computed(() => quotaUsageStore.getQuotaUsageBySourceLabel(quotaSourceLabel.value) ?? null);
 const isLoadingUsage = computed(

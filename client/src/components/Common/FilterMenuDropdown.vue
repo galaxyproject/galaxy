@@ -6,7 +6,7 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import type { QuotaUsage } from "@/api/users";
 import { useQuotaSourceNames } from "@/composables/quotaSourceNames";
-import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
+import { sourceLabelToKey, useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import type { FilterType, ValidFilter } from "@/utils/filtering";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
@@ -166,7 +166,7 @@ function setValue(val: FilterValue) {
                 <span v-else-if="props.type === 'QuotaSource'">
                     <GDropdownItem
                         v-for="quotaUsage in quotaUsages"
-                        :key="quotaUsage.sourceLabel"
+                        :key="sourceLabelToKey(quotaUsage.rawSourceLabel)"
                         href="#"
                         @click="setValue(quotaUsage)">
                         {{ quotaSourceName(quotaUsage.rawSourceLabel) }}

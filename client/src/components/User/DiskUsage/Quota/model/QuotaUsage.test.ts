@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { DEFAULT_QUOTA_SOURCE_LABEL, toQuotaUsage, type UserQuotaUsageData } from "./QuotaUsage";
+import { toQuotaUsage, type UserQuotaUsageData } from "./QuotaUsage";
 
 const RAW_DEFAULT_QUOTA_USAGE: UserQuotaUsageData = {
     quota_source_label: undefined,
@@ -28,12 +28,9 @@ describe("QuotaUsage", () => {
     const limitedQuotaUsage = toQuotaUsage(RAW_LIMITED_SOURCE_QUOTA_USAGE);
     const unlimitedQuotaUsage = toQuotaUsage(RAW_UNLIMITED_SOURCE_QUOTA_USAGE);
 
-    test("default quota source label should have the default value", () => {
-        expect(defaultQuotaUsage.sourceLabel).toBe(DEFAULT_QUOTA_SOURCE_LABEL);
-    });
-
-    test("non default quota source label should have the correct value", () => {
-        expect(limitedQuotaUsage.sourceLabel).toBe(RAW_LIMITED_SOURCE_QUOTA_USAGE.quota_source_label);
+    test("raw source label should be null for the default source", () => {
+        expect(defaultQuotaUsage.rawSourceLabel).toBeNull();
+        expect(limitedQuotaUsage.rawSourceLabel).toBe(RAW_LIMITED_SOURCE_QUOTA_USAGE.quota_source_label);
     });
 
     test("nice quota should be 'unlimited' when the source is unlimited", () => {
