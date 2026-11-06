@@ -121,6 +121,24 @@ def test_effective_duration_matches_new_targets(tmpdir, default_duration, maximu
     assert target.duration == expected
 
 
+@pytest.mark.parametrize(
+    "duration, maximum_duration, expected",
+    [
+        (300, 0, 300),
+        (7200, 3600, 3600),
+    ],
+)
+def test_effective_duration_prefers_explicit_duration(tmpdir, duration, maximum_duration, expected):
+    assert effective_storage_duration(86400, maximum_duration, duration) == expected
+    config = ShortTermStorageConfiguration(
+        short_term_storage_directory=tmpdir,
+        default_storage_duration=86400,
+        maximum_storage_duration=maximum_duration,
+    )
+    target = ShortTermStorageManager(config=config).new_target(TEST_FILENAME, TEST_MIME_TYPE, duration=duration)
+    assert target.duration == expected
+
+
 def test_cleanup(tmpdir):
     config = ShortTermStorageConfiguration(
         short_term_storage_directory=tmpdir,
