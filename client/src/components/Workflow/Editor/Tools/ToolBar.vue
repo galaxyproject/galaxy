@@ -28,10 +28,10 @@ import type {
 import { extractSubworkflow, type PartialWorkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
-import { getAppRoot } from "@/onload/loadConfig";
 import type { WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 import type { CommentTool } from "@/stores/workflowEditorToolbarStore";
 import { assertDefined, ensureDefined } from "@/utils/assertions";
+import { withPrefix } from "@/utils/redirect";
 import { match } from "@/utils/utils";
 
 import { AutoLayoutAction } from "../Actions/stepActions";
@@ -190,7 +190,7 @@ async function onClickCopy() {
 
     toWorkflowModal.value?.hideModal();
 
-    newWorkflowURL.value = `${getAppRoot()}/workflows/edit?id=${newWF.id}`;
+    newWorkflowURL.value = withPrefix(`/workflows/edit?id=${newWF.id}`);
 
     if (newTab && !newTab.closed) {
         newTab.location = newWorkflowURL.value;
