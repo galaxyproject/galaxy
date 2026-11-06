@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { faCopy } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounce } from "@vueuse/core";
-import { BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
-import { copy } from "@/utils/clipboard";
 
-import GButton from "@/components/BaseComponents/GButton.vue";
+import EmbedCode from "./EmbedCode.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
@@ -39,8 +35,8 @@ function onChangePosition(event: Event, xy: "x" | "y") {
 }
 
 const embedUrl = computed(() => {
-    let url = getFullAppUrl(`published/workflow?id=${props.id}&embed=true`);
-    url += `&buttons=${settings.buttons}`;
+    let url = getFullAppUrl(`widgets/workflows/${props.id}`);
+    url += `?buttons=${settings.buttons}`;
     url += `&about=${settings.about}`;
     url += `&heading=${settings.heading}`;
     url += `&minimap=${settings.minimap}`;
@@ -57,10 +53,6 @@ const embedStyle = computed(() => {
         return " ";
     }
 });
-const embed = computed(
-    () => `<iframe title="Galaxy Workflow Embed"${embedStyle.value}src="${embedUrl.value}"></iframe>`,
-);
-
 // These Embed settings are not reactive, to we have to key them
 const embedKey = computed(() => `zoom: ${settings.zoom}, x: ${settings.initialX}, y: ${settings.initialY}`);
 
@@ -68,19 +60,6 @@ const debouncedEmbedKey = useDebounce(embedKey, 500);
 
 const showEmbed = ref(false);
 const showEmbedDebounced = useDebounce(showEmbed, 100);
-
-const copied = ref(false);
-
-function onCopy() {
-    copy(embed.value);
-    copied.value = true;
-}
-
-function onCopyOut() {
-    copied.value = false;
-}
-
-const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
 </script>
 
 <template>
@@ -127,22 +106,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
             </GCheckbox>
         </div>
         <div class="preview">
-            <label for="embed-code" class="w-100">
-                Embed code
-                <BInputGroup id="embed-code">
-                    <BFormInput class="embed-code-input" :value="embed" readonly />
-                    <BInputGroupAppend>
-                        <GButton
-                            v-g-tooltip.hover
-                            :title="clipboardTitle"
-                            color="blue"
-                            @click="onCopy"
-                            @blur="onCopyOut">
-                            <FontAwesomeIcon :icon="faCopy" />
-                        </GButton>
-                    </BInputGroupAppend>
-                </BInputGroup>
-            </label>
+            <EmbedCode title="Galaxy Workflow Embed" :url="embedUrl" :attributes="embedStyle" />
 
             <GCheckbox v-model="showEmbed" switch>Show embed Preview</GCheckbox>
             <WorkflowPublished
@@ -200,10 +164,6 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
             height: 500px;
             min-height: 300px;
             padding: 0.5rem;
-        }
-
-        .embed-code-input {
-            background-color: transparent;
         }
     }
 }

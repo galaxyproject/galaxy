@@ -2,6 +2,9 @@ import { emittedArg } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ref } from "vue";
+
+import { embedKey } from "@/composables/embed";
 
 import VisualizationFrame from "./VisualizationFrame.vue";
 
@@ -15,8 +18,9 @@ vi.mock("@/onload/loadConfig", () => ({ getAppRoot: () => "/" }));
 
 let mounted = [];
 
-function mountFrame(props) {
+function mountFrame(props, provide = {}) {
     const wrapper = mount(VisualizationFrame, {
+        global: { provide },
         propsData: { name: "example", config: {}, ...props },
         attachTo: document.body,
     });
@@ -43,6 +47,14 @@ describe("what the frame hands the plugin", () => {
         await flushPromises();
         expect(incomingOf(saved).visualization_id).toBe("abc123");
         expect(incomingOf(unsaved).visualization_id).toBeUndefined();
+    });
+
+    it("says whether the plugin is embedded", async () => {
+        const embedded = mountFrame({}, { [embedKey]: ref(true) });
+        const standalone = mountFrame({});
+        await flushPromises();
+        expect(incomingOf(embedded).visualization_embedded).toBe(true);
+        expect(incomingOf(standalone).visualization_embedded).toBe(false);
     });
 
     it("keeps sending the config, plugin and root alongside it", async () => {
