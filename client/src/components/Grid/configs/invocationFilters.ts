@@ -20,8 +20,8 @@ export const NAME_MATCH_TTL_MS = 60_000;
 
 /**
  * `workflow` and `history` match by name (substring, or exact when quoted) and are resolved to ids
- * through the workflow and history list APIs. `workflow_id` and `history_id` take comma-separated
- * ids; the column filters set those. Unkeyed text is a workflow name.
+ * through the workflow and history list APIs. `workflow_id` and `history_id` can repeat, one
+ * id per term; the column filters set those. Unkeyed text is a workflow name.
  */
 const validFilters: Record<string, ValidFilter<string>> = {
     workflow: {
@@ -36,8 +36,8 @@ const validFilters: Record<string, ValidFilter<string>> = {
         handler: equals("history", "history"),
         menuItem: true,
     },
-    workflow_id: { handler: equals("workflow_id", "workflow_id"), menuItem: false },
-    history_id: { handler: equals("history_id", "history_id"), menuItem: false },
+    workflow_id: { type: "MultiTags", handler: equals("workflow_id", "workflow_id"), menuItem: false },
+    history_id: { type: "MultiTags", handler: equals("history_id", "history_id"), menuItem: false },
 };
 
 export const invocationsFiltering = new Filtering(validFilters, undefined, false, "workflow");
@@ -107,10 +107,6 @@ export async function findHistoriesByName(name: string): Promise<AnyHistoryEntry
     );
 }
 
-function splitIds(value: string): string[] {
-    return value.split(",").filter((id) => id.length > 0);
-}
-
 /** Ids picked in a column filter, narrowed to the name matches when a name filter is set as well */
 function combine(ids: string[] | undefined, matches: Array<{ id: string }> | undefined): string[] | undefined {
     if (!matches) {
@@ -136,14 +132,17 @@ export async function resolveInvocationFilters(search: string): Promise<Invocati
 }
 
 async function lookUpInvocationFilters(search: string): Promise<InvocationFilterParams | null> {
-    const filters = Object.fromEntries(invocationsFiltering.getFiltersForText(search));
+    const filters = Object.fromEntries(invocationsFiltering.getFiltersForText(search)) as InvocationFilterParams & {
+        workflow?: string;
+        history?: string;
+    };
     const [workflows, histories] = await Promise.all([
         filters.workflow ? findWorkflowsByName(filters.workflow) : undefined,
         filters.history ? findHistoriesByName(filters.history) : undefined,
     ]);
     const params: InvocationFilterParams = {};
-    const workflowIds = combine(filters.workflow_id ? splitIds(filters.workflow_id) : undefined, workflows);
-    const historyIds = combine(filters.history_id ? splitIds(filters.history_id) : undefined, histories);
+    const workflowIds = combine(filters.workflow_id, workflows);
+    const historyIds = combine(filters.history_id, histories);
     if (workflowIds) {
         params.workflow_id = workflowIds;
     }

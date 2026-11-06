@@ -59,8 +59,8 @@ export interface FilterOption {
 }
 
 /**
- * Adds a filter dropdown to the column header. Picking items sets `key:<id>,<id>` in the grid's
- * filter text and removes the `clears` keys from it.
+ * Adds a filter dropdown to the column header. Picking items sets repeated `key:<id>` terms in the
+ * grid's filter text and removes the `clears` keys from it. `key` must be a `MultiTags` filter.
  */
 export interface FieldFilter {
     key: string;

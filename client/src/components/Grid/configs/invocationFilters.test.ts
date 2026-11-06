@@ -82,7 +82,7 @@ describe("resolveInvocationFilters", () => {
         mockIndexes({}, {});
 
         const params = await resolveInvocationFilters(
-            "workflow_id:f2db41e1fa331b3e,a7db2fac67043c7e history_id:1cd8e2f6b131e891",
+            "workflow_id:f2db41e1fa331b3e workflow_id:a7db2fac67043c7e history_id:1cd8e2f6b131e891",
         );
 
         expect(params).toEqual({
@@ -190,7 +190,7 @@ describe("resolveInvocationFilters", () => {
     it("narrows picked ids to the ones matching a name filter", async () => {
         mockIndexes({ "name:rna": [{ id: "visible", name: "RNA-seq" }] }, {});
 
-        expect(await resolveInvocationFilters("workflow:rna workflow_id:visible,other")).toEqual({
+        expect(await resolveInvocationFilters("workflow:rna workflow_id:visible workflow_id:other")).toEqual({
             workflow_id: ["visible"],
         });
         expect(await resolveInvocationFilters("workflow:rna workflow_id:other")).toBeNull();

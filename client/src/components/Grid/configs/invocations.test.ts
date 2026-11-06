@@ -127,7 +127,7 @@ describe("invocations grid filtering", () => {
         const [data, total] = await getData(
             0,
             25,
-            "rna history_id:1cd8e2f6b131e891,f2db41e1fa331b3e",
+            "rna history_id:1cd8e2f6b131e891 history_id:f2db41e1fa331b3e",
             "create_time",
             true,
             { user_id: "user-1" },

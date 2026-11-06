@@ -139,7 +139,7 @@ function applyFilter(filter: string, value: string | boolean, quoted = false) {
 /**
  * Set or remove (`undefined` value) several filters in the filter text at once
  */
-function setFilters(filters: Record<string, string | undefined>) {
+function setFilters(filters: Record<string, string | string[] | undefined>) {
     if (!filterClass) {
         return;
     }
@@ -159,18 +159,15 @@ function setFilters(filters: Record<string, string | undefined>) {
 const columnFilterNames = ref<Record<string, Record<string, FilterOption>>>({});
 
 /**
- * Items currently selected in a column filter, read from the `key:<id>,<id>` filter term
+ * Items currently selected in a column filter, read from the repeated `key:<id>` filter terms
  */
 function columnFilterSelection(filter: FieldFilter): FilterOption[] {
-    const value = rawFilters.value[filter.key];
-    if (typeof value !== "string" || !value) {
+    const ids = rawFilters.value[filter.key];
+    if (!Array.isArray(ids)) {
         return [];
     }
     const known = columnFilterNames.value[filter.key] ?? {};
-    return value
-        .split(",")
-        .filter((id) => id.length > 0)
-        .map((id) => known[id] ?? { id, name: id });
+    return ids.map((id: string) => known[id] ?? { id, name: id });
 }
 
 const activeColumnFilters = computed(() =>
@@ -192,7 +189,7 @@ function onColumnFilter(filter: FieldFilter, options: FilterOption[]) {
         },
     };
     const cleared = Object.fromEntries((filter.clears ?? []).map((key) => [key, undefined]));
-    const value = options.length > 0 ? options.map((option) => option.id).join(",") : undefined;
+    const value = options.length > 0 ? options.map((option) => option.id) : undefined;
     setFilters({ ...cleared, [filter.key]: value });
 }
 

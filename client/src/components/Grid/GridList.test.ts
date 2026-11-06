@@ -196,7 +196,7 @@ describe("GridList", () => {
     it("column filter handling", async () => {
         const testGrid = createTestGrid();
         testGrid.filtering = new Filtering({
-            link: { handler: equals("link", "link"), menuItem: false },
+            link: { type: "MultiTags", handler: equals("link", "link"), menuItem: false },
             name: { handler: equals("name", "name"), menuItem: false },
         });
         const search = vi.fn(async () => [
@@ -221,7 +221,7 @@ describe("GridList", () => {
         expect(vi.mocked(testGrid.getData).mock.calls.at(-1)!.slice(0, 5)).toEqual([0, 25, "link:link-2", "id", true]);
         await wrapper.find("input[data-description='grid column filter option link-1']").setValue(true);
         await flushPromises();
-        expect(filterInput().value).toBe("link:link-2,link-1");
+        expect(filterInput().value).toBe("link:link-2 link:link-1");
         const chips = wrapper.findAll("[data-description='grid active column filter link']");
         expect(chips.map((chip) => chip.text())).toEqual(["link: Link two", "link: Link one"]);
         await chips[0]!.trigger("click");
@@ -232,7 +232,9 @@ describe("GridList", () => {
 
     it("keeps column filters available when a pick matches nothing", async () => {
         const testGrid = createTestGrid();
-        testGrid.filtering = new Filtering({ link: { handler: equals("link", "link"), menuItem: false } });
+        testGrid.filtering = new Filtering({
+            link: { type: "MultiTags", handler: equals("link", "link"), menuItem: false },
+        });
         const search = vi.fn(async () => [{ id: "link-1", name: "Link one" }]);
         testGrid.fields[1]!.filter = { key: "link", plural: "links", search };
         const wrapper = createTarget({ gridConfig: testGrid });
@@ -251,7 +253,9 @@ describe("GridList", () => {
 
     it("hides the table when there is no data and no filter", async () => {
         const testGrid = createTestGrid();
-        testGrid.filtering = new Filtering({ link: { handler: equals("link", "link"), menuItem: false } });
+        testGrid.filtering = new Filtering({
+            link: { type: "MultiTags", handler: equals("link", "link"), menuItem: false },
+        });
         testGrid.fields[1]!.filter = { key: "link", plural: "links", search: vi.fn(async () => []) };
         vi.mocked(testGrid.getData).mockResolvedValue([[], 0]);
         const wrapper = createTarget({ gridConfig: testGrid });
@@ -263,7 +267,9 @@ describe("GridList", () => {
 
     it("ignores a response that arrives after a newer one", async () => {
         const testGrid = createTestGrid();
-        testGrid.filtering = new Filtering({ link: { handler: equals("link", "link"), menuItem: false } });
+        testGrid.filtering = new Filtering({
+            link: { type: "MultiTags", handler: equals("link", "link"), menuItem: false },
+        });
         const wrapper = createTarget({ gridConfig: testGrid });
         await flushPromises();
         const slow = deferred<[RowData[], number]>();
