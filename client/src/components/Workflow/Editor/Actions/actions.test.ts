@@ -312,6 +312,24 @@ describe("Workflow Undo Redo Actions", () => {
                 expect(getWorkflowSnapshot(workflow)).toEqual(before);
             });
 
+            it("stops rolling back at a move that is still running", async () => {
+                undoRedoStore.applyAction(
+                    new AddToSelectionAction(commentStore, stateStore, { comments: [], steps: [2] }),
+                );
+                // the store keeps actions as reactive proxies, so take the entry the history panel would pass
+                const earlierAction = undoRedoStore.undoActionStack.at(-1);
+                expect(earlierAction).toBeDefined();
+
+                vi.mocked(getModule).mockReturnValue(new Promise(() => {}) as never);
+                undoRedoStore.applyAction(new ExtractSubworkflowAction(partialWorkflow(), [], []));
+                await until(() => stepStore.steps[2]?.type === "subworkflow").toBe(true);
+                const duringMove = getWorkflowSnapshot(workflow);
+
+                undoRedoStore.rollBackTo(earlierAction as UndoRedoAction);
+
+                expect(getWorkflowSnapshot(workflow)).toEqual(duringMove);
+            });
+
             it("rolls back, records the error and ignores undo/redo when it fails", async () => {
                 vi.mocked(getModule).mockRejectedValue(new Error("module failed"));
                 const before = getWorkflowSnapshot(workflow);
