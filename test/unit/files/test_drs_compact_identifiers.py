@@ -163,5 +163,5 @@ class TestFetchDrsToFile:
         mock_resolve.assert_called_once()
         mock_retry_get.assert_called_once()
         args = mock_retry_get.call_args[0]
-        assert args[0] == "https://example.com/ga4gh/drs/v1/objects/object123"
+        assert args[1] == "https://example.com/ga4gh/drs/v1/objects/object123"
         mock_stream.assert_called_once()

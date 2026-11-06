@@ -1,4 +1,6 @@
+import ipaddress
 import os
+import socket
 import tempfile
 from unittest.mock import (
     Mock,
@@ -6,11 +8,29 @@ from unittest.mock import (
 )
 
 import pytest
+import responses
 
 from galaxy.files.sources.util import fetch_drs_to_file
 
 
+@pytest.fixture
+def fake_public_dns(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Resolve hostnames to a fixed public address instead of querying DNS."""
+    real_getaddrinfo = socket.getaddrinfo
+
+    def getaddrinfo(host, port, *args, **kwargs):
+        try:
+            ipaddress.ip_address(host.strip("[]"))
+        except ValueError:
+            return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", ("8.8.8.8", port or 0))]
+        return real_getaddrinfo(host, port, *args, **kwargs)
+
+    monkeypatch.setattr(socket, "getaddrinfo", getaddrinfo)
+
+
 class TestDRSCompactIdentifiersIntegration:
+    @pytest.mark.usefixtures("fake_public_dns")
+    @responses.activate
     @patch("galaxy.files.sources.util.requests.get")
     @patch("galaxy.files.sources.util.stream_url_to_file")
     def test_fetch_compact_identifier_drs_file(self, mock_stream, mock_get):
@@ -31,8 +51,7 @@ class TestDRSCompactIdentifiersIntegration:
         }
         resources_response.raise_for_status.return_value = None
 
-        drs_response = Mock()
-        drs_response.json.return_value = {
+        drs_object = {
             "id": "test-object-id",
             "access_methods": [
                 {
@@ -44,16 +63,16 @@ class TestDRSCompactIdentifiersIntegration:
                 }
             ],
         }
-        drs_response.raise_for_status.return_value = None
-        drs_response.status_code = 200
+        drs_url = "https://example-drs.com/ga4gh/drs/v1/objects/test-object-id"
+        responses.get(drs_url, json=drs_object)
 
-        mock_get.side_effect = [namespace_response, resources_response, drs_response]
+        mock_get.side_effect = [namespace_response, resources_response]
 
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             try:
                 fetch_drs_to_file("drs://drs.test:test-object-id", tmp.name, None)
 
-                assert mock_get.call_count == 3
+                assert mock_get.call_count == 2
                 mock_get.assert_any_call(
                     "https://registry.api.identifiers.org/restApi/namespaces/search/findByPrefix?prefix=drs.test",
                     timeout=600,
@@ -63,9 +82,7 @@ class TestDRSCompactIdentifiersIntegration:
                     timeout=600,
                 )
 
-                mock_get.assert_any_call(
-                    "https://example-drs.com/ga4gh/drs/v1/objects/test-object-id", timeout=600, headers=None
-                )
+                assert [call.request.url for call in responses.calls] == [drs_url]
 
                 mock_stream.assert_called_once()
                 call_args = mock_stream.call_args

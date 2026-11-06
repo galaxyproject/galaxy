@@ -146,6 +146,7 @@ def test_uri_get_records_applied_transform(mock_http_server, body, expected_tran
         assert hda_result["sources"][0]["transform"] == expected_transform
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_drs_uri_named_from_drs_metadata(mock_http_server):
     _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed")
@@ -154,6 +155,7 @@ def test_drs_uri_named_from_drs_metadata(mock_http_server):
     assert hda_result["name"] == "sample.bed"
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_drs_uri_named_from_drs_metadata_via_access_id(mock_http_server):
     _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed", access_id="https")
@@ -162,6 +164,7 @@ def test_drs_uri_named_from_drs_metadata_via_access_id(mock_http_server):
     assert hda_result["name"] == "sample.bed"
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_drs_uri_explicit_name_wins(mock_http_server):
     _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed")
@@ -170,6 +173,7 @@ def test_drs_uri_explicit_name_wins(mock_http_server):
     assert hda_result["name"] == "user supplied name"
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_drs_uri_without_name_falls_back_to_uri_basename(mock_http_server):
     _mock_drs_object(_bed_content_url(mock_http_server))
@@ -194,6 +198,7 @@ def test_drs_uri_without_name_falls_back_to_uri_basename(mock_http_server):
         ({"value": "sample.bed"}, DRS_OBJECT_ID),
     ],
 )
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_drs_uri_name_is_sanitized(mock_http_server, drs_name, expected_name):
     _mock_drs_object(_bed_content_url(mock_http_server), name=drs_name)
@@ -202,6 +207,7 @@ def test_drs_uri_name_is_sanitized(mock_http_server, drs_name, expected_name):
     assert hda_result["name"] == expected_name
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_drs_uri_overlong_name_is_truncated(mock_http_server):
     _mock_drs_object(_bed_content_url(mock_http_server), name="a" * 300)
