@@ -100,14 +100,14 @@ skip_if_quay_down = skip_if_site_down(
     "https://quay.io/",
     unavailable_pattern=r"\b(?:429 Client|5\d\d Server) Error: [^\n]* for url: https://quay\.io/api/",
 )
-# WorkflowHub (or Cloudflare in front of it) can be down or blocking CI runners while the homepage
-# check still passes. Galaxy's TRS proxy then reports the challenge, block or overload page it got
-# back as the error message, or raises the requests error for a timeout or connection failure.
+# WorkflowHub (or Cloudflare in front of it) can be down, slow or blocking CI runners while the
+# homepage check still passes. Galaxy's TRS proxy then reports the challenge, block or overload page
+# it got back as the error message, or reports that the server timed out or could not be reached.
 skip_if_workflowhub_down = skip_if_site_down(
     "https://workflowhub.eu/",
     unavailable_pattern=(
         r"<title>Just a moment\.\.\.</title>|[Cc]loudflare|under heavy load"
-        r"|HTTPSConnectionPool\(host='workflowhub\.eu', port=443\)"
+        r"|TRS server https://workflowhub\.eu (did not respond in time|could not be reached)"
     ),
 )
 
