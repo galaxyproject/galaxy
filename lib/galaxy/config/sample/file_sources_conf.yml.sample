@@ -330,6 +330,15 @@
   doc: Public NOMAD datasets.
   # base_url: https://my-oasis.example.org/nomad-oasis
 
+# HAL (https://hal.science) open archive, read-only and public deposits only.
+# Search accepts HAL query syntax, for example `title_t:RNA` or `halId_s:hal-01479142`.
+# Set api_url to a scoped search endpoint to restrict browsing to a collection.
+- type: hal
+  id: hal
+  label: HAL
+  doc: Public HAL publications and supplementary research data.
+  # api_url: https://api.hal.science/search/FRANCE-GRILLES/
+
 # IIIF (International Image Interoperability Framework) file source
 # For examples and to find public IIIF resources, visit: [https://iiif.io/guides/finding_resources/](https://iiif.io/guides/finding_resources/)
 - type: iiif

@@ -1,0 +1,21 @@
+- id: hal
+  version: 0
+  name: HAL
+  description: |
+    Browse public publications and supplementary files in [HAL](https://hal.science/).
+    Import main documents and attached research data. No account is required.
+    Search accepts HAL query syntax, for example `title_t:RNA` or `halId_s:hal-01479142`.
+    File paths include the deposit version. Files under embargo cannot be imported.
+  variables:
+    api_url:
+      label: HAL search API URL
+      type: string
+      optional: true
+      default: https://api.hal.science/search/
+      help: |
+        Use the default for all HAL deposits, or a scoped search endpoint such as
+        https://api.hal.science/search/FRANCE-GRILLES/ for a collection.
+  configuration:
+    type: hal
+    api_url: "{{ variables.api_url }}"
+    writable: false
