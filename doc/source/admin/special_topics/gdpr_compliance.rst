@@ -37,7 +37,7 @@ logging configuration, this record goes to the same destination as the rest of
 Galaxy's log (see the ``log_destination`` option), even when ``log_level`` is
 set higher than ``INFO``.
 
-To write these records to a separate file instead, start from the default
+To also write these records to a separate file, start from the default
 logging configuration shown in :doc:`../config_logging` and add a handler and a
 logger for ``COMPLIANCE`` to it. Note that the file path should be absolute and
 writable by the Galaxy user, e.g.:
