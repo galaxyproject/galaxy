@@ -11894,6 +11894,41 @@ steps: []
                 {"workflow_id": [first.workflow_id, second.workflow_id], "history_id": [second_history_id]}
             ) == {second.invocation_id}
 
+    def test_invocation_filtering_by_several_ids_checks_every_id(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
+"""
+        unknown_id = self._get("configuration/encode/999999999", admin=True).json()["encoded_id"]
+        with self._different_user_history(email=f"{uuid4()}@test.com") as private_history_id:
+            pass
+        with self._different_user_history(email=f"{uuid4()}@test.com") as history_id:
+            first = self._run_workflow(workflow, history_id=history_id, wait=False)
+            second = self._run_workflow(workflow, history_id=history_id, wait=False)
+            first_workflow_id = first.workflow_id
+
+            response = self._get("invocations", data={"workflow_id": [first_workflow_id, first_workflow_id]})
+            self._assert_status_code_is(response, 200)
+            assert [invocation["id"] for invocation in response.json()] == [first.invocation_id]
+
+            response = self._get("invocations", data={"workflow_id": [first_workflow_id, unknown_id]})
+            self._assert_status_code_is(response, 404)
+            response = self._get("invocations", data={"history_id": [history_id, unknown_id]})
+            self._assert_status_code_is(response, 404)
+            response = self._get("invocations", data={"history_id": [history_id, private_history_id]})
+            self._assert_status_code_is(response, 403)
+
+            response = self._get(
+                "invocations", data={"workflow_id": [first_workflow_id, second.workflow_id], "limit": 1}
+            )
+            self._assert_status_code_is(response, 200)
+            assert len(response.json()) == 1
+            assert response.headers["total_matches"] == "2"
+
     def _assert_invocation_for_url_is(self, route, target_invocation=None):
         response = self._get(route)
         self._assert_status_code_is(response, 200)
