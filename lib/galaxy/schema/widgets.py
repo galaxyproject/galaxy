@@ -73,7 +73,7 @@ class WorkflowParameters(BaseModel):
 
 
 class Widget(BaseModel):
-    id: str = Field(title="Identifier", description="Stable identifier of the widget.")
+    id: str = Field(title="Identifier", description="Identifier of the widget.")
     name: str = Field(title="Name", description="Display name of the widget.")
     description: str = Field(title="Description", description="What the widget shows.")
     path: str = Field(
