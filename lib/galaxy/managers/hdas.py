@@ -488,7 +488,10 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         stmt = (
             select(HistoryDatasetAssociation)
             .where(HistoryDatasetAssociation.id.in_(item_ids))
-            .options(selectinload(HistoryDatasetAssociation.history), selectinload(HistoryDatasetAssociation.dataset))
+            .options(
+                selectinload(HistoryDatasetAssociation.history).selectinload(model.History.user),
+                selectinload(HistoryDatasetAssociation.dataset),
+            )
         )
         hdas_by_id = {hda.id: hda for hda in self.hda_manager.session().scalars(stmt)}
 
