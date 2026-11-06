@@ -210,7 +210,7 @@ onUnmounted(() => exports.forEach((entry) => entry.monitor.stopWaitingForTask())
                     </GButton>
                 </BInputGroupAppend>
             </BInputGroup>
-            <p class="mt-2">
+            <p class="mt-2" data-description="galaxy export link warning">
                 Anyone with this link can download this {{ noun }} without logging in, until the link expires (usually
                 after {{ linkLifetime }}). It can't be withdrawn before then.
             </p>
