@@ -1601,8 +1601,9 @@ class CachedToolBox(ToolBox):
             # is the same namedtuple stub the eager pipeline hands the Tool
             # ctor for shed tools whose install-DB row hasn't materialised
             # yet — see ``AbstractToolBox.get_tool_repository_from_xml_item``.
-            # ``Tool.populate_tool_shed_info`` only reads the scalar fields,
-            # all of which are on ``ToolIndexEntry``; building the stub
+            # ``Tool.populate_tool_shed_info`` reads the scalar fields, all
+            # on ``ToolIndexEntry``, and keeps the stub as the
+            # ``tool_shed_repository`` fallback; building the stub
             # directly avoids a per-materialise install-DB round-trip.
             # ``installed_tool_dependencies`` readers get ``[]`` — same
             # shape the eager pre-install code path produces.

@@ -10,8 +10,12 @@ from a2wsgi import WSGIMiddleware
 from fastapi import (
     Depends,
     FastAPI,
+    Request,
 )
-from fastapi.responses import HTMLResponse
+from fastapi.responses import (
+    HTMLResponse,
+    RedirectResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from slowapi import (
     _rate_limit_exceeded_handler,
@@ -111,6 +115,17 @@ def frontend_controller(app):
 def frontend_route(controller, path):
     app, index = controller
     app.get(path, response_class=HTMLResponse)(index)
+    if path != "/":
+        # The WSGI catch-all mounted at "/" swallows FastAPI's redirect_slashes, so citable
+        # URLs with a trailing slash (e.g. /view/owner/repo/) would 404 in the legacy app.
+        app.get(f"{path}/", include_in_schema=False)(_redirect_without_trailing_slash)
+
+
+def _redirect_without_trailing_slash(request: Request) -> RedirectResponse:
+    url = request.url.path.rstrip("/")
+    if request.url.query:
+        url += f"?{request.url.query}"
+    return RedirectResponse(url)
 
 
 FRONT_END_ROUTES = [

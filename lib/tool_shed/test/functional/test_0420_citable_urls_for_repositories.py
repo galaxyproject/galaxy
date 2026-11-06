@@ -1,5 +1,7 @@
 import logging
 
+import requests
+
 from ..base import common
 from ..base.testcase import ShedTestCase
 
@@ -129,6 +131,15 @@ class TestRepositoryCitableURLs(ShedTestCase):
         encoded_repository_id = repository.id
         url = f"{self.url}/repository?repository_id={encoded_repository_id}"
         self.visit_url(url)
+        self.check_for_strings([repository_name, common.test_user_1_name])
+
+    def test_0020_load_view_page_with_trailing_slash(self):
+        # Citable URLs are often published with a trailing slash; they must keep resolving.
+        for path in ["/view/user1/", f"/view/user1/{repository_name}/"]:
+            response = requests.get(f"{self.url}{path}?rows_per_page=250", allow_redirects=False)
+            assert response.status_code == 307, response.text
+            assert response.headers["location"] == f"{path.rstrip('/')}?rows_per_page=250"
+        self.visit_url(f"{self.url}/view/user1/{repository_name}/")
         self.check_for_strings([repository_name, common.test_user_1_name])
 
     def test_0025_load_view_page_for_previous_revision(self):

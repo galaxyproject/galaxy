@@ -19,8 +19,14 @@ from cachetools import LRUCache
 
 import galaxy.queue_worker as queue_worker_mod
 import galaxy.tools.cached_toolbox as mod
+from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.app_unittest_utils.tool_source_support import populate_config
 from galaxy.exceptions import ConfigurationError
+from galaxy.model.tool_shed_install import (
+    mapping as install_mapping,
+    ToolShedRepository,
+)
+from galaxy.tool_shed.cache import ToolShedRepositoryCache
 from galaxy.tool_util.toolbox.base import NullToolTagManager
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.panel import (
@@ -714,6 +720,111 @@ def test_index_reload_refreshes_existing_stub_entries():
     box._register_new_index_entries_as_stubs()
     assert stub._entry is enriched
     assert stub.to_panel_entry()["tool_shed_repository"]["name"] == "fastp"
+
+
+SHED_IMAGE_GUID = "toolshed.g2.bx.psu.edu/repos/iuc/bedtools/bedtools_mergebed/2.31.1+galaxy2"
+SHED_IMAGE_TOOL_XML = """<tool id="bedtools_mergebed" name="MergeBED" version="2.31.1+galaxy2" profile="21.09">
+    <command>echo merge</command>
+    <help><![CDATA[
+**What it does**
+
+.. image:: $PATH_TO_IMAGES/merge-glyph.png
+    ]]></help>
+</tool>
+"""
+
+
+def _shed_image_entry():
+    return _entry(
+        id=SHED_IMAGE_GUID,
+        version="2.31.1+galaxy2",
+        name="MergeBED",
+        is_local=False,
+        tool_shed="toolshed.g2.bx.psu.edu",
+        repository_name="bedtools",
+        repository_owner="iuc",
+        changeset_revision="d57471728f7b",
+    )
+
+
+def _shed_image_stored(tool_dir):
+    return StoredToolSource(
+        hash="abc",
+        tool_source_class="XmlToolSource",
+        raw_source=SHED_IMAGE_TOOL_XML,
+        tool_id=SHED_IMAGE_GUID,
+        tool_dir=tool_dir,
+        source_path=None,
+        stored_at=datetime.now(timezone.utc),
+    )
+
+
+def _materializing_box(with_repository_cache=True):
+    box = _seam_box()
+    # ``Any``: MockApp declares no ``tool_shed_repository_cache`` slot.
+    app: Any = MockApp()
+    # Empty install database: the published conf's repository has no row.
+    app.install_model = install_mapping.init("sqlite:///:memory:", create_tables=True)
+    # ``UniverseApplication`` drops the cache once startup finishes.
+    app.tool_shed_repository_cache = (
+        ToolShedRepositoryCache(session=app.install_model.context) if with_repository_cache else None
+    )
+    box.app = app
+    box._cached_materialize_count = 0
+    return box
+
+
+@pytest.mark.parametrize("with_repository_cache", [True, False], ids=["during_startup", "after_startup"])
+def test_materialized_shed_tool_without_install_row_rewrites_help_images(tmp_path, with_repository_cache):
+    # Regression for #24527: a published shed tool absent from the install
+    # database kept a literal ``$PATH_TO_IMAGES`` image URL in its help.
+    box = _materializing_box(with_repository_cache)
+    entry = _shed_image_entry()
+
+    tool = box._create_tool_from_stored_source(_shed_image_stored(str(tmp_path)), entry=entry)
+
+    repository = tool.tool_shed_repository
+    assert repository is not None
+    assert (repository.tool_shed, repository.owner, repository.name) == ("toolshed.g2.bx.psu.edu", "iuc", "bedtools")
+    assert repository.installed_changeset_revision == "d57471728f7b"
+    help_text = tool.raw_help.content
+    assert "$PATH_TO_IMAGES" not in help_text
+    assert (
+        ".. image:: shed_tool_static/toolshed.g2.bx.psu.edu/iuc/bedtools/bedtools_mergebed/2.31.1%2Bgalaxy2/merge-glyph.png"
+        in help_text
+    )
+
+
+def test_materializing_shed_tools_leaves_repository_cache_untouched(tmp_path):
+    box = _materializing_box()
+    entry = _shed_image_entry()
+    for _ in range(3):
+        tool = box._create_tool_from_stored_source(_shed_image_stored(str(tmp_path)), entry=entry)
+        assert tool.tool_shed_repository.installed_changeset_revision == "d57471728f7b"
+    assert box.app.tool_shed_repository_cache.local_repositories == []
+
+
+@pytest.mark.parametrize("with_repository_cache", [True, False], ids=["during_startup", "after_startup"])
+def test_materializing_shed_tool_keeps_install_database_repository(tmp_path, with_repository_cache):
+    box = _materializing_box(with_repository_cache=False)
+    app = box.app
+    installed = ToolShedRepository(
+        tool_shed="toolshed.g2.bx.psu.edu",
+        name="bedtools",
+        owner="iuc",
+        installed_changeset_revision="d57471728f7b",
+        changeset_revision="d57471728f7b",
+    )
+    app.install_model.context.add(installed)
+    app.install_model.context.commit()
+    if with_repository_cache:
+        app.tool_shed_repository_cache = ToolShedRepositoryCache(session=app.install_model.context)
+
+    tool = box._create_tool_from_stored_source(_shed_image_stored(str(tmp_path)), entry=_shed_image_entry())
+
+    repository = tool.tool_shed_repository
+    assert isinstance(repository, ToolShedRepository)
+    assert repository.id == installed.id
 
 
 def test_create_tool_raises_on_index_miss():

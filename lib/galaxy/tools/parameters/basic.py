@@ -1100,12 +1100,13 @@ class SelectToolParameter(ToolParameter):
     """
     Parameter that takes on one (or many) or a specific set of values.
 
-    For ``multiple="true"`` parameters the value is always a list of the
-    selected option values, even if only a single option was provided as a
-    scalar (e.g. by legacy API clients or test cases), so that output filters
-    and other consumers of the parameter dict can rely on a single
-    representation. With a comma separated string ``"A" in value`` would be a
-    substring check, which is true for a selection of ``"AA"``.
+    For ``multiple="true"`` parameters a single option provided as a scalar
+    (e.g. by legacy API clients, test cases or stored workflow step state) is
+    wrapped in a list, so that output filters and other consumers of the
+    parameter dict see the same type for one or several selected options. On a
+    plain string ``"A" in value`` would be a substring check, which is true for
+    a selection of ``"AA"``. An optional multiple select with nothing selected
+    is ``None``.
 
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.util import XML
@@ -1154,9 +1155,18 @@ class SelectToolParameter(ToolParameter):
     ['x', 'y']
     >>> one.from_json("y", trans)
     ['y']
+    >>> p.to_python("x", None)
+    ['x']
+    >>> p.to_python(["x"], None)
+    ['x']
+    >>> p.to_python("None", None)
+    'None'
     """
 
     value_label: str
+    # A stored string is a single selected option. Subclasses that parse separated
+    # strings in from_json leave stored strings to from_json instead.
+    stored_string_is_single_option: bool = True
 
     def __init__(self, tool: Optional["Tool"], input_source, context=None):
         input_source = ensure_input_source(input_source)
@@ -1357,7 +1367,18 @@ class SelectToolParameter(ToolParameter):
     def to_python(self, value, app):
         if isinstance(value, MutableMapping) and "src" in value:
             return history_item_dict_to_python(value, app, self.name)
-        return super().to_python(value, app)
+        value = super().to_python(value, app)
+        # Stored state (e.g. a workflow step written by hand or uploaded via the API) may
+        # hold a single selected option as a scalar. "" and "None" mean nothing is selected
+        # and stay strings; from_json turns them into None or [] where it runs.
+        if (
+            self.multiple
+            and self.stored_string_is_single_option
+            and isinstance(value, str)
+            and value not in ("", "None")
+        ):
+            return [value]
+        return value
 
     def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         options: list[ParameterOption]
@@ -1529,6 +1550,8 @@ class SelectTagParameter(SelectToolParameter):
     Select set that is composed of a set of tags available for an input.
     """
 
+    stored_string_is_single_option = False
+
     def __init__(self, tool: Optional["Tool"], input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
@@ -1642,7 +1665,12 @@ class ColumnListParameter(SelectToolParameter):
     >>> clp = ColumnListParameter(None, XML('<param name="numerical_column" type="data_column" data_ref="blah" numerical="true"/>'))
     >>> print(clp.name)
     numerical_column
+    >>> multi = ColumnListParameter(None, XML('<param name="columns" type="data_column" data_ref="blah" multiple="true"/>'))
+    >>> multi.to_python("2,3", None)
+    '2,3'
     """
+
+    stored_string_is_single_option = False
 
     def __init__(self, tool: Optional["Tool"], input_source):
         input_source = ensure_input_source(input_source)
@@ -1888,6 +1916,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> assert d['options'][1]['name'] == 'Option 5'
     >>> assert d['options'][1]['value'] == 'option5'
     >>> assert p.from_json(['option5'], trans) == ['option5']
+    >>> p.to_python("option5", None)
+    'option5'
     >>> single = DrillDownSelectToolParameter(tool, XML(
     ... '''
     ... <param name="_name" type="drill_down" display="checkbox" hierarchy="exact">
@@ -1901,6 +1931,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> assert single.get_initial_value(trans, {}) == 'option1'
     >>> assert single.to_param_dict_string('option1') == 'option1'
     """
+
+    stored_string_is_single_option = False
 
     def __init__(self, tool: Optional["Tool"], input_source, context=None):
         input_source = ensure_input_source(input_source)

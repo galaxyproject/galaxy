@@ -1,4 +1,5 @@
 import base64
+import socket
 from os import environ
 from unittest import (
     mock,
@@ -19,6 +20,7 @@ from galaxy.util.unittest_utils import (
     skip_if_dockstore_down,
     skip_if_workflowhub_down,
 )
+from galaxy.workflow import trs_proxy
 from galaxy.workflow.trs_proxy import (
     GA4GH_GALAXY_DESCRIPTOR,
     parse_search_kwds,
@@ -257,3 +259,76 @@ def test_skip_if_workflowhub_down_reports_other_failures():
     with _mock_get(_response(200, '{"id": "138"}')):
         with pytest.raises(AssertionError):
             fetch_tool()
+
+
+UNRESPONSIVE_SERVER_ERRORS = [
+    (
+        requests.exceptions.ReadTimeout(
+            "HTTPSConnectionPool(host='workflowhub.eu', port=443): Read timed out. (read timeout=30)"
+        ),
+        "did not respond in time",
+    ),
+    (
+        requests.exceptions.ConnectTimeout(
+            "HTTPSConnectionPool(host='workflowhub.eu', port=443): Max retries exceeded with url: "
+            "/ga4gh/trs/v2/tools/138 (Caused by ConnectTimeoutError('Connection timed out. (connect timeout=10)'))"
+        ),
+        "did not respond in time",
+    ),
+    (
+        requests.exceptions.ConnectionError(
+            "HTTPSConnectionPool(host='workflowhub.eu', port=443): Max retries exceeded with url: "
+            "/ga4gh/trs/v2/tools/138 (Caused by NewConnectionError('Failed to establish a new connection'))"
+        ),
+        "could not be reached",
+    ),
+]
+
+
+def test_trs_requests_use_bounded_timeout():
+    with _mock_get(_response(200, '{"id": "138"}')) as get:
+        get_trs_proxy().server_from_url("https://workflowhub.eu").get_tool("138")
+    assert get.call_args.kwargs["timeout"] == (10, 30)
+
+
+def test_slow_server_reported_as_timeout():
+    # A listening socket that never accepts completes the TCP handshake but never sends a response.
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        host, port = listener.getsockname()
+        server = get_trs_proxy().server_from_url(f"http://{host}:{port}")
+        with mock.patch.object(trs_proxy, "TRS_REQUEST_TIMEOUT", (1, 0.1)):
+            with pytest.raises(MessageException, match=r"did not respond in time"):
+                server.get_tool("138")
+
+
+@pytest.mark.parametrize("trs_error,reason", UNRESPONSIVE_SERVER_ERRORS)
+def test_unresponsive_server_reported_as_message_exception(trs_error, reason, caplog):
+    with _mock_get(trs_error):
+        with pytest.raises(MessageException) as exc_info:
+            get_trs_proxy().server_from_url("https://workflowhub.eu").get_tool("138")
+    assert exc_info.value.err_msg == f"TRS server https://workflowhub.eu {reason}."
+    assert str(trs_error) in caplog.text
+
+
+def _message_sent_to_client(exception):
+    # expose_api sends a MessageException's message to the client and replaces any other
+    # exception with a generic message.
+    if isinstance(exception, MessageException):
+        return exception.err_msg
+    return "Uncaught exception in exposed API method:"
+
+
+@pytest.mark.parametrize("trs_error,reason", UNRESPONSIVE_SERVER_ERRORS)
+def test_skip_if_workflowhub_down_skips_unresponsive_server_reported_to_client(trs_error, reason):
+    @skip_if_workflowhub_down
+    def import_workflow():
+        try:
+            get_trs_proxy().server_from_url("https://workflowhub.eu").get_tool("138")
+        except Exception as e:
+            raise AssertionError(f"Errors shown on page: ['Error: {_message_sent_to_client(e)}']")
+
+    with _mock_get(trs_error):
+        with pytest.raises(SkipTest, match=reason):
+            import_workflow()

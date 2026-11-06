@@ -233,7 +233,9 @@ class AbstractTool:
         self.config_files.extend(tool_source.parse_file_sources())
 
     def parse_tests(self) -> None:
-        self._tests_parsed = True
+        # The parsed flag is set only once ``_tests`` holds the result, so a
+        # concurrent first access parses again instead of reading ``None``
+        # while this parse is still running.
         source = self.tool_source
         # ``Tool.__init__`` calls ``tool_source.mem_optimize()`` after parsing,
         # which frees an ``XmlToolSource``'s element tree (``root`` becomes
@@ -246,6 +248,7 @@ class AbstractTool:
                 source = get_tool_source(raw_tool_source=source.to_string(), tool_source_class=type(source).__name__)
             except Exception:
                 self._tests = None
+                self._tests_parsed = True
                 log.exception("Failed to rebuild tool source for deferred test parsing of '%s'", self.id)
                 return
         test_descriptions = parse_tool_test_descriptions(source, self.id, self.parameters)
@@ -254,6 +257,7 @@ class AbstractTool:
         except Exception:
             self._tests = None
             log.exception("Failed to parse tool tests for tool '%s'", self.id)
+        self._tests_parsed = True
 
     @property
     def _repository_dir(self) -> str | None:
