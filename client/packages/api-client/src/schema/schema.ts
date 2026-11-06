@@ -6916,7 +6916,7 @@ export interface paths {
          * Lists the widgets this Galaxy serves
          * @description **Warning**: This API is unstable and may change without notice.
          *
-         *     Widgets are meant to be interactive, read-only views of single resources that respect Galaxy's authorization. Any origin may embed page and workflow widgets; other widgets only Galaxy itself and the origins in `widgets_allowed_origins`. `/widgets/` serves the widgets app for any path, so a widget this Galaxy lacks still loads, showing only an error inside the page. Consumers check this list for the widgets and parameters an instance supports instead of hardcoding routes per Galaxy version.
+         *     Widgets are interactive views of single resources that respect Galaxy's authorization. Hiding actions in a widget is a presentation choice, not an access control. Any origin may embed page and workflow widgets; other widgets only Galaxy itself and the origins in `widgets_allowed_origins`. `/widgets/` serves the widgets app for any path, so a widget this Galaxy lacks still loads, showing only an error inside the page. Consumers check this list for the widgets and parameters an instance supports instead of hardcoding routes per Galaxy version.
          */
         get: operations["index_api_widgets_get"];
         put?: never;

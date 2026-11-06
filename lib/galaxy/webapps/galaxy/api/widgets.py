@@ -26,7 +26,7 @@ WIDGETS = [
     Widget(
         id="workflow",
         name="Workflow",
-        description="Read-only graph of one workflow, with its information panel.",
+        description="Graph of one workflow, with its information panel.",
         path="workflows/{workflow_id}",
         parameters_schema=WorkflowParameters.model_json_schema(),
     ),
@@ -40,12 +40,12 @@ class FastAPIWidgets:
         public=True,
         unstable=True,
         summary="Lists the widgets this Galaxy serves",
-        description="Widgets are meant to be interactive, read-only views of single resources that respect "
-        "Galaxy's authorization. Any origin may embed page and workflow widgets; other widgets only Galaxy "
-        "itself and the origins in `widgets_allowed_origins`. "
-        "`/widgets/` serves the widgets app for any path, so a widget this Galaxy lacks still loads, "
-        "showing only an error inside the page. Consumers check this list for the widgets and parameters "
-        "an instance supports instead of hardcoding routes per Galaxy version.",
+        description="Widgets are interactive views of single resources that respect Galaxy's authorization. "
+        "Hiding actions in a widget is a presentation choice, not an access control. Any origin may embed "
+        "page and workflow widgets; other widgets only Galaxy itself and the origins in "
+        "`widgets_allowed_origins`. `/widgets/` serves the widgets app for any path, so a widget this Galaxy "
+        "lacks still loads, showing only an error inside the page. Consumers check this list for the widgets "
+        "and parameters an instance supports instead of hardcoding routes per Galaxy version.",
     )
     def index(self) -> list[Widget]:
         return WIDGETS
