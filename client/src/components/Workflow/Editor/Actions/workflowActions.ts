@@ -6,7 +6,6 @@ import type {
     OutputReconnectionMap,
 } from "@/components/Workflow/Editor/modules/convertOpenConnections";
 import type { PartialWorkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
-import { AxisAlignedBoundingBox, type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
 import { getModule } from "@/components/Workflow/Editor/modules/services";
 import { Services } from "@/components/Workflow/services";
 import { LazyUndoRedoAction, UndoRedoAction, type UndoRedoStore } from "@/stores/undoRedoStore";
@@ -20,6 +19,7 @@ import { useWorkflowStateStore, type WorkflowStateStore } from "@/stores/workflo
 import { type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import type { Connection, InputTerminal, OutputTerminal } from "@/stores/workflowStoreTypes";
 import { assertDefined, ensureDefined } from "@/utils/assertions";
+import { AxisAlignedBoundingBox, type Rectangle } from "@/utils/geometry";
 import { cloneRaw } from "@/utils/toRawDeep";
 
 import type { defaultPosition } from "../composables/useDefaultStepPosition";
@@ -514,8 +514,6 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
         const outputReconnectionMap = this.outputReconnectionMap;
 
         assertDefined(stepId);
-        inputReconnectionMap;
-        outputReconnectionMap;
 
         // reconnect inputs
 
