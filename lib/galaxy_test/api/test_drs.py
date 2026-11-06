@@ -118,6 +118,7 @@ class TestDrsApi(ApiTestCase):
                 user_context=user_context_fixture(),
                 force_http=force_http,
                 retry_options=retry_options,
+                fetch_url_allowlist=parse_allowlist_ips(["127.0.0.0/24"]),
             )
             with open(tf.name) as f:
                 assert CONTENT == f.read()
