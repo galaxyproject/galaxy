@@ -45,6 +45,249 @@ sections:
       {{quick_start_example}}
       ```
 
+  - id: when-to-use
+    title: When to write a user-defined tool
+    kind: getting-started
+    body: |
+      A user-defined tool is the right choice when nothing installed does the
+      job and the job is too small to be worth asking an administrator to
+      install something. A one-off reformatting step, a filter nobody has
+      wrapped, or a couple of commands glued together are all good candidates.
+
+      When a tool that already does the job is installed on your Galaxy, prefer
+      it. An installed tool is versioned, shared and citable, so a history or
+      workflow built on it is easier for someone else to rerun and publish. A
+      user-defined tool travels only with the workflow that embeds it, and only
+      to users allowed to run user-defined tools.
+
+  - id: managing-tools
+    title: Finding the tools you have written
+    kind: getting-started
+    body: |
+      Saved tools live under **Custom Tools**, the wrench in the activity bar.
+      The panel lists each tool you have written with its name, version,
+      description and when you last edited it. From there you can open the
+      editor on a new tool, reopen a saved one to revise it, or disable a tool
+      you want to keep but not see in the tool panel.
+
+      A saved tool is yours alone. Other users cannot see or search for it,
+      and it reaches them only through a workflow that embeds it, as described
+      under [Using a tool in a workflow](#workflows).
+
+  - id: examples
+    title: Worked examples
+    kind: getting-started
+    body: |
+      The quick start is about as small as a tool gets. These two are closer to
+      the size of a real analysis step: several inputs, several outputs, and
+      the work carried in a script rather than on the command line.
+
+      The first reads a GFF/GTF annotation and a two-column mapping table,
+      rewrites the sequence names in column 1, leaves names on an ignore list
+      alone, and fails the job on a name it was not told about. It also writes
+      a small report of what it did. The logic is longer than a shell one-liner
+      is good for, so it goes in a `configfiles` script and `shell_command`
+      just calls it with the input paths.
+
+      ```yaml
+      class: GalaxyUserTool
+      id: gxf-seqname-normalizer
+      name: Normalize GXF sequence names
+      version: 0.2.0
+      description: rename sequences in a GFF/GTF file from a mapping table
+      container: python:3.11-slim
+      shell_command: python normalize.py '$(inputs.annotation.path)' '$(inputs.mapping.path)'
+        '$(inputs.ignore.path)' normalized.gxf report.tsv
+      configfiles:
+        - filename: normalize.py
+          content: |
+            import sys
+            from collections import Counter
+
+            ann_path, map_path, ign_path, out_path, rep_path = sys.argv[1:6]
+
+            mapping = {}
+            with open(map_path, encoding="utf-8") as fh:
+                for line in fh:
+                    if line.startswith("#") or not line.strip():
+                        continue
+                    parts = line.rstrip("\n").split("\t")
+                    if len(parts) >= 2:
+                        mapping[parts[0]] = parts[1]
+
+            ignore = set()
+            with open(ign_path, encoding="utf-8") as fh:
+                for line in fh:
+                    if line.startswith("#") or not line.strip():
+                        continue
+                    ignore.add(line.strip().split("\t")[0])
+
+            counts = Counter()
+            unknown = set()
+
+            with open(ann_path, encoding="utf-8", errors="replace") as inp, open(
+                out_path, "w", encoding="utf-8"
+            ) as out:
+                for line in inp:
+                    if line.startswith("#") or not line.strip():
+                        out.write(line)
+                        continue
+                    parts = line.rstrip("\n").split("\t")
+                    seq = parts[0]
+                    if seq in mapping:
+                        parts[0] = mapping[seq]
+                        counts["renamed"] += 1
+                        out.write("\t".join(parts) + "\n")
+                    elif seq in ignore:
+                        counts["ignored"] += 1
+                        out.write(line)
+                    else:
+                        counts["unknown"] += 1
+                        unknown.add(seq)
+
+            with open(rep_path, "w", encoding="utf-8") as rep:
+                rep.write("metric\tvalue\n")
+                for metric in ("renamed", "ignored", "unknown"):
+                    rep.write(f"{metric}\t{counts[metric]}\n")
+
+            if unknown:
+                sys.exit("Unknown sequence names: " + ", ".join(sorted(unknown)))
+      inputs:
+        - name: annotation
+          label: Annotation to rewrite
+          type: data
+          format:
+            - gff
+            - gff3
+            - gtf
+        - name: mapping
+          label: Two-column old-name/new-name mapping
+          type: data
+          format:
+            - tabular
+        - name: ignore
+          label: Sequence names to leave untouched
+          type: data
+          format:
+            - tabular
+      outputs:
+        - name: normalized
+          label: $(inputs.annotation.element_identifier) (renamed)
+          type: data
+          format_source: annotation
+          from_work_dir: normalized.gxf
+        - name: report
+          label: $(inputs.annotation.element_identifier) (rename report)
+          type: data
+          format: tabular
+          from_work_dir: report.tsv
+      ```
+
+      The second wraps [NucleoATAC](https://github.com/GreenleafLab/NucleoATAC)
+      from a BioContainer image. It shows a multi-step script, a CPU request
+      passed through to the program as `$GALAXY_SLOTS`, inputs restricted to
+      particular datatypes, several labeled outputs, and a `help` block
+      describing the tool to whoever runs it. NucleoATAC leaves out a result
+      file when it has nothing to report, so the script creates an empty one in
+      that case and every declared output is always claimed.
+
+      ```yaml
+      class: GalaxyUserTool
+      id: nucleoatac-run
+      name: NucleoATAC
+      version: 0.5.0
+      description: call nucleosome positions and occupancy from ATAC-seq data
+      container: quay.io/biocontainers/nucleoatac:0.3.4--py27hf85d69d_6
+      requirements:
+        - type: resource
+          cores_min: 4
+      shell_command: sh run.sh '$(inputs.bam.path)' '$(inputs.reference.path)' '$(inputs.regions.path)'
+      configfiles:
+        - filename: run.sh
+          content: |
+            set -eu
+            bam="$1"
+            reference="$2"
+            regions="$3"
+
+            cp "$bam" reads.bam
+            cp "$reference" ref.fa
+            cp "$regions" regions.bed
+            python -c "import pysam; pysam.index('reads.bam'); pysam.faidx('ref.fa')"
+
+            nucleoatac run --bed regions.bed --bam reads.bam --fasta ref.fa --out result --cores "$GALAXY_SLOTS"
+
+            # NucleoATAC omits a result file when it has nothing to report. Unpack
+            # whatever is there and leave an empty file for the rest, so that a
+            # no-call is distinguishable from a failed job.
+            for name in occ occpeaks nucpos nucleoatac_signal nucmap_combined nfrpos; do
+                : > "$name.out"
+                for packed in "result.$name.bed.gz" "result.$name.bedgraph.gz"; do
+                    if [ -s "$packed" ]; then
+                        gunzip -c "$packed" > "$name.out"
+                    fi
+                done
+            done
+      inputs:
+        - name: bam
+          label: Coordinate-sorted ATAC BAM
+          type: data
+          format:
+            - bam
+        - name: reference
+          label: Reference FASTA with matching sequence names
+          type: data
+          format:
+            - fasta
+        - name: regions
+          label: Regions to analyze
+          type: data
+          format:
+            - bed
+      outputs:
+        - name: occ
+          label: $(inputs.bam.element_identifier) occupancy
+          type: data
+          format: bedgraph
+          from_work_dir: occ.out
+        - name: occpeaks
+          label: $(inputs.bam.element_identifier) occupancy peaks
+          type: data
+          format: bed
+          from_work_dir: occpeaks.out
+        - name: nucpos
+          label: $(inputs.bam.element_identifier) nucleosome positions
+          type: data
+          format: bed
+          from_work_dir: nucpos.out
+        - name: nucleoatac_signal
+          label: $(inputs.bam.element_identifier) nucleosome signal
+          type: data
+          format: bedgraph
+          from_work_dir: nucleoatac_signal.out
+        - name: nucmap_combined
+          label: $(inputs.bam.element_identifier) combined nucleosome map
+          type: data
+          format: bed
+          from_work_dir: nucmap_combined.out
+        - name: nfrpos
+          label: $(inputs.bam.element_identifier) NFR positions
+          type: data
+          format: bed
+          from_work_dir: nfrpos.out
+      help:
+        format: markdown
+        content: |
+          Runs NucleoATAC on a coordinate-sorted ATAC BAM, a reference FASTA and a
+          regions BED, and reports nucleosome occupancy, occupancy peaks,
+          nucleosome positions, nucleosome signal, a combined nucleosome map and
+          nucleosome-free-region positions.
+
+          The BAM, FASTA and BED must use the same sequence names. An output with
+          nothing to report comes back as an empty dataset rather than failing the
+          job.
+      ```
+
   - id: tool-format
     title: Tool definition
     kind: reference
@@ -502,6 +745,24 @@ sections:
       container whose tool version differs from the one the command was written
       against.
 
+  - id: sandbox-limits
+    title: What can a tool not reach?
+    kind: faq
+    body: |
+      An expression sees the tool's declared inputs and nothing else. Several
+      things an XML tool can reach are therefore unavailable, and a tool that
+      needs one of them is not a good fit for this format yet:
+
+      | Not available | What this rules out |
+      | --- | --- |
+      | Galaxy's reference data | Aligning against a server-managed genome chosen from a list. Pass a reference in as a `data` input instead. |
+      | Dataset metadata | Branching on a dataset's line count, column count, dbkey or other metadata Galaxy has already computed. |
+      | Metadata files | Reading an index Galaxy stores beside a dataset, such as a BAM `.bai`. Rebuild what you need in the job, as the NucleoATAC example does with `pysam.index`. |
+      | A tool's `extra_files` directory | Shipping a static data file, script or lookup table alongside the tool. Put a script in `configfiles`, or bake the data into the container. |
+      | The Galaxy database and filesystem | Anything the Cheetah templating in an XML tool could query. This is the point of the sandbox, not an oversight. |
+
+      These are current limits of the beta rather than permanent ones.
+
   - id: testing
     title: Can Galaxy run the declared tests?
     kind: faq
@@ -631,3 +892,12 @@ sections:
 
       Galaxy's `.ga` export works the same way: it includes the tool definition
       as `tool_representation`.
+
+      What the importer gets is an independent copy, not a reference to your
+      tool. Editing yours afterwards leaves theirs untouched, so a fix reaches
+      them only when you share the workflow again. This is also the only way to
+      hand a user-defined tool to someone else: there is no direct
+      user-to-user share. An administrator who wants a tool available to
+      everyone can export it to disk and load it like a regular tool, as
+      described under
+      [User-Defined Tools](gxdoc:admin/user_defined_tools.md).
