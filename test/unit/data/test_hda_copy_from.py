@@ -220,3 +220,52 @@ def test_open_copy_does_not_block_updates_of_source(engine, queued_and_cached):
         assert not thread.is_alive(), "update waited on the copier's lock"
     thread.join(30)
     assert not errors, errors
+
+
+@skip_unless_postgres
+def test_copy_from_job_locks_outputs_in_id_order(engine):
+    with _session(engine) as session:
+        history = model.History(name="job cache copy race")
+        session.add(history)
+        low = _new_hda(session, history, model.Dataset.states.QUEUED)
+        high = _new_hda(session, history, model.Dataset.states.QUEUED)
+        cached_low = _new_hda(session, history, model.Dataset.states.OK)
+        cached_high = _new_hda(session, history, model.Dataset.states.OK)
+        session.flush()
+        assert low.id < high.id
+        job, cached_job = model.Job(), model.Job()
+        job.history = cached_job.history = history
+        session.add_all([job, cached_job])
+        # Visits the higher id first, unless the outputs are locked up front.
+        for a_job, out_high, out_low in ((job, high, low), (cached_job, cached_high, cached_low)):
+            a_job.add_output_dataset("out_high", out_high)
+            session.flush()
+            a_job.add_output_dataset("out_low", out_low)
+        session.commit()
+        low_id, high_id, cached_low_id, cached_high_id = low.id, high.id, cached_low.id, cached_high.id
+        job_id, cached_job_id = job.id, cached_job.id
+
+    with _session(engine) as copier:
+        source_low = copier.get(model.HistoryDatasetAssociation, low_id)
+        source_high = copier.get(model.HistoryDatasetAssociation, high_id)
+        assert source_low and source_high
+        copy_low = source_low.copy(flush=False)
+
+        def swap():
+            with _session(engine) as runner:
+                late_hit = runner.get(model.Job, job_id)
+                cached = runner.get(model.Job, cached_job_id)
+                assert late_hit and cached
+                late_hit.copy_from_job(cached, copy_outputs=True)
+                runner.commit()
+
+        thread, errors = _run_in_thread(swap)
+        _wait_until_blocked(engine, thread)
+        copy_high = source_high.copy(flush=False)
+        copier.commit()
+        copy_low_id, copy_high_id = copy_low.id, copy_high.id
+    thread.join(30)
+    assert not thread.is_alive()
+    assert not errors, errors
+    _assert_copy_on_cached_dataset(engine, copy_low_id, cached_low_id)
+    _assert_copy_on_cached_dataset(engine, copy_high_id, cached_high_id)
