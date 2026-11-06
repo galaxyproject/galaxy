@@ -1,6 +1,8 @@
 """Integration tests for SSE-based history update notifications."""
 
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
 from urllib.parse import urljoin
 from uuid import uuid4
 
@@ -21,7 +23,10 @@ class TestHistorySSEIntegration(IntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         config["enable_celery_tasks"] = False
+        # The default set by super() needs celery, and jobs must finish to charge their outputs
+        config["metadata_strategy"] = "directory"
         config["enable_sse_updates"] = True
+        config["enable_quotas"] = True
 
     def setUp(self):
         super().setUp()
@@ -175,3 +180,85 @@ class TestHistorySSEIntegration(IntegrationTestCase):
         assert (
             user_b_history_id not in seen_ids
         ), f"User A received history_update for user B's history ({user_b_history_id}): {history_events}"
+
+    def test_user_quota_update_after_job_finishes(self):
+        """A finished job charges its outputs to its owner's usage, so it pushes ``user_quota_update`` to them."""
+        history_id = self.dataset_populator.new_history(name=f"test_history_{uuid4()}")
+
+        with self._listening(self.galaxy_interactor.api_key) as listener:
+            self.dataset_populator.new_dataset(history_id, content="usage test", wait=True)
+            listener.wait_for_event("user_quota_update")
+
+    def test_user_quota_update_after_dataset_purge(self):
+        """Purging a dataset lowers its owner's usage, so it pushes ``user_quota_update`` to them."""
+        history_id = self.dataset_populator.new_history(name=f"test_history_{uuid4()}")
+        dataset = self.dataset_populator.new_dataset(history_id, content="usage test", wait=True)
+
+        with self._listening(self.galaxy_interactor.api_key) as listener:
+            self.dataset_populator.delete_dataset(history_id, dataset["id"], purge=True)
+            listener.wait_for_event("user_quota_update")
+
+    def test_user_quota_update_after_usage_recalculation(self):
+        """Recalculating a user's usage pushes ``user_quota_update`` to them."""
+        _, user_api_key = self._setup_user_get_key(f"{uuid4()}@galaxy.test")
+
+        with self._listening(user_api_key) as listener:
+            self._get_interactor(api_key=user_api_key).put("users/current/recalculate_disk_usage").raise_for_status()
+            listener.wait_for_event("user_quota_update")
+
+    def test_user_quota_update_after_quota_assignment(self):
+        """Assigning a quota to a user pushes ``user_quota_update`` to that user."""
+        user, user_api_key = self._setup_user_get_key(f"{uuid4()}@galaxy.test")
+
+        with self._listening(user_api_key) as listener, self._quota(in_users=[user["id"]]):
+            listener.wait_for_event("user_quota_update")
+
+    def test_user_quota_update_after_joining_group_with_quota(self):
+        """Joining a group changes the quotas that apply to a user when the group has one."""
+        user, user_api_key = self._setup_user_get_key(f"{uuid4()}@galaxy.test")
+        group = self.dataset_populator.create_group()
+
+        with self._quota(in_groups=[group["id"]]), self._listening(user_api_key) as listener:
+            self._put(f"groups/{group['id']}/users/{user['id']}", admin=True).raise_for_status()
+            listener.wait_for_event("user_quota_update")
+
+    def test_user_quota_update_broadcast_after_default_quota_change(self):
+        """A new default quota concerns every user, so the event is broadcast."""
+        with self._listening(self.galaxy_interactor.api_key) as listener, self._quota(default="registered"):
+            # The user's own usage events, e.g. from the purges of other tests, may arrive too
+            listener.wait_for_event_where(
+                "user_quota_update", lambda event: json.loads(event["data"]) == {"broadcast": True}
+            )
+
+    @contextmanager
+    def _listening(self, api_key: str | None) -> Iterator[SSELineListener]:
+        assert api_key is not None
+        listener = SSELineListener(self._events_stream_url(), api_key)
+        listener.start()
+        try:
+            yield listener
+        finally:
+            listener.stop()
+
+    @contextmanager
+    def _quota(
+        self, in_users: list[str] | None = None, in_groups: list[str] | None = None, default: str = "no"
+    ) -> Iterator[None]:
+        # Large enough to never get in the way of the other tests in this class
+        quota = self.dataset_populator.create_quota(
+            {
+                "name": f"quota_{uuid4()}",
+                "description": "SSE test quota",
+                "amount": "1TB",
+                "operation": "=",
+                "default": default,
+                "in_users": in_users or [],
+                "in_groups": in_groups or [],
+            }
+        )
+        try:
+            yield
+        finally:
+            # A default quota can't be deleted
+            self._put(f"quotas/{quota['id']}", data={"default": "no"}, admin=True, json=True).raise_for_status()
+            self._delete(f"quotas/{quota['id']}", data={"purge": "true"}, admin=True, json=True).raise_for_status()

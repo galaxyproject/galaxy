@@ -178,6 +178,7 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.model.tag_filter import build_tag_filter
+from galaxy.model.user_quota_updates import queue_user_quota_update
 from galaxy.objectstore import (
     ObjectStoreAuth,
     USER_OBJECTS_SCHEME,
@@ -1242,6 +1243,9 @@ WHERE user_id = :user_id and quota_source_label = :label
     def adjust_total_disk_usage(self, amount, quota_source_label, preserve_update_time: bool = False):
         assert amount is not None
         if amount != 0:
+            # A user that isn't in the database yet has no browser to tell
+            if self.id is not None and (session := object_session(self)):
+                queue_user_quota_update(session, [self.id])
             if quota_source_label is None:
                 if not inspect(self).has_identity:
                     # Not in the database yet, the usage is written when the user is flushed
@@ -1359,6 +1363,8 @@ ON CONFLICT
         """
         Calculates and sets user disk usage.
         """
+        # Queued first, since the calculation commits
+        queue_user_quota_update(required_object_session(self), [self.id])
         self._calculate_or_set_disk_usage(object_store=object_store)
 
     def _calculate_or_set_disk_usage(self, object_store: "BaseObjectStore"):

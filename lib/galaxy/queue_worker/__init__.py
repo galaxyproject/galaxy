@@ -84,6 +84,14 @@ class EntryPointUpdatePayload(TypedDict, total=False):
     event_id: str | None
 
 
+class UserQuotaUpdatePayload(TypedDict, total=False):
+    """Wire contract for the ``user_quota_update`` control-task kwargs."""
+
+    user_ids: list[int]
+    broadcast: bool
+    event_id: str | None
+
+
 class HistoryViewerSubscriptionPayload(TypedDict, total=False):
     """Wire contract for the (un)subscribe_history_viewer control-task kwargs.
 
@@ -575,6 +583,22 @@ def entry_point_update(app: "MinimalManagerApp", **kwargs) -> None:
     sse_manager.push_to_user(int(payload["user_id"]), event)
 
 
+def user_quota_update(app: "MinimalManagerApp", **kwargs) -> None:
+    """Tell connected users that their storage usage or quota changed, so they refetch it.
+
+    A broadcast, sent when a default quota changes, also reaches anonymous users. Its data
+    says so, letting clients spread out their refetches instead of all requesting at once.
+    """
+    payload = cast(UserQuotaUpdatePayload, kwargs)
+    sse_manager = app[SSEConnectionManager]
+    event_id = payload.get("event_id")
+    if payload.get("broadcast"):
+        sse_manager.push_broadcast(SSEEvent(event="user_quota_update", data='{"broadcast": true}', id=event_id))
+    event = SSEEvent(event="user_quota_update", data="{}", id=event_id)
+    for user_id in payload.get("user_ids", []):
+        sse_manager.push_to_user(user_id, event)
+
+
 control_message_to_task = {
     "create_panel_section": create_panel_section,
     "reload_tool": reload_tool,
@@ -594,6 +618,7 @@ control_message_to_task = {
     "notify_broadcast": notify_broadcast,
     "history_update": history_update,
     "entry_point_update": entry_point_update,
+    "user_quota_update": user_quota_update,
     "subscribe_history_viewer": subscribe_history_viewer,
     "unsubscribe_history_viewer": unsubscribe_history_viewer,
     "reload_tool_source_cache": reload_tool_source_cache,

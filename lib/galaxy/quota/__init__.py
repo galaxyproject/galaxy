@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.sql import text
 
 import galaxy.util
+from galaxy.model.user_quota_updates import queue_user_quota_update
 from galaxy.objectstore import is_user_object_store
 
 log = logging.getLogger(__name__)
@@ -277,6 +278,12 @@ SELECT id FROM galaxy_user WHERE id IN (SELECT user_id FROM quota_affected_users
                     conn.execute(text(lock_statement), bind)
                 conn.execute(text(from_statement), bind)
                 conn.execute(text(to_statement), bind)
+        # The callers commit the session after moving the dataset, which sends this
+        owner_ids = self.sa_session.scalars(
+            text(f"{with_quota_affected_users} SELECT user_id FROM quota_affected_users"),
+            {"dataset_id": dataset.id},
+        )
+        queue_user_quota_update(self.sa_session, owner_ids)
 
     def _default_unregistered_quota(self, quota_source_label):
         return self._default_quota(self.model.DefaultQuotaAssociation.types.UNREGISTERED, quota_source_label)
@@ -366,7 +373,7 @@ WHERE default_quota_association.type = :default_type
                     self.sa_session.delete(a)
                     flush_needed = True
                 if flush_needed:
-                    self.sa_session.commit()
+                    self.sa_session.flush()
             for user in users:
                 uqa = self.model.UserQuotaAssociation(user, quota)
                 self.sa_session.add(uqa)

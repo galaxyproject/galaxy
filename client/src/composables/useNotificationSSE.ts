@@ -11,6 +11,7 @@ export const SSE_EVENT_TYPES = [
     "notification_status",
     "history_update",
     "entry_point_update",
+    "user_quota_update",
 ] as const;
 
 export type SSEEventType = (typeof SSE_EVENT_TYPES)[number];
