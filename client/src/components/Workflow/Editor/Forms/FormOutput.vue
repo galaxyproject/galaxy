@@ -130,6 +130,7 @@ export default {
             required: true,
         },
     },
+    emits: ["onInput", "onDatatype"],
     data() {
         return {
             expanded: false,

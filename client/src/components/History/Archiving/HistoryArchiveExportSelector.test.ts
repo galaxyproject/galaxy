@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import type { HistorySummary, ObjectExportTaskResponse } from "@/api";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import type GButton from "@/components/BaseComponents/GButton.vue";
 import {
     FAILED_FILE_SOURCE_STORE_RESPONSE,
     FILE_SOURCE_STORE_RESPONSE,
@@ -114,8 +115,8 @@ describe("HistoryArchiveExportSelector.vue", () => {
 
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
-        const archiveButton = wrapper.find(ARCHIVE_HISTORY_BTN);
-        expect(archiveButton.attributes("disabled")).toBeTruthy();
+        const archiveButton = wrapper.findComponent<typeof GButton>(ARCHIVE_HISTORY_BTN);
+        expect(archiveButton.props("disabled")).toBe(true);
     });
 
     it("should disable the Archive button if the confirm delete checkbox is not checked", async () => {
@@ -127,8 +128,8 @@ describe("HistoryArchiveExportSelector.vue", () => {
         await confirmDeleteCheckbox.setValue(false);
         expect((confirmDeleteCheckbox.element as HTMLInputElement).checked).toBeFalsy();
 
-        const archiveButton = wrapper.find(ARCHIVE_HISTORY_BTN);
-        expect(archiveButton.attributes("disabled")).toBeTruthy();
+        const archiveButton = wrapper.findComponent<typeof GButton>(ARCHIVE_HISTORY_BTN);
+        expect(archiveButton.props("disabled")).toBe(true);
     });
 
     it("should enable the Archive button if there is an up to date export record and the confirm delete checkbox is checked", async () => {
@@ -140,7 +141,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
         await confirmDeleteCheckbox.setValue(true);
         expect((confirmDeleteCheckbox.element as HTMLInputElement).checked).toBeTruthy();
 
-        const archiveButton = wrapper.find(ARCHIVE_HISTORY_BTN);
-        expect(archiveButton.attributes("disabled")).toBeFalsy();
+        const archiveButton = wrapper.findComponent<typeof GButton>(ARCHIVE_HISTORY_BTN);
+        expect(archiveButton.props("disabled")).toBe(false);
     });
 });

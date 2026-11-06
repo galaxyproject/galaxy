@@ -47,6 +47,7 @@ export default {
             required: true,
         },
     },
+    emits: ["onError"],
     data() {
         return {
             repositories: [],

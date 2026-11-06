@@ -346,6 +346,7 @@ defineExpose({
 
         <!-- Toggle button -->
         <button
+            v-bind="toggleLabelAttrs"
             :id="toggleId"
             ref="toggleEl"
             type="button"
@@ -355,7 +356,6 @@ defineExpose({
             aria-haspopup="menu"
             :aria-expanded="isOpen ? 'true' : 'false'"
             :aria-controls="shouldRenderMenu ? menuId : undefined"
-            v-bind="toggleLabelAttrs"
             @click="onToggleClick"
             @keydown="onKeydown">
             <template v-if="!split">

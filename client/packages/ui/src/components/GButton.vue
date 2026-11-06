@@ -136,6 +136,7 @@ const buttonElementRef = useResolveElement(buttonRef);
 <template>
     <component
         :is="baseComponent"
+        v-bind="anchorAttributes"
         ref="buttonRef"
         class="g-button"
         :data-title="currentTitle"
@@ -146,7 +147,6 @@ const buttonElementRef = useResolveElement(buttonRef);
         :aria-disabled="props.disabled || undefined"
         :aria-busy="props.loading || undefined"
         :aria-pressed="ariaPressed"
-        v-bind="{ ...anchorAttributes, ...$attrs }"
         @click="onClick">
         <FontAwesomeIcon v-if="props.loading" :icon="faSpinner" spin aria-hidden="true" />
         <slot></slot>

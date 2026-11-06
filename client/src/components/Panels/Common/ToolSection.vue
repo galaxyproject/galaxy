@@ -313,7 +313,12 @@ async function onFavoriteSectionToggle() {
                 data-description="favorite-top-level-drag-target">
                 <FontAwesomeIcon :icon="faGripLines" />
             </div>
-            <a class="title-link" href="javascript:void(0)" role="button" :aria-expanded="opened" @click="toggleMenu()">
+            <a
+                class="title-link"
+                href="javascript:void(0)"
+                role="button"
+                :aria-expanded="opened ? 'true' : 'false'"
+                @click="toggleMenu()">
                 <span>
                     <span class="name">
                         <FontAwesomeIcon
@@ -513,12 +518,12 @@ async function onFavoriteSectionToggle() {
 }
 
 .slide-enter-to,
-.slide-leave {
+.slide-leave-from {
     max-height: 100px;
     overflow: hidden;
 }
 
-.slide-enter,
+.slide-enter-from,
 .slide-leave-to {
     overflow: hidden;
     max-height: 0;

@@ -5,6 +5,7 @@ import flushPromises from "flush-promises";
 import { http as mswHttp } from "msw";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { h } from "vue";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
@@ -19,7 +20,7 @@ function stubComponent(name: string, render?: (props: Record<string, any>) => st
         default: {
             name,
             props: ["dataset", "datasetId", "jobId", "datasetName", "dependencies"],
-            render(this: { $props: Record<string, any> }, h: (tag: string, data: object, text?: string) => unknown) {
+            render(this: { $props: Record<string, any> }) {
                 return h("div", { class: name }, render?.(this.$props));
             },
         },

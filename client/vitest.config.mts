@@ -75,7 +75,7 @@ export default defineConfig({
                     // Match the app build, see vite.config.mjs.
                     comments: false,
                     compatConfig: {
-                        MODE: 2,
+                        MODE: 3,
                     },
                 },
             },

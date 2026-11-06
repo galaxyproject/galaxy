@@ -93,6 +93,16 @@ describe("MultipleView", () => {
         expect(wrapper.find("[data-description='open select histories modal']").exists()).toBeTruthy();
     });
 
+    // MultipleViewList only emits update:show-modal; binding it as a v-model leaks a root attribute
+    it("does not leak show-modal onto the history list", async () => {
+        const wrapper = await setUpWrapper(8, FIRST_HISTORY_ID);
+        expect(wrapper.find("[show-modal]").exists()).toBeFalsy();
+
+        await wrapper.find("[data-description='open select histories modal']").trigger("click");
+        await flushPromises();
+        expect(wrapper.find("[show-modal]").exists()).toBeFalsy();
+    });
+
     it("less than 4 histories should show the current history", async () => {
         const count = 3;
         const currentHistoryId = FIRST_HISTORY_ID;

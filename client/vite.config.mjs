@@ -10,6 +10,7 @@ import { defineConfig } from "vite";
 import { buildMetadataPlugin } from "./vite-plugin-build-metadata.js";
 import { galaxyDevServerPlugin } from "./vite-plugin-galaxy-dev-server.js";
 import { galaxyLegacyPlugin } from "./vite-plugin-galaxy-legacy.js";
+import { legacyLibrariesFirstPlugin } from "./vite-plugin-legacy-libraries-first.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8"));
@@ -92,6 +93,7 @@ export default defineConfig(({ command }) => ({
         __license__: JSON.stringify(packageJson.license),
     },
     plugins: [
+        legacyLibrariesFirstPlugin(),
         vue({
             template: {
                 compilerOptions: {
@@ -101,9 +103,10 @@ export default defineConfig(({ command }) => ({
                     // builds, where a leading comment turns a single-root component into a
                     // Fragment and breaks attribute fallthrough.
                     comments: false,
-                    // Enable Vue 3 compat mode
+                    // Templates compile with Vue 3 semantics. Runtime compat still lives in
+                    // src/compat-config.js.
                     compatConfig: {
-                        MODE: 2,
+                        MODE: 3,
                     },
                 },
             },

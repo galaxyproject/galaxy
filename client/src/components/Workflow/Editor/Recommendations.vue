@@ -41,6 +41,7 @@ export default {
             required: true,
         },
     },
+    emits: ["onCreate"],
     setup() {
         const { stepStore } = useWorkflowStores();
         return { stepStore };
