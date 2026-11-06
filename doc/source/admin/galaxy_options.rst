@@ -2927,8 +2927,10 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Comma-separated origins allowed to embed Galaxy Widgets.
-    Unset allows any origin; widgets are meant to be read-only views.
+    Comma-separated origins, besides Galaxy itself, allowed to embed
+    Galaxy Widgets such as the history graph.
+    Page and workflow widgets can be embedded from any origin, like
+    the published page and workflow embeds.
 :Default: ``None``
 :Type: str
 
