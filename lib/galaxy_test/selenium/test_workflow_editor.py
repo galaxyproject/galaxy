@@ -2438,8 +2438,8 @@ steps:
         cat_node_1 = editor.node._(label="first_cat").wait_for_present()
         cat_node_2 = editor.node._(label="second_cat").wait_for_present()
 
-        self.action_chains().move_to_element(cat_node_1).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
-        self.action_chains().move_to_element(cat_node_2).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+        self.shift_click(cat_node_1)
+        self.shift_click(cat_node_2)
 
         # make new workflow
         new_workflow_name = "Copied from selection"
@@ -2468,7 +2468,7 @@ steps:
         # select the middle step, which has an input and an output connection outside the selection
         editor = self.components.workflow_editor
         second_cat = editor.node._(label="second_cat").wait_for_present()
-        self.action_chains().move_to_element(second_cat).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+        self.shift_click(second_cat)
 
         subworkflow_name = "Moved from selection"
 
