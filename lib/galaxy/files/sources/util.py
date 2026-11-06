@@ -6,6 +6,8 @@ from typing import (
 )
 from urllib.parse import quote
 
+from requests import Session as RequestsSession
+
 from galaxy import exceptions
 from galaxy.files import (
     ConfiguredFileSources,
@@ -15,13 +17,17 @@ from galaxy.files.models import (
     FilesSourceOptions,
     PartialFilesSourceProperties,
 )
-from galaxy.files.uris import stream_url_to_file
+from galaxy.files.uris import (
+    stream_url_to_file,
+    ValidatingSession,
+)
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
 from galaxy.util.path import StrPath
+from galaxy.util.user_agent import get_default_headers
 
 log = logging.getLogger(__name__)
 
@@ -69,8 +75,10 @@ class RetryOptions:
     override_retry_after: Optional[float] = None
 
 
-def retry_and_get(get_url: str, retry_options: RetryOptions, headers: Optional[dict] = None) -> requests.Response:
-    response = requests.get(get_url, timeout=DEFAULT_SOCKET_TIMEOUT, headers=headers)
+def retry_and_get(
+    session: RequestsSession, get_url: str, retry_options: RetryOptions, headers: Optional[dict] = None
+) -> requests.Response:
+    response = session.get(get_url, timeout=DEFAULT_SOCKET_TIMEOUT, headers=headers)
     response.raise_for_status()
     if response.status_code == 202:
         if retry_options.retry_times == 0:
@@ -80,17 +88,19 @@ def retry_and_get(get_url: str, retry_options: RetryOptions, headers: Optional[d
         retry_after = retry_options.override_retry_after or float(response.headers["Retry-After"])
         time.sleep(retry_after)
         retry_options.retry_times -= 1
-        return retry_and_get(get_url, retry_options)
+        return retry_and_get(session, get_url, retry_options, headers=headers)
     else:
         return response
 
 
-def _get_access_info(obj_url: str, access_method: dict, headers: Optional[dict] = None) -> tuple[str, dict]:
+def _get_access_info(
+    session: RequestsSession, obj_url: str, access_method: dict, headers: Optional[dict] = None
+) -> tuple[str, dict]:
     # Prefer access_id resolution to get signed/authenticated URLs
     if access_method.get("access_id"):
         access_id = access_method["access_id"]
         access_get_url = f"{obj_url}/access/{access_id}"
-        access_response = requests.get(access_get_url, timeout=DEFAULT_SOCKET_TIMEOUT, headers=headers)
+        access_response = session.get(access_get_url, timeout=DEFAULT_SOCKET_TIMEOUT, headers=headers)
         access_response.raise_for_status()
         access_response_object = access_response.json()
         access_url = access_response_object
@@ -355,7 +365,9 @@ def fetch_drs_to_file(
             get_url = f"{scheme}://{netspec}/ga4gh/drs/v1/objects/{object_id}"
         else:
             raise ValueError(f"Invalid DRS URI format: {drs_uri}")
-    response = retry_and_get(get_url, retry_options or RetryOptions(), headers=headers)
+    session = ValidatingSession(fetch_url_allowlist or [])
+    headers = {**(headers or {}), **get_default_headers()}
+    response = retry_and_get(session, get_url, retry_options or RetryOptions(), headers=headers)
     response.raise_for_status()
     response_object = response.json()
     access_methods = response_object.get("access_methods", [])
@@ -364,7 +376,7 @@ def fetch_drs_to_file(
 
     downloaded = False
     for access_method in access_methods:
-        access_url, access_headers = _get_access_info(get_url, access_method, headers=headers)
+        access_url, access_headers = _get_access_info(session, get_url, access_method, headers=headers)
         opts = FilesSourceOptions()
         if access_method["type"] == "https":
             extra_props = {

@@ -2,10 +2,16 @@ import io
 import json
 import os
 from typing import Any
+from unittest import mock
 
 import pytest
 import responses
 
+from galaxy.exceptions import ConfigDoesNotAllowException
+from galaxy.files.sources.util import (
+    fetch_drs_to_file,
+    RetryOptions,
+)
 from ._util import (
     assert_realizes_as,
     assert_realizes_contains,
@@ -79,7 +85,8 @@ def test_file_source_drs_http():
 
 
 @responses.activate
-def test_file_source_drs_s3():
+@mock.patch("galaxy.files.uris.validate_non_local")
+def test_file_source_drs_s3(_validate_non_local):
     def drs_repo_handler(request):
         assert request.headers["Authorization"] == "Bearer IBearTokens"
         data = {
@@ -149,8 +156,101 @@ def test_file_source_drs_access_lookup_sends_headers():
         )
 
 
+@pytest.mark.usefixtures("fake_public_dns")
+@responses.activate
+def test_drs_lookups_keep_galaxy_user_agent_over_configured_one(tmp_path):
+    object_url = "https://drs.example.org/ga4gh/drs/v1/objects/1"
+    responses.get(object_url, json={"access_methods": [{"type": "https", "access_id": "1234"}]})
+    responses.get(f"{object_url}/access/1234", json={"url": "https://my.respository.org/myfile.txt"})
+    with patch_http_open(_download_response):
+        fetch_drs_to_file(
+            "drs://drs.example.org/1", tmp_path / "out", user_context=None, headers={"User-Agent": "custom"}
+        )
+    assert [call.request.headers["User-Agent"].split("/")[0] for call in responses.calls] == ["galaxy"] * 2
+
+
 def _download_response(request, **kwargs):
     response: Any = io.StringIO("hello drs world")
     response.headers = {}
     response.geturl = lambda: request.full_url
     return response
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+@responses.activate
+def test_drs_retry_after_202_keeps_headers(tmp_path):
+    object_url = "https://drs.example.org/ga4gh/drs/v1/objects/314162"
+    responses.get(object_url, status=202, headers={"Retry-After": "1"})
+    responses.get(object_url, json=_public_object())
+    retry_options = RetryOptions()
+    retry_options.override_retry_after = 0.01
+
+    with patch_http_open(_download_response):
+        fetch_drs_to_file(
+            "drs://drs.example.org/314162",
+            tmp_path / "out",
+            user_context=None,
+            retry_options=retry_options,
+            headers={"Authorization": "Bearer IBearTokens"},
+        )
+
+    assert [call.request.headers.get("Authorization") for call in responses.calls] == ["Bearer IBearTokens"] * 2
+
+
+@responses.activate
+def test_drs_object_lookup_refuses_private_address(tmp_path):
+    with pytest.raises(ConfigDoesNotAllowException):
+        fetch_drs_to_file("drs://127.0.0.1/1", tmp_path / "out", user_context=None, force_http=True)
+    assert len(responses.calls) == 0
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+@responses.activate
+def test_drs_object_lookup_refuses_redirect_to_private_address(tmp_path):
+    responses.get(
+        "https://drs.example.org/ga4gh/drs/v1/objects/1",
+        status=302,
+        headers={"Location": "http://127.0.0.1:8000/secret"},
+    )
+    with pytest.raises(ConfigDoesNotAllowException):
+        fetch_drs_to_file("drs://drs.example.org/1", tmp_path / "out", user_context=None)
+    assert [call.request.url for call in responses.calls] == ["https://drs.example.org/ga4gh/drs/v1/objects/1"]
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+@responses.activate
+def test_drs_access_lookup_refuses_redirect_to_private_address(tmp_path):
+    object_url = "https://drs.example.org/ga4gh/drs/v1/objects/1"
+    responses.get(object_url, json={"access_methods": [{"type": "https", "access_id": "1234"}]})
+    responses.get(f"{object_url}/access/1234", status=302, headers={"Location": "http://127.0.0.1:8000/secret"})
+    with pytest.raises(ConfigDoesNotAllowException):
+        fetch_drs_to_file("drs://drs.example.org/1", tmp_path / "out", user_context=None)
+    assert [call.request.url for call in responses.calls] == [object_url, f"{object_url}/access/1234"]
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+@responses.activate
+def test_drs_compact_identifier_lookup_refuses_redirect_to_private_address(tmp_path):
+    resolved_url = "https://drs.example.org/ga4gh/drs/v1/objects/1"
+    responses.get(resolved_url, status=302, headers={"Location": "http://127.0.0.1:8000/secret"})
+    with mock.patch("galaxy.files.sources.util.resolve_compact_identifier_to_url", return_value=resolved_url):
+        with pytest.raises(ConfigDoesNotAllowException):
+            fetch_drs_to_file("drs://test.prefix:1", tmp_path / "out", user_context=None)
+    assert [call.request.url for call in responses.calls] == [resolved_url]
+
+
+@responses.activate
+def test_drs_compact_identifier_refuses_private_resolved_url(tmp_path):
+    with mock.patch(
+        "galaxy.files.sources.util.resolve_compact_identifier_to_url",
+        return_value="http://127.0.0.1:8000/ga4gh/drs/v1/objects/1",
+    ):
+        with pytest.raises(ConfigDoesNotAllowException):
+            fetch_drs_to_file("drs://test.prefix:1", tmp_path / "out", user_context=None)
+    assert len(responses.calls) == 0
+
+
+def _public_object():
+    return {
+        "access_methods": [{"type": "https", "access_url": {"url": "https://my.respository.org/myfile.txt"}}],
+    }
