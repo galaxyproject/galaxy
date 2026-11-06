@@ -1930,6 +1930,7 @@ rule_builder:
     menu_item_rule_type: '.rule-link-${rule_type}'
     rule_editor: '.rule-edit-${rule_type}'
     rule_editor_ok: '.rule-editor-ok'
+    rule_editor_column_selector: '.rule-edit-${rule_type} .rule-column-selector'
     add_mapping_menu: '.rule-add-mapping'
     add_mapping_button: '.rule-add-mapping-${mapping_type}'
     mapping_edit: '.rule-map-${mapping_type} .select-basic'
