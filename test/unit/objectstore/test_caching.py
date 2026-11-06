@@ -327,6 +327,23 @@ def test_backend_update_and_size(two_dir_cache, tmp_path):
     backend._delete(obj)
 
 
+def test_backend_update_caches_object_created_on_another_host(two_dir_cache, tmp_path, monkeypatch):
+    """Remote extended metadata updates outputs that Galaxy created in the store, from a host with an empty cache."""
+    backend, cache_a, cache_b = two_dir_cache
+    obj = MagicMock()
+    obj.id = 77
+    monkeypatch.setattr(backend, "_exists_remotely", lambda rel_path: True)
+
+    src = tmp_path / "output.dat"
+    src.write_text("hello world")
+    backend._update_from_file(obj, file_name=str(src), create=True)
+
+    filename = backend._get_filename(obj, sync_cache=False)
+    assert os.path.isfile(filename)
+    with open(filename) as f:
+        assert f.read() == "hello world"
+
+
 def test_backend_pull_into_cache_writes_to_correct_shard(two_dir_cache):
     """_pull_into_cache should download the file to the shard selected for that object_id."""
     backend, cache_a, cache_b = two_dir_cache
