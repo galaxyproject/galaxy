@@ -119,3 +119,23 @@ def test_prepare_dirs_backup_only_appears_after_successful_copy(tmp_path):
     unreadable.chmod(0o600)
     _run_prepare_dirs(tmp_path)
     assert _tree(tmp_path / "_configs") == _tree(configs)
+
+
+def test_prepare_dirs_skips_backup_when_stale_partial_cannot_be_removed(tmp_path):
+    if os.geteuid() == 0:
+        pytest.skip("root can remove files from read-only directories")
+    configs = tmp_path / "configs"
+    configs.mkdir()
+    (configs / "registry.xml").write_text("<registry/>")
+    expected = _tree(configs)
+    stale = tmp_path / "_configs.partial" / "sub"
+    stale.mkdir(parents=True)
+    (stale / "f").write_text("stale")
+    stale.chmod(0o555)
+
+    _run_prepare_dirs(tmp_path)
+    for path in tmp_path.rglob("sub"):
+        path.chmod(0o755)
+
+    assert not (tmp_path / "_configs").exists()
+    assert _tree(configs) == expected

@@ -49,7 +49,7 @@ PREPARE_DIRS_TEMPLATE = """for dir in working outputs configs; do
     if [ -d "{working_directory}/_$dir" ]; then
         rm -rf "{working_directory}/$dir"; cp -R "{working_directory}/_$dir" "{working_directory}/$dir"
     else
-        rm -rf "{working_directory}/_$dir.partial"
+        rm -rf "{working_directory}/_$dir.partial" &&
         cp -R "{working_directory}/$dir" "{working_directory}/_$dir.partial" && mv "{working_directory}/_$dir.partial" "{working_directory}/_$dir"
     fi
 done
