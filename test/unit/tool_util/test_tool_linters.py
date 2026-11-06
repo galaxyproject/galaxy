@@ -2876,3 +2876,67 @@ def test_xsd_requirements_children_in_any_order(lint_ctx):
     tool_source = get_xml_tool_source(REQUIREMENTS_UNORDERED_CHILDREN)
     run_lint_module(lint_ctx, xsd, tool_source)
     assert not lint_ctx.error_messages
+
+
+TESTS_DUPLICATE_PARAM_IN_CONTAINER = """
+<tool id="id" name="name" version="1.0" profile="{profile}">
+    <command>echo</command>
+    <inputs>
+        <param name="top" type="text" value=""/>
+        <repeat name="adapters" title="Adapters">
+            <conditional name="source">
+                <param name="selector" type="select">
+                    <option value="user">User</option>
+                    <option value="other">Other</option>
+                </param>
+                <when value="user">
+                    <param name="adapter" type="text" value=""/>
+                </when>
+                <when value="other"/>
+            </conditional>
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="out" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <repeat name="adapters">
+                <conditional name="source">
+                    <param name="selector" value="user"/>
+                    <param name="adapter" value="A1"/>
+                    <param name="adapter" value="A2"/>
+                </conditional>
+            </repeat>
+            <output name="out" value="out.txt"/>
+        </test>
+        <test>
+            <param name="top" value="T"/>
+            <repeat name="adapters">
+                <conditional name="source">
+                    <param name="selector" value="user"/>
+                    <param name="adapter" value="A1"/>
+                </conditional>
+            </repeat>
+            <repeat name="adapters">
+                <conditional name="source">
+                    <param name="selector" value="user"/>
+                    <param name="adapter" value="A2"/>
+                </conditional>
+            </repeat>
+            <output name="out" value="out.txt"/>
+        </test>
+    </tests>
+</tool>
+"""
+
+
+@pytest.mark.parametrize("profile,level", [("25.1", "error"), ("23.0", "warning")])
+def test_tests_duplicate_param_in_container(lint_ctx, profile, level):
+    tool_source = get_xml_tool_source(TESTS_DUPLICATE_PARAM_IN_CONTAINER.format(profile=profile))
+    run_lint_module(lint_ctx, tests, tool_source)
+    case_messages = [m for m in lint_ctx.message_list if m.linter == "TestsCaseValidation"]
+    assert len(case_messages) == 1
+    assert case_messages[0].level == level
+    assert case_messages[0].message.startswith("Test 1:")
+    assert "Ambiguous test parameter (adapters_0|source|adapter)" in case_messages[0].message
