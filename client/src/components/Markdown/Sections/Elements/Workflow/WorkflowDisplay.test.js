@@ -2,9 +2,10 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { nextTick } from "vue";
+import { nextTick, ref } from "vue";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { embedKey } from "@/composables/embed";
 
 import MountTarget from "./WorkflowDisplay.vue";
 import WorkflowStepIcon from "@/components/WorkflowInvocationState/WorkflowStepIcon.vue";
@@ -96,7 +97,7 @@ describe("WorkflowDisplay", () => {
         [true, "_blank"],
         [false, undefined],
     ])("opens the import in a new tab when embedded is %s", async (embed, target) => {
-        const wrapper = mountDefault(undefined, { embed });
+        const wrapper = mountDefault(undefined, { [embedKey]: ref(embed) });
         await flushPromises();
         expect(wrapper.find('[data-description="workflow import"]').attributes("target")).toBe(target);
     });

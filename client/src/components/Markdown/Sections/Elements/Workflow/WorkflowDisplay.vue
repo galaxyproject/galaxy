@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import axios from "axios";
 import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
-import { computed, inject, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { getStepTitle } from "@/components/WorkflowInvocationState/util";
+import { useEmbed } from "@/composables/embed";
 import { useUid } from "@/composables/utils/uid";
 import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
@@ -28,7 +29,7 @@ const props = withDefaults(defineProps<WorkflowDisplayProps>(), {
     expanded: false,
 });
 
-const embed = inject("embed", false);
+const embed = useEmbed();
 
 type ItemContent = {
     name: string;

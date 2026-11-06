@@ -6,6 +6,8 @@ import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h, inject, ref } from "vue";
 
+import { embedKey } from "@/composables/embed";
+
 import PageView from "./PageView.vue";
 import Heading from "@/components/Common/Heading.vue";
 import PublishedItem from "@/components/Common/PublishedItem.vue";
@@ -107,7 +109,7 @@ describe("PageView", () => {
 
     it("tells the page sections whether they are embedded", async () => {
         const Markdown = defineComponent({
-            setup: () => () => h("pre", { class: "embed-probe" }, String(inject("embed"))),
+            setup: () => () => h("pre", { class: "embed-probe" }, String(inject(embedKey)?.value)),
         });
         for (const embed of [true, false]) {
             const wrapper = shallowMount(PageView as object, {
