@@ -34,6 +34,7 @@ def test_accepts_origins(origins):
         "ftp://example.org",
         "example.org",
         "'self'",
+        "http://[::1]:8080",
     ],
 )
 def test_rejects_malformed_origins(origins):
