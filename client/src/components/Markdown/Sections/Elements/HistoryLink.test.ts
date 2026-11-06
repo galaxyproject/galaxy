@@ -2,6 +2,9 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import { describe, expect, it, vi } from "vitest";
+import { ref } from "vue";
+
+import { embedKey } from "@/composables/embed";
 
 import HistoryLink from "./HistoryLink.vue";
 
@@ -11,7 +14,10 @@ vi.mock("@/stores/historyStore", () => ({ useHistoryStore: () => ({ getHistoryNa
 const localVue = getLocalVue();
 
 function mountLink(embed: boolean) {
-    return mount(HistoryLink as object, { props: { historyId: "h1" }, global: { ...localVue, provide: { embed } } });
+    return mount(HistoryLink as object, {
+        props: { historyId: "h1" },
+        global: { ...localVue, provide: { [embedKey]: ref(embed) } },
+    });
 }
 
 describe("HistoryLink", () => {

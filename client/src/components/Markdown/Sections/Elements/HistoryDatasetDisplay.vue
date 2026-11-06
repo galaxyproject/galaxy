@@ -103,10 +103,11 @@ import { faAngleDoubleDown, faAngleDoubleUp, faDownload, faFileImport } from "@f
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCard, BCardBody, BCardHeader, BEmbed, BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, inject, onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { copyDataset } from "@/api/datasets";
 import { getFields, getItems } from "@/components/Markdown/Utilities/tabularData";
+import { useEmbed } from "@/composables/embed";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatasetStore } from "@/stores/datasetStore";
@@ -136,7 +137,7 @@ const props = defineProps<{
     embedded?: boolean;
 }>();
 
-const embed = inject("embed", false);
+const embed = useEmbed();
 
 // Reactive state
 const currentPage = ref(1);
