@@ -214,6 +214,10 @@ def _find_workflow_tool(
     tool_id = tool_reference["tool_id"]
     tool_version = tool_reference["tool_version"]
     tool_uuid = tool_reference["tool_uuid"]
+    if require_exact_tool_versions and tool_version and not tool_uuid:
+        # ``get_tool(exact=True)`` means exact tool id, and may still settle on
+        # another version of that tool.
+        return toolbox.get_tool_at_version(tool_id, tool_version)
     # Availability comes from has_tool: for exact requests the cached
     # toolbox's get_tool can resolve a different version of the tool.
     if toolbox.has_tool(
@@ -222,10 +226,6 @@ def _find_workflow_tool(
         return toolbox.get_tool(
             tool_id, tool_version=tool_version, tool_uuid=tool_uuid, exact=require_exact_tool_versions, user=user
         )
-    # ``exact`` means exact tool id; an unversioned shed guid or short id
-    # still satisfies an exact version request if that version is installed.
-    if require_exact_tool_versions and tool_version and not tool_uuid:
-        return toolbox.get_tool_at_version(tool_id, tool_version)
     return None
 
 

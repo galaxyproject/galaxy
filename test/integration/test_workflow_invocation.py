@@ -270,6 +270,38 @@ steps:
                 require_exact_tool_versions=True,
             )
 
+    def test_run_workflow_with_versioned_shed_tool_id_wrong_version(self):
+        self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
+        with self.dataset_populator.test_history() as history_id:
+            workflow_id = self._upload_compose_text_param_workflow(f"{UNVERSIONED_COMPOSE_TEXT_PARAM}/0.1.0", "0.0.1")
+            self._assert_missing_tools(
+                workflow_id,
+                history_id,
+                f"{UNVERSIONED_COMPOSE_TEXT_PARAM}/0.1.0 (version 0.0.1, installed: 0.1.0)",
+                require_exact_tool_versions=True,
+            )
+
+    def test_run_workflow_with_workflow_safe_tool_version_update(self):
+        # __BUILD_LIST__ 1.0.0 isn't installed; 1.1.0 is a workflow-safe update of it.
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  build_list:
+    tool_id: __BUILD_LIST__
+    tool_version: "1.0.0"
+    in:
+      datasets_0|input: input1
+""",
+                test_data={"input1": "1 2 3"},
+                history_id=history_id,
+            )
+            workflow = self.workflow_populator.download_workflow(summary.workflow_id)
+            assert workflow["steps"]["1"]["tool_version"] == "1.1.0"
+
     def test_run_workflow_with_unversioned_shed_tool_id_exact_version(self):
         self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
         with self.dataset_populator.test_history() as history_id:

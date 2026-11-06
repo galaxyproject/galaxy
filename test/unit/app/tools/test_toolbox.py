@@ -527,11 +527,15 @@ class TestToolBox(BaseToolBoxTestCase):
         self._setup_two_versions()
         unversioned = "github.com/galaxyproject/example/test_tool"
 
-        for tool_id in (unversioned, f"{unversioned}/0.2", "test_tool"):
+        for tool_id in (unversioned, "test_tool"):
             assert self.toolbox.get_tool_at_version(tool_id, "0.1").id == f"{unversioned}/0.1"
             assert self.toolbox.get_tool_at_version(tool_id, "0.2").id == f"{unversioned}/0.2"
             # A non-exact lookup falls back to the newest version; this doesn't.
             assert self.toolbox.get_tool_at_version(tool_id, "3") is None
+        assert self.toolbox.get_tool_at_version(f"{unversioned}/0.2", "0.2").id == f"{unversioned}/0.2"
+        # get_tool(exact=True) resolves both of these to another version of the tool.
+        assert self.toolbox.get_tool_at_version(f"{unversioned}/0.2", "0.1") is None
+        assert self.toolbox.get_tool_at_version(f"{unversioned}/0.2", "3") is None
         assert self.toolbox.get_tool_at_version("not_a_test_tool", "0.1") is None
 
     def test_load_file_in_section(self):

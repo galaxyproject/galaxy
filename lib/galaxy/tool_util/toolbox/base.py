@@ -45,7 +45,10 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.path import StrPath
-from galaxy.util.tool_version import is_shed_guid
+from galaxy.util.tool_version import (
+    is_shed_guid,
+    remove_version_from_guid,
+)
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
@@ -1004,18 +1007,18 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         )
 
     def get_tool_at_version(self, tool_id: str, tool_version: str) -> ToolLike | None:
-        """Resolve ``tool_id`` only at ``tool_version``.
+        """Resolve the tool ``tool_id`` names, only at ``tool_version``.
 
-        ``get_tool(..., exact=True)`` requires an exact tool id, so it misses an
-        unversioned Tool Shed guid or a short id even when the requested version
-        is installed. This follows lineage like a non-exact lookup but, unlike
-        one, never falls back to another version.
+        ``tool_id`` may be the tool's id, its short (old) id or, for a Tool Shed
+        tool, its versionless guid. A versioned guid names only its own version.
+        Unlike ``get_tool``, this never settles on another version.
         """
+        tool_version = str(tool_version)
         # Try the exact id first: a non-exact lookup of a short id shared by
         # several repositories may settle on another repository's version.
         for exact in (True, False):
             tool = self.get_tool(tool_id, tool_version=tool_version, exact=exact)
-            if tool is not None and tool.version == str(tool_version):
+            if tool is not None and tool.version == tool_version and _tool_id_names_tool(tool_id, tool):
                 return tool
         return None
 
@@ -1809,6 +1812,20 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
 
     @abc.abstractmethod
     def _looks_like_a_tool(self, path: str) -> bool: ...
+
+
+def _tool_id_names_tool(tool_id: str, tool: ToolLike) -> bool:
+    """Whether ``tool_id`` is ``tool``'s id, short (old) id or versionless guid.
+
+    Tool Shed ids compare without their shed host, matching ``get_tool``'s
+    lookup across the configured tool sheds.
+    """
+    names = {tool.id, tool.old_id, tool.id and remove_version_from_guid(tool.id)}
+    return _without_shed_host(tool_id) in {_without_shed_host(name) for name in names if name}
+
+
+def _without_shed_host(tool_id: str) -> str:
+    return tool_id.split("/repos/", 1)[1] if is_shed_guid(tool_id) else tool_id
 
 
 def _filter_for_panel(item, item_type, filters, context: Bunch):
