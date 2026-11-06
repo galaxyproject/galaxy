@@ -1,5 +1,6 @@
 import { faCog, faCopy, faFilter, faFolder } from "@fortawesome/free-solid-svg-icons";
 import { createTestingPinia } from "@pinia/testing";
+import { deferred } from "@tests/vitest/deferred";
 import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
@@ -258,6 +259,29 @@ describe("GridList", () => {
 
         expect(wrapper.find(".grid-table").exists()).toBe(false);
         expect(wrapper.text()).toContain("No data available.");
+    });
+
+    it("ignores a response that arrives after a newer one", async () => {
+        const testGrid = createTestGrid();
+        testGrid.filtering = new Filtering({ link: { handler: equals("link", "link"), menuItem: false } });
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+        const slow = deferred<[RowData[], number]>();
+        const fast = deferred<[RowData[], number]>();
+        vi.mocked(testGrid.getData).mockReturnValueOnce(slow.promise).mockReturnValueOnce(fast.promise);
+        await wrapper.find("[data-description='filter text input']").setValue("link:slow");
+        vi.runAllTimers();
+        await flushPromises();
+        await wrapper.find("[data-description='filter text input']").setValue("link:fast");
+        vi.runAllTimers();
+        await flushPromises();
+
+        fast.resolve([[{ id: "fast-row" }], 1]);
+        await flushPromises();
+        slow.resolve([[{ id: "slow-row" }], 1]);
+        await flushPromises();
+
+        expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("fast-row");
     });
 
     it("pagination", async () => {

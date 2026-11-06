@@ -237,10 +237,14 @@ function fieldTitle(fieldEntry: FieldEntry): string | null {
     }
 }
 
+// only the newest `getGridData` request may update the grid
+let latestRequest = 0;
+
 /**
  * Request grid data
  */
 async function getGridData() {
+    const requestId = ++latestRequest;
     resultsLoading.value = true;
     selected.value = new Set();
     if (props.gridConfig) {
@@ -260,14 +264,20 @@ async function getGridData() {
                 sortDesc.value,
                 props.extraProps,
             );
-            gridData.value = responseData;
-            totalRows.value = responseTotal;
-            errorMessage.value = "";
+            if (requestId === latestRequest) {
+                gridData.value = responseData;
+                totalRows.value = responseTotal;
+                errorMessage.value = "";
+            }
         } catch (e) {
-            errorMessage.value = `Failed to obtain grid data: ${e}`;
+            if (requestId === latestRequest) {
+                errorMessage.value = `Failed to obtain grid data: ${e}`;
+            }
         } finally {
-            initDataLoading.value = false;
-            resultsLoading.value = false;
+            if (requestId === latestRequest) {
+                initDataLoading.value = false;
+                resultsLoading.value = false;
+            }
         }
     }
 }
