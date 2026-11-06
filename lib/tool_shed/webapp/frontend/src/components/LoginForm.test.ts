@@ -21,7 +21,17 @@ describe("LoginForm", () => {
         await wrapper.find("form").trigger("submit")
         await flushPromises()
 
-        expect(loginSpy).toHaveBeenCalledWith("shuser", "secret")
+        expect(loginSpy).toHaveBeenCalledWith("shuser", "secret", null)
+    })
+
+    it("passes the page to return to on to login", async () => {
+        const loginSpy = vi.spyOn(useAuthStore(), "login").mockResolvedValue(undefined)
+
+        const wrapper = mount(LoginForm, { props: { returnTo: "/repos/devteam/bismark/shortlog" } })
+        await wrapper.find("form").trigger("submit")
+        await flushPromises()
+
+        expect(loginSpy).toHaveBeenCalledWith("", "", "/repos/devteam/bismark/shortlog")
     })
 
     it("seeds the username from the initialLogin prop", () => {
