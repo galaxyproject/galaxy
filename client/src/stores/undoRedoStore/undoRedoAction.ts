@@ -35,6 +35,11 @@ export class UndoRedoAction {
     get dataAttributes(): Record<string, string> {
         return {};
     }
+
+    /** True while an async `run` is still in progress; undo and redo wait until it finishes */
+    get isPending(): boolean {
+        return false;
+    }
 }
 
 export class LazyUndoRedoAction extends UndoRedoAction {
