@@ -9,6 +9,7 @@ import {
     type Step,
 } from "@/stores/workflowStepStore";
 import { assertDefined, ensureDefined } from "@/utils/assertions";
+import { cloneRaw } from "@/utils/toRawDeep";
 import { match } from "@/utils/utils";
 
 /** Find input connections which are unconnected */
@@ -229,11 +230,16 @@ export async function convertOpenConnections(
     allSteps: Record<number, Step>,
     searchStore: WorkflowSearchStore,
 ) {
-    const selection = selectedKeys.map((key) => ensureDefined(allSteps[key]));
+    // work on copies; the connections below are rewritten and must not touch the editor's steps
+    const selection = selectedKeys.map((key) => cloneRaw(ensureDefined(allSteps[key])));
+    const stepsWithCopiedSelection: Record<number, Step> = {
+        ...allSteps,
+        ...Object.fromEntries(selection.map((step) => [step.id, step])),
+    };
 
     // convert input connections to input steps
 
-    const openInputConnections = getOpenInputConnections(selectedKeys, allSteps);
+    const openInputConnections = getOpenInputConnections(selectedKeys, stepsWithCopiedSelection);
 
     const allLabelsInSelection = new Set(
         selection.flatMap((step) => {
