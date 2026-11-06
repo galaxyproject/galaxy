@@ -46,3 +46,18 @@ export function getFakeQuotaUsageData(label: string | null, usage: number, quota
         quota_percent: Math.min(100, Math.round((usage / quota) * 100)),
     };
 }
+
+/** A storage as ``/api/object_stores`` reports it, by default with its quota on the default source. */
+export function getFakeStorage(
+    objectStoreId: string,
+    name: string,
+    quota: { source?: string; enabled?: boolean } = {},
+) {
+    return {
+        object_store_id: objectStoreId,
+        name,
+        quota: { enabled: true, ...quota },
+        private: false,
+        badges: [],
+    };
+}

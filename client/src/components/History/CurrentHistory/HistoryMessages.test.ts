@@ -1,4 +1,4 @@
-import { getFakeHistorySummary, getFakeQuotaUsageData, getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeHistorySummary, getFakeQuotaUsageData, getFakeRegisteredUser, getFakeStorage } from "@tests/test-data";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -98,15 +98,7 @@ describe("HistoryMessages", () => {
     it("names the other storage sources whose quota the user exceeded after their storages", async () => {
         server.use(
             http.get("/api/object_stores", ({ response }) =>
-                response(200).json([
-                    {
-                        object_store_id: "scratch",
-                        name: "Scratch Storage",
-                        quota: { source: "scratch", enabled: true },
-                        private: false,
-                        badges: [],
-                    },
-                ]),
+                response(200).json([getFakeStorage("scratch", "Scratch Storage", { source: "scratch" })]),
             ),
         );
         const usages = [

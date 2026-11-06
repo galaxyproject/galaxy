@@ -1,9 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getFakeQuotaUsageData, getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeQuotaUsageData, getFakeRegisteredUser, getFakeStorage } from "@tests/test-data";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
-import { advanceTooltipHoverDelay } from "@tests/vitest/tooltipTestUtils";
-import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
+import { hoverPastTooltipDelay as hover } from "@tests/vitest/tooltipTestUtils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -13,7 +13,6 @@ import { useServerMock } from "@/api/client/__mocks__";
 import { vGTooltip } from "@/directives/vGTooltip";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { useUserStore } from "@/stores/userStore";
-import { DEFAULT_TOOLTIP_HOVER_DELAY_MS } from "@/utils/tooltipTiming";
 
 import QuotaMeter from "./QuotaMeter.vue";
 
@@ -44,18 +43,6 @@ function mountQuotaMeter(options: Parameters<typeof mount>[1]) {
 afterEach(() => {
     mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount());
 });
-
-/** Hovers the element for as long as tooltips and popovers wait before opening. */
-async function hover(element: VueWrapper | DOMWrapper<Element>) {
-    vi.useFakeTimers();
-    try {
-        await element.trigger("mouseenter");
-        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
-    } finally {
-        vi.useRealTimers();
-    }
-    await flushPromises();
-}
 
 /** Hovers the meter and returns the text of the tooltip it shows, if any. */
 async function hoverForTooltip(wrapper: VueWrapper) {
@@ -131,12 +118,12 @@ describe("QuotaMeter.vue", () => {
          * quota disabled doesn't count toward ``secure``.
          */
         const STORAGES = [
-            { object_store_id: "default", name: "Default Storage", quota: { enabled: true } },
-            { object_store_id: "scratch", name: "Scratch Storage", quota: { source: "scratch", enabled: true } },
-            { object_store_id: "fast_scratch", name: "Fast Scratch", quota: { source: "scratch", enabled: true } },
-            { object_store_id: "secure", name: "Secure Storage", quota: { source: "secure", enabled: true } },
-            { object_store_id: "unmetered", name: "Unmetered Storage", quota: { source: "secure", enabled: false } },
-        ].map((storage) => ({ ...storage, private: false, badges: [] }));
+            getFakeStorage("default", "Default Storage"),
+            getFakeStorage("scratch", "Scratch Storage", { source: "scratch" }),
+            getFakeStorage("fast_scratch", "Fast Scratch", { source: "scratch" }),
+            getFakeStorage("secure", "Secure Storage", { source: "secure" }),
+            getFakeStorage("unmetered", "Unmetered Storage", { source: "secure", enabled: false }),
+        ];
 
         let wrapper: VueWrapper;
         let storageRequests: number;
