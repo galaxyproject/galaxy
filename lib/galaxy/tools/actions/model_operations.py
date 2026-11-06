@@ -130,6 +130,8 @@ class ModelOperationToolAction(DefaultToolAction):
         )
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
+        # The outputs are copies of the inputs, possibly another user's datasets from a published history
+        history.charge_added_datasets(job.output_hdas())
         if job_callback:
             job_callback(job)
         if skip:

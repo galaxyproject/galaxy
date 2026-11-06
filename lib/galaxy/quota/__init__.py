@@ -176,16 +176,21 @@ FROM (
 
     def relabel_quota_for_dataset(self, dataset, from_label: str | None, to_label: str | None):
         adjust = dataset.get_total_size()
+        # The users whose usage counts the dataset, as a recalculation decides it
         with_quota_affected_users = """WITH quota_affected_users AS
 (
     SELECT DISTINCT user_id
     FROM history
         INNER JOIN
             history_dataset_association on history_dataset_association.history_id = history.id
-        INNER JOIN
-            dataset on history_dataset_association.dataset_id = dataset.id
     WHERE
-        dataset_id = :dataset_id
+        history_dataset_association.dataset_id = :dataset_id
+        AND NOT history_dataset_association.purged
+        AND NOT history.purged
+        AND user_id IS NOT NULL
+        AND NOT EXISTS (
+            SELECT 1 FROM library_dataset_dataset_association WHERE dataset_id = :dataset_id
+        )
 )"""
         engine = self.sa_session.get_bind()
 
@@ -262,6 +267,14 @@ ON CONFLICT
         engine = self.sa_session.get_bind()
         with engine.connect() as conn:
             with conn.begin():
+                if not for_sqlite:
+                    # Lock the user rows in id order before the label rows, as a recalculation and a job finish
+                    # do, so they can't deadlock
+                    lock_statement = f"""
+{with_quota_affected_users}
+SELECT id FROM galaxy_user WHERE id IN (SELECT user_id FROM quota_affected_users) ORDER BY id FOR UPDATE
+"""
+                    conn.execute(text(lock_statement), bind)
                 conn.execute(text(from_statement), bind)
                 conn.execute(text(to_statement), bind)
 

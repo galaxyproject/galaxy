@@ -3499,6 +3499,27 @@ class TestToolsApi(ApiTestCase, TestsTools):
             collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=4)
             assert collection_details["elements"][0]["object"]["elements"][0]["element_type"] == "hda"
 
+    @skip_without_tool("collection_type_source")
+    def test_discovered_collection_format_source(self):
+        with self.dataset_populator.test_history() as history_id:
+            header = self.dataset_populator.new_dataset(history_id, content="1\t2\n", file_type="tabular", wait=True)
+            hdca_id = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[("A", "3\t4\n"), ("B", "5\t6\n")], wait=True
+            ).json()["outputs"][0]["id"]
+            inputs = {
+                "header": {"src": "hda", "id": header["id"]},
+                "input_collect": {"src": "hdca", "id": hdca_id},
+            }
+            response = self._run("collection_type_source", history_id, inputs, assert_ok=True, wait_for_job=True)
+            output_collection = response["output_collections"][0]
+            collection_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=output_collection["id"]
+            )
+            assert [element["object"]["file_ext"] for element in collection_details["elements"]] == [
+                "tabular",
+                "tabular",
+            ]
+
     @skip_without_tool("multi_data_param")
     def test_reduce_collections_legacy(self):
         with self.dataset_populator.test_history() as history_id:

@@ -132,6 +132,7 @@ from galaxy.tool_util.toolbox import (
     ToolLoadError,
     ToolSection,
 )
+from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.tool_util.toolbox.entry import (
     ToolPanelEntry,
     ToolShedRepositoryInfo,
@@ -1222,6 +1223,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     tool_action: ToolAction
     tool_type_local = False
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
+    _conf_tool_shed_repository: ToolConfRepository | None = None
     job_search: "JobSearch"
     uses_tool_provided_metadata: bool
     allows_unnamed_outputs: bool
@@ -1373,7 +1375,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     def tool_shed_repository(self):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return get_installed_repository(
+            repository = get_installed_repository(
                 self.app,
                 tool_shed=self.tool_shed,
                 name=self.repository_name,
@@ -1381,6 +1383,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 installed_changeset_revision=self.installed_changeset_revision,
                 from_cache=True,
             )
+            # Conf-only repositories outlive the startup-scoped repository cache.
+            return repository or self._conf_tool_shed_repository
 
     @property
     def valid_input_states(self):
@@ -2041,6 +2045,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 inputs.append(resource_xml)
 
     def populate_tool_shed_info(self, tool_shed_repository):
+        if isinstance(tool_shed_repository, ToolConfRepository):
+            self._conf_tool_shed_repository = tool_shed_repository
         if tool_shed_repository:
             self.tool_shed = tool_shed_repository.tool_shed
             assert self.tool_shed

@@ -768,16 +768,20 @@ class TestMappings(BaseModelTestCase):
         return history.add_dataset(hda)
 
 
+def create_postgres_test_database() -> str:
+    base = os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE")
+    dbname = "gxtest" + str(uuid.uuid4())
+    assert base
+    postgres_url = base + dbname
+    create_database(postgres_url)
+    return postgres_url
+
+
 @skip_if_not_postgres_base
 class TestPostgresMappings(TestMappings):
     @classmethod
     def _db_uri(cls):
-        base = os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE")
-        dbname = "gxtest" + str(uuid.uuid4())
-        assert base
-        postgres_url = base + dbname
-        create_database(postgres_url)
-        return postgres_url
+        return create_postgres_test_database()
 
 
 def _invocation_for_workflow(user, workflow):

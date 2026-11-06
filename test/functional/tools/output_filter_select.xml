@@ -1,13 +1,13 @@
 <tool id="output_filter_select" name="output_filter_select" version="1.0.0">
     <!-- this tests output filtering based on a select parameter, ie the focus
-         is on the output filter and the test outputs. the command is just used
-         to examplify how to use selects.
+         is on the output filter and the test outputs. the command creates
+         the files that the filters expect and echoes the parameter values.
 
          the main motivation for the test is to ensure that
-         for `mutiple="true"` the select is accessed as a list (containing the
-         selected options). if the option(s) would be a comma separated string
-         then selecting a value that contains another value as substring
-         (eg AA contains A) would produce an error.
+         for `multiple="true"` the select is accessed as a list (containing the
+         selected options), also if a single option is selected. on a plain
+         string a value that contains another value as substring (eg AA
+         contains A) would also create the output for the shorter value.
 
          In addition also other cases are tested:
          - for optional selects it should be `None` if nothing is selected.
@@ -97,7 +97,7 @@ echo sel_opt $sel_opt
         </data>
     </outputs>
     <tests>
-        <!-- A and C are selected (by default)
+        <!-- A and C are selected
              which implies outputs A and C -->
         <test expect_num_outputs="2">
             <param name="sel_mult" value="A" />
@@ -120,8 +120,8 @@ echo sel_opt $sel_opt
             </assert_stdout>
         </test>
         <!-- make sure that selecting AA, ... does not imply that A, ...
-             are is in the output as well which happens if the select
-             would be a (comma separated) string in the output filter -->
+             are in the output as well which happens if the select
+             would be a plain string in the output filter -->
         <test expect_num_outputs="4">
             <param name="sel_mult" value="AA" />
             <param name="sel_mult_opt" value="BB" />
