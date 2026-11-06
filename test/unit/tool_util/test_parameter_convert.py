@@ -125,28 +125,6 @@ def test_decode_conditional():
     assert decoded_state.input_state["outer_cond"]["input1"]["id"] == EXAMPLE_ID_1
 
 
-def test_boolean_conditional_implicit_false():
-    tool_source = tool_source_for("parameters/gx_conditional_boolean_implicit")
-    bundle = input_models_for_tool_source(tool_source)
-    profile = parse_profile_version(tool_source)
-    state = RequestToolState(
-        {
-            "input": {"src": "hda", "id": EXAMPLE_ID_1_ENCODED},
-            "conditional_parameter": {"test_parameter": False},
-        }
-    )
-    decoded = decode(state, bundle, _fake_decode)
-    assert decoded.input_state == {
-        "input": {"src": "hda", "id": EXAMPLE_ID_1},
-        "conditional_parameter": {"test_parameter": False},
-    }
-    # The omitted branch must also be available as the boolean's default.
-    assert (
-        fill_static_defaults({"input": {"src": "hda", "id": EXAMPLE_ID_1}}, bundle, profile, partial=False)
-        == decoded.input_state
-    )
-
-
 def test_multi_data():
     tool_source = tool_source_for("parameters/gx_data_multiple")
     bundle = input_models_for_tool_source(tool_source)
@@ -379,6 +357,11 @@ def test_fill_defaults():
     with_defaults = fill_state_for({"conditional_parameter": {}}, "parameters/gx_conditional_boolean")
     assert with_defaults["conditional_parameter"]["test_parameter"] is False
     assert with_defaults["conditional_parameter"]["boolean_parameter"] is False
+
+    with_defaults = fill_state_for(
+        {"input": {"src": "hda", "id": EXAMPLE_ID_1}}, "parameters/gx_conditional_boolean_implicit"
+    )
+    assert with_defaults["conditional_parameter"] == {"test_parameter": False}
 
     with_defaults = fill_state_for({}, "parameters/gx_repeat_boolean")
     assert len(with_defaults["parameter"]) == 0

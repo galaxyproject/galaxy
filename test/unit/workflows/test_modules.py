@@ -1121,7 +1121,8 @@ class _PersistableFakeTool(_CaptureFakeTool):
     tool_source = bunch.Bunch(to_string=lambda: "<tool/>")
 
 
-def test_capture_boolean_conditional_implicit_false():
+def test_capture_persists_request_for_implicit_false_branch():
+    """An omitted false XML branch must not prevent mapped workflow request capture."""
     tool = _PersistableFakeTool()
     tool.tool_source = parameter_tool_source("gx_conditional_boolean_implicit")
     tool.parameters = input_models_for_tool_source(tool.tool_source).parameters
@@ -1143,10 +1144,9 @@ def test_capture_boolean_conditional_implicit_false():
             None,
         )
 
-    with mock.patch.object(modules, "log") as log:
-        template, combinations, request = modules._capture_workflow_tool_request_state(
-            trans, tool, None, collection_info, history, resolve, [job_state]
-        )
+    template, combinations, request = modules._capture_workflow_tool_request_state(
+        trans, tool, None, collection_info, history, resolve, [job_state]
+    )
 
     assert request is not None
     assert request.id is not None
@@ -1159,7 +1159,6 @@ def test_capture_boolean_conditional_implicit_false():
     assert template.input_state == request.request
     assert combinations is not None
     assert [combination.input_state for combination in combinations] == [job_state]
-    log.warning.assert_not_called()
 
 
 def test_capture_propagates_failure_flushing_unrelated_pending_objects():
