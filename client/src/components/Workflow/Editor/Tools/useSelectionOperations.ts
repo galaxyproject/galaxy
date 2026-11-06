@@ -80,6 +80,10 @@ export function useSelectionOperations() {
         undoRedoStore.applyAction(action);
 
         await until(() => action.asyncOperationDone.value).toBe(true);
+
+        if (action.asyncOperationError) {
+            throw action.asyncOperationError;
+        }
     }
 
     return {

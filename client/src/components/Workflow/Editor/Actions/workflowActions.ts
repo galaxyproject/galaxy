@@ -475,6 +475,8 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
     insertSubworkflowSubAction?: InsertStepAction;
 
     asyncOperationDone: { value: boolean };
+    /** Set when `run` fails; the action is then rolled back and undo/redo are no-ops */
+    asyncOperationError: Error | null = null;
 
     services;
 
@@ -599,6 +601,25 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
     }
 
     async run() {
+        try {
+            await this.extract();
+        } catch (error) {
+            this.asyncOperationError = error instanceof Error ? error : new Error(String(error));
+            this.rollBack();
+        } finally {
+            this.asyncOperationDone.value = true;
+        }
+    }
+
+    /** Undo whichever sub-actions already ran */
+    rollBack() {
+        this.insertSubworkflowSubAction?.undo();
+        this.deleteSelectionSubAction?.undo();
+        this.insertSubworkflowSubAction = undefined;
+        this.deleteSelectionSubAction = undefined;
+    }
+
+    async extract() {
         const stepIds = [...this.stateStore.multiSelectedStepIds];
         const commentIds = [...this.commentStore.multiSelectedCommentIds];
 
@@ -607,11 +628,11 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
             commentIds.map((id) => ensureDefined(this.commentStore.commentsRecord[id])),
         );
 
-        this.deleteSelectionSubAction = new DeleteSelectionAction(this.partialWorkflow.id);
+        const deleteSelectionSubAction = new DeleteSelectionAction(this.partialWorkflow.id);
 
         const newWf = await this.services.createWorkflow(this.partialWorkflow);
 
-        this.insertSubworkflowSubAction = new InsertStepAction(this.stepStore, this.stateStore, {
+        const insertSubworkflowSubAction = new InsertStepAction(this.stepStore, this.stateStore, {
             contentId: newWf.latest_workflow_id,
             name: newWf.name,
             type: "subworkflow",
@@ -621,9 +642,12 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
             },
         });
 
-        this.deleteSelectionSubAction.run();
-        this.insertSubworkflowSubAction.run();
-        const stepData = this.insertSubworkflowSubAction.getNewStepData();
+        // assign only once run, so `rollBack` undoes just what was applied
+        deleteSelectionSubAction.run();
+        this.deleteSelectionSubAction = deleteSelectionSubAction;
+        insertSubworkflowSubAction.run();
+        this.insertSubworkflowSubAction = insertSubworkflowSubAction;
+        const stepData = insertSubworkflowSubAction.getNewStepData();
 
         const response = await getModule(
             { name: newWf.name, type: "subworkflow", content_id: newWf.latest_workflow_id },
@@ -640,16 +664,18 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
         };
 
         this.stepStore.updateStep(updatedStep);
-        this.insertSubworkflowSubAction.updateStepData = updatedStep;
+        insertSubworkflowSubAction.updateStepData = updatedStep;
         this.stateStore.activeNodeId = stepData.id;
 
         await nextTick();
         this.reconnect();
-
-        this.asyncOperationDone.value = true;
     }
 
     undo() {
+        if (this.asyncOperationError) {
+            return;
+        }
+
         assertDefined(this.insertSubworkflowSubAction);
         assertDefined(this.deleteSelectionSubAction);
 
@@ -658,6 +684,10 @@ export class ExtractSubworkflowAction extends UndoRedoAction {
     }
 
     redo() {
+        if (this.asyncOperationError) {
+            return;
+        }
+
         assertDefined(this.insertSubworkflowSubAction);
         assertDefined(this.deleteSelectionSubAction);
 

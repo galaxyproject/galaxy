@@ -26,12 +26,14 @@ import type {
     OutputReconnectionMap,
 } from "@/components/Workflow/Editor/modules/convertOpenConnections";
 import { extractSubworkflow, type PartialWorkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
+import { Toast } from "@/composables/toast";
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 import type { CommentTool } from "@/stores/workflowEditorToolbarStore";
 import { assertDefined, ensureDefined } from "@/utils/assertions";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 import { match } from "@/utils/utils";
 
 import { AutoLayoutAction } from "../Actions/stepActions";
@@ -186,7 +188,15 @@ const newWorkflowURL = ref("about:blank");
 async function onClickCopy() {
     const newTab = window.open("about:blank", "_blank");
 
-    const newWF = await copySelectionToNewWorkflow(newWorkflowName.value);
+    let newWF;
+    try {
+        newWF = await copySelectionToNewWorkflow(newWorkflowName.value);
+    } catch (error) {
+        newTab?.close();
+        console.error(error);
+        Toast.error(errorMessageAsString(error), "Failed to copy selection into a new workflow");
+        return;
+    }
 
     toWorkflowModal.value?.hideModal();
 
@@ -220,7 +230,13 @@ const workflowExtractionData = ref<{
 } | null>(null);
 
 async function onClickExtract() {
-    workflowExtractionData.value = await extractSubworkflow(workflowId, newWorkflowName.value);
+    try {
+        workflowExtractionData.value = await extractSubworkflow(workflowId, newWorkflowName.value);
+    } catch (error) {
+        console.error(error);
+        Toast.error(errorMessageAsString(error), "Failed to prepare sub-workflow");
+        return;
+    }
 
     await nextTick();
 
@@ -282,8 +298,14 @@ async function onOkExtract() {
         workflowExtractionData.value,
     );
 
-    await moveSelectionToSubworkflow(partialWorkflow, inputReconnectionMap, outputReconnectionMap);
-    workflowExtractionData.value = null;
+    try {
+        await moveSelectionToSubworkflow(partialWorkflow, inputReconnectionMap, outputReconnectionMap);
+    } catch (error) {
+        console.error(error);
+        Toast.error(errorMessageAsString(error), "Failed to create sub-workflow");
+    } finally {
+        workflowExtractionData.value = null;
+    }
 }
 
 const workflowNameValid = computed(() => newWorkflowName.value.trim() !== "");

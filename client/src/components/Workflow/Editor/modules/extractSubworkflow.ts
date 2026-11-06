@@ -25,8 +25,6 @@ export async function extractSubworkflow(workflowId: string, name: string) {
     const expandedSelection = getTraversedSelection(stepIds, stepStore.steps);
     const expandedSteps = new Set(expandedSelection.filter((id) => !stepIds.includes(id)));
 
-    expandedSelection.forEach((stepId) => stateStore.setStepMultiSelected(stepId, true));
-
     const comments = commentIds.map((id) =>
         structuredClone(ensureDefined(commentStore.commentsRecord[id])),
     ) as WorkflowComment[];
@@ -36,6 +34,9 @@ export async function extractSubworkflow(workflowId: string, name: string) {
         stepStore.steps,
         searchStore,
     );
+
+    // expand the selection only once conversion succeeded, so a failure leaves it untouched
+    expandedSelection.forEach((stepId) => stateStore.setStepMultiSelected(stepId, true));
 
     const stepEntriesWithFilteredInputs = removeOpenConnections(stepArray);
 
