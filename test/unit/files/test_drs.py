@@ -3,8 +3,10 @@ import json
 import os
 from typing import Any
 
+import pytest
 import responses
 
+from galaxy.files.sources.util import fetch_drs_to_file
 from ._util import (
     assert_realizes_as,
     assert_realizes_contains,
@@ -103,3 +105,43 @@ def test_file_source_drs_s3():
     assert_realizes_contains(
         file_sources, test_url, "PMID:30101859-Cao-2018-TGFBR2-Patient_4", user_context=user_context
     )
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+@responses.activate
+def test_file_source_drs_access_lookup_sends_headers():
+    object_url = "https://drs.example.org/ga4gh/drs/v1/objects/314161"
+    responses.get(object_url, json={"id": "314161", "access_methods": [{"type": "https", "access_id": "1234"}]})
+
+    def access_handler(request):
+        assert request.headers["Authorization"] == "Bearer IBearTokens"
+        assert request.headers["User-Agent"].startswith("galaxy/")
+        return (200, {}, json.dumps({"url": "https://my.respository.org/myfile.txt"}))
+
+    responses.add_callback(responses.GET, f"{object_url}/access/1234", callback=access_handler)
+
+    with patch_http_open(_download_response):
+        file_sources = configured_file_sources(FILE_SOURCES_CONF)
+        assert_realizes_as(
+            file_sources, "drs://drs.example.org/314161", "hello drs world", user_context=user_context_fixture()
+        )
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+@responses.activate
+def test_drs_lookups_keep_galaxy_user_agent_over_configured_one(tmp_path):
+    object_url = "https://drs.example.org/ga4gh/drs/v1/objects/1"
+    responses.get(object_url, json={"access_methods": [{"type": "https", "access_id": "1234"}]})
+    responses.get(f"{object_url}/access/1234", json={"url": "https://my.respository.org/myfile.txt"})
+    with patch_http_open(_download_response):
+        fetch_drs_to_file(
+            "drs://drs.example.org/1", tmp_path / "out", user_context=None, headers={"User-Agent": "custom"}
+        )
+    assert [call.request.headers["User-Agent"].split("/")[0] for call in responses.calls] == ["galaxy"] * 2
+
+
+def _download_response(request, **kwargs):
+    response: Any = io.StringIO("hello drs world")
+    response.headers = {}
+    response.geturl = lambda: request.full_url
+    return response
