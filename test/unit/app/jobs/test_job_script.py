@@ -103,7 +103,7 @@ def _tree(directory):
     return {str(path.relative_to(directory)): path.read_bytes() for path in directory.rglob("*") if path.is_file()}
 
 
-def test_prepare_dirs_backup_only_appears_after_successful_copy(tmp_path):
+def test_prepare_dirs_restores_backup_only_created_after_successful_copy(tmp_path):
     if os.geteuid() == 0:
         pytest.skip("root can read files without read permission")
     configs = tmp_path / "configs"
@@ -119,6 +119,11 @@ def test_prepare_dirs_backup_only_appears_after_successful_copy(tmp_path):
     unreadable.chmod(0o600)
     _run_prepare_dirs(tmp_path)
     assert _tree(tmp_path / "_configs") == _tree(configs)
+
+    expected = _tree(configs)
+    (configs / "registry.xml").write_text("")
+    _run_prepare_dirs(tmp_path)
+    assert _tree(configs) == expected
 
 
 def test_prepare_dirs_skips_backup_when_stale_partial_cannot_be_removed(tmp_path):
