@@ -198,3 +198,25 @@ def test_copy_of_stale_source_after_swap_locked_follows_swap(engine, source_stat
         copy = session.get(model.HistoryDatasetAssociation, copy_ids[0])
         assert source and copy
         assert source.name == copy.name == "renamed by copier"
+
+
+@skip_unless_postgres
+def test_open_copy_does_not_block_updates_of_source(engine, queued_and_cached):
+    queued_id, _ = queued_and_cached
+    with _session(engine) as copier:
+        source = copier.get(model.HistoryDatasetAssociation, queued_id)
+        assert source
+        source.copy(flush=False)
+
+        def update_source():
+            with _session(engine) as other:
+                output = other.get(model.HistoryDatasetAssociation, queued_id)
+                assert output
+                output.info = "job finished"
+                other.commit()
+
+        thread, errors = _run_in_thread(update_source)
+        _wait_until_blocked(engine, thread)
+        assert not thread.is_alive(), "update waited on the copier's lock"
+    thread.join(30)
+    assert not errors, errors
