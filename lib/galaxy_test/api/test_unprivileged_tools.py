@@ -9,6 +9,7 @@ from galaxy_test.base.api_mixins import TestsTools
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    skip_without_tool,
     TOOL_WITH_ELEMENT_IDENTIFIER,
     TOOL_WITH_SHELL_COMMAND,
 )
@@ -550,3 +551,51 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             )
             job_a_again = self.dataset_populator.get_job_details(run_a_again["jobs"][0]["id"], full=True).json()
             assert job_a_again["copied_from_job_id"] == run_a["jobs"][0]["id"], job_a_again
+
+    @skip_without_tool("help_features_markdown")
+    def test_run_use_cached_job_does_not_mix_user_tools_and_toolbox_tools(self):
+        # A user tool may take the id and version of a toolbox tool; neither may reuse the other's jobs.
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            user_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(
+                    **{
+                        **TOOL_WITH_SHELL_COMMAND,
+                        "id": "help_features_markdown",
+                        "version": "1.0.0",
+                        "shell_command": "echo 'from the user tool' > output.fastq",
+                    }
+                )
+            )
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc", wait=True)
+            inputs = {"input": {"src": "hda", "id": dataset["id"]}}
+            self._run(
+                history_id=history_id, tool_uuid=user_tool["uuid"], inputs=inputs, assert_ok=True, wait_for_job=True
+            )
+            toolbox_run = self._run(
+                "help_features_markdown",
+                history_id=history_id,
+                inputs=inputs,
+                use_cached_job=True,
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            toolbox_job = self.dataset_populator.get_job_details(toolbox_run["jobs"][0]["id"], full=True).json()
+            assert not toolbox_job["copied_from_job_id"], toolbox_job
+            toolbox_output = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset_id=toolbox_run["outputs"][0]["id"]
+            )
+            assert toolbox_output == "abc\n"
+            # And the other way round: the toolbox tool's job is not a cache hit for the user tool.
+            user_tool_again = self._run(
+                history_id=history_id,
+                tool_uuid=user_tool["uuid"],
+                inputs=inputs,
+                use_cached_job=True,
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            user_tool_job = self.dataset_populator.get_job_details(user_tool_again["jobs"][0]["id"], full=True).json()
+            assert user_tool_job["copied_from_job_id"] != toolbox_job["id"], user_tool_job
