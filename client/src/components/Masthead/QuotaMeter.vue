@@ -7,6 +7,7 @@ import { computed } from "vue";
 
 import { isRegisteredUser, isUserOverQuota } from "@/api";
 import { useConfig } from "@/composables/config";
+import { hasOtherQuotaSources } from "@/composables/otherQuotaSources";
 import { useQuotaSourceNames } from "@/composables/quotaSourceNames";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { useUserStore } from "@/stores/userStore";
@@ -26,17 +27,10 @@ const otherSourcesOverQuotaText = computed(
     () => `${localize("Over quota on these storages:")} ${otherSourcesOverQuotaNames.value}`,
 );
 
-// Only with quotas on several storages: other pages load the usage per storage even with quotas off. The server gives
-// anonymous users no usage per storage, so for them the configured quota sources tell.
-const showSourcesPopover = computed(() => {
-    if (!config.value.enable_quotas) {
-        return false;
-    }
-    if (isAnonymous.value) {
-        return (config.value.quota_source_labels?.length ?? 0) > 0;
-    }
-    return (quotaUsages.value?.length ?? 0) > 1;
-});
+// The server gives anonymous users no usage per storage; other users need it listed beyond the default storage.
+const showSourcesPopover = computed(
+    () => hasOtherQuotaSources(config.value) && (isAnonymous.value || (quotaUsages.value?.length ?? 0) > 1),
+);
 const isOverDefaultQuota = computed(() => isUserOverQuota(currentUser.value));
 
 const hasQuota = computed<boolean>(() => {

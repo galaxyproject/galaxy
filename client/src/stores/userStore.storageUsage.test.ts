@@ -12,7 +12,6 @@ const { server, http } = useServerMock();
 
 describe("userStore — watching the storage usage", () => {
     let userRequests: number;
-    let sourceUsageRequests: number;
     let visibility: ReturnType<typeof useVisibilityPatch>;
 
     beforeEach(() => {
@@ -20,15 +19,10 @@ describe("userStore — watching the storage usage", () => {
         vi.useFakeTimers();
         visibility = useVisibilityPatch();
         userRequests = 0;
-        sourceUsageRequests = 0;
         server.use(
             http.get("/api/users/{user_id}", ({ response }) => {
                 userRequests++;
                 return response(200).json(getFakeRegisteredUser());
-            }),
-            http.get("/api/users/{user_id}/usage", ({ response }) => {
-                sourceUsageRequests++;
-                return response(200).json([]);
             }),
         );
     });
@@ -37,20 +31,6 @@ describe("userStore — watching the storage usage", () => {
         visibility.set("hidden");
         await flushPromises();
         visibility.set("visible");
-        await flushPromises();
-    }
-
-    async function startWatchingWithQuotaSources(quotaSourceLabels: string[], { enableQuotas = true } = {}) {
-        server.use(
-            http.get("/api/configuration", ({ response }) => {
-                return response(200).json({
-                    enable_quotas: enableQuotas,
-                    quota_source_labels: quotaSourceLabels,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any);
-            }),
-        );
-        useUserStore().startWatchingStorageUsage();
         await flushPromises();
     }
 
@@ -89,54 +69,5 @@ describe("userStore — watching the storage usage", () => {
         visibility.set("visible");
         await flushPromises();
         expect(userRequests).toBe(2);
-    });
-
-    describe("usage of the other storage sources", () => {
-        it("is loaded for a registered user on a server with other sources", async () => {
-            useUserStore().currentUser = getFakeRegisteredUser();
-
-            await startWatchingWithQuotaSources(["scratch"]);
-
-            expect(sourceUsageRequests).toBe(1);
-        });
-
-        it("isn't loaded on a server without other sources", async () => {
-            useUserStore().currentUser = getFakeRegisteredUser();
-
-            await startWatchingWithQuotaSources([]);
-
-            expect(sourceUsageRequests).toBe(0);
-        });
-
-        it("isn't loaded with quotas off", async () => {
-            useUserStore().currentUser = getFakeRegisteredUser();
-
-            await startWatchingWithQuotaSources(["scratch"], { enableQuotas: false });
-
-            expect(sourceUsageRequests).toBe(0);
-        });
-
-        it("isn't loaded for an anonymous user", async () => {
-            useUserStore().currentUser = {
-                isAnonymous: true,
-                total_disk_usage: 0,
-                nice_total_disk_usage: "0 bytes",
-                quota_percent: 0,
-            };
-
-            await startWatchingWithQuotaSources(["scratch"]);
-
-            expect(sourceUsageRequests).toBe(0);
-        });
-
-        it("is loaded once a user arrives after the watching started", async () => {
-            await startWatchingWithQuotaSources(["scratch"]);
-            expect(sourceUsageRequests).toBe(0);
-
-            useUserStore().currentUser = getFakeRegisteredUser();
-            await flushPromises();
-
-            expect(sourceUsageRequests).toBe(1);
-        });
     });
 });

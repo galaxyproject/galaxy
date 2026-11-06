@@ -63,6 +63,7 @@ import { type Router, useRoute, useRouter } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
+import { useOtherQuotaSourcesUsage } from "@/composables/otherQuotaSources";
 import { useRouteQueryBool } from "@/composables/route";
 import { useHasStagedUploads } from "@/composables/upload/useUploadStaging";
 import { useCommandPalette } from "@/composables/useCommandPalette";
@@ -143,6 +144,7 @@ const embedded = computed(() => embeddedQuery.value || inIframe);
 const historyStore = useHistoryStore();
 if (!embedded.value) {
     historyStore.startWatchingHistory();
+    useOtherQuotaSourcesUsage();
 }
 
 const configStore = useConfigStore();

@@ -236,8 +236,17 @@ describe("QuotaMeter.vue", () => {
             expect(await hoverForTooltip(wrapper)).toBe("Storage and Usage Details");
         });
 
-        it("keeps the tooltip for a registered user with only the default source", async () => {
+        it("keeps the tooltip when the only other source configured has no usage listed", async () => {
             await mountWithUsages([getFakeQuotaUsageData(null, 400)], {
+                enable_quotas: true,
+                quota_source_labels: ["scratch"],
+            });
+
+            expect(await hoverForTooltip(wrapper)).toBe("Storage and Usage Details");
+        });
+
+        it("keeps the tooltip when the usage lists a source that is no longer configured", async () => {
+            await mountWithUsages([getFakeQuotaUsageData(null, 400), getFakeQuotaUsageData("retired", 400)], {
                 enable_quotas: true,
                 quota_source_labels: [],
             });
