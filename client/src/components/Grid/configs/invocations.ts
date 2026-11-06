@@ -182,4 +182,14 @@ const gridConfig: GridConfig = {
     title: "Workflow Invocations",
 };
 
+/**
+ * The admin grid lists every user's invocations, but name and column filter lookups only cover the
+ * admin's own workflows and histories
+ */
+export const adminInvocationsGridConfig: GridConfig = {
+    ...gridConfig,
+    fields: fields.map(({ filter: _filter, ...field }) => field),
+    filtering: undefined,
+};
+
 export default gridConfig;

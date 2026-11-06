@@ -3,7 +3,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import type { WorkflowInvocation } from "@/api/invocations";
-import invocationsGridConfig from "@/components/Grid/configs/invocations";
+import invocationsGridConfig, { adminInvocationsGridConfig } from "@/components/Grid/configs/invocations";
 import invocationsBatchConfig from "@/components/Grid/configs/invocationsBatch";
 import invocationsHistoryGridConfig from "@/components/Grid/configs/invocationsHistory";
 import invocationsWorkflowGridConfig from "@/components/Grid/configs/invocationsWorkflow";
@@ -91,6 +91,8 @@ if (forBatch.value) {
     gridConfig = invocationsWorkflowGridConfig;
 } else if (forHistory.value) {
     gridConfig = invocationsHistoryGridConfig;
+} else if (!props.ownerGrid) {
+    gridConfig = adminInvocationsGridConfig;
 } else {
     gridConfig = invocationsGridConfig;
 }
