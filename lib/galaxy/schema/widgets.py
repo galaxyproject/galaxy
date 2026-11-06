@@ -57,7 +57,9 @@ class WorkflowParameters(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     workflow_id: EncodedId = Field(title="Workflow", description="Encoded id of the workflow.")
-    version: int | None = Field(None, title="Version", description="Version of the workflow, the latest by default.")
+    version: int | None = Field(
+        None, ge=0, title="Version", description="Version of the workflow, the latest by default."
+    )
     zoom: float | None = Field(None, title="Zoom", description="Initial zoom level of the graph.")
     buttons: bool | None = Field(
         None, title="Buttons", description="Whether to show the button opening the workflow in Galaxy."
