@@ -4,10 +4,17 @@ import { defineComponent, h } from "vue";
 
 import ButtonPlain from "./ButtonPlain.vue";
 
+// Run the component with Vue 3 listener semantics: an undeclared `click` would
+// fall through to the root div and fire the parent's handler a second time.
+const Vue3ButtonPlain: any = {
+    ...ButtonPlain,
+    compatConfig: { ...(ButtonPlain as any).compatConfig, INSTANCE_LISTENERS: false },
+};
+
 function mountWithClickHandler() {
     const onClick = vi.fn();
     const Parent = defineComponent({
-        render: () => h(ButtonPlain, { onClick }, () => "label"),
+        render: () => h(Vue3ButtonPlain, { onClick }, () => "label"),
     });
     const wrapper = mount(Parent);
     return { wrapper, onClick };
