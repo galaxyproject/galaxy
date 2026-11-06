@@ -68,8 +68,8 @@ export function legacyComponent(component, seen = new Set()) {
 // the Vue.extend it captures when its vue.js module is evaluated, so marking
 // definitions on the way through reaches all of them. Galaxy code doesn't call
 // Vue.extend. This module has to be evaluated before bootstrap-vue is:
-// compat-config.js imports it first, and the galaxy-legacy-libraries-first
-// plugin in vite.config.mjs covers the production chunking.
+// compat-config.js imports it first, and vite-plugin-legacy-libraries-first.js
+// covers the production chunking.
 const originalExtend = Vue.extend;
 Vue.extend = function legacyExtend(definition = {}) {
     return originalExtend.call(this, legacyComponent(definition));
