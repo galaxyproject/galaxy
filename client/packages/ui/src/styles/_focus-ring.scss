@@ -3,7 +3,7 @@
 
 $focus-ring-width: 2px;
 $focus-ring-offset: 2px;
-$focus-ring-color: var(--color-blue-600, #25537b);
+$focus-ring-color: var(--color-ring, var(--color-blue-600, #25537b));
 
 // $halo fills the offset gap with the page colour, keeping the ring clear of the control's fill and its neighbours.
 // $important lets the halo beat consumer button styles that put their own focus shadow on the element.

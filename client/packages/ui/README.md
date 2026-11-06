@@ -30,7 +30,7 @@ load, is generated from it: run `pnpm --filter @galaxyproject/galaxy-ui build:to
 
 ## Focus ring
 
-Controls draw their keyboard focus ring with the `focus-ring` mixin in `src/styles/_focus-ring.scss`: a 2px blue-600 outline at a 2px offset, with a page-colour halo (`box-shadow`) filling the gap so the ring stays clear of the control's fill and its neighbours. The ring is an outline because forced-colors mode keeps outlines and drops box-shadows. The partial holds mixins only, so `@use "../styles/focus-ring" as *;` emits no CSS by itself. Use the relative path (`../../styles/focus-ring` from `Form/`) so it resolves in both consumers.
+Controls draw their keyboard focus ring with the `focus-ring` mixin in `src/styles/_focus-ring.scss`: a 2px `--color-ring` (blue-600) outline at a 2px offset, with a page-colour halo (`box-shadow`) filling the gap so the ring stays clear of the control's fill and its neighbours. The ring is an outline because forced-colors mode keeps outlines and drops box-shadows. The partial holds mixins only, so `@use "../styles/focus-ring" as *;` emits no CSS by itself. Use the relative path (`../../styles/focus-ring` from `Form/`) so it resolves in both consumers.
 
 ```scss
 &:focus-visible {
