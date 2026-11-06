@@ -1,22 +1,21 @@
 import os
 import threading
 import time
-import uuid
 from collections.abc import Iterator
 
 import pytest
 from sqlalchemy import (
-    create_engine,
     Engine,
     text,
 )
-from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from galaxy import model
-from galaxy.datatypes.registry import Registry
-from galaxy.model.database_utils import DbUrl
-from galaxy.model.unittest_utils.model_testing_utils import create_and_drop_database
+from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - url is a fixture we have to import explicitly
+    create_and_drop_database,
+    disposing_engine,
+    url,
+)
 from .test_galaxy_mapping import MockObjectStore
 
 # GALAXY_TEST_DBURI='postgresql://postgres:postgres@localhost:5432/postgres'
@@ -38,23 +37,20 @@ class NoFilesObjectStore(MockObjectStore):
 
 
 @pytest.fixture(scope="module")
-def engine(tmp_path_factory) -> Iterator[Engine]:
-    database = f"gxtest_{uuid.uuid4().hex}"
-    if IS_POSTGRES:
-        url = DbUrl(make_url(DB_URI).set(database=database).render_as_string(hide_password=False))
-    else:
-        url = DbUrl(f"sqlite:///{tmp_path_factory.mktemp('copy_from') / database}")
-    with create_and_drop_database(url):
-        engine = create_engine(url)
+def tmp_directory(tmp_path_factory) -> str:
+    return str(tmp_path_factory.mktemp("copy_from"))
+
+
+@pytest.fixture(scope="module")
+def engine(url) -> Iterator[Engine]:  # noqa: F811
+    object_store = model.Dataset.object_store
+    with create_and_drop_database(url), disposing_engine(url) as engine:
         model.mapper_registry.metadata.create_all(engine)
         model.setup_global_object_store_for_models(NoFilesObjectStore())  # type: ignore[arg-type]
-        datatypes_registry = Registry()
-        datatypes_registry.load_datatypes()
-        model.set_datatypes_registry(datatypes_registry)
         try:
             yield engine
         finally:
-            engine.dispose()
+            model.Dataset.object_store = object_store
 
 
 def _session(engine: Engine) -> Session:
