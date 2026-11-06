@@ -303,6 +303,22 @@ def test_verify_collection_rejects_unpopulated_empty_collection(populated_state,
     assert str(exc_info.value) == f"Output collection 'plots': populated state is '{populated_state}', expected 'ok'."
 
 
+def test_verify_collection_reports_population_message():
+    output_def = TestCollectionOutputDef.from_dict({"name": "plots"})
+    collection = {
+        "collection_type": "list",
+        "elements": [],
+        "populated_state": "failed",
+        "populated_state_message": "Problem building datasets for collection.",
+    }
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, collection, lambda *a, **k: None)
+    assert str(exc_info.value) == (
+        "Output collection 'plots': populated state is 'failed', expected 'ok'. "
+        "Problem building datasets for collection."
+    )
+
+
 def test_verify_collection_rejects_unpopulated_child():
     output_def = TestCollectionOutputDef.from_dict({"name": "plots", "attributes": {"type": "list:list"}})
     collection = _nested_data_collection()
