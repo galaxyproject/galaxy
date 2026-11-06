@@ -11,6 +11,7 @@ UNVERSIONED_COMPOSE_TEXT_PARAM = "toolshed.g2.bx.psu.edu/repos/iuc/compose_text_
 
 
 class TestWorkflowInvocationShedToolVersions(integration_util.IntegrationTestCase, UsesShedApi):
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
     require_admin_user = False
 
