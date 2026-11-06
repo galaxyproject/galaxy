@@ -81,6 +81,7 @@ from galaxy.tools.parameters.wrapped import (
 )
 from galaxy.util import ExecutionTimer
 from galaxy.util.template import fill_template
+from galaxy.workflow.scheduling_dependencies import input_readiness_dependencies
 
 if TYPE_CHECKING:
     from galaxy.model import (
@@ -97,6 +98,13 @@ log = logging.getLogger(__name__)
 OutputDatasetsT = dict[str, "DatasetInstance"]
 PreservedTagsT = dict[str | None, ItemTagAssociation]
 ToolActionExecuteResult = tuple[Job, OutputDatasetsT, History | None] | tuple[Job, OutputDatasetsT]
+
+
+class CollectedInputDatasets(LegacyUnprefixedDict):
+    def __init__(self):
+        super().__init__()
+        # The dataset checks already cover members flattened from these inputs.
+        self.collection_inputs: set[str] = set()
 
 
 class CollectedToolInputs(NamedTuple):
@@ -187,7 +195,7 @@ class DefaultToolAction(ToolAction):
         """
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
-        input_datasets = LegacyUnprefixedDict()
+        input_datasets = CollectedInputDatasets()
         all_permissions: dict[str, set[str]] = {}
 
         def record_permission(action, role_id):
@@ -346,9 +354,15 @@ class DefaultToolAction(ToolAction):
                 for ext in extensions:
                     if ext:
                         if ext in ("auto", "_sniff_"):
-                            if set(summary.states) & set(Dataset.non_ready_states):
+                            dependencies = input_readiness_dependencies(collection, extensions=(ext,))
+                            readiness = dependencies[0].readiness if dependencies else None
+                            if readiness is None or readiness.state in (
+                                *Dataset.non_ready_states,
+                                Dataset.states.PAUSED,
+                            ):
                                 raise ToolInputsNotReadyException(
-                                    f"Extension '{ext}' not yet resolved, cannot use dataset collection as input"
+                                    f"Extension '{ext}' not yet resolved, cannot use dataset collection as input",
+                                    dependencies=dependencies,
                                 )
                         datatype = trans.app.datatypes_registry.get_datatype_by_extension(ext)
                         if not datatype:
@@ -466,6 +480,8 @@ class DefaultToolAction(ToolAction):
             collection_info=collection_info,
         )
 
+        if isinstance(inp_data, CollectedInputDatasets):
+            inp_data.collection_inputs.update(inp_dataset_collections)
         preserved_tags: PreservedTagsT = {}
         preserved_hdca_tags: PreservedTagsT = {}
         # grab tags from incoming HDAs

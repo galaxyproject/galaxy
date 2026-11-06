@@ -251,6 +251,10 @@ from galaxy.work.context import (
     proxy_work_context_for_history,
     WorkRequestContext,
 )
+from galaxy.workflow.scheduling_dependencies import (
+    input_readiness_dependencies,
+    unpopulated_collection_dependencies,
+)
 from ._types import (
     InputFormatT,
     ParameterValidationErrorsT,
@@ -3858,37 +3862,59 @@ class DatabaseOperationTool(Tool):
         return not self.require_dataset_ok
 
     def check_inputs_ready(self, input_datasets, input_dataset_collections, security):
-        def check_dataset_state(input_key, state):
+        def check_state(input_key, state, input_value, dependencies=None):
             if self.require_terminal_states and state in model.Dataset.non_ready_states:
-                raise ToolInputsNotReadyException("An input dataset is pending.")
-
+                raise ToolInputsNotReadyException(
+                    "An input dataset is pending.",
+                    dependencies=(
+                        dependencies if dependencies is not None else input_readiness_dependencies(input_value)
+                    ),
+                )
             if state == model.Dataset.states.PAUSED and not self.require_terminal_or_paused_states:
-                raise ToolInputsNotReadyException(f"Input '{input_key}' is paused; the file is not yet available.")
+                raise ToolInputsNotReadyException(
+                    f"Input '{input_key}' is paused; the file is not yet available.",
+                    dependencies=(
+                        dependencies if dependencies is not None else input_readiness_dependencies(input_value)
+                    ),
+                )
+            if self.require_dataset_ok and state != model.Dataset.states.OK:
+                raise ToolInputsNotOKException(
+                    f"Tool requires inputs to be in valid state, but input '{input_key}' has data in state '{state}'",
+                    src="hda",
+                    id=input_value.id,
+                    input_name=input_key,
+                )
 
-            if self.require_dataset_ok:
-                if state != model.Dataset.states.OK:
-                    # TODO: frontend component should intercept and point to problematic input
-                    raise ToolInputsNotOKException(
-                        f"Tool requires inputs to be in valid state, but dataset with hid {input_dataset.hid} is in state '{input_dataset.state}'",
-                        src="hda",
-                        id=input_dataset.id,
-                        input_name=input_key,
-                    )
-
+        # These are the same per-dataset checks execution already needed. Stop
+        # at the first wait and preserve that input rather than snapshotting all.
         for input_key, input_dataset in input_datasets.items():
-            if input_dataset:
-                # None is a possible input for optional inputs
-                check_dataset_state(input_key, input_dataset.state)
+            if input_dataset is not None:
+                check_state(input_key, input_dataset.state, input_dataset)
 
-        for input_key, input_dataset_collection_pairs in input_dataset_collections.items():
-            for input_dataset_collection, _ in input_dataset_collection_pairs:
-                if not input_dataset_collection.collection.populated_optimized:
-                    raise ToolInputsNotReadyException("An input collection is not populated.")
-
-            summary = input_dataset_collection.collection.dataset_states_and_extensions_summary
-            states = summary.states
-            for state in states.keys():
-                check_dataset_state(input_key, state)
+        blocked_states: set[str] = set()
+        if self.require_terminal_states:
+            blocked_states.update(model.Dataset.non_ready_states)
+        if not self.require_terminal_or_paused_states:
+            blocked_states.add(model.Dataset.states.PAUSED)
+        if self.require_dataset_ok:
+            blocked_states.update(set(model.Dataset.ready_states) - {model.Dataset.states.OK})
+        for input_key, pairs in input_dataset_collections.items():
+            for input_collection, _ in pairs:
+                if input_collection is None:
+                    continue
+                collection = input_collection.collection
+                if not collection.populated_optimized:
+                    raise ToolInputsNotReadyException(
+                        "An input collection is not populated.",
+                        dependencies=unpopulated_collection_dependencies(collection),
+                    )
+                if not blocked_states or input_key in getattr(input_datasets, "collection_inputs", ()):
+                    continue
+                dependencies = input_readiness_dependencies(collection, states=blocked_states)
+                if dependencies:
+                    dependency = dependencies[0]
+                    assert dependency.readiness is not None
+                    check_state(input_key, dependency.readiness.state, dependency, dependencies)
 
     def _check_output_count(self, count: int) -> None:
         max_outputs = self.app.config.max_discovered_files
@@ -4404,7 +4430,9 @@ class KeepSuccessDatasetsTool(FilterDatasetsTool):
         element_object = element.element_object
         assert isinstance(element_object, model.DatasetInstance)
         if element_object.is_pending:
-            raise ToolInputsNotReadyException("An input dataset is pending.")
+            raise ToolInputsNotReadyException(
+                "An input dataset is pending.", dependencies=input_readiness_dependencies(element_object)
+            )
         return element_object.is_ok
 
 

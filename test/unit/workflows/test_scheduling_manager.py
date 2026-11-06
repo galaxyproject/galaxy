@@ -15,7 +15,7 @@ from galaxy.app_unittest_utils.galaxy_mock import (
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import now
 from galaxy.util.bunch import Bunch
-from galaxy.workflow.modules import (
+from galaxy.workflow.scheduling_dependencies import (
     DependencyType,
     SchedulingDependencies,
     SchedulingDependency,
@@ -24,6 +24,7 @@ from galaxy.workflow.scheduling_manager import (
     WorkflowRequestMonitor,
     WorkflowSchedulingManager,
 )
+from .workflow_support import SchedulingHarness
 
 NOTHING_PENDING = SchedulingDependencies(tracked=frozenset(), untracked=(), more_work=False)
 
@@ -40,43 +41,6 @@ class RecordingScheduler:
     def schedule(self, workflow_invocation):
         self.scheduled += 1
         return self.results.pop(0) if len(self.results) > 1 else self.results[0]
-
-
-class SchedulingHarness:
-    def __init__(self):
-        self.app = MockApp(
-            config=MockAppConfig(maximum_workflow_invocation_duration=0, history_local_serial_workflow_scheduling=False)
-        )
-        self.app.job_config = Bunch(self_handler_tags=[])
-        self.monitor = WorkflowRequestMonitor(
-            cast(MinimalManagerApp, self.app),
-            cast(WorkflowSchedulingManager, Bunch(default_handler_id="main", handler_assignment_methods=[])),
-        )
-        self.session = self.app.model.context
-        self.history = model.History()
-        invocation = model.WorkflowInvocation()
-        invocation.history = self.history
-        invocation.workflow = model.Workflow()
-        invocation.state = model.WorkflowInvocation.states.READY
-        self.session.add(invocation)
-        self.session.commit()
-        self.invocation_id = invocation.id
-        self.set_history_update_time(now() - timedelta(seconds=60))
-
-    def attempt(self, scheduler) -> int:
-        self.monitor._WorkflowRequestMonitor__attempt_schedule(self.invocation_id, scheduler)  # type: ignore[attr-defined]
-        return scheduler.scheduled
-
-    def set_history_update_time(self, update_time):
-        history_id = self.history.id
-        self.session.execute(delete(model.HistoryAudit).where(model.HistoryAudit.history_id == history_id))
-        self.session.execute(insert(model.HistoryAudit).values(history_id=history_id, update_time=update_time))
-        self.session.commit()
-
-    def persist(self, *objects):
-        self.session.add_all(objects)
-        self.session.commit()
-        return objects[0].id
 
 
 def test_waits_for_tracked_job_to_finish():
