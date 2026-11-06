@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import { isWorkflowInput } from "@/components/Workflow/constants";
 import type {
     InputReconnectionMap,
     OutputReconnectionMap,
 } from "@/components/Workflow/Editor/modules/convertOpenConnections";
 import type { PartialWorkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
 import { onAllInputs } from "@/components/Workflow/Editor/modules/onAllInputs";
-import type { NewStep, Step } from "@/stores/workflowStepStore";
+import type { Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
@@ -50,9 +51,7 @@ const connections = computed(() => {
 
 const inputs = computed(() => {
     const steps = Object.values(props.workflow.steps);
-    const inputSteps = steps.filter((step) =>
-        (["parameter_input", "data_input", "data_collection_input"] as Array<NewStep["type"]>).includes(step.type),
-    );
+    const inputSteps = steps.filter((step) => isWorkflowInput(step.type));
 
     const inputLabels = new Set(props.inputMap.map((input) => input.label));
 

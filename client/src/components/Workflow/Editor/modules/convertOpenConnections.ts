@@ -1,3 +1,4 @@
+import { isWorkflowInput } from "@/components/Workflow/constants";
 import { onAllInputs } from "@/components/Workflow/Editor/modules/onAllInputs";
 import { getModule } from "@/components/Workflow/Editor/modules/services";
 import type { WorkflowSearchStore } from "@/stores/workflowSearchStore";
@@ -41,7 +42,7 @@ function getOpenOutputConnections(selectedKeys: number[], allSteps: Record<numbe
                 const connectedNode = ensureDefined(allSteps[connection.id]);
 
                 // don't count open input node outputs as open connections
-                if (!["data_input", "data_collection_input", "parameter_input"].includes(connectedNode.type)) {
+                if (!isWorkflowInput(connectedNode.type)) {
                     openOutputConnections.push({ connection, name, nodeId: step.id });
                 }
             }
