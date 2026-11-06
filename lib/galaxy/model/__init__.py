@@ -698,33 +698,68 @@ class JobLike:
         raise NotImplementedError("Attempt to set stdout, must set tool_stderr or job_stderr")
 
 
-UNIQUE_DATASET_USER_USAGE = """
-WITH per_user_histories AS
-(
-    SELECT id
-    FROM history
-    WHERE user_id = :id
-        AND NOT purged
-),
-per_hist_hdas AS (
-    SELECT DISTINCT dataset_id
-    FROM history_dataset_association
-    WHERE NOT purged
-        AND history_id IN (SELECT id FROM per_user_histories)
-)
+# Datasets counted towards a user's usage: referenced by an unpurged HDA in an
+# unpurged history of the user and not part of any library. EXISTS / NOT EXISTS
+# count each dataset once and let PostgreSQL plan a semi join and an anti join
+# with row estimates taken from the table statistics.
+USER_DATASETS_CONDITION = """
+EXISTS (
+        SELECT 1
+        FROM history_dataset_association
+        JOIN history ON history.id = history_dataset_association.history_id
+        WHERE history_dataset_association.dataset_id = dataset.id
+            AND history.user_id = :id
+            AND NOT history.purged
+            AND NOT history_dataset_association.purged
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM library_dataset_dataset_association
+        WHERE library_dataset_dataset_association.dataset_id = dataset.id
+    )
+"""
+
+UNIQUE_DATASET_USER_USAGE = f"""
 SELECT COALESCE(SUM(COALESCE(dataset.total_size, dataset.file_size, 0)), 0)
 FROM dataset
-LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
-WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
-    AND library_dataset_dataset_association.id IS NULL
-    AND (dataset.object_store_id NOT LIKE '{user_objects_scheme}%' OR dataset.object_store_id IS NULL)
+WHERE {USER_DATASETS_CONDITION}
+    AND (dataset.object_store_id NOT LIKE '{{user_objects_scheme}}%' OR dataset.object_store_id IS NULL)
+    {{and_dataset_condition}}
+"""
+
+UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE = f"""
+SELECT SUM(COALESCE(dataset.total_size, dataset.file_size, 0)) AS usage, dataset.object_store_id
+FROM dataset
+WHERE {USER_DATASETS_CONDITION}
+GROUP BY dataset.object_store_id
+"""
+
+# Sums rows of UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE. The source is aliased as
+# ``dataset`` so the object store conditions read the same as in UNIQUE_DATASET_USER_USAGE.
+PER_OBJECTSTORE_USAGE_SUM = """
+SELECT COALESCE(SUM(dataset.usage), 0)
+FROM {per_object_store_usage} AS dataset
+WHERE (dataset.object_store_id NOT LIKE '{user_objects_scheme}%' OR dataset.object_store_id IS NULL)
     {and_dataset_condition}
 """
 
 
+def _per_objectstore_usage_sum(per_object_store_usage: str, and_dataset_condition: str) -> str:
+    return PER_OBJECTSTORE_USAGE_SUM.format(
+        per_object_store_usage=per_object_store_usage,
+        and_dataset_condition=and_dataset_condition,
+        user_objects_scheme=USER_OBJECTS_SCHEME,
+    )
+
+
 def calculate_user_disk_usage_statements(user_id: int, quota_source_map: "QuotaSourceMap", for_sqlite: bool = False):
-    """Standalone function so can be reused for postgres directly in pgcleanup.py."""
-    statements: list[tuple[str, dict[str, Any]]] = []
+    """Standalone function so can be reused for postgres directly in pgcleanup.py.
+
+    On PostgreSQL this is a single statement that collects the user's datasets once,
+    grouped by object store, and derives the default and per quota source label usage
+    from that. The main query is the ``galaxy_user`` update so the statement's rowcount
+    is 1 for an existing user (pgcleanup.py rolls back statements that change no rows).
+    """
     default_quota_enabled = quota_source_map.default_quota_enabled
     default_exclude_ids = quota_source_map.default_usage_excluded_ids()
     default_cond = "dataset.object_store_id IS NULL" if default_quota_enabled and default_exclude_ids else ""
@@ -733,28 +768,69 @@ def calculate_user_disk_usage_statements(user_id: int, quota_source_map: "QuotaS
     default_usage_dataset_condition = f"{default_cond} {use_or} {exclude_cond}"
     if default_usage_dataset_condition.strip():
         default_usage_dataset_condition = f"AND ( {default_usage_dataset_condition} )"
-    default_usage = UNIQUE_DATASET_USER_USAGE.format(
-        and_dataset_condition=default_usage_dataset_condition, user_objects_scheme=USER_OBJECTS_SCHEME
-    )
+    source = quota_source_map.ids_per_quota_source()
+    source_labels = list(source.keys())
+    if source_labels:
+        clean_old_condition = "quota_source_label NOT IN :labels"
+    else:
+        clean_old_condition = "quota_source_label IS NOT NULL"
+    clean_old_statement = f"""
+DELETE FROM user_quota_source_usage
+WHERE user_id = :id AND {clean_old_condition}
+"""
+
+    if not for_sqlite:
+        params: dict[str, Any] = {"id": user_id}
+        if default_exclude_ids:
+            params["exclude_object_store_ids"] = default_exclude_ids
+        if source_labels:
+            params["labels"] = source_labels
+        label_values = []
+        for i, (quota_source_label, object_store_ids) in enumerate(source.items()):
+            label_usage = _per_objectstore_usage_sum(
+                "per_object_store_usage", f"AND ( dataset.object_store_id IN :label_{i}_object_store_ids )"
+            )
+            label_values.append(f"(:id, :label_{i}, ({label_usage}))")
+            params[f"label_{i}"] = quota_source_label
+            params[f"label_{i}_object_store_ids"] = object_store_ids
+        label_usage_cte = ""
+        if label_values:
+            label_usage_cte = f"""
+label_usage AS (
+    INSERT INTO user_quota_source_usage(user_id, quota_source_label, disk_usage)
+    VALUES {", ".join(label_values)}
+    ON CONFLICT
+    ON constraint uqsu_unique_label_per_user
+    DO UPDATE SET disk_usage = excluded.disk_usage
+),"""
+        default_usage = _per_objectstore_usage_sum("per_object_store_usage", default_usage_dataset_condition)
+        statement = f"""
+WITH per_object_store_usage AS (
+{UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE}
+),{label_usage_cte}
+clean_old_labels AS ({clean_old_statement})
+UPDATE galaxy_user SET disk_usage = ({default_usage})
+WHERE id = :id
+"""
+        return [(statement, params)]
+
+    # SQLite has no data-modifying CTEs, run one statement per quota source.
+    statements: list[tuple[str, dict[str, Any]]] = []
+    per_object_store_usage = f"({UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE})"
+    default_usage = _per_objectstore_usage_sum(per_object_store_usage, default_usage_dataset_condition)
     default_usage = f"""
 UPDATE galaxy_user SET disk_usage = ({default_usage})
 WHERE id = :id
 """
-    params: dict[str, Any] = {"id": user_id}
+    params = {"id": user_id}
     if default_exclude_ids:
         params["exclude_object_store_ids"] = default_exclude_ids
     statements.append((default_usage, params))
-    source = quota_source_map.ids_per_quota_source()
-    # TODO: Merge a lot of these settings together by generating a temp table for
-    # the object_store_id to quota_source_label into a temp table of values
     for quota_source_label, object_store_ids in source.items():
-        label_usage = UNIQUE_DATASET_USER_USAGE.format(
-            and_dataset_condition="AND ( dataset.object_store_id IN :include_object_store_ids )",
-            user_objects_scheme=USER_OBJECTS_SCHEME,
+        label_usage = _per_objectstore_usage_sum(
+            per_object_store_usage, "AND ( dataset.object_store_id IN :include_object_store_ids )"
         )
-        if for_sqlite:
-            # hacky alternative for older sqlite
-            statement = f"""
+        statement = f"""
 WITH new (user_id, quota_source_label, disk_usage) AS (
     VALUES(:id, :label, ({label_usage}))
 )
@@ -765,56 +841,15 @@ FROM new
         ON new.user_id = old.user_id
             AND new.quota_source_label = old.quota_source_label
 """
-        else:
-            statement = f"""
-INSERT INTO user_quota_source_usage(user_id, quota_source_label, disk_usage)
-VALUES(:id, :label, ({label_usage}))
-ON CONFLICT
-ON constraint uqsu_unique_label_per_user
-DO UPDATE SET disk_usage = excluded.disk_usage
-"""
         statements.append(
             (statement, {"id": user_id, "label": quota_source_label, "include_object_store_ids": object_store_ids})
         )
 
     params = {"id": user_id}
-    source_labels = list(source.keys())
-    if len(source_labels) > 0:
-        clean_old_statement = """
-DELETE FROM user_quota_source_usage
-WHERE user_id = :id AND quota_source_label NOT IN :labels
-"""
+    if source_labels:
         params["labels"] = source_labels
-    else:
-        clean_old_statement = """
-DELETE FROM user_quota_source_usage
-WHERE user_id = :id AND quota_source_label IS NOT NULL
-"""
     statements.append((clean_old_statement, params))
     return statements
-
-
-UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE = """
-WITH per_user_histories AS
-(
-    SELECT id
-    FROM history
-    WHERE user_id = :id
-        AND NOT purged
-),
-per_hist_hdas AS (
-    SELECT DISTINCT dataset_id
-    FROM history_dataset_association
-    WHERE NOT purged
-        AND history_id IN (SELECT id FROM per_user_histories)
-)
-SELECT SUM(COALESCE(dataset.total_size, dataset.file_size, 0)) as usage, dataset.object_store_id
-FROM dataset
-LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
-WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
-    AND library_dataset_dataset_association.id IS NULL
-GROUP BY dataset.object_store_id
-"""
 
 
 def calculate_disk_usage_per_objectstore(sa_session, user_id: int):
@@ -2402,6 +2437,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
+        self.touch_dependent_update_times()
+
+    def touch_dependent_update_times(self):
+        """Bump update_time on the collections and workflow invocation steps this job contributes to."""
         # TODO: migrate to where-in subqueries?
         statement = text("""
             UPDATE workflow_invocation_step
