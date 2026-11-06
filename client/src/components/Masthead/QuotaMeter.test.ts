@@ -150,10 +150,16 @@ describe("QuotaMeter.vue", () => {
         }
 
         /** Mounts the meter with storage sources that each have a quota of ``SOURCE_QUOTA`` bytes. */
-        async function mountWithSourceUsages(usageBySource: Record<string, number>, { enableQuotas = true } = {}) {
-            const usages = Object.entries(usageBySource).map(([label, usage]) =>
-                getFakeQuotaUsageData(label, usage, SOURCE_QUOTA),
-            );
+        async function mountWithSourceUsages(
+            usageBySource: Record<string, number>,
+            { enableQuotas = true, defaultUsage = 400 } = {},
+        ) {
+            const usages = [
+                getFakeQuotaUsageData(null, defaultUsage, SOURCE_QUOTA),
+                ...Object.entries(usageBySource).map(([label, usage]) =>
+                    getFakeQuotaUsageData(label, usage, SOURCE_QUOTA),
+                ),
+            ];
             await mountWithUsages(usages, {
                 enable_quotas: enableQuotas,
                 quota_source_labels: Object.keys(usageBySource),
@@ -175,7 +181,12 @@ describe("QuotaMeter.vue", () => {
                     document.body.querySelectorAll(selector),
                     (row) => row.querySelector(SOURCE_NAME)?.textContent,
                 );
-            expect(names(SOURCE_USAGE)).toEqual(["Scratch Storage / Fast Scratch", "archive", "Secure Storage"]);
+            expect(names(SOURCE_USAGE)).toEqual([
+                "Default storage",
+                "Scratch Storage / Fast Scratch",
+                "archive",
+                "Secure Storage",
+            ]);
             expect(names(`${SOURCE_USAGE}.over-quota`)).toEqual(["Scratch Storage / Fast Scratch", "Secure Storage"]);
         });
 
@@ -210,6 +221,12 @@ describe("QuotaMeter.vue", () => {
             });
 
             expect(await hoverForTooltip(wrapper)).toBe("Storage and Usage Details");
+        });
+
+        it("shows no hint when only the default source exceeds its quota", async () => {
+            await mountWithSourceUsages({ scratch: 400 }, { defaultUsage: SOURCE_QUOTA + 1 });
+
+            expect(wrapper.find(OTHER_SOURCES_HINT).exists()).toBe(false);
         });
 
         it("shows no hint while no source exceeds its quota", async () => {

@@ -116,6 +116,15 @@ describe("HistoryMessages", () => {
         expect(wrapper.find(OTHER_SOURCES_OVER_QUOTA_MESSAGE).text()).toContain("Scratch Storage, archive");
     });
 
+    it("doesn't repeat the default storage's warning as another source's", () => {
+        const user = getFakeRegisteredUser({ quota_percent: 100 });
+
+        const wrapper = mountHistoryMessages(user, undefined, [getFakeQuotaUsageData(null, 1001)]);
+
+        expect(wrapper.find(OVER_QUOTA_MESSAGE).exists()).toBe(true);
+        expect(wrapper.find(OTHER_SOURCES_OVER_QUOTA_MESSAGE).exists()).toBe(false);
+    });
+
     it("shows no messages while the other storage sources don't exceed their quota", () => {
         const usages = [getFakeQuotaUsageData(null, 200), getFakeQuotaUsageData("scratch", 1000, 1000)];
 
