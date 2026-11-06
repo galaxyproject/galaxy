@@ -37,7 +37,7 @@ describe("published embed routes", () => {
             "id=b2&embed=true&buttons=true&about=false&heading=false&minimap=true&zoom_controls=true&initialX=-20&initialY=-30&zoom=1.5&version=2";
         expect(props(`/published/workflow?${query}`)).toEqual({
             id: "b2",
-            version: "2",
+            version: 2,
             zoom: 1.5,
             embed: true,
             showButtons: true,

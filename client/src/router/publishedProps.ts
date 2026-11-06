@@ -12,7 +12,7 @@ export function pageProps(pageId: unknown, query: LocationQuery) {
 export function workflowProps(id: unknown, query: LocationQuery) {
     return {
         id,
-        version: query.version,
+        version: typeof query.version === "string" && /^\d+$/.test(query.version) ? Number(query.version) : undefined,
         zoom: query.zoom ? parseFloat(query.zoom as string) : undefined,
         showButtons: query.buttons ? parseBool(query.buttons) : undefined,
         showAbout: query.about ? parseBool(query.about) : undefined,

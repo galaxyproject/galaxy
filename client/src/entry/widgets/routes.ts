@@ -48,14 +48,7 @@ export const widgetRoutes: RouteRecordRaw[] = [
         name: "workflow",
         path: `/widgets/workflows/:workflow_id(${ID})`,
         component: () => import("@/components/Workflow/Published/WorkflowPublished.vue"),
-        props: (route) => {
-            const query = singleValues(route.query);
-            return {
-                ...workflowProps(route.params.workflow_id, query),
-                version: /^\d+$/.test(query.version ?? "") ? Number(query.version) : undefined,
-                embed: true,
-            };
-        },
+        props: (route) => ({ ...workflowProps(route.params.workflow_id, singleValues(route.query)), embed: true }),
     },
     {
         path: "/:pathMatch(.*)*",
