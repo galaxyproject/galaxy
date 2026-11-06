@@ -230,22 +230,24 @@ pre {
 }
 
 /* Form fields: a little taller and softer than the package default, with a brand focus border */
-.shed-main input.g-form-input,
-.shed-main textarea.g-form-input {
+.shed-main input.g-form-input {
     min-height: 2.5rem;
     padding: 0.45rem 0.75rem;
     font-size: 0.95rem;
     color: var(--shed-heading);
     background: #fff;
-    border: 1px solid var(--color-ebony-clay-200, #bbc0d2);
+    /* No border colour here: GFormInput's grey-500 keeps the 3:1 a field border needs on white */
     border-radius: var(--shed-radius-sm);
     transition:
         border-color var(--shed-transition),
         box-shadow var(--shed-transition);
 }
 
-.shed-main input.g-form-input:hover {
-    border-color: var(--color-ebony-clay-400, #8992b2);
+/* A darker border on hover; valid/invalid fields keep GFormInput's state colour */
+.shed-main input.g-form-input:hover:not(:focus, .g-valid, .g-invalid),
+.shed-main .q-field--filled:not(.q-field--focused, .q-field--error) .q-field__control:hover::before,
+.shed-main .q-field--outlined:not(.q-field--focused, .q-field--error) .q-field__control:hover::before {
+    border-color: var(--color-grey-700, #35373f);
 }
 
 /* The focus ring comes from GFormInput's outline; a box-shadow ring here would draw a second one */
@@ -273,7 +275,8 @@ pre {
 
 .shed-main .q-field--filled .q-field__control::before,
 .shed-main .q-field--outlined .q-field__control::before {
-    border: 1px solid var(--color-ebony-clay-200, #bbc0d2);
+    /* grey-500, as on the inputs above: the field border needs 3:1 on white (WCAG 1.4.11) */
+    border: 1px solid var(--color-grey-500, #63656d);
     border-radius: var(--shed-radius-sm);
     background: none;
     /* Quasar fades this layer in only on hover */
@@ -289,7 +292,9 @@ pre {
     box-shadow: 0 0 0 1px var(--color-galaxy-primary, #25537b);
 }
 
-.shed-main .q-field--focused .q-field__control::before {
+/* Quasar clears the ::before border when a focused field is hovered; .q-field outranks its rule */
+.shed-main .q-field--focused .q-field__control::before,
+.shed-main .q-field.q-field--focused .q-field__control:hover::before {
     border-color: var(--color-galaxy-primary, #25537b);
 }
 
