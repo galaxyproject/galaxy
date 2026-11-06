@@ -47,7 +47,7 @@ const onImport = async () => {
             :data-history-id="historyId"
             :href="historyUrl"
             target="_blank">
-            Click to Import History: {{ name }}
+            Click to View History: {{ name }}
         </a>
         <BLink
             v-else-if="showLink"

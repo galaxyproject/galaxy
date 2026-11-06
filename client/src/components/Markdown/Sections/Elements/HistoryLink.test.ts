@@ -31,5 +31,6 @@ describe("HistoryLink", () => {
         expect(link.element.tagName).toBe("A");
         expect(link.attributes("href")).toBe("/histories/view?id=h1");
         expect(link.attributes("target")).toBe("_blank");
+        expect(link.text()).toBe("Click to View History: Shared history");
     });
 });
