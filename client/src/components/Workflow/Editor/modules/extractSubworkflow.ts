@@ -23,7 +23,7 @@ export async function extractSubworkflow(workflowId: string, name: string) {
     const commentIds = [...commentStore.multiSelectedCommentIds];
 
     const expandedSelection = getTraversedSelection(stepIds, stepStore.steps);
-    const expandedSteps = new Set(expandedSelection).difference(new Set(stepIds));
+    const expandedSteps = new Set(expandedSelection.filter((id) => !stepIds.includes(id)));
 
     expandedSelection.forEach((stepId) => stateStore.setStepMultiSelected(stepId, true));
 

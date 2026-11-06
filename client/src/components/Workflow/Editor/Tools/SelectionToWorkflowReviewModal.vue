@@ -180,7 +180,9 @@ defineExpose({
             title="New Workflow Name"
             :state="props.workflowNameValid ? null : false"
             invalid-feedback="please provide a name">
-            <GFormInput :value="props.workflowName" @input="(v) => emit('rename', v ?? '')" />
+            <GFormInput
+                :model-value="props.workflowName"
+                @update:model-value="(v: string | null) => emit('rename', v ?? '')" />
         </GFormLabel>
 
         <div class="workflow-info-grid">
@@ -203,8 +205,10 @@ defineExpose({
                         :state="inputLabelValid(input.label) ? null : false"
                         invalid-feedback="provide a unique input label">
                         <GFormInput
-                            :value="input.label"
-                            @input="(value) => emit('renameInput', input.step.id, value ?? '')" />
+                            :model-value="input.label"
+                            @update:model-value="
+                                (value: string | null) => emit('renameInput', input.step.id, value ?? '')
+                            " />
                     </GFormLabel>
 
                     <div>
@@ -241,8 +245,10 @@ defineExpose({
                         :state="outputLabelValid(output.label) ? null : false"
                         invalid-feedback="provide a unique output label">
                         <GFormInput
-                            :value="output.label"
-                            @input="(value) => emit('renameOutput', output.step.id, output.name, value ?? '')" />
+                            :model-value="output.label"
+                            @update:model-value="
+                                (value: string | null) => emit('renameOutput', output.step.id, output.name, value ?? '')
+                            " />
                     </GFormLabel>
                 </div>
             </div>
