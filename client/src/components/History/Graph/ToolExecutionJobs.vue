@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { computed, ref, toRef } from "vue";
+import { computed, ref, toRef, watch } from "vue";
 
 import { useToolExecutionJobs } from "./useToolExecutionJobs";
 
@@ -25,6 +25,12 @@ const props = defineProps<Props>();
 const { jobs, loading, error } = useToolExecutionJobs(toRef(props, "toolExecutionId"));
 
 const currentIndex = ref(0);
+watch(
+    () => props.toolExecutionId,
+    () => {
+        currentIndex.value = 0;
+    },
+);
 const currentJob = computed(() => jobs.value[currentIndex.value] ?? null);
 
 const hasMany = computed(() => jobs.value.length > 1);

@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
 import { defineComponent, h } from "vue";
@@ -45,7 +45,7 @@ async function mountToolExecutionJobs() {
             ...localVue,
             stubs: { ...localVue.stubs, JobHeader: JobHeaderStub, JobDetailsTabs: true },
         },
-    });
+    }) as VueWrapper;
     await flushPromises();
     return wrapper;
 }
@@ -62,6 +62,22 @@ describe("ToolExecutionJobs", () => {
 
         expect(wrapper.find(SELECTORS.CURRENT_PAGE).text()).toBe("3");
         expect(wrapper.find(SELECTORS.JOB_HEADER).attributes("data-job-id")).toBe("job-3");
+    });
+
+    it.each([
+        { label: "fewer", nextJobs: ["job-b1", "job-b2"] },
+        { label: "as many", nextJobs: ["job-b1", "job-b2", "job-b3"] },
+    ])("opens on the first job after switching to an execution with $label jobs", async ({ nextJobs }) => {
+        mockJobs(["job-1", "job-2", "job-3"]);
+        const wrapper = await mountToolExecutionJobs();
+        await wrapper.find(`${SELECTORS.PAGE_BUTTON}[data-page='3']`).trigger("click");
+
+        mockJobs(nextJobs);
+        await wrapper.setProps({ toolExecutionId: "tool-request-2" });
+        await flushPromises();
+
+        expect(wrapper.find(SELECTORS.JOB_HEADER).attributes("data-job-id")).toBe("job-b1");
+        expect(wrapper.find(SELECTORS.CURRENT_PAGE).text()).toBe("1");
     });
 
     it("shows no pager for a single job", async () => {
