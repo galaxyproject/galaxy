@@ -1,9 +1,13 @@
+import json
 import os
 from collections import namedtuple
 
 from sqlalchemy import select
 
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    wait_on,
+)
 from galaxy_test.driver import integration_util
 from galaxy_test.driver.uses_shed import UsesShed
 from tool_shed.util import hg_util
@@ -44,7 +48,16 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
     def test_repository_uninstall(self):
         """Test that we can uninstall a repository"""
         self._install_repository()
+        assert REPO.name in self._shed_tool_conf()
+        assert REPO.name in self._default_panel()
         self._uninstall_repository()
+        assert REPO.name not in self._shed_tool_conf()
+        # The panel follows once the conf watcher's toolbox reload has run.
+        wait_on(lambda: REPO.name not in self._default_panel() or None, "uninstalled tool to leave the panel")
+        self._app.queue_worker.send_control_task("reload_toolbox", get_response=True)
+        assert REPO.name not in self._shed_tool_conf()
+        assert REPO.name not in self._default_panel()
+        assert self.get_tool(assert_ok=False)["err_msg"]
 
     def test_datatype_uninstall(self):
         repo = ("devteam", "blast_datatypes", "01b38f20197e")
@@ -146,6 +159,15 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
             installed_repositories = self.index_repositories(owner, name)
             assert len(installed_repositories) > 0
         return install_response
+
+    def _shed_tool_conf(self) -> str:
+        with open(self._app.config.shed_tool_config_file) as fh:
+            return fh.read()
+
+    def _default_panel(self) -> str:
+        response = self._get("tool_panels/default")
+        self._assert_status_code_is_ok(response)
+        return json.dumps(response.json())
 
     def get_tool(self, assert_ok=True):
         response = self._get("/api/tools/collection_column_join")
