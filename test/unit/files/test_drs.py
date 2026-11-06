@@ -375,3 +375,30 @@ def test_file_source_drs_attach_oidc_token():
         )
         file_sources = configured_file_sources(DRS_OIDC_FILE_SOURCES_CONF)
         assert_realizes_as(file_sources, test_url, "hello oidc world", user_context=user_context)
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+@responses.activate
+def test_file_source_drs_access_lookup_sends_headers():
+    object_url = "https://drs.example.org/ga4gh/drs/v1/objects/314161"
+    responses.get(object_url, json={"id": "314161", "access_methods": [{"type": "https", "access_id": "1234"}]})
+
+    def access_handler(request):
+        assert request.headers["Authorization"] == "Bearer IBearTokens"
+        assert request.headers["User-Agent"].startswith("galaxy/")
+        return (200, {}, json.dumps({"url": "https://my.respository.org/myfile.txt"}))
+
+    responses.add_callback(responses.GET, f"{object_url}/access/1234", callback=access_handler)
+
+    with patch_http_open(_download_response):
+        file_sources = configured_file_sources(FILE_SOURCES_CONF)
+        assert_realizes_as(
+            file_sources, "drs://drs.example.org/314161", "hello drs world", user_context=user_context_fixture()
+        )
+
+
+def _download_response(request, **kwargs):
+    response: Any = io.StringIO("hello drs world")
+    response.headers = {}
+    response.geturl = lambda: request.full_url
+    return response
