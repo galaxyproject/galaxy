@@ -11,6 +11,7 @@ import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { Services } from "@/components/Workflow/services";
 import { useMarkdown } from "@/composables/markdown";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { TrsSelection, TrsTool as TrsSearchData } from "./types";
 
@@ -84,7 +85,7 @@ watch(query, async () => {
             );
             results.value = response.data;
         } catch (e) {
-            errorMessage.value = e as string;
+            errorMessage.value = errorMessageAsString(e);
         }
 
         loading.value = false;
