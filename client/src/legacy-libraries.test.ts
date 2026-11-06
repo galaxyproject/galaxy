@@ -16,7 +16,11 @@ describe("legacy-libraries marker", () => {
         }
     });
 
-    it("keeps Vue 2 v-model and attribute behavior for bootstrap-vue under a MODE 3 parent", async () => {
+    // Global MODE is still 2 and COMPONENT_V_MODEL still on, so the v-model and
+    // attribute checks pass either way for now. What catches a missing marker
+    // here is compat's console.error for bootstrap-vue's beforeDestroy hooks,
+    // since compat-config.js turns OPTIONS_BEFORE_DESTROY off.
+    it("keeps bootstrap-vue's v-model and attributes working with Galaxy's flags off", async () => {
         const Parent = defineComponent({
             components: { BButton, BFormTextarea },
             data: () => ({ text: "start" }),
