@@ -11929,6 +11929,32 @@ steps: []
             assert len(response.json()) == 1
             assert response.headers["total_matches"] == "2"
 
+    def test_invocation_filtering_by_histories_in_any_state(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
+"""
+        with self._different_user_history(email=f"{uuid4()}@test.com") as active_id:
+            archived_id = self.dataset_populator.new_history()
+            deleted_id = self.dataset_populator.new_history()
+            purged_id = self.dataset_populator.new_history()
+            history_ids = [active_id, archived_id, deleted_id, purged_id]
+            invocation_ids = {
+                self._run_workflow(workflow, history_id=history_id, wait=False).invocation_id
+                for history_id in history_ids
+            }
+            self.dataset_populator.archive_history(archived_id).raise_for_status()
+            self.dataset_populator.delete_history(deleted_id)
+            self.dataset_populator.purge_history(purged_id)
+
+            response = self._get("invocations", data={"history_id": history_ids})
+            self._assert_status_code_is(response, 200)
+            assert {invocation["id"] for invocation in response.json()} == invocation_ids
+
     def _assert_invocation_for_url_is(self, route, target_invocation=None):
         response = self._get(route)
         self._assert_status_code_is(response, 200)

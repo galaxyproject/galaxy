@@ -105,9 +105,13 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
                 self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=False).id
                 for workflow_id in invocation_payload.workflow_id
             ]
-        for history_id in invocation_payload.history_id or []:
-            # access check
-            self._histories_manager.get_accessible(history_id, trans.user, current_history=trans.history)
+        if invocation_payload.history_id:
+            histories = self._histories_manager.by_ids(invocation_payload.history_id)
+            if len(histories) != len(set(invocation_payload.history_id)):
+                raise ObjectNotFound()
+            for history in histories:
+                # access check
+                self._histories_manager.error_unless_accessible(history, trans.user, current_history=trans.history)
         if not trans.user_is_admin:
             # We restrict the query to the current users' invocations
             # Endpoint requires user login, so trans.user.id is never None
