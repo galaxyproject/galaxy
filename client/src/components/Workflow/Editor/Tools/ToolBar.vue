@@ -229,6 +229,7 @@ const workflowExtractionData = ref<{
     inputReconnectionMap: InputReconnectionMap;
     outputReconnectionMap: OutputReconnectionMap;
     expandedSteps: Set<number>;
+    keptInputSteps: Set<number>;
 } | null>(null);
 
 async function onClickExtract() {
@@ -254,13 +255,14 @@ function onRenameExtract(name: string) {
     newWorkflowName.value = name;
 }
 
-/** Drop the steps `extractSubworkflow` added, restoring the user's own selection */
-function deselectExpandedSteps() {
+/** Undo the selection changes `extractSubworkflow` made, restoring the user's own selection */
+function restoreSelection() {
     workflowExtractionData.value?.expandedSteps.forEach((stepId) => stateStore.setStepMultiSelected(stepId, false));
+    workflowExtractionData.value?.keptInputSteps.forEach((stepId) => stateStore.setStepMultiSelected(stepId, true));
 }
 
 function onCancelExtract() {
-    deselectExpandedSteps();
+    restoreSelection();
     workflowExtractionData.value = null;
 }
 
@@ -306,7 +308,7 @@ async function onOkExtract() {
     try {
         await moveSelectionToSubworkflow(partialWorkflow, inputReconnectionMap, outputReconnectionMap);
     } catch (error) {
-        deselectExpandedSteps();
+        restoreSelection();
         console.error(error);
         Toast.error(errorMessageAsString(error), "Failed to create sub-workflow");
     } finally {
