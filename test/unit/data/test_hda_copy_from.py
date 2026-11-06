@@ -57,6 +57,11 @@ def engine(tmp_path_factory) -> Iterator[Engine]:
             engine.dispose()
 
 
+def _session(engine: Engine) -> Session:
+    """Session configured like production's, see galaxy.model.base."""
+    return Session(engine, autoflush=False)
+
+
 def _new_hda(session: Session, history: model.History, state: str) -> model.HistoryDatasetAssociation:
     hda = model.HistoryDatasetAssociation(
         history=history, extension="txt", create_dataset=True, sa_session=session, flush=False
@@ -67,7 +72,7 @@ def _new_hda(session: Session, history: model.History, state: str) -> model.Hist
 
 
 def _source_and_cached(engine: Engine, source_state: str) -> tuple[int, int]:
-    with Session(engine) as session:
+    with _session(engine) as session:
         history = model.History(name="job cache copy race")
         session.add(history)
         source = _new_hda(session, history, source_state)
@@ -113,7 +118,7 @@ def _run_in_thread(target) -> tuple[threading.Thread, list[Exception]]:
 
 
 def _assert_copy_on_cached_dataset(engine: Engine, copy_id: int, cached_id: int) -> None:
-    with Session(engine) as session:
+    with _session(engine) as session:
         copy = session.get(model.HistoryDatasetAssociation, copy_id)
         cached = session.get(model.HistoryDatasetAssociation, cached_id)
         assert copy and cached
@@ -123,7 +128,7 @@ def _assert_copy_on_cached_dataset(engine: Engine, copy_id: int, cached_id: int)
 
 def test_copy_from_keeps_visibility_of_copies(engine, queued_and_cached):
     queued_id, cached_id = queued_and_cached
-    with Session(engine) as session:
+    with _session(engine) as session:
         output = session.get(model.HistoryDatasetAssociation, queued_id)
         cached = session.get(model.HistoryDatasetAssociation, cached_id)
         assert output and cached
@@ -140,13 +145,13 @@ def test_copy_from_keeps_visibility_of_copies(engine, queued_and_cached):
 @skip_unless_postgres
 def test_copy_committed_after_swap_starts_follows_swap(engine, queued_and_cached):
     queued_id, cached_id = queued_and_cached
-    with Session(engine) as copier:
+    with _session(engine) as copier:
         source = copier.get(model.HistoryDatasetAssociation, queued_id)
         assert source
         copy = source.copy(flush=False)
 
         def swap():
-            with Session(engine) as runner:
+            with _session(engine) as runner:
                 output = runner.get(model.HistoryDatasetAssociation, queued_id)
                 cached = runner.get(model.HistoryDatasetAssociation, cached_id)
                 assert output and cached
@@ -168,12 +173,12 @@ def test_copy_committed_after_swap_starts_follows_swap(engine, queued_and_cached
 def test_copy_of_stale_source_after_swap_locked_follows_swap(engine, source_state):
     queued_id, cached_id = _source_and_cached(engine, source_state)
     copy_ids: list[int] = []
-    with Session(engine) as copier:
+    with _session(engine) as copier:
         stale_source = copier.get(model.HistoryDatasetAssociation, queued_id)
         assert stale_source
         assert stale_source.state == source_state
         stale_source.name = "renamed by copier"
-        with Session(engine) as runner:
+        with _session(engine) as runner:
             output = runner.get(model.HistoryDatasetAssociation, queued_id)
             cached = runner.get(model.HistoryDatasetAssociation, cached_id)
             assert output and cached
@@ -192,7 +197,7 @@ def test_copy_of_stale_source_after_swap_locked_follows_swap(engine, source_stat
     assert not thread.is_alive()
     assert not errors, errors
     _assert_copy_on_cached_dataset(engine, copy_ids[0], cached_id)
-    with Session(engine) as session:
+    with _session(engine) as session:
         source = session.get(model.HistoryDatasetAssociation, queued_id)
         copy = session.get(model.HistoryDatasetAssociation, copy_ids[0])
         assert source and copy
