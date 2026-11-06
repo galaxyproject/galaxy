@@ -660,12 +660,17 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         volumes_raw = self._expand_volume_str(self.destination_info.get("singularity_volumes", "$defaults"))
         volumes = _parse_volumes(volumes_raw, self.container_type)
 
+        # Without --home, --contain provides an empty home instead of binding the host user's home.
+        home = self.job_info.home_directory
+        if home is None and self.job_info.tool_environment_sets_home:
+            home = "$HOME"
+
         run_command = singularity_util.build_singularity_run_command(
             command,
             self.container_id,
             volumes=volumes,
             env=env,
-            home="$HOME" if "HOME" in self.tool_info.env_pass_through else None,
+            home=home,
             working_directory=working_directory,
             run_extra_arguments=self.prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
             guest_ports=self.tool_info.guest_ports,

@@ -642,6 +642,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                     compute_working_directory=remote_working_directory,
                     compute_tool_directory=remote_tool_directory,
                     compute_job_directory=remote_job_directory,
+                    compute_environment=compute_environment,
                 )
                 self._rewrite_container_for_compute_environment(container, compute_environment)
             metadata_container = self._get_metadata_container(

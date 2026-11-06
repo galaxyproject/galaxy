@@ -9,6 +9,7 @@ from .test_containerized_jobs import (
     disable_dependency_resolution,
     EXTENDED_TIMEOUT,
     MulledJobTestCases,
+    SingularityHomeTestCases,
     skip_if_container_type_unavailable,
 )
 
@@ -85,7 +86,9 @@ class BaseEmbeddedPulsarContainerIntegration(integration_util.IntegrationTestCas
         assert home.endswith("/working")
 
 
-class TestEmbeddedSingularityPulsarIntegration(BaseEmbeddedPulsarContainerIntegration, MulledJobTestCases):
+class TestEmbeddedSingularityPulsarIntegration(
+    BaseEmbeddedPulsarContainerIntegration, MulledJobTestCases, SingularityHomeTestCases
+):
     dataset_populator: DatasetPopulator
     job_config_file = EMBEDDED_PULSAR_JOB_CONFIG_FILE_SINGULARITY
     container_type = "singularity"
