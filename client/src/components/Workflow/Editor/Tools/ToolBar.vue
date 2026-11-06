@@ -253,6 +253,8 @@ function onRenameExtract(name: string) {
 }
 
 function onCancelExtract() {
+    // drop the steps `extractSubworkflow` added, restoring the user's own selection
+    workflowExtractionData.value?.expandedSteps.forEach((stepId) => stateStore.setStepMultiSelected(stepId, false));
     workflowExtractionData.value = null;
 }
 
