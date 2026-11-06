@@ -240,6 +240,7 @@ export async function convertOpenConnections(
     selectedKeys: number[],
     allSteps: Record<number, Step>,
     searchStore: WorkflowSearchStore,
+    { convertOutputs = true }: { convertOutputs?: boolean } = {},
 ) {
     // work on copies; the connections below are rewritten and must not touch the editor's steps
     const selection = selectedKeys.map((key) => cloneRaw(ensureDefined(allSteps[key])));
@@ -303,7 +304,7 @@ export async function convertOpenConnections(
 
     // convert output connections to outputs
 
-    const openOutputConnections = getOpenOutputConnections(selectedKeys, allSteps);
+    const openOutputConnections = convertOutputs ? getOpenOutputConnections(selectedKeys, allSteps) : [];
     const { steps: modifiedSelection, connections: outputReconnectionMap } = outputConnectionsToWorkflowOutputs(
         selection,
         openOutputConnections,

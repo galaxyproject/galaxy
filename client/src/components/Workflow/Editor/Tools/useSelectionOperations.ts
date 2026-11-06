@@ -1,9 +1,10 @@
 import { until } from "@vueuse/core";
 import { computed, inject, type Ref, unref } from "vue";
 
-import type {
-    InputReconnectionMap,
-    OutputReconnectionMap,
+import {
+    convertOpenConnections,
+    type InputReconnectionMap,
+    type OutputReconnectionMap,
 } from "@/components/Workflow/Editor/modules/convertOpenConnections";
 import type { PartialWorkflow } from "@/components/Workflow/Editor/modules/extractSubworkflow";
 import { removeOpenConnections } from "@/components/Workflow/Editor/modules/removeOpenConnections";
@@ -16,7 +17,7 @@ import { DeleteSelectionAction, DuplicateSelectionAction, ExtractSubworkflowActi
 import { useMultiSelect } from "../composables/multiSelect";
 
 export function useSelectionOperations() {
-    const { undoRedoStore, stateStore, commentStore, stepStore } = useWorkflowStores();
+    const { undoRedoStore, stateStore, commentStore, stepStore, searchStore } = useWorkflowStores();
     const { anySelected, selectedCommentsCount, selectedStepsCount, deselectAll } = useMultiSelect();
 
     const selectedCountText = computed(() => {
@@ -60,7 +61,10 @@ export function useSelectionOperations() {
             structuredClone(ensureDefined(commentStore.commentsRecord[id])),
         ) as WorkflowComment[];
 
-        const stepArray = stepIds.map((id) => ensureDefined(stepStore.steps[id]));
+        // incoming connections become input steps; the copy is standalone, so outgoing ones are just dropped
+        const { stepArray } = await convertOpenConnections(stepIds, stepStore.steps, searchStore, {
+            convertOutputs: false,
+        });
         const stepEntriesWithFilteredInputs = removeOpenConnections(stepArray);
 
         const steps = Object.fromEntries(stepEntriesWithFilteredInputs.map((step) => [step.id, step]));

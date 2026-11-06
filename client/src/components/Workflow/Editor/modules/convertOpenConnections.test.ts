@@ -98,4 +98,18 @@ describe("convertOpenConnections", () => {
         expect(copiedOutputs?.find((output) => output.output_name === "unlabeled")?.label).toBe(generatedLabel);
         expect(generatedLabel).not.toBe("unlabeled");
     });
+
+    it("leaves outgoing connections alone when convertOutputs is false", async () => {
+        const allSteps: Record<number, Step> = {
+            0: mockToolStep(0),
+            1: { ...mockToolStep(1), input_connections: { input1: [{ id: 0, output_name: "out_file1" }] } },
+        };
+
+        const { stepArray, outputReconnectionMap } = await convertOpenConnections([0], allSteps, searchStore, {
+            convertOutputs: false,
+        });
+
+        expect(outputReconnectionMap).toEqual([]);
+        expect(stepArray.find((step) => step.id === 0)?.workflow_outputs).toEqual(allSteps[0]?.workflow_outputs);
+    });
 });
