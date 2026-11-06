@@ -35,6 +35,11 @@ const baseRules = {
     "vue/no-deprecated-v-bind-sync": "error",
     "vue/no-deprecated-v-on-number-modifiers": "error",
     "vue/no-deprecated-vue-config-keycodes": "error",
+    "vue/no-deprecated-v-on-native-modifier": "error",
+    "vue/no-deprecated-html-element-is": "error",
+    "vue/no-use-v-if-with-v-for": "error",
+    // A bare <template> renders as a native <template> element under Vue 3.
+    "vue/no-lone-template": "error",
     "vue/no-lifecycle-after-await": "error",
     "vue/no-ref-as-operand": "error",
     "vue/no-v-for-template-key-on-child": "error",
@@ -213,14 +218,6 @@ export default defineConfig(
             "@typescript-eslint/ban-ts-comment": "warn",
             "@typescript-eslint/no-explicit-any": "warn", // TODO: re-enable this
             "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_.+", varsIgnorePattern: "_.+" }],
-        },
-    },
-    {
-        // galaxy-ui supports Vue 2.7 and 3 at once (the tool shed consumes it too), so its
-        // components keep `.native` for vue-router 3's RouterLink roots.
-        files: ["**/packages/ui/src/**/*.vue"],
-        rules: {
-            "vue/no-deprecated-v-on-native-modifier": "off",
         },
     },
 );

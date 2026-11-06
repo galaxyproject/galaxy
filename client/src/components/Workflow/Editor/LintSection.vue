@@ -70,13 +70,13 @@ const isOkay = computed(() => props.okay && !hasWarningItems.value);
                     @focusout="emit('onMouseLeave', item)"
                     @mouseleave="emit('onMouseLeave', item)">
                     <GLink
+                        v-bind="dataAttributes(item)"
                         class="scrolls"
                         thin
                         :disabled="props.requiresSave"
                         disabled-title="Fix disabled. Save workflow to enable this fix."
                         :data-item-index="idx"
                         data-description="autofix item link"
-                        v-bind="dataAttributes(item)"
                         @click="emit('onClick', item)">
                         <FontAwesomeIcon v-if="'autofix' in item && item.autofix" :icon="faMagic" class="mr-1" />
                         <FontAwesomeIcon v-else :icon="faSearch" class="mr-1" />

@@ -101,9 +101,10 @@ export default defineConfig(({ command }) => ({
                     // builds, where a leading comment turns a single-root component into a
                     // Fragment and breaks attribute fallthrough.
                     comments: false,
-                    // Enable Vue 3 compat mode
+                    // Templates compile with Vue 3 semantics. Runtime compat still lives in
+                    // src/compat-config.js.
                     compatConfig: {
-                        MODE: 2,
+                        MODE: 3,
                     },
                 },
             },
