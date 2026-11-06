@@ -373,7 +373,8 @@ export class RemoveFromSelectionAction extends ModifySelectionAction {
 }
 
 export class DuplicateSelectionAction extends CopyIntoWorkflowAction {
-    constructor(workflowId: string) {
+    /** `uniqueLabels: false` keeps the original labels, for restoring the same steps rather than copying them */
+    constructor(workflowId: string, { uniqueLabels = true }: { uniqueLabels?: boolean } = {}) {
         const stateStore = useWorkflowStateStore(workflowId);
         const commentStore = useWorkflowCommentStore(workflowId);
         const stepStore = useWorkflowStepStore(workflowId);
@@ -386,9 +387,8 @@ export class DuplicateSelectionAction extends CopyIntoWorkflowAction {
         ) as WorkflowComment[];
 
         const labelSet = getLabelSet(stepStore);
-        const steps = Object.fromEntries(
-            stepIds.map((id) => [id, cloneStepWithUniqueLabel(ensureDefined(stepStore.steps[id]), labelSet)]),
-        );
+        const cloneStep = (step: Step) => (uniqueLabels ? cloneStepWithUniqueLabel(step, labelSet) : cloneRaw(step));
+        const steps = Object.fromEntries(stepIds.map((id) => [id, cloneStep(ensureDefined(stepStore.steps[id]))]));
 
         const partialWorkflow = { comments, steps, name: "" };
 
@@ -412,7 +412,8 @@ export class DeleteSelectionAction extends UndoRedoAction {
         this.stateStore = useWorkflowStateStore(workflowId);
         this.connectionStore = useConnectionStore(workflowId);
 
-        this.storedSelectionAction = new DuplicateSelectionAction(workflowId);
+        // undo restores these exact steps, so they keep their labels
+        this.storedSelectionAction = new DuplicateSelectionAction(workflowId, { uniqueLabels: false });
         this.storedSelectionAction.position = { top: 0, left: 0 };
         this.storedSelectionAction.loadWorkflowOptions = {
             appendData: true,

@@ -244,6 +244,18 @@ describe("Workflow Undo Redo Actions", () => {
             testUndoRedo(action);
         });
 
+        it("DeleteSelectionAction keeps step labels across repeated delete and undo", () => {
+            const step = { ...mockToolStep(stepStore.getStepIndex + 1), label: "my_label" };
+            stepStore.addStep(step);
+
+            for (let attempt = 0; attempt < 2; attempt++) {
+                stateStore.setStepMultiSelected(step.id, true);
+                undoRedoStore.applyAction(new DeleteSelectionAction(workflowId));
+                undoRedoStore.undo();
+                expect(stepStore.steps[step.id]?.label).toBe("my_label");
+            }
+        });
+
         describe("ExtractSubworkflowAction", () => {
             const partialWorkflow = (): PartialWorkflow => ({
                 comments: [],
