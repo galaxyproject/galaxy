@@ -47,16 +47,14 @@ export interface InvocationFilterParams {
 /**
  * Turn a name filter value into `name:` terms for the workflow/history index search: a quoted value
  * stays one exact-match term, an unquoted value becomes one substring term per word.
+ * Unquoted index terms only take word characters and hyphens, so other characters separate words.
  */
 export function nameSearch(value: string): string {
     if (isQuoted(value)) {
         return `name:${value}`;
     }
-    return value
-        .split(/\s+/)
-        .filter((word) => word.length > 0)
-        .map((word) => `name:${word}`)
-        .join(" ");
+    const words = value.split(/[^\p{L}\p{M}\p{N}_-]+/u).filter((word) => word.length > 0);
+    return words.length > 0 ? words.map((word) => `name:${word}`).join(" ") : `name:'${value}'`;
 }
 
 function uniqueById<T extends { id: string }>(lists: T[][]): T[] {

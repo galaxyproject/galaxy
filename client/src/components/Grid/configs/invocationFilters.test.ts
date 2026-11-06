@@ -53,6 +53,10 @@ describe("nameSearch", () => {
         ["rna", "name:rna"],
         ["rna seq", "name:rna name:seq"],
         ["'RNA seq'", "name:'RNA seq'"],
+        ["RNA-seq (PE)", "name:RNA-seq name:PE"],
+        ["VGP v1.2", "name:VGP name:v1 name:2"],
+        ["#1", "name:1"],
+        ["++", "name:'++'"],
     ])("turns %j into %j", (value, expected) => {
         expect(nameSearch(value)).toBe(expected);
     });
