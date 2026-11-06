@@ -530,6 +530,160 @@ describe("FormData", () => {
         expect(selectedValues.at(0).text()).toContain("999: OldDataset");
     });
 
+    describe("collection listed directly and mapped over", () => {
+        // An input accepting list and list:list lists a list:list collection twice.
+        const nested = { id: "hdca9", hid: 9, name: "nested", src: "hdca", tags: [] };
+        const nestedOptions = { hdca: [nested, { ...nested, map_over_type: "list" }] };
+        const directValue = {
+            batch: false,
+            product: false,
+            values: [{ id: "hdca9", map_over_type: null, src: "hdca" }],
+        };
+        const mapOverValue = {
+            batch: true,
+            product: false,
+            values: [{ id: "hdca9", map_over_type: "list", src: "hdca" }],
+        };
+
+        it("selecting the map-over entry emits it", async () => {
+            const wrapper = createTarget({
+                type: "data_collection",
+                value: { values: [{ id: "hdca9", src: "hdca" }] },
+                options: nestedOptions,
+            });
+            expect(wrapper.emitted()!.input![0]![0]).toEqual(directValue);
+            await wrapper.vm.$nextTick();
+            const selectedValues = wrapper.findAll(SELECTED_VALUE);
+            expect(selectedValues.length).toBe(1);
+            expect(selectedValues.at(0).text()).toBe("9: nested");
+            const elements = wrapper.findAll(SELECT_OPTIONS);
+            expect(elements.length).toBe(2);
+            expect(elements.at(1).text()).toContain("9: nested (one job per list)");
+            await elements.at(1).find("span").trigger("click");
+            expect(wrapper.emitted()!.input!.length).toEqual(2);
+            expect(wrapper.emitted()!.input![1]![0]).toEqual(mapOverValue);
+            await wrapper.setProps({ value: mapOverValue });
+            const reselected = wrapper.findAll(SELECTED_VALUE);
+            expect(reselected.length).toBe(1);
+            expect(reselected.at(0).text()).toContain("9: nested (one job per list)");
+            expect(wrapper.emitted()!.input!.length).toEqual(2);
+        });
+
+        it("shows only the map-over entry selected for a map-over value", async () => {
+            const wrapper = createTarget({
+                type: "data_collection",
+                value: { values: [{ id: "hdca9", src: "hdca", map_over_type: "list" }] },
+                options: nestedOptions,
+            });
+            expect(wrapper.emitted()!.input![0]![0]).toEqual(mapOverValue);
+            await wrapper.vm.$nextTick();
+            const selectedValues = wrapper.findAll(SELECTED_VALUE);
+            expect(selectedValues.length).toBe(1);
+            expect(selectedValues.at(0).text()).toContain("9: nested (one job per list)");
+        });
+
+        it("resolves a value with an unlisted map-over type to the direct entry", async () => {
+            const wrapper = createTarget({
+                type: "data_collection",
+                value: { values: [{ id: "hdca9", src: "hdca", map_over_type: "paired" }] },
+                options: nestedOptions,
+            });
+            expect(wrapper.emitted()!.input![0]![0]).toEqual(directValue);
+            await wrapper.vm.$nextTick();
+            const selectedValues = wrapper.findAll(SELECTED_VALUE);
+            expect(selectedValues.length).toBe(1);
+            expect(selectedValues.at(0).text()).toBe("9: nested");
+        });
+
+        it("leaves collections on a dataset input unlabelled", async () => {
+            const wrapper = createTarget({
+                value: { values: [{ id: "hdca9", src: "hdca", map_over_type: "list" }] },
+                options: { hdca: [{ ...nested, map_over_type: "list" }] },
+            });
+            await wrapper.vm.$nextTick();
+            expect(wrapper.find(SELECTED_VALUE).text()).toBe("9: nested");
+        });
+
+        it("names what each mapped-over job receives", async () => {
+            const pairs = { id: "hdca10", hid: 10, name: "pairs", src: "hdca", map_over_type: "paired" };
+            const wrapper = createTarget({
+                type: "data_collection",
+                value: null,
+                optional: true,
+                options: { hdca: [nested, { ...nested, map_over_type: "single_datasets" }, pairs] },
+            });
+            await wrapper.vm.$nextTick();
+            const labels = wrapper.findAll(SELECT_OPTIONS).wrappers.map((element) => element.text());
+            expect(labels).toEqual([
+                "Nothing selected",
+                "9: nested",
+                "9: nested (one job per dataset)",
+                "10: pairs (one job per dataset pair)",
+            ]);
+        });
+    });
+
+    describe("dropped collection mapped over by the server", () => {
+        const dropped = { id: "hdca7", hid: 7, name: "dropped", src: "hdca", tags: [] };
+
+        function dragCollection(wrapper: ReturnType<typeof createTarget>, collectionType: string, event: string) {
+            eventStore.setDragData({
+                id: "hdca7",
+                hid: 7,
+                name: "dropped",
+                history_content_type: "dataset_collection",
+                collection_type: collectionType,
+            });
+            dispatchEvent(wrapper, event);
+        }
+
+        it.each([
+            ["a multiple dataset input", { multiple: true }, "list:list", "list", "7: dropped"],
+            [
+                "a collection input",
+                { type: "data_collection", collectionTypes: ["list", "list:list"] },
+                "list:list:list",
+                "list:list",
+                "7: dropped (one job per list:list collection)",
+            ],
+        ])(
+            "appears once on %s after the server lists it",
+            async (_, targetProps, collectionType, mapOverType, label) => {
+                const wrapper = createTarget({ ...targetProps, value: null, options: { hdca: [] } });
+                dragCollection(wrapper, collectionType, "dragenter");
+                dragCollection(wrapper, collectionType, "drop");
+                await wrapper.setProps({ value: wrapper.emitted()!.input!.at(-1)![0] });
+                await wrapper.setProps({ options: { hdca: [{ ...dropped, map_over_type: mapOverType }] } });
+                const labels = wrapper.findAll(SELECT_OPTIONS).wrappers.map((element) => element.text());
+                expect(labels).toEqual([label]);
+                expect(wrapper.emitted()!.input!.at(-1)![0]).toEqual({
+                    batch: true,
+                    product: false,
+                    values: [{ id: "hdca7", src: "hdca", map_over_type: mapOverType }],
+                });
+            },
+        );
+
+        it("selects the listed entry on drop and warns when it is dragged again", async () => {
+            const wrapper = createTarget({
+                value: null,
+                multiple: true,
+                options: { hdca: [{ ...dropped, map_over_type: "list" }] },
+            });
+            dragCollection(wrapper, "list:list", "dragenter");
+            dragCollection(wrapper, "list:list", "drop");
+            const value = wrapper.emitted()!.input!.at(-1)![0];
+            expect(value).toEqual({
+                batch: true,
+                product: false,
+                values: [{ id: "hdca7", src: "hdca", map_over_type: "list" }],
+            });
+            await wrapper.setProps({ value });
+            dragCollection(wrapper, "list:list", "dragenter");
+            expect(wrapper.emitted()!.alert!.at(-1)![0]).toBe("dropped is already selected.");
+        });
+    });
+
     it("tagging filter", async () => {
         const wrapper_0 = createTarget({
             tag: "tag1",
@@ -762,6 +916,21 @@ describe("FormData batch hint", () => {
             /^The supplied input will be .*mapped over this tool: one job per paired_or_unpaired collection\.$/,
         );
         expect(wrapper.find(`${BATCH_INFO} code`).text()).toBe("paired_or_unpaired");
+    });
+
+    it.each([
+        ["single_datasets", "dataset"],
+        ["paired", "dataset pair"],
+        ["list:list", "list:list collection"],
+    ])("names the same job unit in the selected %s row and the hint", async (mapOverType, unit) => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            value: { values: [{ id: "hdca9", src: "hdca", map_over_type: mapOverType }] },
+            options: { hdca: [{ id: "hdca9", hid: 9, name: "samples", src: "hdca", map_over_type: mapOverType }] },
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(SELECTED_VALUE).text()).toBe(`9: samples (one job per ${unit})`);
+        expect(batchInfoText(wrapper)).toMatch(new RegExp(`mapped over this tool: one job per ${unit}\\.$`));
     });
 
     it("names no job unit when several selected collections map over", async () => {
