@@ -130,12 +130,42 @@ def test_copy_from_keeps_visibility_of_copies(engine, queued_and_cached):
         assert output and cached
         element = output.copy(flush=False)
         element.visible = False
+        deleted_copy = output.copy(flush=False)
+        deleted_copy.deleted = True
         session.commit()
         output.copy_from(cached, include_metadata=True)
         session.commit()
         assert output.visible
+        assert not output.deleted
         assert not element.visible
+        assert not element.deleted
         assert element.dataset_id == cached.dataset_id
+        assert deleted_copy.deleted
+        assert deleted_copy.visible
+        assert deleted_copy.dataset_id == cached.dataset_id
+
+
+def test_copy_from_reaches_copies_of_copies(engine, queued_and_cached):
+    queued_id, cached_id = queued_and_cached
+    with _session(engine) as session:
+        output = session.get(model.HistoryDatasetAssociation, queued_id)
+        assert output
+        element = output.copy()
+        element_of_element = element.copy(flush=False)
+        element_of_element.visible = False
+        session.commit()
+        element_of_element_id = element_of_element.id
+    with _session(engine) as session:
+        output = session.get(model.HistoryDatasetAssociation, queued_id)
+        cached = session.get(model.HistoryDatasetAssociation, cached_id)
+        assert output and cached
+        output.copy_from(cached, include_metadata=True)
+        session.commit()
+    _assert_copy_on_cached_dataset(engine, element_of_element_id, cached_id)
+    with _session(engine) as session:
+        copy = session.get(model.HistoryDatasetAssociation, element_of_element_id)
+        assert copy
+        assert not copy.visible
 
 
 @skip_unless_postgres
