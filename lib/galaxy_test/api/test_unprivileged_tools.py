@@ -506,3 +506,47 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
         # The message names the escape that makes a literal shell substitution work.
         assert "\\$(" in response["err_msg"]
         assert "uuid" not in response
+
+    def test_run_use_cached_job_keys_on_tool_revision(self):
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            revision_a = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc", wait=True)
+            inputs = {"input": {"src": "hda", "id": dataset["id"]}}
+            run_a = self._run(
+                history_id=history_id, tool_uuid=revision_a["uuid"], inputs=inputs, assert_ok=True, wait_for_job=True
+            )
+            # Same id and version, different command: the normal shape of "fix the tool and run it again".
+            revision_b = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(
+                    **{**TOOL_WITH_SHELL_COMMAND, "shell_command": "echo 'revision b' > output.fastq"},
+                )
+            )
+            assert revision_b["uuid"] != revision_a["uuid"]
+            run_b = self._run(
+                history_id=history_id,
+                tool_uuid=revision_b["uuid"],
+                inputs=inputs,
+                use_cached_job=True,
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            job_b = self.dataset_populator.get_job_details(run_b["jobs"][0]["id"], full=True).json()
+            assert not job_b["copied_from_job_id"], job_b
+            output_b = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset_id=run_b["outputs"][0]["id"]
+            )
+            assert output_b == "revision b\n"
+            # The cache still works within a revision.
+            run_a_again = self._run(
+                history_id=history_id,
+                tool_uuid=revision_a["uuid"],
+                inputs=inputs,
+                use_cached_job=True,
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            job_a_again = self.dataset_populator.get_job_details(run_a_again["jobs"][0]["id"], full=True).json()
+            assert job_a_again["copied_from_job_id"] == run_a["jobs"][0]["id"], job_a_again
