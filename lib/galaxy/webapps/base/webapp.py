@@ -289,7 +289,7 @@ def _is_widget_request(path: str) -> bool:
 
 
 def _widgets_frame_ancestors(config, path: str) -> str:
-    if path.startswith(("/widgets/pages/", "/widgets/workflows/")):
+    if path.startswith(("/widgets/pages/", "/widgets/workflows/", "/widgets/visualizations/")):
         sources = ["*"]
     else:
         sources = ["'self'", *listify(getattr(config, "widgets_allowed_origins", None), do_strip=True)]

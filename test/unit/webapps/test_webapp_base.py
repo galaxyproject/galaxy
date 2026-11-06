@@ -158,9 +158,9 @@ def test_published_embeds_are_unrestricted(path):
 
 
 @pytest.mark.parametrize("origins", [None, "https://a.example.org"])
-@pytest.mark.parametrize("path", ["/widgets/pages/1", "/widgets/workflows/1"])
+@pytest.mark.parametrize("path", ["/widgets/pages/1", "/widgets/workflows/1", "/widgets/visualizations/1"])
 @pytest.mark.parametrize("url_prefix", ["/", "/galaxy"])
-def test_page_and_workflow_widgets_allow_any_origin(url_prefix, path, origins):
+def test_page_workflow_and_visualization_widgets_allow_any_origin(url_prefix, path, origins):
     client, root_path = _frame_headers_client(url_prefix, widgets_allowed_origins=origins)
     headers = client.get(f"{root_path}{path}").headers
     assert headers["Content-Security-Policy"] == "frame-ancestors *"

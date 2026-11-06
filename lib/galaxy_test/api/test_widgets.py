@@ -18,7 +18,7 @@ class TestWidgetsApi(ApiTestCase):
             ("widgets/histories/1a/graph", "frame-ancestors 'self'"),
             ("widgets/pages/1a", "frame-ancestors *"),
             ("widgets/workflows/1a", "frame-ancestors *"),
-            ("widgets/visualizations/1a", "frame-ancestors 'self'"),
+            ("widgets/visualizations/1a", "frame-ancestors *"),
         ],
     )
     def test_widgets_app(self, path, frame_ancestors):
