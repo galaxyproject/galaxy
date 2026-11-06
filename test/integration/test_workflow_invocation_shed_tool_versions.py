@@ -43,6 +43,12 @@ steps:
             f"{UNVERSIONED_COMPOSE_TEXT_PARAM}/0.1.0"
         ]
 
+    def test_unversioned_tool_id_after_uninstalling_other_version(self):
+        self.uninstall_repository("iuc", "compose_text_param", "e188c9826e0f")  # 0.1.1
+        assert self._run_compose_text_param(UNVERSIONED_COMPOSE_TEXT_PARAM, "0.1.0") == [
+            f"{UNVERSIONED_COMPOSE_TEXT_PARAM}/0.1.0"
+        ]
+
 
 class TestCachedWorkflowInvocationShedToolVersions(
     integration_util.CachedToolBoxIntegrationMixin,

@@ -1926,10 +1926,7 @@ class CachedToolBox(ToolBox):
         # come back from there even after removal.
         self._tool_versions_by_id.pop(tool_id, None)
         if hasattr(self, "_lineage_map"):
-            self._lineage_map.lineage_map.pop(tool_id, None)
-            versionless = remove_version_from_guid(tool_id)
-            if versionless:
-                self._lineage_map.lineage_map.pop(versionless, None)
+            self._remove_from_lineage(tool_id)
         # Drop the complete old-id bucket for this removed index entry.
         self._tools_by_old_id.pop(tool_id, None)
         # The short-id bucket is keyed by ``old_id`` — for a shed guid
@@ -1964,6 +1961,30 @@ class CachedToolBox(ToolBox):
         for key in [key for key in self._cached_tools if key[0] == tool_id]:
             del self._cached_tools[key]
         return result
+
+    def _remove_from_lineage(self, tool_id: str) -> None:
+        """Drop ``tool_id`` from the lineage map.
+
+        A Tool Shed tool's versions share one lineage, mapped under each
+        version's guid and the versionless guid and held by the tool objects.
+        Removing one version takes it out of that lineage in place, so lookups
+        by the versionless guid still find the remaining versions.
+        """
+        lineage_map = self._lineage_map.lineage_map
+        lineage = lineage_map.pop(tool_id, None)
+        versionless = remove_version_from_guid(tool_id)
+        if not versionless:
+            return
+        if not is_shed_guid(tool_id):
+            lineage_map.pop(versionless, None)
+            return
+        lineage = lineage_map.get(versionless, lineage)
+        if lineage is None:
+            return
+        for version in [version for version in lineage.tool_versions if f"{versionless}/{version}" == tool_id]:
+            lineage.tool_versions.discard(version)
+        if not lineage.tool_versions:
+            lineage_map.pop(versionless, None)
 
     def _remove_versions_in_memory(self, tool_id: str, removed: list[str]) -> None:
         """Drop registry slots, proxies and lineage versions the index no longer offers.

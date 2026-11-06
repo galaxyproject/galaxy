@@ -1079,6 +1079,23 @@ def test_guid_sibling_versions_reset_on_in_place_removal():
     assert box._index_versions_for(f"{prefix}/0.20.1") == ["0.20.1"]
 
 
+def test_versionless_guid_resolves_remaining_version_after_removal():
+    box = _registry_box()
+    box._guid_sibling_versions_cache = None
+    prefix = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp"
+    for version in ("0.20.1", "0.23.2"):
+        entry = _entry(id=f"{prefix}/{version}", version=version)
+        box._tool_index.add_entry(entry)
+        box._register_cached_entry(entry)
+    remaining = box.get_tool(f"{prefix}/0.20.1")
+    assert isinstance(remaining, CachedTool)
+    box._remove_tool_in_memory(f"{prefix}/0.23.2")
+    tool = box.get_tool(prefix, tool_version="0.20.1")
+    assert tool is not None and tool.id == f"{prefix}/0.20.1"
+    assert remaining.lineage is not None
+    assert list(remaining.lineage.tool_versions) == ["0.20.1"]
+
+
 def test_get_tool_short_id_missing_version_honors_exact():
     box = _registry_box()
     guid = "toolshed.example.com/repos/owner/repo/cat/1.0"
