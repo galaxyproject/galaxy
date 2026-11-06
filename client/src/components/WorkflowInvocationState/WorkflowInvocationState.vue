@@ -395,7 +395,7 @@ async function onCancel() {
             </template>
         </WorkflowNavigationTitle>
 
-        <WorkflowInvocationLineage :invocation="invocation" />
+        <WorkflowInvocationLineage :invocation="invocation" :compact="!props.isFullPage" />
 
         <BNav v-if="props.isFullPage" pills class="mb-2 mt-2 p-2 bg-light border-bottom">
             <BNavItem title="Overview" :active="onOverviewTab" :to="`/workflows/invocations/${props.invocationId}`">

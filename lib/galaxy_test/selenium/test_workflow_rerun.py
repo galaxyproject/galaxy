@@ -93,6 +93,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocations.state_details.wait_for_visible()
         self.workflow_run_wait_for_ok(hid=1)
         original_url = self.current_url.split("?")[0]
+        invocation_urls = [original_url]
         invocations.source_invocation_link.assert_absent()
         invocations.latest_rerun_invocation_link.assert_absent()
 
@@ -123,6 +124,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
             invocations.source_invocation_link.wait_for_visible()
             assert self.current_url.split("?")[0] == rerun_url
             original_url = rerun_url
+            invocation_urls.append(rerun_url)
 
         invocations.activity.wait_for_and_click()
         invocation_id = original_url.rsplit("/", 1)[-1]
@@ -131,10 +133,20 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
 
         invocations.activity_expand.wait_for_and_click()
         invocations.invocations_table.wait_for_visible()
-        for row, expected in enumerate(("Rerun", "Rerun", "")):
-            assert invocations.lineage_grid_run_type(row=row).wait_for_present().text == expected
-        self.scroll_into_view(invocations.lineage_grid_run_type(row=0).wait_for_visible())
-        self.screenshot("workflow_rerun_lineage_grid_markers")
+        # The grid sorts newest first, so row 1 is J, the rerun with both links.
+        invocations.lineage_grid_row_toggle(row=1).wait_for_and_click()
+        source_link = invocations.lineage_grid_source_link.wait_for_visible()
+        latest_link = invocations.lineage_grid_latest_link.wait_for_visible()
+        first_url, middle_url, last_url = invocation_urls
+        assert urljoin(self.current_url, source_link.get_attribute("href")) == first_url
+        assert urljoin(self.current_url, latest_link.get_attribute("href")) == last_url
+        invocations.overview_graph.wait_for_visible()
+        self.screenshot("workflow_rerun_lineage_grid_expanded")
+        source_link.click()
+        invocations.invocations_table.wait_for_absent_or_hidden()
+        source_page_latest_link = invocations.latest_rerun_invocation_link.wait_for_visible()
+        assert self.current_url.split("?")[0] == first_url
+        assert urljoin(self.current_url, source_page_latest_link.get_attribute("href")) == middle_url
 
     @selenium_test
     @managed_history

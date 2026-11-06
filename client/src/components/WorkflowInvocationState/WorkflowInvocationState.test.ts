@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
+import WorkflowInvocationLineage from "./WorkflowInvocationLineage.vue";
 import WorkflowInvocationState from "./WorkflowInvocationState.vue";
 
 const localVue = getLocalVue();
@@ -280,6 +281,16 @@ describe("WorkflowInvocationState check 'Report' and 'Export' tab disabled state
         expect(reportTab.attributes("disabled")).toBeUndefined();
         const exportTab = wrapper.find(selectors.invocationExportTab);
         expect(exportTab.attributes("disabled")).toBeUndefined();
+    });
+});
+
+describe("WorkflowInvocationState lineage", () => {
+    it.each([
+        [true, false],
+        [false, true],
+    ])("with isFullPage %s has compact %s", async (isFullPage, compact) => {
+        const wrapper = await mountWorkflowInvocationState(invocationData.id, isFullPage);
+        expect(wrapper.findComponent(WorkflowInvocationLineage).props("compact")).toBe(compact);
     });
 });
 
