@@ -40,11 +40,11 @@ describe("userStore — watching the storage usage", () => {
         await flushPromises();
     }
 
-    async function startWatchingWithQuotaSources(quotaSourceLabels: string[]) {
+    async function startWatchingWithQuotaSources(quotaSourceLabels: string[], { enableQuotas = true } = {}) {
         server.use(
             http.get("/api/configuration", ({ response }) => {
                 return response(200).json({
-                    enable_quotas: true,
+                    enable_quotas: enableQuotas,
                     quota_source_labels: quotaSourceLabels,
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } as any);
@@ -106,6 +106,37 @@ describe("userStore — watching the storage usage", () => {
             await startWatchingWithQuotaSources([]);
 
             expect(sourceUsageRequests).toBe(0);
+        });
+
+        it("isn't loaded with quotas off", async () => {
+            useUserStore().currentUser = getFakeRegisteredUser();
+
+            await startWatchingWithQuotaSources(["scratch"], { enableQuotas: false });
+
+            expect(sourceUsageRequests).toBe(0);
+        });
+
+        it("isn't loaded for an anonymous user", async () => {
+            useUserStore().currentUser = {
+                isAnonymous: true,
+                total_disk_usage: 0,
+                nice_total_disk_usage: "0 bytes",
+                quota_percent: 0,
+            };
+
+            await startWatchingWithQuotaSources(["scratch"]);
+
+            expect(sourceUsageRequests).toBe(0);
+        });
+
+        it("is loaded once a user arrives after the watching started", async () => {
+            await startWatchingWithQuotaSources(["scratch"]);
+            expect(sourceUsageRequests).toBe(0);
+
+            useUserStore().currentUser = getFakeRegisteredUser();
+            await flushPromises();
+
+            expect(sourceUsageRequests).toBe(1);
         });
     });
 });
