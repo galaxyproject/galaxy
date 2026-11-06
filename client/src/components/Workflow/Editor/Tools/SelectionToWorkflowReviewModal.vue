@@ -69,8 +69,22 @@ const inputs = computed(() => {
 
 const allInputLabels = computed(() => inputs.value.map((input) => input.label));
 
+// step labels must be unique across the whole sub-workflow, so inputs can't reuse a tool step's label either
+const toolStepLabels = computed(
+    () =>
+        new Set(
+            Object.values(props.workflow.steps).flatMap((step) =>
+                !isWorkflowInput(step.type) && step.label ? [step.label] : [],
+            ),
+        ),
+);
+
 function inputLabelValid(label: string) {
-    return label.trim() !== "" && allInputLabels.value.indexOf(label) === allInputLabels.value.lastIndexOf(label);
+    return (
+        label.trim() !== "" &&
+        allInputLabels.value.indexOf(label) === allInputLabels.value.lastIndexOf(label) &&
+        !toolStepLabels.value.has(label)
+    );
 }
 
 const outputs = computed(() => {
@@ -213,7 +227,7 @@ defineExpose({
 
                     <GFormLabel
                         :state="inputLabelValid(input.label) ? null : false"
-                        invalid-feedback="provide a unique input label">
+                        invalid-feedback="provide a label no other step uses">
                         <GFormInput
                             :model-value="input.label"
                             @update:model-value="
