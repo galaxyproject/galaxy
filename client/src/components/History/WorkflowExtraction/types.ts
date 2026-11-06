@@ -16,6 +16,8 @@ export interface ExtractionOutput {
     state: DatasetState;
     deleted: boolean;
     exposed: boolean;
+    /** The notebook report uses this output, so it stays a workflow output. */
+    referenced_by_report: boolean;
     /** UI-local working label for the rename modal; empty string = no override. */
     label: string;
 }
@@ -26,7 +28,7 @@ interface RowBase {
     invalid?: InvalidReason | null;
     /** Part of the producing subgraph of a notebook's referenced outputs. False for plain history summaries. */
     seeded: boolean;
-    /** Set when a job directive seeded this row but its tool is not a workflow step, so it became an input. */
+    /** Set when a job directive seeded this row but its job cannot be a workflow step here, so it became an input. */
     seed_warning?: string | null;
     outputs: ExtractionOutput[];
 }
@@ -100,6 +102,7 @@ function toExtractionOutput(output: ApiOutput): ExtractionOutput {
         state: output.state,
         deleted: output.deleted,
         exposed: output.exposed ?? false,
+        referenced_by_report: output.referenced_by_report ?? false,
         label: output.suggested_name || output.name || output.output_name || "",
     };
 }

@@ -598,6 +598,8 @@ function onKeyDown(event: KeyboardEvent) {
                                                 v-g-tooltip.hover
                                                 class="inline-icon-button g-card-clear-title"
                                                 transparent
+                                                icon-only
+                                                color="red"
                                                 :title="localize(props.clearTitleTooltip)"
                                                 @click="emit('clearTitle')">
                                                 <FontAwesomeIcon :icon="faTimes" fixed-width />
