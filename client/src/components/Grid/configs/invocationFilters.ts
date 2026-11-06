@@ -146,8 +146,9 @@ function plural(count: number, singular: string, pluralForm: string) {
 }
 
 function workflowOption(workflow: WorkflowSummary): FilterOption {
+    const owned = useUserStore().matchesCurrentUsername(workflow.owner);
     const notes = [
-        useUserStore().matchesCurrentUsername(workflow.owner) ? undefined : `by ${workflow.owner}`,
+        owned ? undefined : `by ${workflow.owner}`,
         workflow.deleted ? "deleted" : undefined,
         workflow.hidden ? "hidden" : undefined,
     ];
@@ -156,7 +157,8 @@ function workflowOption(workflow: WorkflowSummary): FilterOption {
         name: workflow.name,
         updateTime: workflow.update_time,
         detail: () => {
-            const runs = useInvocationStore().getInvocationCountByWorkflowId(workflow.id);
+            // /counts covers every user's runs, so only fetch it for the user's own workflows
+            const runs = owned ? useInvocationStore().getInvocationCountByWorkflowId(workflow.id) : undefined;
             const runText = typeof runs === "number" ? plural(runs, "run", "runs") : undefined;
             return [runText, ...notes].filter(Boolean).join(" · ") || undefined;
         },

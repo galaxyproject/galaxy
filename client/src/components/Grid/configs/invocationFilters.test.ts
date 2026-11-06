@@ -19,6 +19,7 @@ const { server, http } = useServerMock();
 
 const workflowQueries = vi.fn();
 const historyQueries = vi.fn();
+const countRequests = vi.fn();
 
 type Listing = Record<string, Array<Record<string, unknown>>>;
 
@@ -40,6 +41,7 @@ function mockIndexes(workflows: Listing, histories: Listing) {
             return response.untyped(HttpResponse.json(items, { headers: { total_matches: String(items.length) } }));
         }),
         http.get("/api/workflows/{workflow_id}/counts", ({ params, response }) => {
+            countRequests(params.workflow_id);
             return response(200).json(params.workflow_id === "visible" ? { scheduled: 2 } : { scheduled: 1 });
         }),
     );
@@ -157,6 +159,7 @@ describe("column filters", () => {
         useUserStore().currentUser = getFakeRegisteredUser({ username: "me" });
         workflowQueries.mockReset();
         historyQueries.mockReset();
+        countRequests.mockReset();
     });
 
     it("lists the most recently updated own workflows before anything is typed", async () => {
@@ -186,7 +189,8 @@ describe("column filters", () => {
         options.forEach((option) => option.detail?.());
         await flushPromises();
 
-        expect(options.map((option) => option.detail?.())).toEqual(["2 runs", "1 run · by alice · deleted"]);
+        expect(options.map((option) => option.detail?.())).toEqual(["2 runs", "by alice · deleted"]);
+        expect(countRequests.mock.calls).toEqual([["visible"]]);
     });
 
     it("describes histories by item count and state", async () => {
