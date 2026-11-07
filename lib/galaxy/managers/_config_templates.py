@@ -533,7 +533,13 @@ def oauth2_refresh_token_status(
             )
 
 
+def galaxy_url_for_path(trans: SessionRequestContext, path: str) -> str:
+    """Absolute URL of ``path`` under this Galaxy, with or without a ``galaxy_url_prefix``.
+
+    ``url_path`` ends with a slash when Galaxy is served at the root, but not under a prefix.
+    """
+    return f"{trans.request.url_path.rstrip('/')}/{path.lstrip('/')}"
+
+
 def oauth2_redirect_uri(trans: SessionRequestContext) -> str:
-    galaxy_root = trans.request.url_path
-    redirect_uri = f"{galaxy_root}oauth2_callback"
-    return redirect_uri
+    return galaxy_url_for_path(trans, "oauth2_callback")
