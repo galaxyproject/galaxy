@@ -113,9 +113,14 @@ LOGGING_CONFIG_DEFAULT: dict[str, Any] = {
             "propagate": False,
             "handlers": ["console"],
         },
+        # Per-event inotify DEBUG logging: inotify_buffer in watchdog 6, inotify_move_event_grouper in watchdog 7
         "watchdog.observers.inotify_buffer": {
             "level": "INFO",
             "qualname": "watchdog.observers.inotify_buffer",
+        },
+        "watchdog.observers.inotify_move_event_grouper": {
+            "level": "INFO",
+            "qualname": "watchdog.observers.inotify_move_event_grouper",
         },
         "py.warnings": {
             "level": "ERROR",
