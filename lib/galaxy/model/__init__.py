@@ -2413,17 +2413,23 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def touch_dependent_update_times(self):
         """Bump update_time on the collections and workflow invocation steps this job contributes to."""
+        self.touch_collections_update_time()
+        self.touch_invocation_steps_update_time()
+
+    def touch_collections_update_time(self):
+        """Bump update_time on the collections this job contributes to."""
+        self.update_hdca_update_time_for_job(update_time=now(), sa_session=required_object_session(self))
+
+    def touch_invocation_steps_update_time(self):
+        """Bump update_time on the workflow invocation steps this job contributes to."""
         # TODO: migrate to where-in subqueries?
         statement = text("""
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
         """)
-        sa_session = required_object_session(self)
-        update_time = now()
-        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
-        params = {"job_id": self.id, "update_time": update_time}
-        sa_session.execute(statement, params)
+        params = {"job_id": self.id, "update_time": now()}
+        required_object_session(self).execute(statement, params)
 
     def get_destination_configuration(self, dest_params, config, key, default=None):
         """Get a destination parameter that can be defaulted back
