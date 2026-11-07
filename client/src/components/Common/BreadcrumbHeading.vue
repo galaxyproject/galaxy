@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink } from "bootstrap-vue";
 import type { RouteLocationRaw } from "vue-router";
 import { useRoute, useRouter } from "vue-router";
 
 import type { BreadcrumbItem } from "@/components/Common/index";
 import localize from "@/utils/localization";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 interface Props {
@@ -22,21 +22,26 @@ const route = useRoute();
 function isPathActive(path: RouteLocationRaw): boolean {
     return route.path === router.resolve(path).path;
 }
+
+// GLink takes a path string, while items may pass a named route location
+function resolvePath(path: RouteLocationRaw): string {
+    return typeof path === "string" ? path : router.resolve(path).fullPath;
+}
 </script>
 
 <template>
     <div class="breadcrumb-heading mb-2">
         <Heading h1 separator inline size="lg" class="breadcrumb-heading-header mr-2 mb-0">
             <template v-for="(item, index) in props.items" :key="index">
-                <BLink
+                <GLink
                     v-if="item.to && !isPathActive(item.to)"
                     v-g-tooltip.hover.bottom
+                    class="breadcrumb-heading-header-active"
                     :title="`Go back to ${localize(item.title)}`"
-                    :to="item.to"
-                    class="breadcrumb-heading-header-active">
+                    :to="resolvePath(item.to)">
                     <FontAwesomeIcon v-if="item.icon" :icon="item.icon" />
                     {{ localize(item.title) }}
-                </BLink>
+                </GLink>
                 <span v-else class="breadcrumb-heading-header-inactive">
                     <FontAwesomeIcon v-if="item.icon" :icon="item.icon" />
                     {{ localize(item.title) }}
@@ -73,6 +78,8 @@ function isPathActive(path: RouteLocationRaw): boolean {
         }
 
         .breadcrumb-heading-header-active {
+            // Same weight as the inactive crumbs and the heading around them
+            font-weight: inherit;
             min-width: 0;
             overflow: hidden;
             white-space: nowrap;
