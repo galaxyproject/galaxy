@@ -94,3 +94,10 @@ def test_connect_read_only_wal_dataset_leaves_no_sidecar_files(db_path):
     assert _directory_contents(db_path.parent) == before
     connection.close()
     assert _directory_contents(db_path.parent) == before
+
+
+def test_connect_read_only_interrupts_long_query(db_path):
+    connection = sqlite.connect_read_only(db_path, timeout=0.2)
+    with pytest.raises(sqlite3.OperationalError, match="interrupted"):
+        connection.execute("WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c) SELECT count(*) FROM c")
+    connection.close()

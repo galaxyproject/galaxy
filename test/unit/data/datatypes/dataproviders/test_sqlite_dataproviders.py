@@ -55,3 +55,13 @@ def test_provider_rejects_query(source, provider_class, query):
     connection = sqlite3.connect(source.dataset.get_file_name())
     assert connection.execute("SELECT count(*) FROM foo").fetchone()[0] == 2
     connection.close()
+
+
+@pytest.mark.parametrize("provider_class", PROVIDERS)
+def test_provider_interrupts_long_query(source, provider_class):
+    short_timeout_provider_class = type("ShortTimeoutProvider", (provider_class,), {"query_timeout": 0.2})
+    provider = short_timeout_provider_class(
+        source, query="WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c) SELECT x FROM c"
+    )
+    with pytest.raises(RequestParameterInvalidException, match="did not finish within 0.2 seconds"):
+        list(provider)
