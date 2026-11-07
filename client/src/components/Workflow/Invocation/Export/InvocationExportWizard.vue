@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BCard, BCardGroup, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BCard, BCardGroup, BFormGroup } from "bootstrap-vue";
 import { computed, onUnmounted, reactive, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -21,6 +21,7 @@ import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonito
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ExportFormatSelector from "@/components/Common/ExportFormatSelector.vue";
 import ExportIncludeOptions from "@/components/Common/ExportIncludeOptions.vue";
@@ -431,7 +432,7 @@ onUnmounted(() => {
                     </ExternalLink>
                 </p>
                 <BFormGroup label-for="bcodb-server" description="BCO DB URL (example: https://biocomputeobject.org)">
-                    <BFormInput
+                    <GFormInput
                         id="bcodb-server"
                         v-model="exportData.bcoDatabase.serverBaseUrl"
                         type="text"
@@ -441,7 +442,7 @@ onUnmounted(() => {
                 </BFormGroup>
 
                 <BFormGroup label-for="bcodb-table" description="Prefix">
-                    <BFormInput
+                    <GFormInput
                         id="bcodb-table"
                         v-model="exportData.bcoDatabase.table"
                         type="text"
@@ -451,7 +452,7 @@ onUnmounted(() => {
                 </BFormGroup>
 
                 <BFormGroup label-for="bcodb-owner" description="User Name">
-                    <BFormInput
+                    <GFormInput
                         id="bcodb-owner"
                         v-model="exportData.bcoDatabase.ownerGroup"
                         type="text"
@@ -460,7 +461,7 @@ onUnmounted(() => {
                 </BFormGroup>
 
                 <BFormGroup label-for="bcodb-authorization" description="User API Key">
-                    <BFormInput
+                    <GFormInput
                         id="bcodb-authorization"
                         v-model="exportData.bcoDatabase.authorization"
                         type="password"
@@ -475,7 +476,7 @@ onUnmounted(() => {
                     label-for="exported-file-name"
                     :description="`Give the exported file a name.`"
                     class="mt-3">
-                    <BFormInput
+                    <GFormInput
                         id="exported-file-name"
                         v-model="exportData.outputFileName"
                         placeholder="enter file name"

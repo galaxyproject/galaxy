@@ -179,7 +179,8 @@ describe("RDMDestinationSelector", () => {
     }
 
     async function setRecordNameInput(newValue: string) {
-        const recordNameInput = wrapper.find("#record-name-input");
+        const recordNameInput = wrapper.get("input#record-name-input");
+        expect(recordNameInput.classes()).toContain("g-form-input");
         await recordNameInput.setValue(newValue);
     }
 

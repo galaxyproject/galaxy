@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BCard, BCardGroup, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BCard, BCardGroup, BFormGroup } from "bootstrap-vue";
 import { computed, reactive, ref, watch } from "vue";
 
 import type { ModelStoreFormat } from "@/api";
@@ -12,6 +12,7 @@ import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
 
 import type { HistoryExportData, HistoryExportDestination } from "./types";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ExportFormatSelector from "@/components/Common/ExportFormatSelector.vue";
 import ExportIncludeOptions from "@/components/Common/ExportIncludeOptions.vue";
@@ -337,7 +338,7 @@ function resetWizard() {
                     label-for="exported-file-name"
                     :description="`Give the exported file a name.`"
                     class="mt-3">
-                    <BFormInput
+                    <GFormInput
                         id="exported-file-name"
                         v-model="exportData.outputFileName"
                         :placeholder="defaultFileName"

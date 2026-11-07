@@ -65,7 +65,7 @@
                         </ExternalLink>
                     </GAlert>
 
-                    <BFormInput v-model="sourceURL" type="url" />
+                    <GFormInput v-model="sourceURL" type="url" />
                 </BFormGroup>
                 <BFormGroup v-else-if="importType === 'upload'" :label="fileLabel">
                     <BFormFile v-model="sourceFile" />
@@ -88,7 +88,7 @@ import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-sol
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
-import { BForm, BFormFile, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BForm, BFormFile, BFormGroup } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import { fetchFileSources } from "@/api/remoteFiles";
@@ -102,6 +102,7 @@ import GButton from "./BaseComponents/GButton.vue";
 import GRadio from "./BaseComponents/GRadio.vue";
 import GRadioGroup from "./BaseComponents/GRadioGroup.vue";
 import ExternalLink from "./ExternalLink.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 import ImportSuccess from "@/components/ImportSuccess.vue";
 import JobError from "@/components/JobInformation/JobError.vue";
@@ -112,7 +113,6 @@ export default {
         BForm,
         BFormFile,
         BFormGroup,
-        BFormInput,
         FilesInput,
         FontAwesomeIcon,
         ImportSuccess,
@@ -121,6 +121,7 @@ export default {
         ExternalLink,
         GAlert,
         GButton,
+        GFormInput,
         GRadio,
         GRadioGroup,
     },

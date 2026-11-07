@@ -42,6 +42,13 @@ describe("ExportForm.vue", () => {
         expectExportButtonEnabled();
     });
 
+    it("renders the file name as a required GFormInput", async () => {
+        const nameInput = wrapper.get("input#name");
+        expect(nameInput.classes()).toContain("g-form-input");
+        expect(nameInput.attributes("required")).toBeDefined();
+        expect(nameInput.attributes("placeholder")).toBe("Name");
+    });
+
     it("should localize button text", async () => {
         const newLocal = wrapper.find(".export-button").text();
         // Type assertion needed: custom matcher types not recognized with explicit vitest imports
