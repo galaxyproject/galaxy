@@ -740,6 +740,7 @@ class FastFakeHTCondorJobRunner(htcondor.HTCondorJobRunner):
         include_work_dir_outputs=True,
         modify_command_for_container=True,
         stream_stdout_stderr=False,
+        compute_environment=None,
     ):
         job_state = job_wrapper.get_state()
         if job_state == model.Job.states.DELETED:

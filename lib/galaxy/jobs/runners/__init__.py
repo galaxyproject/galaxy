@@ -137,6 +137,8 @@ class BaseJobRunner:
     #: Whether ``recover()`` knows how to resume a job left in the FINISHING state by an
     #: interrupted ``_handle_metadata_externally``.
     recovers_finishing_jobs = False
+    #: Runner recovery can resolve an accepted attempt before its ID was saved.
+    recovers_without_external_id = False
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     # Destination params that may be seeded from a runner-level ``default_<param>``
@@ -373,6 +375,7 @@ class BaseJobRunner:
         include_work_dir_outputs: bool = True,
         modify_command_for_container: bool = True,
         stream_stdout_stderr: bool = False,
+        compute_environment=None,
     ):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do"""
         job_id = job_wrapper.get_id_tag()
@@ -393,7 +396,12 @@ class BaseJobRunner:
 
         # Prepare the job
         try:
-            if job_wrapper.prepare() is False:
+            prepared = (
+                job_wrapper.prepare()
+                if compute_environment is None
+                else job_wrapper.prepare(compute_environment=compute_environment)
+            )
+            if prepared is False:
                 # job cache
                 return False
             job_wrapper.runner_command_line = self.build_command_line(
@@ -447,7 +455,12 @@ class BaseJobRunner:
             container=container,
             stream_stdout_stderr=stream_stdout_stderr,
             metadata_container=metadata_container,
+            return_code_capture_command=self.get_return_code_capture_command(job_wrapper),
         )
+
+    def get_return_code_capture_command(self, job_wrapper: "MinimalJobWrapper") -> str | None:
+        """Optionally adjust the captured tool status before metadata runs."""
+        return None
 
     def get_work_dir_outputs(
         self,
@@ -910,6 +923,10 @@ class BaseJobRunner:
                 job_stderr=job_stderr,
             )
         except Exception:
+            if getattr(getattr(job_wrapper, "finish_context", None), "enabled", False) is True:
+                # The opt-in runner owns retries and must resolve any uncertain
+                # SQL commit using its durable receipt before reporting failure.
+                raise
             log.exception(f"({job_id or ''}/{external_job_id or ''}) Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 

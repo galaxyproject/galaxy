@@ -2791,6 +2791,19 @@ wheels = [
 ]
 
 [[package]]
+name = "engagequeue"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "psutil" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fb/be/e82e89f0e10e3794ab034e610c11d8bd06673ea62bbd8da052a502d3cf24/engagequeue-0.1.1.tar.gz", hash = "sha256:5be87db9988a624f63465a32404846e316e99ec6f34b220e4c9dbdfe9dd8b62e", size = 240183, upload-time = "2026-11-09T14:40:19.033Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/65/6b/b8d934db232a57f59b940b262358e8359b1c09745935fdc479ba0ce55803/engagequeue-0.1.1-py3-none-any.whl", hash = "sha256:e0f76d42cee6b2512fb5cf2197dd767bf31e449c4955423ab0692b89271f6ce3", size = 58752, upload-time = "2026-11-09T14:40:17.561Z" },
+]
+
+[[package]]
 name = "enum-tools"
 version = "0.12.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4622,6 +4635,7 @@ dev = [
     { name = "codespell" },
     { name = "cwltest" },
     { name = "darker" },
+    { name = "engagequeue", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "fluent-logger" },
     { name = "galaxy-release-util" },
     { name = "gcsfs" },
@@ -4675,6 +4689,7 @@ test = [
     { name = "boto3" },
     { name = "cloudbridge" },
     { name = "cwltest" },
+    { name = "engagequeue", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "fluent-logger" },
     { name = "gcsfs" },
     { name = "hvac" },
@@ -4853,6 +4868,7 @@ dev = [
     { name = "codespell" },
     { name = "cwltest", specifier = ">=2.5.20240906231108" },
     { name = "darker" },
+    { name = "engagequeue", marker = "sys_platform == 'darwin' or sys_platform == 'linux'", specifier = "==0.1.1", index = "https://pypi.org/simple" },
     { name = "fluent-logger" },
     { name = "galaxy-release-util" },
     { name = "gcsfs" },
@@ -4900,6 +4916,7 @@ test = [
     { name = "boto3" },
     { name = "cloudbridge", specifier = ">=4.4.2" },
     { name = "cwltest", specifier = ">=2.5.20240906231108" },
+    { name = "engagequeue", marker = "sys_platform == 'darwin' or sys_platform == 'linux'", specifier = "==0.1.1", index = "https://pypi.org/simple" },
     { name = "fluent-logger" },
     { name = "gcsfs" },
     { name = "hvac" },

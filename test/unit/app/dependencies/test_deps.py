@@ -311,6 +311,49 @@ def test_htcondor_required_when_runner_configured():
         assert cds.check_htcondor()
 
 
+@pytest.mark.parametrize(
+    "filename,contents",
+    [
+        ("jobs.yml", "runners:\n  local:\n    load: galaxy.jobs.runners.engagequeue:EngageQueueJobRunner\n"),
+        (
+            "jobs.xml",
+            (
+                '<job_conf><plugins><plugin id="local" type="runner" '
+                'load="galaxy.jobs.runners.engagequeue:EngageQueueJobRunner" /></plugins></job_conf>'
+            ),
+        ),
+    ],
+)
+def test_engagequeue_required_only_for_configured_runner(filename, contents):
+    with _config_context() as cc:
+        jobs = cc.write_config(filename, contents)
+        dependencies = cc.get_cond_deps({"job_config_file": jobs})
+        assert dependencies.check_engagequeue()
+        config_file = cc.write_config("galaxy.yml", f"galaxy:\n  job_config_file: {jobs}\n")
+        requirement = next(
+            Requirement(item) for item in optional(config_file) if Requirement(item).name == "engagequeue"
+        )
+        assert requirement.specifier.contains("0.1.1")
+        assert not requirement.specifier.contains("0.1.0")
+        assert not requirement.specifier.contains("0.1.2")
+
+
+@pytest.mark.parametrize(
+    "config", [{}, {"job_config": {"runners": {"local": {"load": "galaxy.jobs.runners.local:LocalJobRunner"}}}}]
+)
+def test_engagequeue_is_not_required_for_other_deployments(config):
+    with _config_context() as cc:
+        assert not cc.get_cond_deps(config).check_engagequeue()
+
+
+def test_engagequeue_inline_job_configuration():
+    with _config_context() as cc:
+        config = {
+            "job_config": {"runners": {"local": {"load": "galaxy.jobs.runners.engagequeue:EngageQueueJobRunner"}}}
+        }
+        assert cc.get_cond_deps(config).check_engagequeue()
+
+
 def test_vault_hashicorp_configured():
     with _config_context() as cc:
         vault_conf = cc.write_config("vault_conf.yml", VAULT_CONF_HASHICORP)

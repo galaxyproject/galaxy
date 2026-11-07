@@ -134,6 +134,7 @@ test = [
     "boto3",
     "cloudbridge>=4.4.2",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
+    "engagequeue==0.1.1; sys_platform == 'linux' or sys_platform == 'darwin'",
     "fluent-logger",
     "gcsfs",
     "hvac",
@@ -290,6 +291,7 @@ url = "https://pypi.org/simple"
 explicit = true
 
 [tool.uv.sources]
+engagequeue = { index = "pypi-only" }
 isal = { index = "pypi-only", marker = "python_version < '3.15'" }
 lxml = { index = "pypi-only" }
 galaxy-auth = { workspace = true }

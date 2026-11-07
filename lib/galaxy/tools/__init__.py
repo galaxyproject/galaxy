@@ -3678,9 +3678,43 @@ class SetMetadataTool(Tool):
         job = job_wrapper.sa_session.get(Job, job_wrapper.job_id)
         if job:
             inp_data = {}
-            for dataset_assoc in job.input_datasets:
-                inp_data[dataset_assoc.name] = dataset_assoc.dataset
-            return self.exec_after_process(job_wrapper.app, inp_data, {}, job_wrapper.get_param_dict(), job=job)
+            unfinished = []
+            for dataset_assoc in [*job.input_datasets, *job.input_library_datasets]:
+                dataset = dataset_assoc.dataset
+                if (
+                    dataset.state == model.DatasetInstance.states.SETTING_METADATA
+                    and not dataset.deleted
+                    and not dataset.purged
+                    and not dataset.dataset.deleted
+                    and not dataset.dataset.purged
+                ):
+                    inp_data[dataset_assoc.name] = dataset
+                    unfinished.append(dataset)
+            if not unfinished:
+                return
+            try:
+                return self.exec_after_process(job_wrapper.app, inp_data, {}, job_wrapper.get_param_dict(), job=job)
+            finally:
+                # This hook also handles failures before collection/preparation,
+                # and malformed results can prevent exec_after_process from
+                # assigning a final input state. Never leave those inputs busy.
+                session = job_wrapper.sa_session
+                if not session.is_active:
+                    session.rollback()
+                changed = False
+                for dataset in unfinished:
+                    if (
+                        dataset.state == model.DatasetInstance.states.SETTING_METADATA
+                        and not dataset.deleted
+                        and not dataset.purged
+                        and not dataset.dataset.deleted
+                        and not dataset.dataset.purged
+                    ):
+                        dataset.state = model.DatasetInstance.states.FAILED_METADATA
+                        session.add(dataset)
+                        changed = True
+                if changed:
+                    session.commit()
 
 
 class ExportHistoryTool(Tool):

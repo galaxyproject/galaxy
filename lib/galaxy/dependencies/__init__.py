@@ -291,6 +291,9 @@ class ConditionalDependencies(BaseConditionalDependencies):
     def check_galaxycloudrunner(self):
         return "galaxycloudrunner.rules" in self.job_rule_modules
 
+    def check_engagequeue(self):
+        return "galaxy.jobs.runners.engagequeue:EngageQueueJobRunner" in self.job_runners
+
     def check_total_perspective_vortex(self):
         return "tpv.rules" in self.job_rule_modules
 

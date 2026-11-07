@@ -61,6 +61,7 @@ def build_command(
     remote_job_directory=None,
     stream_stdout_stderr: bool = False,
     metadata_container: Container | None = None,
+    return_code_capture_command: str | None = None,
 ):
     """
     Compose the sequence of commands necessary to execute a job. This will
@@ -150,7 +151,9 @@ def build_command(
     if container_monitor_command := job_wrapper.container_monitor_command(container):
         commands_builder.prepend_command(container_monitor_command)
 
-    commands_builder.capture_return_code(default_exit_code_file(working_directory, job_wrapper.job_id))
+    commands_builder.capture_return_code(
+        default_exit_code_file(working_directory, job_wrapper.job_id), return_code_capture_command
+    )
     if warning_checks and for_pulsar:
         # Pulsar stages metadata, not outputs, back to Galaxy; copy outside the container.
         metadata_warning_path = shlex.quote(join(working_directory, "metadata", RUNTIME_ENVIRONMENT_WARNING_FILE))
@@ -397,8 +400,10 @@ tee -a '{stderr_file}' < "$__err" >&2 &""",
         )
         self.append_command('> "$__out" 2> "$__err"', sep="")
 
-    def capture_return_code(self, exit_code_path):
+    def capture_return_code(self, exit_code_path, post_capture_command=None):
         self.append_command(CAPTURE_RETURN_CODE)
+        if post_capture_command:
+            self.append_command(post_capture_command)
         self.append_command(f"echo $return_code > {exit_code_path}")
         self.return_code_captured = True
 
