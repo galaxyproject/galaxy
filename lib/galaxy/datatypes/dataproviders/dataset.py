@@ -7,6 +7,7 @@ Dataproviders that use either:
 """
 
 import logging
+import sqlite3
 import sys
 
 from bx import (
@@ -32,6 +33,14 @@ change SamtoolsDataProvider to use pysam
 """
 
 log = logging.getLogger(__name__)
+
+
+def _execute_query(cursor, query):
+    try:
+        return cursor.execute(query)
+    # Python < 3.11 raises sqlite3.Warning for multiple statements
+    except (sqlite3.Error, sqlite3.Warning) as e:
+        raise RequestParameterInvalidException(f"Cannot run SQLite query: {e}")
 
 
 # ----------------------------------------------------------------------------- base for using a Glx dataset
@@ -721,12 +730,12 @@ class SQliteDataProvider(base.DataProvider):
         file_name = source.dataset.get_file_name()
         if not datatype.sniff(file_name):
             raise RequestParameterInvalidException("Dataset is not a SQlite file, cannot fetch data.")
-        self.connection = sqlite.connect(file_name)
+        self.connection = sqlite.connect_read_only(file_name)
         super().__init__(source, **kwargs)
 
     def __iter__(self):
-        if (self.query is not None) and sqlite.is_read_only_query(self.query):
-            yield from self.connection.cursor().execute(self.query)
+        if self.query is not None:
+            yield from _execute_query(self.connection.cursor(), self.query)
         else:
             yield
 
@@ -743,13 +752,13 @@ class SQliteDataTableProvider(base.DataProvider):
         self.query = query
         self.headers = headers
         self.limit = limit
-        self.connection = sqlite.connect(source.dataset.get_file_name())
+        self.connection = sqlite.connect_read_only(source.dataset.get_file_name())
         super().__init__(source, **kwargs)
 
     def __iter__(self):
-        if (self.query is not None) and sqlite.is_read_only_query(self.query):
+        if self.query is not None:
             cur = self.connection.cursor()
-            results = cur.execute(self.query)
+            results = _execute_query(cur, self.query)
             if self.headers:
                 yield [col[0] for col in cur.description]
             for i, row in enumerate(results):
@@ -770,13 +779,13 @@ class SQliteDataDictProvider(base.DataProvider):
 
     def __init__(self, source, query=None, **kwargs):
         self.query = query
-        self.connection = sqlite.connect(source.dataset.get_file_name())
+        self.connection = sqlite.connect_read_only(source.dataset.get_file_name())
         super().__init__(source, **kwargs)
 
     def __iter__(self):
-        if (self.query is not None) and sqlite.is_read_only_query(self.query):
+        if self.query is not None:
             cur = self.connection.cursor()
-            for row in cur.execute(self.query):
+            for row in _execute_query(cur, self.query):
                 yield [{cur.description[i][0]: value for i, value in enumerate(row)}]
         else:
             yield
