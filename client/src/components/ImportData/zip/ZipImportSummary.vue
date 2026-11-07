@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { faFile, faNetworkWired } from "@fortawesome/free-solid-svg-icons";
-import { BPagination } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { CardBadge } from "@/components/Common/GCard.types";
@@ -9,6 +8,7 @@ import type { ImportableFile } from "@/composables/zipExplorer";
 import { bytesToString } from "@/utils/utils";
 
 import ZipFileEntrySummaryCard from "./ZipFileEntrySummaryCard.vue";
+import GPagination from "@/components/BaseComponents/GPagination.vue";
 import GCard from "@/components/Common/GCard.vue";
 
 interface Props {
@@ -97,12 +97,12 @@ const fileBadges: CardBadge[] = [
         </div>
 
         <div v-if="showPagination" class="d-flex justify-content-center py-3 mt-3">
-            <BPagination
-                :value="currentPage"
+            <GPagination
+                :model-value="currentPage"
                 :total-rows="totalItems"
                 :per-page="itemsPerPage"
                 align="center"
-                size="sm"
+                size="small"
                 first-number
                 last-number
                 @change="onPageChange" />

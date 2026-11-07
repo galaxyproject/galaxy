@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { BPagination } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { usePagination } from "@/composables/pagination";
 import { type GalaxyZipExplorer, getImportableFiles } from "@/composables/zipExplorer";
 
+import GPagination from "@/components/BaseComponents/GPagination.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ZipFileEntryCard from "@/components/ImportData/zip/ZipFileEntryCard.vue";
 
@@ -31,12 +31,12 @@ const {
         <ZipFileEntryCard v-for="file in paginatedFiles" :key="file.path" :file="file" />
 
         <div v-if="showPagination" class="d-flex justify-content-center py-3 mt-3">
-            <BPagination
-                :value="currentPage"
+            <GPagination
+                :model-value="currentPage"
                 :total-rows="files.length"
                 :per-page="itemsPerPage"
                 align="center"
-                size="sm"
+                size="small"
                 first-number
                 last-number
                 @change="onPageChange" />

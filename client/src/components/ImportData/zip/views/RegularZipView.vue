@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { BPagination } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { CardBadge } from "@/components/Common/GCard.types";
 import { usePagination } from "@/composables/pagination";
 import { getImportableFiles, type IZipExplorer } from "@/composables/zipExplorer";
 
+import GPagination from "@/components/BaseComponents/GPagination.vue";
 import GCard from "@/components/Common/GCard.vue";
 import ZipFileEntrySummaryCard from "@/components/ImportData/zip/ZipFileEntrySummaryCard.vue";
 
@@ -49,12 +49,12 @@ const zipFileBadges: CardBadge[] = [
         </GCard>
 
         <div v-if="showPagination" class="d-flex justify-content-center py-3 mt-3">
-            <BPagination
-                :value="currentPage"
+            <GPagination
+                :model-value="currentPage"
                 :total-rows="files.length"
                 :per-page="itemsPerPage"
                 align="center"
-                size="sm"
+                size="small"
                 first-number
                 last-number
                 @change="onPageChange" />
