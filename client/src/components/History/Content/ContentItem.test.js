@@ -89,6 +89,18 @@ describe("ContentItem", () => {
         expect(wrapper.get("button.display-btn").attributes("aria-label")).toBe("Show converted items (1)");
     });
 
+    it("exposes whether the converted items are shown", async () => {
+        await wrapper.setProps({ item: { ...item, sub_items: [{ id: "converted-1" }] } });
+        const button = wrapper.get("button.display-btn");
+        expect(button.attributes("aria-expanded")).toBe("false");
+
+        await button.trigger("click");
+        expect(button.attributes("aria-expanded")).toBe("true");
+
+        await button.trigger("click");
+        expect(button.attributes("aria-expanded")).toBe("false");
+    });
+
     it("check basics", async () => {
         expect(wrapper.attributes("data-hid")).toBe("1");
         expect(wrapper.find(".content-title").text()).toBe("name");
