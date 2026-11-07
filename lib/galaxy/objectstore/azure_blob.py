@@ -286,6 +286,9 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
             with self._atomic_download(local_file_path) as tmp:
                 self._download_to_file(key, tmp)
 
+    def _list_remote_keys(self, rel_path):
+        return (blob.name for blob in self._blobs_from(rel_path))
+
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:
             self._blob_client(rel_path).upload_blob(from_string, overwrite=True)
@@ -328,7 +331,9 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
             log.exception("Could not delete blob '%s' from Azure", rel_path)
             return False
 
-    def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
+    def _get_object_url(
+        self, obj, content_disposition=None, content_type=None, *, expires_in: int | None = None, **kwargs
+    ):
         if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
@@ -340,7 +345,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                     container_name=self.container_name,
                     blob_name=rel_path,
                     permission=BlobSasPermissions(read=True),
-                    expiry=now() + timedelta(seconds=self.direct_download_expires_in),
+                    expiry=now() + timedelta(seconds=expires_in or self.direct_download_expires_in),
                     content_disposition=content_disposition,
                     content_type=content_type,
                 )

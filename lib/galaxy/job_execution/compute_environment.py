@@ -47,7 +47,11 @@ class ComputeEnvironment(metaclass=ABCMeta):
 
     @abstractmethod
     def input_metadata_rewrite(self, dataset, metadata_value):
-        """Input metadata path rewrite for specified dataset."""
+        """Input metadata path rewrite for specified dataset.
+
+        ``metadata_value`` is the metadata file itself, or the element's no_value when it has none.
+        Return None to use the file's local path.
+        """
 
     @abstractmethod
     def unstructured_path_rewrite(self, path):

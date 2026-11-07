@@ -413,19 +413,30 @@ class ObjectStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_direct_download_url(
-        self, obj, content_disposition: str | None = None, content_type: str | None = None
+        self,
+        obj,
+        content_disposition: str | None = None,
+        content_type: str | None = None,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        expires_in: int | None = None,
     ) -> str | None:
         """Return a URL a client can be redirected to in order to download `obj` directly from the backing store.
 
         Returns None unless the concrete store supports direct access *and* the admin has opted in via the
         ``enable_direct_download`` configuration flag. ``content_disposition`` and ``content_type``, when
         supported by the backend, are baked into the URL so the client receives the right download filename
-        and content type.
+        and content type. ``extra_dir``, ``extra_dir_at_root`` and ``alt_name`` address a file stored with
+        `obj` (e.g. a metadata file) as in ``get_filename``. ``expires_in`` is how long a presigned URL
+        lasts, in seconds, up to the store's ``direct_download_expires_in``, which is also the default.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_data_stream(self, obj) -> DataStream | None:
+    def get_data_stream(
+        self, obj, write_cache: bool = True, extra_dir=None, extra_dir_at_root=False, alt_name=None
+    ) -> DataStream | None:
         """Return an iterator over the bytes of `obj` read straight from the backing store.
 
         Lets a caller start sending bytes to a client without first pulling the whole object into the
@@ -433,6 +444,10 @@ class ObjectStore(metaclass=abc.ABCMeta):
         for the cache can be served at all. Returns None when the store cannot stream the object (it
         is local, already cached, or the backend has no streaming read), in which case the caller
         falls back to pulling the object into the cache and serving it from there.
+
+        The bytes are also written into the cache unless ``write_cache`` is False, for one-off reads
+        that should not displace cached objects. ``extra_dir``, ``extra_dir_at_root`` and ``alt_name``
+        address a file stored with `obj` as in ``get_filename``.
         """
         raise NotImplementedError()
 
@@ -447,6 +462,17 @@ class ObjectStore(metaclass=abc.ABCMeta):
 
         If the object does not exist raises `ObjectNotFound`; a `size` of 0 or less returns `b""` without
         checking.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def list_files(self, obj, extra_dir: str) -> list[str]:
+        """Return the files in the directory ``extra_dir`` of `obj` (e.g. its extra files), recursively.
+
+        Names are sorted and relative to the directory, so each one addresses its file as ``alt_name``
+        with the same ``extra_dir``. Lists what the backing store holds without pulling anything into
+        the cache; a missing directory has no files. Stores that cannot list a directory raise
+        NotImplementedError.
         """
         raise NotImplementedError()
 
@@ -820,18 +846,41 @@ class BaseObjectStore(ObjectStore):
         )
 
     def get_direct_download_url(
-        self, obj, content_disposition: str | None = None, content_type: str | None = None
+        self,
+        obj,
+        content_disposition: str | None = None,
+        content_type: str | None = None,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        expires_in: int | None = None,
     ) -> str | None:
         return self._invoke(
-            "get_direct_download_url", obj, content_disposition=content_disposition, content_type=content_type
+            "get_direct_download_url",
+            obj,
+            content_disposition=content_disposition,
+            content_type=content_type,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            expires_in=expires_in,
         )
 
-    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> str | None:
+    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None, **kwargs) -> str | None:
         # Stores that don't support direct download (or haven't opted in) get this no-op default.
         return None
 
-    def get_data_stream(self, obj) -> DataStream | None:
-        return self._invoke("get_data_stream", obj)
+    def get_data_stream(
+        self, obj, write_cache: bool = True, extra_dir=None, extra_dir_at_root=False, alt_name=None
+    ) -> DataStream | None:
+        return self._invoke(
+            "get_data_stream",
+            obj,
+            write_cache=write_cache,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+        )
 
     def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
         # Stores that cannot stream their objects remotely (e.g. disk) get this no-op default.
@@ -841,6 +890,12 @@ class BaseObjectStore(ObjectStore):
         if size <= 0:
             return b""
         return self._invoke("get_data_head", obj, size=size)
+
+    def list_files(self, obj, extra_dir: str) -> list[str]:
+        return self._invoke("list_files", obj, extra_dir=extra_dir)
+
+    def _list_files(self, obj, extra_dir: str, **kwargs) -> list[str]:
+        raise NotImplementedError(f"{type(self).__name__} cannot list the files in a directory")
 
     def get_concrete_store_backends(self) -> list[ConcreteObjectStore]:
         return self._invoke("get_concrete_store_backends")
@@ -1011,13 +1066,18 @@ class ConcreteObjectStore(BaseObjectStore):
             object_expires_after_days=self.object_expires_after_days,
         )
 
-    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> str | None:
+    def _get_direct_download_url(
+        self, obj, content_disposition=None, content_type=None, expires_in=None, **kwargs
+    ) -> str | None:
         if not self.enable_direct_download:
             return None
+        # A caller may ask for a shorter lifetime than the store's, never a longer one.
+        if expires_in is None or expires_in > self.direct_download_expires_in:
+            expires_in = self.direct_download_expires_in
         # _get_object_url is resolved via dynamic dispatch on each concrete backend; it is not
         # declared on ConcreteObjectStore so static analysis can't see it here.
         return self._get_object_url(  # type: ignore[attr-defined]
-            obj, content_disposition=content_disposition, content_type=content_type
+            obj, content_disposition=content_disposition, content_type=content_type, expires_in=expires_in, **kwargs
         )
 
     def _get_concrete_store_badges(self, obj) -> list[BadgeDict]:
@@ -1360,6 +1420,16 @@ class DiskObjectStore(ConcreteObjectStore):
             raise ObjectNotFound
         return path
 
+    def _list_files(self, obj, extra_dir: str, **kwargs) -> list[str]:
+        """Override `ObjectStore`'s stub by walking the directory on disk."""
+        try:
+            path = self._get_filename(obj, dir_only=True, extra_dir=extra_dir)
+        except ObjectNotFound:
+            return []
+        return sorted(
+            os.path.relpath(os.path.join(root, name), path) for root, _, files in safe_walk(path) for name in files
+        )
+
     def _update_from_file(
         self, obj, file_name=None, create: bool = False, preserve_symlinks: bool = False, **kwargs
     ) -> None:
@@ -1496,7 +1566,7 @@ class NestedObjectStore(BaseObjectStore):
         """For the first backend that has this `obj`, get its URL."""
         return self._call_method("_get_object_url", obj, None, False, **kwargs)
 
-    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> str | None:
+    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None, **kwargs) -> str | None:
         """For the first backend that has this `obj`, get its direct download URL."""
         return self._call_method(
             "_get_direct_download_url",
@@ -1505,6 +1575,7 @@ class NestedObjectStore(BaseObjectStore):
             False,
             content_disposition=content_disposition,
             content_type=content_type,
+            **kwargs,
         )
 
     def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
@@ -1514,6 +1585,10 @@ class NestedObjectStore(BaseObjectStore):
     def _get_data_head(self, obj, size: int, **kwargs) -> bytes:
         """For the first backend that has this `obj`, read the start of it from that backend."""
         return self._call_method("_get_data_head", obj, ObjectNotFound, True, size=size, **kwargs)
+
+    def _list_files(self, obj, extra_dir: str, **kwargs) -> list[str]:
+        """For the first backend that has this directory of `obj`, list its files."""
+        return self._call_method("_list_files", obj, [], False, dir_only=True, extra_dir=extra_dir)
 
     def _get_concrete_store_backends(self, **kwargs):
         backends = []
