@@ -321,6 +321,7 @@ defineExpose({
                     :indeterminate-items="indeterminateItems"
                     :per-page="usingProvider ? undefined : perPage"
                     :selectable="props.selectable"
+                    :select-checkbox-title="(item) => `Select ${item.label}`"
                     :selected-items="selectedItems"
                     :show-select-all="props.selectable"
                     @row-click="onRowClick"
