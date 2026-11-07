@@ -8,7 +8,11 @@ from galaxy.files import (
 )
 from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.job_execution.setup import JobIO
-from galaxy.model import Job
+from galaxy.model import (
+    DatasetCollectionElement,
+    HistoryDatasetAssociation,
+    Job,
+)
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 
 WORKING_DIRECTORY = "/tmp"
@@ -90,3 +94,27 @@ def test_job_io_deserialization(job_io: JobIO):
     assert isinstance(new_job_io, JobIO)
     assert isinstance(new_job_io.file_sources_dict, dict)
     assert isinstance(new_job_io.file_sources, ConfiguredFileSources)
+
+
+def _job_with_input(app: FileSourcesMockApp, job: Job, name: str) -> HistoryDatasetAssociation:
+    session = app.model.session
+    hda = HistoryDatasetAssociation(create_dataset=True, sa_session=session)
+    session.add(hda)
+    job.add_input_dataset(name, dataset=hda)
+    session.commit()
+    return hda
+
+
+def test_get_input_datasets_uses_materialized_dataset(app: FileSourcesMockApp, job: Job, job_io: JobIO):
+    _job_with_input(app, job, "input")
+    materialized = HistoryDatasetAssociation(create_dataset=True, sa_session=app.model.session)
+    assert job_io.get_input_datasets({"input": materialized}) == [materialized]
+
+
+def test_get_input_datasets_uses_materialized_collection_element(app: FileSourcesMockApp, job: Job, job_io: JobIO):
+    # A job mapped over a collection of deferred datasets materializes its input as a
+    # collection element. Pulsar stages only what this method returns.
+    _job_with_input(app, job, "mode|input")
+    materialized = HistoryDatasetAssociation(create_dataset=True, sa_session=app.model.session)
+    element = DatasetCollectionElement(element=materialized, element_index=0, element_identifier="forward")
+    assert job_io.get_input_datasets({"mode|input": element}) == [materialized]

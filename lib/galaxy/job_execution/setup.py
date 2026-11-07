@@ -23,6 +23,7 @@ from galaxy.job_execution.datasets import (
     get_path_rewriter,
 )
 from galaxy.model import (
+    DatasetCollectionElement,
     DatasetInstance,
     Job,
     JobExportHistoryArchive,
@@ -224,6 +225,9 @@ class JobIO(UsesDictVisibleKeys):
         for da in job.input_datasets + job.input_library_datasets:
             if materialized_objects and da.name in materialized_objects:
                 materialized_object = materialized_objects[da.name]
+                if isinstance(materialized_object, DatasetCollectionElement):
+                    # A job mapped over a collection gets a materialized element.
+                    materialized_object = materialized_object.dataset_instance
                 if isinstance(materialized_object, DatasetInstance):
                     datasets.append(materialized_object)
             elif da.dataset:
