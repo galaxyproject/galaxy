@@ -335,14 +335,12 @@ class HistoryGraphBuilder:
 
     def _hda_producers(self, dataset_ids: set[int]) -> dict[tuple[str, int], tuple[int, str]]:
         """Resolve each HDA's producing (tool_request_id, tool_id) by
-        joining JobToOutputDatasetAssociation to Job. Only HDAs with
-        exactly one distinct producing tool_request are returned;
-        ambiguous ones are logged at debug level."""
+        joining JobToOutputDatasetAssociation to Job."""
         if not dataset_ids:
             return {}
         stmt = (
             select(
-                JobToOutputDatasetAssociation.dataset_id.label("hda_id"),
+                JobToOutputDatasetAssociation.dataset_id.label("item_id"),
                 Job.tool_request_id,
                 Job.tool_id,
             )
@@ -353,30 +351,16 @@ class HistoryGraphBuilder:
                 Job.tool_id.notin_(SYNTHETIC_TOOL_IDS),
             )
         )
-        candidates: dict[int, dict[int, str]] = {}  # hda_id -> {tr_id: tool_id}
-        for row in self.sa_session.execute(stmt):
-            if row.tool_request_id is not None:
-                candidates.setdefault(row.hda_id, {})[row.tool_request_id] = row.tool_id
-
-        result: dict[tuple[str, int], tuple[int, str]] = {}
-        for hda_id, tr_map in candidates.items():
-            if len(tr_map) == 1:
-                tr_id, tool_id = next(iter(tr_map.items()))
-                result[("dataset", hda_id)] = (tr_id, tool_id)
-            else:
-                log.debug("history_graph: skipping HDA %d — ambiguous producer (%s)", hda_id, set(tr_map.keys()))
-        return result
+        return self._unique_producers(stmt, "dataset", "HDA")
 
     def _hdca_producers(self, collection_ids: set[int]) -> dict[tuple[str, int], tuple[int, str]]:
         """Resolve each HDCA's producing (tool_request_id, tool_id) by
-        joining JobToOutputDatasetCollectionAssociation to Job. Only
-        HDCAs with exactly one distinct producing tool_request are
-        returned; ambiguous ones are logged at debug level."""
+        joining JobToOutputDatasetCollectionAssociation to Job."""
         if not collection_ids:
             return {}
         stmt = (
             select(
-                JobToOutputDatasetCollectionAssociation.dataset_collection_id.label("hdca_id"),
+                JobToOutputDatasetCollectionAssociation.dataset_collection_id.label("item_id"),
                 Job.tool_request_id,
                 Job.tool_id,
             )
@@ -387,18 +371,34 @@ class HistoryGraphBuilder:
                 Job.tool_id.notin_(SYNTHETIC_TOOL_IDS),
             )
         )
-        candidates: dict[int, dict[int, str]] = {}  # hdca_id -> {tr_id: tool_id}
+        return self._unique_producers(stmt, "collection", "HDCA")
+
+    def _unique_producers(
+        self,
+        stmt: Select,
+        content_type: Literal["dataset", "collection"],
+        kind: str,
+    ) -> dict[tuple[str, int], tuple[int, str]]:
+        """Run a producer query (rows of item_id, tool_request_id, tool_id)
+        and keep the items with exactly one distinct producing
+        tool_request; ambiguous ones are logged at debug level."""
+        candidates: dict[int, dict[int, str]] = {}  # item_id -> {tr_id: tool_id}
         for row in self.sa_session.execute(stmt):
+            # Jobs without a tool request are skipped here rather than with
+            # ``Job.tool_request_id.isnot(None)`` in the query: PostgreSQL
+            # underestimates how many jobs have a tool request and then plans
+            # a hash join over every such job via ix_job_tool_request_id
+            # instead of probing job_pkey per output row (#24763).
             if row.tool_request_id is not None:
-                candidates.setdefault(row.hdca_id, {})[row.tool_request_id] = row.tool_id
+                candidates.setdefault(row.item_id, {})[row.tool_request_id] = row.tool_id
 
         result: dict[tuple[str, int], tuple[int, str]] = {}
-        for hdca_id, tr_map in candidates.items():
+        for item_id, tr_map in candidates.items():
             if len(tr_map) == 1:
                 tr_id, tool_id = next(iter(tr_map.items()))
-                result[("collection", hdca_id)] = (tr_id, tool_id)
+                result[(content_type, item_id)] = (tr_id, tool_id)
             else:
-                log.debug("history_graph: skipping HDCA %d — ambiguous producer (%s)", hdca_id, set(tr_map.keys()))
+                log.debug("history_graph: skipping %s %d — ambiguous producer (%s)", kind, item_id, set(tr_map.keys()))
         return result
 
     # ── Payload input resolution ──
