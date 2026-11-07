@@ -66,6 +66,17 @@ describe("GButton.vue", () => {
 
         expect(wrapper.emitted("click")).toHaveLength(1);
     });
+
+    it("passes listeners it does not emit, like blur, to the button", async () => {
+        const onBlur = vi.fn();
+        const wrapper = mount(defineComponent({ render: () => h(GButton, { onBlur }, () => "Copy") }), {
+            global: localVue,
+        });
+
+        await wrapper.get("button").trigger("blur");
+
+        expect(onBlur).toHaveBeenCalledTimes(1);
+    });
 });
 
 describe("GButton.vue loading", () => {
