@@ -3862,43 +3862,32 @@ class DatabaseOperationTool(Tool):
         return not self.require_dataset_ok
 
     def check_inputs_ready(self, input_datasets, input_dataset_collections, security):
-        def check_state(input_key, state, input_value, dependencies=None):
+        def check_dataset_state(input_key, input_dataset):
+            state = input_dataset.state
             if self.require_terminal_states and state in model.Dataset.non_ready_states:
                 raise ToolInputsNotReadyException(
-                    "An input dataset is pending.",
-                    dependencies=(
-                        dependencies if dependencies is not None else input_readiness_dependencies(input_value)
-                    ),
+                    "An input dataset is pending.", dependencies=input_readiness_dependencies(input_dataset)
                 )
             if state == model.Dataset.states.PAUSED and not self.require_terminal_or_paused_states:
                 raise ToolInputsNotReadyException(
                     f"Input '{input_key}' is paused; the file is not yet available.",
-                    dependencies=(
-                        dependencies if dependencies is not None else input_readiness_dependencies(input_value)
-                    ),
+                    dependencies=input_readiness_dependencies(input_dataset),
                 )
             if self.require_dataset_ok and state != model.Dataset.states.OK:
                 raise ToolInputsNotOKException(
-                    f"Tool requires inputs to be in valid state, but input '{input_key}' has data in state '{state}'",
+                    f"Tool requires inputs to be in valid state, but dataset with hid {input_dataset.hid} is in state '{state}'",
                     src="hda",
-                    id=input_value.id,
+                    id=input_dataset.id,
                     input_name=input_key,
                 )
 
-        # These are the same per-dataset checks execution already needed. Stop
-        # at the first wait and preserve that input rather than snapshotting all.
+        # Collection inputs are flattened into input_datasets as well, so this
+        # also covers their members. The first wait becomes the step's blocker.
         for input_key, input_dataset in input_datasets.items():
             if input_dataset is not None:
-                check_state(input_key, input_dataset.state, input_dataset)
+                check_dataset_state(input_key, input_dataset)
 
-        blocked_states: set[str] = set()
-        if self.require_terminal_states:
-            blocked_states.update(model.Dataset.non_ready_states)
-        if not self.require_terminal_or_paused_states:
-            blocked_states.add(model.Dataset.states.PAUSED)
-        if self.require_dataset_ok:
-            blocked_states.update(set(model.Dataset.ready_states) - {model.Dataset.states.OK})
-        for input_key, pairs in input_dataset_collections.items():
+        for pairs in input_dataset_collections.values():
             for input_collection, _ in pairs:
                 if input_collection is None:
                     continue
@@ -3908,13 +3897,6 @@ class DatabaseOperationTool(Tool):
                         "An input collection is not populated.",
                         dependencies=unpopulated_collection_dependencies(collection),
                     )
-                if not blocked_states or input_key in getattr(input_datasets, "collection_inputs", ()):
-                    continue
-                dependencies = input_readiness_dependencies(collection, states=blocked_states)
-                if dependencies:
-                    dependency = dependencies[0]
-                    assert dependency.readiness is not None
-                    check_state(input_key, dependency.readiness.state, dependency, dependencies)
 
     def _check_output_count(self, count: int) -> None:
         max_outputs = self.app.config.max_discovered_files

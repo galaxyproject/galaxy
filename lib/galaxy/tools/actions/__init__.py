@@ -100,13 +100,6 @@ PreservedTagsT = dict[str | None, ItemTagAssociation]
 ToolActionExecuteResult = tuple[Job, OutputDatasetsT, History | None] | tuple[Job, OutputDatasetsT]
 
 
-class CollectedInputDatasets(LegacyUnprefixedDict):
-    def __init__(self):
-        super().__init__()
-        # The dataset checks already cover members flattened from these inputs.
-        self.collection_inputs: set[str] = set()
-
-
 class CollectedToolInputs(NamedTuple):
     history: History
     inp_data: LegacyUnprefixedDict
@@ -195,7 +188,7 @@ class DefaultToolAction(ToolAction):
         """
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
-        input_datasets = CollectedInputDatasets()
+        input_datasets = LegacyUnprefixedDict()
         all_permissions: dict[str, set[str]] = {}
 
         def record_permission(action, role_id):
@@ -480,8 +473,6 @@ class DefaultToolAction(ToolAction):
             collection_info=collection_info,
         )
 
-        if isinstance(inp_data, CollectedInputDatasets):
-            inp_data.collection_inputs.update(inp_dataset_collections)
         preserved_tags: PreservedTagsT = {}
         preserved_hdca_tags: PreservedTagsT = {}
         # grab tags from incoming HDAs
