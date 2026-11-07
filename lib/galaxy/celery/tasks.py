@@ -120,9 +120,8 @@ def cached_create_tool_from_representation(
     )
 
 
-# Upper bound for one disk usage recalculation, including the time spent waiting
-# for a recalculation of the same user that is already running.
-RECALCULATE_DISK_USAGE_TIME_LIMIT = 3600
+# Upper bound in seconds for waiting for a recalculation of the same user that is already running.
+DISK_USAGE_RECALCULATION_WAIT_TIMEOUT = 3600
 # First keys of the two-key PostgreSQL advisory locks, the second key is the user id.
 DISK_USAGE_RUNNING_LOCK = 1146442529
 DISK_USAGE_WAITING_LOCK = 1146442530
@@ -134,8 +133,14 @@ def recalculate_disk_usage_deduplicated(session: Session, user: User, object_sto
     On PostgreSQL at most one recalculation per user runs and at most one waits for it.
     The waiting one starts computing after the changes that triggered this call were
     committed, so this call returns ``False`` without computing when another one is
-    waiting. ``statement_timeout`` bounds the wait and each statement, Celery's thread
-    pool does not enforce task time limits.
+    waiting. This relies on the READ COMMITTED isolation level, PostgreSQL's default:
+    each statement of the waiting recalculation sees the changes committed before it
+    started. Under REPEATABLE READ or SERIALIZABLE the waiting recalculation would only
+    see the snapshot taken by the transaction's first query, before it waited.
+
+    ``lock_timeout`` bounds the wait for a running recalculation, Celery's thread pool
+    does not enforce task time limits. The recalculation itself runs under the
+    connection's own ``lock_timeout`` and ``statement_timeout``.
 
     All locks are taken on the session's connection. The waiting lock is session-level,
     so it survives a rollback: if anything fails before it is released, the connection
@@ -152,27 +157,27 @@ def recalculate_disk_usage_deduplicated(session: Session, user: User, object_sto
         log.info("Disk usage recalculation for user %s is already queued, skipping", user.id)
         return False
     try:
+        lock_timeout = connection.scalar(text("SELECT current_setting('lock_timeout')"))
         connection.execute(
-            text("SELECT set_config('statement_timeout', :timeout, true)"),
-            {"timeout": f"{RECALCULATE_DISK_USAGE_TIME_LIMIT}s"},
+            text("SELECT set_config('lock_timeout', :timeout, true)"),
+            {"timeout": f"{DISK_USAGE_RECALCULATION_WAIT_TIMEOUT}s"},
         )
         connection.execute(
             text("SELECT pg_advisory_xact_lock(:lock, :user_id)"), {"lock": DISK_USAGE_RUNNING_LOCK, **lock_params}
         )
+        connection.execute(text("SELECT set_config('lock_timeout', :timeout, true)"), {"timeout": lock_timeout})
         connection.execute(
             text("SELECT pg_advisory_unlock(:lock, :user_id)"), {"lock": DISK_USAGE_WAITING_LOCK, **lock_params}
         )
     except BaseException:
         connection.invalidate()
         raise
-    # commits, which releases the running lock and resets statement_timeout
+    # commits, which releases the running lock
     user.calculate_and_set_disk_usage(object_store)
     return True
 
 
-# statement_timeout bounds waiting for a running recalculation and each statement of
-# this one, the soft time limit (prefork pools only) stays clear of both.
-@galaxy_task(action="recalculate a user's disk usage", soft_time_limit=2 * RECALCULATE_DISK_USAGE_TIME_LIMIT + 300)
+@galaxy_task(action="recalculate a user's disk usage")
 def recalculate_user_disk_usage(
     session: galaxy_scoped_session, object_store: BaseObjectStore, task_user_id: int | None = None
 ):

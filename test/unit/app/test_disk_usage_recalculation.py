@@ -95,14 +95,14 @@ def test_recalculates_with_a_single_pooled_connection(model_mapping: mapping.Gal
     assert user.disk_usage == 10
 
 
-def test_waits_for_running_recalculation_within_time_limit(model_mapping: mapping.GalaxyModelMapping, user: model.User):
+def test_wait_for_running_recalculation_times_out(model_mapping: mapping.GalaxyModelMapping, user: model.User):
     with model_mapping.engine.connect() as running:
         running.execute(
             text("SELECT pg_advisory_xact_lock(:lock, :user_id)"),
             {"lock": DISK_USAGE_RUNNING_LOCK, "user_id": user.id},
         )
-        with mock.patch("galaxy.celery.tasks.RECALCULATE_DISK_USAGE_TIME_LIMIT", 1):
-            with pytest.raises(OperationalError, match="statement timeout"):
+        with mock.patch("galaxy.celery.tasks.DISK_USAGE_RECALCULATION_WAIT_TIMEOUT", 1):
+            with pytest.raises(OperationalError, match="lock timeout"):
                 recalculate_disk_usage_deduplicated(model_mapping.session(), user, OBJECT_STORE)
         model_mapping.session.rollback()
         # the waiting slot is free again for the next recalculation
@@ -113,3 +113,23 @@ def test_waits_for_running_recalculation_within_time_limit(model_mapping: mappin
     assert recalculate_disk_usage_deduplicated(model_mapping.session(), user, OBJECT_STORE)
     model_mapping.session.refresh(user)
     assert user.disk_usage == 10
+
+
+def test_recalculation_runs_under_the_connection_timeouts(model_mapping: mapping.GalaxyModelMapping, user: model.User):
+    session = model_mapping.session()
+    session.execute(text("SELECT set_config('lock_timeout', '5s', true)"))
+    timeouts = []
+
+    def record_timeouts(self, object_store):
+        timeouts.append(
+            tuple(
+                session.execute(
+                    text("SELECT current_setting('lock_timeout'), current_setting('statement_timeout')")
+                ).one()
+            )
+        )
+
+    with mock.patch.object(model.User, "calculate_and_set_disk_usage", autospec=True, side_effect=record_timeouts):
+        assert recalculate_disk_usage_deduplicated(session, user, OBJECT_STORE)
+    session.rollback()
+    assert timeouts == [("5s", "0")]
