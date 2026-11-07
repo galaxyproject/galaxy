@@ -1130,17 +1130,22 @@ class CachedToolBox(ToolBox):
                     except Exception:
                         return (1, v)
 
-                versions = sorted(
-                    self._tool_index.configured_versions(tool_id).keys(),
-                    key=_ver_key,
-                )
-                tools: list[ToolLike] = []
-                for ver in versions:
-                    entry = self._tool_index.get(tool_id, ver)
-                    if entry is not None:
-                        tools.append(self._cached_tool_for_entry(entry))
-                if tools:
-                    return tools
+                # A shed guid names one version; its lineage spans every
+                # guid sharing the versionless prefix.
+                lineage_ids = [tool_id]
+                versionless = remove_version_from_guid(tool_id) if is_shed_guid(tool_id) else None
+                if versionless:
+                    for sibling_id, _ in self._guid_sibling_versions().get(versionless, ()):
+                        if sibling_id not in lineage_ids:
+                            lineage_ids.append(sibling_id)
+                version_entries = [
+                    entry
+                    for lineage_id in lineage_ids
+                    for entry in self._tool_index.configured_versions(lineage_id).values()
+                ]
+                version_entries.sort(key=lambda entry: _ver_key(entry.version or ""))
+                if version_entries:
+                    return [self._cached_tool_for_entry(entry) for entry in version_entries]
             else:
                 entry = self._tool_index.get_configured(tool_id, tool_version)
                 if entry is not None:
@@ -1156,11 +1161,13 @@ class CachedToolBox(ToolBox):
         # Cached shed installs need their own short-id lookup and version sort.
         if self._tool_index and self._shed_short_id_to_guids and tool_id in self._shed_short_id_to_guids:
             candidates: list[tuple[tuple[int, Any], ToolLike]] = []
-            for guid in sorted(self._shed_short_id_to_guids[tool_id]):
-                entry = self._tool_index.get_configured(guid, tool_version)
-                if entry is None and tool_version and not exact:
-                    # Inexact requests may use this guid's default version.
-                    entry = self._tool_index.entries.get(guid)
+            guids = sorted(self._shed_short_id_to_guids[tool_id])
+            entries = [self._tool_index.get_configured(guid, tool_version) for guid in guids]
+            if tool_version and not exact and not any(entries):
+                # Inexact requests may use a default version, but only when no
+                # guid has the requested one.
+                entries = [self._tool_index.entries.get(guid) for guid in guids]
+            for entry in entries:
                 if entry is not None:
                     cached = self._cached_tool_for_entry(entry)
                     ver_key: tuple[int, Any]
@@ -1924,10 +1931,7 @@ class CachedToolBox(ToolBox):
         # come back from there even after removal.
         self._tool_versions_by_id.pop(tool_id, None)
         if hasattr(self, "_lineage_map"):
-            self._lineage_map.lineage_map.pop(tool_id, None)
-            versionless = remove_version_from_guid(tool_id)
-            if versionless:
-                self._lineage_map.lineage_map.pop(versionless, None)
+            self._remove_from_lineage(tool_id)
         # Drop the complete old-id bucket for this removed index entry.
         self._tools_by_old_id.pop(tool_id, None)
         # The short-id bucket is keyed by ``old_id`` — for a shed guid
@@ -1962,6 +1966,30 @@ class CachedToolBox(ToolBox):
         for key in [key for key in self._cached_tools if key[0] == tool_id]:
             del self._cached_tools[key]
         return result
+
+    def _remove_from_lineage(self, tool_id: str) -> None:
+        """Drop ``tool_id`` from the lineage map.
+
+        A Tool Shed tool's versions share one lineage, mapped under each
+        version's guid and the versionless guid and held by the tool objects.
+        Removing one version takes it out of that lineage in place, so lookups
+        by the versionless guid still find the remaining versions.
+        """
+        lineage_map = self._lineage_map.lineage_map
+        lineage = lineage_map.pop(tool_id, None)
+        versionless = remove_version_from_guid(tool_id)
+        if not versionless:
+            return
+        if not is_shed_guid(tool_id):
+            lineage_map.pop(versionless, None)
+            return
+        lineage = lineage_map.get(versionless, lineage)
+        if lineage is None:
+            return
+        for version in [version for version in lineage.tool_versions if f"{versionless}/{version}" == tool_id]:
+            lineage.tool_versions.discard(version)
+        if not lineage.tool_versions:
+            lineage_map.pop(versionless, None)
 
     def _remove_versions_in_memory(self, tool_id: str, removed: list[str]) -> None:
         """Drop registry slots, proxies and lineage versions the index no longer offers.
