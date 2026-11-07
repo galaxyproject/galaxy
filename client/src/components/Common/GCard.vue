@@ -653,6 +653,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 [String(badge.class)]: badge.class,
                                             }"
                                             :title="localize(badge.title)"
+                                            :aria-label="badge.ariaLabel ? localize(badge.ariaLabel) : undefined"
                                             :variant="badge.variant || 'secondary'"
                                             :to="badge.to"
                                             :role="badge.handler ? 'button' : undefined"
@@ -690,6 +691,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 [String(badge.class)]: badge.class,
                                             }"
                                             :title="localize(badge.title)"
+                                            :aria-label="badge.ariaLabel ? localize(badge.ariaLabel) : undefined"
                                             :variant="badge.variant || 'secondary'"
                                             :to="badge.to"
                                             :href="badge.href"

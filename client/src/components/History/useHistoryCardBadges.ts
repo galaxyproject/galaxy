@@ -79,6 +79,7 @@ export function useHistoryCardBadges(
         historyCardTitleBadges.unshift({
             id: "owner-shared",
             label: username,
+            ariaLabel: `Filter by owner ${username}`,
             title: localize(
                 `'${username}' shared this history with you. Click to view all histories shared with you by '${username}'`,
             ),
@@ -99,6 +100,7 @@ export function useHistoryCardBadges(
         historyCardTitleBadges.unshift({
             id: "owner-published",
             label: username,
+            ariaLabel: `Filter by owner ${username}`,
             title: ownerBadgeTitle(history.value),
             icon: faUser,
             type: "badge",
