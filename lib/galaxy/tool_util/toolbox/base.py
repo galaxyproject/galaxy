@@ -1518,6 +1518,15 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             self._curated_tool_tags = self._collect_tool_attribute_set("tool_tags")
         return self._curated_tool_tags
 
+    def curated_tool_tags_by_id(self, trans: "ProvidesUserContext") -> dict[str, list[str]]:
+        """Map the ids of tools visible to the user to their curated tags."""
+        filter_method = self._build_filter_method(trans)
+        mapping: dict[str, list[str]] = {}
+        for _, tool in self.tools():
+            if tool.tool_tags and filter_method(tool, panel_item_types.TOOL):
+                mapping[tool.id] = list(tool.tool_tags)
+        return mapping
+
     @property
     def tool_edam_operations(self) -> frozenset[str]:
         """Set of EDAM operation ids referenced by loaded tools (lazy, cached)."""

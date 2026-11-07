@@ -358,6 +358,11 @@ def test_fill_defaults():
     assert with_defaults["conditional_parameter"]["test_parameter"] is False
     assert with_defaults["conditional_parameter"]["boolean_parameter"] is False
 
+    with_defaults = fill_state_for(
+        {"input": {"src": "hda", "id": EXAMPLE_ID_1}}, "parameters/gx_conditional_boolean_implicit"
+    )
+    assert with_defaults["conditional_parameter"] == {"test_parameter": False}
+
     with_defaults = fill_state_for({}, "parameters/gx_repeat_boolean")
     assert len(with_defaults["parameter"]) == 0
     with_defaults = fill_state_for({"parameter": [{}]}, "parameters/gx_repeat_boolean")

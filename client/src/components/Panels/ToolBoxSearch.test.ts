@@ -28,16 +28,6 @@ const EXPECTED_LABELS = ["Recent tools", "Favorites"];
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
 
-function toToolsById(list: Tool[]) {
-    return list.reduce(
-        (acc, tool) => {
-            acc[tool.id] = tool;
-            return acc;
-        },
-        {} as Record<string, Tool>,
-    );
-}
-
 function withFavoriteEdamOperationTool(list: Tool[]) {
     return list.map((tool) =>
         tool.id === "liftOver1" ? ({ ...tool, edam_operations: ["operation_2409"] } as Tool) : tool,
@@ -78,7 +68,7 @@ function mountToolBox(options: MountToolBoxOptions = {}) {
 
     const toolStore = useToolStore();
     vi.spyOn(toolStore, "fetchToolTagsMapping").mockResolvedValue();
-    toolStore.toolsById = toToolsById(options.tools ?? toolsList);
+    toolStore.saveAllTools(options.tools ?? toolsList);
     toolStore.toolSections = options.toolSections ?? { default: toolsListInPanel };
     toolStore.defaultPanelView = "default";
     toolStore.currentPanelView = options.currentPanelView ?? "my_panel";

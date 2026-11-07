@@ -1,0 +1,15 @@
+<tool id="legacy_home_probe" name="legacy_home_probe" version="0.1.0">
+    <requirements>
+        <container type="docker">busybox:1.36.1-glibc</container>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+touch "\$HOME/$probe_name" &&
+echo "\$HOME" > '$home'
+    ]]></command>
+    <inputs>
+        <param name="probe_name" type="text" />
+    </inputs>
+    <outputs>
+        <data name="home" format="txt" />
+    </outputs>
+</tool>

@@ -64,6 +64,7 @@ include src/galaxy/tool_util/unittest_utils/functional_tools/parameters/gx_data_
 include src/galaxy/tool_util/unittest_utils/functional_tools/parameters/gx_int_optional.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/parameters/gx_drill_down_recurse_multiple.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/parameters/gx_conditional_boolean.xml
+include src/galaxy/tool_util/unittest_utils/functional_tools/parameters/gx_conditional_boolean_implicit.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/parameters/gx_data_column_with_default.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/parameters/gx_boolean_optional_26_2.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/parameters/gx_text_empty_validation.xml
