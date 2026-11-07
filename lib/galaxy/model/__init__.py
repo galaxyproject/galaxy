@@ -3530,8 +3530,9 @@ class Notification(Base, Dictifiable, RepresentById):
     publication_time: Mapped[Optional[datetime]] = mapped_column(
         default=now
     )  # The date of publication, can be a future date to allow scheduling
+    # A callable, so the expiry date is computed for each new notification.
     expiration_time: Mapped[Optional[datetime]] = mapped_column(
-        default=now() + timedelta(days=30 * 6)
+        default=lambda: now() + timedelta(days=30 * 6)
     )  # The expiration date, expired notifications will be permanently removed from DB regularly
     source: Mapped[str] = mapped_column(
         String(32), index=True, nullable=True
