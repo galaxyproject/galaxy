@@ -5564,6 +5564,39 @@ to arrays of `name` and `value`, or arrays of `name`, `value` and `selected`.
 
 For an example tool see [select_from_url.xml](https://github.com/galaxyproject/galaxy/tree/dev/test/functional/tools/select_from_url.xml).
 
+#### Using the values of other parameters
+
+List the parameters in ``depends_on`` (separated by commas) to use their values in
+the URL, request headers and request body. The select is then refreshed when one of
+these parameters changes. In the example below the second select lists the genotype
+sets of the crop selected in the first one:
+
+```xml
+<param name="crop" type="select" label="Crop">
+    <options from_url="https://example.org/api/crops"/>
+</param>
+<param name="genotype_set" type="select" label="Genotype set">
+    <options from_url="https://example.org/api/crops/$crop/genotype_sets" depends_on="crop"/>
+</param>
+```
+
+Parameters are found the same way as the ``ref`` of a ``param_value``
+[filter](#tool-inputs-param-options-filter): by name, among the parameters
+defined before the select at the same level or in an enclosing section,
+conditional or repeat. A select inside a repeat uses the parameters of its own
+repeat instance. Use ``section_name.param_name``, ``conditional_name.param_name``
+or ``repeat_name.param_name`` to refer to a parameter inside a section,
+conditional or repeat. A parameter inside a repeat gives the values of all repeat
+instances.
+
+Values are inserted as strings, and multiple values are joined with ``,``. In
+``from_url`` they are percent-encoded (``/`` too) and in ``request_headers`` and
+``request_body`` they are escaped as JSON string content (use them inside
+quotes, as in ``{"crop": "$crop"}``). Parameter values can't be used in the
+URL's scheme or host. While a listed parameter has no value (or is a runtime
+or connected value in the workflow editor) no request is made and the select has
+no options.
+
 ### ``from_file``
 
 The following example is for Blast databases. In this example users maybe select
@@ -5628,6 +5661,11 @@ used to generate dynamic options.
     <xs:attribute name="request_method" type="RequestMethodType">
       <xs:annotation>
         <xs:documentation xml:lang="en">Set the request method to use for options provided using 'from_url'. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="depends_on" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Comma-separated names of parameters whose values can be used in the 'from_url', 'request_headers' and 'request_body' templates. The options are refreshed when one of these parameters changes.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_parameter" type="xs:string">

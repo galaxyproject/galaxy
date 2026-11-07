@@ -2046,12 +2046,31 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         # If parameter depends on any other paramters, we must refresh the
         # form when it changes
         for name in param.get_dependencies():
-            # Let it throw exception, but give some hint what the problem might be
-            assert (
-                name in context
-            ), f"Tool with id '{self.id}': Could not find dependency '{name}' of parameter '{param.name}'"
-            context[name].refresh_on_change = True
+            for dependency in self._resolve_param_dependency(name, param, context):
+                dependency.refresh_on_change = True
         return param
+
+    def _resolve_param_dependency(self, name: str, param: ToolParameter, context) -> list[Any]:
+        """Find the inputs named by ``name``; ``a.b`` names input ``b`` in section, conditional or repeat ``a``."""
+        root, *path = name.split(".")
+        # Let it throw exception, but give some hint what the problem might be
+        assert (
+            root in context
+        ), f"Tool with id '{self.id}': Could not find dependency '{name}' of parameter '{param.name}'"
+        targets = [context[root]]
+        for part in path:
+            candidates = []
+            for target in targets:
+                if isinstance(target, (Section, Repeat)):
+                    candidates.append(target.inputs.get(part))
+                elif isinstance(target, Conditional):
+                    if target.test_param is not None and part == target.test_param.name:
+                        candidates.append(target.test_param)
+                    else:
+                        candidates.extend(case.inputs.get(part) for case in target.cases if case.inputs)
+            targets = [candidate for candidate in candidates if candidate is not None]
+            assert targets, f"Tool with id '{self.id}': Could not find dependency '{name}' of parameter '{param.name}'"
+        return targets
 
     def populate_resource_parameters(self, tool_source):
         root = getattr(tool_source, "root", None)
