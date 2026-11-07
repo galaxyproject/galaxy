@@ -210,7 +210,7 @@ def _process_raw_inputs(
                         parent_context=cond_context,
                     )
                     expanded_inputs.update(case_inputs)
-                expanded_case_value = split_if_str(case_when)
+                expanded_case_value = _test_value_as_list(test_param_input_source, case_when)
                 if case_value is not None:
                     # A bit tricky here - we are growing inputs with value
                     # that may be implicit (i.e. not defined by user just
@@ -274,7 +274,7 @@ def _process_raw_inputs(
                 param_extra = raw_input_dict["attributes"]
                 location = param_extra.get("location")
                 if param_type != "text":
-                    param_value = split_if_str(param_value)
+                    param_value = _test_value_as_list(input_source, param_value)
                 if param_type == "data":
                     if location and input_source.get_bool("multiple", False):
                         # We get the input/s from the location which can be a list of urls separated by commas
@@ -591,6 +591,15 @@ def split_if_str(value):
     if split:
         value = value.split(",")
     return value
+
+
+def _test_value_as_list(input_source: InputSource, value: Any) -> Any:
+    """Comma-split string test values for data and multiple-valued inputs, wrap others in a list."""
+    param_type = input_source.get("type")
+    # ftpfile defaults to multiple, as in FTPFileToolParameter
+    if param_type == "data" or input_source.get_bool("multiple", param_type == "ftpfile"):
+        return split_if_str(value)
+    return [value] if isinstance(value, str) else value
 
 
 # convert the sort internal structure used by the tool library {tag: string, attributes: dict, children: []}
