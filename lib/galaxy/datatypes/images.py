@@ -186,6 +186,10 @@ class Image(data.Data):
 
             except PIL.UnidentifiedImageError:
                 pass
+            except Exception as e:
+                # Image metadata is optional: an unparsable header (e.g. GROMACS XPM) or an image
+                # above Pillow's decompression bomb limit leaves it unset.
+                log.warning("Could not read image metadata from %s: %s", dataset.get_file_name(), e)
 
 
 class Jpg(Image):
