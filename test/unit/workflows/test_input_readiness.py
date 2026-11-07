@@ -6,11 +6,17 @@ import pytest
 
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockTrans
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.model.unittest_utils.model_testing_utils import create_and_drop_database
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tools import create_tool_from_source
 from galaxy.work.context import WorkRequestContext
 from galaxy.workflow import modules
+from galaxy.workflow.run_request import (
+    workflow_run_config_to_request,
+    WorkflowRunConfig,
+)
+from galaxy.workflow.schedulers.core import CoreWorkflowSchedulingPlugin
 from .workflow_support import (
     MockToolbox,
     SchedulingHarness,
@@ -56,14 +62,6 @@ def collection_input(harness, states=("running", "ok"), extension="txt", nested=
 def real_workflow_scheduler(
     harness, hdca, step_count=2, second_hdca=None, tool_file="filter_empty_collection_1.1.0.xml"
 ):
-    """Prepare a real core invocation, also used by the reproducible benchmark."""
-    from galaxy.managers.collections import DatasetCollectionManager
-    from galaxy.workflow.run_request import (
-        workflow_run_config_to_request,
-        WorkflowRunConfig,
-    )
-    from galaxy.workflow.schedulers.core import CoreWorkflowSchedulingPlugin
-
     harness.app.config.log_events = False
     tool = create_tool_from_source(harness.app, get_tool_source(f"lib/galaxy/tools/{tool_file}"))
     toolbox = MockToolbox()
