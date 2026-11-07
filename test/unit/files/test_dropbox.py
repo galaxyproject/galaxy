@@ -24,6 +24,7 @@ def test_file_source():
 
 
 def test_no_access_token_says_so(monkeypatch):
+    pytest.importorskip("fs.dropboxfs")
     monkeypatch.delenv("GALAXY_TEST_DROPBOX_ACCESS_TOKEN", raising=False)
     file_sources = configured_file_sources(FILE_SOURCES_CONF)
     with pytest.raises(AuthenticationRequired, match="No Dropbox access token is set"):
