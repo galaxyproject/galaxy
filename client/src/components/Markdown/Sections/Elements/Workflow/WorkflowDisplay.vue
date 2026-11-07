@@ -4,6 +4,7 @@ import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { getStepTitle } from "@/components/WorkflowInvocationState/util";
+import { useEmbed } from "@/composables/embed";
 import { useUid } from "@/composables/utils/uid";
 import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
@@ -27,6 +28,8 @@ const props = withDefaults(defineProps<WorkflowDisplayProps>(), {
     embedded: false,
     expanded: false,
 });
+
+const embed = useEmbed();
 
 type ItemContent = {
     name: string;
@@ -112,6 +115,7 @@ function toolButtonId(orderIndex: number) {
                 <GButton
                     v-g-tooltip.hover
                     :href="importUrl"
+                    :target="embed ? '_blank' : undefined"
                     transparent
                     size="small"
                     icon-only

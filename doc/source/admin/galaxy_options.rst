@@ -2922,6 +2922,19 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``widgets_allowed_origins``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Comma-separated origins, besides Galaxy itself, allowed to embed
+    Galaxy Widgets such as the history graph.
+    Page and workflow widgets can be embedded from any origin, like
+    the published page and workflow embeds.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``nginx_upload_store``
 ~~~~~~~~~~~~~~~~~~~~~~
