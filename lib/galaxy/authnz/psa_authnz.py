@@ -274,6 +274,8 @@ class PSAAuthnz(IdentityProvider):
             self.config[setting_name("USERNAME_KEY")] = oidc_backend_config.get("username_key")
         if oidc_backend_config.get("domain") is not None:
             self.config[setting_name("DOMAIN")] = oidc_backend_config.get("domain")
+        if oidc_backend_config.get("extra_scopes") is not None:
+            self.config[setting_name("SCOPE")] = oidc_backend_config.get("extra_scopes")
 
         # OIDC-specific settings (only set for OIDC backends)
         if self._is_oidc_backend():
@@ -354,9 +356,6 @@ class PSAAuthnz(IdentityProvider):
             and "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config
         ):
             backend.DEFAULT_SCOPE.append("https://www.googleapis.com/auth/cloud-platform")
-
-        if self.config["EXTRA_SCOPES"] is not None:
-            backend.DEFAULT_SCOPE.extend(self.config["EXTRA_SCOPES"])
 
         redirect = do_auth(backend)
         # The post-login destination travels in the validated login-next cookie.
