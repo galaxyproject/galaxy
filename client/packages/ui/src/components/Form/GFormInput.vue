@@ -68,6 +68,8 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@use "../../styles/focus-ring" as *;
+
 // Colours stay scoped so the galaxy-ui tokens beat any field class a consumer adds
 .g-form-input {
     color: var(--color-grey-800);
@@ -108,11 +110,8 @@ defineExpose({
         outline: none;
     }
 
-    // Page-background gap keeps the ring clear of the field border; outline survives forced colors.
     &:focus-visible {
-        outline: 2px solid var(--color-blue-600);
-        outline-offset: 2px;
-        box-shadow: 0 0 0 2px var(--background-color);
+        @include focus-ring;
     }
 
     // Same shades as GSelect's state borders, which keep 3:1 contrast against the background

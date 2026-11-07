@@ -152,6 +152,8 @@ function onChange(event: Event) {
 </template>
 
 <style scoped lang="scss">
+@use "../styles/focus-ring" as *;
+
 .g-checkbox {
     display: inline-flex;
     align-items: center;
@@ -184,9 +186,9 @@ function onChange(event: Event) {
         cursor: not-allowed;
     }
 
+    // No halo: it would show as a page-colour square around the control on tinted rows
     &:focus-visible {
-        outline: 2px solid var(--color-blue-600, #25537b);
-        outline-offset: 2px;
+        @include focus-ring($halo: false);
     }
 }
 
