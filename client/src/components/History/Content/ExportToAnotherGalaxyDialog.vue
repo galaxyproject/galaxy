@@ -6,6 +6,7 @@ import { storeToRefs } from "pinia";
 import { computed, onUnmounted, ref, shallowReactive, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { useConfig } from "@/composables/config";
 import { useDownloadTracker } from "@/composables/downloadTracker";
 import type { TaskMonitor } from "@/composables/genericTaskMonitor";
 import type { MonitoringData } from "@/composables/persistentProgressMonitor";
@@ -14,6 +15,7 @@ import { READY_STATE } from "@/composables/shortTermStorageMonitor";
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { type ExportableItem, useExportToAnotherGalaxyStore } from "@/stores/exportToAnotherGalaxyStore";
 import { copy as sendToClipboard } from "@/utils/clipboard";
+import { formatDurationSeconds } from "@/utils/duration";
 import { absPath } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
@@ -36,6 +38,7 @@ interface Export {
 const store = useExportToAnotherGalaxyStore();
 const { item } = storeToRefs(store);
 
+const { config } = useConfig();
 const { getDownloadObjectUrl } = useShortTermStorage();
 const { trackDownloadRequestWithData } = useDownloadTracker();
 
@@ -56,6 +59,9 @@ const showDialog = computed({
     },
 });
 const noun = computed(() => (item.value?.contentType === "dataset_collection" ? "collection" : "dataset"));
+const linkLifetime = computed(
+    () => formatDurationSeconds(config.value?.short_term_storage_effective_duration) ?? "24 hours",
+);
 const shown = computed(() => (item.value ? exports.get(keyOf(item.value)) : undefined));
 // The export task's own state, not the storage's: a failed export still marks its storage ready.
 const link = computed(() =>
@@ -202,7 +208,7 @@ onUnmounted(() => exports.forEach((entry) => entry.monitor.stopWaitingForTask())
             </BInputGroup>
             <p class="mt-2">
                 Anyone with this link can download this {{ noun }} without logging in, until the link expires (usually
-                after 24 hours). It can't be withdrawn before then.
+                after {{ linkLifetime }}). It can't be withdrawn before then.
             </p>
             <p>
                 On the other Galaxy, open Upload and choose <b>Import from Another Galaxy</b>. Your exports are also
