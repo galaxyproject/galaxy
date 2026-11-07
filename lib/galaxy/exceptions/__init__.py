@@ -16,6 +16,12 @@ have nothing to do with the web - keep this in mind when defining exception name
 and messages.
 """
 
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from galaxy.workflow.scheduling_dependencies import SchedulingDependency
+
 from .error_codes import (
     error_codes_by_name,
     ErrorCode,
@@ -147,13 +153,24 @@ class RequestParameterInvalidException(MessageException):
 
 
 class ToolInputsNotReadyException(MessageException):
+    def __init__(
+        self,
+        err_msg: str | None = None,
+        type="info",
+        *,
+        dependencies: Iterable["SchedulingDependency"] = (),
+        **extra_error_info,
+    ):
+        super().__init__(err_msg, type, **extra_error_info)
+        self.dependencies = tuple(dependencies)
+
     status_code = 400
     error_code = error_codes_by_name["TOOL_INPUTS_NOT_READY"]
 
 
 class ToolInputsNotOKException(MessageException):
     def __init__(
-        self, err_msg: str | None = None, type="info", *, src: str, id: str, input_name: str, **extra_error_info
+        self, err_msg: str | None = None, type="info", *, src: str, id: int, input_name: str, **extra_error_info
     ):
         super().__init__(err_msg, type, src=src, id=id, input_name=input_name, **extra_error_info)
         self.src = src

@@ -11,6 +11,12 @@ from galaxy.workflow.run import (
     STEP_OUTPUT_DELAYED,
     WorkflowProgress,
 )
+from galaxy.workflow.scheduling_dependencies import (
+    DependencyType,
+    SchedulingDependencies,
+    SchedulingDependency,
+    unpopulated_collection_dependencies,
+)
 from .workflow_support import (
     expression_json_hda,
     MockApp,
@@ -225,8 +231,8 @@ class TestWorkflowProgress(TestCase):
             progress.replacement_for_connection(self._connection_to_step_2_output(), is_data=False)
         progress.record_delay(delayed.value)
 
-        assert progress.scheduling_dependencies() == modules.SchedulingDependencies(
-            tracked=frozenset({modules.SchedulingDependency(modules.DependencyType.HDA, 7)}),
+        assert progress.scheduling_dependencies() == SchedulingDependencies(
+            tracked=frozenset({SchedulingDependency(DependencyType.HDA, 7)}),
             untracked=(),
             more_work=False,
         )
@@ -241,8 +247,8 @@ class TestWorkflowProgress(TestCase):
         session.add(collection)
         session.commit()
 
-        assert modules.unpopulated_collection_dependencies(collection) == [
-            modules.SchedulingDependency(modules.DependencyType.DATASET_COLLECTION, unpopulated_child.id)
+        assert unpopulated_collection_dependencies(collection) == [
+            SchedulingDependency(DependencyType.DATASET_COLLECTION, unpopulated_child.id)
         ]
 
     def test_delay_inherited_from_delayed_step_is_not_untracked(self):
@@ -255,7 +261,7 @@ class TestWorkflowProgress(TestCase):
         assert delayed.value.inherited
         progress.record_delay(delayed.value)
 
-        assert progress.scheduling_dependencies() == modules.SchedulingDependencies(
+        assert progress.scheduling_dependencies() == SchedulingDependencies(
             tracked=frozenset(), untracked=(), more_work=False
         )
 

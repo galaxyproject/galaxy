@@ -81,6 +81,7 @@ from galaxy.tools.parameters.wrapped import (
 )
 from galaxy.util import ExecutionTimer
 from galaxy.util.template import fill_template
+from galaxy.workflow.scheduling_dependencies import input_readiness_dependencies
 
 if TYPE_CHECKING:
     from galaxy.model import (
@@ -346,9 +347,17 @@ class DefaultToolAction(ToolAction):
                 for ext in extensions:
                     if ext:
                         if ext in ("auto", "_sniff_"):
-                            if set(summary.states) & set(Dataset.non_ready_states):
+                            # A member that finished without resolving its datatype
+                            # must not hide another one that may still resolve.
+                            dependencies = input_readiness_dependencies(
+                                collection,
+                                states=(*Dataset.non_ready_states, Dataset.states.PAUSED),
+                                extensions=(ext,),
+                            )
+                            if dependencies:
                                 raise ToolInputsNotReadyException(
-                                    f"Extension '{ext}' not yet resolved, cannot use dataset collection as input"
+                                    f"Extension '{ext}' not yet resolved, cannot use dataset collection as input",
+                                    dependencies=dependencies,
                                 )
                         datatype = trans.app.datatypes_registry.get_datatype_by_extension(ext)
                         if not datatype:

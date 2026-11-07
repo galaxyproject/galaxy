@@ -53,6 +53,7 @@ from galaxy.tools.parameters.workflow_utils import (
     NO_REPLACEMENT,
 )
 from galaxy.util.json import swap_inf_nan
+from galaxy.workflow.scheduling_dependencies import unpopulated_collection_dependencies
 from ._types import (
     ToolRequestT,
     ToolStateJobInstancePopulatedT,
@@ -156,13 +157,19 @@ def _resolve_collection_ref(
         if hdca is None:
             return raw_fallback
         if not hdca.collection.populated_optimized:
-            raise ToolInputsNotReadyException("An input collection is not populated.")
+            raise ToolInputsNotReadyException(
+                "An input collection is not populated.",
+                dependencies=unpopulated_collection_dependencies(hdca.collection),
+            )
         return hdca
     dce = sa_session.get(model.DatasetCollectionElement, decoded)
     if dce is None or dce.child_collection is None:
         return raw_fallback
     if not dce.child_collection.populated_optimized:
-        raise ToolInputsNotReadyException("An input collection is not populated.")
+        raise ToolInputsNotReadyException(
+            "An input collection is not populated.",
+            dependencies=unpopulated_collection_dependencies(dce.child_collection),
+        )
     return dce
 
 
