@@ -196,3 +196,9 @@ def test_independent_workflow_branch_can_progress_while_another_waits(harness):
     assert tool_steps[0].state == "scheduled"
     assert tool_steps[1].state != "scheduled"
     assert invocation.state == invocation.states.READY
+
+
+def test_unresolved_extension_waits_on_any_pending_member(harness):
+    hdca, _ = collection_input(harness, states=("error", "running"), extension="auto")
+    scheduler = real_workflow_scheduler(harness, hdca)
+    assert_waiting_without_replays(harness, scheduler)

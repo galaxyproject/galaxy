@@ -347,12 +347,14 @@ class DefaultToolAction(ToolAction):
                 for ext in extensions:
                     if ext:
                         if ext in ("auto", "_sniff_"):
-                            dependencies = input_readiness_dependencies(collection, extensions=(ext,))
-                            readiness = dependencies[0].readiness if dependencies else None
-                            if readiness is None or readiness.state in (
-                                *Dataset.non_ready_states,
-                                Dataset.states.PAUSED,
-                            ):
+                            # A member that finished without resolving its datatype
+                            # must not hide another one that may still resolve.
+                            dependencies = input_readiness_dependencies(
+                                collection,
+                                states=(*Dataset.non_ready_states, Dataset.states.PAUSED),
+                                extensions=(ext,),
+                            )
+                            if dependencies:
                                 raise ToolInputsNotReadyException(
                                     f"Extension '{ext}' not yet resolved, cannot use dataset collection as input",
                                     dependencies=dependencies,
