@@ -3519,6 +3519,7 @@ dependencies = [
     { name = "starlette", version = "1.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "svgwrite" },
     { name = "typing-extensions" },
+    { name = "tzdata" },
     { name = "webob" },
     { name = "whoosh" },
 ]
@@ -3596,6 +3597,7 @@ requires-dist = [
     { name = "svgwrite" },
     { name = "testfixtures", marker = "extra == 'test'" },
     { name = "typing-extensions" },
+    { name = "tzdata" },
     { name = "webob", specifier = ">=1.8.9" },
     { name = "whoosh" },
 ]
@@ -4766,6 +4768,7 @@ dependencies = [
     { name = "tifffile", version = "2026.11.12", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "tuspyserver" },
     { name = "typing-extensions" },
+    { name = "tzdata" },
     { name = "uvicorn" },
     { name = "uvloop" },
     { name = "webob" },
@@ -5003,6 +5006,7 @@ requires-dist = [
     { name = "tifffile" },
     { name = "tuspyserver" },
     { name = "typing-extensions", specifier = ">=4.13" },
+    { name = "tzdata" },
     { name = "uvicorn", specifier = "!=0.28.0" },
     { name = "uvloop", specifier = ">=0.21.0" },
     { name = "webob", specifier = ">=1.8.9" },
