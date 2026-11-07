@@ -82,6 +82,27 @@ def test_subdomain_switcher_preserves_configured_entries():
     assert appconfig.subdomain_switcher == sites
 
 
+def test_another_galaxy_servers_default_to_usegalaxy_sites():
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
+
+    assert appconfig.another_galaxy_servers == [
+        {"label": "usegalaxy.eu", "url": "https://usegalaxy.eu"},
+        {"label": "usegalaxy.org", "url": "https://usegalaxy.org"},
+        {"label": "usegalaxy.org.au", "url": "https://usegalaxy.org.au"},
+    ]
+
+
+def test_another_galaxy_servers_preserves_configured_entries():
+    servers = [
+        {"label": "Local Galaxy", "url": "https://galaxy.example.org/galaxy/"},
+        {"label": "Dev", "url": "http://localhost:8080"},
+    ]
+
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False, another_galaxy_servers=servers)
+
+    assert appconfig.another_galaxy_servers == servers
+
+
 def test_assign_email_from(monkeypatch):
     appconfig = config.GalaxyAppConfiguration(
         override_tempdir=False, galaxy_infrastructure_url="http://myhost:8080/galaxy/"

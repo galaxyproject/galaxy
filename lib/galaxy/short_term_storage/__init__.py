@@ -42,6 +42,18 @@ from galaxy.util import (
 DEFAULT_STORAGE_DURATION = 24 * 60 * 60  # store for a day by default
 
 
+def effective_storage_duration(
+    default_storage_duration: OptionalNumberT,
+    maximum_storage_duration: OptionalNumberT,
+    duration: OptionalNumberT = None,
+) -> int | float:
+    """Seconds a target is kept for; an unset or zero maximum means no limit."""
+    resolved_duration = duration or default_storage_duration or DEFAULT_STORAGE_DURATION
+    if maximum_storage_duration and resolved_duration > maximum_storage_duration:
+        return maximum_storage_duration
+    return resolved_duration
+
+
 @dataclass
 class ShortTermStorageConfiguration:
     short_term_storage_directory: str
@@ -169,10 +181,9 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
             security = ShortTermStorageTargetSecurity()
         request_id = uuid4()
         target_directory = self._directory(request_id)
-        duration = duration or self._config.default_storage_duration or DEFAULT_STORAGE_DURATION
-        maximum_storage_duration = self._config.maximum_storage_duration
-        if duration and maximum_storage_duration and duration > maximum_storage_duration:
-            duration = maximum_storage_duration
+        duration = effective_storage_duration(
+            self._config.default_storage_duration, self._config.maximum_storage_duration, duration
+        )
         target = ShortTermStorageTarget(
             request_id=request_id, raw_path=str(target_directory / "target"), duration=duration
         )

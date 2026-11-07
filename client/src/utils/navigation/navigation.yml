@@ -1886,10 +1886,20 @@ gies:
     spinner: 'img#spinner'
     iframe: 'body iframe[seamless="seamless"]'
 
+another_galaxy_picker:
+  selectors:
+    select: '[data-description="picker select ${key}"]'
+    consent: '[data-description="picker consent"]'
+    send: '[data-description="picker send"]'
+
 upload_activity:
   selectors:
     activity: '#activity-upload'
     method_card: '[data-method-id="${method_id}"]'
+    galaxy_picker_server: '[data-description="galaxy picker server"]'
+    galaxy_picker_url: '[data-description="galaxy picker url"]'
+    galaxy_picker_open: '[data-description="galaxy picker open"]'
+    galaxy_picker_import_item: '[data-description="galaxy picker import item"]'
     local_file_input: '#local-file-input'
     paste_content_textarea: '.paste-textarea'
     add_another_dataset_button: '[data-test-id="add-another-dataset"]'
