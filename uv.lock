@@ -2221,7 +2221,7 @@ wheels = [
 
 [[package]]
 name = "cwl-utils"
-version = "0.45"
+version = "0.47"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cwl-upgrader" },
@@ -2232,9 +2232,9 @@ dependencies = [
     { name = "schema-salad" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3e/e7/018d9fae1a9fa088af93f75eb439bb9606c1efd400f680c0b53bbcc0116c/cwl_utils-0.45.tar.gz", hash = "sha256:5883f39a0f2870a2fae550de1fdab3145286f1280fb099841f50ccbc9866e5f4", size = 384300, upload-time = "2026-09-26T13:33:48.192Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/18/bb/a937be7aad624c7e2db4111508cd107d3a54e29631cc7392fd968c61c245/cwl_utils-0.47.tar.gz", hash = "sha256:eb077afc7265c7549ee847b778bcfa85315dffcf4cfc4e1210e19bf89154eb60", size = 386163, upload-time = "2026-11-06T14:48:40.364Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/26/da/b41d4e5c2f2b9c9537062e68c59616f75d3253881ecebcd73299ac1e8839/cwl_utils-0.45-py3-none-any.whl", hash = "sha256:cfcf13ca4a8d068e22b5d53962f5313dd1cb374a697854e24f0486a5ef38c3f8", size = 444766, upload-time = "2026-09-26T13:33:46.682Z" },
+    { url = "https://files.pythonhosted.org/packages/82/da/4bcde26797e576da7a68c65e15f0246611931e1c50d96fa7fb9866910f25/cwl_utils-0.47-py3-none-any.whl", hash = "sha256:45dce3efbb5294eea726b2eea0e7de88f06b36efae5c8a14ceccbcc180dc2608", size = 449091, upload-time = "2026-11-06T14:48:38.464Z" },
 ]
 
 [[package]]
@@ -3156,7 +3156,7 @@ requires-dist = [
     { name = "bx-python" },
     { name = "celery" },
     { name = "cloudauthz", specifier = "==0.6.0" },
-    { name = "cwl-utils", specifier = "!=0.44" },
+    { name = "cwl-utils", specifier = ">=0.46" },
     { name = "dparse" },
     { name = "galaxy-auth", editable = "packages/auth" },
     { name = "galaxy-config", editable = "packages/config" },
@@ -3918,7 +3918,7 @@ test = [
 requires-dist = [
     { name = "beaker", marker = "extra == 'test'" },
     { name = "conda-package-streaming" },
-    { name = "cwl-utils", marker = "extra == 'cwl'", specifier = "!=0.44" },
+    { name = "cwl-utils", marker = "extra == 'cwl'", specifier = ">=0.46" },
     { name = "cwltool", marker = "extra == 'cwl'", specifier = ">=3.1.20230624081518" },
     { name = "edam-ontology", marker = "extra == 'edam'" },
     { name = "galaxy-tool-util-models", editable = "packages/tool_util_models" },
@@ -4501,7 +4501,7 @@ requires-dist = [
     { name = "cloudauthz", specifier = "==0.6.0" },
     { name = "conda-package-streaming" },
     { name = "ct3", specifier = ">=3.3.3" },
-    { name = "cwl-utils", specifier = ">=0.13,!=0.44" },
+    { name = "cwl-utils", specifier = ">=0.46" },
     { name = "cwltool", specifier = ">=3.1.20230624081518" },
     { name = "dictobj" },
     { name = "dnspython" },
