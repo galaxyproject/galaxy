@@ -19,10 +19,17 @@ const INVOCATIONS = [
 
 const workflowRequests = vi.fn();
 const historyRequests = vi.fn();
+const invocationQueries = vi.fn();
 
 function mockServer(workflowFails = false, historyFails = false) {
     server.use(
-        http.get("/api/invocations", ({ response }) => {
+        http.get("/api/invocations", ({ request, response }) => {
+            const searchParams = new URL(request.url).searchParams;
+            invocationQueries({
+                workflow_id: searchParams.getAll("workflow_id"),
+                history_id: searchParams.getAll("history_id"),
+                user_id: searchParams.get("user_id"),
+            });
             return response.untyped(HttpResponse.json(INVOCATIONS, { headers: { total_matches: "4" } }));
         }),
         http.get("/api/histories/{history_id}", ({ params, response }) => {
@@ -49,6 +56,7 @@ describe("invocations grid getData", () => {
         setActivePinia(createPinia());
         workflowRequests.mockReset();
         historyRequests.mockReset();
+        invocationQueries.mockReset();
     });
 
     afterEach(() => {
@@ -97,5 +105,55 @@ describe("invocations grid getData", () => {
         await getData(0, 25, "", "create_time", true);
         await flushPromises();
         expect(historyRequests).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe("invocations grid filtering", () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        invocationQueries.mockReset();
+    });
+
+    it("sends every matching workflow id and the picked history ids", async () => {
+        mockServer();
+        server.use(
+            http.get("/api/workflows", ({ request, response }) => {
+                const search = new URL(request.url).searchParams.get("search");
+                const items = search === "name:rna" ? [{ id: "workflow-1" }, { id: "workflow-2" }] : [];
+                return response.untyped(HttpResponse.json(items, { headers: { total_matches: String(items.length) } }));
+            }),
+        );
+
+        const [data, total] = await getData(
+            0,
+            25,
+            "rna history_id:1cd8e2f6b131e891,f2db41e1fa331b3e",
+            "create_time",
+            true,
+            { user_id: "user-1" },
+        );
+
+        expect(data).toHaveLength(4);
+        expect(total).toBe(4);
+        expect(invocationQueries).toHaveBeenCalledWith({
+            workflow_id: ["workflow-1", "workflow-2"],
+            history_id: ["1cd8e2f6b131e891", "f2db41e1fa331b3e"],
+            user_id: "user-1",
+        });
+    });
+
+    it("skips the invocation request when a name matches nothing", async () => {
+        mockServer();
+        server.use(
+            http.get("/api/workflows", ({ response }) => {
+                return response.untyped(HttpResponse.json([], { headers: { total_matches: "0" } }));
+            }),
+        );
+
+        const [data, total] = await getData(0, 25, "workflow:missing", "create_time", true);
+
+        expect(data).toEqual([]);
+        expect(total).toBe(0);
+        expect(invocationQueries).not.toHaveBeenCalled();
     });
 });

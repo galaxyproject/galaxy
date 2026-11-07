@@ -590,8 +590,8 @@ class AgentOperationsManager:
             decoded_history_id = self.trans.security.decode_id(history_id)
 
         payload = InvocationIndexPayload(
-            workflow_id=decoded_workflow_id,
-            history_id=decoded_history_id,
+            workflow_id=[decoded_workflow_id] if decoded_workflow_id is not None else None,
+            history_id=[decoded_history_id] if decoded_history_id is not None else None,
             limit=limit,
             offset=offset,
         )

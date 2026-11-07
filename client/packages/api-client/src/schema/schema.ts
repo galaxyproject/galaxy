@@ -44530,10 +44530,10 @@ export interface operations {
     index_invocations_api_invocations_get: {
         parameters: {
             query?: {
-                /** @description Return only invocations for this Workflow ID */
-                workflow_id?: string | null;
-                /** @description Return only invocations for this History ID */
-                history_id?: string | null;
+                /** @description Return only invocations for these Workflow IDs (repeat the parameter for several) */
+                workflow_id?: string[] | null;
+                /** @description Return only invocations for these History IDs (repeat the parameter for several) */
+                history_id?: string[] | null;
                 /** @description Return only invocations for this Job ID */
                 job_id?: string | null;
                 /** @description Return invocations for this User ID. */

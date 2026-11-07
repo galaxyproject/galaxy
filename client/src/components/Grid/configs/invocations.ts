@@ -9,6 +9,12 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import _l from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import {
+    historyColumnFilter,
+    invocationsFiltering,
+    resolveInvocationFilters,
+    workflowColumnFilter,
+} from "./invocationFilters";
 import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
@@ -29,12 +35,17 @@ export async function getData(
     sort_desc: boolean,
     extraProps?: Record<string, unknown>,
 ) {
+    const filterParams = await resolveInvocationFilters(search);
+    if (!filterParams) {
+        return [[] as WorkflowInvocation[], 0] as const;
+    }
     const params = {
         limit,
         offset,
         sort_by: sort_by as SortKeyLiteral,
         sort_desc,
         include_nested_invocations: false,
+        ...filterParams,
     } as Record<string, unknown>;
 
     if (extraProps && "include_terminal" in extraProps) {
@@ -112,11 +123,13 @@ const fields: FieldArray = [
             const invocation = data as WorkflowInvocation;
             return workflowStore.getStoredWorkflowNameByInstanceId(invocation.workflow_id);
         },
+        filter: workflowColumnFilter,
     },
     {
         key: "history_id",
         title: "History",
         type: "history",
+        filter: historyColumnFilter,
     },
     {
         key: "create_time",
@@ -160,6 +173,7 @@ const gridConfig: GridConfig = {
     id: "invocations-grid",
     actions: actions,
     fields: fields,
+    filtering: invocationsFiltering,
     getData: getData,
     plural: "Workflow Invocations",
     sortBy: "create_time",

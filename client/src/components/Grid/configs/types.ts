@@ -44,7 +44,31 @@ export interface FieldEntry {
     icon?: IconDefinition;
     handler?: FieldHandler;
     converter?: (data: RowData) => string;
+    filter?: FieldFilter;
     width?: number;
+}
+
+/** An item offered by a column's filter dropdown */
+export interface FilterOption {
+    id: string;
+    name: string;
+    /** Shown as elapsed time */
+    updateTime?: string;
+    /** Secondary text such as a run or item count, read reactively */
+    detail?: () => string | undefined;
+}
+
+/**
+ * Adds a filter dropdown to the column header. Picking items sets `key:<id>,<id>` in the grid's
+ * filter text and removes the `clears` keys from it.
+ */
+export interface FieldFilter {
+    key: string;
+    clears?: string[];
+    /** Name of the items, used in the dropdown's labels (e.g. "workflows") */
+    plural: string;
+    /** Items matching the search text; an empty query lists the most recent items */
+    search: (query: string) => Promise<FilterOption[]>;
 }
 
 export type FieldHandler = (data: RowData) => void;

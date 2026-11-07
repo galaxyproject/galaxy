@@ -11884,6 +11884,40 @@ steps: []
                 "invocations?limit=1&sort_by=create_time&sort_desc=false&offset=1", target_invocation=new_invocation
             )
 
+    def test_invocation_filtering_by_several_workflows_and_histories(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
+"""
+        with self._different_user_history(email=f"{uuid4()}@test.com") as first_history_id:
+            second_history_id = self.dataset_populator.new_history()
+            third_history_id = self.dataset_populator.new_history()
+            first = self._run_workflow(workflow, history_id=first_history_id, wait=False)
+            second = self._run_workflow(workflow, history_id=second_history_id, wait=False)
+            third = self._run_workflow(workflow, history_id=third_history_id, wait=False)
+
+            def invocation_ids(query):
+                response = self._get("invocations", data=query)
+                self._assert_status_code_is(response, 200)
+                return {invocation["id"] for invocation in response.json()}
+
+            assert invocation_ids({"workflow_id": [first.workflow_id, second.workflow_id]}) == {
+                first.invocation_id,
+                second.invocation_id,
+            }
+            assert invocation_ids({"workflow_id": third.workflow_id}) == {third.invocation_id}
+            assert invocation_ids({"history_id": [second_history_id, third_history_id]}) == {
+                second.invocation_id,
+                third.invocation_id,
+            }
+            assert invocation_ids(
+                {"workflow_id": [first.workflow_id, second.workflow_id], "history_id": [second_history_id]}
+            ) == {second.invocation_id}
+
     def _assert_invocation_for_url_is(self, route, target_invocation=None):
         response = self._get(route)
         self._assert_status_code_is(response, 200)

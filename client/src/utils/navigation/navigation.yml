@@ -1475,6 +1475,11 @@ invocations:
     activity_expand: ".activity-panel-footer"
     invocations_table: '#invocations-grid .grid-table'
     invocations_table_rows: '#invocations-grid .grid-table [data-description="grid item"]'
+    column_filter_toggle: '#invocations-grid [data-description="grid column filter ${key}"] > button'
+    column_filter_search: '#invocations-grid [data-description="grid column filter ${key}"] [data-description="grid column filter search"]'
+    column_filter_options: '#invocations-grid [data-description="grid column filter ${key}"] .grid-column-filter-option'
+    column_filter_option: '#invocations-grid [data-description="grid column filter ${key}"] input[data-description="grid column filter option ${id}"]'
+    active_column_filters: '#invocations-grid [data-description="grid active column filter ${key}"]'
     invocations_panel_list: '[data-description="Workflow Invocations"] .scroll-list'
     invocations_panel_list_items: '[data-description="Workflow Invocations"] .scroll-list .g-card[id^="g-card-invocation-"]'
     pager: '[data-description="grid pager"]'

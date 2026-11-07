@@ -1322,11 +1322,11 @@ LegacyJobStateQueryParam = Annotated[
     ),
 ]
 
-WorkflowIdQueryParam = Annotated[
-    DecodedDatabaseIdField | None,
+WorkflowIdsQueryParam = Annotated[
+    list[DecodedDatabaseIdField] | None,
     Query(
-        title="Workflow ID",
-        description="Return only invocations for this Workflow ID",
+        title="Workflow IDs",
+        description="Return only invocations for these Workflow IDs (repeat the parameter for several)",
     ),
 ]
 
@@ -1335,6 +1335,14 @@ HistoryIdQueryParam = Annotated[
     Query(
         title="History ID",
         description="Return only invocations for this History ID",
+    ),
+]
+
+HistoryIdsQueryParam = Annotated[
+    list[DecodedDatabaseIdField] | None,
+    Query(
+        title="History IDs",
+        description="Return only invocations for these History IDs (repeat the parameter for several)",
     ),
 ]
 
@@ -1439,8 +1447,8 @@ class FastAPIInvocations:
     def index_invocations(
         self,
         response: Response,
-        workflow_id: WorkflowIdQueryParam = None,
-        history_id: HistoryIdQueryParam = None,
+        workflow_id: WorkflowIdsQueryParam = None,
+        history_id: HistoryIdsQueryParam = None,
         job_id: JobIdQueryParam = None,
         user_id: UserIdQueryParam = None,
         sort_by: InvocationsSortByQueryParam = None,
@@ -1509,8 +1517,8 @@ class FastAPIInvocations:
     ) -> list[WorkflowInvocationResponse]:
         invocations = self.index_invocations(
             response=response,
-            workflow_id=workflow_id,
-            history_id=history_id,
+            workflow_id=[workflow_id],
+            history_id=[history_id] if history_id is not None else None,
             job_id=job_id,
             user_id=user_id,
             sort_by=sort_by,
