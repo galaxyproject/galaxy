@@ -2,7 +2,7 @@
 import { faCloudUploadAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BForm, BFormFile, BFormGroup } from "bootstrap-vue";
+import { BFormFile, BFormGroup } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
@@ -131,7 +131,7 @@ defineExpose({ attemptImport });
 </script>
 
 <template>
-    <BForm class="mt-4 workflow-import-file" @submit.prevent="submit">
+    <form class="mt-4 workflow-import-file" @submit.prevent="submit">
         <div
             ref="dropZoneRef"
             class="workflow-drop-zone"
@@ -169,7 +169,7 @@ defineExpose({ attemptImport });
         <GAlert v-if="loading" variant="info">
             <LoadingSpan message="Loading your workflow, this may take a while - please be patient." />
         </GAlert>
-    </BForm>
+    </form>
 </template>
 
 <style scoped lang="scss">

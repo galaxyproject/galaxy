@@ -53,7 +53,7 @@
                         {{ alertMessage }}
                     </GAlert>
 
-                    <BForm @submit.prevent="save">
+                    <form @submit.prevent="save">
                         <BFormGroup label="Name" description="Specify a build name, e.g. Hamster." label-for="name">
                             <BFormInput id="name" v-model="form.name" tour_id="name" required />
                         </BFormGroup>
@@ -97,7 +97,7 @@
                             <FontAwesomeIcon :icon="faSave" />
                             Save
                         </GButton>
-                    </BForm>
+                    </form>
                 </BCard>
             </BCol>
 
@@ -143,7 +143,7 @@ import "vue-multiselect/dist/vue-multiselect.css";
 import { faSave, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BCard, BCol, BForm, BFormFile, BFormGroup, BFormInput, BFormTextarea, BProgress, BRow } from "bootstrap-vue";
+import { BCard, BCol, BFormFile, BFormGroup, BFormInput, BFormTextarea, BProgress, BRow } from "bootstrap-vue";
 import Multiselect from "vue-multiselect";
 
 import { getGalaxyInstance } from "@/app";
@@ -162,7 +162,6 @@ export default {
         GAlert,
         BCard,
         BCol,
-        BForm,
         BFormFile,
         BFormGroup,
         BFormInput,

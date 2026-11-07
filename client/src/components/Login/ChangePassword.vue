@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BCard, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BCard, BFormGroup, BFormInput } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { SKIP_PENDING_REQUESTS_HEADER } from "@/api/pendingRequests";
@@ -58,7 +58,7 @@ async function submit() {
 </script>
 
 <template>
-    <BForm data-description="change password" @submit.prevent="submit">
+    <form data-description="change password" @submit.prevent="submit">
         <GAlert v-if="!!message" :variant="variant" show>
             {{ message }}
         </GAlert>
@@ -93,5 +93,5 @@ async function submit() {
 
             <GButton type="submit">Save new password</GButton>
         </BCard>
-    </BForm>
+    </form>
 </template>
