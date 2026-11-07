@@ -112,6 +112,7 @@ dependencies = [
     "tifffile",
     "typing-extensions>=4.13",  # for TypeForm
     "tuspyserver",
+    "tzdata",  # zoneinfo data for Celery's "UTC" timezone setting where the OS ships none
     "uvicorn!=0.28.0",  # https://github.com/galaxyproject/galaxy/issues/17669
     "uvloop>=0.21.0",  # Python 3.13 support
     "WebOb>=1.8.9",  # Python 3.13 support
