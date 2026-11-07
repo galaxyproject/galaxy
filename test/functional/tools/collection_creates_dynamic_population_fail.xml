@@ -1,14 +1,15 @@
 <tool id="collection_creates_dynamic_population_fail" name="collection_creates_dynamic_population_fail" version="0.1.0">
   <command><![CDATA[
-    cp '$input1' outer_inner.txt
+    cp '$input1' nonnumeric.txt
   ]]></command>
   <inputs>
     <param name="input1" type="data" format="txt" label="Input" />
   </inputs>
   <outputs>
     <collection name="list_output" type="list" label="Unpopulated List">
-      <!-- A flat list cannot hold two identifiers, so discovery fails but the job succeeds. -->
-      <discover_datasets pattern="(?P&lt;identifier_0&gt;[^_]+)_(?P&lt;identifier_1&gt;[^_]+)\.txt" ext="txt" visible="true" />
+      <!-- Numeric sorting fails before creating datasets, so the collection fails without
+           leaving a historyless dataset that would also fail the job under strict checks. -->
+      <discover_datasets pattern="(?P&lt;designation&gt;.+)\.txt" sort_by="numeric_designation" ext="txt" visible="true" />
     </collection>
   </outputs>
   <tests>
