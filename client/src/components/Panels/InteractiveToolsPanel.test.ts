@@ -34,7 +34,7 @@ const mockTools: Partial<Tool>[] = [
 // trap -- not through the property descriptor `vi.spyOn` reads -- so it can't
 // be spied on directly. Seed the state it derives from instead.
 function seedToolsById(toolStore: ReturnType<typeof useToolStore>, toolsList: Partial<Tool>[]) {
-    toolStore.toolsById = Object.fromEntries(toolsList.map((tool) => [tool.id as string, tool as Tool]));
+    toolStore.saveAllTools(toolsList as Tool[]);
 }
 
 describe("InteractiveToolsPanel component", () => {

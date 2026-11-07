@@ -20,6 +20,7 @@ def _job_wrapper(tool_type="default", require_container="False", require_contain
         requirements=[],
         requires_galaxy_python_environment=False,
         docker_env_pass_through=[],
+        environment_variables=[],
         id="cat",
         version="1.0",
         profile=24.0,

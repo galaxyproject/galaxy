@@ -82,6 +82,7 @@ from .state_handler_factory import build_state_handlers
 
 if TYPE_CHECKING:
     from galaxy.app import GalaxyManagerApplication
+    from galaxy.job_execution.compute_environment import ComputeEnvironment
     from galaxy.jobs import (
         JobWrapper,
         MinimalJobWrapper,
@@ -116,6 +117,15 @@ class RunnerParams(ParamsWithSpecs):
 
     def _param_vaildation_error(self, name, value):
         raise Exception(JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE % name)
+
+
+def _tool_environment_sets_home(job_wrapper: "MinimalJobWrapper") -> bool:
+    """Whether the tool or a destination ``tool_env`` entry exports HOME into the container."""
+    tool = job_wrapper.tool
+    assert tool
+    return "HOME" in job_wrapper.job_destination.tool_env_names or any(
+        variable.get("name") == "HOME" for variable in tool.environment_variables
+    )
 
 
 class BaseJobRunner:
@@ -633,6 +643,7 @@ class BaseJobRunner:
         compute_tool_directory: str | None = None,
         compute_job_directory: str | None = None,
         compute_tmp_directory: str | None = None,
+        compute_environment: "ComputeEnvironment | None" = None,
     ):
         job_directory_type: Literal["galaxy", "pulsar"] = "galaxy" if compute_working_directory is None else "pulsar"
         if not compute_working_directory:
@@ -648,6 +659,10 @@ class BaseJobRunner:
 
         if not compute_tmp_directory:
             compute_tmp_directory = job_wrapper.tmp_directory()
+
+        # The job script exports HOME from the compute environment's home directory,
+        # containers must use the same directory.
+        home_directory = (compute_environment or job_wrapper).home_directory()
 
         guest_ports = job_wrapper.guest_ports
         tool_info = ToolInfo(
@@ -665,7 +680,8 @@ class BaseJobRunner:
             tool_directory=compute_tool_directory,
             job_directory=compute_job_directory,
             tmp_directory=compute_tmp_directory,
-            home_directory=job_wrapper.home_directory(),
+            home_directory=home_directory,
+            tool_environment_sets_home=_tool_environment_sets_home(job_wrapper),
             job_directory_type=job_directory_type,
             output_paths=get_disk_paths(self.app.object_store) if job_directory_type == "galaxy" else set(),
         )
