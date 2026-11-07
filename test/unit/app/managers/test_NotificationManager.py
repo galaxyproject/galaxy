@@ -303,6 +303,13 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         assert content["history_id"] == "encoded-11"
         assert content["run_id"] == "encoded-7"
 
+    def test_notifications_expire_six_months_after_they_are_created(self):
+        user = self._create_test_users(num_users=1)[0]
+        created = datetime(2030, 1, 1)
+        with patch("galaxy.model.now", return_value=created):
+            notification, _ = self._send_message_notification_to_users([user])
+        assert notification.expiration_time == created + timedelta(days=30 * 6)
+
     def test_get_user_notifications(self):
         user = self._create_test_user()
         user_notifications = self.notification_manager.get_user_notifications(user)
