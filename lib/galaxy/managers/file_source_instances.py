@@ -257,11 +257,6 @@ class FileSourceInstancesManager:
         user_vault.write_secret(refresh_token_vault_key, refresh_token)
         return f"file_source_templates/{template_id}/new?uuid={new_object_uuid}"
 
-    def _redirect_uri(self, trans: SessionRequestContext) -> str:
-        galaxy_root = trans.request.url_path
-        redirect_uri = f"{galaxy_root}/oauth2_callback"
-        return redirect_uri
-
     def _access_token_for_template(self, trans: ProvidesUserContext, template: FileSourceTemplate, uuid: str) -> str:
         """Mint an OAuth token for a capability without exposing provider behavior here."""
         template_server_configuration = self._resolver.template_server_configuration(
