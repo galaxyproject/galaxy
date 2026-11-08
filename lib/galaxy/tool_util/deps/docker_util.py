@@ -30,6 +30,8 @@ DEFAULT_VOLUMES_FROM = None
 DEFAULT_AUTO_REMOVE = True
 DEFAULT_SET_USER = None if sys.platform == "darwin" else "$UID"
 DEFAULT_RUN_EXTRA_ARGUMENTS = None
+DEFAULT_PULL_ATTEMPTS = 3
+DEFAULT_PULL_RETRY_DELAY = 5
 
 
 def kill_command(container: str, signal: Optional[str] = None, **kwds) -> List[str]:
@@ -59,7 +61,20 @@ def build_docker_cache_command(image: str, **kwds) -> str:
     assert kwds.get("to_str", True)
     inspect_image_command = command_shell("inspect", [image], **kwds)
     pull_image_command = command_shell("pull", [image], **kwds)
-    cache_command = f"{inspect_image_command} > /dev/null 2>&1\n[ $? -ne 0 ] && {pull_image_command} > /dev/null 2>&1\n"
+    # Retry the pull because registry downloads get cut short now and then. Pull output
+    # stays off the job's stderr unless the last attempt fails too.
+    cache_command = f"""if ! {inspect_image_command} > /dev/null 2>&1; then
+    _galaxy_docker_pull_attempt=1
+    until _galaxy_docker_pull_output=$({pull_image_command} 2>&1); do
+        if [ "$_galaxy_docker_pull_attempt" -ge {DEFAULT_PULL_ATTEMPTS} ]; then
+            printf '%s\\n' "$_galaxy_docker_pull_output" >&2
+            break
+        fi
+        sleep $((_galaxy_docker_pull_attempt * {DEFAULT_PULL_RETRY_DELAY}))
+        _galaxy_docker_pull_attempt=$((_galaxy_docker_pull_attempt + 1))
+    done
+fi
+"""
     return cache_command
 
 
