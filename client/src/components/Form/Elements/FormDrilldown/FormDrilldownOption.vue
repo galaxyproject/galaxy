@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+
 import { faCaretDown, faCaretRight, faFile, faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormRadio } from "bootstrap-vue";
@@ -16,8 +16,8 @@ interface Props {
     handleClick: Function;
     multiple: boolean;
     showIcons?: boolean;
-    leafIcon?: IconDefinition;
-    branchIcon?: IconDefinition;
+    leafIcon: Object;
+    branchIcon: Object;
 }
 
 const props = withDefaults(defineProps<Props>(), {

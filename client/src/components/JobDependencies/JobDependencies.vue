@@ -8,7 +8,7 @@
                         <th>Dependency</th>
                         <th>Dependency Type</th>
                         <th>Version</th>
-                        <th v-if="currentUser.is_admin">Path</th>
+                        <th v-if="currentUser && currentUser.is_admin">Path</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -16,7 +16,7 @@
                         <td>${{ dependency.name }}</td>
                         <td>${{ dependency.dependency_type }}</td>
                         <td>${{ dependency.version }}</td>
-                        <td v-if="currentUser.is_admin">
+                        <td v-if="currentUser && currentUser.is_admin">
                             <div v-if="dependency.environment_path">{{ dependency.environment_path }}</div>
                             <div v-else-if="dependency.path">{{ dependency.path }}</div>
                             <div v-else></div>

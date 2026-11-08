@@ -2,7 +2,8 @@
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormInput } from "bootstrap-vue";
-import { sanitize } from "dompurify";
+import DOMPurify from 'dompurify';
+const sanitize = DOMPurify.sanitize;
 
 import type { JobState } from "@/api/jobs";
 import { isWorkflowInput } from "@/components/Workflow/constants";
