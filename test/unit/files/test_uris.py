@@ -93,7 +93,7 @@ def test_validate_non_local_private_address_outside_allowlist_rejected(url, allo
 @pytest.mark.parametrize(
     "url",
     [
-        # Bracketed IPv6 literals reach getaddrinfo with their brackets and do not resolve.
+        # Bracketed IPv6 literals do not verify.
         "http://[::1]/",
         "http://[::1]:8080/",
         "http://example.org:abc/",
