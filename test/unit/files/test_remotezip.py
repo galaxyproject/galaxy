@@ -2,6 +2,7 @@ import io
 import ipaddress
 import os
 import zipfile
+from typing import Optional
 
 import pytest
 import responses
@@ -99,9 +100,9 @@ def _serve_ranges(url: str):
     responses.add_callback(responses.GET, url, callback=callback)
 
 
-def _realize(test_url: str) -> str:
+def _realize(test_url: str, config: Optional[FileSourcePluginsConfig] = None) -> str:
     return realize_to_temp_file(
-        configured_file_sources(FILE_SOURCES_CONF), test_url, user_context=user_context_fixture()
+        configured_file_sources(FILE_SOURCES_CONF, config), test_url, user_context=user_context_fixture()
     )
 
 
@@ -112,6 +113,16 @@ def test_file_source_follows_redirect_to_public_host():
     responses.head(MOVED_ZIP_URL)
     _serve_ranges(MOVED_ZIP_URL)
     assert _realize(_zip_url()) == MEMBER_CONTENTS
+
+
+@responses.activate
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_follows_redirect_to_allowlisted_address():
+    private_url = "http://127.0.0.1/archive.zip"
+    responses.head(ZIP_URL, status=302, headers={"Location": private_url})
+    responses.head(private_url)
+    _serve_ranges(private_url)
+    assert _realize(_zip_url(), LOCALHOST_ALLOWLIST) == MEMBER_CONTENTS
 
 
 @responses.activate
