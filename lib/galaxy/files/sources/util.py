@@ -100,41 +100,41 @@ def fetch_drs_to_file(
     if force_http:
         scheme = "http"
     get_url = f"{scheme}://{netspec}/ga4gh/drs/v1/objects/{object_id}"
-    session = ValidatingSession(fetch_url_allowlist or [])
     headers = {**(headers or {}), **get_default_headers()}
-    response = retry_and_get(session, get_url, retry_options or RetryOptions(), headers=headers)
-    response.raise_for_status()
-    response_object = response.json()
-    access_methods = response_object.get("access_methods", [])
-    if len(access_methods) == 0:
-        raise ValueError(f"No access methods found in DRS response for {drs_uri}")
+    with ValidatingSession(fetch_url_allowlist or []) as session:
+        response = retry_and_get(session, get_url, retry_options or RetryOptions(), headers=headers)
+        response.raise_for_status()
+        response_object = response.json()
+        access_methods = response_object.get("access_methods", [])
+        if len(access_methods) == 0:
+            raise ValueError(f"No access methods found in DRS response for {drs_uri}")
 
-    downloaded = False
-    for access_method in access_methods:
-        access_url, access_headers = _get_access_info(session, get_url, access_method, headers=headers)
-        opts = FilesSourceOptions()
-        if access_method["type"] in ("https", "ftp"):
-            extra_props = {
-                "http_headers": access_headers or {},
-                "fetch_url_allowlist": fetch_url_allowlist or [],
-            }
-            opts.extra_props = PartialFilesSourceProperties(**extra_props)
+        downloaded = False
+        for access_method in access_methods:
+            access_url, access_headers = _get_access_info(session, get_url, access_method, headers=headers)
+            opts = FilesSourceOptions()
+            if access_method["type"] in ("https", "ftp"):
+                extra_props = {
+                    "http_headers": access_headers or {},
+                    "fetch_url_allowlist": fetch_url_allowlist or [],
+                }
+                opts.extra_props = PartialFilesSourceProperties(**extra_props)
 
-        file_sources = ensure_file_sources(user_context.file_sources if user_context else None)
-        try:
-            file_sources.get_file_source_path(access_url)
-        except exceptions.RequestParameterInvalidException:
-            # No file source handles this access method, try the next one.
-            continue
-        stream_url_to_file(
-            access_url,
-            target_path=str(target_path),
-            file_sources=file_sources,
-            user_context=user_context,
-            file_source_opts=opts,
-        )
-        downloaded = True
-        break
+            file_sources = ensure_file_sources(user_context.file_sources if user_context else None)
+            try:
+                file_sources.get_file_source_path(access_url)
+            except exceptions.RequestParameterInvalidException:
+                # No file source handles this access method, try the next one.
+                continue
+            stream_url_to_file(
+                access_url,
+                target_path=str(target_path),
+                file_sources=file_sources,
+                user_context=user_context,
+                file_source_opts=opts,
+            )
+            downloaded = True
+            break
 
     if not downloaded:
         unimplemented_access_types = [m["type"] for m in access_methods]
