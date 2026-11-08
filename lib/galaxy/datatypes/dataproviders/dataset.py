@@ -7,6 +7,7 @@ Dataproviders that use either:
 """
 
 import logging
+import sqlite3
 import sys
 
 from bx import (
@@ -706,7 +707,38 @@ class SamtoolsDataProvider(line.RegexLineDataProvider):
         return options_dict, new_kwargs
 
 
-class SQliteDataProvider(base.DataProvider):
+class SQLiteQueryDataProvider(base.DataProvider):
+    """
+    Base for data providers that run a user-supplied query against a sqlite
+    database file, opened with ``galaxy.util.sqlite.connect_read_only``.
+    """
+
+    query_timeout = sqlite.READ_ONLY_QUERY_TIMEOUT
+
+    def __init__(self, source, query=None, **kwargs):
+        self.query = query
+        self.connection = sqlite.connect_read_only(source.dataset.get_file_name(), timeout=self.query_timeout)
+        super().__init__(source, **kwargs)
+
+    def __iter__(self):
+        if self.query is None:
+            yield
+            return
+        try:
+            yield from self.iter_results(self.connection.cursor())
+        # Python < 3.11 raises sqlite3.Warning for multiple statements
+        except (sqlite3.Error, sqlite3.Warning) as e:
+            if isinstance(e, sqlite3.OperationalError) and str(e) == "interrupted":
+                raise RequestParameterInvalidException(
+                    f"SQLite query did not finish within {self.query_timeout:g} seconds"
+                )
+            raise RequestParameterInvalidException(f"Cannot run SQLite query: {e}")
+
+    def iter_results(self, cursor):
+        raise NotImplementedError
+
+
+class SQliteDataProvider(SQLiteQueryDataProvider):
     """
     Data provider that uses a sqlite database file as its source.
 
@@ -716,22 +748,15 @@ class SQliteDataProvider(base.DataProvider):
     settings = {"query": "str"}
 
     def __init__(self, source, query=None, **kwargs):
-        self.query = query
-        datatype = source.datatype
-        file_name = source.dataset.get_file_name()
-        if not datatype.sniff(file_name):
+        if not source.datatype.sniff(source.dataset.get_file_name()):
             raise RequestParameterInvalidException("Dataset is not a SQlite file, cannot fetch data.")
-        self.connection = sqlite.connect(file_name)
-        super().__init__(source, **kwargs)
+        super().__init__(source, query=query, **kwargs)
 
-    def __iter__(self):
-        if (self.query is not None) and sqlite.is_read_only_query(self.query):
-            yield from self.connection.cursor().execute(self.query)
-        else:
-            yield
+    def iter_results(self, cursor):
+        yield from cursor.execute(self.query)
 
 
-class SQliteDataTableProvider(base.DataProvider):
+class SQliteDataTableProvider(SQLiteQueryDataProvider):
     """
     Data provider that uses a sqlite database file as its source.
     Allows any query to be run and returns the resulting rows as arrays of arrays
@@ -740,27 +765,21 @@ class SQliteDataTableProvider(base.DataProvider):
     settings = {"query": "str", "headers": "bool", "limit": "int"}
 
     def __init__(self, source, query=None, headers=False, limit=sys.maxsize, **kwargs):
-        self.query = query
         self.headers = headers
         self.limit = limit
-        self.connection = sqlite.connect(source.dataset.get_file_name())
-        super().__init__(source, **kwargs)
+        super().__init__(source, query=query, **kwargs)
 
-    def __iter__(self):
-        if (self.query is not None) and sqlite.is_read_only_query(self.query):
-            cur = self.connection.cursor()
-            results = cur.execute(self.query)
-            if self.headers:
-                yield [col[0] for col in cur.description]
-            for i, row in enumerate(results):
-                if i >= self.limit:
-                    break
-                yield list(row)
-        else:
-            yield
+    def iter_results(self, cursor):
+        results = cursor.execute(self.query)
+        if self.headers:
+            yield [col[0] for col in cursor.description]
+        for i, row in enumerate(results):
+            if i >= self.limit:
+                break
+            yield list(row)
 
 
-class SQliteDataDictProvider(base.DataProvider):
+class SQliteDataDictProvider(SQLiteQueryDataProvider):
     """
     Data provider that uses a sqlite database file as its source.
     Allows any query to be run and returns the resulting rows as arrays of dicts
@@ -768,15 +787,6 @@ class SQliteDataDictProvider(base.DataProvider):
 
     settings = {"query": "str"}
 
-    def __init__(self, source, query=None, **kwargs):
-        self.query = query
-        self.connection = sqlite.connect(source.dataset.get_file_name())
-        super().__init__(source, **kwargs)
-
-    def __iter__(self):
-        if (self.query is not None) and sqlite.is_read_only_query(self.query):
-            cur = self.connection.cursor()
-            for row in cur.execute(self.query):
-                yield [{cur.description[i][0]: value for i, value in enumerate(row)}]
-        else:
-            yield
+    def iter_results(self, cursor):
+        for row in cursor.execute(self.query):
+            yield [{cursor.description[i][0]: value for i, value in enumerate(row)}]
