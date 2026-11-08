@@ -4,15 +4,13 @@ from typing import Optional
 from requests import Session as RequestsSession
 
 from galaxy import exceptions
-from galaxy.files import (
-    ConfiguredFileSources,
-    FileSourcesUserContext,
-)
+from galaxy.files import FileSourcesUserContext
 from galaxy.files.models import (
     FilesSourceOptions,
     PartialFilesSourceProperties,
 )
 from galaxy.files.uris import (
+    ensure_file_sources,
     stream_url_to_file,
     ValidatingSession,
 )
@@ -122,23 +120,21 @@ def fetch_drs_to_file(
             }
             opts.extra_props = PartialFilesSourceProperties(**extra_props)
 
+        file_sources = ensure_file_sources(user_context.file_sources if user_context else None)
         try:
-            file_sources = (
-                user_context.file_sources
-                if user_context
-                else ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
-            )
-            stream_url_to_file(
-                access_url,
-                target_path=str(target_path),
-                file_sources=file_sources,
-                user_context=user_context,
-                file_source_opts=opts,
-            )
-            downloaded = True
-            break
+            file_sources.get_file_source_path(access_url)
         except exceptions.RequestParameterInvalidException:
+            # No file source handles this access method, try the next one.
             continue
+        stream_url_to_file(
+            access_url,
+            target_path=str(target_path),
+            file_sources=file_sources,
+            user_context=user_context,
+            file_source_opts=opts,
+        )
+        downloaded = True
+        break
 
     if not downloaded:
         unimplemented_access_types = [m["type"] for m in access_methods]
