@@ -69,6 +69,18 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
 
+# Do not allow these tools to be called directly - they (it) enforces extra security and
+# provides access via a different API endpoint.
+PROTECTED_TOOLS = ["__DATA_FETCH__"]
+
+
+def validate_not_protected(tool_id: Optional[str]):
+    if tool_id in PROTECTED_TOOLS:
+        raise exceptions.RequestParameterInvalidException(
+            f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
+        )
+
+
 ToolRunPayload = dict[str, Any]
 JobCreateResponse = dict[str, Any]
 
@@ -319,6 +331,10 @@ class ToolsService(ServiceBase):
         }
         create_payload.update(files_payload)
         return self._create(trans, create_payload)
+
+    def create(self, trans: ProvidesHistoryContext, payload: ToolRunPayload, **kwd) -> JobCreateResponse:
+        validate_not_protected(payload.get("tool_id"))
+        return self._create(trans, payload, **kwd)
 
     def _create(self, trans: ProvidesHistoryContext, payload: ToolRunPayload, **kwd) -> JobCreateResponse:
         action = payload.get("action")

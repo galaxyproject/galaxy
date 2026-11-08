@@ -99,7 +99,10 @@ from galaxy.webapps.galaxy.api.common import (
     serve_workbook,
 )
 from galaxy.webapps.galaxy.services.base import tool_request_detailed_to_model
-from galaxy.webapps.galaxy.services.tools import ToolsService
+from galaxy.webapps.galaxy.services.tools import (
+    PROTECTED_TOOLS,
+    ToolsService,
+)
 from . import (
     APIContentTypeRoute,
     as_form,
@@ -113,9 +116,6 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-# Do not allow these tools to be called directly - they (it) enforces extra security and
-# provides access via a different API endpoint.
-PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
@@ -944,20 +944,12 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
-        validate_not_protected(tool_id)
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         __tags = payload.get("__tags", [])
         if not isinstance(__tags, list) or not all(isinstance(tag, str) for tag in __tags):
             raise exceptions.RequestParameterInvalidException("__tags must be a list of strings.")
-        return self.service._create(trans, payload, **kwd)
-
-
-def validate_not_protected(tool_id: Optional[str]):
-    if tool_id in PROTECTED_TOOLS:
-        raise exceptions.RequestParameterInvalidException(
-            f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
-        )
+        return self.service.create(trans, payload, **kwd)
 
 
 def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:

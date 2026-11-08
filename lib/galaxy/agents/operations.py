@@ -288,7 +288,7 @@ class AgentOperationsManager:
             "inputs": inputs,
         }
 
-        result = self.tools_service._create(self.trans, payload)
+        result = self.tools_service.create(self.trans, payload)
         return self._encode_ids_in_response(result)
 
     def get_job_status(self, job_id: str) -> dict[str, Any]:
@@ -1026,7 +1026,7 @@ class AgentOperationsManager:
             "tool_uuid": tool_uuid,
             "inputs": inputs,
         }
-        result = self.tools_service._create(self.trans, payload)
+        result = self.tools_service.create(self.trans, payload)
         return self._encode_ids_in_response(result)
 
     # ==================== File sources (remote data repositories) ====================
