@@ -134,8 +134,6 @@ def validate_non_local(
     if parsed_url.count("@") > 0:
         # credentials.
         parsed_url = parsed_url[parsed_url.rindex("@") + 1 :]
-    # Percent encoded colons and other characters will not be resolved as such
-    # so we don't have to either.
 
     # Sometimes the netloc will contain the port which is not desired, so we
     # need to extract that.
