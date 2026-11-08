@@ -34,6 +34,18 @@ class TestHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 
+class ThreadingTestServer(socketserver.ThreadingTCPServer):
+    """Handle each connection in its own thread.
+
+    A browser can open a connection and never send a request on it - a socket
+    left over from a navigation it cancelled, say. Served one connection at a
+    time, every later request would queue behind that one until the browser
+    closes it.
+    """
+
+    daemon_threads = True
+
+
 class TestHTTPServer:
     """Simple HTTP server for serving test HTML pages."""
 
@@ -56,7 +68,7 @@ class TestHTTPServer:
         def handler(*args, **kwargs):
             return TestHTTPRequestHandler(*args, directory=str(self.directory), **kwargs)
 
-        self.server = socketserver.TCPServer(("localhost", self.port), handler)
+        self.server = ThreadingTestServer(("localhost", self.port), handler)
         self.port = self.server.server_address[1]  # Get actual port if 0 was specified
 
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)

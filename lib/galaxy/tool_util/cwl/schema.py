@@ -46,6 +46,9 @@ class SchemaLoader:
         loading_context.loader = self.raw_document_loader
         loading_context.do_update = True
         loading_context.relax_path_checks = True
+        # cwltool's jshint pass runs JavaScript through cwl_utils' Node engine;
+        # Galaxy evaluates JavaScript only in its sandboxed QuickJS worker.
+        loading_context.disable_js_validation = True
         return loading_context
 
     def raw_process_reference(self, path, loading_context=None):
