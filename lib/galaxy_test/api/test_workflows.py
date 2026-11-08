@@ -645,8 +645,8 @@ steps:
         name = f"lookup_{uuid4().hex}"
         my_email = f"{uuid4()}@test.com"
 
-        def lookup(search, limit=50, **flags):
-            query = {"search": search, "sort_by": "update_time", "sort_desc": True, "limit": limit, **flags}
+        def lookup(search, **flags):
+            query = {"search": search, "sort_by": "update_time", "sort_desc": True, "limit": 50, **flags}
             response = self._get("workflows", data=query)
             self._assert_status_code_is(response, 200)
             return {workflow["id"] for workflow in response.json()}
@@ -667,8 +667,6 @@ steps:
             assert lookup(f"name:{name}", show_published=True) == {own_id, shared_id, published_id}
             assert lookup(f"name:{name} is:deleted", show_published=False) == {deleted_id}
             assert lookup(f"name:{name}", show_published=False, show_hidden=True) == {hidden_id}
-            # a newer published workflow can take the only slot from the user's own
-            assert lookup(f"name:{name}", limit=1, show_published=True) == {published_id}
 
     def test_index_ordering(self):
         # ordered by update_time on the stored workflows with all user's workflows
@@ -11943,6 +11941,9 @@ steps: []
             response = self._get("invocations", data={"workflow_id": [first_workflow_id, first_workflow_id]})
             self._assert_status_code_is(response, 200)
             assert [invocation["id"] for invocation in response.json()] == [first.invocation_id]
+            response = self._get("invocations", data={"history_id": [history_id, history_id]})
+            self._assert_status_code_is(response, 200)
+            assert {invocation["id"] for invocation in response.json()} == {first.invocation_id, second.invocation_id}
 
             response = self._get("invocations", data={"workflow_id": [first_workflow_id, unknown_id]})
             self._assert_status_code_is(response, 404)

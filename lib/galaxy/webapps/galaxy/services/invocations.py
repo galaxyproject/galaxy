@@ -106,8 +106,9 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
                 for workflow_id in invocation_payload.workflow_id
             ]
         if invocation_payload.history_id:
-            histories = self._histories_manager.by_ids(invocation_payload.history_id)
-            if len(histories) != len(set(invocation_payload.history_id)):
+            history_ids = list(set(invocation_payload.history_id))
+            histories = self._histories_manager.by_ids(history_ids)
+            if len(histories) != len(history_ids):
                 raise ObjectNotFound()
             for history in histories:
                 # access check
