@@ -34,7 +34,7 @@ dependencies = [
     "bx-python",
     "celery",
     "cloudauthz==0.6.0",
-    "cwl-utils!=0.44",  # configures root logging on import: https://github.com/common-workflow-language/cwl-utils/pull/471
+    "cwl-utils>=0.46",
     "dparse",
     "gxformat2>=0.28.0",
     "kombu>=5.3",

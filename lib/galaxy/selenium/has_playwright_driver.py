@@ -177,6 +177,11 @@ logger = logging.getLogger(__name__)
 
 UNSPECIFIED_TIMEOUT = object()
 
+# How page.goto fails when the page starts a navigation of its own mid-flight.
+LOST_NAVIGATION_RACE = ("ERR_ABORTED", "is interrupted by another navigation")
+# One competing navigation can cancel one attempt and interrupt the next.
+NAVIGATE_TO_ATTEMPTS = 3
+
 
 class PlaywrightResources(NamedTuple):
     """
@@ -328,17 +333,25 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         Args:
             url: The URL to navigate to
         """
-        try:
-            self.page.goto(url)
-        except PlaywrightError as e:
-            if "ERR_ABORTED" not in str(e):
-                raise
-            # The page navigated itself - an async form submit assigning
-            # window.location, say - and the browser cancels whichever
-            # navigation lost the race. Selenium's get() accepts wherever that
-            # leaves it; go where the caller asked instead. The competing load
-            # has committed by now, so this one has the page to itself.
-            self.page.goto(url)
+        # The page can navigate itself - an async form submit assigning
+        # window.location, say - while goto is in flight. Selenium's get()
+        # accepts wherever that leaves it; go where the caller asked instead.
+        # goto fails with ERR_ABORTED when the browser cancels our navigation
+        # for the page's, and as interrupted when the page's commits first -
+        # but then ours carries on and commits later, interrupting the next
+        # goto in turn. So go again only until a navigation of ours lands.
+        for attempt in range(NAVIGATE_TO_ATTEMPTS):
+            try:
+                self.page.goto(url)
+                return
+            except PlaywrightError as e:
+                if not any(reason in str(e) for reason in LOST_NAVIGATION_RACE):
+                    raise
+                if self.page.url == url:
+                    self.page.wait_for_load_state()
+                    return
+                if attempt == NAVIGATE_TO_ATTEMPTS - 1:
+                    raise
 
     def refresh(self) -> None:
         """Reload the current page."""
