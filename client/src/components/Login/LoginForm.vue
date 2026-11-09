@@ -203,7 +203,7 @@ function goToResetPassword() {
                                             type="password"
                                             autocomplete="current-password" />
 
-                                        <BFormText v-if="showResetLink" class="text-nowrap">
+                                        <BFormText v-if="showResetLink">
                                             <span v-localize>Forgot password?</span>
 
                                             <GLink id="reset-password-link" type="button" @click="goToResetPassword">
