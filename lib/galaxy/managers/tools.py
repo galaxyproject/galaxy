@@ -102,9 +102,13 @@ class DynamicToolManager(ModelManager[DynamicTool]):
     def __init__(self, app: BasicSharedApp):
         super().__init__(app)
         try:
-            self.container_allowlist = ContainerAllowlist(app.config.user_defined_tool_allowed_containers)
+            self.container_allowlist = ContainerAllowlist(
+                app.config.user_defined_tool_allowed_containers, app.config.user_defined_tool_denied_containers
+            )
         except ImageReferenceError as e:
-            raise exceptions.ConfigurationError(f"Invalid user_defined_tool_allowed_containers entry: {e}") from e
+            raise exceptions.ConfigurationError(
+                f"Invalid user_defined_tool_allowed_containers or user_defined_tool_denied_containers entry: {e}"
+            ) from e
 
     def ensure_container_allowed(self, container: str) -> None:
         if rejection := self.container_allowlist.rejection(container):

@@ -6689,6 +6689,25 @@
 :Type: seq
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_defined_tool_denied_containers``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Container images that user defined tools may not run in, even if
+    ``user_defined_tool_allowed_containers`` allows them. An entry
+    ending in ``/*`` denies any image below that registry or path, at
+    any depth, and an image name denies every tag and digest of that
+    image. Entries with a tag or digest are not accepted, because the
+    same image can be named by another tag or digest. When this list
+    is not empty, references that cannot be parsed are refused even if
+    ``user_defined_tool_allowed_containers`` is ``*``. Malformed
+    entries prevent Galaxy from starting. See the user defined tools
+    admin documentation for details.
+:Default: ``[]``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beta_tool_formats``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

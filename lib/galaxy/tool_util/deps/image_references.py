@@ -11,6 +11,10 @@ it; ``<repository>:<tag>`` only that tag, without a digest; and
 ``<repository>@<digest>`` only that digest, whatever the tag. Runtimes pull the
 digest of a reference that has both and ignore its tag, so a tag entry must not
 allow ``<repository>:<tag>@<any digest>``.
+
+Denied entries take precedence over allowed ones and are limited to
+``<registry-or-path>/*`` and ``<repository>``: the same image can always be
+named by another tag or digest, so denying one would block nothing.
 """
 
 import re
@@ -127,24 +131,39 @@ def _parse_entry(entry: str) -> _Entry:
     return _Entry(ImageReference(registry, path), namespace=True)
 
 
+def _parse_denied_entry(entry: str) -> _Entry:
+    if entry == "*":
+        raise ImageReferenceError("'*' cannot be denied, allow no images with an empty list of allowed containers")
+    parsed = _parse_entry(entry)
+    if parsed.reference.tag or parsed.reference.digest:
+        raise ImageReferenceError(
+            f"'{entry}' names a tag or digest, deny the repository or namespace instead: "
+            "the same image can be named by another tag or digest"
+        )
+    return parsed
+
+
 class ContainerAllowlist:
-    def __init__(self, entries: Iterable[str]):
+    def __init__(self, entries: Iterable[str], denied: Iterable[str] = ()):
         self.raw_entries = tuple(entries)
         self.unrestricted = "*" in self.raw_entries
         self._rules = [_parse_entry(entry) for entry in self.raw_entries if entry != "*"]
+        self._denied_rules = [_parse_denied_entry(entry) for entry in denied]
 
     def allows(self, identifier: str) -> bool:
         return self.rejection(identifier) is None
 
     def rejection(self, identifier: str) -> str | None:
         """Return why ``identifier`` is not allowed, or ``None`` if it is."""
-        if self.unrestricted:
+        if self.unrestricted and not self._denied_rules:
             return None
         try:
             reference = parse_image_reference(identifier)
         except ImageReferenceError as e:
             return f"Invalid container: {e}"
-        if any(rule.matches(reference) for rule in self._rules):
+        if any(rule.matches(reference) for rule in self._denied_rules):
+            return f"Container '{identifier}' is denied for user defined tools on this Galaxy server."
+        if self.unrestricted or any(rule.matches(reference) for rule in self._rules):
             return None
         return (
             f"Container '{identifier}' is not allowed for user defined tools on this Galaxy server. "

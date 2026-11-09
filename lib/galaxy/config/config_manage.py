@@ -566,6 +566,7 @@ _ATTR_TYPE_OVERRIDES: dict[str, dict[str, str]] = {
         "tool_section_filters": "list[str]",
         "toolbox_filter_base_modules": "list[str]",
         "user_defined_tool_allowed_containers": "list[str]",
+        "user_defined_tool_denied_containers": "list[str]",
         "user_library_import_symlink_allowlist": "list[str]",
         "user_tool_filters": "list[str]",
         "user_tool_label_filters": "list[str]",

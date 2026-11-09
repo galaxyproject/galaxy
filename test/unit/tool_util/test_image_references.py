@@ -88,3 +88,25 @@ def test_container_allowlist(entries, identifier, allowed):
 def test_container_allowlist_rejects_malformed_entries(entry):
     with pytest.raises(ImageReferenceError):
         ContainerAllowlist([entry])
+
+
+@pytest.mark.parametrize(
+    "entries, denied, identifier, allowed",
+    [
+        (["quay.io/org/*"], ["quay.io/org/bad"], "quay.io/org/bad:1", False),
+        (["quay.io/org/*"], ["quay.io/org/bad"], f"quay.io/org/bad@{SHA_A}", False),
+        (["quay.io/org/*"], ["quay.io/org/bad"], "quay.io/org/good:1", True),
+        (["quay.io/org/*"], ["quay.io/org/sub/*"], "quay.io/org/sub/x:1", False),
+        (["*"], ["busybox"], "docker.io/library/busybox:1", False),
+        (["*"], ["busybox"], "python:3.13", True),
+        (["*"], ["busybox"], "oras://ghcr.io/org/img:1", False),
+    ],
+)
+def test_container_allowlist_denied(entries, denied, identifier, allowed):
+    assert ContainerAllowlist(entries, denied).allows(identifier) is allowed
+
+
+@pytest.mark.parametrize("entry", ["*", "quay.io/org/bad:1", f"quay.io/org/bad@{SHA_A}", "quay.io/bio*"])
+def test_container_allowlist_rejects_malformed_denied_entries(entry):
+    with pytest.raises(ImageReferenceError):
+        ContainerAllowlist(["*"], [entry])

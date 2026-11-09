@@ -964,6 +964,7 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         if self.user_defined_tool_allowed_containers is None:
             self.user_defined_tool_allowed_containers = self.schema.defaults["user_defined_tool_allowed_containers"]
         self.user_defined_tool_allowed_containers = listify(self.user_defined_tool_allowed_containers, do_strip=True)
+        self.user_defined_tool_denied_containers = listify(self.user_defined_tool_denied_containers, do_strip=True)
 
         self.password_expiration_period = timedelta(days=int(cast(SupportsInt, self.password_expiration_period)))
 

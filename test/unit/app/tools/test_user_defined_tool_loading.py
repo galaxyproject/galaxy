@@ -162,6 +162,18 @@ class TestUserDefinedToolLoading(BaseToolBoxTestCase):
         with pytest.raises(exceptions.RequestParameterInvalidException, match="is not allowed"):
             self._create(self._executor())
 
+    def test_create_uses_configured_denied_containers(self):
+        self.app.config.user_defined_tool_denied_containers = ["quay.io/biocontainers/coreutils"]
+        self.dynamic_tool_manager = DynamicToolManager(self.app)
+        with pytest.raises(exceptions.RequestParameterInvalidException, match="is denied"):
+            self._create(self._executor())
+        assert self._create(self._executor(), container="quay.io/biocontainers/samtools:1.17").active
+
+    def test_malformed_denied_entry_is_a_configuration_error(self):
+        self.app.config.user_defined_tool_denied_containers = ["quay.io/biocontainers/coreutils:9.5"]
+        with pytest.raises(exceptions.ConfigurationError, match="user_defined_tool_denied_containers"):
+            DynamicToolManager(self.app)
+
     def test_malformed_allowlist_entry_is_a_configuration_error(self):
         self.app.config.user_defined_tool_allowed_containers = ["quay.io/bio*"]
         with pytest.raises(exceptions.ConfigurationError, match="user_defined_tool_allowed_containers"):

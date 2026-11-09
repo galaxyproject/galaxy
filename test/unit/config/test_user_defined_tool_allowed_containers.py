@@ -22,3 +22,12 @@ def _allowed(**kwargs) -> list[str]:
 )
 def test_user_defined_tool_allowed_containers(kwargs, expected):
     assert _allowed(**kwargs) == expected
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [(None, []), ("quay.io/org/bad, quay.io/org/sub/*", ["quay.io/org/bad", "quay.io/org/sub/*"])],
+)
+def test_user_defined_tool_denied_containers(value, expected):
+    config = GalaxyAppConfiguration(override_tempdir=False, user_defined_tool_denied_containers=value)
+    assert config.user_defined_tool_denied_containers == expected

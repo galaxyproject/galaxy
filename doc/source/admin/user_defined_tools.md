@@ -156,6 +156,22 @@ Each entry and each tool's `container` are parsed into registry, repository, tag
 - References with any other scheme, such as `oras://`, never match: user-defined tool images are Docker image references, which the explicit Singularity resolvers pull with a `docker://` prefix.
 - A lone `*` allows any image. An empty list allows none, so no user-defined tool can be created or run. Leaving the option unset uses the default.
 
+To exclude images from what the allowed list permits, list them in `user_defined_tool_denied_containers`, which is empty by default. A denied entry takes precedence over an allowed one:
+
+```yaml
+user_defined_tool_allowed_containers:
+  - quay.io/biocontainers/*
+user_defined_tool_denied_containers:
+  - quay.io/biocontainers/some-tool   # this image, every tag and digest
+  - ghcr.io/someorg/experimental/*    # any image below the path
+```
+
+Denied entries are parsed and compared like allowed ones, with these differences:
+
+- An entry must name a repository or a namespace. Entries with a tag or digest are refused, because the same image can be named by another tag or digest. A lone `*` is refused too; use an empty allowed list to allow no images.
+- When the list is not empty, a reference Galaxy cannot parse, such as an `oras://` one, is refused even if `user_defined_tool_allowed_containers` is `*`, because it cannot be compared against the denied entries.
+- `<path>/*` does not include `<path>` itself. To deny both, list both.
+
 Galaxy resolves an unqualified name against Docker Hub, as Docker does. Podman may instead search the registries listed in its `unqualified-search-registries` setting, so a tool allowed to use `python:3.13` because `docker.io/library/python` is listed could pull `python` from another registry. On destinations that run Podman, either set `unqualified-search-registries = ["docker.io"]` or do not list Docker Hub images. The default list is not affected: an unqualified name never matches `quay.io/biocontainers/*`.
 
 Galaxy checks the image when a tool is created, through the API, the tool editor, a workflow import or the tool-authoring assistant, and refuses the tool with a message listing the allowed entries. It checks again before each job of a user-defined tool runs, against the image the tool declares rather than whatever a container resolver maps it to, so tools created before an image was removed from the list fail with a message instead of running. The check also applies to `GalaxyUserTool` tools an administrator loads from disk. Galaxy refuses to start if an entry is malformed.
