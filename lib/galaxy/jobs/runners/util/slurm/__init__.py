@@ -37,8 +37,14 @@ SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [
 
 
 def slurm_job_state(external_id: str, execute: Callable[[list[str]], str] | None = None) -> str:
-    """Return the state SLURM reports for a job, or NOT_FOUND if it no longer knows the job.
+    """Return the state SLURM reports for a job, or NOT_FOUND if it no longer knows the job."""
+    return slurm_job_info(external_id, execute)["JobState"]
 
+
+def slurm_job_info(external_id: str, execute: Callable[[list[str]], str] | None = None) -> dict[str, str]:
+    """Return what SLURM reports about a job, ``JobState`` is NOT_FOUND if it no longer knows the job.
+
+    A job that aged out of ``scontrol`` only has a ``JobState``.
     ``external_id`` may use the slurm-drmaa-with-cluster-support ``job_id.cluster`` syntax.
     """
     execute = execute or commands.execute
@@ -55,7 +61,7 @@ def slurm_job_state(external_id: str, execute: Callable[[list[str]], str] | None
     except commands.CommandLineException as e:
         if e.stderr == "slurm_load_jobs error: Invalid job id specified\n":
             # The job may be old, try to get its state with sacct
-            return _slurm_job_state_with_sacct(job_id, cluster, execute) or NOT_FOUND
+            return {"JobState": _slurm_job_state_with_sacct(job_id, cluster, execute) or NOT_FOUND}
         raise e
     # stdout is a single line in format "key1=value1 key2=value2 ..."
     job_info_keys: list[str] = []
@@ -69,7 +75,7 @@ def slurm_job_state(external_id: str, execute: Callable[[list[str]], str] | None
         except ValueError:
             # Some value may contain spaces (e.g. `Comment=** time_limit (60m) min_nodes (1) **`)
             job_info_values[-1] += f" {job_info}"
-    return dict(zip(job_info_keys, job_info_values))["JobState"]
+    return dict(zip(job_info_keys, job_info_values))
 
 
 def _slurm_job_state_with_sacct(job_id: str, cluster: str | None, execute: Callable[[list[str]], str]) -> str | None:
@@ -124,5 +130,6 @@ __all__ = (
     "MEMORY_LIMIT_PROBABLY_EXCEEDED",
     "NOT_FOUND",
     "check_memory_limit",
+    "slurm_job_info",
     "slurm_job_state",
 )

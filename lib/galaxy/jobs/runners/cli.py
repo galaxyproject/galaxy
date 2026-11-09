@@ -11,8 +11,8 @@ from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
-    JobState,
 )
+from galaxy.jobs.runners.util import RUNNER_STATE_DEFINITIONS
 from galaxy.util import asbool
 from .util.cli import (
     CliInterface,
@@ -212,25 +212,20 @@ class ShellJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         shell, job_interface = self.get_cli_plugins(shell_params, job_params)
         cmd_out = shell.execute(job_interface.get_failure_reason(external_job_id))
         if cmd_out is not None:
-            jobstate_map = {
-                JobState.runner_states.MEMORY_LIMIT_REACHED: (
-                    "Tool failed due to insufficient memory. Try with more memory.",
-                    f"({ajs.job_wrapper.get_id_tag()}/{ajs.job_id}) Job hit memory limit (SLURM state: OUT_OF_MEMORY)",
-                ),
-                JobState.runner_states.WALLTIME_REACHED: (
-                    "This job was terminated because it ran longer than the maximum allowed job run time.",
-                    f"({ajs.job_wrapper.get_id_tag()}/{ajs.job_id}) Job hit walltime",
-                ),
-                JobState.runner_states.UNKNOWN_ERROR: (
-                    "This job ran into an unknown error.",
-                    f"({ajs.job_wrapper.get_id_tag()}/{ajs.job_id}) Job hit unknown error",
-                ),
-            }
             reported_jobstate = job_interface.parse_failure_reason(cmd_out.stdout, external_job_id)
-            if reported_jobstate in jobstate_map:
-                ajs.fail_message, logmsg = jobstate_map.get(reported_jobstate)
+            definition = RUNNER_STATE_DEFINITIONS.get(reported_jobstate)
+            message = job_interface.parse_failure_message(cmd_out.stdout, external_job_id)
+            if definition:
                 ajs.runner_state = reported_jobstate
-                log.info(logmsg)
+                message = message or definition.fail_message
+                log.info(
+                    "(%s/%s) Job failed with runner state: %s",
+                    ajs.job_wrapper.get_id_tag(),
+                    ajs.job_id,
+                    definition.value,
+                )
+            if message:
+                ajs.fail_message = message
 
     def __get_job_states(self):
         job_destinations = {}
