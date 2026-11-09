@@ -62,10 +62,11 @@ def queue_user_quota_update(
 
 def send_user_quota_updates_on_commit(
     session: scoped_session[Session], send: Callable[[UserQuotaUpdates], None]
-) -> None:
+) -> Callable[[], None]:
     """Enable queueing in ``session`` and pass what is queued to ``send`` after each commit.
 
     This applies to every session the scoped session's factory creates. Without it, queueing does nothing.
+    Returns a function that undoes it.
     """
     session.session_factory.kw.setdefault("info", {})[_ENABLED_KEY] = True
     if session.registry.has():
@@ -86,6 +87,16 @@ def send_user_quota_updates_on_commit(
 
     event.listen(session, "after_commit", after_commit)
     event.listen(session, "after_rollback", after_rollback)
+
+    def remove() -> None:
+        event.remove(session, "after_commit", after_commit)
+        event.remove(session, "after_rollback", after_rollback)
+        session.session_factory.kw["info"].pop(_ENABLED_KEY, None)
+        if session.registry.has():
+            session.info.pop(_ENABLED_KEY, None)
+            session.info.pop(_INFO_KEY, None)
+
+    return remove
 
 
 class UserQuotaUpdateBatcher:

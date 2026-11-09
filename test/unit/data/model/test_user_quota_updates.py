@@ -92,6 +92,22 @@ def test_sender_enables_queueing_in_new_sessions(session):
     assert user_quota_updates_enabled(session)
 
 
+def test_removing_the_sender_disables_queueing(sent):
+    session = scoped_session(sessionmaker(bind=create_engine("sqlite:///:memory:")))
+    remove = send_user_quota_updates_on_commit(session, sent.append)
+    session.execute(text("SELECT 1"))
+    queue_user_quota_update(session, [1])
+
+    remove()
+    session.commit()
+    queue_user_quota_update(session, [2])
+    session.commit()
+
+    assert sent == []
+    assert not user_quota_updates_enabled(session)
+    session.remove()
+
+
 def test_failing_sender_does_not_fail_commit():
     attempts: list[UserQuotaUpdates] = []
 
