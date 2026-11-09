@@ -205,7 +205,21 @@ class GenericToolOutputDataset(
     ] = False
 
 
-class ToolOutputDataset(GenericToolOutputDataset[bool, str]): ...
+class ToolOutputBaseModel(GenericToolOutputBaseModel[bool, str]):
+    """Fields available only on parsed outputs, not incoming tool definitions."""
+
+    filters: Annotated[
+        List[str],
+        Field(
+            description=(
+                "Raw filter expressions from the tool definition. All must evaluate to true for the output "
+                "to be produced. An empty list means the output is unconditional."
+            ),
+        ),
+    ] = Field(default_factory=list)
+
+
+class ToolOutputDataset(GenericToolOutputDataset[bool, str], ToolOutputBaseModel): ...
 
 
 class IncomingToolOutputDataset(
@@ -329,7 +343,7 @@ class GenericToolOutputCollection(
         return values
 
 
-class ToolOutputCollection(GenericToolOutputCollection[bool, str]):
+class ToolOutputCollection(GenericToolOutputCollection[bool, str], ToolOutputBaseModel):
     # XML/rules-based tools can derive the collection type from a rules input.
     # Incoming YAML user tools deliberately do not expose this parser-only field.
     collection_type_from_rules: Optional[str] = None
@@ -703,19 +717,19 @@ class GenericToolOutputSimple(
 # how ``ToolOutput*Model`` instances are constructed in the output parser (which
 # always supplies both). Binding the type vars to ``[bool, str]`` mirrors
 # ``ToolOutputDataset`` / ``ToolOutputCollection``.
-class ToolOutputText(GenericToolOutputSimple[bool, str]):
+class ToolOutputText(GenericToolOutputSimple[bool, str], ToolOutputBaseModel):
     type: Literal["text"]
 
 
-class ToolOutputInteger(GenericToolOutputSimple[bool, str]):
+class ToolOutputInteger(GenericToolOutputSimple[bool, str], ToolOutputBaseModel):
     type: Literal["integer"]
 
 
-class ToolOutputFloat(GenericToolOutputSimple[bool, str]):
+class ToolOutputFloat(GenericToolOutputSimple[bool, str], ToolOutputBaseModel):
     type: Literal["float"]
 
 
-class ToolOutputBoolean(GenericToolOutputSimple[bool, str]):
+class ToolOutputBoolean(GenericToolOutputSimple[bool, str], ToolOutputBaseModel):
     type: Literal["boolean"]
 
 
