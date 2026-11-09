@@ -4,6 +4,7 @@ Plugins resource control over the API.
 
 import json
 import logging
+import os
 from functools import partial
 from typing import (
     Any,
@@ -18,7 +19,10 @@ from fastapi import (
     Query,
     Request,
 )
-from fastapi.responses import JSONResponse
+from fastapi.responses import (
+    JSONResponse,
+    Response,
+)
 from openai import (
     APIError,
     AsyncOpenAI,
@@ -52,7 +56,10 @@ from galaxy.model import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.visualization import VisualizationPluginResponse
 from galaxy.structured_app import StructuredApp
-from galaxy.webapps.base.api import GalaxyStreamingResponse
+from galaxy.webapps.base.api import (
+    GalaxyFileResponse,
+    GalaxyStreamingResponse,
+)
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnApp,
@@ -391,6 +398,36 @@ class FastAPIPlugins:
             return PluginDatasetsResponse(hdas=hdas)
         else:
             return VisualizationPluginResponse(**registry.get_plugin(id).to_dict())
+
+    @router.get(
+        "/api/plugins/{plugin_name}/static/{file_path:path}",
+        summary="Serve a static file from a runtime-installed visualization package.",
+    )
+    @router.head(
+        "/api/plugins/{plugin_name}/static/{file_path:path}",
+        summary="Check a static file from a runtime-installed visualization package.",
+    )
+    def static_file(
+        self,
+        request: Request,
+        plugin_name: str = Path(..., title="Plugin name", description="The visualization plugin identifier."),
+        file_path: str = Path(..., title="File path", description="Path of the file within the plugin's static files."),
+    ) -> Response:
+        """
+        Runtime-installed packages live in the managed package store rather than Galaxy's static tree, which can be
+        read-only (CVMFS), so Galaxy serves their assets itself. Built-in plugins are served from /static as before.
+        """
+        path = self._get_registry().get_runtime_static_file(plugin_name, file_path)
+        # files can change in place when a package is updated, so always revalidate
+        response = GalaxyFileResponse(path, headers={"Cache-Control": "no-cache"})
+        # GalaxyFileResponse only sets the ETag while sending, and we need it now
+        response.set_stat_headers(os.stat(path))
+        etag = response.headers["etag"]
+        if_none_match = request.headers.get("if-none-match")
+        # no-cache makes every load revalidate, so answer a matching ETag without resending the file
+        if if_none_match and etag in (tag.strip().removeprefix("W/") for tag in if_none_match.split(",")):
+            return Response(status_code=304, headers={"ETag": etag, "Cache-Control": "no-cache"})
+        return response
 
     def _get_registry(self):
         """Get the visualizations registry or raise an error if not configured."""

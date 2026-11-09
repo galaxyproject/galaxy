@@ -24,6 +24,154 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/visualizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all installed visualization packages.
+         * @description Return a list of all installed visualization packages with their status.
+         */
+        get: operations["index_api_admin_visualizations_get"];
+        put?: never;
+        /**
+         * Install a visualization package.
+         * @description Install a visualization package from the npm registry, under its unscoped package name.
+         */
+        post: operations["install_api_admin_visualizations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/visualizations/available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List available visualization packages from npm registry.
+         * @description Return a list of available @galaxyproject visualization packages from npm registry.
+         */
+        get: operations["available_api_admin_visualizations_available_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/visualizations/reload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reload the visualization registry.
+         * @description Reload the visualization registry to pick up configuration changes.
+         */
+        post: operations["reload_api_admin_visualizations_reload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/visualizations/versions/{package_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get available versions for an npm package.
+         * @description Return available versions for a specific npm package.
+         */
+        get: operations["package_versions_api_admin_visualizations_versions__package_name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/visualizations/{viz_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get details for a specific visualization package.
+         * @description Return detailed information about a specific visualization package.
+         */
+        get: operations["show_api_admin_visualizations__viz_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Uninstall a visualization package.
+         * @description Uninstall a visualization package and clean up its assets.
+         */
+        delete: operations["uninstall_api_admin_visualizations__viz_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/visualizations/{viz_id}/toggle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Enable or disable a visualization package.
+         * @description Enable or disable a visualization package without uninstalling it.
+         */
+        put: operations["toggle_api_admin_visualizations__viz_id__toggle_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/visualizations/{viz_id}/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update a visualization package to a new version.
+         * @description Update an installed visualization package to a new version.
+         */
+        put: operations["update_api_admin_visualizations__viz_id__update_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/agents": {
         parameters: {
             query?: never;
@@ -4910,6 +5058,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/plugins/{plugin_name}/static/{file_path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Serve a static file from a runtime-installed visualization package.
+         * @description Runtime-installed packages live in the managed package store rather than Galaxy's static tree, which can be
+         *     read-only (CVMFS), so Galaxy serves their assets itself. Built-in plugins are served from /static as before.
+         */
+        get: operations["static_file_api_plugins__plugin_name__static__file_path__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        /**
+         * Check a static file from a runtime-installed visualization package.
+         * @description Runtime-installed packages live in the managed package store rather than Galaxy's static tree, which can be
+         *     read-only (CVMFS), so Galaxy serves their assets itself. Built-in plugins are served from /static as before.
+         */
+        head: operations["static_file_api_plugins__plugin_name__static__file_path__head"];
+        patch?: never;
+        trace?: never;
+    };
     "/api/proxy": {
         parameters: {
             query?: never;
@@ -8539,6 +8713,57 @@ export interface components {
              * @description Areas of specialization
              */
             specialties?: string[];
+        };
+        /** AvailableVisualizationListResponse */
+        AvailableVisualizationListResponse: components["schemas"]["AvailableVisualizationResponse"][];
+        /** AvailableVisualizationResponse */
+        AvailableVisualizationResponse: {
+            /** Author */
+            author?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Date
+             * @description Last publish date.
+             */
+            date?: string | null;
+            /**
+             * Description
+             * @description Package description.
+             * @default
+             */
+            description: string;
+            /** Keywords */
+            keywords?: string[];
+            /**
+             * Links
+             * @description Homepage, repository, etc.
+             */
+            links?: {
+                [key: string]: unknown;
+            } | null;
+            /** Maintainers */
+            maintainers?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Name
+             * @description The npm package name.
+             */
+            name: string;
+            /**
+             * Score
+             * @description NPM search score.
+             */
+            score?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Version
+             * @description Latest published version.
+             * @default
+             */
+            version: string;
         };
         /** BadgeDict */
         BadgeDict: {
@@ -17693,6 +17918,19 @@ export interface components {
              */
             step_output: string;
         };
+        /** InstallVisualizationRequest */
+        InstallVisualizationRequest: {
+            /**
+             * Package
+             * @description The npm package name to install.
+             */
+            package: string;
+            /**
+             * Version
+             * @description The package version to install.
+             */
+            version: string;
+        };
         /** InstalledRepositoryToolShedStatus */
         InstalledRepositoryToolShedStatus: {
             /**
@@ -17769,6 +18007,58 @@ export interface components {
             tool_shed_status?: components["schemas"]["InstalledRepositoryToolShedStatus"] | null;
             /** Uninstalled */
             uninstalled: boolean;
+        };
+        /** InstalledVisualizationListResponse */
+        InstalledVisualizationListResponse: components["schemas"]["InstalledVisualizationResponse"][];
+        /** InstalledVisualizationResponse */
+        InstalledVisualizationResponse: {
+            /**
+             * Enabled
+             * @description Whether this visualization is enabled.
+             */
+            enabled: boolean;
+            /**
+             * ID
+             * @description The visualization identifier.
+             */
+            id: string;
+            /**
+             * Installed
+             * @description Whether files are present on disk.
+             */
+            installed: boolean;
+            /**
+             * Message
+             * @description Status message.
+             */
+            message?: string | null;
+            /**
+             * Metadata
+             * @description Package metadata from package.json.
+             */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Package
+             * @description The npm package name.
+             */
+            package: string;
+            /**
+             * Path
+             * @description Filesystem path to the installed package.
+             */
+            path?: string | null;
+            /**
+             * Size
+             * @description Total size in bytes.
+             */
+            size?: number | null;
+            /**
+             * Version
+             * @description The installed package version.
+             */
+            version: string;
         };
         /** IntegerParameterModel */
         IntegerParameterModel: {
@@ -20572,6 +20862,11 @@ export interface components {
              */
             subject: string;
         };
+        /** MessageResponse */
+        MessageResponse: {
+            /** Message */
+            message: string;
+        };
         /**
          * MetadataFile
          * @description Metadata file associated with a dataset.
@@ -21264,6 +21559,19 @@ export interface components {
             type: "package";
             /** Version */
             version?: string | null;
+        };
+        /** PackageVersionsResponse */
+        PackageVersionsResponse: {
+            /**
+             * Package
+             * @description The npm package name.
+             */
+            package: string;
+            /**
+             * Versions
+             * @description Available versions, newest first.
+             */
+            versions?: string[];
         };
         /**
          * PageContentFormat
@@ -25941,6 +26249,23 @@ export interface components {
             /** Value */
             value?: string | null;
         };
+        /** ToggleVisualizationRequest */
+        ToggleVisualizationRequest: {
+            /**
+             * Enabled
+             * @description Whether to enable or disable the visualization.
+             */
+            enabled: boolean;
+        };
+        /** ToggleVisualizationResponse */
+        ToggleVisualizationResponse: {
+            /** Enabled */
+            enabled: boolean;
+            /** ID */
+            id: string;
+            /** Message */
+            message: string;
+        };
         /** ToolDataDetails */
         ToolDataDetails: {
             /**
@@ -27193,6 +27518,14 @@ export interface components {
             preferences: {
                 [key: string]: components["schemas"]["NotificationCategorySettings"];
             };
+        };
+        /** UpdateVisualizationRequest */
+        UpdateVisualizationRequest: {
+            /**
+             * Version
+             * @description The new version to update to.
+             */
+            version: string;
         };
         /** UpgradeAllStepsAction */
         UpgradeAllStepsAction: {
@@ -33884,6 +34217,406 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminExtension"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_admin_visualizations_get: {
+        parameters: {
+            query?: {
+                /** @description Whether to include disabled visualizations in the result. */
+                include_disabled?: boolean;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstalledVisualizationListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    install_api_admin_visualizations_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstallVisualizationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstalledVisualizationResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    available_api_admin_visualizations_available_get: {
+        parameters: {
+            query?: {
+                /** @description Filter available packages by name or description. */
+                search?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvailableVisualizationListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    reload_api_admin_visualizations_reload_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    package_versions_api_admin_visualizations_versions__package_name__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The npm package name (e.g., @galaxyproject/circster). */
+                package_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackageVersionsResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_api_admin_visualizations__viz_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The identifier of the visualization package. */
+                viz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstalledVisualizationResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    uninstall_api_admin_visualizations__viz_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The identifier of the visualization package. */
+                viz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    toggle_api_admin_visualizations__viz_id__toggle_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The identifier of the visualization package. */
+                viz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToggleVisualizationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToggleVisualizationResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_api_admin_visualizations__viz_id__update_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The identifier of the visualization package. */
+                viz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateVisualizationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstalledVisualizationResponse"];
                 };
             };
             /** @description Request Error */
@@ -49346,6 +50079,92 @@ export interface operations {
                 "application/json": components["schemas"]["ChatCompletionRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    static_file_api_plugins__plugin_name__static__file_path__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The visualization plugin identifier. */
+                plugin_name: string;
+                /** @description Path of the file within the plugin's static files. */
+                file_path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    static_file_api_plugins__plugin_name__static__file_path__head: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The visualization plugin identifier. */
+                plugin_name: string;
+                /** @description Path of the file within the plugin's static files. */
+                file_path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
