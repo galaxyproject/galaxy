@@ -15,13 +15,14 @@ __all__ = ("failure",)
 
 log = logging.getLogger(__name__)
 
-MESSAGES = dict(
-    walltime_reached="it reached the walltime",
-    memory_limit_reached="it exceeded the amount of allocated memory",
-    unknown_error="it encountered an unknown error",
-    tool_detected="it encountered a tool detected error condition",
-    tool_timelimit_reached="it exceeded the tool's time limit",
-)
+MESSAGES = {
+    JobState.runner_states.WALLTIME_REACHED: "it reached the walltime",
+    JobState.runner_states.MEMORY_LIMIT_REACHED: "it exceeded the amount of allocated memory",
+    JobState.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER: "its output was not returned from the cluster",
+    JobState.runner_states.UNKNOWN_ERROR: "it encountered an unknown error",
+    JobState.runner_states.TOOL_DETECT_ERROR: "it encountered a tool detected error condition",
+    JobState.runner_states.TOOL_TIMELIMIT_REACHED: "it exceeded the tool's time limit",
+}
 
 
 def failure(app: "GalaxyManagerApplication", job_runner: "BaseJobRunner", job_state: JobState) -> None:
@@ -153,6 +154,8 @@ class _ExpressionContext:
             self._lazy_context = {
                 "walltime_reached": runner_state == JobState.runner_states.WALLTIME_REACHED,
                 "memory_limit_reached": runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
+                "job_output_not_returned_from_cluster": runner_state
+                == JobState.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER,
                 "unknown_error": runner_state == JobState.runner_states.UNKNOWN_ERROR,
                 "tool_detected_failure": runner_state == JobState.runner_states.TOOL_DETECT_ERROR,
                 "tool_timelimit_reached": runner_state == JobState.runner_states.TOOL_TIMELIMIT_REACHED,
