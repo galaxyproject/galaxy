@@ -58,6 +58,7 @@ from galaxy.jobs.runners import (
     ContainerRequiredException,
     JobState,
 )
+from galaxy.jobs.runners.util import RUNNER_STATE_DEFINITIONS
 from galaxy.model.base import check_database_connection
 from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.tool_util.deps import dependencies
@@ -277,11 +278,9 @@ PULSAR_PARAM_SPECS = dict(
 
 # What a user is told when a Pulsar server reports why their job failed. Resubmission
 # handlers only understand these states, so others from a newer server are ignored.
-REMOTE_RUNNER_STATE_MESSAGES = {
-    JobState.runner_states.MEMORY_LIMIT_REACHED: "This job was terminated because it used more memory than it was allocated.",
-    JobState.runner_states.WALLTIME_REACHED: "This job was terminated because it ran longer than the maximum allowed job run time.",
-}
-
+# A reason this Galaxy has no definition for is still useful to resubmit conditions,
+# but it has to at least look like a reason.
+REMOTE_RUNNER_STATE = re.compile(r"[a-z][a-z0-9_]*")
 PARAMETER_SPECIFICATION_REQUIRED = object()
 PARAMETER_SPECIFICATION_IGNORED = object()
 
@@ -857,9 +856,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         return self.client_manager.get_client(job_destination_params, **get_client_kwds)
 
     def finish_job(self, job_state: JobState) -> None:
-        assert isinstance(
-            job_state, AsynchronousJobState
-        ), f"job_state type is '{type(job_state)}', expected AsynchronousJobState"
+        assert isinstance(job_state, AsynchronousJobState), (
+            f"job_state type is '{type(job_state)}', expected AsynchronousJobState"
+        )
         job_wrapper = job_state.job_wrapper
         try:
             client = self.get_client_from_state(job_state)
@@ -1051,9 +1050,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         )
         job_ext_output_metadata = job.get_external_output_metadata()
         if not PulsarJobRunner.__remote_metadata(client) and job_ext_output_metadata:
-            pid = job_ext_output_metadata[
-                0
-            ].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
+            pid = (
+                job_ext_output_metadata[0].job_runner_external_pid
+            )  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             if pid in [None, ""]:
                 log.warning(f"stop_job(): {job.id}: no PID in database for job, unable to stop")
                 return
@@ -1371,15 +1370,17 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
 
 def _apply_remote_runner_state(job_state: AsynchronousJobState, full_status: dict[str, Any] | None) -> str | None:
     """Record why the Pulsar server says a job failed, returning the message for the user if it said."""
-    runner_state = (full_status or {}).get("runner_state")
+    full_status = full_status or {}
+    message = full_status.get("runner_state_message")
+    runner_state = full_status.get("runner_state")
     if runner_state is None:
-        return None
-    message = REMOTE_RUNNER_STATE_MESSAGES.get(runner_state)
-    if message is None:
-        log.warning("(%s) Ignoring unrecognized runner state from Pulsar: %s", job_state.job_id, runner_state)
-        return None
+        return message
+    definition = RUNNER_STATE_DEFINITIONS.get(runner_state)
+    if definition is None and not REMOTE_RUNNER_STATE.fullmatch(runner_state):
+        log.warning("(%s) Ignoring malformed runner state from Pulsar: %s", job_state.job_id, runner_state)
+        return message
     job_state.runner_state = runner_state
-    return message
+    return message or (definition.fail_message if definition else None)
 
 
 class PulsarLegacyJobRunner(PulsarJobRunner):

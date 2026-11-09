@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 from galaxy import model
 from galaxy.jobs.runners import JobState
+from galaxy.jobs.runners.util import RUNNER_STATE_DEFINITIONS
 from galaxy.util import now
 from ._safe_eval import safe_eval
 
@@ -15,15 +16,6 @@ __all__ = ("failure",)
 
 log = logging.getLogger(__name__)
 
-MESSAGES = {
-    JobState.runner_states.WALLTIME_REACHED: "it reached the walltime",
-    JobState.runner_states.MEMORY_LIMIT_REACHED: "it exceeded the amount of allocated memory",
-    JobState.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER: "its output was not returned from the cluster",
-    JobState.runner_states.UNKNOWN_ERROR: "it encountered an unknown error",
-    JobState.runner_states.TOOL_DETECT_ERROR: "it encountered a tool detected error condition",
-    JobState.runner_states.TOOL_TIMELIMIT_REACHED: "it exceeded the tool's time limit",
-}
-
 
 def failure(app: "GalaxyManagerApplication", job_runner: "BaseJobRunner", job_state: JobState) -> None:
     # Leave handler quickly if no resubmit conditions specified or if the runner state doesn't allow resubmission.
@@ -32,18 +24,19 @@ def failure(app: "GalaxyManagerApplication", job_runner: "BaseJobRunner", job_st
         return
 
     runner_state = getattr(job_state, "runner_state", None) or JobState.runner_states.UNKNOWN_ERROR
-    if runner_state not in (
-        JobState.runner_states.WALLTIME_REACHED,
-        JobState.runner_states.MEMORY_LIMIT_REACHED,
-        JobState.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER,
-        JobState.runner_states.TOOL_DETECT_ERROR,
-        JobState.runner_states.TOOL_TIMELIMIT_REACHED,
-        JobState.runner_states.UNKNOWN_ERROR,
-    ):
-        # not set or not a handleable runner state
+    definition = RUNNER_STATE_DEFINITIONS.get(runner_state)
+    if definition is not None and definition.resubmit_description is None:
+        # a runner state that must not lead to resubmission
         return
 
     _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_state)
+
+
+def _resubmit_description(runner_state: str) -> str:
+    definition = RUNNER_STATE_DEFINITIONS.get(runner_state)
+    if definition is None or definition.resubmit_description is None:
+        return f"its runner reported {runner_state}"
+    return definition.resubmit_description
 
 
 def _handle_resubmit_definitions(
@@ -80,7 +73,7 @@ def _handle_resubmit_definitions(
             "%s Job will be resubmitted to '%s' because %s at the '%s' destination",
             job_log_prefix,
             new_destination.id,
-            MESSAGES[runner_state],
+            _resubmit_description(runner_state),
             job_state.job_wrapper.job_destination.id,
         )
 
@@ -117,7 +110,7 @@ def _handle_resubmit_definitions(
         job.job_runner_external_id = None
         # Allow the UI to query for resubmitted state
         job_state.runner_state_handled = True
-        info = f"This job was resubmitted to the queue because {MESSAGES[runner_state]} on its compute resource."
+        info = f"This job was resubmitted to the queue because {_resubmit_description(runner_state)} on its compute resource."
         job_runner.mark_as_resubmitted(job_state, info=info)
         return
 
@@ -152,19 +145,23 @@ class _ExpressionContext:
                 seconds_since_queued = (current_time - last_queued_state.create_time).total_seconds()
 
             self._lazy_context = {
-                "walltime_reached": runner_state == JobState.runner_states.WALLTIME_REACHED,
-                "memory_limit_reached": runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
-                "job_output_not_returned_from_cluster": runner_state
-                == JobState.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER,
-                "unknown_error": runner_state == JobState.runner_states.UNKNOWN_ERROR,
-                "tool_detected_failure": runner_state == JobState.runner_states.TOOL_DETECT_ERROR,
-                "tool_timelimit_reached": runner_state == JobState.runner_states.TOOL_TIMELIMIT_REACHED,
-                "any_failure": True,
-                "any_potential_job_failure": True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
-                "attempt": attempt,
-                "seconds_running": seconds_running,
-                "seconds_since_queued": seconds_since_queued,
+                definition.condition: runner_state == definition.value
+                for definition in RUNNER_STATE_DEFINITIONS.values()
+                if definition.condition
             }
+            # A reason this Galaxy has no definition for, e.g. from a newer Pulsar server.
+            if runner_state not in RUNNER_STATE_DEFINITIONS:
+                self._lazy_context["unknown_error"] = True
+            self._lazy_context.update(
+                {
+                    "runner_state": runner_state,
+                    "any_failure": True,
+                    "any_potential_job_failure": True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
+                    "attempt": attempt,
+                    "seconds_running": seconds_running,
+                    "seconds_since_queued": seconds_since_queued,
+                }
+            )
 
         # Small optimization to eliminate the need to parse AST and eval for simple variables.
         if condition in self._lazy_context:

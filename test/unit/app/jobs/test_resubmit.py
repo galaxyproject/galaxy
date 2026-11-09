@@ -2,13 +2,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from galaxy.jobs import JobDestination
-from galaxy.jobs.handler import JobHandlerQueue
 from galaxy.jobs.runners import JobState
 from galaxy.jobs.runners.state_handlers.resubmit import (
     _ExpressionContext,
     failure,
-    MESSAGES,
+)
+from galaxy.jobs.runners.util import (
+    register_runner_state,
+    RUNNER_STATE_DEFINITIONS,
+    runner_states,
 )
 
 HANDLED_RUNNER_STATES = [
@@ -18,6 +20,8 @@ HANDLED_RUNNER_STATES = [
     (JobState.runner_states.TOOL_DETECT_ERROR, "tool_detected_failure"),
     (JobState.runner_states.TOOL_TIMELIMIT_REACHED, "tool_timelimit_reached"),
     (JobState.runner_states.UNKNOWN_ERROR, "unknown_error"),
+    (JobState.runner_states.NODE_FAILURE, "node_failure"),
+    (JobState.runner_states.PREEMPTED, "preempted"),
 ]
 
 
@@ -34,7 +38,7 @@ def _job_state(runner_state, resubmit):
 
 @pytest.mark.parametrize("runner_state,condition", HANDLED_RUNNER_STATES)
 def test_every_handled_runner_state_has_a_message(runner_state, condition):
-    assert MESSAGES[runner_state]
+    assert RUNNER_STATE_DEFINITIONS[runner_state].resubmit_description
 
 
 @pytest.mark.parametrize("runner_state,condition", HANDLED_RUNNER_STATES)
@@ -56,3 +60,50 @@ def test_does_not_resubmit_when_condition_is_for_another_state():
     job_state = _job_state(JobState.runner_states.WALLTIME_REACHED, [{"condition": "memory_limit_reached"}])
     failure(MagicMock(), MagicMock(), job_state)
     assert job_state.runner_state_handled is False
+
+
+@pytest.mark.parametrize(
+    "runner_state",
+    [
+        JobState.runner_states.CANCELLED,
+        JobState.runner_states.GLOBAL_WALLTIME_REACHED,
+        JobState.runner_states.OUTPUT_SIZE_LIMIT,
+    ],
+)
+def test_states_without_a_description_are_never_resubmitted(runner_state):
+    job_state = _job_state(runner_state, [{"condition": "any_failure"}])
+    failure(MagicMock(), MagicMock(), job_state)
+    assert job_state.runner_state_handled is False
+
+
+@pytest.fixture
+def registered_reason():
+    value = register_runner_state(
+        "TEST_GPU_LOST", "test_gpu_lost", resubmit_description="its GPU was lost", condition="test_gpu_lost"
+    )
+    yield value
+    del RUNNER_STATE_DEFINITIONS[value]
+    del runner_states.__dict__["TEST_GPU_LOST"]
+
+
+def test_registering_a_reason_makes_it_available_to_conditions(registered_reason):
+    job_state = _job_state(registered_reason, [{"condition": "test_gpu_lost"}])
+    failure(MagicMock(), MagicMock(), job_state)
+    assert job_state.runner_state_handled is True
+
+
+def test_registered_reason_does_not_count_as_unknown(registered_reason):
+    context = _ExpressionContext(_job_state(registered_reason, []))
+    assert context.safe_eval("unknown_error") is False
+
+
+def test_reason_without_definition_counts_as_unknown():
+    context = _ExpressionContext(_job_state("from_the_future", []))
+    assert context.safe_eval("unknown_error") is True
+    assert context.safe_eval("memory_limit_reached") is False
+
+
+def test_reason_without_definition_can_be_matched_by_name():
+    job_state = _job_state("from_the_future", [{"condition": "runner_state == 'from_the_future'"}])
+    failure(MagicMock(), MagicMock(), job_state)
+    assert job_state.runner_state_handled is True
