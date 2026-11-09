@@ -157,7 +157,10 @@ from galaxy.tools.parameters.workflow_utils import (
     workflow_building_modes,
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
-from galaxy.tools.runtime import dataset_path
+from galaxy.tools.runtime import (
+    dataset_path,
+    input_extra_files_path,
+)
 from galaxy.util import (
     listify,
     unicodify,
@@ -375,6 +378,7 @@ def to_cwl(
             else:
                 # The same path as runtimeify and $input.path give.
                 properties["path"] = dataset_path(value, compute_environment, shell_quotable=shell_quotable)
+                properties["extra_files_path"] = input_extra_files_path(value, compute_environment)
             if isinstance(value.datatype, Directory):
                 properties["class"] = "Directory"
                 properties["listing"] = []

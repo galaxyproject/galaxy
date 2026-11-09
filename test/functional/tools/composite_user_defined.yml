@@ -1,0 +1,17 @@
+class: GalaxyUserTool
+id: composite_user_defined
+version: "0.1"
+name: composite_user_defined
+description: reads a file of a composite dataset from its extra files path
+container: busybox
+shell_command: |
+  cat '$(inputs.input1.extra_files_path)/Roadmaps' > output.txt
+inputs:
+  - name: input1
+    type: data
+    format: [velvet]
+outputs:
+  - name: output1
+    type: data
+    format: txt
+    from_work_dir: output.txt

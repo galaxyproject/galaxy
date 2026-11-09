@@ -1,3 +1,4 @@
+import os
 import re
 from collections.abc import Callable
 from typing import (
@@ -90,6 +91,24 @@ def dataset_path(
         else:
             rewrite = compute_environment.input_path_rewrite(dataset)
     return rewrite or dataset.get_file_name()
+
+
+def input_extra_files_path(
+    dataset: DatasetInstance,
+    compute_environment: Optional["ComputeEnvironment"] = None,
+) -> str | None:
+    """Return where a tool finds an input dataset's extra files on disk, if it has any.
+
+    YAML tools get this as ``extra_files_path`` and XML tools as
+    ``$input.extra_files_path``. Rewriting the path makes Pulsar stage the
+    folder and fail the job if it is missing, so only call that for a folder
+    that exists.
+    """
+    extra_files_path: str = dataset.extra_files_path
+    if not os.path.exists(extra_files_path):
+        return None
+    rewrite: str | None = compute_environment.input_extra_files_rewrite(dataset) if compute_environment else None
+    return rewrite or extra_files_path
 
 
 def is_list_like(collection_type: str) -> bool:
@@ -191,6 +210,7 @@ def setup_for_runtimeify(
             properties["location"] = source_uri
         else:
             properties["path"] = dataset_path(hda_entry, compute_environment, shell_quotable=shell_quotable)
+            properties["extra_files_path"] = input_extra_files_path(hda_entry, compute_environment)
         set_basename_and_derived_properties(properties, hda_entry.dataset.created_from_basename or hda_entry.name)
         # Like Cheetah's ``element_identifier``, fall back to the dataset name outside a collection.
         properties["element_identifier"] = element_identifiers.get(hda_entry) or hda_entry.name

@@ -136,6 +136,6 @@ Current limitations include:
 
 - Access to reference data is not supported
 - Access to metadata and metadata files (such as BAM indexes) is not supported
-- Access to the `extra_files` directory is not supported
+- Inputs' `extra_files` directories can be read through `extra_files_path`, but writing to an output's `extra_files` directory is not supported
 - Declared `tests` are stored but are not executed for a tool held in the database
 - Nonnumeric expressions in resource requirement values are not supported

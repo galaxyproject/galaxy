@@ -283,6 +283,13 @@ sections:
       them. Quote any substitution that can contain spaces yourself, as
       `'$(inputs.query.path)'`.
 
+      Some datatypes, such as BLAST databases and `pbed`, keep their data in a
+      folder of extra files. Reference that folder as
+      `$(inputs.database.extra_files_path)`, for example
+      `-db '$(inputs.database.extra_files_path)/blastdb'`. It is only set for
+      datasets that have extra files. A `directory` dataset's content is at
+      `$(inputs.input_name.path)`.
+
       Reusable helper functions can be declared with a `javascript` requirement,
       and are then available to every expression in the tool:
 
