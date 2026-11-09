@@ -43,6 +43,10 @@ from galaxy.structured_app import (
 )
 from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.parameters import JobInternalToolState
+from galaxy.tool_util.parameters.convert import (
+    reference_data_runtime_json,
+    runtimeify,
+)
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util_models.parameters import ToolParameterBundleModel
 from galaxy.tool_util_models.tool_source import (
@@ -69,7 +73,10 @@ from galaxy.tools.parameters.grouping import (
     Repeat,
     Section,
 )
-from galaxy.tools.runtime import setup_for_reference_data
+from galaxy.tools.runtime import (
+    setup_for_reference_data,
+    setup_for_runtimeify,
+)
 from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
     DatasetFilenameWrapper,
@@ -1156,9 +1163,6 @@ class UserToolEvaluator(ToolEvaluator):
         adapt_reference_data = setup_for_reference_data(self.app, compute_environment, self.tool.tool_source.trusted)
         hda_references: list[model.HistoryDatasetAssociation]
         if validated_tool_state is not None:
-            from galaxy.tool_util.parameters.convert import runtimeify
-            from galaxy.tools.runtime import setup_for_runtimeify
-
             # Get input collections from job for collection parameter support
             input_dataset_collections: dict[
                 str, model.HistoryDatasetCollectionAssociation | model.DatasetCollectionElement
@@ -1198,9 +1202,7 @@ class UserToolEvaluator(ToolEvaluator):
             def resolve_reference_data(input, value, **kwargs):
                 if not isinstance(input, ReferenceDataToolParameter) or not value:
                     return None
-                if input.multiple and isinstance(value, list):
-                    return [adapt_reference_data(input.table_name, v).model_dump(by_alias=True) for v in value]
-                return adapt_reference_data(input.table_name, value).model_dump(by_alias=True)
+                return reference_data_runtime_json(adapt_reference_data, input.table_name, input.multiple, value)
 
             if self.tool.has_data_table:
                 visit_input_values(self.tool.inputs, incoming, resolve_reference_data)
