@@ -8,13 +8,12 @@ import { useUserStore } from "@/stores/userStore";
 
 import {
     historyColumnFilter,
+    invocationFilterParams,
     invocationsFiltering,
     MAX_FILTER_IDS,
     NAME_MATCH_LIMIT,
-    NAME_MATCH_TTL_MS,
     nameSearch,
     RECENT_LIMIT,
-    resolveInvocationFilters,
     workflowColumnFilter,
 } from "./invocationFilters";
 import invocationsGridConfig from "./invocations";
@@ -70,46 +69,84 @@ describe("nameSearch", () => {
     ])("turns %j into %j", (value, expected) => {
         expect(nameSearch(value)).toBe(expected);
     });
+
+    it("uses the given key", () => {
+        expect(nameSearch("rna seq", "workflow")).toBe("workflow:rna workflow:seq");
+        expect(nameSearch("'My data'", "history")).toBe("history:'My data'");
+    });
 });
 
-describe("resolveInvocationFilters", () => {
-    beforeEach(() => {
-        setActivePinia(createPinia());
-        workflowQueries.mockReset();
-        historyQueries.mockReset();
-    });
-
-    it("passes picked ids through without lookups", async () => {
-        mockIndexes({}, {});
-
-        const params = await resolveInvocationFilters(
-            "workflow_id:f2db41e1fa331b3e workflow_id:a7db2fac67043c7e history_id:1cd8e2f6b131e891",
-        );
-
-        expect(params).toEqual({
+describe("invocationFilterParams", () => {
+    it("passes picked ids through", () => {
+        expect(
+            invocationFilterParams(
+                "workflow_id:f2db41e1fa331b3e workflow_id:a7db2fac67043c7e history_id:1cd8e2f6b131e891",
+            ),
+        ).toEqual({
             workflow_id: ["f2db41e1fa331b3e", "a7db2fac67043c7e"],
             history_id: ["1cd8e2f6b131e891"],
         });
-        expect(workflowQueries).not.toHaveBeenCalled();
-        expect(historyQueries).not.toHaveBeenCalled();
+    });
+
+    it("sends no more picked ids than the API accepts", () => {
+        const ids = Array.from({ length: MAX_FILTER_IDS + 1 }, (_, index) => `id${index}`);
+
+        expect(invocationFilterParams(ids.map((id) => `history_id:${id}`).join(" "))).toEqual({
+            history_id: ids.slice(0, MAX_FILTER_IDS),
+        });
+    });
+
+    it.each([
+        ["rna", "workflow:rna"],
+        ["workflow:rna", "workflow:rna"],
+        ["history:'My data'", "history:'My data'"],
+        ["workflow:rna history:batch", "workflow:rna history:batch"],
+    ])("turns the name filters of %j into the search %j", (text, search) => {
+        expect(invocationFilterParams(text)).toEqual({ search });
+    });
+
+    it("sends picked ids and name filters together", () => {
+        expect(invocationFilterParams("workflow:rna workflow_id:f2db41e1fa331b3e")).toEqual({
+            workflow_id: ["f2db41e1fa331b3e"],
+            search: "workflow:rna",
+        });
+    });
+
+    it("keeps a quoted name with a colon in one term", () => {
+        expect(invocationFilterParams("workflow:'Foo bar: baz'")).toEqual({ search: "workflow:'Foo bar: baz'" });
+        expect(
+            Object.fromEntries(
+                invocationsFiltering.getFiltersForText("workflow:'Foo bar: baz' history:x", true, false),
+            ),
+        ).toEqual({ workflow: "'Foo bar: baz'", history: "x" });
+    });
+});
+
+describe("column filters", () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        useUserStore().currentUser = getFakeRegisteredUser({ username: "me" });
+        workflowQueries.mockReset();
+        historyQueries.mockReset();
+        countRequests.mockReset();
     });
 
     it("looks up visible, deleted and hidden workflows by name", async () => {
         mockIndexes(
             {
-                "name:rna": [{ id: "visible", name: "RNA-seq" }],
-                "name:rna is:deleted": [{ id: "deleted", name: "old RNA-seq" }],
+                "name:rna": [{ id: "visible", name: "RNA-seq", owner: "me" }],
+                "name:rna is:deleted": [{ id: "deleted", name: "old RNA-seq", owner: "me" }],
                 "name:rna+hidden": [
-                    { id: "hidden", name: "RNA-seq (hidden)" },
-                    { id: "visible", name: "RNA-seq" },
+                    { id: "hidden", name: "RNA-seq (hidden)", owner: "me" },
+                    { id: "visible", name: "RNA-seq", owner: "me" },
                 ],
             },
             {},
         );
 
-        const params = await resolveInvocationFilters("rna");
+        const options = await workflowColumnFilter.search("rna");
 
-        expect(params).toEqual({ workflow_id: ["visible", "deleted", "hidden"] });
+        expect(options.map((option) => option.id)).toEqual(["visible", "deleted", "hidden"]);
         expect(workflowQueries).toHaveBeenCalledWith(
             expect.objectContaining({ search: "name:rna", show_published: "true" }),
         );
@@ -120,29 +157,23 @@ describe("resolveInvocationFilters", () => {
     });
 
     it("keeps the user's own workflows when published ones fill the match limit", async () => {
-        const published = Array.from({ length: NAME_MATCH_LIMIT }, (_, index) => ({ id: `published-${index}` }));
+        const published = Array.from({ length: NAME_MATCH_LIMIT }, (_, index) => ({
+            id: `published-${index}`,
+            owner: "alice",
+        }));
         server.use(
             http.get("/api/workflows", ({ request, response }) => {
                 const query = new URL(request.url).searchParams;
                 const visible = query.get("search") === "name:rna" && query.get("show_hidden") !== "true";
-                const items = !visible ? [] : query.get("show_published") === "true" ? published : [{ id: "own" }];
+                const own = [{ id: "own", owner: "me" }];
+                const items = !visible ? [] : query.get("show_published") === "true" ? published : own;
                 return response.untyped(HttpResponse.json(items, { headers: { total_matches: String(items.length) } }));
             }),
         );
 
-        const params = await resolveInvocationFilters("workflow:rna");
+        const options = await workflowColumnFilter.search("rna");
 
-        expect(params?.workflow_id).toHaveLength(MAX_FILTER_IDS);
-        expect(params?.workflow_id?.[0]).toBe("own");
-    });
-
-    it("sends no more picked ids than the API accepts", async () => {
-        const ids = Array.from({ length: MAX_FILTER_IDS + 1 }, (_, index) => `id${index}`);
-        mockIndexes({}, {});
-
-        const params = await resolveInvocationFilters(ids.map((id) => `history_id:${id}`).join(" "));
-
-        expect(params).toEqual({ history_id: ids.slice(0, MAX_FILTER_IDS) });
+        expect(options.map((option) => option.id)).toContain("own");
     });
 
     it("looks up active, deleted and purged histories by exact name", async () => {
@@ -154,67 +185,12 @@ describe("resolveInvocationFilters", () => {
             },
         );
 
-        const params = await resolveInvocationFilters("history:'My data'");
+        const options = await historyColumnFilter.search("'My data'");
 
-        expect(params).toEqual({ history_id: ["active", "purged"] });
+        expect(options.map((option) => option.id)).toEqual(["active", "purged"]);
         expect(historyQueries).toHaveBeenCalledWith(
             expect.objectContaining({ search: "name:'My data'", show_archived: "true", show_own: "true" }),
         );
-    });
-
-    it("repeats name lookups only when the text changes or the last ones are old", async () => {
-        mockIndexes({ "name:paging": [{ id: "visible", name: "paging" }] }, {});
-        const now = vi.spyOn(Date, "now").mockReturnValue(1_000_000);
-
-        const first = await resolveInvocationFilters("workflow:paging");
-        const lookups = workflowQueries.mock.calls.length;
-        expect(await resolveInvocationFilters("workflow:paging")).toEqual(first);
-        expect(workflowQueries).toHaveBeenCalledTimes(lookups);
-
-        await resolveInvocationFilters("workflow:other");
-        await resolveInvocationFilters("workflow:paging");
-        expect(workflowQueries).toHaveBeenCalledTimes(3 * lookups);
-
-        now.mockReturnValue(1_000_000 + NAME_MATCH_TTL_MS);
-        await resolveInvocationFilters("workflow:paging");
-        expect(workflowQueries).toHaveBeenCalledTimes(4 * lookups);
-        now.mockRestore();
-    });
-
-    it("keeps a quoted name with a colon in one term", async () => {
-        mockIndexes({ "name:'Foo bar: baz'": [{ id: "visible", name: "Foo bar: baz" }] }, {});
-
-        expect(await resolveInvocationFilters("workflow:'Foo bar: baz'")).toEqual({ workflow_id: ["visible"] });
-        expect(
-            Object.fromEntries(
-                invocationsFiltering.getFiltersForText("workflow:'Foo bar: baz' history:x", true, false),
-            ),
-        ).toEqual({ workflow: "'Foo bar: baz'", history: "x" });
-    });
-
-    it("returns null when a name matches nothing", async () => {
-        mockIndexes({}, { "name:results": [{ id: "history-1", name: "results" }] });
-
-        expect(await resolveInvocationFilters("workflow:missing history:results")).toBeNull();
-    });
-
-    it("narrows picked ids to the ones matching a name filter", async () => {
-        mockIndexes({ "name:rna": [{ id: "visible", name: "RNA-seq" }] }, {});
-
-        expect(await resolveInvocationFilters("workflow:rna workflow_id:visible workflow_id:other")).toEqual({
-            workflow_id: ["visible"],
-        });
-        expect(await resolveInvocationFilters("workflow:rna workflow_id:other")).toBeNull();
-    });
-});
-
-describe("column filters", () => {
-    beforeEach(() => {
-        setActivePinia(createPinia());
-        useUserStore().currentUser = getFakeRegisteredUser({ username: "me" });
-        workflowQueries.mockReset();
-        historyQueries.mockReset();
-        countRequests.mockReset();
     });
 
     it("lists the most recently updated own workflows before anything is typed", async () => {

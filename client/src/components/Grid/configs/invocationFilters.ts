@@ -18,13 +18,10 @@ export const MAX_FILTER_IDS = 50;
 /** Number of most recently updated items a column filter lists before anything is typed. */
 export const RECENT_LIMIT = 20;
 
-/** How long a page or sort change can reuse the last resolved filter text. */
-export const NAME_MATCH_TTL_MS = 60_000;
-
 /**
- * `workflow` and `history` match by name (substring, or exact when quoted) and are resolved to ids
- * through the workflow and history list APIs. `workflow_id` and `history_id` can repeat, one
- * id per term; the column filters set those. Unkeyed text is a workflow name.
+ * `workflow` and `history` match by name (substring, or exact when quoted) and go to the server as
+ * `search` terms. `workflow_id` and `history_id` can repeat, one id per term; the column filters
+ * set those. Unkeyed text is a workflow name.
  */
 const validFilters: Record<string, ValidFilter<string>> = {
     workflow: {
@@ -48,19 +45,20 @@ export const invocationsFiltering = new Filtering(validFilters, undefined, false
 export interface InvocationFilterParams {
     workflow_id?: string[];
     history_id?: string[];
+    search?: string;
 }
 
 /**
- * Turn a name filter value into `name:` terms for the workflow/history index search: a quoted value
- * stays one exact-match term, an unquoted value becomes one substring term per word.
- * Unquoted index terms only take word characters and hyphens, so other characters separate words.
+ * Turn a name filter value into `key:` terms for a server search: a quoted value stays one
+ * exact-match term, an unquoted value becomes one substring term per word.
+ * Unquoted search terms only take word characters and hyphens, so other characters separate words.
  */
-export function nameSearch(value: string): string {
+export function nameSearch(value: string, key = "name"): string {
     if (isQuoted(value)) {
-        return `name:${value}`;
+        return `${key}:${value}`;
     }
     const words = value.split(/[^\p{L}\p{M}\p{N}_-]+/u).filter((word) => word.length > 0);
-    return words.length > 0 ? words.map((word) => `name:${word}`).join(" ") : `name:'${value}'`;
+    return words.length > 0 ? words.map((word) => `${key}:${word}`).join(" ") : `${key}:'${value}'`;
 }
 
 const workflowListOptions = {
@@ -110,51 +108,29 @@ export async function findHistoriesByName(name: string): Promise<AnyHistoryEntry
     );
 }
 
-/**
- * Ids picked in a column filter, narrowed to the name matches when a name filter is set as well.
- * Matches are ordered by lookup, so the user's own visible workflows are the last to be cut.
- */
-function combine(ids: string[] | undefined, matches: Array<{ id: string }> | undefined): string[] | undefined {
-    const matchIds = matches?.map((match) => match.id);
-    const combined = ids && matchIds ? ids.filter((id) => matchIds.includes(id)) : (ids ?? matchIds);
-    return combined?.slice(0, MAX_FILTER_IDS);
-}
-
-let lastResolved: { search: string; params: InvocationFilterParams | null; time: number } | undefined;
-
-/**
- * Translate the grid's filter text into `/api/invocations` query parameters, looking up names.
- * Returns `null` when the filters match no workflow or history, so no invocation can match.
- */
-export async function resolveInvocationFilters(search: string): Promise<InvocationFilterParams | null> {
-    if (lastResolved?.search === search && Date.now() - lastResolved.time < NAME_MATCH_TTL_MS) {
-        return lastResolved.params;
-    }
-    const params = await lookUpInvocationFilters(search);
-    lastResolved = { search, params, time: Date.now() };
-    return params;
-}
-
-async function lookUpInvocationFilters(search: string): Promise<InvocationFilterParams | null> {
-    const filters = Object.fromEntries(invocationsFiltering.getFiltersForText(search)) as InvocationFilterParams & {
+/** Translate the grid's filter text into `/api/invocations` query parameters. */
+export function invocationFilterParams(search: string): InvocationFilterParams {
+    const filters = Object.fromEntries(invocationsFiltering.getFiltersForText(search)) as {
         workflow?: string;
         history?: string;
+        workflow_id?: string[];
+        history_id?: string[];
     };
-    const [workflows, histories] = await Promise.all([
-        filters.workflow ? findWorkflowsByName(filters.workflow) : undefined,
-        filters.history ? findHistoriesByName(filters.history) : undefined,
-    ]);
     const params: InvocationFilterParams = {};
-    const workflowIds = combine(filters.workflow_id, workflows);
-    const historyIds = combine(filters.history_id, histories);
-    if (workflowIds) {
-        params.workflow_id = workflowIds;
+    if (filters.workflow_id) {
+        params.workflow_id = filters.workflow_id.slice(0, MAX_FILTER_IDS);
     }
-    if (historyIds) {
-        params.history_id = historyIds;
+    if (filters.history_id) {
+        params.history_id = filters.history_id.slice(0, MAX_FILTER_IDS);
     }
-    const nothingMatched = params.workflow_id?.length === 0 || params.history_id?.length === 0;
-    return nothingMatched ? null : params;
+    const nameTerms = [
+        filters.workflow && nameSearch(filters.workflow, "workflow"),
+        filters.history && nameSearch(filters.history, "history"),
+    ].filter(Boolean);
+    if (nameTerms.length > 0) {
+        params.search = nameTerms.join(" ");
+    }
+    return params;
 }
 
 function workflowOption(workflow: WorkflowSummary): FilterOption {

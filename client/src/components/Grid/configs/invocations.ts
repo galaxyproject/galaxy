@@ -8,8 +8,8 @@ import _l from "@/utils/localization";
 
 import {
     historyColumnFilter,
+    invocationFilterParams,
     invocationsFiltering,
-    resolveInvocationFilters,
     workflowColumnFilter,
 } from "./invocationFilters";
 import { fetchInvocations } from "./invocationsIndex";
@@ -33,17 +33,13 @@ export async function getData(
     sort_desc: boolean,
     extraProps?: Record<string, unknown>,
 ) {
-    const filterParams = await resolveInvocationFilters(search);
-    if (!filterParams) {
-        return [[] as WorkflowInvocation[], 0] as const;
-    }
     const params = {
         limit,
         offset,
         sort_by: sort_by as SortKeyLiteral,
         sort_desc,
         include_nested_invocations: false,
-        ...filterParams,
+        ...invocationFilterParams(search),
     } as Record<string, unknown>;
 
     if (extraProps && "include_terminal" in extraProps) {

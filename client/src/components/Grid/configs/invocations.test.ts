@@ -28,6 +28,7 @@ function mockServer(workflowFails = false, historyFails = false) {
             invocationQueries({
                 workflow_id: searchParams.getAll("workflow_id"),
                 history_id: searchParams.getAll("history_id"),
+                search: searchParams.get("search"),
                 user_id: searchParams.get("user_id"),
             });
             return response.untyped(HttpResponse.json(INVOCATIONS, { headers: { total_matches: "4" } }));
@@ -114,15 +115,8 @@ describe("invocations grid filtering", () => {
         invocationQueries.mockReset();
     });
 
-    it("sends every matching workflow id and the picked history ids", async () => {
+    it("sends name filters as search terms next to the picked ids", async () => {
         mockServer();
-        server.use(
-            http.get("/api/workflows", ({ request, response }) => {
-                const search = new URL(request.url).searchParams.get("search");
-                const items = search === "name:rna" ? [{ id: "workflow-1" }, { id: "workflow-2" }] : [];
-                return response.untyped(HttpResponse.json(items, { headers: { total_matches: String(items.length) } }));
-            }),
-        );
 
         const [data, total] = await getData(
             0,
@@ -136,24 +130,10 @@ describe("invocations grid filtering", () => {
         expect(data).toHaveLength(4);
         expect(total).toBe(4);
         expect(invocationQueries).toHaveBeenCalledWith({
-            workflow_id: ["workflow-1", "workflow-2"],
+            workflow_id: [],
             history_id: ["1cd8e2f6b131e891", "f2db41e1fa331b3e"],
+            search: "workflow:rna",
             user_id: "user-1",
         });
-    });
-
-    it("skips the invocation request when a name matches nothing", async () => {
-        mockServer();
-        server.use(
-            http.get("/api/workflows", ({ response }) => {
-                return response.untyped(HttpResponse.json([], { headers: { total_matches: "0" } }));
-            }),
-        );
-
-        const [data, total] = await getData(0, 25, "workflow:missing", "create_time", true);
-
-        expect(data).toEqual([]);
-        expect(total).toBe(0);
-        expect(invocationQueries).not.toHaveBeenCalled();
     });
 });
