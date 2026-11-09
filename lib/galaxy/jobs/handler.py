@@ -6,6 +6,7 @@ import abc
 import datetime
 import os
 from collections import defaultdict
+from contextlib import suppress
 from queue import (
     Empty,
     Queue,
@@ -310,7 +311,11 @@ class JobHandlerQueue(BaseJobHandlerQueue):
     def job_pair_for_id(self, id: int) -> tuple[model.Job, JobWrapper]:
         job = self.sa_session.get(model.Job, id)
         assert job is not None
-        return job, self.job_wrapper(job, use_persisted_destination=True)
+        job_wrapper = self.job_wrapper(job, use_persisted_destination=True)
+        # resubmits are not persisted, this job can only resubmit with the configured ones
+        with suppress(KeyError):
+            job_wrapper.job_destination.resubmit = self.app.job_config.get_destination(job.destination_id).resubmit
+        return job, job_wrapper
 
     def __check_jobs_at_startup(self):
         """
