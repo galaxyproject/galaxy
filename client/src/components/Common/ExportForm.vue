@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
+import { BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { FilterFileSourcesOptions } from "@/api/remoteFiles";
 import localize from "@/utils/localization";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
@@ -62,7 +63,7 @@ const doExport = () => {
         </BFormGroup>
 
         <BFormGroup id="fieldset-name" label="File name" label-for="name" :description="nameDescription" class="mt-3">
-            <BFormInput id="name" v-model="name" :placeholder="namePlaceholder" required />
+            <GFormInput id="name" v-model="name" :placeholder="namePlaceholder" required />
         </BFormGroup>
 
         <BRow align-h="end">

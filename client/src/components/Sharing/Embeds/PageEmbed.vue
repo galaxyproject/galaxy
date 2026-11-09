@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useDebounce } from "@vueuse/core";
-import { BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
 import { EMBED_LABELS } from "@/components/Page/constants";
 import { copy } from "@/utils/clipboard";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import PageView from "@/components/Page/PageView.vue";
@@ -23,6 +24,12 @@ const settings = ref({
     width: 800,
     height: 600,
 });
+
+// empty or partial number input emits ""; keep the last size
+function toSize(value: string | null, current: number) {
+    const size = parseFloat(value ?? "");
+    return Number.isNaN(size) ? current : size;
+}
 
 const embedUrl = computed(() => {
     let url = getFullAppUrl(`published/page?id=${props.id}&embed=true`);
@@ -70,11 +77,23 @@ function onCopy() {
             <div v-if="settings.applyStyle" class="dimension-controls">
                 <label>
                     Width
-                    <BFormInput v-model.number="settings.width" type="number" min="200" max="2000" step="50" />
+                    <GFormInput
+                        :model-value="String(settings.width)"
+                        type="number"
+                        min="200"
+                        max="2000"
+                        step="50"
+                        @update:model-value="settings.width = toSize($event, settings.width)" />
                 </label>
                 <label>
                     Height
-                    <BFormInput v-model.number="settings.height" type="number" min="200" max="2000" step="50" />
+                    <GFormInput
+                        :model-value="String(settings.height)"
+                        type="number"
+                        min="200"
+                        max="2000"
+                        step="50"
+                        @update:model-value="settings.height = toSize($event, settings.height)" />
                 </label>
             </div>
         </div>
@@ -83,7 +102,7 @@ function onCopy() {
             <label for="embed-code" class="w-100">
                 Embed code
                 <BInputGroup id="embed-code">
-                    <BFormInput class="embed-code-input" :value="embed" readonly />
+                    <GFormInput class="embed-code-input" :model-value="embed" readonly />
                     <BInputGroupAppend>
                         <GButton color="blue" @click="onCopy">
                             {{ copied ? "Copied!" : "Copy" }}
