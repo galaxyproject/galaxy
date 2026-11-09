@@ -17,6 +17,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
 )
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.model.dataset_collections.readiness import dataset_readiness
 from galaxy.model.orm.now import now
 from galaxy.schema.invocation import (
     CancelReason,
@@ -604,7 +605,9 @@ class WorkflowProgress:
             if isinstance(replacement, model.HistoryDatasetAssociation):
                 if not_yet_available(replacement):
                     raise modules.DelayedWorkflowEvaluation(
-                        dependencies=[SchedulingDependency(DependencyType.HDA, replacement.id)]
+                        dependencies=[
+                            SchedulingDependency(DependencyType.HDA, replacement.id, dataset_readiness(replacement))
+                        ]
                     )
                 if not is_data and not replacement.is_ok:
                     raise modules.FailWorkflowEvaluation(
@@ -638,7 +641,13 @@ class WorkflowProgress:
                 if pending:
                     assert pending_dataset_instance is not None
                     raise modules.DelayedWorkflowEvaluation(
-                        dependencies=[SchedulingDependency(DependencyType.HDA, pending_dataset_instance.id)]
+                        dependencies=[
+                            SchedulingDependency(
+                                DependencyType.HDA,
+                                pending_dataset_instance.id,
+                                dataset_readiness(pending_dataset_instance),
+                            )
+                        ]
                     )
 
         return replacement

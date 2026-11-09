@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from galaxy.model import (
     Dataset,
     DatasetCollection,
+    DatasetInstance,
     HistoryDatasetAssociation,
     required_object_session,
 )
@@ -39,7 +40,7 @@ def _readiness(state: str | None, extension: str, deleted: bool, dataset_deleted
     return ReadinessSnapshot(state, extension, deleted, bool(dataset_deleted))
 
 
-def dataset_readiness(dataset: HistoryDatasetAssociation) -> ReadinessSnapshot:
+def dataset_readiness(dataset: DatasetInstance) -> ReadinessSnapshot:
     assert dataset.dataset is not None
     return _readiness(dataset.state, dataset.extension, dataset.deleted, dataset.dataset.deleted)
 

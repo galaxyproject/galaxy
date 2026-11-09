@@ -3,6 +3,7 @@ from typing import cast
 import pytest
 
 from galaxy import model
+from galaxy.model.dataset_collections.readiness import dataset_readiness
 from galaxy.schema.invocation import FailureReason
 from galaxy.util.unittest import TestCase
 from galaxy.workflow import modules
@@ -219,20 +220,26 @@ class TestWorkflowProgress(TestCase):
         return conn
 
     def test_pending_dataset_delays_with_tracked_dependency(self):
+        self._assert_delays_with_readiness_dependency(model.Dataset.states.QUEUED, is_data=False)
+
+    def test_paused_dataset_delays_with_readiness_dependency_when_ready_required(self):
+        self._assert_delays_with_readiness_dependency(model.Dataset.states.PAUSED, require_ready=True)
+
+    def _assert_delays_with_readiness_dependency(self, state, **kwds):
         self._setup_workflow(TEST_WORKFLOW_YAML)
         dataset = model.Dataset()
-        dataset.state = model.Dataset.states.QUEUED
+        dataset.state = state
         hda = model.HistoryDatasetAssociation(dataset=dataset)
         hda.id = 7
         progress = self._new_workflow_progress()
         progress.set_step_outputs(self._invocation_step(2), {"out1": hda})
 
         with pytest.raises(modules.DelayedWorkflowEvaluation) as delayed:
-            progress.replacement_for_connection(self._connection_to_step_2_output(), is_data=False)
+            progress.replacement_for_connection(self._connection_to_step_2_output(), **kwds)
         progress.record_delay(delayed.value)
 
         assert progress.scheduling_dependencies() == SchedulingDependencies(
-            tracked=frozenset({SchedulingDependency(DependencyType.HDA, 7)}),
+            tracked=frozenset({SchedulingDependency(DependencyType.HDA, 7, dataset_readiness(hda))}),
             untracked=(),
             more_work=False,
         )

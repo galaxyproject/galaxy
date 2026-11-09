@@ -142,11 +142,24 @@ def test_reschedules_after_backfill_interval_without_changes():
     assert harness.attempt(scheduler) == 2
 
 
-def _readiness_dependency(harness):
-    hda = model.HistoryDatasetAssociation(dataset=model.Dataset(state=model.Dataset.states.RUNNING))
+def _readiness_dependency(harness, state=model.Dataset.states.RUNNING):
+    hda = model.HistoryDatasetAssociation(dataset=model.Dataset(state=state))
     hda.history = harness.history
     harness.persist(hda)
     return hda, SchedulingDependency(DependencyType.HDA, hda.id, dataset_readiness(hda))
+
+
+def test_paused_readiness_dependency_waits_until_resumed():
+    harness = SchedulingHarness()
+    hda, dependency = _readiness_dependency(harness, state=model.Dataset.states.PAUSED)
+    scheduler = RecordingScheduler(pending(dependency))
+
+    assert harness.attempt(scheduler) == 1
+    assert harness.attempt(scheduler) == 1
+
+    harness.session.execute(update(model.Dataset).where(model.Dataset.id == hda.dataset_id).values(state="new"))
+    harness.session.commit()
+    assert harness.attempt(scheduler) == 2
 
 
 def test_readiness_snapshot_ignores_moves_between_non_ready_states():
