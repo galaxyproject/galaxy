@@ -169,7 +169,10 @@ class TrsServer:
             log.warning("Request to TRS server %s failed: %s", self._trs_url, e)
             raise UpstreamProxyError(f"TRS server {self._trs_url} could not be reached.") from e
         if response.ok:
-            return response.json()
+            try:
+                return response.json()
+            except ValueError as e:
+                raise UpstreamProxyError(f"TRS server {self._trs_url} responded with a body that is not JSON.") from e
         try:
             trs_error_dict = response.json()
             code = int(trs_error_dict["code"])
