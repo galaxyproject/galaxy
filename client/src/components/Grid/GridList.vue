@@ -180,6 +180,11 @@ const activeColumnFilters = computed(() =>
     }),
 );
 
+const reachedColumnFilterLimit = computed(() => {
+    const limit = props.gridConfig.maxColumnFilterPicks;
+    return limit !== undefined && activeColumnFilters.value.length >= limit ? limit : undefined;
+});
+
 function onColumnFilter(filter: FieldFilter, options: FilterOption[]) {
     columnFilterNames.value = {
         ...columnFilterNames.value,
@@ -542,6 +547,7 @@ watch(operationMessage, () => {
                                 :filter="fieldEntry.filter"
                                 :title="fieldTitle(fieldEntry) ?? fieldEntry.key"
                                 :selected="columnFilterSelection(fieldEntry.filter)"
+                                :reached-limit="reachedColumnFilterLimit"
                                 @update:selected="onColumnFilter(fieldEntry.filter, $event)" />
                         </th>
                     </thead>

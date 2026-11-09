@@ -20,6 +20,8 @@ interface Props {
     /** Column title, used in the toggle's accessible name */
     title: string;
     selected: FilterOption[];
+    /** Set to the limit once no more items can be picked */
+    reachedLimit?: number;
 }
 
 const props = defineProps<Props>();
@@ -119,6 +121,7 @@ function toggle(option: FilterOption) {
                     :key="option.id"
                     class="grid-column-filter-option"
                     :model-value="selectedIds.has(option.id)"
+                    :disabled="!!reachedLimit && !selectedIds.has(option.id)"
                     :data-description="`grid column filter option ${option.id}`"
                     @update:model-value="toggle(option)">
                     <span class="d-block font-weight-bold text-break">{{ option.name }}</span>
@@ -136,6 +139,9 @@ function toggle(option: FilterOption) {
                     <span v-if="query.trim()">{{ localize(`No ${filter.plural} match "${query.trim()}"`) }}</span>
                     <span v-else>{{ localize(`No ${filter.plural} found`) }}</span>
                 </div>
+            </div>
+            <div v-if="reachedLimit" class="small text-muted mt-2" data-description="grid column filter limit">
+                {{ localize(`You can pick up to ${reachedLimit} items across the columns.`) }}
             </div>
             <GButton
                 v-if="selected.length"

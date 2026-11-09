@@ -230,6 +230,33 @@ describe("GridList", () => {
         expect(wrapper.find("[data-description='grid column filter count']").text()).toBe("1");
     });
 
+    it("stops offering column filter options at the grid's limit", async () => {
+        const testGrid = createTestGrid();
+        testGrid.filtering = new Filtering({
+            link: { type: "MultiTags", handler: equals("link", "link"), menuItem: false },
+        });
+        testGrid.maxColumnFilterPicks = 1;
+        const search = vi.fn(async () => [
+            { id: "link-1", name: "Link one" },
+            { id: "link-2", name: "Link two" },
+        ]);
+        testGrid.fields[1]!.filter = { key: "link", plural: "links", search };
+        const wrapper = createTarget({ gridConfig: testGrid });
+        await flushPromises();
+        await wrapper.find("[data-description='grid column filter link'] button").trigger("click");
+        await flushPromises();
+        const option = (id: string) =>
+            wrapper.find(`input[data-description='grid column filter option ${id}']`).element as HTMLInputElement;
+        expect(option("link-2").disabled).toBe(false);
+
+        await wrapper.find("input[data-description='grid column filter option link-1']").setValue(true);
+        await flushPromises();
+
+        expect(option("link-1").disabled).toBe(false);
+        expect(option("link-2").disabled).toBe(true);
+        expect(wrapper.find("[data-description='grid column filter limit']").text()).toContain("up to 1 items");
+    });
+
     it("keeps column filters available when a pick matches nothing", async () => {
         const testGrid = createTestGrid();
         testGrid.filtering = new Filtering({

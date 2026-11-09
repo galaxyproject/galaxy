@@ -12,16 +12,16 @@ import type { FieldFilter, FilterOption } from "./types";
 /** Maximum number of workflows or histories a name resolves to, per lookup. */
 export const NAME_MATCH_LIMIT = 50;
 
-/** Maximum number of ids `/api/invocations` accepts per filter. */
-export const MAX_FILTER_IDS = 50;
+/** Number of items that can be picked across the column filters; the server uses 10 search terms. */
+export const MAX_COLUMN_FILTER_PICKS = 10;
 
 /** Number of most recently updated items a column filter lists before anything is typed. */
 export const RECENT_LIMIT = 20;
 
 /**
- * `workflow` and `history` match by name (substring, or exact when quoted) and go to the server as
- * `search` terms. `workflow_id` and `history_id` can repeat, one id per term; the column filters
- * set those. Unkeyed text is a workflow name.
+ * `workflow` and `history` match by name (substring, or exact when quoted). `workflow_id` and
+ * `history_id` can repeat, one id per term; the column filters set those. Unkeyed text is a
+ * workflow name. All of them go to the server as `search` terms.
  */
 const validFilters: Record<string, ValidFilter<string>> = {
     workflow: {
@@ -41,12 +41,6 @@ const validFilters: Record<string, ValidFilter<string>> = {
 };
 
 export const invocationsFiltering = new Filtering(validFilters, undefined, false, "workflow");
-
-export interface InvocationFilterParams {
-    workflow_id?: string[];
-    history_id?: string[];
-    search?: string;
-}
 
 /**
  * Turn a name filter value into `key:` terms for a server search: a quoted value stays one
@@ -108,29 +102,21 @@ export async function findHistoriesByName(name: string): Promise<AnyHistoryEntry
     );
 }
 
-/** Translate the grid's filter text into `/api/invocations` query parameters. */
-export function invocationFilterParams(search: string): InvocationFilterParams {
-    const filters = Object.fromEntries(invocationsFiltering.getFiltersForText(search)) as {
+/** Translate the grid's filter text into the `search` parameter of `/api/invocations`. */
+export function invocationSearch(text: string): string | undefined {
+    const filters = Object.fromEntries(invocationsFiltering.getFiltersForText(text)) as {
         workflow?: string;
         history?: string;
         workflow_id?: string[];
         history_id?: string[];
     };
-    const params: InvocationFilterParams = {};
-    if (filters.workflow_id) {
-        params.workflow_id = filters.workflow_id.slice(0, MAX_FILTER_IDS);
-    }
-    if (filters.history_id) {
-        params.history_id = filters.history_id.slice(0, MAX_FILTER_IDS);
-    }
-    const nameTerms = [
+    const terms = [
         filters.workflow && nameSearch(filters.workflow, "workflow"),
         filters.history && nameSearch(filters.history, "history"),
+        ...(filters.workflow_id ?? []).map((id) => `workflow_id:${id}`),
+        ...(filters.history_id ?? []).map((id) => `history_id:${id}`),
     ].filter(Boolean);
-    if (nameTerms.length > 0) {
-        params.search = nameTerms.join(" ");
-    }
-    return params;
+    return terms.join(" ") || undefined;
 }
 
 function workflowOption(workflow: WorkflowSummary): FilterOption {

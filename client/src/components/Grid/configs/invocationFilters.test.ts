@@ -8,9 +8,8 @@ import { useUserStore } from "@/stores/userStore";
 
 import {
     historyColumnFilter,
-    invocationFilterParams,
+    invocationSearch,
     invocationsFiltering,
-    MAX_FILTER_IDS,
     NAME_MATCH_LIMIT,
     nameSearch,
     RECENT_LIMIT,
@@ -76,44 +75,25 @@ describe("nameSearch", () => {
     });
 });
 
-describe("invocationFilterParams", () => {
-    it("passes picked ids through", () => {
-        expect(
-            invocationFilterParams(
-                "workflow_id:f2db41e1fa331b3e workflow_id:a7db2fac67043c7e history_id:1cd8e2f6b131e891",
-            ),
-        ).toEqual({
-            workflow_id: ["f2db41e1fa331b3e", "a7db2fac67043c7e"],
-            history_id: ["1cd8e2f6b131e891"],
-        });
-    });
-
-    it("sends no more picked ids than the API accepts", () => {
-        const ids = Array.from({ length: MAX_FILTER_IDS + 1 }, (_, index) => `id${index}`);
-
-        expect(invocationFilterParams(ids.map((id) => `history_id:${id}`).join(" "))).toEqual({
-            history_id: ids.slice(0, MAX_FILTER_IDS),
-        });
-    });
-
+describe("invocationSearch", () => {
     it.each([
+        ["", undefined],
         ["rna", "workflow:rna"],
         ["workflow:rna", "workflow:rna"],
         ["history:'My data'", "history:'My data'"],
         ["workflow:rna history:batch", "workflow:rna history:batch"],
-    ])("turns the name filters of %j into the search %j", (text, search) => {
-        expect(invocationFilterParams(text)).toEqual({ search });
-    });
-
-    it("sends picked ids and name filters together", () => {
-        expect(invocationFilterParams("workflow:rna workflow_id:f2db41e1fa331b3e")).toEqual({
-            workflow_id: ["f2db41e1fa331b3e"],
-            search: "workflow:rna",
-        });
+        [
+            "workflow_id:f2db41e1fa331b3e workflow_id:a7db2fac67043c7e",
+            "workflow_id:f2db41e1fa331b3e workflow_id:a7db2fac67043c7e",
+        ],
+        ["history_id:1cd8e2f6b131e891", "history_id:1cd8e2f6b131e891"],
+        ["workflow_id:f2db41e1fa331b3e workflow:rna", "workflow:rna workflow_id:f2db41e1fa331b3e"],
+    ])("turns %j into the search %j", (text, search) => {
+        expect(invocationSearch(text)).toBe(search);
     });
 
     it("keeps a quoted name with a colon in one term", () => {
-        expect(invocationFilterParams("workflow:'Foo bar: baz'")).toEqual({ search: "workflow:'Foo bar: baz'" });
+        expect(invocationSearch("workflow:'Foo bar: baz'")).toBe("workflow:'Foo bar: baz'");
         expect(
             Object.fromEntries(
                 invocationsFiltering.getFiltersForText("workflow:'Foo bar: baz' history:x", true, false),

@@ -26,8 +26,6 @@ function mockServer(workflowFails = false, historyFails = false) {
         http.get("/api/invocations", ({ request, response }) => {
             const searchParams = new URL(request.url).searchParams;
             invocationQueries({
-                workflow_id: searchParams.getAll("workflow_id"),
-                history_id: searchParams.getAll("history_id"),
                 search: searchParams.get("search"),
                 user_id: searchParams.get("user_id"),
             });
@@ -115,7 +113,7 @@ describe("invocations grid filtering", () => {
         invocationQueries.mockReset();
     });
 
-    it("sends name filters as search terms next to the picked ids", async () => {
+    it("sends name filters and picked ids as search terms", async () => {
         mockServer();
 
         const [data, total] = await getData(
@@ -130,9 +128,7 @@ describe("invocations grid filtering", () => {
         expect(data).toHaveLength(4);
         expect(total).toBe(4);
         expect(invocationQueries).toHaveBeenCalledWith({
-            workflow_id: [],
-            history_id: ["1cd8e2f6b131e891", "f2db41e1fa331b3e"],
-            search: "workflow:rna",
+            search: "workflow:rna history_id:1cd8e2f6b131e891 history_id:f2db41e1fa331b3e",
             user_id: "user-1",
         });
     });

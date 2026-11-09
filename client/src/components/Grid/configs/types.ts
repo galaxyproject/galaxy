@@ -16,6 +16,8 @@ export interface GridConfig {
     actions?: ActionArray;
     fields: FieldArray;
     filtering?: Filtering<any>;
+    /** Number of items that can be picked across the column filters */
+    maxColumnFilterPicks?: number;
     getData: (
         offset: number,
         limit: number,

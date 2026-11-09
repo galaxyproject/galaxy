@@ -8,8 +8,9 @@ import _l from "@/utils/localization";
 
 import {
     historyColumnFilter,
-    invocationFilterParams,
+    invocationSearch,
     invocationsFiltering,
+    MAX_COLUMN_FILTER_PICKS,
     workflowColumnFilter,
 } from "./invocationFilters";
 import { fetchInvocations } from "./invocationsIndex";
@@ -39,7 +40,7 @@ export async function getData(
         sort_by: sort_by as SortKeyLiteral,
         sort_desc,
         include_nested_invocations: false,
-        ...invocationFilterParams(search),
+        search: invocationSearch(search),
     } as Record<string, unknown>;
 
     if (extraProps && "include_terminal" in extraProps) {
@@ -138,6 +139,7 @@ const gridConfig: GridConfig = {
     actions: actions,
     fields: fields,
     filtering: invocationsFiltering,
+    maxColumnFilterPicks: MAX_COLUMN_FILTER_PICKS,
     getData: getData,
     plural: "Workflow Invocations",
     sortBy: "create_time",
