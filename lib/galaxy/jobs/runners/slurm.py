@@ -2,7 +2,6 @@
 SLURM job control via the DRMAA API.
 """
 
-import os
 import time
 from typing import (
     TYPE_CHECKING,
@@ -10,9 +9,11 @@ from typing import (
 
 from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
-from galaxy.util import (
-    commands,
-    unicodify,
+from galaxy.jobs.runners.util.slurm import (
+    check_memory_limit,
+    MEMORY_LIMIT_EXCEEDED,
+    MEMORY_LIMIT_PROBABLY_EXCEEDED,
+    slurm_job_state,
 )
 from galaxy.util.custom_logging import get_logger
 
@@ -23,23 +24,13 @@ log = get_logger(__name__)
 
 __all__ = ("SlurmJobRunner",)
 
-# Error message printed to job stderr when SLURM itself kills a job.
-# See src/common/slurm_jobacct_gather.c and src/slurmd/slurmd/req.c in
-# https://github.com/SchedMD/slurm/
-SLURM_MEMORY_LIMIT_EXCEEDED_MSG = "slurmstepd: error: Exceeded job memory limit"
-# Warning messages which may be printed to job stderr by SLURM after termination
-# of a job step when using the cgroup task plugin. The exceeded memory is not
-# always the cause of the step termination, which can be successful.
-# See src/plugins/task/cgroup/task_cgroup_memory.c in
-# https://github.com/SchedMD/slurm/
-SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [
-    ": Exceeded job memory limit at some point.",
-    ": Exceeded step memory limit at some point.",
-]
-
 # These messages are returned to the user
 OUT_OF_MEMORY_MSG = "This job was terminated because it used more memory than it was allocated."
 PROBABLY_OUT_OF_MEMORY_MSG = "This job was cancelled probably because it used more memory than it was allocated."
+MEMORY_LIMIT_MESSAGES = {
+    MEMORY_LIMIT_EXCEEDED: OUT_OF_MEMORY_MSG,
+    MEMORY_LIMIT_PROBABLY_EXCEEDED: PROBABLY_OUT_OF_MEMORY_MSG,
+}
 
 
 class SlurmJobRunner(DRMAAJobRunner):
@@ -47,60 +38,9 @@ class SlurmJobRunner(DRMAAJobRunner):
     restrict_job_name_length = False
 
     def _complete_terminal_job(self, ajs: "DRMAAJobState", drmaa_state: str, **kwargs) -> bool | None:
-        def _get_slurm_state_with_sacct(job_id, cluster):
-            cmd = ["sacct", "-n", "-o", "state%-32"]
-            if cluster:
-                cmd.extend(["-M", cluster])
-            cmd.extend(["-j", job_id])
-            try:
-                stdout = commands.execute(cmd)
-            except commands.CommandLineException as e:
-                if e.stderr.strip() == "SLURM accounting storage is disabled":
-                    log.warning("SLURM accounting storage is not properly configured, unable to run sacct")
-                    return
-                raise e
-            # First line is for 'job_id'
-            # Second line is for 'job_id.batch' (only available after the batch job is complete)
-            # Following lines are for the steps 'job_id.0', 'job_id.1', ... (but Galaxy does not use steps)
-            first_line = stdout.splitlines()[0]
-            # Strip whitespaces and the final '+' (if present), only return the first word
-            return first_line.strip().rstrip("+").split()[0]
-
         def _get_slurm_state() -> str:
             assert ajs.job_id is not None
-            cmd = ["scontrol", "-o"]
-            if "." in ajs.job_id:
-                # custom slurm-drmaa-with-cluster-support job id syntax
-                job_id, cluster = ajs.job_id.split(".", 1)
-                cmd.extend(["-M", cluster])
-            else:
-                job_id = ajs.job_id
-                cluster = None
-            cmd.extend(["show", "job", job_id])
-            try:
-                stdout = commands.execute(cmd).strip()
-            except commands.CommandLineException as e:
-                if e.stderr == "slurm_load_jobs error: Invalid job id specified\n":
-                    # The job may be old, try to get its state with sacct
-                    job_state = _get_slurm_state_with_sacct(job_id, cluster)
-                    if job_state:
-                        return job_state
-                    return "NOT_FOUND"
-                raise e
-            # stdout is a single line in format "key1=value1 key2=value2 ..."
-            job_info_keys = []
-            job_info_values = []
-            for job_info in stdout.split():
-                try:
-                    # Some value may contain `=` (e.g. `StdIn=StdIn=/dev/null`)
-                    k, v = job_info.split("=", 1)
-                    job_info_keys.append(k)
-                    job_info_values.append(v)
-                except ValueError:
-                    # Some value may contain spaces (e.g. `Comment=** time_limit (60m) min_nodes (1) **`)
-                    job_info_values[-1] += f" {job_info}"
-            job_info_dict = dict(zip(job_info_keys, job_info_values))
-            return job_info_dict["JobState"]
+            return slurm_job_state(ajs.job_id)
 
         try:
             if drmaa_state == self.drmaa_job_states.FAILED:
@@ -160,14 +100,14 @@ class SlurmJobRunner(DRMAAJobRunner):
                         # User requested to stop job, this isn't an error, just finish as normal
                         return super()._complete_terminal_job(ajs, drmaa_state=drmaa_state)
                     # Check to see if the job was killed for exceeding memory consumption
-                    check_memory_limit_msg = self.__check_memory_limit(ajs.error_file)
-                    if check_memory_limit_msg:
+                    memory_limit = check_memory_limit(ajs.error_file)
+                    if memory_limit:
                         log.info(
                             "(%s/%s) Job hit memory limit (SLURM state: CANCELLED)",
                             ajs.job_wrapper.get_id_tag(),
                             ajs.job_id,
                         )
-                        ajs.fail_message = check_memory_limit_msg
+                        ajs.fail_message = MEMORY_LIMIT_MESSAGES[memory_limit]
                         ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                     else:
                         log.info(
@@ -206,28 +146,3 @@ class SlurmJobRunner(DRMAAJobRunner):
             )
         # by default, finish the job with the state from drmaa
         return super()._complete_terminal_job(ajs, drmaa_state=drmaa_state)
-
-    def __check_memory_limit(self, efile_path):
-        """
-        A very poor implementation of tail, but it doesn't need to be fancy
-        since we are only searching the last 2K
-        """
-        try:
-            log.debug("Checking %s for exceeded memory message from SLURM", efile_path)
-            with open(efile_path, "rb") as f:
-                if os.path.getsize(efile_path) > 2048:
-                    f.seek(-2048, os.SEEK_END)
-                    f.readline()
-                for line in f.readlines():
-                    stripped_line = unicodify(line.strip())
-                    if stripped_line == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
-                        return OUT_OF_MEMORY_MSG
-                    elif any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
-                        return PROBABLY_OUT_OF_MEMORY_MSG
-        except FileNotFoundError:
-            # Entirely expected, as __check_memory_limit is only called if the job state is CANCELLED
-            return False
-        except Exception:
-            log.exception("Error reading end of %s:", efile_path)
-
-        return False
