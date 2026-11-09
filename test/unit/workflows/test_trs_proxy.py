@@ -224,6 +224,15 @@ def test_trs_error_document_is_passed_through():
             server.get_tool("138")
 
 
+def test_version_with_slash_stays_one_path_segment():
+    server = get_trs_proxy().server_from_url("https://workflowhub.eu")
+    parts = trs_proxy.parse_trs_url(server.get_trs_url("138", "feature/x"))
+    assert parts and parts["version_id"] == "feature/x"
+    with _mock_get(_response(200, '{"content": "class: GalaxyWorkflow"}')) as get:
+        server.get_version_descriptor("138", parts["version_id"])
+    assert get.call_args.args[0].endswith("/tools/138/versions/feature%2Fx/GALAXY/descriptor")
+
+
 def test_timeout_is_gateway_timeout():
     server = get_trs_proxy().server_from_url("https://workflowhub.eu")
     with _mock_get(requests.exceptions.ReadTimeout("read timed out")):
