@@ -655,6 +655,16 @@ class WorkflowRefactorExecutor:
                         from_step_label=from_step_label,
                     )
                     execution.messages.append(message)
+            else:
+                # The new sub-workflow can hold its inputs at other positions; connections follow the name.
+                is_subworkflow_input = (
+                    matching_input["name"] == input_name and "input_subworkflow_step_id" in matching_input
+                )
+                for input_connection in _listify_connections(input_connections):
+                    if is_subworkflow_input:
+                        input_connection["input_subworkflow_step_id"] = matching_input["input_subworkflow_step_id"]
+                    else:
+                        input_connection.pop("input_subworkflow_step_id", None)
 
         for input_name in inputs_to_delete:
             del all_input_connections[input_name]
