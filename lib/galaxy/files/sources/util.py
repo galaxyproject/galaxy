@@ -412,73 +412,73 @@ def fetch_drs_to_file(
             get_url = f"{scheme}://{netspec}/ga4gh/drs/v1/objects/{object_id}"
         else:
             raise ValueError(f"Invalid DRS URI format: {drs_uri}")
-    session = ValidatingSession(fetch_url_allowlist or [])
     headers = {**(headers or {}), **get_default_headers()}
-    response = retry_and_get(session, get_url, retry_options or RetryOptions(), headers=headers)
-    response.raise_for_status()
-    response_object = response.json()
-    access_methods = response_object.get("access_methods", [])
-    if len(access_methods) == 0:
-        raise ValueError(f"No access methods found in DRS response for {drs_uri}")
+    with ValidatingSession(fetch_url_allowlist or []) as session:
+        response = retry_and_get(session, get_url, retry_options or RetryOptions(), headers=headers)
+        response.raise_for_status()
+        response_object = response.json()
+        access_methods = response_object.get("access_methods", [])
+        if len(access_methods) == 0:
+            raise ValueError(f"No access methods found in DRS response for {drs_uri}")
 
-    if metadata_out is not None:
-        drs_name = sanitize_drs_name(response_object.get("name"))
-        if drs_name:
-            metadata_out["name"] = drs_name
+        if metadata_out is not None:
+            drs_name = sanitize_drs_name(response_object.get("name"))
+            if drs_name:
+                metadata_out["name"] = drs_name
 
-    downloaded = False
-    for access_method in access_methods:
-        access_url, access_headers = _get_access_info(session, get_url, access_method, headers=headers)
-        opts = FilesSourceOptions()
-        if access_method["type"] in ("https", "ftp"):
-            extra_props = {
-                "http_headers": access_headers or {},
-                "fetch_url_allowlist": fetch_url_allowlist or [],
-            }
-            opts.extra_props = PartialFilesSourceProperties(**extra_props)
-        elif access_method["type"] == "s3":
-            # S3 access method - requires S3 file source configuration
-            # Note: SPARC datasets use "Requester Pays" buckets which require
-            # RequestPayer='requester' parameter (not currently supported by Galaxy S3 file source)
-            log.debug(f"Processing S3 access method: {access_url}")
-            extra_props = {
-                "fetch_url_allowlist": fetch_url_allowlist or [],
-            }
-            opts.extra_props = PartialFilesSourceProperties(**extra_props)
+        downloaded = False
+        for access_method in access_methods:
+            access_url, access_headers = _get_access_info(session, get_url, access_method, headers=headers)
+            opts = FilesSourceOptions()
+            if access_method["type"] in ("https", "ftp"):
+                extra_props = {
+                    "http_headers": access_headers or {},
+                    "fetch_url_allowlist": fetch_url_allowlist or [],
+                }
+                opts.extra_props = PartialFilesSourceProperties(**extra_props)
+            elif access_method["type"] == "s3":
+                # S3 access method - requires S3 file source configuration
+                # Note: SPARC datasets use "Requester Pays" buckets which require
+                # RequestPayer='requester' parameter (not currently supported by Galaxy S3 file source)
+                log.debug(f"Processing S3 access method: {access_url}")
+                extra_props = {
+                    "fetch_url_allowlist": fetch_url_allowlist or [],
+                }
+                opts.extra_props = PartialFilesSourceProperties(**extra_props)
 
-        # Handle S3 URLs directly using s3fs instead of going through file sources
-        if access_url.startswith("s3://"):
+            # Handle S3 URLs directly using s3fs instead of going through file sources
+            if access_url.startswith("s3://"):
+                try:
+                    log.debug(f"Handling S3 URL directly: {access_url}")
+                    _download_s3_file(access_url, target_path, access_headers)
+                    downloaded = True
+                    break
+                except Exception as e:
+                    log.debug(f"Failed to fetch via {access_method['type']} access method: {e}")
+                    continue
+
+            file_sources = ensure_file_sources(user_context.file_sources if user_context else None)
             try:
-                log.debug(f"Handling S3 URL directly: {access_url}")
-                _download_s3_file(access_url, target_path, access_headers)
+                file_sources.get_file_source_path(access_url)
+            except exceptions.RequestParameterInvalidException:
+                # No file source handles this access method, try the next one.
+                continue
+            try:
+                stream_url_to_file(
+                    access_url,
+                    target_path=str(target_path),
+                    file_sources=file_sources,
+                    user_context=user_context,
+                    file_source_opts=opts,
+                )
                 downloaded = True
                 break
+            except exceptions.MessageException:
+                # Verification and configuration refusals stop the lookup.
+                raise
             except Exception as e:
-                log.debug(f"Failed to fetch via {access_method['type']} access method: {e}")
+                log.debug(f"Unexpected error with {access_method['type']} access method: {e}")
                 continue
-
-        file_sources = ensure_file_sources(user_context.file_sources if user_context else None)
-        try:
-            file_sources.get_file_source_path(access_url)
-        except exceptions.RequestParameterInvalidException:
-            # No file source handles this access method, try the next one.
-            continue
-        try:
-            stream_url_to_file(
-                access_url,
-                target_path=str(target_path),
-                file_sources=file_sources,
-                user_context=user_context,
-                file_source_opts=opts,
-            )
-            downloaded = True
-            break
-        except exceptions.MessageException:
-            # Verification and configuration refusals stop the lookup.
-            raise
-        except Exception as e:
-            log.debug(f"Unexpected error with {access_method['type']} access method: {e}")
-            continue
 
     if not downloaded:
         unimplemented_access_types = [m["type"] for m in access_methods]
