@@ -21,7 +21,10 @@ from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.jobs.handler import InvocationGrabber
 from galaxy.model.base import check_database_connection
-from galaxy.model.dataset_collections.readiness import ReadinessSnapshot
+from galaxy.model.dataset_collections.readiness import (
+    readiness_snapshots,
+    ReadinessSnapshot,
+)
 from galaxy.schema.invocation import (
     FailureReason,
     InvocationFailureDatasetFailed,
@@ -411,32 +414,16 @@ class WorkflowRequestMonitor(Monitors):
 
         # A delayed step records one observed input, including paused states
         # and unresolved datatypes. Poll that dataset instead of its collection.
-        input_dependencies: dict[int, set[ReadinessSnapshot | None]] = {}
+        input_dependencies: dict[int, set[ReadinessSnapshot]] = {}
         for dependency in dependencies:
             if dependency.dependency_type == DependencyType.HDA and dependency.readiness is not None:
                 input_dependencies.setdefault(dependency.id, set()).add(dependency.readiness)
         if input_dependencies:
-            # Bound the batch for invocations with many independently waiting
-            # steps; collection members never become Python ID lists.
-            ids = list(input_dependencies)
-            for start in range(0, len(ids), 500):
-                batch = ids[start : start + 500]
-                rows = session.execute(
-                    select(
-                        model.HistoryDatasetAssociation.id,
-                        func.coalesce(model.HistoryDatasetAssociation._state, model.Dataset.state),
-                        model.HistoryDatasetAssociation.extension,
-                        model.HistoryDatasetAssociation.deleted,
-                        func.coalesce(model.Dataset.deleted, False),
-                    )
-                    .join(model.Dataset)
-                    .where(model.HistoryDatasetAssociation.id.in_(batch))
-                ).all()
-                if len(rows) != len(batch):
+            current = readiness_snapshots(session, input_dependencies)
+            for hda_id, recorded in input_dependencies.items():
+                # A missing row or steps that recorded different snapshots also wake.
+                if {current.get(hda_id)} != recorded:
                     return True
-                for hda_id, state, extension, deleted, dataset_deleted in rows:
-                    if {ReadinessSnapshot(state, extension, deleted, dataset_deleted)} != input_dependencies[hda_id]:
-                        return True
 
         # Group dependencies by type for batch queries
         job_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.JOB}
