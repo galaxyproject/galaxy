@@ -817,6 +817,32 @@ class WorkflowModule:
         return MapOverPlanner(self.trans).plan_map_over(progress, step, all_inputs)
 
 
+def workflow_step_name(step: WorkflowStep) -> str:
+    """Return the step label, a legacy input step's name, or its 1-based position."""
+    name = step.label
+    if not name and step.is_input_type and step.tool_inputs:
+        name = step.tool_inputs.get("name")
+    return str(name or step.order_index + 1)
+
+
+def disconnected_required_subworkflow_inputs(step: WorkflowStep, subworkflow: Workflow) -> list[WorkflowStep]:
+    """Return the required input steps of ``subworkflow`` without a default that ``step`` doesn't connect."""
+    connected_input_step_ids = {connection.input_subworkflow_step_id for connection in step.input_connections}
+    default_not_set = object()
+    return [
+        input_step
+        for input_step in subworkflow.input_steps
+        if input_step.id not in connected_input_step_ids
+        and not input_step.input_optional
+        and input_step.get_input_default_value(default_not_set) is default_not_set
+    ]
+
+
+def disconnected_subworkflow_inputs_message(input_steps: list[WorkflowStep]) -> str:
+    input_names = ", ".join(f"'{workflow_step_name(input_step)}'" for input_step in input_steps)
+    return f"Subworkflow has disconnected required input {input_names}"
+
+
 class SubWorkflowModule(WorkflowModule):
     # Two step improvements to build runtime inputs for subworkflow modules
     # - First pass verify nested workflow doesn't have an RuntimeInputs
@@ -1388,6 +1414,25 @@ class InputDataCollectionModule(InputModule):
         return state_as_dict
 
 
+def _is_default_option(value, default_value) -> bool:
+    """Whether a select option starts selected for a parameter default (any entry of a list default)."""
+    if isinstance(default_value, list):
+        return value in default_value
+    return default_value is not None and value == default_value
+
+
+def _parameter_def_list_to_options(parameter_value, default_value=None) -> list[OptionDict]:
+    options: list[OptionDict] = []
+    for item in parameter_value:
+        if isinstance(item, dict):
+            value = item["value"]
+            label = item["label"] if "label" in item else value
+        else:
+            value = label = item
+        options.append({"label": label, "value": value, "selected": _is_default_option(value, default_value)})
+    return options
+
+
 class InputParameterModule(WorkflowModule):
     POSSIBLE_PARAMETER_TYPES = POSSIBLE_PARAMETER_TYPES
     type = "parameter_input"
@@ -1723,14 +1768,11 @@ class InputParameterModule(WorkflowModule):
                             )
 
             options: list[OptionDict] | None = None
-            if isinstance(default_value, list):
-                default_values = [str(value) for value in default_value]
-            else:
-                default_values = [default_value] if default_value else []
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
                 options = [
-                    {"label": o[0], "value": o[1], "selected": o[1] in default_values} for o in static_options[0]
+                    {"label": o[0], "value": o[1], "selected": _is_default_option(o[1], default_value)}
+                    for o in static_options[0]
                 ]
             elif static_options:
                 # Intersection based on values of multiple option connections.
@@ -1743,7 +1785,7 @@ class InputParameterModule(WorkflowModule):
                     {
                         "label": ", ".join(labels),
                         "value": value,
-                        "selected": value in default_values,
+                        "selected": _is_default_option(value, default_value),
                     }
                     for value, labels in collapsed_labels.items()
                 ]
@@ -1778,6 +1820,10 @@ class InputParameterModule(WorkflowModule):
             parameter_kwds["multiple"] = parameter_def["multiple"]
 
         is_text = parameter_type == "text"
+        if is_text and default_value is not None and parameter_def.get("multiple"):
+            default_values = default_value if isinstance(default_value, list) else [default_value]
+            if any(not isinstance(value, str) for value in default_values):
+                raise ParameterValueError("the attribute 'value' must be text", "input")
         restricted_inputs = False
 
         # Really is just an attempt - tool module may not be available (small problem), get_options may really depend on other
@@ -1790,26 +1836,9 @@ class InputParameterModule(WorkflowModule):
                 restricted_inputs = True
                 parameter_kwds["options"] = restricted_options
 
-        def _parameter_def_list_to_options(parameter_value):
-            options = []
-            for item in parameter_value:
-                option = {}
-                if isinstance(item, dict):
-                    value = item["value"]
-                    option["value"] = value
-                    if "label" in item:
-                        option["label"] = item["label"]
-                    else:
-                        option["label"] = value
-                else:
-                    option["value"] = item
-                    option["label"] = item
-                options.append(option)
-            return options
-
         if is_text and not restricted_inputs and parameter_def.get("restrictions"):
             restriction_values = parameter_def.get("restrictions")
-            parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values)
+            parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values, default_value)
             restricted_inputs = True
 
         # Pass bounds as min/max so the run form gets them; the parameter adds an equivalent implicit range validator.
@@ -1828,9 +1857,7 @@ class InputParameterModule(WorkflowModule):
         parameter_class = parameter_types[client_parameter_type]
 
         if default_value_set:
-            if client_parameter_type == "select":
-                parameter_kwds["selected"] = default_value
-            else:
+            if client_parameter_type != "select":
                 parameter_kwds["value"] = default_value
             if parameter_type == "boolean":
                 parameter_kwds["checked"] = default_value
@@ -1892,11 +1919,15 @@ class InputParameterModule(WorkflowModule):
                 # likely most important for parent workflows, where they run on primitive values.
                 input_param.validate(input_value, trans)
         except ValueError as e:
+            details = str(e)
+            if isinstance(e, ParameterValueError):
+                # Match run_request.py: name the step, not the runtime parameter "input".
+                details = f"{self.label or invocation_step.workflow_step.order_index + 1}: {e.message_suffix}"
             raise FailWorkflowEvaluation(
                 why=InvocationFailureWorkflowParameterInvalid(
                     reason=FailureReason.workflow_parameter_invalid,
-                    workflow_step_id=invocation_step.workflow_step_id,
-                    details=str(e),
+                    workflow_step_id=invocation_step.workflow_step.id,
+                    details=details,
                 )
             )
         step_outputs = dict(output=input_value)
@@ -2374,6 +2405,8 @@ class PickValueModule(WorkflowModule):
         object_store_populator = ObjectStorePopulator(trans.app, trans.user)
         hda.set_skipped(object_store_populator, replace_dataset=False)
         trans.sa_session.add(hda)
+        # The callers reference the HDA by id
+        trans.sa_session.flush()
         return hda
 
     def _create_collection_from_list(self, trans: "ProvidesHistoryContext", invocation_step, hdas):
@@ -3326,10 +3359,17 @@ class ToolModule(WorkflowModule):
         )
 
         complete = False
+        # A step resumed after a capped scheduling iteration skips the jobs it already created.
+        recorded_job_indexes: set[int] = set()
+        if collection_info and not invocation_step.is_new:
+            implicit_collection_jobs = invocation_step.implicit_collection_jobs
+            if implicit_collection_jobs is not None:
+                recorded_job_indexes = implicit_collection_jobs.recorded_order_indexes()
         completed_jobs: dict[int, Job | None] = tool.completed_jobs(
             trans,
             use_cached_job,
             param_combinations,
+            recorded_job_indexes=recorded_job_indexes,
         )
         try:
             mapping_params = MappingParameters(
@@ -3363,6 +3403,7 @@ class ToolModule(WorkflowModule):
                     step, job, progress.effective_replacement_dict()
                 ),
                 completed_jobs=completed_jobs,
+                recorded_job_indexes=recorded_job_indexes,
                 workflow_resource_parameters=resource_parameters,
                 credentials_context=credentials_context,
             )
@@ -3531,13 +3572,12 @@ class ToolModule(WorkflowModule):
         return PostJobAction(value["action_type"], step, output_name, action_arguments)
 
     def get_informal_replacement_parameters(self, step: WorkflowStep) -> list[str]:
-        """Return a list of replacement parameters."""
+        """Return the ``${...}`` names in rename actions, the only actions that substitute them at runtime."""
         replacement_parameters = set()
         for pja in step.post_job_actions:
-            if action_arguments := pja.action_arguments:
-                for argument in action_arguments.values():
-                    for match in re.findall(r"\$\{(.+?)\}", unicodify(argument)):
-                        replacement_parameters.add(match)
+            if pja.action_type == "RenameDatasetAction":
+                newname = (pja.action_arguments or {}).get("newname") or ""
+                replacement_parameters.update(re.findall(r"\$\{(.+?)\}", unicodify(newname)))
 
         return list(replacement_parameters)
 
@@ -3698,13 +3738,26 @@ class WorkflowModuleInjector:
 
     def compute_runtime_state(self, step: WorkflowStep, step_args=None):
         assert step.module, "module must be injected before computing runtime state"
-        state, step_errors = step.module.compute_runtime_state(self.trans, step, step_args)
+        try:
+            state, step_errors = step.module.compute_runtime_state(self.trans, step, step_args)
+        except ParameterValueError as e:
+            raise step_cannot_run_exception(step, e) from e
         step.state = state
 
         # Fix any missing parameters
         step.upgrade_messages = step.module.check_and_update_state()
 
         return step_errors
+
+
+def step_cannot_run_exception(
+    step: WorkflowStep, error: ParameterValueError
+) -> exceptions.RequestParameterInvalidException:
+    """Report a stored step definition (such as an invalid default) that keeps the workflow from running."""
+    step_name = step.label or str(step.order_index + 1)
+    return exceptions.RequestParameterInvalidException(
+        f"Workflow step '{step_name}' cannot be run: {error.message_suffix}"
+    )
 
 
 def populate_module_and_state(

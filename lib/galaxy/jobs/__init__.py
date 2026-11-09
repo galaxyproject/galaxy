@@ -15,6 +15,7 @@ import shutil
 import sys
 import time
 import traceback
+from collections import defaultdict
 from collections.abc import (
     Callable,
     Iterable,
@@ -88,7 +89,10 @@ from galaxy.jobs.runners import (
     BaseJobRunner,
     JobState,
 )
-from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.metadata import (
+    get_metadata_compute_strategy,
+    job_metadata_directory,
+)
 from galaxy.model import (
     Dataset,
     Job,
@@ -97,6 +101,7 @@ from galaxy.model import (
     store,
     Task,
 )
+from galaxy.model.metadata import MetadataTempFilePathError
 from galaxy.model.store import copy_dataset_instance_metadata_attributes
 from galaxy.model.store.discover import (
     MaxDiscoveredFilesExceededError,
@@ -110,6 +115,7 @@ from galaxy.objectstore import (
 from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.deps.container_classes import JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
@@ -1230,6 +1236,13 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def requires_containerization(self):
+        # User-defined tools run arbitrary commands, don't run them on the host.
+        if (
+            self.tool
+            and self.tool.tool_type == "user_defined"
+            and self.app.config.require_container_for_user_defined_tools
+        ):
+            return True
         return util.asbool(self.get_destination_configuration("require_container", "False"))
 
     @property
@@ -1300,6 +1313,24 @@ class MinimalJobWrapper(HasResourceParameters):
         assert job
         return job
 
+    def _charge_outputs(self, datasets: list[model.Dataset]) -> None:
+        """
+        Increase the disk usage of every user with an HDA of the outputs: the owner of the job's history, who is
+        the user who logged in for a job run before logging in, and the owners of copies made while the job ran.
+        """
+        sizes = {dataset: int(dataset.total_size or 0) for dataset in datasets if not dataset.purged}
+        holders = model.dataset_holders(self.sa_session, [dataset for dataset, size in sizes.items() if size])
+        sizes_by_user_id: dict[int, dict[model.Dataset, int]] = defaultdict(dict)
+        for dataset, user_ids in holders.items():
+            for user_id in user_ids:
+                sizes_by_user_id[user_id][dataset] = sizes[dataset]
+        # Lock the users' rows in the order of their ids, so jobs charging the same users can't deadlock
+        for user_id in sorted(sizes_by_user_id):
+            user = self.sa_session.get(model.User, user_id)
+            assert user
+            user.adjust_disk_usage_for_datasets(sizes_by_user_id[user_id])
+            self.sa_session.flush([user])
+
     def get_id_tag(self):
         # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
         return self.get_job().get_id_tag()
@@ -1326,8 +1357,8 @@ class MinimalJobWrapper(HasResourceParameters):
         return os.path.abspath(os.path.join(self.working_directory, "outputs", COMMAND_VERSION_FILENAME))
 
     def __prepare_upload_paramfile(self, job):
-        """Copy the upload paramfile into the working directory and use the stable path."""
-        new = os.path.join(self.working_directory, "upload_params.json")
+        """Copy the upload paramfile into the configs directory and use the stable path."""
+        new = os.path.join(ensure_configs_directory(self.working_directory), "upload_params.json")
         paramfile_parameter = next(iter(param for param in job.parameters if param.name == "paramfile"))
         if (param_file_path := json.loads(paramfile_parameter.value)) != new:
             try:
@@ -1388,8 +1419,12 @@ class MinimalJobWrapper(HasResourceParameters):
         ) = tool_evaluator.build()
         if tool_evaluator.use_cached_job and job.user and job.tool_id and not tool_evaluator.consumes_names:
             # search again, now we know tool doesn't require name match
-            param_dump = {p.name: p.value for p in job.parameters if not p.name.startswith("__")}
             assert self.tool
+            # Some wrappers (e.g. QIIME2) declare __-prefixed input sections.
+            # Keep these scientific parameters while excluding internal state.
+            param_dump = {
+                p.name: p.value for p in job.parameters if p.name in self.tool.inputs or not p.name.startswith("__")
+            }
             params = self.tool.params_from_strings(param_dump)
             json_internal = params_to_json_internal(self.tool.inputs, params, self.app)
             element_identifiers = None
@@ -1410,6 +1445,9 @@ class MinimalJobWrapper(HasResourceParameters):
             )
             if job_to_copy and isinstance(job_to_copy, Job):
                 job.copy_from_job(job_to_copy, copy_outputs=True)
+                if job.history:
+                    # The outputs are the cached job's datasets, possibly another user's from a published history
+                    job.history.charge_added_datasets(job.output_hdas())
                 # The copied job never reaches finish(), so run its post job actions here.
                 for pjaa in job.post_job_actions:
                     if pjaa.post_job_action.action_type not in ActionBox.immediate_actions:
@@ -1424,7 +1462,9 @@ class MinimalJobWrapper(HasResourceParameters):
         self.galaxy_lib_dir  # noqa: B018
         if self.tool.requires_galaxy_python_environment or self.remote_command_line:
             # These tools (upload, metadata, data_source) may need access to the datatypes registry.
-            self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, "registry.xml"))
+            self.app.datatypes_registry.to_xml_file(
+                os.path.join(ensure_configs_directory(self.working_directory), "registry.xml")
+            )
         if self.remote_command_line:
             os.makedirs(os.path.join(self.working_directory, "metadata", "outputs_new"), exist_ok=True)
             self.job_io.to_json(path=os.path.join(self.working_directory, "metadata", "outputs_new", "job_io.json"))
@@ -1448,7 +1488,8 @@ class MinimalJobWrapper(HasResourceParameters):
             # The tool execution is given a working directory beneath the
             # "job" working directory.
             safe_makedirs(self.tool_working_directory)
-            safe_makedirs(os.path.join(working_directory, "outputs"))
+            for name in JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES:
+                safe_makedirs(os.path.join(working_directory, name))
             log.debug("(%s) Working directory for job is: %s", self.job_id, self.working_directory)
         except ObjectInvalid:
             raise Exception("(%s) Unable to create job working directory", job.id)
@@ -1601,6 +1642,13 @@ class MinimalJobWrapper(HasResourceParameters):
                             log.warning("fail(): Missing output file in working directory: %s", unicodify(e))
             except Exception as e:
                 log.exception(str(e))
+            # finish() sets the total size of the outputs in the same transaction that charges them to the user,
+            # so outputs without a total size haven't been charged yet
+            uncharged_datasets = [
+                output_dataset
+                for dataset_assoc in job.output_datasets
+                if (output_dataset := dataset_assoc.dataset.dataset) is not None and output_dataset.total_size is None
+            ]
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -1626,6 +1674,8 @@ class MinimalJobWrapper(HasResourceParameters):
                         "Execution of this dataset's job is paused because its input datasets are in an error state.",
                     )
             self._set_unknown_output_extensions_to_data(job)
+            # Failed outputs keep their partial content, charge it like finish() does
+            self._charge_outputs(uncharged_datasets)
             job.set_final_state(job.states.ERROR)
             job.command_line = self.command_line
             job.info = message
@@ -2241,13 +2291,17 @@ class MinimalJobWrapper(HasResourceParameters):
                 else:
                     dataset.state = model.HistoryDatasetAssociation.states.FAILED_METADATA
             else:
-                self.external_output_metadata.load_metadata(
-                    dataset,
-                    output_name,
-                    self.sa_session,
-                    working_directory=self.working_directory,
-                    remote_metadata_directory=remote_metadata_directory,
-                )
+                try:
+                    self.external_output_metadata.load_metadata(
+                        dataset,
+                        output_name,
+                        self.sa_session,
+                        working_directory=self.working_directory,
+                        remote_metadata_directory=remote_metadata_directory,
+                    )
+                except MetadataTempFilePathError as e:
+                    log.warning("(%s) Rejected metadata for output %s: %s", job.id, output_name, e)
+                    dataset.state = model.HistoryDatasetAssociation.states.FAILED_METADATA
             if final_job_state != job.states.ERROR:
                 line_count = context.get("line_count", None)
                 dataset.set_peek(line_count=line_count)
@@ -2500,18 +2554,13 @@ class MinimalJobWrapper(HasResourceParameters):
             job.exit_code = tool_exit_code
         # custom post process setup
 
-        collected_bytes = 0
-        quota_source_info = None
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset.dataset
-            # assume all datasets in a job get written to the same objectstore
-            quota_source_info = dataset.quota_source_info
-            collected_bytes += dataset.set_total_size()
+            dataset.set_total_size()
             if dataset.purged:
                 # Purge, in case job wrote directly to object store
                 dataset.full_delete()
-                collected_bytes = 0
 
         # Calculate dataset hash - only if the job completed successfully,
         # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).
@@ -2535,9 +2584,7 @@ class MinimalJobWrapper(HasResourceParameters):
                                 )
                             )
 
-        user = job.user
-        if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:
-            user.adjust_total_disk_usage(collected_bytes, quota_source_info.label)
+        self._charge_outputs([dataset_assoc.dataset.dataset for dataset_assoc in job.output_datasets])
 
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
@@ -2642,6 +2689,8 @@ class MinimalJobWrapper(HasResourceParameters):
             input_ext=input_ext,
             input_dbkey=input_dbkey,
             final_job_state=final_job_state,
+            # Metadata set for legacy galaxy.json datasets writes its temp files here.
+            metadata_tmp_files_dir=job_metadata_directory(self.working_directory),
         )
 
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):

@@ -1,5 +1,4 @@
 import json
-from datetime import timedelta
 from typing import (
     Any,
     NamedTuple,
@@ -13,7 +12,9 @@ from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.schema.invocation import FailureReason
+from galaxy.tool_util.parameters import input_models_for_tool_source
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tool_util.unittest_utils.parameters import parameter_tool_source
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.tools.parameters.meta import to_decoded_json
@@ -25,11 +26,11 @@ from galaxy.tools.parameters.workflow_utils import (
 )
 from galaxy.util import (
     bunch,
-    now,
 )
 from galaxy.workflow import modules
 from galaxy.workflow.workflow_parameter_input_definitions import split_numeric_bounds
 from .workflow_support import (
+    expression_json_hda,
     MockTrans,
     yaml_to_model,
 )
@@ -592,18 +593,6 @@ def test_to_cwl_record_collection():
     }
 
 
-def _expression_json_hda(path, content: str | None, seconds_since_updated: int = 0):
-    hda = model.HistoryDatasetAssociation(extension="expression.json", create_dataset=True, flush=False)
-    hda.id = 1
-    assert hda.dataset is not None
-    hda.dataset.state = model.Dataset.states.OK
-    if content is not None:
-        path.write_text(content)
-    hda.dataset.external_filename = str(path)
-    hda.update_time = now() - timedelta(seconds=seconds_since_updated)
-    return hda
-
-
 def _workflow_step():
     step = model.WorkflowStep()
     step.id = 1
@@ -611,19 +600,19 @@ def _workflow_step():
 
 
 def test_to_cwl_expression_json(tmp_path):
-    hda = _expression_json_hda(tmp_path / "expression.json", '"abs(c3)>0.5"')
+    hda = expression_json_hda(tmp_path / "expression.json", '"abs(c3)>0.5"')
     assert modules.to_cwl(hda, [], _workflow_step()) == "abs(c3)>0.5"
 
 
 def test_to_cwl_expression_json_empty_file_recently_updated_delays(tmp_path):
-    hda = _expression_json_hda(tmp_path / "expression.json", "")
+    hda = expression_json_hda(tmp_path / "expression.json", "")
     with pytest.raises(modules.DelayedWorkflowEvaluation) as exc_info:
         modules.to_cwl(hda, [], _workflow_step())
     assert "could not be read" in exc_info.value.why
 
 
 def test_to_cwl_expression_json_malformed_fails_after_grace_period(tmp_path):
-    hda = _expression_json_hda(
+    hda = expression_json_hda(
         tmp_path / "expression.json",
         "{not json",
         seconds_since_updated=modules.EXPRESSION_JSON_GRACE_PERIOD_SECONDS + 1,
@@ -638,7 +627,7 @@ def test_to_cwl_expression_json_malformed_fails_after_grace_period(tmp_path):
 
 
 def test_to_cwl_expression_json_missing_file_fails_after_grace_period(tmp_path):
-    hda = _expression_json_hda(
+    hda = expression_json_hda(
         tmp_path / "expression.json", None, seconds_since_updated=modules.EXPRESSION_JSON_GRACE_PERIOD_SECONDS + 1
     )
     with pytest.raises(modules.FailWorkflowEvaluation) as exc_info:
@@ -650,7 +639,7 @@ def test_to_cwl_expression_json_missing_file_fails_after_grace_period(tmp_path):
 
 
 def test_read_expression_json_without_update_time_fails_immediately(tmp_path):
-    hda = _expression_json_hda(tmp_path / "expression.json", "")
+    hda = expression_json_hda(tmp_path / "expression.json", "")
     hda.update_time = None
     with pytest.raises(modules.FailWorkflowEvaluation) as exc_info:
         modules.read_expression_json(hda, _workflow_step())
@@ -660,24 +649,24 @@ def test_read_expression_json_without_update_time_fails_immediately(tmp_path):
 def test_read_expression_json_does_not_swallow_other_os_errors(tmp_path):
     a_directory = tmp_path / "expression.json"
     a_directory.mkdir()
-    hda = _expression_json_hda(a_directory, None)
+    hda = expression_json_hda(a_directory, None)
     with pytest.raises(IsADirectoryError):
         modules.read_expression_json(hda, _workflow_step())
 
 
 def test_read_expression_json_without_step_reraises_read_error(tmp_path):
-    hda = _expression_json_hda(tmp_path / "expression.json", "")
+    hda = expression_json_hda(tmp_path / "expression.json", "")
     with pytest.raises(json.JSONDecodeError):
         modules.read_expression_json(hda)
 
 
 def test_replace_expression_json_dataset(tmp_path):
-    hda = _expression_json_hda(tmp_path / "expression.json", "0.5")
+    hda = expression_json_hda(tmp_path / "expression.json", "0.5")
     assert modules.replace_expression_json_dataset(hda, _workflow_step()) == 0.5
 
 
 def test_replace_expression_json_dataset_collection_element(tmp_path):
-    hda = _expression_json_hda(tmp_path / "expression.json", "true")
+    hda = expression_json_hda(tmp_path / "expression.json", "true")
     collection = model.DatasetCollection(collection_type="list")
     element = model.DatasetCollectionElement(collection=collection, element_identifier="true", element=hda)
     assert modules.replace_expression_json_dataset(element, _workflow_step()) is True
@@ -1117,6 +1106,46 @@ class _PersistableFakeTool(_CaptureFakeTool):
     version = "1.0"
     dynamic_tool = None
     tool_source = bunch.Bunch(to_string=lambda: "<tool/>")
+
+
+def test_capture_persists_request_for_implicit_false_branch():
+    """An omitted false XML branch must not prevent mapped workflow request capture."""
+    tool = _PersistableFakeTool()
+    tool.tool_source = parameter_tool_source("gx_conditional_boolean_implicit")
+    tool.parameters = input_models_for_tool_source(tool.tool_source).parameters
+    trans = MockTrans()
+    history = model.History(name="target")
+    trans.sa_session.add(history)
+    collection_info = bunch.Bunch(collections={"input": bunch.Bunch(id=7)}, subcollection_types={})
+    job_state = {"input": {"src": "hda", "id": 13}, "conditional_parameter": {"test_parameter": False}}
+
+    def resolve(iteration_elements):
+        return (
+            bunch.Bunch(
+                inputs={
+                    "input": None,
+                    "conditional_parameter": {"test_parameter": False, "__current_case__": 1},
+                }
+            ),
+            None,
+            None,
+        )
+
+    template, combinations, request = modules._capture_workflow_tool_request_state(
+        trans, tool, None, collection_info, history, resolve, [job_state]
+    )
+
+    assert request is not None
+    assert request.id is not None
+    assert request.request_state == "validated"
+    assert request.request == {
+        "input": {"__class__": "Batch", "values": [{"src": "hdca", "id": 7}], "linked": True},
+        "conditional_parameter": {"test_parameter": False},
+    }
+    assert template is not None
+    assert template.input_state == request.request
+    assert combinations is not None
+    assert [combination.input_state for combination in combinations] == [job_state]
 
 
 def test_capture_propagates_failure_flushing_unrelated_pending_objects():

@@ -54,6 +54,7 @@ from galaxy.tools.source_store import (
     ToolSourceStore,
 )
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
+from galaxy.tools.source_store.coordination import populate_once
 from galaxy.tools.source_store.discover import discover_tools
 from galaxy.tools.source_store.index import (
     ToolIndex,
@@ -523,6 +524,10 @@ class CachedTool:
         return real
 
 
+# File mtimes come from a coarse clock that can trail indexed_at, so files stamped this close are hashed anyway.
+MTIME_SLACK_SECONDS = 2
+
+
 def edited_tool_files(stores: Iterable[ToolSourceStore]) -> dict[str, str | None]:
     """Tool files of writable ``stores`` edited since indexed, mapped to their shed guid (or ``None``).
 
@@ -547,7 +552,7 @@ def edited_tool_files(stores: Iterable[ToolSourceStore]) -> dict[str, str | None
                 mtime = os.stat(path).st_mtime
             except OSError:
                 continue
-            if entry.indexed_at is not None and mtime <= entry.indexed_at.timestamp():
+            if entry.indexed_at is not None and mtime < entry.indexed_at.timestamp() - MTIME_SLACK_SECONDS:
                 continue
             file_hash = md5_hash_file(path)
             if file_hash is not None and file_hash != entry.file_hash:
@@ -618,10 +623,7 @@ class CachedToolBox(ToolBox):
             self._require_read_only_store_indexes()
             self._tool_index = self._store.load_index() or ToolIndex()
             if self._index_needs_population():
-                self._run_inline_populator()
-                # The inline populator uses a separate store instance.
-                self._store.invalidate_index_cache()
-                self._tool_index = self._store.load_index() or ToolIndex()
+                self._populate_once(self._index_needs_population)
             elif self._reindex_edited_sources:
                 self._reindex_edited_tool_files()
         else:
@@ -700,18 +702,15 @@ class CachedToolBox(ToolBox):
         # ``_index_panel_items`` only returns placements when the index is
         # populated, so it is non-None here.
         assert self._tool_index is not None
-        missing = {p.tool_id for p in placements if p.tool_id not in self._tool_index.entries}
+        missing = self._panel_ids_missing_from_index(placements)
         if missing:
             log.info(
                 "CachedToolBox fast panel init found %d panel ids missing from index; running populator",
                 len(missing),
             )
-            self._run_inline_populator()
-            if self._store is not None:
-                self._store.invalidate_index_cache()
-                self._tool_index = self._store.load_index() or ToolIndex()
+            self._populate_once(lambda: bool(self._panel_ids_missing_from_index()))
             placements = self._index_panel_items()
-            missing = {p.tool_id for p in placements if p.tool_id not in self._tool_index.entries}
+            missing = self._panel_ids_missing_from_index(placements)
             if missing or not placements:
                 log.debug("CachedToolBox fast panel init disabled; %d panel ids still missing from index", len(missing))
                 return False
@@ -736,6 +735,12 @@ class CachedToolBox(ToolBox):
         )
         self._tool_panel_loaded_from_index = True
         return True
+
+    def _panel_ids_missing_from_index(self, placements: list[ToolPanelItem] | None = None) -> set[str]:
+        assert self._tool_index is not None
+        if placements is None:
+            placements = self._index_panel_items()
+        return {p.tool_id for p in placements if p.tool_id not in self._tool_index.entries}
 
     def _load_indexed_panel_structure(
         self,
@@ -927,6 +932,39 @@ class CachedToolBox(ToolBox):
                 )
         return False
 
+    def _populate_once(self, still_needed: Callable[[], bool]) -> None:
+        """Populate inline unless another process sharing the store does it first.
+
+        Every process booting or reloading against a stale store would
+        otherwise populate it at the same time; the others wait for the one
+        holding the store's populate lease and then load its index.
+        ``still_needed`` runs on the reloaded index under the lease unless a
+        peer's populate is used.
+        """
+
+        def reload_and_check() -> bool:
+            self._reload_tool_index()
+            return still_needed()
+
+        def populate() -> None:
+            self._run_inline_populator()
+            # The inline populator writes through a separate store instance.
+            self._reload_tool_index()
+
+        def peer_result_usable() -> bool:
+            self._reload_tool_index()
+            # An index this Galaxy cannot load (e.g. written by another
+            # version during a rolling upgrade) reloads as empty.
+            return bool(self._tool_index and self._tool_index.entries)
+
+        lease = self._store.populate_lease() if self._store is not None else None
+        populate_once(lease, reload_and_check, populate, peer_result_usable=peer_result_usable)
+
+    def _reload_tool_index(self) -> None:
+        if self._store is not None:
+            self._store.invalidate_index_cache()
+            self._tool_index = self._store.load_index() or ToolIndex()
+
     def _run_inline_populator(self) -> None:
         """Cold-start hook: write source rows and metadata in this process.
 
@@ -1092,17 +1130,22 @@ class CachedToolBox(ToolBox):
                     except Exception:
                         return (1, v)
 
-                versions = sorted(
-                    self._tool_index.configured_versions(tool_id).keys(),
-                    key=_ver_key,
-                )
-                tools: list[ToolLike] = []
-                for ver in versions:
-                    entry = self._tool_index.get(tool_id, ver)
-                    if entry is not None:
-                        tools.append(self._cached_tool_for_entry(entry))
-                if tools:
-                    return tools
+                # A shed guid names one version; its lineage spans every
+                # guid sharing the versionless prefix.
+                lineage_ids = [tool_id]
+                versionless = remove_version_from_guid(tool_id) if is_shed_guid(tool_id) else None
+                if versionless:
+                    for sibling_id, _ in self._guid_sibling_versions().get(versionless, ()):
+                        if sibling_id not in lineage_ids:
+                            lineage_ids.append(sibling_id)
+                version_entries = [
+                    entry
+                    for lineage_id in lineage_ids
+                    for entry in self._tool_index.configured_versions(lineage_id).values()
+                ]
+                version_entries.sort(key=lambda entry: _ver_key(entry.version or ""))
+                if version_entries:
+                    return [self._cached_tool_for_entry(entry) for entry in version_entries]
             else:
                 entry = self._tool_index.get_configured(tool_id, tool_version)
                 if entry is not None:
@@ -1118,11 +1161,13 @@ class CachedToolBox(ToolBox):
         # Cached shed installs need their own short-id lookup and version sort.
         if self._tool_index and self._shed_short_id_to_guids and tool_id in self._shed_short_id_to_guids:
             candidates: list[tuple[tuple[int, Any], ToolLike]] = []
-            for guid in sorted(self._shed_short_id_to_guids[tool_id]):
-                entry = self._tool_index.get_configured(guid, tool_version)
-                if entry is None and tool_version and not exact:
-                    # Inexact requests may use this guid's default version.
-                    entry = self._tool_index.entries.get(guid)
+            guids = sorted(self._shed_short_id_to_guids[tool_id])
+            entries = [self._tool_index.get_configured(guid, tool_version) for guid in guids]
+            if tool_version and not exact and not any(entries):
+                # Inexact requests may use a default version, but only when no
+                # guid has the requested one.
+                entries = [self._tool_index.entries.get(guid) for guid in guids]
+            for entry in entries:
                 if entry is not None:
                     cached = self._cached_tool_for_entry(entry)
                     ver_key: tuple[int, Any]
@@ -1563,8 +1608,9 @@ class CachedToolBox(ToolBox):
             # is the same namedtuple stub the eager pipeline hands the Tool
             # ctor for shed tools whose install-DB row hasn't materialised
             # yet — see ``AbstractToolBox.get_tool_repository_from_xml_item``.
-            # ``Tool.populate_tool_shed_info`` only reads the scalar fields,
-            # all of which are on ``ToolIndexEntry``; building the stub
+            # ``Tool.populate_tool_shed_info`` reads the scalar fields, all
+            # on ``ToolIndexEntry``, and keeps the stub as the
+            # ``tool_shed_repository`` fallback; building the stub
             # directly avoids a per-materialise install-DB round-trip.
             # ``installed_tool_dependencies`` readers get ``[]`` — same
             # shape the eager pre-install code path produces.
@@ -1885,10 +1931,7 @@ class CachedToolBox(ToolBox):
         # come back from there even after removal.
         self._tool_versions_by_id.pop(tool_id, None)
         if hasattr(self, "_lineage_map"):
-            self._lineage_map.lineage_map.pop(tool_id, None)
-            versionless = remove_version_from_guid(tool_id)
-            if versionless:
-                self._lineage_map.lineage_map.pop(versionless, None)
+            self._remove_from_lineage(tool_id)
         # Drop the complete old-id bucket for this removed index entry.
         self._tools_by_old_id.pop(tool_id, None)
         # The short-id bucket is keyed by ``old_id`` — for a shed guid
@@ -1923,6 +1966,30 @@ class CachedToolBox(ToolBox):
         for key in [key for key in self._cached_tools if key[0] == tool_id]:
             del self._cached_tools[key]
         return result
+
+    def _remove_from_lineage(self, tool_id: str) -> None:
+        """Drop ``tool_id`` from the lineage map.
+
+        A Tool Shed tool's versions share one lineage, mapped under each
+        version's guid and the versionless guid and held by the tool objects.
+        Removing one version takes it out of that lineage in place, so lookups
+        by the versionless guid still find the remaining versions.
+        """
+        lineage_map = self._lineage_map.lineage_map
+        lineage = lineage_map.pop(tool_id, None)
+        versionless = remove_version_from_guid(tool_id)
+        if not versionless:
+            return
+        if not is_shed_guid(tool_id):
+            lineage_map.pop(versionless, None)
+            return
+        lineage = lineage_map.get(versionless, lineage)
+        if lineage is None:
+            return
+        for version in [version for version in lineage.tool_versions if f"{versionless}/{version}" == tool_id]:
+            lineage.tool_versions.discard(version)
+        if not lineage.tool_versions:
+            lineage_map.pop(versionless, None)
 
     def _remove_versions_in_memory(self, tool_id: str, removed: list[str]) -> None:
         """Drop registry slots, proxies and lineage versions the index no longer offers.

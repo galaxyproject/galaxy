@@ -22,6 +22,7 @@ from .index import (
     ToolIndexEntry,
 )
 from .interface import (
+    PopulateLease,
     StoredToolSource,
     ToolSourceStore,
 )
@@ -224,6 +225,10 @@ class CompositeToolSourceStore(ToolSourceStore):
             return None
         merged.select_configured_defaults()
         return merged
+
+    def populate_lease(self) -> PopulateLease | None:
+        # Populates write the default store, so its lease covers them.
+        return self._default_store.populate_lease()
 
     def invalidate_index_cache(self) -> None:
         for _name, member in self._members:

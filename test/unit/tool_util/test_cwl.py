@@ -2,7 +2,9 @@ import json
 import os
 from uuid import uuid4
 
+import pytest
 import yaml
+from cwltool import validate_js
 
 from galaxy.tool_util.cwl import (
     tool_proxy,
@@ -38,6 +40,14 @@ def test_tool_proxy():
     tool_proxy(_cwl_tool_path("v1.0/v1.0/sorttool.cwl"))
     tool_proxy(_cwl_tool_path("v1.0/v1.0/bwa-mem-tool.cwl"))
     tool_proxy(_cwl_tool_path("v1.0/v1.0/parseInt-tool.cwl"))
+
+
+def test_tool_proxy_skips_jshint(monkeypatch: pytest.MonkeyPatch):
+    def fail(*args, **kwargs):
+        raise AssertionError("cwltool ran jshint")
+
+    monkeypatch.setattr(validate_js, "exec_js_process", fail)
+    tool_proxy(_cwl_tool_path("../parameters/cwl_int.cwl"))
 
 
 def test_serialize_deserialize():

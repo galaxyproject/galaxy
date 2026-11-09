@@ -17,10 +17,8 @@ import { BSkeleton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { useToast } from "@/composables/toast";
+import { useFavoriteObjects } from "@/composables/useFavoriteObjects";
 import { useToolStore } from "@/stores/toolStore";
-import { useUserStore } from "@/stores/userStore";
-import ariaAlert from "@/utils/ariaAlert";
 
 import type { CardBadge } from "../Common/GCard.types";
 import { useToolsListCardActions } from "./useToolsListCardActions";
@@ -76,9 +74,8 @@ const emit = defineEmits<{
     (e: "apply-filter", filter: string, value: string): void;
 }>();
 
-const userStore = useUserStore();
-const { currentFavorites, isAnonymous } = storeToRefs(userStore);
-const Toast = useToast();
+const { canFavorite, isFavorite, isSaving, toggleFavorite } = useFavoriteObjects();
+const isAnonymous = computed(() => !canFavorite.value);
 const { panelSections } = storeToRefs(useToolStore());
 
 function getOntologyBadges(view: "ontology:edam_operations" | "ontology:edam_topics", ids: string[]): OntologyBadge[] {
@@ -106,42 +103,11 @@ function quotedOntology(ontology: OntologyBadge) {
     return `"${ontology.id}"`;
 }
 
-const favoriteTagSet = computed(() => new Set(currentFavorites.value.tags || []));
-const favoriteEdamOperationSet = computed(() => new Set(currentFavorites.value.edam_operations || []));
-const favoriteEdamTopicSet = computed(() => new Set(currentFavorites.value.edam_topics || []));
-const togglingTags = ref<string[]>([]);
-const togglingEdamOperations = ref<string[]>([]);
-const togglingEdamTopics = ref<string[]>([]);
-
-function isFavoriteTag(tag: string) {
-    return favoriteTagSet.value.has(tag);
-}
-
-function isTogglingTag(tag: string) {
-    return togglingTags.value.includes(tag);
-}
-
-function isFavoriteEdamOperation(operationId: string) {
-    return favoriteEdamOperationSet.value.has(operationId);
-}
-
-function isTogglingEdamOperation(operationId: string) {
-    return togglingEdamOperations.value.includes(operationId);
-}
-
-function isFavoriteEdamTopic(topicId: string) {
-    return favoriteEdamTopicSet.value.has(topicId);
-}
-
-function isTogglingEdamTopic(topicId: string) {
-    return togglingEdamTopics.value.includes(topicId);
-}
-
 function favoriteTagTitle(tag: string) {
     if (isAnonymous.value) {
         return "Login or Register to Favorite Tags";
     }
-    if (isFavoriteTag(tag)) {
+    if (isFavorite("tags", tag)) {
         return "Remove tag from Favorites";
     }
     return "Add tag to Favorites";
@@ -151,7 +117,7 @@ function favoriteEdamOperationTitle(ontology: OntologyBadge) {
     if (isAnonymous.value) {
         return "Login or Register to Favorite EDAM Operations";
     }
-    if (isFavoriteEdamOperation(ontology.id)) {
+    if (isFavorite("edam_operations", ontology.id)) {
         return `Remove EDAM operation '${ontology.name}' from Favorites`;
     }
     return `Add EDAM operation '${ontology.name}' to Favorites`;
@@ -161,99 +127,10 @@ function favoriteEdamTopicTitle(ontology: OntologyBadge) {
     if (isAnonymous.value) {
         return "Login or Register to Favorite EDAM Topics";
     }
-    if (isFavoriteEdamTopic(ontology.id)) {
+    if (isFavorite("edam_topics", ontology.id)) {
         return `Remove EDAM topic '${ontology.name}' from Favorites`;
     }
     return `Add EDAM topic '${ontology.name}' to Favorites`;
-}
-
-async function toggleFavoriteTag(tag: string) {
-    if (isAnonymous.value) {
-        Toast.error("You must be signed in to manage favorite tags.");
-        ariaAlert("sign in to manage favorite tags");
-        return;
-    }
-
-    if (isTogglingTag(tag)) {
-        return;
-    }
-
-    togglingTags.value = [...togglingTags.value, tag];
-
-    try {
-        if (isFavoriteTag(tag)) {
-            await userStore.removeFavoriteTag(tag);
-            ariaAlert(`removed tag ${tag} from favorites`);
-        } else {
-            await userStore.addFavoriteTag(tag);
-            ariaAlert(`added tag ${tag} to favorites`);
-        }
-    } catch {
-        Toast.error(`Failed to update favorite tag '${tag}'.`);
-        ariaAlert(`failed to update favorite tag ${tag}`);
-    } finally {
-        togglingTags.value = togglingTags.value.filter((activeTag) => activeTag !== tag);
-    }
-}
-
-async function toggleFavoriteEdamOperation(ontology: OntologyBadge) {
-    if (isAnonymous.value) {
-        Toast.error("You must be signed in to manage favorite EDAM operations.");
-        ariaAlert("sign in to manage favorite EDAM operations");
-        return;
-    }
-
-    if (isTogglingEdamOperation(ontology.id)) {
-        return;
-    }
-
-    togglingEdamOperations.value = [...togglingEdamOperations.value, ontology.id];
-
-    try {
-        if (isFavoriteEdamOperation(ontology.id)) {
-            await userStore.removeFavoriteEdamOperation(ontology.id);
-            ariaAlert(`removed EDAM operation ${ontology.name} from favorites`);
-        } else {
-            await userStore.addFavoriteEdamOperation(ontology.id);
-            ariaAlert(`added EDAM operation ${ontology.name} to favorites`);
-        }
-    } catch {
-        Toast.error(`Failed to update favorite EDAM operation '${ontology.name}'.`);
-        ariaAlert(`failed to update favorite EDAM operation ${ontology.name}`);
-    } finally {
-        togglingEdamOperations.value = togglingEdamOperations.value.filter(
-            (activeOperation) => activeOperation !== ontology.id,
-        );
-    }
-}
-
-async function toggleFavoriteEdamTopic(ontology: OntologyBadge) {
-    if (isAnonymous.value) {
-        Toast.error("You must be signed in to manage favorite EDAM topics.");
-        ariaAlert("sign in to manage favorite EDAM topics");
-        return;
-    }
-
-    if (isTogglingEdamTopic(ontology.id)) {
-        return;
-    }
-
-    togglingEdamTopics.value = [...togglingEdamTopics.value, ontology.id];
-
-    try {
-        if (isFavoriteEdamTopic(ontology.id)) {
-            await userStore.removeFavoriteEdamTopic(ontology.id);
-            ariaAlert(`removed EDAM topic ${ontology.name} from favorites`);
-        } else {
-            await userStore.addFavoriteEdamTopic(ontology.id);
-            ariaAlert(`added EDAM topic ${ontology.name} to favorites`);
-        }
-    } catch {
-        Toast.error(`Failed to update favorite EDAM topic '${ontology.name}'.`);
-        ariaAlert(`failed to update favorite EDAM topic ${ontology.name}`);
-    } finally {
-        togglingEdamTopics.value = togglingEdamTopics.value.filter((activeTopic) => activeTopic !== ontology.id);
-    }
 }
 
 const routeTo = computed(() =>
@@ -407,11 +284,13 @@ const {
                         :class="{ disabled: isAnonymous }"
                         data-description="favorite-edam-operation-button"
                         :title="favoriteEdamOperationTitle(ontology)"
-                        :aria-pressed="isFavoriteEdamOperation(ontology.id) ? 'true' : 'false'"
+                        :aria-pressed="isFavorite('edam_operations', ontology.id) ? 'true' : 'false'"
                         :aria-disabled="isAnonymous ? 'true' : undefined"
-                        :disabled="isTogglingEdamOperation(ontology.id)"
-                        @click.stop="toggleFavoriteEdamOperation(ontology)">
-                        <FontAwesomeIcon :icon="isFavoriteEdamOperation(ontology.id) ? fasStar : farStar" fixed-width />
+                        :disabled="isSaving('edam_operations', ontology.id)"
+                        @click.stop="toggleFavorite('edam_operations', ontology.id, ontology.name)">
+                        <FontAwesomeIcon
+                            :icon="isFavorite('edam_operations', ontology.id) ? fasStar : farStar"
+                            fixed-width />
                     </button>
                 </span>
 
@@ -429,11 +308,13 @@ const {
                         :class="{ disabled: isAnonymous }"
                         data-description="favorite-edam-topic-button"
                         :title="favoriteEdamTopicTitle(ontology)"
-                        :aria-pressed="isFavoriteEdamTopic(ontology.id) ? 'true' : 'false'"
+                        :aria-pressed="isFavorite('edam_topics', ontology.id) ? 'true' : 'false'"
                         :aria-disabled="isAnonymous ? 'true' : undefined"
-                        :disabled="isTogglingEdamTopic(ontology.id)"
-                        @click.stop="toggleFavoriteEdamTopic(ontology)">
-                        <FontAwesomeIcon :icon="isFavoriteEdamTopic(ontology.id) ? fasStar : farStar" fixed-width />
+                        :disabled="isSaving('edam_topics', ontology.id)"
+                        @click.stop="toggleFavorite('edam_topics', ontology.id, ontology.name)">
+                        <FontAwesomeIcon
+                            :icon="isFavorite('edam_topics', ontology.id) ? fasStar : farStar"
+                            fixed-width />
                     </button>
                 </span>
 
@@ -446,11 +327,11 @@ const {
                         class="inline-tag-button"
                         :class="{ disabled: isAnonymous }"
                         :title="favoriteTagTitle(tag)"
-                        :aria-pressed="isFavoriteTag(tag) ? 'true' : 'false'"
+                        :aria-pressed="isFavorite('tags', tag) ? 'true' : 'false'"
                         :aria-disabled="isAnonymous ? 'true' : undefined"
-                        :disabled="isTogglingTag(tag)"
-                        @click.stop="toggleFavoriteTag(tag)">
-                        <FontAwesomeIcon :icon="isFavoriteTag(tag) ? fasStar : farStar" fixed-width />
+                        :disabled="isSaving('tags', tag)"
+                        @click.stop="toggleFavorite('tags', tag)">
+                        <FontAwesomeIcon :icon="isFavorite('tags', tag) ? fasStar : farStar" fixed-width />
                     </button>
                 </span>
             </div>

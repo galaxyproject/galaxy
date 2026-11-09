@@ -170,6 +170,15 @@ inputs:
 steps: []
 """
 
+WORKFLOW_OUTPUT_FILTER_SELECT_SINGLE_VALUE = """
+class: GalaxyWorkflow
+steps:
+  - tool_id: output_filter_select
+    state:
+      sel_mult: AA
+      sel: CC
+"""
+
 
 class RunsWorkflowFixtures:
     workflow_populator: WorkflowPopulator
@@ -287,6 +296,12 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
             instance=instance,
             preserve_external_subworkflow_links=preserve_external_subworkflow_links,
         )
+
+    def _yaml_workflow_run_form(self, workflow_yaml: str) -> dict[str, Any]:
+        """Upload a format2 workflow and download its run form against a fresh history."""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(workflow_yaml)
+        with self.dataset_populator.test_history() as history_id:
+            return self._download_workflow(workflow_id, style="run", history_id=history_id)
 
     def _assert_is_runtime_input(self, tool_state_value):
         if not isinstance(tool_state_value, dict):
@@ -419,6 +434,32 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
             workflows_url = self._api_url(f"workflows/{workflow_id}")
             assert get(workflows_url).status_code == 403
 
+    def test_shared_user_can_show_workflow(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_show")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        assert self._show_workflow(workflow_id)["name"] == "test_shared_show"
+
+    def test_anon_can_show_importable_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_importable_show", importable=True)
+        with self._different_user(anon=True):
+            assert self._show_workflow(workflow_id)["name"] == "test_importable_show"
+
+    def test_admin_can_show_private_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_admin_show")
+        show_response = self._get(f"workflows/{workflow_id}", admin=True)
+        self._assert_status_code_is(show_response, 200)
+        assert show_response.json()["name"] == "test_admin_show"
+
+    def test_cannot_show_workflow_with_unset_importable(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_unset_importable")
+        self._assert_status_code_is_ok(
+            self.workflow_populator.update_workflow_fields(workflow_id, {"importable": None})
+        )
+        with self._different_user():
+            self._assert_status_code_is(self._get(f"workflows/{workflow_id}"), 403)
+
     def test_cannot_download_private_workflow(self):
         workflow_id = self.workflow_populator.simple_workflow("test_not_downloadable")
         with self._different_user():
@@ -522,6 +563,114 @@ steps:
             workflow_undelete_url = self._api_url(f"workflows/{workflow_id}/undelete", use_key=True)
             undelete_response = post(workflow_undelete_url)
             self._assert_status_code_is(undelete_response, 403)
+
+    def test_update_show_in_tool_panel(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_update_show_in_tool_panel")
+        self._assert_status_code_is_ok(self._update_workflow(workflow_id, {"show_in_tool_panel": True}))
+        assert self._shows_in_tool_panel(workflow_id)
+        self._assert_status_code_is_ok(self._update_workflow(workflow_id, {"show_in_tool_panel": False}))
+        assert not self._shows_in_tool_panel(workflow_id)
+
+    def test_shared_user_can_update_show_in_tool_panel(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_show_in_tool_panel")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        for key in ("show_in_tool_panel", "menu_entry"):
+            self._assert_status_code_is_ok(self._update_workflow(workflow_id, {key: True}))
+            assert self._shows_in_tool_panel(workflow_id, show_shared=True)
+            self._assert_status_code_is_ok(self._update_workflow(workflow_id, {key: False}))
+            assert not self._shows_in_tool_panel(workflow_id, show_shared=True)
+
+    def test_other_can_update_show_in_tool_panel_for_published(self):
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_published_show_in_tool_panel", publish=True)
+        response = self.workflow_populator.update_workflow_fields(workflow_id, {"show_in_tool_panel": True})
+        self._assert_status_code_is_ok(response)
+        assert self._shows_in_tool_panel(workflow_id, show_published=True)
+
+    def test_update_show_in_tool_panel_by_uuid(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_show_in_tool_panel_by_uuid")
+        workflow_uuid = self._show_workflow(workflow_id)["latest_workflow_uuid"]
+        update_fields = self.workflow_populator.update_workflow_fields
+        self._assert_status_code_is_ok(update_fields(workflow_uuid, {"show_in_tool_panel": True}))
+        assert self._shows_in_tool_panel(workflow_id)
+        self._assert_status_code_is_ok(update_fields(workflow_uuid, {"show_in_tool_panel": False}))
+        assert not self._shows_in_tool_panel(workflow_id)
+
+    def test_other_cannot_update(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_other_update")
+        with self._different_user():
+            for update in ({"name": "other name"}, {"published": True}, {"show_in_tool_panel": True}):
+                self._assert_status_code_is(self._update_workflow(workflow_id, update), 403)
+        workflow = self._show_workflow(workflow_id)
+        assert workflow["name"] == "test_other_update"
+        assert workflow["published"] is False
+
+    def test_admin_can_update_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_admin_update")
+        response = self.workflow_populator.update_workflow_fields(workflow_id, {"hidden": True}, admin=True)
+        self._assert_status_code_is_ok(response)
+        assert self._show_workflow(workflow_id)["hidden"] is True
+
+    def test_shared_user_cannot_update_name_with_show_in_tool_panel(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_update_name")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        update = {"show_in_tool_panel": True, "name": "other name"}
+        self._assert_status_code_is(self._update_workflow(workflow_id, update), 403)
+        assert not self._shows_in_tool_panel(workflow_id, show_shared=True)
+        assert self._show_workflow(workflow_id)["name"] == "test_shared_update_name"
+
+    def test_other_cannot_refactor(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_other_refactor")
+        actions = [{"action_type": "update_name", "name": "other name"}]
+        with self._different_user():
+            for dry_run in (True, False):
+                refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=dry_run)
+                self._assert_status_code_is(refactor_response, 403)
+        assert self._show_workflow(workflow_id)["name"] == "test_other_refactor"
+
+    def test_shared_user_cannot_refactor_or_update(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow("test_shared_refactor")
+            self.workflow_populator.share_with_user(workflow_id, my_email)
+        actions = [{"action_type": "update_name", "name": "other name"}]
+        for dry_run in (True, False):
+            refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=dry_run)
+            self._assert_status_code_is(refactor_response, 403)
+        for fields in ({"tags": ["other"]}, {"hidden": True}):
+            update_response = self.workflow_populator.update_workflow_fields(workflow_id, fields)
+            self._assert_status_code_is(update_response, 403)
+        workflow = self._show_workflow(workflow_id)
+        assert workflow["name"] == "test_shared_refactor"
+        assert workflow["tags"] == []
+        assert workflow["hidden"] is False
+
+    def test_set_workflow_menu(self):
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            shared_workflow_id = self.workflow_populator.simple_workflow("test_set_menu_shared")
+            self.workflow_populator.share_with_user(shared_workflow_id, my_email)
+            private_workflow_id = self.workflow_populator.simple_workflow("test_set_menu_private")
+        menu_response = self.workflow_populator.set_workflow_menu([shared_workflow_id])
+        self._assert_status_code_is_ok(menu_response)
+        assert self._shows_in_tool_panel(shared_workflow_id, show_shared=True)
+        menu_response = self.workflow_populator.set_workflow_menu([shared_workflow_id, private_workflow_id])
+        self._assert_status_code_is(menu_response, 403)
+        assert self._shows_in_tool_panel(shared_workflow_id, show_shared=True)
+
+    def test_set_workflow_menu_drops_duplicate_ids(self):
+        workflow_id_1 = self.workflow_populator.simple_workflow("test_set_menu_dup_1")
+        workflow_id_2 = self.workflow_populator.simple_workflow("test_set_menu_dup_2")
+        menu_response = self.workflow_populator.set_workflow_menu([workflow_id_1, workflow_id_2, workflow_id_1])
+        self._assert_status_code_is_ok(menu_response)
+        menu = self._get("workflows/menu").json()
+        assert len(menu["ids_in_menu"]) == 2
+        assert self._shows_in_tool_panel(workflow_id_1)
+        assert self._shows_in_tool_panel(workflow_id_2)
 
     def test_index(self):
         index_response = self._get("workflows")
@@ -2417,6 +2566,21 @@ steps:
         assert len(outputs) == 2
         assert outputs[0]["name"] == "out_1"
         assert outputs[1]["name"] == "out_2"
+
+    @skip_without_tool("output_filter_select")
+    def test_export_editor_filtered_outputs_single_value_multiple_select(self):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OUTPUT_FILTER_SELECT_SINGLE_VALUE)
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        outputs = downloaded_workflow["steps"]["0"]["outputs"]
+        assert [output["name"] for output in outputs] == ["AA", "CC"]
+
+    @skip_without_tool("output_filter_select")
+    def test_run_filtered_outputs_single_value_multiple_select(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(WORKFLOW_OUTPUT_FILTER_SELECT_SINGLE_VALUE, history_id=history_id, assert_ok=True)
+            [job] = self._history_jobs(history_id)
+            job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert sorted(job_details["outputs"].keys()) == ["AA", "CC"]
 
     @skip_without_tool("collection_type_source")
     def test_export_editor_collection_type_source(self):
@@ -5072,6 +5236,42 @@ outer_input:
             details = self.dataset_populator.get_history_dataset_details(history_id)
             assert details["name"] == "moocow suffix"
 
+    @skip_without_tool("cat")
+    def test_run_form_replacement_parameters_from_rename(self):
+        run_form = self._yaml_workflow_run_form("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+    out:
+      out_file1:
+        rename: "${a} ${b} suffix"
+""")
+        assert sorted(run_form["steps"][1]["replacement_parameters"]) == ["a", "b"]
+
+    @skip_without_tool("cat")
+    def test_run_form_replacement_parameters_ignore_non_rename_actions(self):
+        run_form = self._yaml_workflow_run_form("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+    out:
+      out_file1:
+        rename: "${a} suffix"
+        add_tags: ["name:${t}"]
+        change_datatype: "${d}"
+""")
+        assert sorted(run_form["steps"][1]["replacement_parameters"]) == ["a"]
+
     @skip_without_tool("random_lines1")
     def test_run_runtime_parameters_after_pause(self):
         with self.dataset_populator.test_history() as history_id:
@@ -5749,10 +5949,30 @@ input_c:
             )
             assert output_filtered["element_count"] == 2, output_filtered
 
-    def test_subworkflow_missing_input_connection_error(self):
-        with self.dataset_populator.test_history() as history_id:
-            summary = self._run_workflow(
-                """
+    def _assert_disconnected_subworkflow_input_rejected(
+        self, workflow_id: str, history_id: str | None, inputs: dict[str, Any], step_path: str, input_name: str
+    ) -> None:
+        jobs_before = self._history_jobs(history_id) if history_id else []
+        history_name = f"disconnected subworkflow input history {uuid4()}"
+        target = {"history_id": history_id} if history_id else {"new_history_name": history_name}
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={**target, "inputs_by": "name", "inputs": inputs},
+            json=True,
+        )
+        self._assert_status_code_is(response, 400)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
+        assert_error_message_contains(
+            response, f"{step_path}: Subworkflow has disconnected required input '{input_name}'"
+        )
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        if history_id:
+            assert self._history_jobs(history_id) == jobs_before
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @pytest.mark.parametrize("new_history", [False, True])
+    def test_subworkflow_missing_input_connection_error(self, history_id, new_history):
+        workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs: []
 steps:
@@ -5763,19 +5983,97 @@ steps:
         my_input:
           type: data
       steps: []
-""",
-                history_id=history_id,
-                assert_ok=False,
-            )
-            workflow_details = self._invocation_details(summary.workflow_id, summary.invocation_id)
-            assert workflow_details["messages"] == [
-                {
-                    "details": "Subworkflow has disconnected required input.",
-                    "reason": "unexpected_failure",
-                    "workflow_step_id": 0,
-                    "workflow_step_index_path": [0],
-                }
-            ]
+""")
+        self._assert_disconnected_subworkflow_input_rejected(
+            workflow_id, None if new_history else history_id, {}, "subworkflow_step", "my_input"
+        )
+
+    def test_subworkflow_partially_connected_required_input_error(self, history_id):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  parent_input:
+    type: data
+steps:
+  subworkflow_step:
+    in:
+      connected_input: parent_input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        connected_input:
+          type: data
+        disconnected_input:
+          type: data
+      steps:
+        cat:
+          tool_id: cat1
+          in:
+            input1: connected_input
+""")
+        hda = self.dataset_populator.new_dataset(history_id, content="1\n2\n", wait=True)
+        self._assert_disconnected_subworkflow_input_rejected(
+            workflow_id,
+            history_id,
+            {"parent_input": {"src": "hda", "id": hda["id"]}},
+            "subworkflow_step",
+            "disconnected_input",
+        )
+
+    def test_nested_subworkflow_missing_input_connection_error(self, history_id):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  parent_input:
+    type: data
+steps:
+  outer_subworkflow:
+    in:
+      outer_input: parent_input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        outer_input:
+          type: data
+      steps:
+        cat:
+          tool_id: cat1
+          in:
+            input1: outer_input
+        inner_subworkflow:
+          run:
+            class: GalaxyWorkflow
+            inputs:
+              inner_input:
+                type: data
+            steps: []
+""")
+        hda = self.dataset_populator.new_dataset(history_id, content="1\n2\n", wait=True)
+        self._assert_disconnected_subworkflow_input_rejected(
+            workflow_id,
+            history_id,
+            {"parent_input": {"src": "hda", "id": hda["id"]}},
+            "outer_subworkflow > inner_subworkflow",
+            "inner_input",
+        )
+
+    @pytest.mark.parametrize("parameter_type,default", [("boolean", False), ("integer", 0), ("text", "")])
+    def test_run_subworkflow_with_falsy_default_unconnected(self, history_id, parameter_type, default):
+        workflow_id = self._upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+steps:
+  subworkflow_step:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        parameter:
+          type: {parameter_type}
+          optional: false
+          default: {json.dumps(default)}
+      steps: []
+""")
+        response = self._post(f"workflows/{workflow_id}/invocations", data={"history_id": history_id}, json=True)
+        self._assert_status_code_is(response, 200)
 
     def test_run_subworkflow_with_required_input_with_default_unconnected(self):
         """Test subworkflow with required parameter input that has default value but is unconnected.
@@ -5879,6 +6177,41 @@ some_file:
             assert message["workflow_step_index_path"] == [1]
             # Verify workflow_step_id points to the conditional_step (step 2 in the subworkflow)
             assert message["workflow_step_id"] == 2
+
+    def test_subworkflow_parameter_validator_failure(self):
+        # The parent input has no validator, so the value is only checked when the subworkflow schedules.
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  outer_text: text
+steps:
+  nested:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_text:
+          type: text
+          validators:
+            - type: regex
+              expression: "^moo"
+              message: must start with moo
+      steps: {}
+    in:
+      inner_text: outer_text
+""")
+        with self.dataset_populator.test_history() as history_id:
+            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                workflow_id, history_id=history_id, inputs={"0": "cow"}
+            )
+            self.workflow_populator.wait_for_invocation(workflow_id, invocation_id, assert_ok=False)
+            invocation_details = self.workflow_populator.get_invocation(invocation_id)
+            assert invocation_details["state"] == "failed"
+            assert len(invocation_details["messages"]) == 1
+            message = invocation_details["messages"][0]
+            assert message["reason"] == "workflow_parameter_invalid"
+            assert message["details"] == "inner_text: must start with moo"
+            assert message["workflow_step_index_path"] == [1]
+            assert message["workflow_step_id"] == 0
 
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")
@@ -8541,6 +8874,60 @@ input:
             response = self.workflow_populator.invoke_single_input_workflow_raw(other_history_id, src, input_id)
             self._assert_status_code_is(response, 403)
 
+    @pytest.mark.parametrize("no_add_to_history", ["omitted", None, False, True])
+    def test_run_no_add_to_history(self, no_add_to_history):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps: []
+""")
+        with self.dataset_populator.test_history() as source_history_id:
+            hda = self.dataset_populator.new_dataset(source_history_id, wait=True)
+            with self.dataset_populator.test_history() as target_history_id:
+                workflow_request = {
+                    "history_id": target_history_id,
+                    "inputs_by": "name",
+                    "inputs": {"input1": {"src": "hda", "id": hda["id"]}},
+                }
+                if no_add_to_history != "omitted":
+                    workflow_request["no_add_to_history"] = no_add_to_history
+                response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
+                self._assert_status_code_is(response, 200)
+                target_contents = self.dataset_populator.get_history_contents(target_history_id)
+                expected_count = 0 if no_add_to_history is True else 1
+                assert len(target_contents) == expected_count, target_contents
+
+    @pytest.mark.parametrize(
+        "ds_map", ["omitted", None, {}, "non_empty"], ids=["omitted", "null", "empty", "non_empty"]
+    )
+    def test_run_inputs_with_ds_map(self, ds_map):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps: []
+""")
+        with self.dataset_populator.test_history() as history_id:
+            hda = self.dataset_populator.new_dataset(history_id, wait=True)
+            workflow_request = {
+                "history_id": history_id,
+                "inputs_by": "name",
+                "inputs": {"input1": {"src": "hda", "id": hda["id"]}},
+            }
+            if ds_map == "non_empty":
+                workflow_request["ds_map"] = {"0": {"src": "hda", "id": hda["id"]}}
+            elif ds_map != "omitted":
+                workflow_request["ds_map"] = ds_map
+            response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
+            if ds_map == "non_empty":
+                self._assert_status_code_is(response, 400)
+                assert_error_message_contains(response, "Cannot specify both legacy ds_map and input attributes")
+            else:
+                self._assert_status_code_is(response, 200)
+                invocation = self.workflow_populator.get_invocation(response.json()["id"])
+                assert invocation["inputs"]["0"]["id"] == hda["id"]
+
     def test_run_with_int_parameter_nested(self):
         with self.dataset_populator.test_history() as history_id:
             workflow = self.workflow_populator.load_workflow_from_resource("test_subworkflow_with_integer_input")
@@ -10681,7 +11068,7 @@ steps:
         assert [value for _, value, selected in options if selected] == ["ex2", "--ex3"]
 
     @skip_without_tool("multi_select_numeric")
-    def test_value_restriction_selects_multiple_numeric_text_list_default(self):
+    def test_value_restriction_rejects_multiple_numeric_text_list_default(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
@@ -10696,10 +11083,32 @@ steps:
       select_numeric: values
 """)
         with self.dataset_populator.test_history() as history_id:
-            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
-        (runtime_input,) = run_workflow["steps"][0]["inputs"]
-        assert runtime_input["value"] == ["1", "2"]
-        assert [value for _, value, selected in runtime_input["options"] if selected] == ["1", "2"]
+            response = self._get(f"workflows/{workflow_id}/download", data={"style": "run", "history_id": history_id})
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Workflow step 'values' cannot be run")
+        assert_error_message_contains(response, "the attribute 'value' must be text")
+
+    def test_numeric_multiple_text_default_rejected_on_invocation_and_preview(self, history_id):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  values:
+    type: [string]
+    default: [1, 2]
+steps: {}
+""")
+        for inputs in ({}, {"values": ["a"]}):
+            response = self._post(
+                f"workflows/{workflow_id}/invocations",
+                data={"history_id": history_id, "inputs_by": "name", "inputs": inputs},
+                json=True,
+            )
+            self._assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "Workflow step 'values' cannot be run")
+            assert_error_message_contains(response, "the attribute 'value' must be text")
+        response = self._get(f"workflows/{workflow_id}/download", data={"style": "preview"})
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Workflow step 'values' cannot be run")
 
     def test_value_restriction_with_select_from_subworkflow_input(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
@@ -10819,6 +11228,67 @@ inputs:
     max: {maximum}
 steps: []
 """)
+
+    def test_value_restriction_static_default_selected(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  single_text:
+    type: text
+    restrictions: [a, b, c]
+    default: b
+  multiple_text:
+    type: [text]
+    restrictions: [a, b, c]
+    default: [b, c]
+  labeled_text:
+    type: text
+    restrictions:
+      - {value: a, label: A}
+      - {value: b, label: B}
+    default: b
+  empty_text:
+    type: text
+    restrictions:
+      - {value: a, label: A}
+      - {value: "", label: Empty}
+    default: ""
+steps: {}
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        single_input, multiple_input, labeled_input, empty_input = (step["inputs"][0] for step in run_workflow["steps"])
+        assert single_input["value"] == "b"
+        assert single_input["options"] == [["a", "a", False], ["b", "b", True], ["c", "c", False]]
+        assert multiple_input["value"] == ["b", "c"]
+        assert multiple_input["options"] == [["a", "a", False], ["b", "b", True], ["c", "c", True]]
+        assert labeled_input["value"] == "b"
+        assert labeled_input["options"] == [["A", "a", False], ["B", "b", True]]
+        assert empty_input["value"] == ""
+        assert empty_input["options"] == [["A", "a", False], ["Empty", "", True]]
+
+    @skip_without_tool("collection_creates_pair_format")
+    def test_value_restriction_connected_empty_default_selected(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+  out_format:
+    type: text
+    restrictOnConnections: true
+    default: ""
+steps:
+  split:
+    tool_id: collection_creates_pair_format
+    in:
+      input1: input1
+      out_format: out_format
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        runtime_input = run_workflow["steps"][1]["inputs"][0]
+        assert runtime_input["value"] == ""
+        assert runtime_input["options"] == [["do not change", "", True], ["interval", "interval", False]]
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):
@@ -11692,13 +12162,13 @@ outer_input:
         response = self._show_workflow(workflow_id)
         assert not response["published"]
         assert not response["importable"]
-        published_worklow = self._put(f"workflows/{workflow_id}", data={"published": True}, json=True).json()
+        published_worklow = self.workflow_populator.update_workflow_fields(workflow_id, {"published": True}).json()
         assert published_worklow["published"]
-        importable_worklow = self._put(f"workflows/{workflow_id}", data={"importable": True}, json=True).json()
+        importable_worklow = self.workflow_populator.update_workflow_fields(workflow_id, {"importable": True}).json()
         assert importable_worklow["importable"]
-        unpublished_worklow = self._put(f"workflows/{workflow_id}", data={"published": False}, json=True).json()
+        unpublished_worklow = self.workflow_populator.update_workflow_fields(workflow_id, {"published": False}).json()
         assert not unpublished_worklow["published"]
-        unimportable_worklow = self._put(f"workflows/{workflow_id}", data={"importable": False}, json=True).json()
+        unimportable_worklow = self.workflow_populator.update_workflow_fields(workflow_id, {"importable": False}).json()
         assert not unimportable_worklow["importable"]
 
     def test_workflow_from_path_requires_admin(self):
@@ -12370,6 +12840,12 @@ outer_input:
                 shared_workflow_id=workflow_id,
             )
         return self._post(route, import_data)
+
+    def _shows_in_tool_panel(self, workflow_id, show_shared=None, show_published=None):
+        workflows = self.workflow_populator.index(show_shared=show_shared, show_published=show_published)
+        matches = [w["show_in_tool_panel"] for w in workflows if w["id"] == workflow_id]
+        assert len(matches) == 1, f"expected workflow {workflow_id} once in index, found {len(matches)}"
+        return matches[0]
 
     def _assert_looks_like_instance_workflow_representation(self, workflow):
         self._assert_has_keys(workflow, "url", "owner", "inputs", "annotation", "steps")

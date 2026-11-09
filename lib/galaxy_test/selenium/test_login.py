@@ -14,18 +14,10 @@ class TestLogin(SeleniumTestCase):
 
     @selenium_test
     def test_reset_password_link(self):
-        email = self._get_random_email()
-        self.home()
-        self.components.masthead.login_masthead_button.wait_for_and_click()
-        login = self.components.login
-        self.fill(login.form.wait_for_visible(), {"login": email})
-        login.reset_password_link.wait_for_and_click()
-        reset_password = self.components.reset_password
-        assert reset_password.email.wait_for_visible().get_attribute("value") == email
-        reset_password.submit.wait_for_and_click()
+        alert_text = self.request_password_reset(self._get_random_email())
         # Test servers usually lack SMTP, so either response proves the request round-tripped.
-        alert_text = reset_password.alert.wait_for_visible().text
         assert "confirmation email" in alert_text or "Mail is not configured" in alert_text
+        self.screenshot("password_reset_request_result")
 
     @selenium_test
     def test_reset_password_direct_load(self):

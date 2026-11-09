@@ -25,7 +25,6 @@ from dataclasses import (
     dataclass,
     replace,
 )
-from typing import Any
 from unittest.mock import patch
 from urllib.parse import (
     urlencode,
@@ -41,7 +40,10 @@ from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.webapps.galaxy.api.job_files import UPLOAD_STAGING_PREFIX
 from galaxy_test.base import api_asserts
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    wait_on,
+)
 from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -68,7 +70,6 @@ class RunningJob:
 class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     initialized = False
     dataset_populator: DatasetPopulator
-    input_hda_dict: dict[str, Any]
     input_hda: model.HistoryDatasetAssociation
     nginx_upload_job_files_store: str
 
@@ -85,17 +86,16 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        sa_session = self.sa_session
+        stmt = select(model.HistoryDatasetAssociation).order_by(model.HistoryDatasetAssociation.id)
         if not TestJobFilesIntegration.initialized:
             history_id = self.dataset_populator.new_history()
-            sa_session = self.sa_session
-            stmt = select(model.HistoryDatasetAssociation)
             assert len(sa_session.scalars(stmt).all()) == 0
-            TestJobFilesIntegration.input_hda_dict = self.dataset_populator.new_dataset(
-                history_id, content=TEST_INPUT_TEXT, wait=True
-            )
+            self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
             assert len(sa_session.scalars(stmt).all()) == 1
-            TestJobFilesIntegration.input_hda = sa_session.scalars(stmt).all()[0]
             TestJobFilesIntegration.initialized = True
+        # The first HDA is the shared input that create_static_job_with_state uses by default.
+        self.input_hda = sa_session.scalars(stmt).first()
 
     def test_read_by_state(self):
         job, _, _ = self.create_static_job_with_state("running")
@@ -119,20 +119,42 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         _assert_insufficient_permissions(response)
 
     def test_read_fails_if_input_file_purged(self):
-        job, _, _ = self.create_static_job_with_state("running")
+        history_id, input_hda = self._new_input_hda()
+        job, _, _ = self.create_static_job_with_state("running", input_hda=input_hda)
         job_id, job_key = self._api_job_keys(job)
-        input_file_path = self.input_hda.get_file_name()
+        input_file_path = input_hda.get_file_name()
         data = {"path": input_file_path, "job_key": job_key}
         get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
         head_response = requests.head(get_url, params=data)
         api_asserts.assert_status_code_is_ok(head_response)
         delete_response = self.dataset_populator.delete_dataset(
-            self.input_hda_dict["history_id"], content_id=self.input_hda_dict["id"], purge=True, wait_for_purge=True
+            history_id, content_id=self._app.security.encode_id(input_hda.id), purge=True, wait_for_purge=True
         )
         assert delete_response.status_code == 200
-        head_response = requests.get(get_url, params=data)
-        assert head_response.status_code == 400
-        assert head_response.json()["err_msg"] == "Input dataset(s) for job have been purged."
+        # wait_for_purge sees the HDA as purged; the purge task removes the file after that.
+        wait_on(lambda: None if os.path.exists(input_file_path) else True, "input file to be removed")
+        response = requests.get(get_url, params=data)
+        assert response.status_code == 400
+        assert response.json()["err_msg"] == "Input dataset(s) for job have been purged."
+
+    def test_read_fails_if_input_file_removed_before_dataset_marked_purged(self):
+        # A purge commits the HDA as purged, removes the file, then commits the dataset as purged.
+        # A request that arrives between the last two steps must still report a purged input.
+        _, input_hda = self._new_input_hda()
+        sa_session = self.sa_session
+        job, _, _ = self.create_static_job_with_state("running", input_hda=input_hda)
+        job_id, job_key = self._api_job_keys(job)
+        input_file_path = input_hda.get_file_name()
+        input_hda.deleted = True
+        input_hda.purged = True
+        sa_session.commit()
+        os.remove(input_file_path)
+        assert not input_hda.dataset.purged
+        data = {"path": input_file_path, "job_key": job_key}
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        response = requests.get(get_url, params=data)
+        assert response.status_code == 400
+        assert response.json()["err_msg"] == "Input dataset(s) for job have been purged."
 
     def test_read_missing_file(self):
         # Without inputs, so a missing dataset-named file can't be blamed on a purged input.
@@ -438,10 +460,18 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     def sa_session(self):
         return self._app.model.session
 
-    def create_static_job_with_state(self, state, with_input=True):
+    def _new_input_hda(self):
+        """A job input of its own, for tests that purge it."""
+        history_id = self.dataset_populator.new_history()
+        hda_dict = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
+        input_hda = self.sa_session.get(model.HistoryDatasetAssociation, self._app.security.decode_id(hda_dict["id"]))
+        assert input_hda
+        return history_id, input_hda
+
+    def create_static_job_with_state(self, state, with_input=True, input_hda=None):
         """Create a job with unknown handler so its state won't change."""
         sa_session = self.sa_session
-        hda = sa_session.scalars(select(model.HistoryDatasetAssociation)).all()[0]
+        hda = input_hda or self.input_hda
         assert hda
         history = sa_session.scalars(select(model.History)).all()[0]
         assert history

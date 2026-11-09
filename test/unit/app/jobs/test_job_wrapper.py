@@ -25,6 +25,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.objectstore import BaseObjectStore
+from galaxy.tool_util.deps.container_classes import JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES
 from galaxy.tools import ToolBox
 from galaxy.tools.parameters.basic import DirectoryUriToolParameter
 from galaxy.util import XML
@@ -72,8 +73,9 @@ class AbstractTestCases:
             self.tear_down_app()
 
         @contextmanager
-        def _prepared_wrapper(self):
+        def _prepared_wrapper(self, requires_galaxy_python_environment=False):
             wrapper = self._wrapper()
+            cast(MockTool, wrapper.tool).requires_galaxy_python_environment = requires_galaxy_python_environment
             wrapper._get_tool_evaluator = lambda *args, **kwargs: MockEvaluator(  # type: ignore[method-assign]
                 wrapper.app, wrapper.tool, wrapper.get_job(), wrapper.working_directory
             )
@@ -85,6 +87,12 @@ class AbstractTestCases:
             version_path = wrapper.get_version_string_path()
             expected_path = os.path.join(self.working_directory, "outputs", "COMMAND_VERSION")
             assert version_path == expected_path
+
+        def test_working_directory_has_container_mounted_subdirectories(self):
+            wrapper = self._wrapper()
+            # Container volumes default to mounting these, so they must exist before the job runs.
+            for name in JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES:
+                assert os.path.isdir(os.path.join(wrapper.working_directory, name))
 
         def test_prepare_sets_command_line(self):
             with self._prepared_wrapper() as wrapper:
@@ -102,6 +110,11 @@ class AbstractTestCases:
 class TestJobWrapper(AbstractTestCases.BaseWrapperTestCase):
     def _wrapper(self):
         return JobWrapper(self.job, self.queue)
+
+    def test_prepare_writes_registry_to_configs_directory(self):
+        with self._prepared_wrapper(requires_galaxy_python_environment=True) as wrapper:
+            assert os.path.isfile(os.path.join(wrapper.working_directory, "configs", "registry.xml"))
+            assert not os.path.exists(os.path.join(wrapper.working_directory, "registry.xml"))
 
 
 class TestTaskWrapper(AbstractTestCases.BaseWrapperTestCase):

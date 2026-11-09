@@ -29,7 +29,7 @@ dependencies = [
     "circus",
     "conda-package-streaming",
     "CT3>=3.3.3",  # Python 3.13 support
-    "cwl-utils>=0.13,!=0.44",  # 0.44 configures root logging on import: https://github.com/common-workflow-language/cwl-utils/pull/471
+    "cwl-utils>=0.46",
     "cwltool>=3.1.20230624081518",  # save time, minimum needed by cwl-1.0 branch
     "dictobj",
     "dnspython",
@@ -37,7 +37,7 @@ dependencies = [
     "dparse",
     "edam-ontology",
     "fastapi>=0.137.2",  # https://github.com/fastapi/fastapi/pull/15785
-    "fastmcp>=2.13.0",
+    "fastmcp>=4.0.0",
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
@@ -105,7 +105,6 @@ dependencies = [
     "social-auth-core>=4.5.0,<6",  # >=4.5.0 to drop dependency on abandoned python-jose, <6 until #23941
     "sortedcontainers",
     "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019 , https://github.com/sqlalchemy/sqlalchemy/issues/12600
-    "sqlparse",
     "starlette>=1.0.1",  # CVE-2026-48710 BadHost
     "starlette-context",
     "svgwrite",

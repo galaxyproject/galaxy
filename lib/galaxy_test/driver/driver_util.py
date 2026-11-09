@@ -248,6 +248,8 @@ def setup_galaxy_config(
         data_dir=tmpdir,
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
+        # The default job runners have no container engine.
+        require_container_for_user_defined_tools=False,
         enable_tool_generated_tours=True,
         expose_dataset_path=True,
         ftp_upload_purge=False,

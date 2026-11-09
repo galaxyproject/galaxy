@@ -465,7 +465,7 @@ execution:
       # For a stock Galaxy instance and traditional job runner $defaults will
       # expand out as:
 
-      # $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:rw
+      # $galaxy_root:ro,$tool_directory:ro,$job_directory/tool_script.sh:ro,$job_directory/inputs:ro,$job_directory/configs:ro,$job_directory/outputs:rw,$working_directory:rw,$default_file_path:rw
 
       # This assumes most of what is needed is available under Galaxy's root directory,
       # the tool directory, and the Galaxy's file_path (if using object store creatively
@@ -476,19 +476,24 @@ execution:
       # galaxy.yml. This will cause $defaults to allow writing to much
       # less. It will then expand as follows:
 
-      # $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:ro
+      # $galaxy_root:ro,$tool_directory:ro,$job_directory/tool_script.sh:ro,$job_directory/inputs:ro,$job_directory/configs:ro,$job_directory/outputs:rw,$working_directory:rw,$default_file_path:ro
 
       # If using the Pulsar, defaults will be even further restricted because the
       # Pulsar will (by default) stage all needed inputs into the job's job_directory
       # (so there is not need to allow the docker container to read all the
       # files - let alone write over them). Defaults in this case becomes:
 
-      # $job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw
+      # $job_directory/tool_script.sh:ro,$job_directory/inputs:ro,$job_directory/configs:ro,$job_directory/unstructured:ro,$job_directory/outputs:rw,$tool_directory:ro,$working_directory:rw
 
       # Python string.Template is used to expand volumes and values $defaults,
       # $galaxy_root, $default_file_path, $tool_directory, $working_directory,
       # are available to all jobs and $job_directory is also available for
       # Pulsar jobs.
+
+      # The job directory itself is not mounted - besides the subdirectories above
+      # it holds the job script, the files metadata is set from (possibly including
+      # object store credentials) and, for Pulsar, credentials for the job's Galaxy
+      # callbacks. Avoid adding $job_directory to the volumes.
       #docker_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro
 
       # One can run docker using volumes-from tag by setting the following

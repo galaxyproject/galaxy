@@ -53,6 +53,7 @@
   <tool file="tool_provided_metadata_10.xml" />
   <tool file="tool_provided_metadata_11.xml" />
   <tool file="tool_provided_metadata_12.xml" />
+  <tool file="tool_provided_metadata_13.xml" />
   <tool file="tool_provided_metadata_security.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="is_of_type.xml" />
@@ -115,6 +116,7 @@
   <tool file="job_properties.xml" />
   <tool file="job_environment_default.xml" />
   <tool file="job_environment_default_legacy.xml" />
+  <tool file="legacy_home_probe.xml" />
   <tool file="job_environment_explicit_shared_home.xml" />
   <tool file="job_environment_explicit_isolated_home.xml" />
   <tool file="galaxy_slots_and_memory.xml" />
@@ -133,6 +135,7 @@
   <tool file="format_source_in_conditional.xml" />
   <tool file="format_source_in_collection.xml" />
   <tool file="output_filter.xml" />
+  <tool file="output_filter_select.xml" />
   <tool file="async_conditional_no_default_nested_data.xml" />
   <tool file="async_ambiguous_unqualified_name.xml" />
   <tool file="async_nested_conditional_shared_discriminator.xml" />
@@ -143,6 +146,7 @@
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_with_input_optional.xml" />
+  <tool file="output_filter_all_by_param.xml" />
   <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
@@ -169,6 +173,7 @@
   <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
+  <tool file="cache_dunder_section.xml" />
   <tool file="sam_to_unsorted_bam.xml" />
   <tool file="top_level_data.xml" />
   <tool file="validation_hdf5.xml" />
@@ -241,6 +246,7 @@
   <tool file="collection_type_source_section_repeat.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
+  <tool file="collection_creates_dynamic_population_fail.xml" />
   <tool file="collection_list_or_nested_list_input.xml" />
   <tool file="collection_list_2x_or_3x_nested.xml" />
   <tool file="collection_paired_or_list_paired_input.xml" />

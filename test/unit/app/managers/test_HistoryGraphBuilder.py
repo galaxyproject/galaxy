@@ -1091,6 +1091,69 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         producer_targets = {e.target for e in graph.edges if e.type == "collection_output"}
         assert hdca_enc not in producer_targets, "Ambiguous HDCA must NOT get a producer edge (N2 fallback)"
 
+    def test_job_without_tool_request_does_not_make_hda_producer_ambiguous(self):
+        history, _ = self._create_history()
+        hda = self._create_hda(history, name="output")
+        tr = self._create_tool_request(history)
+        self._link_job_output_hda(self._create_job(tool_request=tr, tool_id="tool"), hda)
+        self._link_job_output_hda(self._create_job(tool_id="legacy_tool"), hda)
+
+        graph = self._build_graph(history)
+
+        assert {(e.source, e.target, e.type) for e in graph.edges} == {
+            (self._encode("r", tr.id), self._encode("d", hda.id), "dataset_output"),
+        }
+
+    def test_job_without_tool_request_does_not_make_hdca_producer_ambiguous(self):
+        history, _ = self._create_history()
+        element = self._create_hda(history, name="element")
+        hdca = self.collection_manager.create(
+            self.trans, history, "output list", "list", element_identifiers=self.build_element_identifiers([element])
+        )
+        tr = self._create_tool_request(history)
+        self._link_job_output_hdca(self._create_job(tool_request=tr, tool_id="tool"), hdca)
+        self._link_job_output_hdca(self._create_job(tool_id="legacy_tool"), hdca)
+
+        graph = self._build_graph(history)
+
+        producer_edges = {(e.source, e.target) for e in graph.edges if e.type == "collection_output"}
+        assert producer_edges == {(self._encode("r", tr.id), self._encode("c", hdca.id))}
+
+    def test_producer_queries_do_not_filter_tool_request_id_in_sql(self):
+        """``Job.tool_request_id IS NOT NULL`` in the producer queries makes
+        PostgreSQL hash every job with a tool request instead of probing
+        job_pkey per output row; the NULL check must stay in Python."""
+        history, _ = self._create_history()
+        hda = self._create_hda(history, name="output")
+        element = self._create_hda(history, name="element")
+        hdca = self.collection_manager.create(
+            self.trans, history, "output list", "list", element_identifiers=self.build_element_identifiers([element])
+        )
+        tr = self._create_tool_request(history)
+        job = self._create_job(tool_request=tr, tool_id="tool")
+        self._link_job_output_hda(job, hda)
+        self._link_job_output_hdca(job, hdca)
+        self.trans.sa_session.flush()
+
+        statements: list[str] = []
+
+        def _capture(_conn, _cursor, statement, _parameters, _context, _executemany):
+            statements.append(statement)
+
+        engine = self.trans.sa_session.get_bind()
+        event.listen(engine, "before_cursor_execute", _capture)
+        try:
+            self._build_graph(history)
+        finally:
+            event.remove(engine, "before_cursor_execute", _capture)
+
+        producer_queries = [
+            s for s in statements if "job_to_output_dataset" in s and "job.tool_request_id" in s and "JOIN job " in s
+        ]
+        assert len(producer_queries) == 2, statements
+        for sql in producer_queries:
+            assert "job.tool_request_id IS NOT NULL" not in sql, sql
+
     def test_seed_filter_issues_no_extra_queries(self):
         """Stage 9 lock: ``_extract_subgraph`` operates only on the
         already-materialized in-memory graph and must NOT trigger any

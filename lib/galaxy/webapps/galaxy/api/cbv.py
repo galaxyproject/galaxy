@@ -19,6 +19,7 @@ from fastapi import (
     APIRouter,
     Depends,
 )
+from fastapi.routing import APIRoute
 from starlette.routing import (
     Route,
     WebSocketRoute,
@@ -65,7 +66,49 @@ def _cbv(router: APIRouter, cls: type[T]) -> type[T]:
         router.routes.remove(route)
         _update_cbv_route_endpoint_signature(cls, route)
         cbv_router.routes.append(route)
-    router.include_router(cbv_router)
+    # Re-register HTTP routes to rebuild dependencies and handlers after changing
+    # the endpoint signatures. Including a temporary router does this too,
+    # but FastAPI >= 0.137 retains that extra level and walks it on every request.
+    # Keep normal inclusion for WebSockets, inferred streams and custom constructors.
+    if all(
+        isinstance(route, APIRoute)
+        and type(route).__init__ is APIRoute.__init__
+        and not getattr(route, "stream_item_type", None)
+        for route in cbv_routes
+    ):
+        for route in cbv_routes:
+            assert isinstance(route, APIRoute)
+            router.add_api_route(
+                route.path,
+                route.endpoint,
+                response_model=route.response_model,
+                status_code=route.status_code,
+                tags=route.tags,
+                dependencies=route.dependencies,
+                summary=route.summary,
+                description=route.description,
+                response_description=route.response_description,
+                responses=route.responses,
+                deprecated=route.deprecated,
+                methods=route.methods,
+                operation_id=route.operation_id,
+                response_model_include=route.response_model_include,
+                response_model_exclude=route.response_model_exclude,
+                response_model_by_alias=route.response_model_by_alias,
+                response_model_exclude_unset=route.response_model_exclude_unset,
+                response_model_exclude_defaults=route.response_model_exclude_defaults,
+                response_model_exclude_none=route.response_model_exclude_none,
+                include_in_schema=route.include_in_schema,
+                response_class=route.response_class,
+                name=route.name,
+                route_class_override=type(route),
+                callbacks=route.callbacks,
+                openapi_extra=route.openapi_extra,
+                generate_unique_id_function=route.generate_unique_id_function,
+                strict_content_type=route.strict_content_type,
+            )
+    else:
+        router.include_router(cbv_router)
     return cls
 
 

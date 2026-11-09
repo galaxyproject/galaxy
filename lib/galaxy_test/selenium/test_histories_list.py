@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
+    SeleniumTestCase,
     SharedStateSeleniumTestCase,
 )
 
@@ -213,9 +214,12 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
-        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
-        self.sleep_for(self.wait_types.UX_RENDER)
+        histories = self.components.histories
+        # The first click selects name (still descending), the second switches to ascending.
+        histories.sort_button(field="Name", direction="ascending").wait_for_and_click()
+        histories.sort_button(field="Name", direction="ascending").wait_for_and_click()
+        histories.sort_button(field="Name", direction="descending").wait_for_visible()
+        histories.list_loading.wait_for_absent()
 
         expected_histories = [self.history2_name, self.history3_name]
 
@@ -352,3 +356,24 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         # rename XHR has completed before any subsequent home() navigation
         # that would otherwise cancel the still-in-flight request.
         self.wait_for_selector(f'[data-description="name display"][title="{name}"]')
+
+
+class TestHistoriesPurge(SeleniumTestCase):
+    ensure_registered = True
+
+    @selenium_test
+    def test_purge_all_histories(self):
+        self.home()
+        history_ids = [self.current_history_id()]
+        history_ids += [self.dataset_populator.new_history(f"purge me {i}") for i in range(2)]
+        self.navigate_to_histories_page()
+        titles = self.get_history_titles(True)
+        assert len(titles) == len(history_ids)
+        assert {"purge me 0", "purge me 1"} <= set(titles)
+        self.screenshot("histories_before_bulk_purge")
+        self.histories_purge_all()
+
+        def all_purged():
+            return all(self.api_get(f"histories/{history_id}")["purged"] for history_id in history_ids)
+
+        self._wait_on(all_purged, "histories to be purged", wait_type=self.wait_types.DATABASE_OPERATION)

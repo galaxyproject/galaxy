@@ -32,9 +32,59 @@ outputs:
     format: txt
     from_work_dir: galaxy_cores.txt
 """)
+TOOL_INSPECTING_JOB_DIRECTORY = yaml.safe_load("""class: GalaxyUserTool
+id: inspect_job_directory
+version: "0.1"
+name: inspect_job_directory
+description: report which job directory files are visible
+container: busybox
+shell_command: |
+  (test -e ../launch_config && echo "launch_config visible" || echo "launch_config hidden") > job_directory.txt;
+  (test -e ../command.sh && echo "command.sh visible" || echo "command.sh hidden") >> job_directory.txt;
+  (test -e ../metadata && echo "metadata visible" || echo "metadata hidden") >> job_directory.txt;
+  cat '$(inputs.input.path)' >> job_directory.txt
+inputs:
+  - name: input
+    type: data
+    format: txt
+outputs:
+  - name: output
+    type: data
+    format: txt
+    from_work_dir: job_directory.txt
+""")
 
 
-class TestUserDefinedToolRecommendedJobSetup(integration_util.IntegrationTestCase, TestsTools):
+class UserDefinedToolJobDirectoryVisibility(TestsTools):
+    dataset_populator: DatasetPopulator
+
+    def test_user_defined_cannot_see_job_directory(self):
+        # The job directory holds the job script, metadata files evaluated outside the container and
+        # Pulsar's launch_config with the job's Galaxy callback credentials.
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_INSPECTING_JOB_DIRECTORY)
+            )
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="input readable", wait=True)
+            response = self._run(
+                history_id=history_id,
+                tool_uuid=dynamic_tool["uuid"],
+                inputs={"input": {"src": "hda", "id": dataset["id"]}},
+                wait_for_job=True,
+                assert_ok=True,
+            )
+            output_content = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=response["outputs"][0]["id"]
+            )
+        assert output_content == "launch_config hidden\ncommand.sh hidden\nmetadata hidden\ninput readable\n"
+
+
+class TestUserDefinedToolRecommendedJobSetup(
+    integration_util.IntegrationTestCase, UserDefinedToolJobDirectoryVisibility
+):
     """Exercies how user defined tools could be run in production."""
 
     framework_tool_and_types = True
@@ -80,6 +130,39 @@ class TestUserDefinedToolRecommendedJobSetup(integration_util.IntegrationTestCas
         assert destination_params["require_container"]
 
 
+class TestUserDefinedToolLocalDocker(integration_util.IntegrationTestCase, UserDefinedToolJobDirectoryVisibility):
+    """User defined tools in Docker on the local runner, where Galaxy's job directory layout applies."""
+
+    framework_tool_and_types = True
+    dataset_populator: DatasetPopulator
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["enable_celery_tasks"] = False
+        config["metadata_strategy"] = "directory"
+        config["job_config"] = {
+            "runners": {"local": {"load": "galaxy.jobs.runners.local:LocalJobRunner"}},
+            "execution": {
+                "default": "local",
+                "environments": {
+                    "local": {"runner": "local"},
+                    "local_docker": {
+                        "runner": "local",
+                        "docker_enabled": True,
+                        "require_container": True,
+                        "docker_net": "none",
+                    },
+                },
+            },
+            "tools": [{"class": "user_defined", "environment": "local_docker"}],
+        }
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+
 class TestUserDefinedToolRecommendedJobSetupTPV(TestUserDefinedToolRecommendedJobSetup):
     job_config_file = EMBEDDED_PULSAR_TPV_JOB_CONFIG_FILE
 
@@ -111,3 +194,70 @@ class TestCachedUserDefinedToolRecommendedJobSetupTPV(
     TestUserDefinedToolRecommendedJobSetupTPV,
 ):
     pass
+
+
+class TestUserDefinedToolRequiresContainerPulsar(integration_util.IntegrationTestCase):
+    """User defined tools fail on destinations without a container by default."""
+
+    user_defined_environment = "pulsar_embed"
+    dataset_populator: DatasetPopulator
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["require_container_for_user_defined_tools"] = True
+        config["enable_celery_tasks"] = False
+        config["metadata_strategy"] = "directory"
+        config["job_config"] = {
+            "runners": {
+                "local": {"load": "galaxy.jobs.runners.local:LocalJobRunner"},
+                "pulsar_embed": {
+                    "load": "galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner",
+                    "pulsar_app_config": {
+                        "tool_dependency_dir": "none",
+                        "conda_auto_init": False,
+                        "conda_auto_install": False,
+                    },
+                },
+            },
+            "execution": {
+                "default": "local",
+                "environments": {
+                    "local": {"runner": "local"},
+                    "pulsar_embed": {"runner": "pulsar_embed", "remote_metadata": True},
+                },
+            },
+            "tools": [{"class": "user_defined", "environment": cls.user_defined_environment}],
+        }
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def test_user_defined_tool_without_container_fails(self):
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_INSPECTING_JOB_DIRECTORY)
+            )
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, wait=True)
+            response = self.dataset_populator.run_tool_raw(
+                tool_id=None,
+                tool_uuid=dynamic_tool["uuid"],
+                inputs={"input": {"src": "hda", "id": dataset["id"]}},
+                history_id=history_id,
+            )
+            response.raise_for_status()
+            job_id = response.json()["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id)
+            assert self.dataset_populator.get_job_details(job_id).json()["state"] == "error"
+            output = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=response.json()["outputs"][0]["id"], assert_ok=False
+            )
+            assert "Failed to find a container when required" in output["misc_info"]
+
+
+class TestUserDefinedToolRequiresContainerLocal(TestUserDefinedToolRequiresContainerPulsar):
+    user_defined_environment = "local"

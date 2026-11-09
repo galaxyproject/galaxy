@@ -358,6 +358,7 @@ onMounted(() => {
                 :sort-desc="sortDesc"
                 :overlay-loading="overlay"
                 :selected-items="selectedIndices"
+                :select-checkbox-title="(item) => `Select ${item.name}`"
                 :actions="datasetTableActions"
                 :status-icon="getDatasetStatusIcon"
                 @sort-changed="onSort"

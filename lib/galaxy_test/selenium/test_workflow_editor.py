@@ -24,6 +24,7 @@ from galaxy_test.base.workflow_fixtures import (
     parameter_input_workflow,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
+    WORKFLOW_RENAME_ON_REPLACEMENT_PARAM,
     WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
@@ -104,6 +105,20 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.assert_workflow_has_changes_and_save()
         self.workflow_index_open_with_name(name)
         self.assert_wf_annotation_is(new_annotation)
+
+    @selenium_test
+    def test_edit_tags(self):
+        name = self.create_and_wait_for_new_workflow_in_editor()
+        self.workflow_editor_add_tags(["editortag"])
+        self.screenshot("workflow_editor_tags")
+        # The editor saves tags without blocking; leave only once the server has them.
+        self._wait_on(
+            lambda: [w["tags"] for w in self.api_get("workflows") if w["name"].endswith(name)] == [["editortag"]],
+            "tag save to finish",
+        )
+        self.workflow_index_open()
+        self.workflow_index_search_for(name)
+        self._wait_on(lambda: self.workflow_index_tags() == ["editortag"], "saved workflow to show its tag")
 
     @selenium_test
     def test_edit_name(self):
@@ -961,10 +976,9 @@ steps:
         annotation = "best_practices_input_label"
         self.workflow_create_new(annotation=annotation)
         self.workflow_editor_add_input(item_name="data_input")
-        editor.tool_bar.best_practices.wait_for_and_click()
+        assert self.workflow_editor_best_practices()["input metadata"] == "warning"
+        self.screenshot("workflow_editor_best_practices_input_metadata")
         best_practices = editor.best_practices
-        section_element = best_practices.section_input_metadata.wait_for_present()
-        assert section_element.get_attribute("data-lint-status") == "warning"
         item = best_practices.item_input_metadata(index=0)
         element = item.wait_for_present()
         assert element.get_attribute("data-missing-label") == "true"
@@ -973,7 +987,6 @@ steps:
         item.wait_for_and_click()
         self.workflow_editor_set_node_label("best practice input")
 
-        # editor.tool_bar.best_practices.wait_for_and_click()
         element = item.wait_for_present()
         assert element.get_attribute("data-missing-label") == "false"
         assert element.get_attribute("data-missing-annotation") == "true"
@@ -991,7 +1004,7 @@ steps:
     def test_best_practices_dangling_conditional_gate(self):
         editor = self.components.workflow_editor
         self.open_in_workflow_editor(WORKFLOW_WHEN_NOT_CONNECTED)
-        editor.tool_bar.best_practices.wait_for_and_click()
+        self.workflow_editor_open_best_practices()
         best_practices = editor.best_practices
         section_element = best_practices.section_conditional_gates.wait_for_present()
         assert section_element.get_attribute("data-lint-status") == "warning"
@@ -1008,6 +1021,33 @@ steps:
             assert section_element.get_attribute("data-lint-status") == "ok"
 
         assert_linting_conditional_gates_okay()
+
+    @selenium_test
+    def test_best_practices_extract_untyped_rename_parameter(self):
+        editor = self.components.workflow_editor
+        # No auto layout: it marks the workflow changed and the refactor would add a save-first confirm.
+        self.open_in_workflow_editor(WORKFLOW_RENAME_ON_REPLACEMENT_PARAM, auto_layout=False)
+        # Refactors are silently dropped while the workflow is still loading.
+        editor.canvas_loading.wait_for_absent()
+        self.workflow_editor_open_best_practices()
+        best_practices = editor.best_practices
+        section_element = best_practices.section_formal_inputs.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
+        item = best_practices.item_formal_input(index=0)
+        assert "replaceme" in item.wait_for_present().text
+        self.screenshot("workflow_editor_best_practices_untyped_parameter")
+
+        item.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        editor.node._(label="replaceme").wait_for_present()
+
+        @retry_assertion_during_transitions
+        def assert_linting_formal_inputs_okay():
+            section_element = best_practices.section_formal_inputs.wait_for_present()
+            assert section_element.get_attribute("data-lint-status") == "ok"
+
+        assert_linting_formal_inputs_okay()
+        self.screenshot("workflow_editor_best_practices_untyped_parameter_extracted")
 
     @selenium_test
     def test_rendering_rules_workflow_1(self):
@@ -1811,7 +1851,7 @@ steps:
         # Make sure the when input is still shown
         conditional_node.input_terminal(name="when").wait_for_present()
         # Best practices flag the gate that reads nothing
-        editor.tool_bar.best_practices.wait_for_and_click()
+        self.workflow_editor_open_best_practices()
         section_element = editor.best_practices.section_conditional_gates.wait_for_present()
         assert section_element.get_attribute("data-lint-status") == "warning"
 
