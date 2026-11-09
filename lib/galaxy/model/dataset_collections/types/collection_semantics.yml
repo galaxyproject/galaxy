@@ -563,6 +563,8 @@
     is_valid: false
     tests:
         workflow_editor: "rejects paired -> list:paired_or_unpaired connection"
+        algebra:
+          - {op: can_match, output: paired, input: "list:paired_or_unpaired"}
 
 - example:
     label: COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED_NOT_CONSUMES_PAIRED_OR_UNPAIRED
@@ -581,6 +583,8 @@
     is_valid: false
     tests:
         workflow_editor: "rejects paired_or_unpaired -> list:paired_or_unpaired connection"
+        algebra:
+          - {op: can_match, output: paired_or_unpaired, input: "list:paired_or_unpaired"}
 
 - doc: |
     In addition to explicit collection inputs, tool inputs of ``type`` ``data``

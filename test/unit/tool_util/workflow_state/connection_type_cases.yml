@@ -164,6 +164,18 @@
   input: "list:paired_or_unpaired"
   expected: false
 
+- op: can_match
+  output: paired
+  input: "list:paired_or_unpaired"
+  expected: false
+  semantics_ref: COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED_NOT_CONSUMES_PAIRED
+
+- op: can_match
+  output: paired_or_unpaired
+  input: "list:paired_or_unpaired"
+  expected: false
+  semantics_ref: COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED_NOT_CONSUMES_PAIRED_OR_UNPAIRED
+
 # paired_or_unpaired cannot be reduced by a list/multi-data input
 - op: can_match
   output: paired_or_unpaired
