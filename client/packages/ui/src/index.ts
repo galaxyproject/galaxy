@@ -4,6 +4,7 @@
 
 export { type CheckboxGroupOption } from "./components/checkboxGroupContext";
 export {
+    type BadgeVariant,
     type ColorVariant,
     type ComponentColor,
     type ComponentColorClassList,
@@ -22,6 +23,7 @@ export { type SelectOption } from "./components/Form/GSelect.types";
 export { default as GSelect } from "./components/Form/GSelect.vue";
 export { type RadioButtonVariant, type RadioGroupOption } from "./components/Form/radioGroupContext";
 export { default as GAlert } from "./components/GAlert.vue";
+export { default as GBadge } from "./components/GBadge.vue";
 export { default as GButton } from "./components/GButton.vue";
 export { default as GButtonGroup } from "./components/GButtonGroup.vue";
 export { default as GCheckbox } from "./components/GCheckbox.vue";
