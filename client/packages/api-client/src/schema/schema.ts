@@ -2063,7 +2063,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Returns histories available to the current user. */
+        /**
+         * Returns histories available to the current user.
+         * @description With `search`, `limit` defaults to 100 and must be less than 1000, and `sort_by=size`
+         *     is accepted only for a listing of the caller's own histories.
+         */
         get: operations["index_api_histories_get"];
         put?: never;
         /**
@@ -40054,7 +40058,7 @@ export interface operations {
                 /** @description Whether to include archived histories. */
                 show_archived?: boolean | null;
                 /** @description Sort index by this specified attribute */
-                sort_by?: "create_time" | "name" | "update_time" | "username";
+                sort_by?: "create_time" | "name" | "size" | "update_time" | "username";
                 /** @description Sort in descending order? */
                 sort_desc?: boolean;
                 /**

@@ -52,6 +52,34 @@ describe("ListHeader", () => {
         expect(pressedSortIds(wrapper)).toEqual(["sortby-update_time"]);
     });
 
+    it("starts on update time when it is one of the given sort options", () => {
+        const wrapper = mountHeader({
+            sortOptions: [
+                { value: "name", label: "Name" },
+                { value: "update_time", label: "Update time" },
+                { value: "size", label: "Size" },
+            ],
+        });
+
+        expect(wrapper.findAll("[id^='sortby-']").map((button) => button.attributes("id"))).toEqual([
+            "sortby-name",
+            "sortby-update_time",
+            "sortby-size",
+        ]);
+        expect(pressedSortIds(wrapper)).toEqual(["sortby-update_time"]);
+    });
+
+    it("starts on the first given sort option without update time", () => {
+        const wrapper = mountHeader({
+            sortOptions: [
+                { value: "name", label: "Name" },
+                { value: "size", label: "Size" },
+            ],
+        });
+
+        expect(pressedSortIds(wrapper)).toEqual(["sortby-name"]);
+    });
+
     it("toggles direction when the active sort is clicked again", async () => {
         const wrapper = mountHeader();
 

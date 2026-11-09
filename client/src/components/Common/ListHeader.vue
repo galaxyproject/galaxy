@@ -78,14 +78,16 @@ const defaultSortOptions: SortOption[] = [
 // Use provided sortOptions or fall back to defaults
 const effectiveSortOptions = computed(() => (props.sortOptions.length > 0 ? props.sortOptions : defaultSortOptions));
 
+function initialSortBy(): SortBy {
+    const options = effectiveSortOptions.value;
+    if (options.some((option) => option.value === "update_time")) {
+        return "update_time";
+    }
+    return options[0]?.value ?? "update_time";
+}
+
 // Null only while defaultSortOption is selected.
-const sortBy = ref<SortBy | null>(
-    props.defaultSortOption
-        ? null
-        : props.sortOptions.length > 0
-          ? (effectiveSortOptions.value[0]?.value ?? "update_time")
-          : "update_time",
-);
+const sortBy = ref<SortBy | null>(props.defaultSortOption ? null : initialSortBy());
 const currentListViewMode = computed(() => userStore.currentListViewPreferences[props.listId] || "grid");
 
 const isAColumnNotVisible = computed(() => {

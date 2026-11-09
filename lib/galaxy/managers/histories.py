@@ -158,10 +158,18 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
             message = "Requires user to log in."
             raise RequestParameterInvalidException(message)
 
+        filter_own = show_own or (not show_published and not show_shared and not is_admin)
+        own_only = filter_own and not show_published and not show_shared
+        if payload.sort_by == "size" and not own_only:
+            # Sorting by size sums the datasets of every matching history, which is
+            # bounded only for a listing of the caller's own histories.
+            message = "Sorting by size requires listing only your own histories."
+            raise RequestParameterInvalidException(message)
+
         stmt = select(self.model_class).outerjoin(model.User)
 
         filters = []
-        if show_own or (not show_published and not show_shared and not is_admin):
+        if filter_own:
             filters = [self.model_class.user == user]
         if show_published:
             filters.append(self.model_class.published == true())
@@ -247,6 +255,11 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         sort_column: Any
         if payload.sort_by == "username":
             sort_column = model.User.username
+        elif payload.sort_by == "size":
+            # A correlated subquery that coalesces to 0, so it is never null. Postgres
+            # requires a SELECT DISTINCT to select every expression it orders by.
+            sort_column = model.History.disk_size
+            stmt = stmt.add_columns(sort_column)
         else:
             sort_column = getattr(model.History, payload.sort_by)
         stmt = apply_sort_column(stmt, sort_column, payload.sort_desc, model.History.id)

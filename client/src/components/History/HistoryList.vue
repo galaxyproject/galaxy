@@ -153,6 +153,16 @@ const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const currentListViewMode = computed(() => userStore.currentListViewPreferences.histories || "grid");
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
+// The server sorts by size only when listing the user's own, non-archived histories.
+const sortOptions = computed(() =>
+    myView.value
+        ? [
+              { value: "name", label: "Name" },
+              { value: "update_time", label: "Update time" },
+              { value: "size", label: "Storage used" },
+          ]
+        : [],
+);
 const noItems = computed(() => !loading.value && historiesLoaded.value.length === 0 && !filterText.value);
 const noResults = computed(() => !loading.value && historiesLoaded.value.length === 0 && Boolean(filterText.value));
 const deleteButtonTitle = computed(() => (showDeleted.value ? "Hide deleted histories" : "Show deleted histories"));
@@ -686,6 +696,7 @@ onMounted(async () => {
                 ref="listHeader"
                 list-id="histories"
                 show-sort-options
+                :sort-options="sortOptions"
                 show-view-toggle
                 :show-select-all="myView || sharedView"
                 :select-all-disabled="loading || overlay || noItems || noResults"
