@@ -44,7 +44,6 @@ from galaxy.tool_util_models.parameters import (
     IntegerParameterModel,
     LabelValue,
     NumberCompatiableValidators,
-    ReferenceDataParameterModel,
     RepeatParameterModel,
     RulesParameterModel,
     SectionParameterModel,
@@ -275,18 +274,11 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "reference_data":
-            if input_source.parse_reference_data() is None:
+            if (reference_data := input_source.parse_reference_data()) is None:
                 raise ParameterDefinitionError(
                     "reference_data is only supported in GalaxyTool and GalaxyUserTool YAML tools"
                 )
-            return ReferenceDataParameterModel(
-                type="reference_data",
-                name=input_source.parse_name(),
-                optional=input_source.parse_optional(),
-                multiple=input_source.get_bool("multiple", False),
-                table=input_source.get("table"),
-                **_common_param_kwargs(input_source),
-            )
+            return reference_data.to_internal()
         elif param_type == "drill_down":
             multiple = input_source.get_bool("multiple", False)
             hierarchy = input_source.get("hierarchy", "exact")

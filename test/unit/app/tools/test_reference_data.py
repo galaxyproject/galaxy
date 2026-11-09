@@ -6,6 +6,7 @@ from typing import (
 )
 
 import pytest
+from pydantic import ValidationError
 
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.model import (
@@ -225,6 +226,30 @@ def test_parameter_models_reject_reference_data_outside_the_yaml_tool_classes(to
 def test_table_this_instance_does_not_have_offers_nothing(app):
     tool = _tool(app, table="not_installed")
     assert _values(app, tool) == []
+
+
+@pytest.mark.parametrize(
+    "input_fields, field",
+    [
+        ({"filter": {"from_input": "reads", "on_metadata": "dbkey"}}, "filter"),
+        ({"options": [{"label": "A", "value": "a"}]}, "options"),
+        ({"multiple": "several"}, "multiple"),
+    ],
+    ids=["filter", "options", "non_bool_multiple"],
+)
+def test_definitions_the_authoring_model_rejects_fail_to_load(app, input_fields, field):
+    with pytest.raises(ValidationError, match=f"(?m)^{field}$"):
+        _tool(app, with_reads=True, **input_fields)
+
+
+def test_form_uses_the_authoring_model_coerced_flags(app):
+    tool = _tool(app, multiple="false", optional="true")
+    parameter = _parameter(tool)
+    assert parameter.multiple is False
+    assert parameter.optional is True
+    model = input_models_for_tool_source(tool.tool_source).parameters[0]
+    assert isinstance(model, ReferenceDataParameterModel)
+    assert (model.multiple, model.optional) == (False, True)
 
 
 @pytest.mark.parametrize("validated_state", [False, True], ids=["job_parameters", "validated_state"])

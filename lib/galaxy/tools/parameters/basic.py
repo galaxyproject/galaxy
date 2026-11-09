@@ -1880,14 +1880,13 @@ class ReferenceDataToolParameter(SelectToolParameter):
 
     def __init__(self, tool: Optional["Tool"], input_source, context=None):
         input_source = ensure_input_source(input_source)
-        if input_source.parse_reference_data() is None:
+        if (reference_data := input_source.parse_reference_data()) is None:
             raise ParameterValueError(
                 "reference_data is only supported in GalaxyTool and GalaxyUserTool YAML tools",
                 input_source.parse_name(),
             )
-        table_name = input_source.get("table")
         super().__init__(tool, input_source, context)
-        self.table_name: str = table_name
+        self.table_name: str = reference_data.table
         self.trusted = input_source.trusted
         # The tool form and the workflow editor render this as a plain select.
         self.type = "select"
