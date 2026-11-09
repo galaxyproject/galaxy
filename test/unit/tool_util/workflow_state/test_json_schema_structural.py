@@ -81,15 +81,14 @@ class TestMissingRequiredFields:
         errors = validate_structural_json_schema(wf)
         assert len(errors) > 0
 
-    def test_missing_class_allowed_with_default(self):
-        # class_ has default="GalaxyWorkflow", so omitting it is valid
+    def test_missing_class_fails(self):
         wf: dict[str, Any] = {
             "inputs": {},
             "outputs": {},
             "steps": {},
         }
         errors = validate_structural_json_schema(wf)
-        assert errors == []
+        assert [e.message for e in errors] == ["'class' is a required property"]
 
     def test_wrong_class_fails(self):
         wf = {
