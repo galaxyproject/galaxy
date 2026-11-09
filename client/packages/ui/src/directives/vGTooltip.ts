@@ -377,7 +377,7 @@ function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipSta
     const label = state.isHtml ? getHtmlLabel(state.contentEl) : content;
     // Set aria-label so icon-only buttons have an accessible name
     const target = getLabelTarget(el);
-    // Set on every update, since the toggle of a menu button can re-render without it
+    // Set alongside aria-label, so the description and the name always land on the same target
     target.setAttribute("aria-describedby", state.tooltipEl.id);
     const labelledHere = !!target.dataset.gTooltipAriaLabel;
     // Tooltips describe text controls without replacing their visible or explicit names.
