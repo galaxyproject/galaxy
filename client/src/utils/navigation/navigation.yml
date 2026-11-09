@@ -687,7 +687,7 @@ histories:
     bulk_delete_button: 'button[id="history-list-footer-bulk-delete-button"]'
     bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
     bulk_purge_button: 'button[id="history-list-footer-bulk-purge-button"]'
-    select_all: '#history-list label[for="list-header-select-all"]'
+    select_all: '#history-list .list-header-select-all .g-checkbox'
     bulk_open_multiview_button: 'button[id="history-list-footer-bulk-open-multiview-button"]'
     sort_button: '[data-title="Sort by ${field} ${direction}"]'
     list_loading: '#history-list-overlay .g-overlay'
