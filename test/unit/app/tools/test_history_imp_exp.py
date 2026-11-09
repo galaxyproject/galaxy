@@ -2,10 +2,12 @@ import json
 import os
 import tarfile
 import tempfile
+import zipfile
 from shutil import rmtree
 from typing import Any
 from unittest.mock import Mock
 
+import pytest
 from sqlalchemy import select
 
 from galaxy import model
@@ -847,3 +849,21 @@ class HistoryArchive:
 
 class Dummy:
     pass
+
+
+def test_check_archive_tar_with_zip_last_member(tmp_path):
+    # The archive is extracted as a tar, so the path checks must look at the tar members and not
+    # at the zip that zipfile finds at the end of it.
+    archive = str(tmp_path / "archive.tar")
+    zip_path = tmp_path / "inner.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr("harmless.txt", "content\n")
+    escaping = tmp_path / "escaping.txt"
+    escaping.write_text("content\n")
+    with tarfile.open(archive, "w") as tf:
+        tf.add(escaping, arcname="../insecure/escaping.txt")
+        tf.add(zip_path, arcname="inner.zip")
+    dest_dir = str(tmp_path / "dest")
+    os.makedirs(dest_dir)
+    with pytest.raises(AssertionError, match="escaping.txt"):
+        unpack_tar_gz_archive.check_archive(archive, dest_dir)

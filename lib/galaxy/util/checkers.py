@@ -157,8 +157,27 @@ def check_bz2(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
     return (True, True)
 
 
+def is_zipfile_strict(file_path: util.StrPath) -> bool:
+    """
+    Like ``zipfile.is_zipfile``, but also require the file to start with a local
+    file header or an empty-archive record.
+
+    ``is_zipfile`` only looks for an end-of-central-directory record at the end
+    of the file, so e.g. a tar whose last member is a zip is accepted as that
+    zip. As a consequence, self-extracting zips and zips with prepended data
+    are not detected as zip.
+    """
+    try:
+        with open(file_path, "rb") as fh:
+            if fh.read(4) not in (b"PK\x03\x04", b"PK\x05\x06"):
+                return False
+    except OSError:
+        return False
+    return zipfile.is_zipfile(file_path)
+
+
 def check_zip(file_path: str, check_content: bool = True, files=1) -> tuple[bool, bool]:
-    if not zipfile.is_zipfile(file_path):
+    if not is_zipfile_strict(file_path):
         return (False, False)
 
     if not check_content:

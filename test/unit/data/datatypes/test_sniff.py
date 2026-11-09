@@ -139,6 +139,23 @@ def test_file_prefix_of_tar_misdetected_as_zip():
     assert file_prefix.mime_type == "application/x-tar"
 
 
+def test_tar_with_zip_last_member_sniffs_as_tar_and_is_not_decompressed(tmp_path):
+    source = os.path.join(galaxy_directory(), "test-data", "tar_with_zip_last_member.tar")
+    file_prefix = FilePrefix(source, auto_decompress=True)
+
+    assert file_prefix.compressed_format is None
+    assert file_prefix.mime_type == "application/x-tar"
+
+    response = handle_uploaded_dataset_file_internal(
+        file_prefix,
+        example_datatype_registry_for_sample(),
+        tmp_dir=str(tmp_path),
+    )
+    assert response.compressed_type is None
+    with open(response.converted_path, "rb") as converted, open(source, "rb") as original:
+        assert converted.read() == original.read()
+
+
 def test_handle_composite_file_stages_legitimate_name(tmp_path):
     extra_files = tmp_path / "extra"
     extra_files.mkdir()
