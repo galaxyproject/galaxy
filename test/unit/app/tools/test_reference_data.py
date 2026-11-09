@@ -221,11 +221,12 @@ def test_entry_of_a_table_without_paths_has_only_metadata(app, tmp_path):
     assert reference["metadata"] == {"name": "Alpha"}
 
 
-def test_job_fails_when_admins_close_the_table_after_it_was_submitted(app, tmp_path):
+@pytest.mark.parametrize("validated_state", [False, True], ids=["job_parameters", "validated_state"])
+def test_job_fails_when_admins_close_the_table_after_it_was_submitted(app, tmp_path, validated_state):
     tool = _tool(app)
-    job = _job("hg38")
+    job = _job("hg38", validated_state)
     app.tool_data_tables["open_refs"].user_accessible = False
-    with pytest.raises(ParameterValueError):
+    with pytest.raises(ParameterValueError, match="no legal values"):
         _evaluated_reference(app, tool, job, tmp_path)
 
 
