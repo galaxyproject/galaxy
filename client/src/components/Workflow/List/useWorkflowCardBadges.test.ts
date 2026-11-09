@@ -72,6 +72,18 @@ describe("useWorkflowCardBadges", () => {
         expect(countRequests).toEqual([]);
     });
 
+    it.each([
+        ["owner-shared", false],
+        ["owner-published", true],
+    ])("names the %s badge after the filter it applies", (id, publishedView) => {
+        const workflow = ref(makeWorkflow("someone_else", { published: true }));
+        const { workflowCardTitleBadges } = useWorkflowCardBadges(workflow, publishedView, true, true, vi.fn());
+        const badge = workflowCardTitleBadges.value.find((b) => b.id === id);
+
+        expect(badge?.visible).toBe(true);
+        expect(badge?.ariaLabel).toBe("Filter by owner someone_else");
+    });
+
     it("does not fetch invocation count when step count is shown", async () => {
         renderBadges(makeWorkflow(USERNAME, { number_of_steps: 3 }));
         await flushPromises();

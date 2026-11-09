@@ -443,6 +443,18 @@ describe("GCard", () => {
         expect(inert.attributes("tabindex")).toBeUndefined();
     });
 
+    it.each(["titleBadges", "badges"])("names %s by their ariaLabel", (prop) => {
+        const wrapper = mountCard({
+            [prop]: [
+                { id: "named", label: "jdoe", title: "Owner", ariaLabel: "Filter by owner jdoe", handler: vi.fn() },
+                { id: "plain", label: "Plain", title: "Plain", handler: vi.fn() },
+            ],
+        });
+
+        expect(wrapper.find("#g-card-badge-named-card").attributes("aria-label")).toBe("Filter by owner jdoe");
+        expect(wrapper.find("#g-card-badge-plain-card").attributes("aria-label")).toBeUndefined();
+    });
+
     it.each(["titleBadges", "badges"])("leaves Enter alone on link %s so they still navigate", (prop) => {
         const wrapper = mountCard({
             [prop]: [{ id: "link", label: "Link", title: "Link", href: "https://example.org" }],
