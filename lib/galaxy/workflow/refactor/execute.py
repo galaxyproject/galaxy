@@ -3,7 +3,10 @@ from typing import (
     Any,
 )
 
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    RequestParameterInvalidException,
+    ToolMissingException,
+)
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import contains_workflow_parameter
 from galaxy.tools.parameters.workflow_utils import (
@@ -44,6 +47,7 @@ from .schema import (
 )
 from ..modules import (
     InputParameterModule,
+    module_factory,
     WorkflowModuleInjector,
 )
 
@@ -451,7 +455,12 @@ class WorkflowRefactorExecutor:
         step = self.workflow.steps[step_def["id"]]
         new_workflow = trans.app.workflow_manager.get_owned_workflow(trans, content_id)
         step.subworkflow = new_workflow
-        self._inject_for_updated_step(step, execution)
+        try:
+            self._inject_for_updated_step(step, execution)
+        except ToolMissingException:
+            # Only the sub-workflow's inputs and outputs are needed from here on.
+            step.clear_module_extras()
+            step.module = module_factory.from_workflow_step(trans, step)
 
         self._patch_step(execution, step, step_def)
 
