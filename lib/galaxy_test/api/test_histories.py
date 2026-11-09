@@ -814,6 +814,12 @@ class ImportExportTests(BaseHistories):
         import_data = dict(archive_source="", archive_file=f)
         self._import_history_and_wait(import_data, "API Test History", wait_on_history_length=2)
 
+    def test_import_archive_by_path_is_gated_like_path_uploads(self):
+        # a source named by path is read from the server, so it follows the fetch rule for src=path
+        import_data = dict(archive_source="/not/a/real/archive.tgz", archive_type="file")
+        response = self._post("histories", data=import_data)
+        self._assert_status_code_is(response, 403)
+
     def test_import_export_include_deleted(self):
         history_name = f"for_export_include_deleted_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
