@@ -37,6 +37,7 @@
                     :items="folderContents"
                     :per-page="perPage"
                     :selected-items="selectedIndices"
+                    :select-checkbox-title="(item) => `Select ${item.name}`"
                     :sort-by="sortBy"
                     :sort-desc="sortDesc"
                     :local-sorting="false"
