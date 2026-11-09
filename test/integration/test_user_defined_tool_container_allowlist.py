@@ -1,11 +1,7 @@
 """User defined tools with the default user_defined_tool_allowed_containers setting."""
 
-from uuid import uuid4
+from typing import Any
 
-from galaxy.model import (
-    DynamicTool,
-    UserDynamicToolAssociation,
-)
 from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.populators import (
     DatasetPopulator,
@@ -62,20 +58,6 @@ class TestUserDefinedToolContainerAllowlist(integration_util.IntegrationTestCase
             )
             assert "Container 'busybox' is not allowed for user defined tools" in output["misc_info"]
 
-    def _store_tool_row(self, representation) -> str:
+    def _store_tool_row(self, representation: dict[str, Any]) -> str:
         user_id = self._app.security.decode_id(self.dataset_populator.user_id())
-        session = self._app.model.session
-        dynamic_tool = DynamicTool(
-            tool_format="GalaxyUserTool",
-            tool_id=representation["id"],
-            tool_version=representation["version"],
-            uuid=uuid4(),
-            value=representation,
-            public=False,
-            active=True,
-        )
-        session.add(dynamic_tool)
-        session.flush()
-        session.add(UserDynamicToolAssociation(user_id=user_id, dynamic_tool_id=dynamic_tool.id))
-        session.commit()
-        return str(dynamic_tool.uuid)
+        return integration_util.store_user_tool_row(self._app, user_id, representation)
