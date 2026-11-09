@@ -14,6 +14,29 @@ import type { defaultPosition } from "../composables/useDefaultStepPosition";
 import { fromSimple, type Workflow } from "../modules/model";
 import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
 
+/** Moves the editor between the workflow states on either side of a refactor, which the server has already applied. */
+export class RefactorWorkflowAction extends UndoRedoAction {
+    private before: Workflow;
+    private after: Workflow;
+    private restore: (data: Workflow) => void;
+
+    constructor(before: Workflow, after: Workflow, restore: (data: Workflow) => void) {
+        super();
+        this.before = before;
+        this.after = after;
+        this.restore = restore;
+        this.name = "rework workflow";
+    }
+
+    undo() {
+        this.restore(this.before);
+    }
+
+    redo() {
+        this.restore(this.after);
+    }
+}
+
 export class LazySetValueAction<T> extends LazyUndoRedoAction {
     setValueHandler;
     showAttributesCallback;
