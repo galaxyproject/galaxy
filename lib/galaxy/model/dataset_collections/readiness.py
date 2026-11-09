@@ -22,6 +22,7 @@ from galaxy.model import (
 )
 
 SNAPSHOT_BATCH_SIZE = 500
+NON_READY = "non_ready"
 
 
 class ReadinessSnapshot(NamedTuple):
@@ -31,9 +32,16 @@ class ReadinessSnapshot(NamedTuple):
     dataset_deleted: bool
 
 
+def _readiness(state: str | None, extension: str, deleted: bool, dataset_deleted: bool | None) -> ReadinessSnapshot:
+    # Moving between non-ready states (queued -> running) cannot unblock a wait.
+    if state in Dataset.non_ready_states:
+        state = NON_READY
+    return ReadinessSnapshot(state, extension, deleted, bool(dataset_deleted))
+
+
 def dataset_readiness(dataset: HistoryDatasetAssociation) -> ReadinessSnapshot:
     assert dataset.dataset is not None
-    return ReadinessSnapshot(dataset.state, dataset.extension, dataset.deleted, bool(dataset.dataset.deleted))
+    return _readiness(dataset.state, dataset.extension, dataset.deleted, dataset.dataset.deleted)
 
 
 def _effective_state() -> ColumnElement[Any]:
@@ -48,7 +56,7 @@ def _snapshot_columns() -> tuple[Label[Any], Label[Any]]:
 
 
 def _row_readiness(row: Any) -> ReadinessSnapshot:
-    return ReadinessSnapshot(row.effective_state, row.extension, row.deleted, row.dataset_deleted)
+    return _readiness(row.effective_state, row.extension, row.deleted, row.dataset_deleted)
 
 
 def readiness_snapshots(session: Session, hda_ids: Iterable[int]) -> dict[int, ReadinessSnapshot]:

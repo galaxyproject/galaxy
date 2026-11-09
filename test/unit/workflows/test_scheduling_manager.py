@@ -5,6 +5,7 @@ from typing import cast
 from sqlalchemy import (
     delete,
     insert,
+    update,
 )
 
 from galaxy import model
@@ -12,6 +13,7 @@ from galaxy.app_unittest_utils.galaxy_mock import (
     MockApp,
     MockAppConfig,
 )
+from galaxy.model.dataset_collections.readiness import dataset_readiness
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import now
 from galaxy.util.bunch import Bunch
@@ -138,6 +140,26 @@ def test_reschedules_after_backfill_interval_without_changes():
     harness.monitor.update_time_tracking_dict[harness.invocation_id] = tracking._replace(schedule_time=stale)
     assert harness.attempt(scheduler) == 2
     assert harness.attempt(scheduler) == 2
+
+
+def _readiness_dependency(harness):
+    hda = model.HistoryDatasetAssociation(dataset=model.Dataset(state=model.Dataset.states.RUNNING))
+    hda.history = harness.history
+    harness.persist(hda)
+    return hda, SchedulingDependency(DependencyType.HDA, hda.id, dataset_readiness(hda))
+
+
+def test_readiness_snapshot_ignores_moves_between_non_ready_states():
+    harness = SchedulingHarness()
+    hda, dependency = _readiness_dependency(harness)
+    scheduler = RecordingScheduler(pending(dependency))
+
+    assert harness.attempt(scheduler) == 1
+    for state in ("queued", "setting_metadata", "ok"):
+        harness.session.execute(update(model.Dataset).where(model.Dataset.id == hda.dataset_id).values(state=state))
+        harness.session.commit()
+        harness.attempt(scheduler)
+    assert scheduler.scheduled == 2
 
 
 def _set_history_update_time(session, history_id, update_time):
