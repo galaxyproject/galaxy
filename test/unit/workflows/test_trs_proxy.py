@@ -14,6 +14,7 @@ from galaxy.exceptions import (
     ConfigDoesNotAllowException,
     GatewayTimeoutException,
     MessageException,
+    UpstreamProxyError,
 )
 from galaxy.util import requests
 from galaxy.util.unittest_utils import (
@@ -231,6 +232,13 @@ def test_version_with_slash_stays_one_path_segment():
     with _mock_get(_response(200, '{"content": "class: GalaxyWorkflow"}')) as get:
         server.get_version_descriptor("138", parts["version_id"])
     assert get.call_args.args[0].endswith("/tools/138/versions/feature%2Fx/GALAXY/descriptor")
+
+
+def test_successful_response_without_json_is_upstream_error():
+    server = get_trs_proxy().server_from_url("https://workflowhub.eu")
+    with _mock_get(_response(200, "<html>Sign in</html>")):
+        with pytest.raises(UpstreamProxyError, match="not JSON"):
+            server.get_tool("138")
 
 
 def test_timeout_is_gateway_timeout():
