@@ -170,19 +170,23 @@ class Image(data.Data):
                     im_ndim = len(im_shape)
 
                     # Determine the metadata values that are available without loading the image data
-                    dataset.metadata.width = im.size[0]
-                    dataset.metadata.height = im.size[1]
-                    dataset.metadata.depth = 0
-                    dataset.metadata.frames = getattr(im, "n_frames", 0)
-                    dataset.metadata.dtype = str(np.array((0,), im_typestr).dtype)
+                    values: dict[str, Any] = {
+                        "width": im.size[0],
+                        "height": im.size[1],
+                        "depth": 0,
+                        "frames": getattr(im, "n_frames", 0),
+                        "dtype": str(np.array((0,), im_typestr).dtype),
+                    }
 
                     # Determine the remaining values, by assuming the order of axes
                     if im_ndim == 2:
-                        dataset.metadata.axes = "YX"
-                        dataset.metadata.channels = 0
+                        values.update(axes="YX", channels=0)
                     elif im_ndim == 3:
-                        dataset.metadata.axes = "YXC"
-                        dataset.metadata.channels = im_shape[2]
+                        values.update(axes="YXC", channels=im_shape[2])
+
+                # Assign only once every value was read, so a failure leaves all of them unset
+                for key, value in values.items():
+                    setattr(dataset.metadata, key, value)
 
             except PIL.UnidentifiedImageError:
                 pass

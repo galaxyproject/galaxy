@@ -1,9 +1,12 @@
+import io
 import struct
 import zlib
 from typing import (
     Any,
     cast,
 )
+
+import PIL.Image
 
 from galaxy.datatypes.images import (
     Dicom,
@@ -42,6 +45,14 @@ def __test(image_cls: type[Image], input_filename: str):
         return test
 
     return decorator
+
+
+def __set_meta(image_cls: type[Image], path: str):
+    dataset = MockDataset(1)
+    dataset.set_file_name(path)
+    dataset.dataset = MockDatasetDataset(path)
+    image_cls().set_meta(cast(DatasetProtocol, dataset))
+    return dataset.metadata
 
 
 # Define test factory
@@ -274,6 +285,16 @@ def test_decompression_bomb_metadata(tmp_path):
     dataset.dataset = MockDatasetDataset(str(path))
     Image().set_meta(cast(DatasetProtocol, dataset))
     __assert_empty_metadata(dataset.metadata)
+
+
+def test_truncated_metadata(tmp_path):
+    frames = [PIL.Image.new("L", (16, 16), i * 40) for i in range(4)]
+    buffer = io.BytesIO()
+    frames[0].save(buffer, "GIF", save_all=True, append_images=frames[1:])
+    # Pillow opens the cut file and reads its size, but counting frames fails
+    path = tmp_path / "truncated.gif"
+    path.write_bytes(buffer.getvalue()[:-40])
+    __assert_empty_metadata(__set_meta(Image, str(path)))
 
 
 def test_pbm_sniff():
