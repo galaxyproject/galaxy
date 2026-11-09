@@ -10,6 +10,7 @@ from galaxy.model import (
     UserGroupAssociation,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.quota import queue_group_membership_change
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -82,12 +83,12 @@ class GroupUsersManager:
     def _add_user_to_group(self, trans: ProvidesAppContext, group: model.Group, user: model.User):
         gra = model.UserGroupAssociation(user, group)
         trans.sa_session.add(gra)
-        trans.app.security_agent.queue_user_quota_update_for_group_changes([user.id], [group.id])
+        queue_group_membership_change(trans.sa_session, [user.id], [group.id])
         trans.sa_session.commit()
 
     def _remove_user_from_group(self, trans: ProvidesAppContext, group_user: model.UserGroupAssociation):
         trans.sa_session.delete(group_user)
-        trans.app.security_agent.queue_user_quota_update_for_group_changes([group_user.user_id], [group_user.group_id])
+        queue_group_membership_change(trans.sa_session, [group_user.user_id], [group_user.group_id])
         trans.sa_session.commit()
 
 

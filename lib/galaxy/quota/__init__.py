@@ -1,15 +1,67 @@
 """Galaxy Quotas"""
 
 import logging
+from collections.abc import Iterable
 
-from sqlalchemy import select
+from sqlalchemy import (
+    select,
+    union,
+)
+from sqlalchemy.orm import (
+    scoped_session,
+    Session,
+)
 from sqlalchemy.sql import text
 
 import galaxy.util
+from galaxy.model import (
+    GroupQuotaAssociation,
+    Quota,
+    UserGroupAssociation,
+    UserQuotaAssociation,
+)
 from galaxy.model.user_quota_updates import queue_user_quota_update
 from galaxy.objectstore import is_user_object_store
 
 log = logging.getLogger(__name__)
+
+AnySession = Session | scoped_session[Session]
+
+
+def queue_quota_change(session: AnySession, quota: Quota) -> None:
+    """Announce a change of ``quota`` to the users it applies to, or to everyone for a default quota."""
+    if quota.default:
+        queue_user_quota_update(session, broadcast=True)
+        return
+    direct_user_ids = select(UserQuotaAssociation.user_id).where(UserQuotaAssociation.quota_id == quota.id)
+    group_user_ids = (
+        select(UserGroupAssociation.user_id)
+        .join(GroupQuotaAssociation, GroupQuotaAssociation.group_id == UserGroupAssociation.group_id)
+        .where(GroupQuotaAssociation.quota_id == quota.id)
+    )
+    queue_user_quota_update(session, session.scalars(union(direct_user_ids, group_user_ids)))
+
+
+def queue_quota_change_for_users_and_groups(
+    session: AnySession, user_ids: Iterable[int], group_ids: Iterable[int]
+) -> None:
+    """Announce a quota change to these users and to the members of these groups."""
+    queue_user_quota_update(session, user_ids)
+    group_ids = list(group_ids)
+    if group_ids:
+        stmt = select(UserGroupAssociation.user_id).where(UserGroupAssociation.group_id.in_(group_ids))
+        queue_user_quota_update(session, session.scalars(stmt))
+
+
+def queue_group_membership_change(session: AnySession, user_ids: Iterable[int], group_ids: Iterable[int]) -> None:
+    """Announce a quota change to users who joined or left these groups, if any of the groups has a quota."""
+    if any_group_has_quota(session, group_ids):
+        queue_user_quota_update(session, user_ids)
+
+
+def any_group_has_quota(session: AnySession, group_ids: Iterable[int]) -> bool:
+    stmt = select(GroupQuotaAssociation.id).where(GroupQuotaAssociation.group_id.in_(list(group_ids))).limit(1)
+    return session.scalars(stmt).first() is not None
 
 
 class QuotaAgent:  # metaclass=abc.ABCMeta
@@ -309,6 +361,7 @@ WHERE default_quota_association.type = :default_type
                 return None
 
     def set_default_quota(self, default_type, quota):
+        queue_user_quota_update(self.sa_session, broadcast=True)
         # Unset the current default(s) associated with this quota, if there are any
         for dqa in quota.default:
             self.sa_session.delete(dqa)
@@ -367,6 +420,11 @@ WHERE default_quota_association.type = :default_type
         if groups is None:
             groups = []
         for quota in quotas:
+            # Before replacing the associations, so the users the quota no longer applies to are told too
+            queue_quota_change(self.sa_session, quota)
+            queue_quota_change_for_users_and_groups(
+                self.sa_session, [user.id for user in users], [group.id for group in groups]
+            )
             if delete_existing_assocs:
                 flush_needed = False
                 for a in quota.users + quota.groups:

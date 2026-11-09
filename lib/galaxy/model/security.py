@@ -1,7 +1,6 @@
 import logging
 import socket
 import sqlite3
-from collections.abc import Iterable
 from datetime import timedelta
 from typing import (
     Literal,
@@ -32,7 +31,6 @@ from galaxy.model import (
     DefaultHistoryPermissions,
     DefaultUserPermissions,
     Group,
-    GroupQuotaAssociation,
     GroupRoleAssociation,
     HistoryDatasetAssociationDisplayAtAuthorization,
     Library,
@@ -54,6 +52,10 @@ from galaxy.model.db.role import (
     get_private_user_role,
 )
 from galaxy.model.user_quota_updates import queue_user_quota_update
+from galaxy.quota import (
+    any_group_has_quota,
+    queue_group_membership_change,
+)
 from galaxy.security import (
     Action,
     get_permitted_actions,
@@ -708,7 +710,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
     def associate_user_group(self, user, group):
         assoc = UserGroupAssociation(user, group)
         self.sa_session.add(assoc)
-        self.queue_user_quota_update_for_group_changes([user.id], [group.id])
+        queue_group_membership_change(self.sa_session, [user.id], [group.id])
         self.sa_session.commit()
         return assoc
 
@@ -1516,7 +1518,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 select(UserGroupAssociation.group_id).where(UserGroupAssociation.user_id == user.id)
             )
         )
-        self.queue_user_quota_update_for_group_changes([user.id], old_group_ids.symmetric_difference(group_ids))
+        queue_group_membership_change(self.sa_session, [user.id], old_group_ids.symmetric_difference(group_ids))
         delete_stmt = delete(UserGroupAssociation).where(UserGroupAssociation.user_id == user.id)
         insert_values = [{"user_id": user.id, "group_id": group_id} for group_id in group_ids]
         self._set_associations(user, UserGroupAssociation, delete_stmt, insert_values)
@@ -1544,7 +1546,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
 
     def _set_group_users(self, group, user_ids):
         # Checked first, so the members of a group without a quota aren't loaded
-        if self._any_group_has_quota([group.id]):
+        if any_group_has_quota(self.sa_session, [group.id]):
             old_user_ids = set(
                 self.sa_session.scalars(
                     select(UserGroupAssociation.user_id).where(UserGroupAssociation.group_id == group.id)
@@ -1554,15 +1556,6 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         delete_stmt = delete(UserGroupAssociation).where(UserGroupAssociation.group_id == group.id)
         insert_values = [{"group_id": group.id, "user_id": user_id} for user_id in user_ids]
         self._set_associations(group, UserGroupAssociation, delete_stmt, insert_values)
-
-    def queue_user_quota_update_for_group_changes(self, user_ids: Iterable[int], group_ids: Iterable[int]) -> None:
-        """Announce a quota change to users who joined or left these groups, if any of the groups has a quota."""
-        if self._any_group_has_quota(group_ids):
-            queue_user_quota_update(self.sa_session, user_ids)
-
-    def _any_group_has_quota(self, group_ids: Iterable[int]) -> bool:
-        stmt = select(GroupQuotaAssociation.id).where(GroupQuotaAssociation.group_id.in_(list(group_ids))).limit(1)
-        return self.sa_session.scalars(stmt).first() is not None
 
     def _set_group_roles(self, group, role_ids):
         delete_stmt = delete(GroupRoleAssociation).where(GroupRoleAssociation.group_id == group.id)

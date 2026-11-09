@@ -13,6 +13,7 @@ from galaxy.exceptions import (
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import Group
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.quota import queue_group_membership_change
 from galaxy.schema.fields import Security
 from galaxy.schema.groups import (
     GroupCreatePayload,
@@ -119,9 +120,7 @@ class GroupsManager:
             raise RequestParameterInvalidException(
                 f"Group '{group.name}' has not been deleted, so it cannot be purged."
             )
-        trans.app.security_agent.queue_user_quota_update_for_group_changes(
-            [uga.user_id for uga in group.users], [group.id]
-        )
+        queue_group_membership_change(trans.sa_session, [uga.user_id for uga in group.users], [group.id])
         # Delete UserGroupAssociations
         for uga in group.users:
             sa_session.delete(uga)
