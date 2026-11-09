@@ -42,6 +42,7 @@ from galaxy.tool_util_models.tool_source import (
     XrefDict,
     YamlTemplateConfigFile,
 )
+from galaxy.tool_util_models.yaml_parameters import YamlReferenceDataParameter
 from galaxy.util import (
     Element,
     listify,
@@ -703,6 +704,11 @@ class CanonicalYamlInputSource(YamlInputSource):
         if self.input_dict["type"] == "section":
             return "section"
         return super().parse_input_type()
+
+    def parse_reference_data(self) -> YamlReferenceDataParameter | None:
+        if self.input_dict["type"] != "reference_data":
+            return None
+        return YamlReferenceDataParameter.model_validate(self.input_dict)
 
     def parse_dynamic_options(self) -> YamlReferenceDataOptions | None:
         if self.input_dict["type"] != "reference_data":

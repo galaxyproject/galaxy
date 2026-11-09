@@ -1880,9 +1880,12 @@ class ReferenceDataToolParameter(SelectToolParameter):
 
     def __init__(self, tool: Optional["Tool"], input_source, context=None):
         input_source = ensure_input_source(input_source)
+        if input_source.parse_reference_data() is None:
+            raise ParameterValueError(
+                "reference_data is only supported in GalaxyTool and GalaxyUserTool YAML tools",
+                input_source.parse_name(),
+            )
         table_name = input_source.get("table")
-        if table_name is None or input_source.parse_dynamic_options() is None:
-            raise ParameterValueError("reference_data is only supported in YAML tools", input_source.parse_name())
         super().__init__(tool, input_source, context)
         self.table_name: str = table_name
         self.trusted = input_source.trusted

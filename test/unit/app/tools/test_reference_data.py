@@ -17,6 +17,7 @@ from galaxy.model import (
 )
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.tool_util.parameters import input_models_for_tool_source
+from galaxy.tool_util.parameters.factory import ParameterDefinitionError
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util_models.parameters import ReferenceDataParameterModel
 from galaxy.tools import create_tool_from_source
@@ -25,11 +26,8 @@ from galaxy.tools.evaluation import UserToolEvaluator
 from galaxy.tools.parameters.basic import (
     ParameterValueError,
     ReferenceDataToolParameter,
-    ToolParameter,
 )
 from galaxy.tools.runtime import setup_for_reference_data
-from galaxy.util import XML
-from galaxy.util.bunch import Bunch
 from galaxy.work.context import WorkRequestContext
 from .test_evaluation import ComputeEnvironment
 
@@ -177,10 +175,51 @@ def test_history_bundles_are_not_offered_as_table_entries(app, monkeypatch):
     assert [option.value for option in options] == ["hg38", "mm10"]
 
 
-def test_xml_tools_cannot_declare_reference_data(app):
-    tool = cast("Tool", Bunch(app=app, profile=26.1))
-    with pytest.raises(ParameterValueError, match="only supported in YAML tools"):
-        ToolParameter.build(tool, XML('<param name="reference" type="reference_data" table="open_refs"/>'))
+ONLY_IN_YAML_TOOL_CLASSES = "only supported in GalaxyTool and GalaxyUserTool YAML tools"
+
+
+def _xml_tool(param_xml: str) -> str:
+    return f'<tool id="x" name="x" version="1" profile="26.1"><command>x</command><inputs>{param_xml}</inputs></tool>'
+
+
+CLASSLESS_YAML_TOOL = {
+    "id": "x",
+    "name": "x",
+    "version": "1",
+    "command": "x",
+    "inputs": [{"name": "reference", "type": "reference_data", "table": "open_refs"}],
+    "outputs": {},
+}
+
+NON_YAML_TOOL_CLASS_SOURCES = pytest.mark.parametrize(
+    "tool_source_class, raw_tool_source",
+    [
+        ("XmlToolSource", _xml_tool('<param name="reference" type="reference_data" table="open_refs"/>')),
+        (
+            "XmlToolSource",
+            _xml_tool(
+                '<param name="reference" type="reference_data" table="closed_refs">'
+                '<options from_data_table="open_refs"/></param>'
+            ),
+        ),
+        ("YamlToolSource", json.dumps(CLASSLESS_YAML_TOOL)),
+    ],
+    ids=["xml_bare", "xml_with_options", "classless_yaml"],
+)
+
+
+@NON_YAML_TOOL_CLASS_SOURCES
+def test_tools_outside_the_yaml_tool_classes_cannot_declare_reference_data(app, tool_source_class, raw_tool_source):
+    tool_source = get_tool_source(tool_source_class=tool_source_class, raw_tool_source=raw_tool_source)
+    with pytest.raises(ParameterValueError, match=ONLY_IN_YAML_TOOL_CLASSES):
+        create_tool_from_source(app, tool_source=tool_source)
+
+
+@NON_YAML_TOOL_CLASS_SOURCES
+def test_parameter_models_reject_reference_data_outside_the_yaml_tool_classes(tool_source_class, raw_tool_source):
+    tool_source = get_tool_source(tool_source_class=tool_source_class, raw_tool_source=raw_tool_source)
+    with pytest.raises(ParameterDefinitionError, match=ONLY_IN_YAML_TOOL_CLASSES):
+        input_models_for_tool_source(tool_source)
 
 
 def test_table_this_instance_does_not_have_offers_nothing(app):
