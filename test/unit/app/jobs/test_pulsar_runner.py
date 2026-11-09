@@ -45,13 +45,13 @@ from galaxy.jobs.runners import (
     JobState,
     pulsar as pulsar_runner,
 )
+from galaxy.jobs.runners.util import RUNNER_STATE_DEFINITIONS
 from galaxy.jobs.runners.pulsar import (  # type: ignore[attr-defined]
     build_client_manager,
     effective_dependency_resolution,
     FAILED_REMOTE_ERROR,
     LOST_REMOTE_ERROR,
     PulsarJobRunner,
-    REMOTE_RUNNER_STATE_MESSAGES,
 )
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 
@@ -477,31 +477,63 @@ def test_failure_without_runner_state_keeps_generic_message(full_status):
 
 @pytest.mark.parametrize(
     "runner_state",
-    [JobState.runner_states.MEMORY_LIMIT_REACHED, JobState.runner_states.WALLTIME_REACHED],
+    [
+        JobState.runner_states.MEMORY_LIMIT_REACHED,
+        JobState.runner_states.WALLTIME_REACHED,
+        JobState.runner_states.NODE_FAILURE,
+        JobState.runner_states.PREEMPTED,
+        JobState.runner_states.CANCELLED,
+    ],
 )
 def test_failure_with_runner_state_is_classified(runner_state):
     job_state = _failing_job_state()
     full_status = {"status": "failed", "runner_state": runner_state}
     runner = _update(job_state, "failed", full_status)
     assert job_state.runner_state == runner_state
-    assert _fail_message(runner) == REMOTE_RUNNER_STATE_MESSAGES[runner_state]
+    assert _fail_message(runner) == RUNNER_STATE_DEFINITIONS[runner_state].fail_message
     assert runner.fail_job.call_args.kwargs["full_status"] == full_status
 
 
-def test_unrecognized_runner_state_is_logged_and_ignored(caplog):
+def test_reason_without_definition_is_kept_for_resubmit_conditions():
+    job_state = _failing_job_state()
+    runner = _update(job_state, "failed", {"status": "failed", "runner_state": "from_the_future"})
+    assert job_state.runner_state == "from_the_future"
+    assert _fail_message(runner) == FAILED_REMOTE_ERROR
+
+
+def test_malformed_runner_state_is_logged_and_ignored(caplog):
     job_state = _failing_job_state()
     with caplog.at_level(logging.WARNING):
-        runner = _update(job_state, "failed", {"status": "failed", "runner_state": "from_the_future"})
+        runner = _update(job_state, "failed", {"status": "failed", "runner_state": "not a reason; DROP"})
     assert job_state.runner_state is None
     assert _fail_message(runner) == FAILED_REMOTE_ERROR
-    assert "from_the_future" in caplog.text
+    assert "malformed runner state" in caplog.text
+
+
+def test_runner_state_message_is_preferred_over_the_definition():
+    job_state = _failing_job_state()
+    full_status = {
+        "status": "failed",
+        "runner_state": JobState.runner_states.MEMORY_LIMIT_REACHED,
+        "runner_state_message": "Held by the pool for exceeding request_memory",
+    }
+    runner = _update(job_state, "failed", full_status)
+    assert job_state.runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED
+    assert _fail_message(runner) == "Held by the pool for exceeding request_memory"
+
+
+def test_runner_state_message_without_a_reason_is_shown():
+    job_state = _failing_job_state()
+    runner = _update(
+        job_state, "failed", {"status": "failed", "runner_state_message": "Slurm reported: RaisedSignal:9"}
+    )
+    assert job_state.runner_state is None
+    assert _fail_message(runner) == "Slurm reported: RaisedSignal:9"
 
 
 def test_lost_job_ignores_runner_state():
     job_state = _failing_job_state()
-    runner = _update(
-        job_state, "lost", {"status": "lost", "runner_state": JobState.runner_states.MEMORY_LIMIT_REACHED}
-    )
+    runner = _update(job_state, "lost", {"status": "lost", "runner_state": JobState.runner_states.MEMORY_LIMIT_REACHED})
     assert job_state.runner_state is None
     assert _fail_message(runner) == LOST_REMOTE_ERROR
 
