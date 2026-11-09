@@ -158,9 +158,7 @@ const titleIcon = computed<TitleIcon>(() => {
     return { icon, title: label };
 });
 
-/** Card title: input rows show their (editable) name; tool rows show the step
- *  label when one is set, falling back to the tool name. Mirrors the workflow
- *  editor, where a labeled node displays its label rather than the tool name. */
+/** Inputs show their name; tool steps their label, else tool name (as in the workflow editor). */
 const cardTitle = computed(() => {
     if (isInputStep(props.job)) {
         return props.job.newName;
@@ -168,8 +166,6 @@ const cardTitle = computed(() => {
     return props.job.stepLabel || props.job.tool_name || props.job.tool_id || "Unnamed Step";
 });
 
-/** Title pencil tooltip: inputs are renamed, tool steps are labeled (add vs.
- *  edit depending on whether a label is already set). */
 const renameTitle = computed(() => {
     if (isInputStep(props.job)) {
         return "Rename";
@@ -177,20 +173,26 @@ const renameTitle = computed(() => {
     return props.job.stepLabel ? "Edit this workflow step's label" : "Add a workflow step label";
 });
 
-/** Tool steps with a label set get a clear (x) beside the pencil to drop it
- *  back to the unlabeled default. Inputs always have a name, so no clear. */
+/** Only tool step labels are optional; input names can't be cleared. */
 const canClearStepLabel = computed(
     () => props.job.step_type === "tool" && Boolean(props.job.stepLabel) && props.job.checked && !props.job.invalid,
 );
 
-/** The title pencil drives input rename for inputs and label add/edit for tool
- *  steps, so both step kinds share the same title-adjacent affordance. */
 function onTitleRename() {
     if (props.job.step_type === "tool") {
         emit("label-step");
     } else {
         emit("rename");
     }
+}
+
+function reportLockTitle(output: ExtractionOutput): string | undefined {
+    if (!output.referenced_by_report || props.job.invalid) {
+        return undefined;
+    }
+    return props.job.checked
+        ? "The notebook report uses this output, so it stays a workflow output"
+        : "The notebook report uses this output; include this step to keep it";
 }
 
 function displayLabel(output: ExtractionOutput): string {
@@ -213,7 +215,7 @@ function displayLabel(output: ExtractionOutput): string {
         select-title="Include as a step in the workflow"
         dim-when-unselected
         @rename="onTitleRename"
-        @clearTitle="emit('clear-step-label')"
+        @clear-title="emit('clear-step-label')"
         @select="emit('select')">
         <template v-slot:select>
             <FontAwesomeIcon
@@ -234,7 +236,13 @@ function displayLabel(output: ExtractionOutput): string {
                         data-output-star
                         :class="{ active: output.exposed }"
                         :color="output.exposed ? 'orange' : 'grey'"
-                        :disabled="Boolean(props.job.invalid) || output.deleted || !props.job.checked"
+                        :disabled="
+                            Boolean(props.job.invalid) ||
+                            output.deleted ||
+                            !props.job.checked ||
+                            output.referenced_by_report
+                        "
+                        :disabled-title="reportLockTitle(output)"
                         :title="output.exposed ? 'Do not expose this output' : 'Expose this output'"
                         size="large"
                         transparent
@@ -283,18 +291,6 @@ function displayLabel(output: ExtractionOutput): string {
         font-size: 0.8rem;
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem 0.25rem 0 0;
-    }
-
-    // GCard renders the clear-title control as a neutral icon button; the
-    // destructive (muted -> red on hover) styling is our policy, so we keep it
-    // here rather than push it into GCard's default.
-    :deep(.g-card-clear-title) {
-        color: $text-muted;
-
-        &:hover {
-            background-color: $brand-danger;
-            color: $white;
-        }
     }
 
     .workflow-extraction-output {

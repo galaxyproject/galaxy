@@ -13,6 +13,13 @@ if TYPE_CHECKING:
     from typing import Any
 
 
+def connection_step_id(connection: "Any") -> int:
+    """Source step id of an input connection; the .ga format may give a dict or a list of one dict."""
+    if isinstance(connection, list):
+        connection = connection[0]
+    return connection["id"]
+
+
 class WorkflowStructureAssertions:
     """Mixin providing workflow structure verification methods."""
 

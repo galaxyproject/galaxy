@@ -353,6 +353,16 @@ class WorkflowExtractionOutput(Model):
         title="Exposed",
         description="Whether this output should be preselected for exposure as a workflow output.",
     )
+    referenced_by_report: bool = Field(
+        False,
+        title="Referenced By Report",
+        description="Whether the notebook report uses this output, which keeps it a workflow output.",
+    )
+
+
+# A history item named by kind and id: an HDA or an HDCA.
+ContentKind = Literal["hda", "hdca"]
+ContentRef = tuple[ContentKind, int]
 
 
 class OutputLabelHint(Model):
@@ -361,7 +371,7 @@ class OutputLabelHint(Model):
         title="ID",
         description="Decoded ID of the concrete HDA/HDCA output to expose.",
     )
-    src: Literal["hda", "hdca"] = Field(
+    src: ContentKind = Field(
         ...,
         title="Source",
         description="Whether the output ID identifies an HDA or an HDCA.",

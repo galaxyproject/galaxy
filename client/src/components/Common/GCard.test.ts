@@ -345,4 +345,15 @@ describe("GCard", () => {
 
         expect(event.defaultPrevented).toBe(false);
     });
+
+    it("renders the clear-title button only when canClearTitle is set", () => {
+        expect(mountCard({}).find(".g-card-clear-title").exists()).toBe(false);
+        expect(mountCard({ canClearTitle: true }).find(".g-card-clear-title").exists()).toBe(true);
+    });
+
+    it("emits clearTitle when the clear-title button is clicked", async () => {
+        const wrapper = mountCard({ canClearTitle: true });
+        await wrapper.get(".g-card-clear-title").trigger("click");
+        expect(wrapper.emitted("clearTitle")).toHaveLength(1);
+    });
 });

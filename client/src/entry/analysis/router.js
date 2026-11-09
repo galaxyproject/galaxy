@@ -405,7 +405,13 @@ export function getRouter(Galaxy) {
                     {
                         path: "histories/:historyId/extract_workflow",
                         component: WorkflowExtractionForm,
-                        props: true,
+                        props: (route) => ({
+                            historyId: route.params.historyId,
+                            fromPageId:
+                                typeof route.query.from_page === "string"
+                                    ? route.query.from_page || undefined
+                                    : undefined,
+                        }),
                     },
                     {
                         path: "histories/:historyId/graph/:tab?",
