@@ -5,7 +5,7 @@
         loading-message="Loading tool requirement resolution information">
         <template v-slot:header>
             <BRow class="m-1">
-                <BForm inline>
+                <form class="form-inline">
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-resolver-type">Using resolvers of type</label>
                     <GSelect
@@ -13,11 +13,11 @@
                         v-model="resolverType"
                         class="w-auto mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions" />
-                </BForm>
+                </form>
             </BRow>
 
             <BRow class="m-1">
-                <BForm inline>
+                <form class="form-inline">
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
                     <GSelect
@@ -28,7 +28,7 @@
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
                     </GSelect>
-                </BForm>
+                </form>
             </BRow>
         </template>
 
@@ -106,7 +106,7 @@
 <script>
 import { faChevronDown, faChevronUp, faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BForm, BRow } from "bootstrap-vue";
+import { BRow } from "bootstrap-vue";
 import { reactive } from "vue";
 
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
@@ -138,7 +138,6 @@ RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
     components: {
-        BForm,
         BRow,
         FontAwesomeIcon,
         DependencyIndexWrapper,

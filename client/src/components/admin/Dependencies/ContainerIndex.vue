@@ -5,7 +5,7 @@
         loading-message="Loading container resolution information">
         <template v-slot:header>
             <BRow class="m-1">
-                <BForm inline>
+                <form class="form-inline">
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-container-type">Resolve containers of type</label>
                     <GSelect
@@ -20,11 +20,11 @@
                         v-model="resolverType"
                         class="w-auto mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions" />
-                </BForm>
+                </form>
             </BRow>
 
             <BRow class="m-1">
-                <BForm inline>
+                <form class="form-inline">
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
                     <GSelect
@@ -55,7 +55,7 @@
                         v-model="filterResolverType"
                         class="w-auto mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions" />
-                </BForm>
+                </form>
             </BRow>
         </template>
 
@@ -111,7 +111,7 @@
 <script>
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BForm, BRow } from "bootstrap-vue";
+import { BRow } from "bootstrap-vue";
 import { reactive } from "vue";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
@@ -137,7 +137,6 @@ RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
     components: {
-        BForm,
         BRow,
         ContainerDescription,
         ContainerResolutionDetails,

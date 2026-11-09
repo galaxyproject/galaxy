@@ -19,7 +19,6 @@ function mountExtReg(cfg: object) {
         stubs: {
             GAlert: true,
             GButton: true,
-            BForm: true,
             BFormGroup: true,
         },
     });
@@ -79,5 +78,11 @@ describe("ExternalRegistration – OIDC rendering", () => {
         const wrapper = mountExtReg(cfg);
 
         expect(wrapper.findAll("[data-description='registration button']").length).toBe(wantButtons);
+    });
+
+    it("renders a native form", () => {
+        const wrapper = mountExtReg({});
+
+        expect(wrapper.find("form#externalRegister").exists()).toBe(true);
     });
 });

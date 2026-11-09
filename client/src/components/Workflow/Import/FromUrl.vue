@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BForm, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 import { RouterLink, useRouter } from "vue-router";
 
@@ -80,7 +80,7 @@ defineExpose({ attemptImport });
 </script>
 
 <template>
-    <BForm class="mt-4 workflow-import-url" @submit.prevent="submit">
+    <form class="mt-4 workflow-import-url" @submit.prevent="submit">
         <h2 class="h-sm">Import from a Galaxy workflow export URL</h2>
 
         <BFormGroup label="Workflow Archive URL">
@@ -101,5 +101,5 @@ defineExpose({ attemptImport });
         <GAlert v-if="loading" show variant="info">
             <LoadingSpan message="Loading your workflow, this may take a while - please be patient." />
         </GAlert>
-    </BForm>
+    </form>
 </template>
