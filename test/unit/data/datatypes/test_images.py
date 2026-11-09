@@ -1,6 +1,4 @@
 import io
-import struct
-import zlib
 from typing import (
     Any,
     cast,
@@ -271,20 +269,9 @@ def test_unparsable_metadata(metadata):
     __assert_empty_metadata(metadata)
 
 
-def test_decompression_bomb_metadata(tmp_path):
-    def chunk(chunk_type: bytes, data: bytes) -> bytes:
-        return struct.pack(">I", len(data)) + chunk_type + data + struct.pack(">I", zlib.crc32(chunk_type + data))
-
-    ihdr = struct.pack(">IIBBBBB", 20000, 20000, 8, 0, 0, 0, 0)
-    path = tmp_path / "large.png"
-    path.write_bytes(
-        b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(b"\0")) + chunk(b"IEND", b"")
-    )
-    dataset = MockDataset(1)
-    dataset.set_file_name(str(path))
-    dataset.dataset = MockDatasetDataset(str(path))
-    Image().set_meta(cast(DatasetProtocol, dataset))
-    __assert_empty_metadata(dataset.metadata)
+def test_decompression_bomb_metadata(monkeypatch):
+    monkeypatch.setattr(PIL.Image, "MAX_IMAGE_PIXELS", 1)
+    __assert_empty_metadata(__set_meta(Image, get_test_fname("im1_uint8.png")))
 
 
 def test_truncated_metadata(tmp_path):
