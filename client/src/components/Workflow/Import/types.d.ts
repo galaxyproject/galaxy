@@ -10,6 +10,13 @@ export interface TrsToolVersion {
     name: string;
 }
 
+/** The fields of a workflow refactor action that address a version on a TRS server. */
+export interface TrsVersionReference {
+    trs_server: string;
+    trs_tool_id: string;
+    trs_version_id: string;
+}
+
 export interface TrsTool {
     id: string;
     name: string;

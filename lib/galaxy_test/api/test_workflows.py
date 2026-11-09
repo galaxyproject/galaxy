@@ -453,6 +453,51 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
             response = self.workflow_populator.refactor_workflow(workflow_id, replace_private, dry_run=dry_run_flag)
             self._assert_status_code_is(response, 403)
 
+    def test_replace_subworkflow_from_url(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+
+        def base64_url(content: str) -> str:
+            return "base64://" + base64.b64encode(content.encode()).decode()
+
+        def replace(url: str, dry_run: bool = False) -> Response:
+            action = {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, "url": url}
+            return self.workflow_populator.refactor_workflow(workflow_id, [action], dry_run=dry_run)
+
+        def workflow_count() -> int:
+            return len(self._get("workflows", {"show_hidden": True}).json())
+
+        url = base64_url(REPLACEMENT_SUBWORKFLOW)
+        count = workflow_count()
+        dry_run = replace(url, dry_run=True)
+        self._assert_status_code_is(dry_run, 200)
+        assert dry_run.json()["changed"]
+        replace(url).raise_for_status()
+        assert workflow_count() == count + 1
+        imported_id = self._subworkflow_step_workflow_id(workflow_id)
+        imported = self._get(f"workflows/{imported_id}", {"instance": True}).json()
+        assert imported["hidden"]
+        assert imported["source_metadata"]["url"] == url
+
+        downloaded = self.workflow_populator.download_workflow(workflow_id)
+        nested_step = next(step for step in downloaded["steps"].values() if step["label"] == "nested_workflow")
+        assert nested_step["input_connections"]["inner_input"]
+
+        replace(url).raise_for_status()
+        assert self._subworkflow_step_workflow_id(workflow_id) == imported_id
+        assert workflow_count() == count + 1
+
+        replace(base64_url(REPLACEMENT_SUBWORKFLOW.replace("num_lines: 3", "num_lines: 4"))).raise_for_status()
+        assert self._subworkflow_step_workflow_id(workflow_id) != imported_id
+        assert workflow_count() == count + 2
+
+        not_a_workflow = replace(base64_url("<html><body>a page</body></html>"))
+        self._assert_status_code_is(not_a_workflow, 400)
+        assert "is not a Galaxy workflow" in not_a_workflow.json()["err_msg"]
+        self._assert_status_code_is(replace("file:///etc/passwd"), 400)
+        self._assert_status_code_is(replace("http://169.254.169.254/workflow.ga"), 403)
+        self._assert_status_code_is(replace("http://169.254.169.254/ga4gh/trs/v2/tools/a/versions/b"), 403)
+        assert workflow_count() == count + 2
+
     def test_replace_subworkflow_targets(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
         my_email = self.dataset_populator.user_email()
@@ -2178,6 +2223,14 @@ steps:
             if step["type"] == "subworkflow":
                 return step["subworkflow"]
         raise AssertionError("No subworkflow step found in downloaded workflow")
+
+    def test_import_refuses_subworkflow_url_with_other_scheme(self):
+        outer_workflow = self._build_outer_ga_workflow(
+            {"content_source": "url", "content_id": "gxfiles://posix/inner.ga"}
+        )
+        response = self.workflow_populator.create_workflow_response(outer_workflow)
+        self._assert_status_code_is(response, 400)
+        assert "is not an http or https URL" in response.json()["err_msg"]
 
     def test_import_ga_workflow_with_url_subworkflow(self):
         """Test importing a .ga workflow where a subworkflow is referenced via a base64:// URL."""

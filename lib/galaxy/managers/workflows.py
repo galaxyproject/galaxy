@@ -1,7 +1,9 @@
 import copy
+import hashlib
 import json
 import logging
 import os
+import re
 import uuid
 from collections.abc import Collection
 from typing import (
@@ -174,6 +176,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 MAX_SUBWORKFLOW_URL_DEPTH = 10
+GITHUB_FILE_URL_REGEX = re.compile(r"https://(?:www\.)?github\.com/(?P<repo>[^/]+/[^/]+)/(?:blob|raw)/(?P<path>[^?#]+)")
 
 INDEX_SEARCH_FILTERS = {
     "name": "name",
@@ -184,6 +187,13 @@ INDEX_SEARCH_FILTERS = {
     "u": "user",
     "is": "is",
 }
+
+
+def github_raw_file_url(url: str) -> str:
+    """The URL serving the file itself for a link to a file page on github.com, other URLs as they are."""
+    if match := GITHUB_FILE_URL_REGEX.match(url):
+        return f"https://raw.githubusercontent.com/{match['repo']}/{match['path']}"
+    return url
 
 
 def _tool_steps(workflow: model.Workflow) -> list[model.WorkflowStep]:
@@ -946,7 +956,7 @@ class WorkflowContentsManager(UsesAnnotations):
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         # If there's a source, put it in the workflow name.
         if "name" not in data:
-            raise exceptions.RequestParameterInvalidException(f"Invalid workflow format detected [{data}]")
+            raise exceptions.RequestParameterInvalidException("Invalid workflow format detected, it has no name.")
 
         workflow_input_name = data["name"]
         imported_sufix = f"(imported from {source})"
@@ -2421,6 +2431,11 @@ class WorkflowContentsManager(UsesAnnotations):
     def _is_url(value: str) -> bool:
         return value.startswith(("http://", "https://", "base64://"))
 
+    def __validate_subworkflow_url(self, trans: ProvidesHistoryContext, url: str) -> None:
+        if not self._is_url(url):
+            raise exceptions.RequestParameterInvalidException(f"'{url}' is not an http or https URL.")
+        validate_uri_access(url, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
+
     def __build_subworkflow_from_url(
         self,
         trans: ProvidesHistoryContext,
@@ -2433,9 +2448,17 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(
                 f"Maximum subworkflow URL resolution depth ({MAX_SUBWORKFLOW_URL_DEPTH}) exceeded"
             )
-        validate_uri_access(url, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
+        self.__validate_subworkflow_url(trans, url)
         workflow_content = stream_url_to_str(url, file_sources=trans.app.file_sources)
-        as_dict = yaml.safe_load(workflow_content)
+        return self.__build_subworkflow_from_url_content(trans, url, yaml.safe_load(workflow_content), resolving_urls)
+
+    def __build_subworkflow_from_url_content(
+        self,
+        trans: ProvidesHistoryContext,
+        url: str,
+        as_dict: dict[str, Any],
+        resolving_urls: frozenset[str],
+    ) -> model.Workflow:
         raw_workflow_description = self.normalize_workflow_format(trans, as_dict)
         created_workflow = self.build_workflow_from_raw_description(
             trans,
@@ -2692,21 +2715,37 @@ class WorkflowContentsManager(UsesAnnotations):
         self,
         trans: ProvidesHistoryContext,
         current: Workflow,
-        content_id: str | None = None,
-        stored_workflow_id: str | None = None,
-        version: int | None = None,
-        trs_version_id: str | None = None,
+        action: UpgradeSubworkflowAction,
         dry_run: bool = False,
     ) -> SubworkflowUpgradeTarget:
         """The workflow version an ``upgrade_subworkflow`` action moves a step using ``current`` to."""
         workflow_manager = self.app.workflow_manager
-        if content_id is not None:
+        version = action.version
+        trs_version_id = action.trs_version_id
+        if action.content_id is not None:
             return self.replacement_subworkflow(
-                trans, current, workflow_manager.get_accessible_workflow(trans, content_id), dry_run
+                trans, current, workflow_manager.get_accessible_workflow(trans, action.content_id), dry_run
             )
-        if stored_workflow_id is not None:
-            replacement = workflow_manager.get_stored_accessible_workflow(trans, stored_workflow_id)
+        if action.stored_workflow_id is not None:
+            replacement = workflow_manager.get_stored_accessible_workflow(trans, action.stored_workflow_id)
             return self.replacement_subworkflow(trans, current, replacement.get_internal_version(version), dry_run)
+        owner = current.top_level_stored_workflow.user
+        if action.url is not None:
+            url = action.url.strip()
+            if self.trs_proxy._match_url(url):
+                server, trs_tool_id, url_trs_version_id = self.trs_proxy.get_trs_id_and_version_from_trs_url(
+                    trs_url=url
+                )
+                return SubworkflowUpgradeTarget(
+                    self.get_or_import_trs_workflow(trans, owner, server, trs_tool_id, url_trs_version_id)
+                )
+            return SubworkflowUpgradeTarget(self.get_or_import_url_workflow(trans, owner, url))
+        if action.trs_tool_id is not None:
+            assert action.trs_server is not None and trs_version_id is not None
+            server = self.trs_proxy.get_server(action.trs_server)
+            return SubworkflowUpgradeTarget(
+                self.get_or_import_trs_workflow(trans, owner, server, action.trs_tool_id, trs_version_id)
+            )
         stored_workflow = current.stored_workflow or workflow_manager.attach_stored_workflow(trans, current)
         if version is not None:
             return SubworkflowUpgradeTarget(stored_workflow.get_internal_version(version))
@@ -2720,13 +2759,13 @@ class WorkflowContentsManager(UsesAnnotations):
             if trs_version_id == current_trs_version_id:
                 return SubworkflowUpgradeTarget(current)
             return SubworkflowUpgradeTarget(
-                self.get_or_import_trs_workflow(trans, stored_workflow.user, server, trs_tool_id, trs_version_id)
+                self.get_or_import_trs_workflow(trans, owner, server, trs_tool_id, trs_version_id)
             )
         latest_workflow = stored_workflow.latest_workflow
         # Newer local versions of an imported workflow take precedence over newer TRS releases.
         if latest_workflow.id != current.id:
             return SubworkflowUpgradeTarget(latest_workflow)
-        return self.__newest_trs_release(trans, stored_workflow.user, current)
+        return self.__newest_trs_release(trans, owner, current)
 
     def __newest_trs_release(
         self, trans: ProvidesHistoryContext, owner: User, current: Workflow
@@ -2789,10 +2828,7 @@ class WorkflowContentsManager(UsesAnnotations):
         if trs_url := source_metadata.get("trs_url"):
             server, _, _ = self.trs_proxy.get_trs_id_and_version_from_trs_url(trs_url=trs_url)
         elif trs_server := source_metadata.get("trs_server"):
-            try:
-                server = self.trs_proxy.get_server(trs_server)
-            except KeyError:
-                raise exceptions.RequestParameterInvalidException(f"Unknown TRS server '{trs_server}'.")
+            server = self.trs_proxy.get_server(trs_server)
         else:
             return None
         return server, trs_tool_id, trs_version_id
@@ -2817,6 +2853,46 @@ class WorkflowContentsManager(UsesAnnotations):
             trans, owner, "Only the owner of this workflow can import a new TRS version of its sub-workflow."
         )
         return self.__build_subworkflow_from_trs_url(trans, trs_url, frozenset())
+
+    def get_or_import_url_workflow(self, trans: ProvidesHistoryContext, owner: User, url: str) -> Workflow:
+        """The owner's import of the workflow file at ``url``, made as a hidden workflow unless this content has one.
+
+        A URL can serve new content over time, e.g. a branch on GitHub, so an import is reused only
+        for the same URL and content.
+        """
+        url = github_raw_file_url(url)
+        self.__validate_subworkflow_url(trans, url)
+        try:
+            workflow_content = stream_url_to_str(url, file_sources=trans.app.file_sources)
+        except Exception as e:
+            raise exceptions.RequestParameterInvalidException(f"Failed to open URL '{url}'.") from e
+        content_sha256 = hashlib.sha256(workflow_content.encode("utf-8")).hexdigest()
+        sa_session = trans.sa_session
+        imported_statement = (
+            select(StoredWorkflow)
+            .join(Workflow, Workflow.id == StoredWorkflow.latest_workflow_id)
+            .where(
+                StoredWorkflow.user_id == owner.id,
+                StoredWorkflow.deleted == false(),
+                to_json(sa_session, Workflow.source_metadata, ["url"]) == url,
+                to_json(sa_session, Workflow.source_metadata, ["content_sha256"]) == content_sha256,
+            )
+            .order_by(StoredWorkflow.id.desc())
+            .limit(1)
+        )
+        if imported := sa_session.execute(imported_statement).scalar():
+            return imported.latest_workflow
+        self.__require_owner(trans, owner, "Only the owner of this workflow can import a sub-workflow into it.")
+        try:
+            as_dict = yaml.safe_load(workflow_content)
+        except yaml.YAMLError:
+            as_dict = None
+        if not isinstance(as_dict, dict) or not {"steps", "$graph"} & as_dict.keys():
+            raise exceptions.RequestParameterInvalidException(f"The file at '{url}' is not a Galaxy workflow.")
+        workflow = self.__build_subworkflow_from_url_content(trans, url, as_dict, frozenset())
+        workflow.source_metadata = {**(workflow.source_metadata or {}), "content_sha256": content_sha256}
+        sa_session.commit()
+        return workflow
 
     def upgrade_nested_subworkflows(
         self, trans: ProvidesHistoryContext, workflow: Workflow, dry_run: bool, upgrading: frozenset[int]

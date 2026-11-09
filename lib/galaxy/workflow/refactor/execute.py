@@ -466,10 +466,7 @@ class WorkflowRefactorExecutor:
         target = contents_manager.resolve_subworkflow_upgrade(
             trans,
             current_workflow,
-            content_id=action.content_id,
-            stored_workflow_id=action.stored_workflow_id,
-            version=action.version,
-            trs_version_id=action.trs_version_id,
+            action,
             dry_run=self._dry_run,
         )
         new_workflow = target.workflow

@@ -1286,6 +1286,71 @@ steps:
         with pytest.raises(RequestParameterInvalidException, match="not imported from a TRS server"):
             self._refactor(actions)
 
+    def _assert_replaced_with_trs_import(self, target: dict[str, Any], trs_version_id: str):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        stored_workflow = self._most_recent_stored_workflow
+        actions: ActionsJson = [{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, **target}]
+        user_id = stored_workflow.user_id
+        with self._fake_trs():
+            assert self._refactor(actions, stored_workflow=stored_workflow, dry_run=True).workflow
+            dry_run_import = self._manager.get_workflow_by_trs_id_and_version(
+                FAKE_TRS_TOOL_ID, trs_version_id, user_id=user_id
+            )
+            assert dry_run_import is not None and dry_run_import.hidden
+            self._refactor(actions, stored_workflow=stored_workflow)
+        self._app.model.session.expire_all()
+        assert self._subworkflow(stored_workflow.latest_workflow, "nested_workflow").stored_workflow == dry_run_import
+        assert dry_run_import.latest_workflow.source_metadata["trs_url"] == FAKE_TRS_SERVER.get_trs_url(
+            FAKE_TRS_TOOL_ID, trs_version_id
+        )
+
+    def test_replace_subworkflow_with_trs_id(self):
+        self._assert_replaced_with_trs_import(
+            {"trs_server": "dockstore", "trs_tool_id": FAKE_TRS_TOOL_ID, "trs_version_id": "v0.2"}, "v0.2"
+        )
+
+    def test_replace_subworkflow_with_trs_url(self):
+        self._assert_replaced_with_trs_import({"url": FAKE_TRS_SERVER.get_trs_url(FAKE_TRS_TOOL_ID, "v0.1")}, "v0.1")
+
+    def test_replace_subworkflow_with_unknown_trs_server(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        actions: ActionsJson = [
+            {
+                "action_type": "upgrade_subworkflow",
+                "step": {"label": "nested_workflow"},
+                "trs_server": "not-configured",
+                "trs_tool_id": FAKE_TRS_TOOL_ID,
+                "trs_version_id": "v0.2",
+            }
+        ]
+        with pytest.raises(RequestParameterInvalidException, match="Unknown TRS server"):
+            self._refactor(actions)
+
+    def test_replace_subworkflow_with_github_file_link(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        stored_workflow = self._most_recent_stored_workflow
+        raw_url = "https://raw.githubusercontent.com/example/workflows/main/qc.gxwf.yml"
+        actions: ActionsJson = [
+            {
+                "action_type": "upgrade_subworkflow",
+                "step": {"label": "nested_workflow"},
+                "url": "https://github.com/example/workflows/blob/main/qc.gxwf.yml",
+            }
+        ]
+        with (
+            mock.patch("galaxy.managers.workflows.validate_uri_access") as validate_uri_access,
+            mock.patch(
+                "galaxy.managers.workflows.stream_url_to_str", return_value=TRS_SUBWORKFLOW.format(num_lines=5)
+            ) as stream_url_to_str,
+        ):
+            self._refactor(actions, stored_workflow=stored_workflow)
+        assert validate_uri_access.call_args.args[0] == raw_url
+        assert stream_url_to_str.call_args.args[0] == raw_url
+        self._app.model.session.expire_all()
+        imported = self._subworkflow(stored_workflow.latest_workflow, "nested_workflow")
+        assert imported.source_metadata["url"] == raw_url
+        assert imported.stored_workflow.hidden
+
     def test_subworkflow_upgrade_connection_input_dropped(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
 
@@ -1635,6 +1700,10 @@ class MockTrans(ProvidesAppContext):
 
     def get_user(self):
         return self.user
+
+    @property
+    def user_is_admin(self) -> bool:
+        return False
 
     @property
     def galaxy_session(self):

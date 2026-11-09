@@ -27331,6 +27331,9 @@ export interface components {
          *
          *     A target owned by someone else, e.g. a published workflow, is copied into this user's account as
          *     a hidden workflow, and the step uses the copy. A dry run reads the target without copying it.
+         *
+         *     A workflow from a TRS server or a URL is imported as a hidden workflow, also during a dry run,
+         *     and the real run reuses that import.
          */
         UpgradeSubworkflowAction: {
             /**
@@ -27360,10 +27363,25 @@ export interface components {
              */
             stored_workflow_id?: string | null;
             /**
+             * Trs Server
+             * @description The id of the TRS server configured on this Galaxy that holds `trs_tool_id`.
+             */
+            trs_server?: string | null;
+            /**
+             * Trs Tool Id
+             * @description The id of a workflow on `trs_server` to switch to, at the version given by `trs_version_id`.
+             */
+            trs_tool_id?: string | null;
+            /**
              * Trs Version Id
-             * @description The TRS version to switch a sub-workflow imported from a TRS server to. The version is imported if this user has no copy of it yet, also during a dry run.
+             * @description The TRS version to switch to: a version of `trs_tool_id` if given, else of the TRS workflow the sub-workflow was imported from. The version is imported if this user has no copy of it yet, also during a dry run.
              */
             trs_version_id?: string | null;
+            /**
+             * Url
+             * @description The URL of a workflow file to switch to, e.g. a link to a file on GitHub, or of a version on a TRS server. The workflow is imported unless this user already imported the same content from this URL, also during a dry run.
+             */
+            url?: string | null;
             /**
              * Version
              * @description The version to switch to, counted from 0 for the oldest, as listed by `/api/workflows/{workflow_id}/versions`. A version of `stored_workflow_id` if given, else of the sub-workflow's own stored workflow.

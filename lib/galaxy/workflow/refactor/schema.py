@@ -218,6 +218,9 @@ class UpgradeSubworkflowAction(BaseAction):
 
     A target owned by someone else, e.g. a published workflow, is copied into this user's account as
     a hidden workflow, and the step uses the copy. A dry run reads the target without copying it.
+
+    A workflow from a TRS server or a URL is imported as a hidden workflow, also during a dry run,
+    and the real run reuses that import.
     """
 
     # An unrecognized target would otherwise fall through to the upgrade without a target.
@@ -246,8 +249,23 @@ class UpgradeSubworkflowAction(BaseAction):
     )
     trs_version_id: str | None = Field(
         default=None,
-        description="The TRS version to switch a sub-workflow imported from a TRS server to. "
-        "The version is imported if this user has no copy of it yet, also during a dry run.",
+        description="The TRS version to switch to: a version of `trs_tool_id` if given, else of the TRS workflow "
+        "the sub-workflow was imported from. The version is imported if this user has no copy of it yet, "
+        "also during a dry run.",
+    )
+    trs_server: str | None = Field(
+        default=None,
+        description="The id of the TRS server configured on this Galaxy that holds `trs_tool_id`.",
+    )
+    trs_tool_id: str | None = Field(
+        default=None,
+        description="The id of a workflow on `trs_server` to switch to, at the version given by `trs_version_id`.",
+    )
+    url: str | None = Field(
+        default=None,
+        description="The URL of a workflow file to switch to, e.g. a link to a file on GitHub, or of a version on a "
+        "TRS server. The workflow is imported unless this user already imported the same content from this URL, "
+        "also during a dry run.",
     )
     recursive: bool = Field(
         default=False,
@@ -262,12 +280,22 @@ class UpgradeSubworkflowAction(BaseAction):
     @model_validator(mode="after")
     def at_most_one_target(self) -> "UpgradeSubworkflowAction":
         version = None if self.stored_workflow_id is not None else self.version
-        targets = [t for t in (self.content_id, self.stored_workflow_id, version, self.trs_version_id) if t is not None]
+        targets = [
+            t
+            for t in (self.content_id, self.stored_workflow_id, version, self.trs_version_id, self.url)
+            if t is not None
+        ]
         if len(targets) > 1:
             raise ValueError(
                 "Specify at most one of content_id, stored_workflow_id (optionally with version), "
-                "version and trs_version_id."
+                "version, trs_version_id (optionally with trs_server and trs_tool_id) and url."
             )
+        if self.recursive and (self.url is not None or self.trs_version_id is not None):
+            raise ValueError("recursive can't be set with url or trs_version_id, which stay as published.")
+        if (self.trs_server is None) != (self.trs_tool_id is None) or (
+            self.trs_tool_id is not None and self.trs_version_id is None
+        ):
+            raise ValueError("trs_server, trs_tool_id and trs_version_id must be given together.")
         return self
 
 
