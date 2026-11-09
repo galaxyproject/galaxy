@@ -100,19 +100,17 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         invocation_payload: InvocationIndexPayload,
         serialization_params: InvocationSerializationParams,
     ) -> tuple[list[WorkflowInvocationResponse], int]:
-        if invocation_payload.workflow_id and invocation_payload.instance:
-            invocation_payload.workflow_id = [
-                self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=False).id
-                for workflow_id in invocation_payload.workflow_id
-            ]
+        workflow_id = invocation_payload.workflow_id
+        if invocation_payload.instance:
+            instance = invocation_payload.instance
+            invocation_payload.workflow_id = self._workflows_manager.get_stored_workflow(
+                trans, workflow_id, by_stored_id=not instance
+            ).id
         if invocation_payload.history_id:
-            history_ids = list(set(invocation_payload.history_id))
-            histories = self._histories_manager.by_ids(history_ids)
-            if len(histories) != len(history_ids):
-                raise ObjectNotFound()
-            for history in histories:
-                # access check
-                self._histories_manager.error_unless_accessible(history, trans.user, current_history=trans.history)
+            # access check
+            self._histories_manager.get_accessible(
+                invocation_payload.history_id, trans.user, current_history=trans.history
+            )
         if not trans.user_is_admin:
             # We restrict the query to the current users' invocations
             # Endpoint requires user login, so trans.user.id is never None
@@ -126,8 +124,8 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             user_id = invocation_payload.user_id
         invocations, total_matches = self._workflows_manager.build_invocations_query(
             trans,
-            stored_workflow_ids=invocation_payload.workflow_id,
-            history_ids=invocation_payload.history_id,
+            stored_workflow_id=invocation_payload.workflow_id,
+            history_id=invocation_payload.history_id,
             search=invocation_payload.search,
             job_id=invocation_payload.job_id,
             user_id=user_id,

@@ -175,23 +175,10 @@ INDEX_SEARCH_FILTERS = {
 
 INVOCATION_INDEX_SEARCH_FILTERS = {
     "workflow": "workflow",
+    "workflow_id": "workflow_id",
     "history": "history",
+    "history_id": "history_id",
 }
-
-
-def _invocation_name_filters(search: str | None) -> tuple[list, list]:
-    """Translate an invocation index search into filters on workflow names and on history names."""
-    workflow_filters: list = []
-    history_filters: list = []
-    if search:
-        for term in filter_terms(parse_filters_structured(search, INVOCATION_INDEX_SEARCH_FILTERS)).terms:
-            if isinstance(term, RawTextTerm):
-                workflow_filters.append(raw_text_column_filter([StoredWorkflow.name], term))
-            elif term.filter == "history":
-                history_filters.append(text_column_filter(History.name, term))
-            else:
-                workflow_filters.append(text_column_filter(StoredWorkflow.name, term))
-    return workflow_filters, history_filters
 
 
 def _tool_steps(workflow: model.Workflow) -> list[model.WorkflowStep]:
@@ -728,11 +715,35 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         trans.sa_session.commit()
         return workflow_invocation_step
 
+    def _invocation_search_filters(self, search: str | None) -> tuple[list, list]:
+        """Translate an invocation index search into filters on the workflow and on the history."""
+        workflow_filters: list = []
+        history_filters: list = []
+        workflow_ids: list[int] = []
+        history_ids: list[int] = []
+        if search:
+            for term in filter_terms(parse_filters_structured(search, INVOCATION_INDEX_SEARCH_FILTERS)).terms:
+                if isinstance(term, RawTextTerm):
+                    workflow_filters.append(raw_text_column_filter([StoredWorkflow.name], term))
+                elif term.filter == "workflow_id":
+                    workflow_ids.append(decode_id(self.app, term.text))
+                elif term.filter == "history_id":
+                    history_ids.append(decode_id(self.app, term.text))
+                elif term.filter == "history":
+                    history_filters.append(text_column_filter(History.name, term))
+                else:
+                    workflow_filters.append(text_column_filter(StoredWorkflow.name, term))
+        if workflow_ids:
+            workflow_filters.append(StoredWorkflow.id.in_(workflow_ids))
+        if history_ids:
+            history_filters.append(History.id.in_(history_ids))
+        return workflow_filters, history_filters
+
     def build_invocations_query(
         self,
         trans: ProvidesUserContext,
-        stored_workflow_ids: list[int] | None = None,
-        history_ids: list[int] | None = None,
+        stored_workflow_id=None,
+        history_id=None,
         job_id=None,
         user_id=None,
         include_terminal=True,
@@ -746,29 +757,26 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
     ) -> tuple[list, int]:
         """Get invocations owned by the current user."""
 
-        workflow_name_filters, history_name_filters = _invocation_name_filters(search)
+        workflow_filters, history_filters = self._invocation_search_filters(search)
         stmt = select(WorkflowInvocation)
-        if stored_workflow_ids or workflow_name_filters:
-            stmt = stmt.join(Workflow)
-        if stored_workflow_ids:
-            found_ids = trans.sa_session.scalars(
-                select(StoredWorkflow.id).where(StoredWorkflow.id.in_(stored_workflow_ids))
-            ).all()
-            if len(found_ids) != len(set(stored_workflow_ids)):
+        if stored_workflow_id is not None:
+            stored_workflow = trans.sa_session.get(StoredWorkflow, stored_workflow_id)
+            if not stored_workflow:
                 raise exceptions.ObjectNotFound()
-            stmt = stmt.where(Workflow.stored_workflow_id.in_(stored_workflow_ids))
-        if workflow_name_filters:
-            stmt = stmt.join(StoredWorkflow, Workflow.stored_workflow_id == StoredWorkflow.id).where(
-                *workflow_name_filters
-            )
-        if user_id is not None or history_name_filters:
+        if stored_workflow_id is not None or workflow_filters:
+            stmt = stmt.join(Workflow)
+        if stored_workflow_id is not None:
+            stmt = stmt.where(Workflow.stored_workflow_id == stored_workflow_id)
+        if workflow_filters:
+            stmt = stmt.join(StoredWorkflow, Workflow.stored_workflow_id == StoredWorkflow.id).where(*workflow_filters)
+        if user_id is not None or history_filters:
             stmt = stmt.join(History)
         if user_id is not None:
             stmt = stmt.where(History.user_id == user_id)
-        if history_name_filters:
-            stmt = stmt.where(*history_name_filters)
-        if history_ids:
-            stmt = stmt.where(WorkflowInvocation.history_id.in_(history_ids))
+        if history_filters:
+            stmt = stmt.where(*history_filters)
+        if history_id is not None:
+            stmt = stmt.where(WorkflowInvocation.history_id == history_id)
         if job_id is not None:
             stmt = stmt.join(WorkflowInvocationStep).where(WorkflowInvocationStep.job_id == job_id)
         if not include_terminal:

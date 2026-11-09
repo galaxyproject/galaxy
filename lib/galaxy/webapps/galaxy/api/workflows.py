@@ -1322,14 +1322,11 @@ LegacyJobStateQueryParam = Annotated[
     ),
 ]
 
-MAX_INVOCATION_INDEX_FILTER_IDS = 50
-
-WorkflowIdsQueryParam = Annotated[
-    list[DecodedDatabaseIdField] | None,
+WorkflowIdQueryParam = Annotated[
+    DecodedDatabaseIdField | None,
     Query(
-        title="Workflow IDs",
-        max_length=MAX_INVOCATION_INDEX_FILTER_IDS,
-        description="Return only invocations for these Workflow IDs (repeat the parameter for several)",
+        title="Workflow ID",
+        description="Return only invocations for this Workflow ID",
     ),
 ]
 
@@ -1341,15 +1338,6 @@ HistoryIdQueryParam = Annotated[
     ),
 ]
 
-HistoryIdsQueryParam = Annotated[
-    list[DecodedDatabaseIdField] | None,
-    Query(
-        title="History IDs",
-        max_length=MAX_INVOCATION_INDEX_FILTER_IDS,
-        description="Return only invocations for these History IDs (repeat the parameter for several)",
-    ),
-]
-
 InvocationsSearchQueryParam = Annotated[
     str | None,
     Query(
@@ -1357,7 +1345,8 @@ InvocationsSearchQueryParam = Annotated[
         description=(
             "Return only invocations matching every term. `workflow:<name>` and `history:<name>` match the name "
             "of the invocation's workflow or history, as a substring or, when the name is quoted, exactly. "
-            "Text without a key matches the workflow name."
+            "Text without a key matches the workflow name. `workflow_id:<id>` and `history_id:<id>` can repeat, "
+            "and match any of the given ids. At most 10 keyed or quoted terms are used."
         ),
     ),
 ]
@@ -1463,8 +1452,8 @@ class FastAPIInvocations:
     def index_invocations(
         self,
         response: Response,
-        workflow_id: WorkflowIdsQueryParam = None,
-        history_id: HistoryIdsQueryParam = None,
+        workflow_id: WorkflowIdQueryParam = None,
+        history_id: HistoryIdQueryParam = None,
         job_id: JobIdQueryParam = None,
         user_id: UserIdQueryParam = None,
         sort_by: InvocationsSortByQueryParam = None,
@@ -1535,8 +1524,8 @@ class FastAPIInvocations:
     ) -> list[WorkflowInvocationResponse]:
         invocations = self.index_invocations(
             response=response,
-            workflow_id=[workflow_id],
-            history_id=[history_id] if history_id is not None else None,
+            workflow_id=workflow_id,
+            history_id=history_id,
             job_id=job_id,
             user_id=user_id,
             sort_by=sort_by,

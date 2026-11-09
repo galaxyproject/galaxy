@@ -44479,10 +44479,10 @@ export interface operations {
     index_invocations_api_invocations_get: {
         parameters: {
             query?: {
-                /** @description Return only invocations for these Workflow IDs (repeat the parameter for several) */
-                workflow_id?: string[] | null;
-                /** @description Return only invocations for these History IDs (repeat the parameter for several) */
-                history_id?: string[] | null;
+                /** @description Return only invocations for this Workflow ID */
+                workflow_id?: string | null;
+                /** @description Return only invocations for this History ID */
+                history_id?: string | null;
                 /** @description Return only invocations for this Job ID */
                 job_id?: string | null;
                 /** @description Return invocations for this User ID. */
@@ -44504,7 +44504,7 @@ export interface operations {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
                 include_nested_invocations?: boolean;
-                /** @description Return only invocations matching every term. `workflow:<name>` and `history:<name>` match the name of the invocation's workflow or history, as a substring or, when the name is quoted, exactly. Text without a key matches the workflow name. */
+                /** @description Return only invocations matching every term. `workflow:<name>` and `history:<name>` match the name of the invocation's workflow or history, as a substring or, when the name is quoted, exactly. Text without a key matches the workflow name. `workflow_id:<id>` and `history_id:<id>` can repeat, and match any of the given ids. At most 10 keyed or quoted terms are used. */
                 search?: string | null;
             };
             header?: {

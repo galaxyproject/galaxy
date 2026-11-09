@@ -11903,25 +11903,23 @@ steps: []
             second = self._run_workflow(workflow, history_id=second_history_id, wait=False)
             third = self._run_workflow(workflow, history_id=third_history_id, wait=False)
 
-            def invocation_ids(query):
-                response = self._get("invocations", data=query)
+            def invocation_ids(search):
+                response = self._get("invocations", data={"search": search})
                 self._assert_status_code_is(response, 200)
                 return {invocation["id"] for invocation in response.json()}
 
-            assert invocation_ids({"workflow_id": [first.workflow_id, second.workflow_id]}) == {
-                first.invocation_id,
-                second.invocation_id,
-            }
-            assert invocation_ids({"workflow_id": third.workflow_id}) == {third.invocation_id}
-            assert invocation_ids({"history_id": [second_history_id, third_history_id]}) == {
+            first_or_second_workflow = f"workflow_id:{first.workflow_id} workflow_id:{second.workflow_id}"
+            assert invocation_ids(first_or_second_workflow) == {first.invocation_id, second.invocation_id}
+            assert invocation_ids(f"workflow_id:{third.workflow_id}") == {third.invocation_id}
+            assert invocation_ids(f"history_id:{second_history_id} history_id:{third_history_id}") == {
                 second.invocation_id,
                 third.invocation_id,
             }
-            assert invocation_ids(
-                {"workflow_id": [first.workflow_id, second.workflow_id], "history_id": [second_history_id]}
-            ) == {second.invocation_id}
+            assert invocation_ids(f"{first_or_second_workflow} history_id:{second_history_id}") == {
+                second.invocation_id
+            }
 
-    def test_invocation_filtering_by_several_ids_checks_every_id(self):
+    def test_invocation_search_only_returns_own_invocations_for_ids(self):
         workflow = """
 class: GalaxyWorkflow
 inputs:
@@ -11932,39 +11930,43 @@ steps: []
 """
         unknown_id = self._get("configuration/encode/999999999", admin=True).json()["encoded_id"]
         with self._different_user_history(email=f"{uuid4()}@test.com") as private_history_id:
-            pass
+            private = self._run_workflow(workflow, history_id=private_history_id, wait=False)
         with self._different_user_history(email=f"{uuid4()}@test.com") as history_id:
             first = self._run_workflow(workflow, history_id=history_id, wait=False)
             second = self._run_workflow(workflow, history_id=history_id, wait=False)
             first_workflow_id = first.workflow_id
 
-            response = self._get("invocations", data={"workflow_id": [first_workflow_id, first_workflow_id]})
-            self._assert_status_code_is(response, 200)
-            assert [invocation["id"] for invocation in response.json()] == [first.invocation_id]
-            response = self._get("invocations", data={"history_id": [history_id, history_id]})
-            self._assert_status_code_is(response, 200)
-            assert {invocation["id"] for invocation in response.json()} == {first.invocation_id, second.invocation_id}
+            def invocation_ids(search):
+                response = self._get("invocations", data={"search": search})
+                self._assert_status_code_is(response, 200)
+                return {invocation["id"] for invocation in response.json()}
 
-            response = self._get("invocations", data={"workflow_id": [first_workflow_id, unknown_id]})
-            self._assert_status_code_is(response, 404)
-            response = self._get("invocations", data={"history_id": [history_id, unknown_id]})
-            self._assert_status_code_is(response, 404)
-            response = self._get("invocations", data={"history_id": [history_id, private_history_id]})
-            self._assert_status_code_is(response, 403)
+            assert invocation_ids(f"workflow_id:{first_workflow_id} workflow_id:{first_workflow_id}") == {
+                first.invocation_id
+            }
+            assert invocation_ids(f"workflow_id:{first_workflow_id} workflow_id:{unknown_id}") == {first.invocation_id}
+            assert invocation_ids(f"history_id:{history_id} history_id:{unknown_id}") == {
+                first.invocation_id,
+                second.invocation_id,
+            }
+            assert invocation_ids(f"workflow_id:{private.workflow_id}") == set()
+            assert invocation_ids(f"history_id:{private_history_id}") == set()
+
+            only_unknown_ids_are_used = " ".join(
+                [f"workflow_id:{unknown_id}"] * 10 + [f"workflow_id:{first_workflow_id}"]
+            )
+            assert invocation_ids(only_unknown_ids_are_used) == set()
+
+            response = self._get("invocations", data={"search": "workflow_id:not-an-id"})
+            self._assert_status_code_is(response, 400)
 
             response = self._get(
-                "invocations", data={"workflow_id": [first_workflow_id, second.workflow_id], "limit": 1}
+                "invocations",
+                data={"search": f"workflow_id:{first_workflow_id} workflow_id:{second.workflow_id}", "limit": 1},
             )
             self._assert_status_code_is(response, 200)
             assert len(response.json()) == 1
             assert response.headers["total_matches"] == "2"
-
-    def test_invocation_filtering_limits_the_number_of_ids(self):
-        workflow_id = self.workflow_populator.simple_workflow("test_invocation_filter_id_limit")
-        history_id = self.dataset_populator.new_history()
-        for key, value in (("workflow_id", workflow_id), ("history_id", history_id)):
-            self._assert_status_code_is(self._get("invocations", data={key: [value] * 50}), 200)
-            self._assert_status_code_is(self._get("invocations", data={key: [value] * 51}), 400)
 
     def test_invocation_filtering_by_name_search(self):
         def workflow(name):
@@ -12000,8 +12002,10 @@ steps: []
             assert invocation_ids("variant") == {variant.invocation_id}
             assert invocation_ids(f"history:'batch {tag}'") == {rna.invocation_id, variant.invocation_id}
             assert invocation_ids("workflow:rna-seq history:batch") == {rna.invocation_id}
-            assert invocation_ids("workflow:rna-seq", workflow_id=[variant.workflow_id]) == set()
-            assert invocation_ids("workflow:rna-seq", history_id=[other_history_id]) == {copy.invocation_id}
+            assert invocation_ids("workflow:rna-seq", workflow_id=variant.workflow_id) == set()
+            assert invocation_ids("workflow:rna-seq", history_id=other_history_id) == {copy.invocation_id}
+            assert invocation_ids(f"workflow:rna-seq workflow_id:{variant.workflow_id}") == set()
+            assert invocation_ids(f"workflow:rna-seq history_id:{other_history_id}") == {copy.invocation_id}
             assert invocation_ids("workflow:no-such-workflow") == set()
 
             self._delete(f"workflows/{copy.workflow_id}").raise_for_status()
@@ -12035,7 +12039,8 @@ steps: []
             self.dataset_populator.delete_history(deleted_id)
             self.dataset_populator.purge_history(purged_id)
 
-            response = self._get("invocations", data={"history_id": history_ids})
+            search = " ".join(f"history_id:{history_id}" for history_id in history_ids)
+            response = self._get("invocations", data={"search": search})
             self._assert_status_code_is(response, 200)
             assert {invocation["id"] for invocation in response.json()} == invocation_ids
 
