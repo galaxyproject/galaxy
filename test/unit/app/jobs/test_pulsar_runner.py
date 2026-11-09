@@ -398,6 +398,7 @@ def test_rejected_job_fails_without_resubmission():
         raise AssertionError("container resolved for a rejected job")
 
     runner._find_container = find_container
+    runner._job_state = lambda job, job_wrapper: SimpleNamespace()
 
     def reject(**kwargs):
         raise InsufficientPermissionsException("Container 'busybox' is not allowed")
@@ -407,6 +408,7 @@ def test_rejected_job_fails_without_resubmission():
         job_id=1,
         tool=SimpleNamespace(id="cat", version="1.0", requires_galaxy_python_environment=False),
         prepare=reject,
+        get_job=lambda: None,
         fail=lambda message, **kwargs: failures.append(message),
     )
 
