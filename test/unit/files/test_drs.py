@@ -1,4 +1,5 @@
 import io
+import ipaddress
 import json
 import os
 import tempfile
@@ -532,6 +533,23 @@ def test_drs_skips_access_method_without_handler(tmp_path):
     )
     with patch_http_open(_download_response):
         fetch_drs_to_file("drs://drs.example.org/1", tmp_path / "out", user_context=None)
+    assert (tmp_path / "out").read_text() == "hello drs world"
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+@responses.activate
+def test_drs_ftp_access_method_honours_allowlist_without_user_context(tmp_path):
+    responses.get(
+        "https://drs.example.org/ga4gh/drs/v1/objects/1",
+        json={"access_methods": [{"type": "ftp", "access_url": {"url": "ftp://10.1.2.3/myfile.txt"}}]},
+    )
+    with patch_http_open(_download_response):
+        fetch_drs_to_file(
+            "drs://drs.example.org/1",
+            tmp_path / "out",
+            user_context=None,
+            fetch_url_allowlist=[ipaddress.ip_network("10.0.0.0/8")],
+        )
     assert (tmp_path / "out").read_text() == "hello drs world"
 
 
