@@ -530,6 +530,42 @@ describe("FormData", () => {
         expect(selectedValues.at(0).text()).toContain("999: OldDataset");
     });
 
+    it("lists keep-options latest first and replaces page entries with the same id", async () => {
+        const keep = (id: string, hid: number, name: string) => ({ id, hid, name, src: "hda", keep: true, tags: [] });
+        const wrapper = createTarget({
+            value: {
+                values: [
+                    { id: "pinned1", src: "hda" },
+                    { id: "hidden1", src: "hda" },
+                    { id: "hidden2", src: "hda" },
+                ],
+            },
+            multiple: true,
+            options: {
+                hda: [
+                    ...[1, 2, 3, 4].map((hid) => ({ id: `hda${hid}`, hid, name: `hdaName${hid}`, src: "hda" })),
+                    keep("hidden1", 7, "(hidden) hiddenName1"),
+                    keep("hda2", 2, "(hidden) hdaName2"),
+                    keep("hidden2", 8, "(hidden) hiddenName2"),
+                ],
+            },
+            pinned: { hda: [keep("pinned1", 900, "PinnedName")] },
+        });
+        await wrapper.vm.$nextTick();
+        const labels = wrapper.findAll(SELECT_OPTIONS).wrappers.map((option) => option.text());
+        expect(labels).toEqual([
+            "8: (hidden) hiddenName2",
+            "7: (hidden) hiddenName1",
+            "900: PinnedName",
+            "1: hdaName1",
+            "2: (hidden) hdaName2",
+            "3: hdaName3",
+            "4: hdaName4",
+        ]);
+        const selectedValues = wrapper.findAll(SELECTED_VALUE).wrappers.map((option) => option.text());
+        expect(selectedValues).toEqual(["8: (hidden) hiddenName2", "7: (hidden) hiddenName1", "900: PinnedName"]);
+    });
+
     it("tagging filter", async () => {
         const wrapper_0 = createTarget({
             tag: "tag1",
