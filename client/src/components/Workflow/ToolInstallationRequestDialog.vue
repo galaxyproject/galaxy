@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { submitToolInstallationRequest } from "@/api/notifications";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { parseRequestedToolParts } from "@/utils/tool-version";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
 const props = defineProps<{
@@ -100,9 +100,9 @@ async function requestInstallation() {
         @update:show="setShow($event)">
         <!-- Inside the dialog: the open <dialog> makes the rest of the page inert,
              so an alert rendered outside it would be hidden behind the backdrop. -->
-        <BAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = ''">
+        <GAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = ''">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
         <p>
             Request the admins to install
             <strong>{{ toolCount }} missing {{ toolCount === 1 ? "tool" : "tools" }}</strong>

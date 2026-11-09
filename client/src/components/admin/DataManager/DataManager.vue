@@ -17,7 +17,7 @@
                             <BInputGroup>
                                 <BFormInput v-model="filter" placeholder="Type to Search" @keyup.esc="filter = ''" />
                                 <BInputGroupAppend>
-                                    <BButton :disabled="!filter" @click="filter = ''">Clear (esc)</BButton>
+                                    <GButton :disabled="!filter" @click="filter = ''">Clear (esc)</GButton>
                                 </BInputGroupAppend>
                             </BInputGroup>
                         </BFormGroup>
@@ -75,7 +75,6 @@
 import axios from "axios";
 import {
     BBadge,
-    BButton,
     BCard,
     BCardGroup,
     BCol,
@@ -99,7 +98,6 @@ import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 export default {
     components: {
         BBadge,
-        BButton,
         BCard,
         BCardGroup,
         BCol,
