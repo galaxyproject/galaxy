@@ -323,6 +323,7 @@ ON CONFLICT
 
         bind = {"dataset_id": dataset.id, "adjust": int(adjust), "to_label": to_label, "from_label": from_label}
         engine = self.sa_session.get_bind()
+        owner_ids: Iterable[int] = ()
         with engine.connect() as conn:
             with conn.begin():
                 if not for_sqlite:
@@ -332,16 +333,17 @@ ON CONFLICT
 {with_quota_affected_users}
 SELECT id FROM galaxy_user WHERE id IN (SELECT user_id FROM quota_affected_users) ORDER BY id FOR UPDATE
 """
-                    conn.execute(text(lock_statement), bind)
+                    owner_ids = conn.execute(text(lock_statement), bind).scalars().all()
                 conn.execute(text(from_statement), bind)
                 conn.execute(text(to_statement), bind)
         if not user_quota_updates_enabled(self.sa_session):
             return
+        if for_sqlite:
+            owner_ids = self.sa_session.scalars(
+                text(f"{with_quota_affected_users} SELECT user_id FROM quota_affected_users"),
+                {"dataset_id": dataset.id},
+            )
         # The callers commit the session after moving the dataset, which sends this
-        owner_ids = self.sa_session.scalars(
-            text(f"{with_quota_affected_users} SELECT user_id FROM quota_affected_users"),
-            {"dataset_id": dataset.id},
-        )
         queue_user_quota_update(self.sa_session, owner_ids)
 
     def _default_unregistered_quota(self, quota_source_label):
