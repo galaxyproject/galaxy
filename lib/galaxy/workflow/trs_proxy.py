@@ -64,10 +64,11 @@ def parse_search_kwds(search_query):
 
 
 def parse_trs_url(url: str) -> dict[str, str] | None:
-    """Split a TRS version URL into trs_base_url, tool_id (unquoted) and version_id."""
+    """Split a TRS version URL into trs_base_url, tool_id and version_id, both unquoted."""
     if matches := re.match(TRS_URL_REGEX, url):
         match_dict = matches.groupdict()
         match_dict["tool_id"] = urllib.parse.unquote(match_dict["tool_id"])
+        match_dict["version_id"] = urllib.parse.unquote(match_dict["version_id"])
         return match_dict
     return None
 
@@ -139,17 +140,16 @@ class TrsServer:
         return self._get(trs_api_url)
 
     def get_version(self, tool_id, version_id, **kwd):
-        trs_api_url = f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions/{version_id}"
-        return self._get(trs_api_url)
+        return self._get(self._get_version_api_endpoint(tool_id, version_id, **kwd))
 
     def get_version_descriptor(self, tool_id, version_id, **kwd):
         trs_api_url = (
-            f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions/{version_id}/{GA4GH_GALAXY_DESCRIPTOR}/descriptor"
+            f"{self._get_version_api_endpoint(tool_id, version_id, **kwd)}/{GA4GH_GALAXY_DESCRIPTOR}/descriptor"
         )
         return self._get(trs_api_url)["content"]
 
     def get_trs_url(self, tool_id: str, version_id: str):
-        return f"{self._get_tool_api_endpoint(tool_id)}/versions/{version_id}"
+        return self._get_version_api_endpoint(tool_id, version_id)
 
     def _quote(self, tool_id, **kwd):
         if asbool(kwd.get("tool_id_b64_encoded", False)):
@@ -189,3 +189,7 @@ class TrsServer:
         tool_id = self._quote(tool_id, **kwd)
         trs_api_url = f"{self._get_api_endpoint(**kwd)}/{tool_id}"
         return trs_api_url
+
+    def _get_version_api_endpoint(self, tool_id, version_id, **kwd):
+        # Version ids can be branch names, which may contain "/".
+        return f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions/{urllib.parse.quote(version_id, safe='')}"
