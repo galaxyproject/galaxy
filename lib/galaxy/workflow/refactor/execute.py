@@ -616,7 +616,6 @@ class WorkflowRefactorExecutor:
         """
         patch a workflow step after upgrading the tool / subworkflow
         """
-        # TODO: find workflow outputs that need to be dropped and report them
         upgrade_inputs = step.module.get_all_inputs()
         upgrade_outputs = step.module.get_all_outputs()
         upgrade_output_names = {u["name"] for u in upgrade_outputs}
@@ -718,6 +717,11 @@ class WorkflowRefactorExecutor:
                     output_label=output_label,
                 )
                 execution.messages.append(message)
+        step_def["workflow_outputs"] = [
+            workflow_output
+            for workflow_output in step_def.get("workflow_outputs", [])
+            if workflow_output not in workflow_outputs_to_delete
+        ]
 
     @staticmethod
     def normalize_input_connections_to_list(all_input_connections, input_name, add_if_missing=False):
