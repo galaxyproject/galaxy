@@ -11966,6 +11966,53 @@ steps: []
             self._assert_status_code_is(self._get("invocations", data={key: [value] * 50}), 200)
             self._assert_status_code_is(self._get("invocations", data={key: [value] * 51}), 400)
 
+    def test_invocation_filtering_by_name_search(self):
+        def workflow(name):
+            return f"""
+class: GalaxyWorkflow
+name: {name}
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
+"""
+
+        tag = uuid4().hex
+        rna_name = f"RNA-seq {tag}"
+        with self._different_user_history(email=f"{uuid4()}@test.com"):
+            batch_history_id = self.dataset_populator.new_history(name=f"batch {tag}")
+            other_history_id = self.dataset_populator.new_history(name=f"other {tag}")
+            rna = self._run_workflow(workflow(rna_name), history_id=batch_history_id, wait=False)
+            copy = self._run_workflow(workflow(f"{rna_name} copy"), history_id=other_history_id, wait=False)
+            variant = self._run_workflow(workflow(f"Variant {tag}"), history_id=batch_history_id, wait=False)
+
+            def invocation_ids(search, **query):
+                response = self._get("invocations", data={"search": search, **query})
+                self._assert_status_code_is(response, 200)
+                matches = {invocation["id"] for invocation in response.json()}
+                assert response.headers["total_matches"] == str(len(matches))
+                return matches
+
+            assert invocation_ids("workflow:rna-seq") == {rna.invocation_id, copy.invocation_id}
+            assert invocation_ids("workflow:rna-seq workflow:copy") == {copy.invocation_id}
+            assert invocation_ids(f"workflow:'{rna_name}'") == {rna.invocation_id}
+            assert invocation_ids("variant") == {variant.invocation_id}
+            assert invocation_ids(f"history:'batch {tag}'") == {rna.invocation_id, variant.invocation_id}
+            assert invocation_ids("workflow:rna-seq history:batch") == {rna.invocation_id}
+            assert invocation_ids("workflow:rna-seq", workflow_id=[variant.workflow_id]) == set()
+            assert invocation_ids("workflow:rna-seq", history_id=[other_history_id]) == {copy.invocation_id}
+            assert invocation_ids("workflow:no-such-workflow") == set()
+
+            self._delete(f"workflows/{copy.workflow_id}").raise_for_status()
+            self.dataset_populator.purge_history(other_history_id)
+            assert invocation_ids("workflow:copy") == {copy.invocation_id}
+            assert invocation_ids(f"history:'other {tag}'") == {copy.invocation_id}
+
+        response = self._get("invocations", data={"search": f"workflow:'{rna_name}'"})
+        self._assert_status_code_is(response, 200)
+        assert response.json() == []
+
     def test_invocation_filtering_by_histories_in_any_state(self):
         workflow = """
 class: GalaxyWorkflow

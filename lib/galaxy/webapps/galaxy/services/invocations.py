@@ -128,6 +128,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             trans,
             stored_workflow_ids=invocation_payload.workflow_id,
             history_ids=invocation_payload.history_id,
+            search=invocation_payload.search,
             job_id=invocation_payload.job_id,
             user_id=user_id,
             include_terminal=invocation_payload.include_terminal,
