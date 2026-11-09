@@ -207,6 +207,8 @@ class ToolDataTable(Dictifiable):
     empty_field_value: str
     empty_field_values: dict[str | None, str]
     filenames: dict[str, FileNameInfoT]
+    # Whether user-defined tools may read this table. Tool Shed repositories can't set this.
+    user_accessible: bool = False
     _load_info: LoadInfoT
     _merged_load_info: list[tuple[type["ToolDataTable"], LoadInfoT]]
 
@@ -235,6 +237,7 @@ class ToolDataTable(Dictifiable):
         self.empty_field_value = config_element.get("empty_field_value", "")
         self.empty_field_values: dict[str, str] = {}
         self.allow_duplicate_entries = util.asbool(config_element.get("allow_duplicate_entries", True))
+        self.user_accessible = util.asbool(config_element.get("user_accessible", False))
         self.here = os.path.dirname(filename) if filename else None
         self.filenames: dict[str, FileNameInfoT] = {}
         self.tool_data_path = tool_data_path
@@ -543,6 +546,7 @@ class TabularToolDataTable(ToolDataTable):
                 self.filenames[filename] = info
         # save info about table
         self._merged_load_info.append((other_table.__class__, other_table._load_info))
+        self.user_accessible = self.user_accessible or other_table.user_accessible
         # If we are merging in a data table that does not allow duplicates, enforce that upon the data table
         if self.allow_duplicate_entries and not other_table.allow_duplicate_entries:
             log.debug(
@@ -1235,6 +1239,10 @@ class ToolDataTableManager(Dictifiable):
             for table_elem in elements:
                 if table_names is not None and table_elem.get("name") not in table_names:
                     continue
+                if from_shed_config:
+                    # The element is persisted and reloaded as local configuration, so drop this
+                    # here: only an admin may open a table to user-defined tools.
+                    table_elem.attrib.pop("user_accessible", "")
                 table = self.from_elem(
                     table_elem,
                     tool_data_path,
