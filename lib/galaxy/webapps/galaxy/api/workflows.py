@@ -1322,10 +1322,13 @@ LegacyJobStateQueryParam = Annotated[
     ),
 ]
 
+MAX_INVOCATION_INDEX_FILTER_IDS = 50
+
 WorkflowIdsQueryParam = Annotated[
     list[DecodedDatabaseIdField] | None,
     Query(
         title="Workflow IDs",
+        max_length=MAX_INVOCATION_INDEX_FILTER_IDS,
         description="Return only invocations for these Workflow IDs (repeat the parameter for several)",
     ),
 ]
@@ -1342,6 +1345,7 @@ HistoryIdsQueryParam = Annotated[
     list[DecodedDatabaseIdField] | None,
     Query(
         title="History IDs",
+        max_length=MAX_INVOCATION_INDEX_FILTER_IDS,
         description="Return only invocations for these History IDs (repeat the parameter for several)",
     ),
 ]

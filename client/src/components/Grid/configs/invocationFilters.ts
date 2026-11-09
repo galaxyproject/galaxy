@@ -12,6 +12,9 @@ import type { FieldFilter, FilterOption } from "./types";
 /** Maximum number of workflows or histories a name resolves to, per lookup. */
 export const NAME_MATCH_LIMIT = 50;
 
+/** Maximum number of ids `/api/invocations` accepts per filter. */
+export const MAX_FILTER_IDS = 50;
+
 /** Number of most recently updated items a column filter lists before anything is typed. */
 export const RECENT_LIMIT = 20;
 
@@ -107,13 +110,14 @@ export async function findHistoriesByName(name: string): Promise<AnyHistoryEntry
     );
 }
 
-/** Ids picked in a column filter, narrowed to the name matches when a name filter is set as well */
+/**
+ * Ids picked in a column filter, narrowed to the name matches when a name filter is set as well.
+ * Matches are ordered by lookup, so the user's own visible workflows are the last to be cut.
+ */
 function combine(ids: string[] | undefined, matches: Array<{ id: string }> | undefined): string[] | undefined {
-    if (!matches) {
-        return ids;
-    }
-    const matchIds = matches.map((match) => match.id);
-    return ids ? ids.filter((id) => matchIds.includes(id)) : matchIds;
+    const matchIds = matches?.map((match) => match.id);
+    const combined = ids && matchIds ? ids.filter((id) => matchIds.includes(id)) : (ids ?? matchIds);
+    return combined?.slice(0, MAX_FILTER_IDS);
 }
 
 let lastResolved: { search: string; params: InvocationFilterParams | null; time: number } | undefined;

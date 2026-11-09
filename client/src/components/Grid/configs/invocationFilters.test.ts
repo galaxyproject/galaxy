@@ -9,6 +9,7 @@ import { useUserStore } from "@/stores/userStore";
 import {
     historyColumnFilter,
     invocationsFiltering,
+    MAX_FILTER_IDS,
     NAME_MATCH_LIMIT,
     NAME_MATCH_TTL_MS,
     nameSearch,
@@ -131,7 +132,17 @@ describe("resolveInvocationFilters", () => {
 
         const params = await resolveInvocationFilters("workflow:rna");
 
-        expect(params?.workflow_id).toContain("own");
+        expect(params?.workflow_id).toHaveLength(MAX_FILTER_IDS);
+        expect(params?.workflow_id?.[0]).toBe("own");
+    });
+
+    it("sends no more picked ids than the API accepts", async () => {
+        const ids = Array.from({ length: MAX_FILTER_IDS + 1 }, (_, index) => `id${index}`);
+        mockIndexes({}, {});
+
+        const params = await resolveInvocationFilters(ids.map((id) => `history_id:${id}`).join(" "));
+
+        expect(params).toEqual({ history_id: ids.slice(0, MAX_FILTER_IDS) });
     });
 
     it("looks up active, deleted and purged histories by exact name", async () => {

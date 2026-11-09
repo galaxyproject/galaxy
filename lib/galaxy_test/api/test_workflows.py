@@ -11959,6 +11959,13 @@ steps: []
             assert len(response.json()) == 1
             assert response.headers["total_matches"] == "2"
 
+    def test_invocation_filtering_limits_the_number_of_ids(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_invocation_filter_id_limit")
+        history_id = self.dataset_populator.new_history()
+        for key, value in (("workflow_id", workflow_id), ("history_id", history_id)):
+            self._assert_status_code_is(self._get("invocations", data={key: [value] * 50}), 200)
+            self._assert_status_code_is(self._get("invocations", data={key: [value] * 51}), 400)
+
     def test_invocation_filtering_by_histories_in_any_state(self):
         workflow = """
 class: GalaxyWorkflow
