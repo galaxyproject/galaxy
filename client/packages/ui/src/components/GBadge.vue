@@ -74,6 +74,8 @@ const variantClasses = computed(() => {
 </template>
 
 <style scoped lang="scss">
+@use "../styles/focus-ring" as *;
+
 .g-badge {
     display: inline-block;
     margin: 0;
@@ -110,9 +112,7 @@ button.g-badge {
     }
 
     &:focus-visible {
-        outline: 2px solid var(--color-blue-600);
-        outline-offset: 2px;
-        box-shadow: 0 0 0 2px var(--background-color);
+        @include focus-ring;
     }
 }
 
