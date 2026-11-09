@@ -1119,6 +1119,7 @@ steps:
         assert message.step_label == "nested_workflow"
         assert message.output_name == "workflow_output"
         assert message.output_label == "outer_output"
+        assert not _step_with_label(self._download_native(), "nested_workflow")["workflow_outputs"]
 
     def test_upgrade_all_steps(self):
         self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
