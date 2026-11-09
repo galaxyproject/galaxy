@@ -4145,13 +4145,16 @@
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    List of allowed local network addresses for "Upload from URL"
-    dialog. By default, Galaxy will deny access to the local network
-    address space, to prevent users making requests to services which
-    the administrator did not intend to expose. Previously, you could
-    request any network service that Galaxy might have had access to,
-    even if the user could not normally access it. It should be a
-    comma-separated list of IP addresses or IP address/mask, e.g.
+    List of allowed local network addresses for server-side URL
+    fetches: the "Upload from URL" dialog, http(s) and ftp URLs
+    fetched through file sources, DRS servers and their access URLs,
+    remote ZIP archives and TRS servers given by URL. By default,
+    Galaxy will deny access to the local network address space, to
+    prevent users making requests to services which the administrator
+    did not intend to expose. Previously, you could request any
+    network service that Galaxy might have had access to, even if the
+    user could not normally access it. It should be a comma-separated
+    list of IP addresses or IP address/mask, e.g.
     10.10.10.10,10.0.1.0/24,fd00::/8
 :Default: ``None``
 :Type: str
