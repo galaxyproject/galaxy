@@ -6,12 +6,16 @@ from collections.abc import (
 )
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import (
+    Any,
+    TypeAlias,
+)
 
 from galaxy.exceptions import ToolInputsNotReadyException
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
+    DatasetInstance,
     HistoryDatasetAssociation,
 )
 from galaxy.model.dataset_collections.adapters import CollectionAdapter
@@ -70,37 +74,44 @@ def unpopulated_collection_dependencies(collection: DatasetCollection) -> list[S
     ]
 
 
+def dataset_dependencies(dataset: DatasetInstance) -> list[SchedulingDependency]:
+    """Track a dataset the caller already found blocking."""
+    if not isinstance(dataset, HistoryDatasetAssociation) or not dataset.id:
+        return []
+    return [SchedulingDependency(DependencyType.HDA, dataset.id, dataset_readiness(dataset))]
+
+
+ReadinessInput: TypeAlias = DatasetInstance | DatasetCollection | DatasetCollectionElement | CollectionAdapter
+
+
 def input_readiness_dependencies(
-    value: Any,
+    value: ReadinessInput,
     *,
-    states: Collection[str] | None = None,
+    states: Collection[str],
     extensions: Collection[str] | None = None,
 ) -> list[SchedulingDependency]:
-    """Track one blocker; the next evaluation can discover the remaining waits."""
+    """Track one member in ``states``; the next evaluation can discover the remaining waits."""
     if isinstance(value, DatasetCollection) and value.id:
         blocker = blocking_dataset(value, states, extensions)
         if blocker is None:
             return []
         hda_id, readiness = blocker
         return [SchedulingDependency(DependencyType.HDA, hda_id, readiness)]
-    if isinstance(value, HistoryDatasetAssociation):
-        if not value.id or (states is not None and value.state not in states):
+    if isinstance(value, DatasetInstance):
+        if value.state not in states or (extensions is not None and value.extension not in extensions):
             return []
-        if extensions is not None and value.extension not in extensions:
-            return []
-        return [SchedulingDependency(DependencyType.HDA, value.id, dataset_readiness(value))]
+        return dataset_dependencies(value)
     if isinstance(value, DatasetCollectionElement):
-        return input_readiness_dependencies(value.child_collection or value.hda, states=states, extensions=extensions)
+        member = value.child_collection or value.hda
+        return input_readiness_dependencies(member, states=states, extensions=extensions) if member else []
     values: Iterable[Any]
     if isinstance(value, CollectionAdapter):
         adapting = value.adapting
         if not isinstance(adapting, list):
             return input_readiness_dependencies(adapting, states=states, extensions=extensions)
         values = (element.hda for element in adapting)
-    elif isinstance(value, DatasetCollection):
-        values = value.elements
     else:
-        return []
+        values = value.elements
     for element in values:
         dependencies = input_readiness_dependencies(element, states=states, extensions=extensions)
         if dependencies:

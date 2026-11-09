@@ -252,7 +252,7 @@ from galaxy.work.context import (
     WorkRequestContext,
 )
 from galaxy.workflow.scheduling_dependencies import (
-    input_readiness_dependencies,
+    dataset_dependencies,
     ToolInputsNotReadyWithDependencies,
     unpopulated_collection_dependencies,
 )
@@ -3867,12 +3867,12 @@ class DatabaseOperationTool(Tool):
             state = input_dataset.state
             if self.require_terminal_states and state in model.Dataset.non_ready_states:
                 raise ToolInputsNotReadyWithDependencies(
-                    "An input dataset is pending.", dependencies=input_readiness_dependencies(input_dataset)
+                    "An input dataset is pending.", dependencies=dataset_dependencies(input_dataset)
                 )
             if state == model.Dataset.states.PAUSED and not self.require_terminal_or_paused_states:
                 raise ToolInputsNotReadyWithDependencies(
                     f"Input '{input_key}' is paused; the file is not yet available.",
-                    dependencies=input_readiness_dependencies(input_dataset),
+                    dependencies=dataset_dependencies(input_dataset),
                 )
             if self.require_dataset_ok and state != model.Dataset.states.OK:
                 raise ToolInputsNotOKException(
@@ -4414,7 +4414,7 @@ class KeepSuccessDatasetsTool(FilterDatasetsTool):
         assert isinstance(element_object, model.DatasetInstance)
         if element_object.is_pending:
             raise ToolInputsNotReadyWithDependencies(
-                "An input dataset is pending.", dependencies=input_readiness_dependencies(element_object)
+                "An input dataset is pending.", dependencies=dataset_dependencies(element_object)
             )
         return element_object.is_ok
 
