@@ -129,9 +129,9 @@ def _parse_entry(entry: str) -> _Entry:
 
 class ContainerAllowlist:
     def __init__(self, entries: Iterable[str]):
-        self.entries = tuple(entries)
-        self.unrestricted = "*" in self.entries
-        self._entries = [_parse_entry(entry) for entry in self.entries if entry != "*"]
+        self.raw_entries = tuple(entries)
+        self.unrestricted = "*" in self.raw_entries
+        self._rules = [_parse_entry(entry) for entry in self.raw_entries if entry != "*"]
 
     def allows(self, identifier: str) -> bool:
         return self.rejection(identifier) is None
@@ -144,7 +144,7 @@ class ContainerAllowlist:
             reference = parse_image_reference(identifier)
         except ImageReferenceError as e:
             return f"Invalid container: {e}"
-        if any(entry.matches(reference) for entry in self._entries):
+        if any(rule.matches(reference) for rule in self._rules):
             return None
         return (
             f"Container '{identifier}' is not allowed for user defined tools on this Galaxy server. "
@@ -152,4 +152,4 @@ class ContainerAllowlist:
         )
 
     def describe(self) -> str:
-        return ", ".join(self.entries) if self.entries else "(none)"
+        return ", ".join(self.raw_entries) if self.raw_entries else "(none)"
