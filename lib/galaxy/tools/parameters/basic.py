@@ -2744,13 +2744,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
 
         # append matching subcollections
         for hdca, implicit_conversion in self.match_multirun_collections(trans, history, dataset_collection_matcher):
-            subcollection_type = self._history_query(trans).can_map_over(hdca).collection_type
-            collection_type = hdca.collection.collection_type
-            if subcollection_type == "paired_or_unpaired" and not collection_type.endswith("paired_or_unpaired"):
-                if collection_type.endswith("paired"):
-                    subcollection_type = "paired"
-                else:
-                    subcollection_type = "single_datasets"
+            subcollection_type = self._history_query(trans).map_over_type(hdca)
             name = hdca.name
             if implicit_conversion:
                 name = f"{name} (with implicit datatype conversion)"
