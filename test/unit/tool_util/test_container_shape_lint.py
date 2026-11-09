@@ -64,7 +64,7 @@ def test_valid_container_shapes_pass_lint(container):
 
 @pytest.mark.parametrize(
     "bad_container",
-    ["definitely not a container", "foo bar baz", "docker://not an image"],
+    ["definitely not a container", "foo bar baz", "docker://not an image", "quay.io/biocontainers/coreutils:9.5 "],
 )
 def test_invalid_container_shapes_warn(bad_container):
     tool_source = YamlToolSource(_doc(container=bad_container))

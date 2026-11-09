@@ -44,11 +44,10 @@ class ContainerImageShape(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         for identifier in _iter_container_identifiers(tool_source):
-            stripped = identifier.strip()
-            if stripped.startswith(UNCHECKED_PREFIXES):
+            if identifier.startswith(UNCHECKED_PREFIXES):
                 continue
             try:
-                parse_image_reference(stripped)
+                parse_image_reference(identifier)
             except ImageReferenceError as e:
                 lint_ctx.warn(
                     f"container '{identifier}' does not match a recognized shape "
