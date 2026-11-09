@@ -389,8 +389,15 @@ def test_host_metadata_does_not_resolve_container(config):
 def test_rejected_job_fails_without_resubmission():
     runner = cast(Any, object.__new__(PulsarJobRunner))
     runner.work_queue = queue.Queue()
-    client = SimpleNamespace(destination_params={}, setup=lambda *args: {"pulsar_version": "0.16.0"})
+    client = SimpleNamespace(
+        destination_params={"remote_container_handling": True}, setup=lambda *args: {"pulsar_version": "0.16.0"}
+    )
     runner.get_client_from_wrapper = lambda job_wrapper: client
+
+    def find_container(job_wrapper, **kwargs):
+        raise AssertionError("container resolved for a rejected job")
+
+    runner._find_container = find_container
 
     def reject(**kwargs):
         raise InsufficientPermissionsException("Container 'busybox' is not allowed")
