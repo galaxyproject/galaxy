@@ -116,6 +116,7 @@ import { debounce } from "lodash";
 import { mapActions, mapState, storeToRefs } from "pinia";
 
 import { canMutateHistory } from "@/api";
+import { mergeDataOptions } from "@/components/Form/Elements/FormData/types";
 import { findInputByDottedName } from "@/components/Form/utilities";
 import { Toast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
@@ -420,7 +421,7 @@ export default {
         },
         /**
          * Merge a freshly fetched page of options (from load-more or search) into
-         * the matching parameter's option list, de-duplicating by ``id``/``src``.
+         * the matching parameter's option list, de-duplicating by ``src``/``id``/``map_over_type``.
          * Both callers merge rather than replace so the dropdown never empties out
          * from under an open multiselect (which would unmount its focused input),
          * and so a beyond-the-page selection stays visible. Refreshes the form
@@ -435,9 +436,7 @@ export default {
             }
             const existing = (target.options && target.options[src]) || [];
             const incoming = (newInput.options && newInput.options[src]) || [];
-            const seen = new Set(existing.map((o) => `${o.id}_${o.src}`));
-            const merged = existing.concat(incoming.filter((o) => !seen.has(`${o.id}_${o.src}`)));
-            target.options = { ...target.options, [src]: merged };
+            target.options = { ...target.options, [src]: mergeDataOptions(existing, incoming) };
             if (newInput.options_meta && newInput.options_meta[src]) {
                 target.options_meta = {
                     ...(target.options_meta || {}),

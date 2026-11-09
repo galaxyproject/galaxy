@@ -68,7 +68,8 @@ def accumulate_with_filter(
     Returns ``(matches, pre_filter_total, has_more)`` where:
 
     - ``matches`` is up to ``limit`` filter results starting from the
-      ``post_filter_offset``-th match;
+      ``post_filter_offset``-th match, plus the rest of the last row's
+      matches when a multi-match row reaches the limit;
     - ``pre_filter_total`` is the count reported by the underlying query (the
       best estimate available without scanning the full filtered space);
     - ``has_more`` is true if more DB rows exist past the consumed window — it
@@ -93,17 +94,20 @@ def accumulate_with_filter(
         if not rows:
             return matches, pre_filter_total, False
         rows_consumed = 0
-        hit_limit = False
         for row in rows:
             rows_consumed += 1
             result = filter_fn(row)
             if not result:
                 continue
-            # A ``list`` filter result emits multiple matches per row (kept
-            # adjacent so a multi-emitting row never straddles a page boundary
-            # in a half-emitted state). Anything else truthy is a single
-            # match — we deliberately do NOT unpack tuples here, because
-            # existing callers return tuples as a single composite match.
+            # A ``list`` filter result emits multiple matches per row; the
+            # page takes all of them, even past ``limit``, so a row never
+            # ends a page half-emitted (``has_more`` counts rows, and would
+            # hide the rest). An offset landing mid-row still resumes after
+            # the entries already shown, so clients must merge pages by
+            # option identity (src, id, map_over_type), not by item.
+            # Anything else truthy is a single match — we deliberately do
+            # NOT unpack tuples here, because existing callers return tuples
+            # as a single composite match.
             if isinstance(result, list):
                 emitted: list[T] = result
             else:
@@ -113,10 +117,7 @@ def accumulate_with_filter(
                     skipped += 1
                     continue
                 matches.append(entry)
-                if len(matches) >= limit:
-                    hit_limit = True
-                    break
-            if hit_limit:
+            if len(matches) >= limit:
                 break
         # ``rows_consumed`` (not ``len(rows)``) is the right cursor advance:
         # when we break out of the inner loop at the limit, the trailing rows
