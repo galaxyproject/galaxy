@@ -28,6 +28,7 @@ from sqlalchemy.orm import (
 log = logging.getLogger(__name__)
 
 _INFO_KEY = "galaxy_user_quota_updates"
+_ENABLED_KEY = "galaxy_user_quota_updates_enabled"
 
 
 @dataclass
@@ -42,10 +43,17 @@ class UserQuotaUpdates:
         self.broadcast = self.broadcast or other.broadcast
 
 
+def user_quota_updates_enabled(session: Session | scoped_session[Session]) -> bool:
+    """Whether updates queued in ``session`` are sent, so callers can skip queries only needed to queue them."""
+    return bool(session.info.get(_ENABLED_KEY))
+
+
 def queue_user_quota_update(
     session: Session | scoped_session[Session], user_ids: Iterable[int] = (), broadcast: bool = False
 ) -> None:
     """Announce, after the session's next commit, that these users' storage usage or quota changed."""
+    if not user_quota_updates_enabled(session):
+        return
     user_ids = set(user_ids)
     if not user_ids and not broadcast:
         return
@@ -53,16 +61,19 @@ def queue_user_quota_update(
 
 
 def send_user_quota_updates_on_commit(
-    session: scoped_session[Session], send: Callable[[UserQuotaUpdates], None] | None
+    session: scoped_session[Session], send: Callable[[UserQuotaUpdates], None]
 ) -> None:
-    """Pass the updates queued in ``session`` to ``send`` after each commit, or drop them if ``send`` is ``None``.
+    """Enable queueing in ``session`` and pass what is queued to ``send`` after each commit.
 
-    The listeners apply to every session the scoped session's factory creates.
+    This applies to every session the scoped session's factory creates. Without it, queueing does nothing.
     """
+    session.session_factory.kw.setdefault("info", {})[_ENABLED_KEY] = True
+    if session.registry.has():
+        session.info[_ENABLED_KEY] = True
 
     def after_commit(session: Session) -> None:
         updates = session.info.pop(_INFO_KEY, None)
-        if send is None or updates is None:
+        if updates is None:
             return
         try:
             send(updates)

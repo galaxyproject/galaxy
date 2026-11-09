@@ -20,7 +20,10 @@ from galaxy.model import (
     UserGroupAssociation,
     UserQuotaAssociation,
 )
-from galaxy.model.user_quota_updates import queue_user_quota_update
+from galaxy.model.user_quota_updates import (
+    queue_user_quota_update,
+    user_quota_updates_enabled,
+)
 from galaxy.objectstore import is_user_object_store
 
 log = logging.getLogger(__name__)
@@ -30,6 +33,8 @@ AnySession = Session | scoped_session[Session]
 
 def queue_quota_change(session: AnySession, quota: Quota) -> None:
     """Announce a change of ``quota`` to the users it applies to, or to everyone for a default quota."""
+    if not user_quota_updates_enabled(session):
+        return
     if quota.default:
         queue_user_quota_update(session, broadcast=True)
         return
@@ -48,14 +53,14 @@ def queue_quota_change_for_users_and_groups(
     """Announce a quota change to these users and to the members of these groups."""
     queue_user_quota_update(session, user_ids)
     group_ids = list(group_ids)
-    if group_ids:
+    if group_ids and user_quota_updates_enabled(session):
         stmt = select(UserGroupAssociation.user_id).where(UserGroupAssociation.group_id.in_(group_ids))
         queue_user_quota_update(session, session.scalars(stmt))
 
 
 def queue_group_membership_change(session: AnySession, user_ids: Iterable[int], group_ids: Iterable[int]) -> None:
     """Announce a quota change to users who joined or left these groups, if any of the groups has a quota."""
-    if any_group_has_quota(session, group_ids):
+    if user_quota_updates_enabled(session) and any_group_has_quota(session, group_ids):
         queue_user_quota_update(session, user_ids)
 
 
@@ -330,6 +335,8 @@ SELECT id FROM galaxy_user WHERE id IN (SELECT user_id FROM quota_affected_users
                     conn.execute(text(lock_statement), bind)
                 conn.execute(text(from_statement), bind)
                 conn.execute(text(to_statement), bind)
+        if not user_quota_updates_enabled(self.sa_session):
+            return
         # The callers commit the session after moving the dataset, which sends this
         owner_ids = self.sa_session.scalars(
             text(f"{with_quota_affected_users} SELECT user_id FROM quota_affected_users"),

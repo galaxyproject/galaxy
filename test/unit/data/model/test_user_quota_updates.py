@@ -13,6 +13,7 @@ from sqlalchemy.orm import (
 from galaxy.model.user_quota_updates import (
     queue_user_quota_update,
     send_user_quota_updates_on_commit,
+    user_quota_updates_enabled,
     UserQuotaUpdateBatcher,
     UserQuotaUpdates,
 )
@@ -73,6 +74,22 @@ def test_ignores_empty_update(session, sent):
     session.commit()
 
     assert sent == []
+
+
+def test_queueing_does_nothing_without_a_sender():
+    session = scoped_session(sessionmaker(bind=create_engine("sqlite:///:memory:")))
+    session.execute(text("SELECT 1"))
+    queue_user_quota_update(session, [1])
+
+    assert not user_quota_updates_enabled(session)
+    assert session.info == {}
+    session.remove()
+
+
+def test_sender_enables_queueing_in_new_sessions(session):
+    assert user_quota_updates_enabled(session)
+    session.remove()
+    assert user_quota_updates_enabled(session)
 
 
 def test_failing_sender_does_not_fail_commit():

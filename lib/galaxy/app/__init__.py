@@ -841,9 +841,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
             sse_dispatcher.user_quota_update(sorted(updates.user_ids), broadcast=updates.broadcast)
 
         self.user_quota_update_batcher = UserQuotaUpdateBatcher(send_user_quota_updates)
-        send_user_quota_updates_on_commit(
-            self.model.session, self.user_quota_update_batcher.add if self.config.enable_sse_updates else None
-        )
+        if self.config.enable_sse_updates:
+            send_user_quota_updates_on_commit(self.model.session, self.user_quota_update_batcher.add)
         self.haltables.insert(0, ("user quota updates", self.user_quota_update_batcher.flush))
         self.notification_manager = self._register_singleton(NotificationManager)
         self.interactivetool_manager = InteractiveToolManager(self)
