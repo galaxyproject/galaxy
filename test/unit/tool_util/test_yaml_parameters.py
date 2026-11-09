@@ -32,6 +32,7 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionParameterModel,
     DataParameterModel,
     HiddenParameterModel,
+    ReferenceDataParameterModel,
     RepeatParameterModel,
     SectionParameterModel,
     SelectParameterModel,
@@ -100,6 +101,34 @@ def test_select_rejects_dynamic_options():
                 "dynamic_options": "some_fn()",
             }
         )
+
+
+@pytest.mark.parametrize("multiple", [False, True])
+def test_reference_data_maps_to_its_own_type_carrying_the_table(multiple):
+    internal = _validate(
+        {
+            "name": "reference",
+            "type": "reference_data",
+            "table": "fasta_indexes",
+            "multiple": multiple,
+        }
+    ).to_internal()
+    assert isinstance(internal, ReferenceDataParameterModel)
+    assert internal.table == "fasta_indexes"
+    assert internal.multiple is multiple
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    [
+        {},
+        {"table": "t", "options": [{"label": "A", "value": "a"}]},
+        {"table": "t", "filter": {"from_input": "reads", "on_metadata": "dbkey"}},
+    ],
+)
+def test_reference_data_rejects_invalid_definitions(invalid):
+    with pytest.raises(ValidationError):
+        _validate({"name": "reference", "type": "reference_data", **invalid})
 
 
 # ---------------------------------------------------------------------------
@@ -389,6 +418,7 @@ def test_each_parameter_type_publishes_one_valid_example():
         "data_collection",
         "float",
         "integer",
+        "reference_data",
         "repeat",
         "section",
         "select",

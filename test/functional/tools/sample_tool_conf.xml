@@ -348,6 +348,8 @@
   <!-- YAML tools not picked up automatically yet - arguably for the
        best until they are out of beta. -->
   <tool file="parameters/gx_boolean_user.yml" />
+  <tool file="parameters/gx_reference_data_user.yml" />
+  <tool file="parameters/gx_reference_data_multiple_user.yml" />
   <tool file="parameters/gx_data_user.yml" />
   <tool file="parameters/gx_data_multiple_user.yml" />
   <tool file="parameters/gx_user_boolean_optional_null.yml" />

@@ -128,6 +128,12 @@ sections:
       See the [Datatypes page](gxui:/datatypes) in your Galaxy instance for the
       extensions available there.
 
+      A `reference_data` input offers the entries of a tool data table, such
+      as built-in genomes, and hands the selected entry to expressions like a
+      dataset, or a list of them with `multiple: true`. An administrator has
+      to open the table to user-defined tools; until then the input offers no
+      entries.
+
       Types that exist in the XML tool vocabulary but are rejected here:
       `hidden`, `drill_down`, `data_column`, `genomebuild`, `group_tag`,
       `baseurl`, `rules`, `directory`. XML-only fields such as `truevalue`,

@@ -456,7 +456,12 @@ def test_user_tool_requires_a_quotable_path_only_for_shell_command(command):
     set_datatypes_registry(example_datatype_registry_for_sample())
     hda = _hda(1, "zarr")
     hda.metadata.store_root = "Bob's store.zarr"
-    tool = Bunch(shell_command=command.get("shell_command"), base_command=command.get("base_command"))
+    tool = Bunch(
+        shell_command=command.get("shell_command"),
+        base_command=command.get("base_command"),
+        tool_source=Bunch(trusted=False),
+        has_data_table=False,
+    )
     evaluator = UserToolEvaluator(cast(Any, Bunch()), cast(Any, tool), cast(Any, None), "/job")
     evaluator.compute_environment = cast(Any, WorkingDirectoryComputeEnvironment())
 

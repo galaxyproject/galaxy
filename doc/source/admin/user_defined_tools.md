@@ -128,13 +128,27 @@ Every user-defined tool names the image it runs in, and that reference is resolv
 
 Set `require_container: true` on any destination that accepts user-defined tools. Without it, a tool whose image cannot be resolved runs directly on the host instead of failing.
 
+## Reference data
+
+A user-defined tool reads reference data with a `reference_data` input, which offers the entries of a [tool data table](https://galaxyproject.org/admin/data-tables/) and passes the selected entry to the command as `inputs.<name>.path`, with the table's other columns under `inputs.<name>.metadata`. With `multiple: true`, users can select several entries and `inputs.<name>` is a list of them. Tables are closed to user-defined tools by default. Open one by adding `user_accessible="true"` to it in `tool_data_table_conf.xml`:
+
+```xml
+<table name="fasta_indexes" comment_char="#" user_accessible="true">
+    <columns>value, dbkey, name, path</columns>
+    <file path="fasta_indexes.loc" />
+</table>
+```
+
+Opening a table lets anyone allowed to run user-defined tools read everything in it, and the setting has no effect on the tool data table API. Galaxy ignores this attribute in a `tool_data_table_conf.xml` supplied by a Tool Shed repository, so it has to be set on the table in a configuration file you manage. Admin-installed `GalaxyTool` YAML tools can read every table.
+
+The container has to be able to see the files. `$tool_data_path` and `$shed_tool_data_path` are part of the default container volumes; a table whose `path` column points elsewhere, such as CVMFS, needs that location added to `docker_volumes` or `singularity_volumes` on the destination.
+
 ## Limitations
 
 The user-defined tool language is still evolving, and additional safety audits are ongoing.
 
 Current limitations include:
 
-- Access to reference data is not supported
 - Access to metadata and metadata files (such as BAM indexes) is not supported
 - Access to the `extra_files` directory is not supported
 - Declared `tests` are stored but are not executed for a tool held in the database

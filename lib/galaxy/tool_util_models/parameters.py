@@ -867,6 +867,36 @@ class DataInternalJson(StrictModel):
     element_identifier: str | None = None
 
 
+class ReferenceDataSource(StrictModel):
+    table: Annotated[str, Field(description="Name of the tool data table the entry comes from.")]
+    value: Annotated[str, Field(description="Content of the entry's `value` column.")]
+
+
+class ReferenceDataInternalJson(StrictModel):
+    """A tool data table entry, shaped like a dataset for YAML tool expressions."""
+
+    class_: Annotated[
+        Literal["ReferenceData"],
+        Field(alias="class", description="Distinguishes reference data from the 'File' of a history dataset."),
+    ]
+    path: Annotated[
+        str | None,
+        Field(description="Content of the entry's `path` column. Unset for a table without a `path` column."),
+    ] = None
+    basename: Annotated[str | None, Field(description="The last component of `path`.")] = None
+    nameroot: Annotated[str | None, Field(description="The basename root such that nameroot + nameext == basename")] = (
+        None
+    )
+    nameext: Annotated[
+        str | None, Field(description="The basename extension such that nameroot + nameext == basename")
+    ] = None
+    source: Annotated[ReferenceDataSource, Field(description="The table entry this reference data was resolved from.")]
+    metadata: Annotated[
+        dict[str, str],
+        Field(description="The entry's named columns other than `value` and `path`, such as `dbkey` and `name`."),
+    ]
+
+
 class DataCollectionElementInternalJson(DataInternalJson):
     """A file within a collection element - adds collection-specific metadata."""
 
@@ -2025,6 +2055,59 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
         return self.options is None
 
 
+class ReferenceDataParameterModel(BaseGalaxyToolParameterModelDefinition):
+    """A tool data table entry, requested by the value of its `value` column.
+
+    Tool expressions receive the entry as a ReferenceDataInternalJson, or a list of them when `multiple` is set.
+    """
+
+    parameter_type: Literal["gx_reference_data"] = "gx_reference_data"
+    type: Literal["reference_data"]
+    table: Annotated[str, Field(description="Name of the tool data table offering the entries.")]
+    multiple: bool = False
+
+    def field_kwargs(self) -> dict[str, Any]:
+        kwargs = super().field_kwargs()
+        kwargs["json_schema_extra"]["gx_multiple"] = self.multiple
+        return kwargs
+
+    def _value_type(self, allow_connections: bool = False) -> builtins.type:
+        py_type: type = StrictStr
+        if self.multiple:
+            if allow_connections:
+                return allow_connected_value(list_type(allow_connected_value(py_type)))
+            return list_type(py_type)
+        return allow_connected_value(py_type) if allow_connections else py_type
+
+    @property
+    def py_type(self) -> builtins.type:
+        return optional_if_needed(self._value_type(), self.optional or self.multiple)
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        requires_value = self.request_requires_value
+        if state_representation == "workflow_step":
+            py_type = optional(self._value_type())
+        elif state_representation == "workflow_step_linked":
+            py_type = optional_if_needed(self._value_type(allow_connections=True), self.optional or self.multiple)
+        elif state_representation in ("test_case_xml", "test_case_json"):
+            py_type = optional_if_needed(self._value_type(), self.optional)
+        elif state_representation == "job_runtime":
+            requires_value = True
+            runtime_type: type = list_type(ReferenceDataInternalJson) if self.multiple else ReferenceDataInternalJson
+            py_type = optional_if_needed(runtime_type, self.optional or self.multiple)
+        elif state_representation == "job_internal":
+            requires_value = True
+            py_type = self.py_type
+        else:
+            py_type = self.py_type
+        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
+
+    @property
+    def request_requires_value(self) -> bool:
+        # Like a select with dynamic options, the legacy API picks the first entry when none is given.
+        return False
+
+
 class GenomeBuildParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_genomebuild"] = "gx_genomebuild"
     type: Literal["genomebuild"]
@@ -2704,6 +2787,7 @@ GalaxyParameterT = (
     | GroupTagParameterModel
     | BaseUrlParameterModel
     | GenomeBuildParameterModel
+    | ReferenceDataParameterModel
     | ColorParameterModel
     | ConditionalParameterModel
     | RepeatParameterModel
