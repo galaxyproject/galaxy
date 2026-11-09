@@ -8,7 +8,10 @@ from unittest import mock
 import pytest
 import responses
 
-from galaxy.exceptions import ConfigDoesNotAllowException
+from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
+    RequestParameterInvalidException,
+)
 from galaxy.files import (
     DictFileSourcesUserContext,
     ProvidesFileSourcesUserContext,
@@ -491,6 +494,45 @@ def test_drs_access_lookup_refuses_redirect_to_private_address(tmp_path):
     with pytest.raises(ConfigDoesNotAllowException):
         fetch_drs_to_file("drs://drs.example.org/1", tmp_path / "out", user_context=None)
     assert [call.request.url for call in responses.calls] == [object_url, f"{object_url}/access/1234"]
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+@responses.activate
+def test_drs_unverifiable_access_url_keeps_verification_error(tmp_path):
+    responses.get(
+        "https://drs.example.org/ga4gh/drs/v1/objects/1",
+        json={"access_methods": [{"type": "https", "access_url": {"url": "https://exa%6dple.org/myfile.txt"}}]},
+    )
+    with pytest.raises(RequestParameterInvalidException, match="Could not verify url"):
+        fetch_drs_to_file("drs://drs.example.org/1", tmp_path / "out", user_context=None)
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+@responses.activate
+def test_drs_private_access_url_keeps_refusal(tmp_path):
+    responses.get(
+        "https://drs.example.org/ga4gh/drs/v1/objects/1",
+        json={"access_methods": [{"type": "https", "access_url": {"url": "http://127.0.0.1:8000/secret"}}]},
+    )
+    with pytest.raises(ConfigDoesNotAllowException):
+        fetch_drs_to_file("drs://drs.example.org/1", tmp_path / "out", user_context=None)
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+@responses.activate
+def test_drs_skips_access_method_without_handler(tmp_path):
+    responses.get(
+        "https://drs.example.org/ga4gh/drs/v1/objects/1",
+        json={
+            "access_methods": [
+                {"type": "gsiftp", "access_url": {"url": "gsiftp://example.org/myfile.txt"}},
+                *_public_object()["access_methods"],
+            ]
+        },
+    )
+    with patch_http_open(_download_response):
+        fetch_drs_to_file("drs://drs.example.org/1", tmp_path / "out", user_context=None)
+    assert (tmp_path / "out").read_text() == "hello drs world"
 
 
 def _public_object():

@@ -10,16 +10,14 @@ from urllib.parse import quote
 from requests import Session as RequestsSession
 
 from galaxy import exceptions
-from galaxy.files import (
-    ConfiguredFileSources,
-    FileSourcesUserContext,
-)
+from galaxy.files import FileSourcesUserContext
 from galaxy.files.models import (
     FilesSourceOptions,
     PartialFilesSourceProperties,
     RealizedSourceMetadata,
 )
 from galaxy.files.uris import (
+    ensure_file_sources,
     stream_url_to_file,
     ValidatingSession,
 )
@@ -448,31 +446,36 @@ def fetch_drs_to_file(
             }
             opts.extra_props = PartialFilesSourceProperties(**extra_props)
 
-        try:
-            # Handle S3 URLs directly using s3fs instead of going through file sources
-            if access_url.startswith("s3://"):
+        # Handle S3 URLs directly using s3fs instead of going through file sources
+        if access_url.startswith("s3://"):
+            try:
                 log.debug(f"Handling S3 URL directly: {access_url}")
                 _download_s3_file(access_url, target_path, access_headers)
                 downloaded = True
                 break
-            else:
-                file_sources = (
-                    user_context.file_sources
-                    if user_context
-                    else ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
-                )
-                stream_url_to_file(
-                    access_url,
-                    target_path=str(target_path),
-                    file_sources=file_sources,
-                    user_context=user_context,
-                    file_source_opts=opts,
-                )
-                downloaded = True
-                break
-        except exceptions.RequestParameterInvalidException as e:
-            log.debug(f"Failed to fetch via {access_method['type']} access method: {e}")
+            except Exception as e:
+                log.debug(f"Failed to fetch via {access_method['type']} access method: {e}")
+                continue
+
+        file_sources = ensure_file_sources(user_context.file_sources if user_context else None)
+        try:
+            file_sources.get_file_source_path(access_url)
+        except exceptions.RequestParameterInvalidException:
+            # No file source handles this access method, try the next one.
             continue
+        try:
+            stream_url_to_file(
+                access_url,
+                target_path=str(target_path),
+                file_sources=file_sources,
+                user_context=user_context,
+                file_source_opts=opts,
+            )
+            downloaded = True
+            break
+        except exceptions.MessageException:
+            # Verification and configuration refusals stop the lookup.
+            raise
         except Exception as e:
             log.debug(f"Unexpected error with {access_method['type']} access method: {e}")
             continue
