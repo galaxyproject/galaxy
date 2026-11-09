@@ -22,6 +22,7 @@ from galaxy.jobs.runners.util.job_script import (
 from galaxy.model import Dataset
 from galaxy.tool_util.deps.container_classes import (
     Container,
+    requires_dependency_resolution,
     TRAP_KILL_CONTAINER,
 )
 from galaxy.tool_util.runtime_environment import (
@@ -94,10 +95,7 @@ def build_command(
     # environment after dependency resolution, but the task splitting command
     # is still executed in Galaxy's Python environment.
 
-    # One could imagine also allowing dependencies inside of the container but
-    # that is too sophisticated for a first crack at this - build your
-    # containers ready to go!
-    if not container or container.resolve_dependencies:
+    if requires_dependency_resolution(container):
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
     __handle_task_splitting(commands_builder, job_wrapper)
