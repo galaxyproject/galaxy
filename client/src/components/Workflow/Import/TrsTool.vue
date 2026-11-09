@@ -5,7 +5,7 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
 
-import { compareTrsVersions, isTrsVersion } from "./trsVersion";
+import { sortTrsVersions, trsVersionId } from "./trsVersion";
 import type { TrsTool, TrsToolVersion } from "./types";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -24,21 +24,7 @@ const emit = defineEmits<{
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
-const sortedVersions = computed(() => {
-    return props.trsTool.versions.slice().sort((a, b) => {
-        const comparison = compareTrsVersions(b.name, a.name);
-        if (comparison !== null) {
-            return comparison;
-        }
-        // Version numbers first, newest at the top, then everything else (branches) by name.
-        const aIsVersion = isTrsVersion(a.name);
-        const bIsVersion = isTrsVersion(b.name);
-        if (aIsVersion !== bIsVersion) {
-            return aIsVersion ? -1 : 1;
-        }
-        return b.name.localeCompare(a.name);
-    });
-});
+const sortedVersions = computed(() => sortTrsVersions(props.trsTool.versions));
 
 const selectedVersion = ref<TrsToolVersion | null>(
     sortedVersions.value.length > 0 ? (sortedVersions.value[0] ?? null) : null,
@@ -57,26 +43,21 @@ const showImportButton = computed(() => false);
 // Watch for version changes in wizard mode to emit selection
 watch(selectedVersion, (newVersion) => {
     if (newVersion) {
-        const version_id = newVersion.id.includes(`:${newVersion.name}`) ? newVersion.name : newVersion.id;
-        emit("onSelect", version_id);
+        emit("onSelect", trsVersionId(newVersion));
     }
 });
 
 // Emit initial selection in wizard mode
 onMounted(() => {
     if (selectedVersion.value) {
-        const version_id = selectedVersion.value.id.includes(`:${selectedVersion.value.name}`)
-            ? selectedVersion.value.name
-            : selectedVersion.value.id;
-        emit("onSelect", version_id);
+        emit("onSelect", trsVersionId(selectedVersion.value));
     }
 });
 
 function importSelectedVersion() {
     const version = selectedVersion.value;
     if (version) {
-        const version_id = version.id.includes(`:${version.name}`) ? version.name : version.id;
-        emit("onImport", version_id);
+        emit("onImport", trsVersionId(version));
     }
 }
 </script>

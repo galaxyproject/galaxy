@@ -1,3 +1,5 @@
+import type { TrsToolVersion } from "./types";
+
 /** Parse a TRS version name like "v1.2.3" into numeric parts, or null if it holds no version number. */
 function parseTrsVersion(name: string): number[] | null {
     const match = name.match(/(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
@@ -12,7 +14,7 @@ function parseTrsVersion(name: string): number[] | null {
 }
 
 /** Whether a TRS version name carries a version number, as opposed to e.g. a branch name. */
-export function isTrsVersion(name: string): boolean {
+function isTrsVersion(name: string): boolean {
     return parseTrsVersion(name) !== null;
 }
 
@@ -29,4 +31,25 @@ export function compareTrsVersions(left: string, right: string): number | null {
         }
     }
     return 0;
+}
+
+/** Version numbers first, newest at the top, then everything else (branches) by name. */
+export function sortTrsVersions(versions: TrsToolVersion[]): TrsToolVersion[] {
+    return versions.slice().sort((a, b) => {
+        const comparison = compareTrsVersions(b.name, a.name);
+        if (comparison !== null) {
+            return comparison;
+        }
+        const aIsVersion = isTrsVersion(a.name);
+        const bIsVersion = isTrsVersion(b.name);
+        if (aIsVersion !== bIsVersion) {
+            return aIsVersion ? -1 : 1;
+        }
+        return b.name.localeCompare(a.name);
+    });
+}
+
+/** The id that addresses a version on the TRS server; Dockstore's version ids repeat the tool id. */
+export function trsVersionId(version: TrsToolVersion): string {
+    return version.id.includes(`:${version.name}`) ? version.name : version.id;
 }
