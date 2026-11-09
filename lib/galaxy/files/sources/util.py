@@ -376,7 +376,7 @@ def fetch_drs_to_file(
     for access_method in access_methods:
         access_url, access_headers = _get_access_info(session, get_url, access_method, headers=headers)
         opts = FilesSourceOptions()
-        if access_method["type"] == "https":
+        if access_method["type"] in ("https", "ftp"):
             extra_props = {
                 "http_headers": access_headers or {},
                 "fetch_url_allowlist": fetch_url_allowlist or [],
