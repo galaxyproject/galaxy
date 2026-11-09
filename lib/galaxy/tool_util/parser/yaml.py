@@ -83,11 +83,11 @@ class YamlToolSource(ToolSource):
         self.root_dict = root_dict
         self._source_path = source_path
         self._macro_paths: list[str] = []
-        if not self._trusted and (unsupported := sorted(set(root_dict) - USER_TOOL_ROOT_KEYS)):
+        if not self.trusted and (unsupported := sorted(set(root_dict) - USER_TOOL_ROOT_KEYS)):
             raise UntrustedToolSourceError(f"User-defined tools may not set {', '.join(unsupported)}.")
 
     @property
-    def _trusted(self) -> bool:
+    def trusted(self) -> bool:
         return self.parse_class() != "GalaxyUserTool"
 
     @property
@@ -225,7 +225,7 @@ class YamlToolSource(ToolSource):
     def parse_input_pages(self) -> PagesSource:
         # All YAML tools have only one page (feature is deprecated)
         page_source_class = CanonicalYamlPageSource if self.is_yaml_origin() else YamlPageSource
-        page_source = page_source_class(self.root_dict.get("inputs", {}), trusted=self._trusted)
+        page_source = page_source_class(self.root_dict.get("inputs", {}), trusted=self.trusted)
         return PagesSource([page_source], "cwl")
 
     def parse_strict_shell(self):
