@@ -1,6 +1,10 @@
 # A simple CLI runner for slurm that can be used when running Galaxy from a
 # non-submit host and using a Slurm cluster.
+from __future__ import annotations
+
+import re
 from logging import getLogger
+from typing import ClassVar
 
 from . import (
     BaseJobExec,
@@ -14,7 +18,7 @@ argmap = {"time": "-t", "ncpus": "-c", "partition": "-p"}
 
 
 class Slurm(BaseJobExec):
-    slurm_longjobstate_to_shortjobstate = {
+    slurm_longjobstate_to_shortjobstate: ClassVar[dict[str, str]] = {
         "BOOT_FAIL": "BF",
         "CANCELLED": "CA",
         "COMPLETED": "CD",
@@ -32,10 +36,14 @@ class Slurm(BaseJobExec):
         "TIMEOUT": "TO",
         "UNKNOWN": "UN",  # Custom for code in case one isn't available here
     }
-    slurmstate_runnerstate_map = {
+    slurmstate_runnerstate_map: ClassVar[dict[str, str]] = {
         "OOM": runner_states.MEMORY_LIMIT_REACHED,
         "TO": runner_states.WALLTIME_REACHED,
         "UN": runner_states.UNKNOWN_ERROR,
+        "NF": runner_states.NODE_FAILURE,
+        "BF": runner_states.NODE_FAILURE,
+        "PR": runner_states.PREEMPTED,
+        "CA": runner_states.CANCELLED,
     }
 
     def __init__(self, **kwargs):
@@ -60,7 +68,7 @@ class Slurm(BaseJobExec):
         template_scriptargs = ""
         for k, v in scriptargs.items():
             template_scriptargs += f"#SBATCH {k} {v}\n"
-        return dict(headers=template_scriptargs)
+        return {"headers": template_scriptargs}
 
     def submit(self, script_file):
         return f"sbatch {script_file}"
@@ -72,7 +80,9 @@ class Slurm(BaseJobExec):
         return "squeue -a -o '%A %t'"
 
     def get_single_status(self, job_id):
-        return f"squeue -a -o '%A %t' -j {job_id}"
+        # Without -t all squeue drops a job as soon as it ends, so a job that
+        # failed would be indistinguishable from one that succeeded.
+        return f"squeue -a -t all -o '%A %t' -j {job_id}"
 
     def parse_status(self, status, job_ids):
         # Get status for each job, skipping header.
@@ -88,9 +98,9 @@ class Slurm(BaseJobExec):
         status = status.splitlines()
         if len(status) > 1:
             # Job still on cluster and has state.
-            id, state = status[1].split()
+            _id, state = status[1].split()
             return self._get_job_state(state)
-        elif self.sacct_available and len(status) <= 1:
+        elif self.sacct_available:
             log.debug(f"For job '{job_id}', relying on 'sacct' method to determine job state")
             # Job no longer on cluster, retrieve state
             pdata = shell.execute(f"sacct -o JobIDRaw,State -P -n -j {job_id}")
@@ -107,67 +117,60 @@ class Slurm(BaseJobExec):
                 log.debug(f"Job '{job_id}' cannot be found. Returning error for job.")
                 return self._get_job_state("F")
 
-            state = "CD"
-            for jobline in job_data:
-                # Ignore the '.batch' and '.extern' in the output
-                if ".batch" in jobline or ".extern" in jobline:
-                    continue
-
-                splitjobdata = jobline.split("|")
-                if len(splitjobdata) >= 2:
-                    s_jobid, s_jobstate = splitjobdata
-                    if " " in s_jobstate:
-                        s_jobstate, s_jobotherinfo = s_jobstate.split(" ", 1)
-                    state = self.slurm_longjobstate_to_shortjobstate.get(s_jobstate, "UN")
+            return self._get_job_state(self._state_from_sacct(job_data))
         # else line like "slurm_load_jobs error: Invalid job id specified"
         return job_states.OK
 
-    def _get_job_state(self, state: str) -> str:
-        try:
-            return {
-                "BF": job_states.ERROR,
-                "CA": job_states.ERROR,
-                "CD": job_states.OK,
-                "CG": job_states.RUNNING,
-                "DL": job_states.ERROR,
-                "F": job_states.ERROR,
-                "NF": job_states.ERROR,
-                "OOM": job_states.ERROR,
-                "PD": job_states.QUEUED,
-                "PR": job_states.RUNNING,
-                "R": job_states.RUNNING,
-                "RQ": job_states.RUNNING,
-                "RS": job_states.RUNNING,
-                "RV": job_states.ERROR,
-                "S": job_states.RUNNING,
-                "TO": job_states.ERROR,
-                "UN": job_states.ERROR,  # Custom code for unknown
-            }[state]
-        except KeyError:
-            raise KeyError(f"Failed to map slurm status code [{state}] to job state.")
-
-    def get_failure_reason(self, job_id):
-        return f"sacct -o JobIDRaw,State -P -n -j {job_id}"
-
-    def parse_failure_reason(self, reason, job_id):
+    def _state_from_sacct(self, lines):
         state = "CD"
-        for line in reason.splitlines():
+        for line in lines:
+            # Ignore the '.batch' and '.extern' in the output
             if ".batch" in line or ".extern" in line:
                 continue
+            fields = line.split("|")
+            if len(fields) >= 2:
+                # e.g. "CANCELLED by 1000"
+                long_state = fields[1].split(" ", 1)[0]
+                state = self.slurm_longjobstate_to_shortjobstate.get(long_state, "UN")
+        return state
 
-            splitjobdata = line.split("|")
-            log.debug(f"State split line: {len(splitjobdata)}")
-            if len(splitjobdata) >= 2:
-                s_jobid, s_jobstate = splitjobdata
-                if " " in s_jobstate:
-                    s_jobstate, s_jobotherinfo = s_jobstate.split(" ", 1)
-                    log.debug(f"Found space in jobstate, split into: {s_jobstate} - {s_jobotherinfo}")
-                log.debug(f"State job data: {s_jobid} - {s_jobstate}")
-                state = self.slurm_longjobstate_to_shortjobstate.get(s_jobstate, "UN")
+    def _get_job_state(self, state):
+        return {
+            "BF": job_states.ERROR,
+            "CA": job_states.ERROR,
+            "CD": job_states.OK,
+            "CG": job_states.RUNNING,
+            "DL": job_states.ERROR,
+            "F": job_states.ERROR,
+            "NF": job_states.ERROR,
+            "OOM": job_states.ERROR,
+            "PD": job_states.QUEUED,
+            "PR": job_states.ERROR,
+            "R": job_states.RUNNING,
+            "RQ": job_states.RUNNING,
+            "RS": job_states.RUNNING,
+            "RV": job_states.ERROR,
+            "S": job_states.RUNNING,
+            "TO": job_states.ERROR,
+            "UN": job_states.ERROR,  # Custom code for unknown
+        }.get(state)
 
-        if state in self.slurmstate_runnerstate_map:
-            return self.slurmstate_runnerstate_map.get(state, runner_states.UNKNOWN_ERROR)
-        return None
+    def get_failure_reason(self, job_id):
+        # scontrol remembers finished jobs for MinJobAge even without accounting,
+        # sacct covers jobs that have aged out of it.
+        return f"scontrol -o show job {job_id} 2>/dev/null; sacct -o JobIDRaw,State -P -n -j {job_id} 2>/dev/null"
+
+    def parse_failure_reason(self, reason, job_id):
+        match = re.search(r"\bJobState=(\S+)", reason)
+        if match:
+            state = self.slurm_longjobstate_to_shortjobstate.get(match.group(1), "UN")
+        else:
+            state = self._state_from_sacct(reason.splitlines())
+        return self.slurmstate_runnerstate_map.get(state)
+
+    def parse_failure_message(self, reason, job_id):
+        match = re.search(r"\bReason=(RaisedSignal\S+)", reason)
+        return f"Slurm reported: {match.group(1)}" if match else None
 
 
 __all__ = ("Slurm",)
