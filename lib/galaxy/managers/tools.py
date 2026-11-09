@@ -28,7 +28,6 @@ from galaxy.tool_util.cwl import tool_proxy
 from galaxy.tool_util.deps.image_references import (
     ContainerAllowlist,
     ImageReferenceError,
-    parse_image_reference,
 )
 from galaxy.tool_util.lint import lint_user_tool_source
 from galaxy.tool_util.parser.yaml import YamlToolSource
@@ -108,15 +107,8 @@ class DynamicToolManager(ModelManager[DynamicTool]):
             raise exceptions.ConfigurationError(f"Invalid user_defined_tool_allowed_containers entry: {e}") from e
 
     def ensure_container_allowed(self, container: str) -> None:
-        if not self.container_allowlist.allows(container):
-            try:
-                parse_image_reference(container)
-            except ImageReferenceError as e:
-                raise exceptions.RequestParameterInvalidException(f"Invalid container: {e}") from e
-            raise exceptions.RequestParameterInvalidException(
-                f"Container '{container}' is not allowed for user defined tools on this Galaxy server. "
-                f"Allowed containers: {self.container_allowlist.describe()}"
-            )
+        if rejection := self.container_allowlist.rejection(container):
+            raise exceptions.RequestParameterInvalidException(rejection)
 
     def ensure_can_use_unprivileged_tool(self, user: model.User | None):
         if user is None or not any(

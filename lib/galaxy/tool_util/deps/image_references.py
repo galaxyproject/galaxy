@@ -134,13 +134,22 @@ class ContainerAllowlist:
         self._entries = [_parse_entry(entry) for entry in self.entries if entry != "*"]
 
     def allows(self, identifier: str) -> bool:
+        return self.rejection(identifier) is None
+
+    def rejection(self, identifier: str) -> str | None:
+        """Return why ``identifier`` is not allowed, or ``None`` if it is."""
         if self.unrestricted:
-            return True
+            return None
         try:
             reference = parse_image_reference(identifier)
-        except ImageReferenceError:
-            return False
-        return any(entry.matches(reference) for entry in self._entries)
+        except ImageReferenceError as e:
+            return f"Invalid container: {e}"
+        if any(entry.matches(reference) for entry in self._entries):
+            return None
+        return (
+            f"Container '{identifier}' is not allowed for user defined tools on this Galaxy server. "
+            f"Allowed containers: {self.describe()}"
+        )
 
     def describe(self) -> str:
         return ", ".join(self.entries) if self.entries else "(none)"
