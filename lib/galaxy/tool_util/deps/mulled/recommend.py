@@ -56,7 +56,8 @@ from .util import (
 log = logging.getLogger(__name__)
 
 BIOCONTAINERS_NAMESPACE = "biocontainers"
-QUAY_BIOCONTAINERS_PREFIX = "quay.io/biocontainers"
+QUAY_REGISTRY = "quay.io"
+QUAY_BIOCONTAINERS_PREFIX = f"{QUAY_REGISTRY}/{BIOCONTAINERS_NAMESPACE}"
 RECOMMENDATION_CACHE_EXPIRY = 300  # seconds, mirrors QUAY_VERSIONS_CACHE_EXPIRY
 # Bounds for version resolution: how many recent versions to try per unpinned
 # package, and a hard cap on total combinations to test (keeps the search cheap
@@ -247,7 +248,7 @@ def biocontainer_tag_built(image: str, *, session: Session | None = None) -> boo
     except ImageReferenceError:
         return None
     namespace, _, repo = reference.repository.partition("/")
-    if reference.registry != "quay.io" or namespace != BIOCONTAINERS_NAMESPACE or not repo:
+    if reference.registry != QUAY_REGISTRY or namespace != BIOCONTAINERS_NAMESPACE or not repo:
         return None
     # The runtime pulls the digest of a reference that has one, whatever its tag.
     if not reference.tag or reference.digest:
