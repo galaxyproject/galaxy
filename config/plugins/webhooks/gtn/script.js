@@ -16,6 +16,23 @@
         document.getElementById("gtn-container").style.visibility = "visible";
     }
 
+    // Focus would otherwise stay in the hidden iframe, so hand it to the page the button opened.
+    function focusMainContent(navigation) {
+        Promise.resolve(navigation)
+            .catch(() => undefined)
+            .then(() => {
+                const center = document.getElementById("center");
+                const target = center || document.querySelector("#gtn a");
+                if (!target) {
+                    return;
+                }
+                if (center && !center.hasAttribute("tabindex")) {
+                    center.setAttribute("tabindex", "-1");
+                }
+                target.focus({ preventScroll: true });
+            });
+    }
+
     function buttonify(el, activate) {
         el.addEventListener("click", activate);
         if (el.tagName.toLowerCase() === "a") {
@@ -184,10 +201,13 @@
 
                             if (tool_id === "upload1" || tool_id === "upload") {
                                 document.getElementById("tool-panel-upload-button").click();
+                                removeOverlay();
                             } else {
-                                Galaxy.router.push({ path: `/?tool_id=${encodeURIComponent(tool_id)}` });
+                                // vue-router drops a query written into an object's path, so pass a string.
+                                const navigation = Galaxy.router.push(`/?tool_id=${encodeURIComponent(tool_id)}`);
+                                removeOverlay();
+                                focusMainContent(navigation);
                             }
-                            removeOverlay();
                         });
                     });
 
@@ -200,10 +220,11 @@
                         buttonify(el, () => {
                             // The click target can be nested markup inside the button, so read the bound element.
                             const trs_url = el.dataset.workflow;
-                            Galaxy.router.push({
-                                path: `/workflows/trs_import?trs_url=${encodeURIComponent(trs_url)}&run_form=true`,
-                            });
+                            const navigation = Galaxy.router.push(
+                                `/workflows/trs_import?trs_url=${encodeURIComponent(trs_url)}&run_form=true`
+                            );
                             removeOverlay();
+                            focusMainContent(navigation);
                         });
                     });
                 });
