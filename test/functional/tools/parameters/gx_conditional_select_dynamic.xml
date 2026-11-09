@@ -10,7 +10,7 @@ echo '$conditional_parameter.parameter' >> '$output'
                 <option value="no_select">No Select</option>
             </param>
             <when value="use_select">
-                <param name="ref_parameter" type="data" ext="txt" >
+                <param name="ref_parameter" type="data" format="txt" >
                 </param>
                 <param name="parameter" type="select" dynamic_options="every_other_word(ref_parameter.dataset.get_file_name())">
                 </param>
