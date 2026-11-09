@@ -1,6 +1,8 @@
 """User defined tools with the default user_defined_tool_allowed_containers setting."""
 
+import json
 from typing import Any
+from uuid import uuid4
 
 from galaxy.model import Job
 from galaxy_test.api.test_tools import TestsTools
@@ -90,6 +92,31 @@ class TestUserDefinedToolContainerAllowlist(BaseUserDefinedToolContainerAllowlis
 
     def test_job_of_stored_tool_with_disallowed_container_fails(self):
         self._run_stored_disallowed_tool()
+
+    def test_import_workflow_embedding_disallowed_tool_is_rejected(self):
+        workflow = {
+            "a_galaxy_workflow": "true",
+            "name": "wf embedding a busybox user tool",
+            "format-version": "0.1",
+            "steps": {
+                "0": {
+                    "id": 0,
+                    "type": "tool",
+                    "tool_state": "{}",
+                    "input_connections": {},
+                    "uuid": str(uuid4()),
+                    "tool_representation": TOOL_WITH_SHELL_COMMAND,
+                },
+            },
+        }
+        with self.dataset_populator.user_tool_execute_permissions():
+            workflows_before = self._get("workflows").json()
+            tools_before = self.dataset_populator.get_unprivileged_tools()
+            response = self._post("workflows", data={"workflow": json.dumps(workflow)})
+            assert response.status_code == 400, response.text
+            assert "Container 'busybox' is not allowed" in response.json()["err_msg"]
+            assert self._get("workflows").json() == workflows_before
+            assert self.dataset_populator.get_unprivileged_tools() == tools_before
 
 
 class TestUserDefinedToolContainerAllowlistPulsar(BaseUserDefinedToolContainerAllowlist):
