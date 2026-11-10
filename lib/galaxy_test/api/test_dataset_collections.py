@@ -411,6 +411,31 @@ class TestDatasetCollectionsApi(ApiTestCase):
         ]
         create_response = self._post("dataset_collections", payload, json=True)
         assert_status_code_is(create_response, 400)
+        # Valid nf-core values containing punctuation must be preserved.
+        payload["column_definitions"] = [
+            {"type": "string", "name": "db_type", "optional": False},
+            {"type": "string", "name": "db_params", "optional": False},
+        ]
+        payload["rows"] = {
+            "sample1": ["short;long", "--min=10 --max=50"],
+            "sample2": ["long", "/data/reference.v2"],
+        }
+
+        response = self._post("dataset_collections", payload, json=True)
+        collection = self._check_create_response(response)
+
+        assert collection["elements"][0]["columns"] == [
+            "short;long", "--min=10 --max=50"
+        ]
+        assert collection["elements"][1]["columns"] == [
+            "long", "/data/reference.v2"
+        ]
+
+        # Embedded control characters must be rejected.
+        for invalid_value in ("short\nlong", "short\tlong", "short\x00long"):
+            payload["rows"]["sample1"][0] = invalid_value
+            response = self._post("dataset_collections", payload, json=True)
+            assert_status_code_is(response, 400)
 
     def test_sample_sheet_requires_columns(self, history_id):
         contents = [
