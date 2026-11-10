@@ -253,6 +253,7 @@ from galaxy.work.context import (
 )
 from galaxy.workflow.scheduling_dependencies import (
     input_readiness_dependencies,
+    ToolInputsNotReadyWithDependencies,
     unpopulated_collection_dependencies,
 )
 from ._types import (
@@ -3865,11 +3866,11 @@ class DatabaseOperationTool(Tool):
         def check_dataset_state(input_key, input_dataset):
             state = input_dataset.state
             if self.require_terminal_states and state in model.Dataset.non_ready_states:
-                raise ToolInputsNotReadyException(
+                raise ToolInputsNotReadyWithDependencies(
                     "An input dataset is pending.", dependencies=input_readiness_dependencies(input_dataset)
                 )
             if state == model.Dataset.states.PAUSED and not self.require_terminal_or_paused_states:
-                raise ToolInputsNotReadyException(
+                raise ToolInputsNotReadyWithDependencies(
                     f"Input '{input_key}' is paused; the file is not yet available.",
                     dependencies=input_readiness_dependencies(input_dataset),
                 )
@@ -3893,7 +3894,7 @@ class DatabaseOperationTool(Tool):
                     continue
                 collection = input_collection.collection
                 if not collection.populated_optimized:
-                    raise ToolInputsNotReadyException(
+                    raise ToolInputsNotReadyWithDependencies(
                         "An input collection is not populated.",
                         dependencies=unpopulated_collection_dependencies(collection),
                     )
@@ -4412,7 +4413,7 @@ class KeepSuccessDatasetsTool(FilterDatasetsTool):
         element_object = element.element_object
         assert isinstance(element_object, model.DatasetInstance)
         if element_object.is_pending:
-            raise ToolInputsNotReadyException(
+            raise ToolInputsNotReadyWithDependencies(
                 "An input dataset is pending.", dependencies=input_readiness_dependencies(element_object)
             )
         return element_object.is_ok

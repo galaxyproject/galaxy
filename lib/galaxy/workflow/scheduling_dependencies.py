@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+from galaxy.exceptions import ToolInputsNotReadyException
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
@@ -35,6 +36,21 @@ class SchedulingDependency:
     # Input readiness waits wake on a change to the values that caused the wait,
     # including failures and paused states, rather than collection population.
     readiness: ReadinessSnapshot | None = None
+
+
+class ToolInputsNotReadyWithDependencies(ToolInputsNotReadyException):
+    """An input wait with dependencies the workflow scheduler can observe."""
+
+    def __init__(
+        self,
+        err_msg: str | None = None,
+        type: str = "info",
+        *,
+        dependencies: Iterable[SchedulingDependency],
+        **extra_error_info: Any,
+    ) -> None:
+        super().__init__(err_msg, type, **extra_error_info)
+        self.dependencies = tuple(dependencies)
 
 
 @dataclass(frozen=True)

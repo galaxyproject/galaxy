@@ -22,7 +22,6 @@ from galaxy.exceptions import (
     AuthenticationRequired,
     ItemAccessibilityException,
     RequestParameterInvalidException,
-    ToolInputsNotReadyException,
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.output_format import (
@@ -81,7 +80,10 @@ from galaxy.tools.parameters.wrapped import (
 )
 from galaxy.util import ExecutionTimer
 from galaxy.util.template import fill_template
-from galaxy.workflow.scheduling_dependencies import input_readiness_dependencies
+from galaxy.workflow.scheduling_dependencies import (
+    input_readiness_dependencies,
+    ToolInputsNotReadyWithDependencies,
+)
 
 if TYPE_CHECKING:
     from galaxy.model import (
@@ -355,7 +357,7 @@ class DefaultToolAction(ToolAction):
                                 extensions=(ext,),
                             )
                             if dependencies:
-                                raise ToolInputsNotReadyException(
+                                raise ToolInputsNotReadyWithDependencies(
                                     f"Extension '{ext}' not yet resolved, cannot use dataset collection as input",
                                     dependencies=dependencies,
                                 )

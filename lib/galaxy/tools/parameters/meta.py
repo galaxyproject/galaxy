@@ -40,7 +40,10 @@ from galaxy.util.permutations import (
     state_set_value,
 )
 from galaxy.work.context import WorkRequestContext
-from galaxy.workflow.scheduling_dependencies import unpopulated_collection_dependencies
+from galaxy.workflow.scheduling_dependencies import (
+    ToolInputsNotReadyWithDependencies,
+    unpopulated_collection_dependencies,
+)
 from . import visit_input_values
 from .workflow_utils import (
     runtime_to_json,
@@ -495,7 +498,7 @@ def __expand_collection_parameter(
         item = trans.sa_session.get_one(HistoryDatasetCollectionAssociation, decoded_id)
         collection = item.collection
     if not collection.populated_optimized:
-        raise exceptions.ToolInputsNotReadyException(
+        raise ToolInputsNotReadyWithDependencies(
             "An input collection is not populated.", dependencies=unpopulated_collection_dependencies(collection)
         )
     collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)

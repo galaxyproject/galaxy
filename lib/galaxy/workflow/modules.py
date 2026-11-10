@@ -170,6 +170,7 @@ from galaxy.workflow.map_over import (
 from galaxy.workflow.scheduling_dependencies import (
     DependencyType,
     SchedulingDependency,
+    ToolInputsNotReadyWithDependencies,
 )
 from galaxy.workflow.workflow_parameter_input_definitions import (
     check_validators,
@@ -3414,7 +3415,8 @@ class ToolModule(WorkflowModule):
 
         except ToolInputsNotReadyException as exc:
             delayed_why = f"tool [{tool.id}] inputs are not ready, this special tool requires inputs to be ready"
-            raise DelayedWorkflowEvaluation(why=delayed_why, dependencies=exc.dependencies) from exc
+            dependencies = exc.dependencies if isinstance(exc, ToolInputsNotReadyWithDependencies) else ()
+            raise DelayedWorkflowEvaluation(why=delayed_why, dependencies=dependencies) from exc
 
         progress.record_executed_job_count(len(execution_tracker.successful_jobs))
         step_outputs: dict[str, model.HistoryDatasetCollectionAssociation | model.HistoryDatasetAssociation] = {}
