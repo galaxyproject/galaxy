@@ -17,6 +17,7 @@ SHA_B = "sha256:" + "b" * 64
         ("python:3.13", ImageReference("docker.io", "library/python", tag="3.13")),
         ("docker://python:3.13", ImageReference("docker.io", "library/python", tag="3.13")),
         ("index.docker.io/library/python", ImageReference("docker.io", "library/python")),
+        ("registry-1.docker.io/library/python", ImageReference("docker.io", "library/python")),
         ("rocker/tidyverse:4.3.0", ImageReference("docker.io", "rocker/tidyverse", tag="4.3.0")),
         ("Quay.IO/biocontainers/samtools", ImageReference("quay.io", "biocontainers/samtools")),
         ("localhost/x", ImageReference("localhost", "x")),

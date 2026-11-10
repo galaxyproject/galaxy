@@ -3,7 +3,9 @@
 References are parsed into registry, repository, tag and digest and
 canonicalized like the Docker CLI does (``python:3.13`` is
 ``docker.io/library/python:3.13``), so matching compares parsed parts rather
-than string prefixes.
+than string prefixes. ``registry-1.docker.io``, the host that serves Docker
+Hub's registry API, is canonicalized to ``docker.io`` as well, which the
+Docker CLI does not do, so a denied Docker Hub image cannot be named through it.
 
 Allowlist entries: ``*`` allows anything; ``<registry-or-path>/*`` allows any
 repository below it, at any depth; ``<repository>`` allows any tag or digest of
