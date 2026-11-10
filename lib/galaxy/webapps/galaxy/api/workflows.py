@@ -1357,6 +1357,19 @@ HistoryIdQueryParam = Annotated[
     ),
 ]
 
+InvocationsSearchQueryParam = Annotated[
+    str | None,
+    Query(
+        title="Search",
+        description=(
+            "Return only invocations matching every term. `workflow:<name>` and `history:<name>` match the name "
+            "of the invocation's workflow or history, as a substring or, when the name is quoted, exactly. "
+            "Text without a key matches the workflow name. `workflow_id:<id>` and `history_id:<id>` can repeat, "
+            "and match any of the given ids. At most 10 keyed or quoted terms are used."
+        ),
+    ),
+]
+
 JobIdQueryParam = Annotated[
     DecodedDatabaseIdField | None,
     Query(
@@ -1471,6 +1484,7 @@ class FastAPIInvocations:
         view: SerializationViewQueryParam = None,
         step_details: StepDetailQueryParam = False,
         include_nested_invocations: bool = True,
+        search: InvocationsSearchQueryParam = None,
         trans: SessionRequestContext = DependsOnTrans,
     ) -> list[WorkflowInvocationResponse]:
         if not trans.user:
@@ -1480,6 +1494,7 @@ class FastAPIInvocations:
         invocation_payload = InvocationIndexPayload(
             workflow_id=workflow_id,
             history_id=history_id,
+            search=search,
             job_id=job_id,
             user_id=user_id,
             sort_by=sort_by,

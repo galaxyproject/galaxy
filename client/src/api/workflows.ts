@@ -59,6 +59,8 @@ interface LoadWorkflowsOptions {
     showPublished: boolean;
     /** Include workflows shared with the requesting user (required by the `is:shared_with_me` filter). */
     showShared?: boolean;
+    /** List hidden workflows instead of visible ones (cannot be combined with `showShared`). */
+    showHidden?: boolean;
     skipStepCounts: boolean;
 }
 
@@ -70,6 +72,7 @@ export async function loadWorkflows({
     filterText = "",
     showPublished = false,
     showShared,
+    showHidden,
     skipStepCounts = true,
 }: LoadWorkflowsOptions): Promise<{ data: WorkflowSummary[]; totalMatches: number }> {
     const {
@@ -86,6 +89,7 @@ export async function loadWorkflows({
                 search: filterText,
                 show_published: showPublished,
                 show_shared: showShared,
+                show_hidden: showHidden,
                 skip_step_counts: skipStepCounts,
             },
         },

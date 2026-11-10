@@ -403,6 +403,29 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 3
 
+    def test_index_name_lookups_used_by_invocation_filters(self):
+        name = f"lookup_{uuid4().hex}"
+
+        def lookup(search):
+            query = {"search": search, "show_own": True, "show_published": False, "show_shared": False}
+            query.update({"show_archived": True, "view": "summary", "keys": "username", "limit": 50})
+            response = self._get("histories", data=query)
+            self._assert_status_code_is(response, 200)
+            return {history["id"] for history in response.json()}
+
+        with self._different_user(email=f"{uuid4()}@test.com"):
+            active_id = self._create_history(name)["id"]
+            archived_id = self._create_history(name)["id"]
+            self.dataset_populator.archive_history(archived_id).raise_for_status()
+            deleted_id = self._create_history(name)["id"]
+            self.dataset_populator.delete_history(deleted_id)
+            purged_id = self._create_history(name)["id"]
+            self.dataset_populator.purge_history(purged_id)
+
+            assert lookup(f"name:{name}") == {active_id, archived_id}
+            assert lookup(f"name:{name} is:deleted") == {deleted_id}
+            assert lookup(f"name:{name} is:purged") == {purged_id}
+
     def _create_history_then_publish_and_archive_it(self, name):
         history_id = self._create_history(name)["id"]
         response = self._update(history_id, {"published": True})

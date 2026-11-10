@@ -650,6 +650,33 @@ steps:
         workflow_index = self._get("workflows?show_hidden=false").json()
         assert not [w for w in workflow_index if w["id"] == workflow_id]
 
+    def test_index_name_lookups_used_by_invocation_filters(self):
+        name = f"lookup_{uuid4().hex}"
+        my_email = f"{uuid4()}@test.com"
+
+        def lookup(search, **flags):
+            query = {"search": search, "sort_by": "update_time", "sort_desc": True, "limit": 50, **flags}
+            response = self._get("workflows", data=query)
+            self._assert_status_code_is(response, 200)
+            return {workflow["id"] for workflow in response.json()}
+
+        with self._different_user(email=my_email):
+            own_id = self.workflow_populator.simple_workflow(name)
+            deleted_id = self.workflow_populator.simple_workflow(name)
+            self._assert_status_code_is(self._delete(f"workflows/{deleted_id}"), 204)
+            hidden_id = self.workflow_populator.simple_workflow(name)
+            self.workflow_populator.update_workflow_fields(hidden_id, {"hidden": True}).raise_for_status()
+        with self._different_user(email=f"{uuid4()}@test.com"):
+            shared_id = self.workflow_populator.simple_workflow(name)
+            self.workflow_populator.share_with_user(shared_id, my_email)
+            published_id = self.workflow_populator.simple_workflow(name, publish=True)
+
+        with self._different_user(email=my_email):
+            assert lookup(f"name:{name}", show_published=False) == {own_id, shared_id}
+            assert lookup(f"name:{name}", show_published=True) == {own_id, shared_id, published_id}
+            assert lookup(f"name:{name} is:deleted", show_published=False) == {deleted_id}
+            assert lookup(f"name:{name}", show_published=False, show_hidden=True) == {hidden_id}
+
     def test_index_ordering(self):
         # ordered by update_time on the stored workflows with all user's workflows
         # before workflows shared with user.
@@ -11884,6 +11911,163 @@ steps: []
             self._assert_invocation_for_url_is(
                 "invocations?limit=1&sort_by=create_time&sort_desc=false&offset=1", target_invocation=new_invocation
             )
+
+    def test_invocation_filtering_by_several_workflows_and_histories(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
+"""
+        with self._different_user_history(email=f"{uuid4()}@test.com") as first_history_id:
+            second_history_id = self.dataset_populator.new_history()
+            third_history_id = self.dataset_populator.new_history()
+            first = self._run_workflow(workflow, history_id=first_history_id, wait=False)
+            second = self._run_workflow(workflow, history_id=second_history_id, wait=False)
+            third = self._run_workflow(workflow, history_id=third_history_id, wait=False)
+
+            def invocation_ids(search):
+                response = self._get("invocations", data={"search": search})
+                self._assert_status_code_is(response, 200)
+                return {invocation["id"] for invocation in response.json()}
+
+            first_or_second_workflow = f"workflow_id:{first.workflow_id} workflow_id:{second.workflow_id}"
+            assert invocation_ids(first_or_second_workflow) == {first.invocation_id, second.invocation_id}
+            assert invocation_ids(f"workflow_id:{third.workflow_id}") == {third.invocation_id}
+            assert invocation_ids(f"history_id:{second_history_id} history_id:{third_history_id}") == {
+                second.invocation_id,
+                third.invocation_id,
+            }
+            assert invocation_ids(f"{first_or_second_workflow} history_id:{second_history_id}") == {
+                second.invocation_id
+            }
+
+    def test_invocation_search_only_returns_own_invocations_for_ids(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
+"""
+        unknown_id = self._get("configuration/encode/999999999", admin=True).json()["encoded_id"]
+        with self._different_user_history(email=f"{uuid4()}@test.com") as private_history_id:
+            private = self._run_workflow(workflow, history_id=private_history_id, wait=False)
+        with self._different_user_history(email=f"{uuid4()}@test.com") as history_id:
+            first = self._run_workflow(workflow, history_id=history_id, wait=False)
+            second = self._run_workflow(workflow, history_id=history_id, wait=False)
+            first_workflow_id = first.workflow_id
+
+            def invocation_ids(search):
+                response = self._get("invocations", data={"search": search})
+                self._assert_status_code_is(response, 200)
+                return {invocation["id"] for invocation in response.json()}
+
+            assert invocation_ids(f"workflow_id:{first_workflow_id} workflow_id:{first_workflow_id}") == {
+                first.invocation_id
+            }
+            assert invocation_ids(f"workflow_id:{first_workflow_id} workflow_id:{unknown_id}") == {first.invocation_id}
+            assert invocation_ids(f"history_id:{history_id} history_id:{unknown_id}") == {
+                first.invocation_id,
+                second.invocation_id,
+            }
+            assert invocation_ids(f"workflow_id:{private.workflow_id}") == set()
+            assert invocation_ids(f"history_id:{private_history_id}") == set()
+
+            only_unknown_ids_are_used = " ".join(
+                [f"workflow_id:{unknown_id}"] * 10 + [f"workflow_id:{first_workflow_id}"]
+            )
+            assert invocation_ids(only_unknown_ids_are_used) == set()
+
+            response = self._get("invocations", data={"search": "workflow_id:not-an-id"})
+            self._assert_status_code_is(response, 400)
+
+            response = self._get(
+                "invocations",
+                data={"search": f"workflow_id:{first_workflow_id} workflow_id:{second.workflow_id}", "limit": 1},
+            )
+            self._assert_status_code_is(response, 200)
+            assert len(response.json()) == 1
+            assert response.headers["total_matches"] == "2"
+
+    def test_invocation_filtering_by_name_search(self):
+        def workflow(name):
+            return f"""
+class: GalaxyWorkflow
+name: {name}
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
+"""
+
+        tag = uuid4().hex
+        rna_name = f"RNA-seq {tag}"
+        with self._different_user_history(email=f"{uuid4()}@test.com"):
+            batch_history_id = self.dataset_populator.new_history(name=f"batch {tag}")
+            other_history_id = self.dataset_populator.new_history(name=f"other {tag}")
+            rna = self._run_workflow(workflow(rna_name), history_id=batch_history_id, wait=False)
+            copy = self._run_workflow(workflow(f"{rna_name} copy"), history_id=other_history_id, wait=False)
+            variant = self._run_workflow(workflow(f"Variant {tag}"), history_id=batch_history_id, wait=False)
+
+            def invocation_ids(search, **query):
+                response = self._get("invocations", data={"search": search, **query})
+                self._assert_status_code_is(response, 200)
+                matches = {invocation["id"] for invocation in response.json()}
+                assert response.headers["total_matches"] == str(len(matches))
+                return matches
+
+            assert invocation_ids("workflow:rna-seq") == {rna.invocation_id, copy.invocation_id}
+            assert invocation_ids("workflow:rna-seq workflow:copy") == {copy.invocation_id}
+            assert invocation_ids(f"workflow:'{rna_name}'") == {rna.invocation_id}
+            assert invocation_ids("variant") == {variant.invocation_id}
+            assert invocation_ids(f"history:'batch {tag}'") == {rna.invocation_id, variant.invocation_id}
+            assert invocation_ids("workflow:rna-seq history:batch") == {rna.invocation_id}
+            assert invocation_ids("workflow:rna-seq", workflow_id=variant.workflow_id) == set()
+            assert invocation_ids("workflow:rna-seq", history_id=other_history_id) == {copy.invocation_id}
+            assert invocation_ids(f"workflow:rna-seq workflow_id:{variant.workflow_id}") == set()
+            assert invocation_ids(f"workflow:rna-seq history_id:{other_history_id}") == {copy.invocation_id}
+            assert invocation_ids("workflow:no-such-workflow") == set()
+
+            self._delete(f"workflows/{copy.workflow_id}").raise_for_status()
+            self.dataset_populator.purge_history(other_history_id)
+            assert invocation_ids("workflow:copy") == {copy.invocation_id}
+            assert invocation_ids(f"history:'other {tag}'") == {copy.invocation_id}
+
+        response = self._get("invocations", data={"search": f"workflow:'{rna_name}'"})
+        self._assert_status_code_is(response, 200)
+        assert response.json() == []
+
+    def test_invocation_filtering_by_histories_in_any_state(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
+"""
+        with self._different_user_history(email=f"{uuid4()}@test.com") as active_id:
+            archived_id = self.dataset_populator.new_history()
+            deleted_id = self.dataset_populator.new_history()
+            purged_id = self.dataset_populator.new_history()
+            history_ids = [active_id, archived_id, deleted_id, purged_id]
+            invocation_ids = {
+                self._run_workflow(workflow, history_id=history_id, wait=False).invocation_id
+                for history_id in history_ids
+            }
+            self.dataset_populator.archive_history(archived_id).raise_for_status()
+            self.dataset_populator.delete_history(deleted_id)
+            self.dataset_populator.purge_history(purged_id)
+
+            search = " ".join(f"history_id:{history_id}" for history_id in history_ids)
+            response = self._get("invocations", data={"search": search})
+            self._assert_status_code_is(response, 200)
+            assert {invocation["id"] for invocation in response.json()} == invocation_ids
 
     def _assert_invocation_for_url_is(self, route, target_invocation=None):
         response = self._get(route)
