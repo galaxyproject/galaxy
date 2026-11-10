@@ -119,12 +119,9 @@ class BaseEmbeddedPulsarContainerIntegration(integration_util.IntegrationTestCas
                 self.dataset_populator.get_history_dataset_content(history_id, content_id=outputs[name]).strip()
                 for name in ("path", "md5")
             )
-            details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=bam["id"])
-            [index] = [meta_file for meta_file in details["meta_files"] if meta_file["file_type"] == "bam_index"]
-            index_response = self._get(index["download_url"].split("api/", 1)[1])
-            self._assert_status_code_is(index_response, 200)
+            index = self.dataset_populator.get_history_dataset_metadata_file(history_id, bam["id"], "bam_index")
         assert path.startswith(self.pulsar_staging_directory)
-        assert md5 == hashlib.md5(index_response.content).hexdigest()
+        assert md5 == hashlib.md5(index).hexdigest()
 
 
 class TestEmbeddedSingularityPulsarIntegration(
