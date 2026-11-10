@@ -70,6 +70,8 @@ jobs:
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
       - name: Install tox
         run: uv tool install tox --with tox-uv
+      - name: Prepare EngageQueue container test image
+        run: docker pull alpine:latest
       - name: Run tests
         run: tox -e "$TOX_ENV"
         env:
@@ -87,8 +89,98 @@ jobs:
         with:
           name: Unit test results (${{ matrix.python-version }})
           path: 'galaxy root/run_unit_tests.html'
+  engagequeue-macos:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
+    name: EngageQueue native (${{ matrix.runner }}, Python 3.12)
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15-intel
+            architecture: x86_64
+          - runner: macos-26
+            architecture: arm64
+    defaults:
+      run:
+        working-directory: galaxy
+    env:
+      CONDA_PKGS_DIRS: ${{ github.workspace }}/galaxy/.cache/conda/pkgs
+      PIP_CACHE_DIR: ${{ github.workspace }}/galaxy/.cache/pip
+      UV_CACHE_DIR: ${{ github.workspace }}/galaxy/.cache/uv
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: galaxy
+          persist-credentials: false
+      - name: Install Miniforge
+        run: |
+          if [ ! -x "$HOME/miniforge3/bin/conda" ]; then
+            curl -fsSL "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-$(uname -m).sh" -o "$RUNNER_TEMP/miniforge.sh"
+            bash "$RUNNER_TEMP/miniforge.sh" -b -p "$HOME/miniforge3"
+          fi
+      - name: Create project-local environment
+        run: '"$HOME/miniforge3/bin/conda" create -y -p "$PWD/.conda/galaxy" -c conda-forge python=3.12 pip'
+      - name: Install Galaxy test dependencies
+        # pytest-postgresql imports psycopg even for the SQLite cases. Bundle
+        # libpq through the binary extra, constrained by the test requirements.
+        run: |
+          .conda/galaxy/bin/python -m pip install "uv==$(awk '$1 == "uv" { print $2 }' .tool-versions)"
+          .conda/galaxy/bin/uv pip install --python .conda/galaxy/bin/python \
+            --extra-index-url https://wheels.galaxyproject.org/simple \
+            --index-strategy unsafe-best-match \
+            -r requirements.txt -r lib/galaxy/dependencies/pinned-test-requirements.txt \
+            'psycopg[binary]'
+      - name: Verify native macOS SDK installation
+        env:
+          EXPECTED_ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          .conda/galaxy/bin/python - <<'PY'
+          import os
+          import platform
+          import sys
+          from pathlib import Path
+
+          import engagequeue
+
+          assert sys.platform == "darwin", sys.platform
+          assert sys.version_info[:2] == (3, 12), sys.version
+          assert platform.machine() == os.environ["EXPECTED_ARCHITECTURE"], platform.machine()
+          assert engagequeue.__version__ == "0.1.1", engagequeue.__version__
+          assert Path(engagequeue.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
+          PY
+      - name: Exercise native execution and Galaxy completion
+        # No services or Docker image preload: real Docker cases skip when
+        # their daemon or cached image is unavailable; native cases still run.
+        run: |
+          export PATH="$PWD/.conda/galaxy/bin:$PATH"
+          export CONDA_PREFIX="$PWD/.conda/galaxy"
+          export GALAXY_VIRTUAL_ENV="$PWD/.conda/galaxy"
+          PYTHONPATH="$PWD/lib" .conda/galaxy/bin/python -m pytest -q \
+            test/unit/app/dependencies/test_deps.py \
+            test/unit/app/jobs/test_engagequeue*.py \
+            test/unit/app/jobs/test_startup_stop_legacy_safety.py \
+            test/unit/app/jobs/test_command_factory.py \
+            test/unit/app/jobs/test_command_factory_work_dir_outputs.py \
+            test/unit/app/jobs/test_set_metadata_failure.py \
+            test/unit/app/jobs/test_upload_finish.py \
+            test/unit/app/tools/test_evaluation.py \
+            test/unit/app/tools/test_wrappers.py \
+            test/unit/app/managers/test_interactivetool.py \
+            --junitxml=reports/engagequeue-macos.xml
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: EngageQueue native results (${{ matrix.runner }})
+          path: galaxy/reports/engagequeue-macos.xml
+          if-no-files-found: ignore
   report:
-    needs: [test]
+    needs: [test, engagequeue-macos]
     if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
     permissions:
       actions: read
@@ -98,7 +190,7 @@ jobs:
       title: Scheduled unit tests are failing
       labels: area/testing, kind/bug
       description: |-
-        The nightly run of the Python unit tests across every supported Python version failed.
+        The nightly Python unit tests or native macOS execution tests failed.
 
-        Pull requests to dev run the unit tests on the newest Python only; nightly runs cover every supported version. Release branches retain the oldest and newest versions.
+        Pull requests to dev run the unit tests on the newest Python only; nightly runs cover every supported version. Release branches retain the oldest and newest versions. Native EngageQueue integration also runs on Intel and Apple Silicon macOS with Python 3.12.
       needs: ${{ toJSON(needs) }}

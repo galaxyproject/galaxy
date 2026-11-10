@@ -25,6 +25,10 @@ class ComputeEnvironment(metaclass=ABCMeta):
     def __init__(self):
         self.materialized_objects: dict[str, DeferrableObjectsT] = {}
 
+    def input_collection_paths_and_metadata_files(self, collection) -> list[list[Any]] | None:
+        """Optionally rewrite the paths used by a collection manifest."""
+        return None
+
     @abstractmethod
     def output_names(self):
         """Output unqualified filenames defined by job."""

@@ -6,6 +6,7 @@ fluent-logger
 sentry-sdk>=2.63.0
 pbs_python
 drmaa
+engagequeue==0.1.1
 statsd
 azure-storage-blob==12.19.1
 python-irodsclient==2.0.0

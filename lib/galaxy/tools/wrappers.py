@@ -478,7 +478,13 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
     @property
     def all_metadata_files(self) -> list[tuple[str, str]]:
-        return self.unsanitized.get_metadata_file_paths_and_extensions() if self else []
+        files = self.unsanitized.get_metadata_file_paths_and_extensions() if self else []
+        if self.compute_environment and self.__io_type == "input":
+            return [
+                (extension, self.compute_environment.input_metadata_rewrite(self.unsanitized, path) or path)
+                for extension, path in files
+            ]
+        return files
 
     def serialize(self, invalid_chars: Sequence[str] = ("/",)) -> dict[str, Any]:
         return data_input_to_staging_path_and_source_path(self, invalid_chars=invalid_chars) if self else {}
@@ -791,7 +797,11 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     ) -> list[list[Any]]:
         if self._element_identifiers_extensions_paths_and_metadata_files is None:
             if self.collection:
-                result = self.collection.element_identifiers_extensions_paths_and_metadata_files
+                environment = self.kwargs.get("compute_environment")
+                rewrite = getattr(environment, "input_collection_paths_and_metadata_files", None)
+                result = rewrite(self.collection) if rewrite else None
+                if result is None:
+                    result = self.collection.element_identifiers_extensions_paths_and_metadata_files
                 self._element_identifiers_extensions_paths_and_metadata_files = result
                 return result
             else:

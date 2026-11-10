@@ -344,9 +344,25 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             self.job_wrapper(job).fail(
                 "This tool was disabled before the job completed.  Please contact your Galaxy administrator."
             )
-        elif job.copied_from_job_id:
+        elif job.state in (model.Job.states.STOPPING, model.Job.states.STOPPED) and job.job_runner_name is None:
+            # A never-dispatched stop must not become a fresh submission.
+            job.set_state(model.Job.states.STOPPED)
+        elif job.copied_from_job_id and job.state not in (model.Job.states.STOPPING, model.Job.states.STOPPED):
             self.queue.put((job.id, job.tool_id))
         elif job.job_runner_name is not None and job.job_runner_external_id is None:
+            runner = self.dispatcher.job_runners.get(job.job_runner_name.split(":", 1)[0])
+            if getattr(runner, "recovers_without_external_id", False):
+                # The runner owns a durable acceptance key and can resolve its
+                # attempt without losing a concurrently committed stop intent.
+                job_wrapper = self.__recover_job_wrapper(job)
+                self.dispatcher.recover(job, job_wrapper)
+                return
+            if job.state in (model.Job.states.STOPPING, model.Job.states.STOPPED):
+                # Legacy recover methods may submit when no external ID exists.
+                # A committed stop must never enter that fresh admission path.
+                job.set_state(model.Job.states.STOPPED)
+                self.dispatcher.stop(job, self.__recover_job_wrapper(job))
+                return
             # This could happen during certain revisions of Galaxy where a runner URL was persisted before the job was dispatched to a runner.
             log.debug(f"({job.id}) Job runner assigned but no external ID recorded, adding to the job handler queue")
             job.job_runner_name = None

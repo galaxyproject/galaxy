@@ -418,6 +418,166 @@ helper isolation, crash recovery, and cancellation:
 python -m pytest test/integration/test_htcondor_runner.py -k "not Container" -v
 ```
 
+### EngageQueue local execution
+
+The optional [EngageQueue](https://github.com/BlankenbergLab/engagequeue) Python
+package provides persistent local execution. Select
+`galaxy.jobs.runners.engagequeue:EngageQueueJobRunner`. The runner uses its Python
+API directly. Accepted commands and their metadata processing run in independent
+supervisors; closing Galaxy releases its client handles while the execution
+scheduler continues admitting queued jobs.
+
+Galaxy's conditional dependency installer selects the public `engagequeue==0.1.1`
+release when this runner is configured. For a manually managed framework
+environment, install it with that environment's Python:
+
+```console
+python -m pip install engagequeue==0.1.1
+```
+
+Local execution supports Linux and macOS. Linux native supervision owns
+daemonized descendants through a subreaper. On macOS, tools must stay in the
+foreground and keep their descendants in the command's original process group;
+jobs that daemonize, double-fork, or create a new process session require a
+different execution environment. Systemd pools are Linux-only. Tool dependencies
+must be compatible with the execution host, and foreground Apptainer execution
+requires a Linux host.
+
+This runner uses EngageQueue's local `Executor`; its `state_dir` must describe
+local state. EngageQueue's separate managed Docker execution mode and
+`DockerExecutor` are not selected by this runner. A managed `state_dir` fails
+configuration before submission. Ordinary Docker tool execution on the local
+host remains supported, with Docker Desktop required on macOS.
+
+The SDK remains optional for deployments using other runners. Changing an
+existing execution runtime requires draining its active work and restarting that
+runtime with the selected installation.
+
+Configure the state directory on persistent local storage. Each named pool has a
+shared FIFO queue and concurrency limit across Galaxy handlers and standalone
+EngageQueue clients. A positive `max_concurrent_jobs` bounds executions; `0` or
+`null` is unbounded, and `"*"` uses the host CPU count. Configuration for an
+existing pool must agree across handlers.
+
+```yaml
+runners:
+  engagequeue:
+    load: galaxy.jobs.runners.engagequeue:EngageQueueJobRunner
+    workers: 4
+    state_dir: /srv/galaxy/execution-state
+
+execution:
+  environments:
+    local_batch:
+      runner: engagequeue
+      pool: batch
+      max_concurrent_jobs: 4
+      backend: native
+      outputs_to_working_directory: true
+      cleanup_job: onsuccess
+    local_uploads:
+      runner: engagequeue
+      pool: uploads
+      max_concurrent_jobs: 0
+      embed_metadata_in_job: true
+      metadata_strategy: extended
+      outputs_to_working_directory: true
+      cleanup_job: onsuccess
+    local_metadata:
+      runner: engagequeue
+      pool: batch
+      max_concurrent_jobs: 4
+      dependency_resolution: none
+      metadata_strategy: directory
+      outputs_to_working_directory: false
+      cleanup_job: onsuccess
+
+tools:
+  - id: upload1
+    environment: local_uploads
+  - id: __DATA_FETCH__
+    environment: local_uploads
+  - id: __SET_METADATA__
+    environment: local_metadata
+```
+
+Standard tools retain Galaxy's dependency and container resolution. Set
+`outputs_to_working_directory: true` to write intermediate outputs into the job
+directory and import them into the permanent object store after execution.
+Resource environment variables such as `GALAXY_SLOTS` advertise allocation; use
+destination `cpus` and `memory_mb` to request backend resource controls. Native
+supervision treats these as hints; select `require_hard_limits: true` to reject
+execution unless the backend can enforce the requested limits.
+The optional `systemd` backend requires a working user service manager and does
+not silently fall back to native supervision.
+
+Upload/fetch destinations require extended metadata embedded in the accepted
+execution. The runner adopts Galaxy's opt-in transactional upload completion,
+preserving output identities and resuming committed phases after handler
+restart. Existing restrictions on custom completion hooks, post-job actions,
+and external publication still apply. Standalone metadata uses the framework
+interpreter and datatype registry and imports results into its existing input
+dataset. Its zero-output command does not receive a second output-metadata pass.
+
+Docker and foreground Apptainer jobs use the same runner. Docker commands carry
+an execution ownership label so cancellation can verify the daemon-owned
+container as well as the local launcher. Interactive runtime ports are saved
+atomically and callback publication retries while the container remains active,
+including across long Galaxy outages. Revoked entry points stay revoked.
+Interactive Docker commands also mount their selected dataset files, metadata
+sidecars and extra-files directories read-only at their original paths, including
+collection and materialized inputs. Configure explicit `docker_volumes` for
+interactive tools to restrict other mounts while keeping working, output and
+temporary directories writable. Avoid `$storage`, `$defaults` or parent-directory
+mounts when they would expose unrelated datasets or Galaxy configuration.
+
+Set `stage_inputs: true` on a runner or destination when the container daemon
+cannot read the permanent store, such as a root-squashed network filesystem.
+Galaxy snapshots the selected inputs, paired extra-files directories and
+metadata sidecars under the job's local `inputs` directory. Normal evaluator
+hooks rewrite scalar, collection, materialized and collection-manifest paths
+to those copies. The accepted attempt retains its prepared snapshot across
+recovery. Configure explicit container volumes that expose the job inputs
+read-only and working/output/temp directories read-write, omitting `$storage`
+and other permanent-store mounts. Internal extra-file symlinks remain within
+the copied tree; links escaping the selected directory fail preparation.
+
+Stopping an interactive tool requests termination of its verified tool
+container while the accepted shell continues collecting saved files and running
+metadata. Deleting the job cancels the entire execution. A durable stop receipt
+must confirm ownership and the expected signal before a conventional container
+termination code is accepted as a successful user stop; uncertain or out-of-memory
+termination remains a failure with retained diagnostics. Leave
+`track_jobs_in_database: true` (the default) to recover interactive completion
+when Galaxy restarts after Stop and before metadata import finishes. This path
+requires an EngageQueue build providing `stop_container`, stop receipts and
+`ContainerSpec.remove_on_exit`. The native runner disables Docker auto-removal
+only for the interactive tool container, preserving final exit/OOM evidence even
+when the application requires SIGKILL. The independent supervisor removes that
+verified, stopped container after the full command and metadata execution have
+finished. Metadata containers and ordinary Docker tools retain their existing
+auto-removal behavior. Unknown exit/OOM evidence still cannot authorize exit-137
+normalization.
+Stop intent is published durably before resolving an accepted execution, so a
+monitor callback or restart that precedes the handler's Stop queue preserves the
+same graceful request. Repeated callbacks cannot replace its original identity
+or turn it into a hard cancellation. Database job tracking must remain enabled
+to recover either STOPPING or STOPPED interactive jobs after restart.
+
+Galaxy cancellation requests remain pending until EngageQueue confirms that
+owned writers stopped. Failed or uncertain attempts retain working files for
+inspection. Successful cleanup follows dataset/metadata import and, for uploads,
+the final completion receipt. EngageQueue's record pruning does not delete
+Galaxy workspaces. Keep the prior runner configured until its active jobs drain
+when introducing new destinations; execution state is not converted implicitly.
+
+The independent runtime must be outside any service cgroup or container that is
+stopped together with Galaxy. Use EngageQueue's standalone service/attachment
+configuration and `attach_only: true` on the runner or destination for that
+deployment boundary. Host reboot survival is not a
+promise that running commands continue; subsequent attachment reconciles lost
+executions without replaying their commands.
+
 ### Pulsar
 
 Runs jobs via Galaxy [Pulsar](https://pulsar.readthedocs.io/). Pulsar does not require an existing cluster or a shared filesystem and can also run jobs on Windows hosts. It also has the ability to interface with all of the DRMs supported by Galaxy. Pulsar provides a much looser coupling between Galaxy job execution and the Galaxy server host than is possible with Galaxy's native job execution code.

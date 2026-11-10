@@ -20,16 +20,36 @@ GetIpCallable = Callable[[], str]
 
 
 def parse_ports(container_name, connection_configuration):
-    while True:
-        ports_command = docker_util.build_docker_simple_command(
-            "port", container_name=container_name, **connection_configuration
-        )
-        with tempfile.TemporaryFile(prefix="docker_port_") as stdout_file:
-            exit_code = subprocess.call(ports_command, shell=True, stdout=stdout_file, preexec_fn=os.setpgrp)
-            if exit_code == 0:
-                stdout_file.seek(0)
-                ports_raw = stdout_file.read().decode("utf-8")
-                return ports_raw
+    command = docker_util.command_list("port", [container_name], **connection_configuration)
+    result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+    return result.stdout if result.returncode == 0 and result.stdout.strip() else None
+
+
+def container_running(container_name, connection_configuration):
+    """Return None for unavailable Docker, rather than treating it as exit."""
+    command = docker_util.command_list("inspect", [container_name], **connection_configuration)
+    result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+    if result.returncode:
+        if "no such" in result.stderr.lower():
+            return False
+        return None
+    rows = json.loads(result.stdout)
+    return bool(rows and rows[0].get("State", {}).get("Running"))
+
+
+def write_runtime(ports):
+    """Publish a complete runtime snapshot for recovery without a callback."""
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", prefix=".container-runtime-", dir=".", delete=False) as stream:
+            temporary = stream.name
+            json.dump(ports, stream)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, "container_runtime.json")
+    finally:
+        if temporary and os.path.exists(temporary):
+            os.unlink(temporary)
 
 
 def get_ip_command(cmd) -> str:
@@ -62,9 +82,15 @@ def main():
     else:
         _get_ip = get_ip
 
-    ports_raw = None
     exc_traceback = ""
-    for i in range(10):
+    attempt = 0
+    ports_found = False
+    started = time.monotonic()
+    exit_code_path = container_config.get("job_exit_code_file")
+    startup_timeout = container_config.get("startup_timeout", None if exit_code_path else 300)
+    if startup_timeout is not None:
+        startup_timeout = float(startup_timeout)
+    while True:
         try:
             ports_raw = parse_ports(container_name, connection_configuration)
             if ports_raw is not None:
@@ -74,22 +100,36 @@ def main():
                     for key in ports:
                         if ports[key]["host"] == "0.0.0.0":
                             ports[key]["host"] = host_ip
+                # Recovery can consume this even when callbacks are disabled or
+                # Galaxy is down longer than the former ten-attempt window.
+                write_runtime(ports)
+                ports_found = True
                 if callback_url:
                     r = requests.post(callback_url, json={"container_runtime": ports}, timeout=DEFAULT_SOCKET_TIMEOUT)
                     r.raise_for_status()
-                else:
-                    with open("container_runtime.json", "w") as f:
-                        json.dump(ports, f)
+                exc_traceback = ""
                 break
             else:
                 raise Exception("Failed to recover ports...")
         except Exception:
             exc_info = sys.exc_info()
             exc_traceback = "".join(traceback.format_exception(*exc_info))
-        time.sleep(i * 2)
-    else:
-        with open("container_monitor_exception.txt", "w") as f:
-            f.write(exc_traceback)
+        try:
+            running = container_running(container_name, connection_configuration)
+        except Exception:
+            running = None
+        if exit_code_path and os.path.exists(exit_code_path):
+            break
+        expired = startup_timeout is not None and time.monotonic() - started >= startup_timeout
+        if running is False and (ports_found or expired):
+            break
+        if not ports_found and expired:
+            break
+        attempt += 1
+        time.sleep(min(10, attempt * 2))
+    if exc_traceback:
+        with open("container_monitor_exception.txt", "w") as stream:
+            stream.write(exc_traceback)
 
 
 if __name__ == "__main__":
