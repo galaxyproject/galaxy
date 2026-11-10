@@ -45,7 +45,7 @@ async function getData(
                 sort_by: sort_by as SortKeyLiteral,
                 sort_desc,
                 user_id: userStore.currentUser.id,
-                workflow_id: [workflowId],
+                workflow_id: workflowId,
             },
         },
     });

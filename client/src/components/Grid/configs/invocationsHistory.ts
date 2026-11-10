@@ -45,7 +45,7 @@ async function getData(
                 sort_desc,
                 user_id: userStore.currentUser.id,
                 include_nested_invocations: false,
-                history_id: [historyId],
+                history_id: historyId,
             },
         },
     });
