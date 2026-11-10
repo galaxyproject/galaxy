@@ -4410,6 +4410,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/oauth/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get a token for an approved OAuth device flow login
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        post: operations["token_api_oauth_token_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/object_store_instances": {
         parameters: {
             query?: never;
@@ -8870,6 +8890,24 @@ export interface components {
             /** Workflow Url */
             workflow_url?: string | null;
         };
+        /** Body_token_api_oauth_token_post */
+        Body_token_api_oauth_token_post: {
+            /**
+             * Client Id
+             * @description Required. ID of the app that started the login.
+             */
+            client_id?: string | null;
+            /**
+             * Device Code
+             * @description Required. The device code from the device authorization.
+             */
+            device_code?: string | null;
+            /**
+             * Grant Type
+             * @description Required. Must be `urn:ietf:params:oauth:grant-type:device_code`.
+             */
+            grant_type?: string | null;
+        };
         /** BooleanParameterModel */
         BooleanParameterModel: {
             /**
@@ -12775,6 +12813,34 @@ export interface components {
              * @description Page where the user enters the code.
              */
             verification_uri: string;
+        };
+        /**
+         * DeviceTokenResponse
+         * @description Token issued once the user approves a device flow login (RFC 6749 §5.1).
+         */
+        DeviceTokenResponse: {
+            /**
+             * Access Token
+             * @description Token the app sends with its Galaxy API requests.
+             */
+            access_token: string;
+            /**
+             * Expires In
+             * @description Seconds until the token expires. Left out if it does not expire.
+             */
+            expires_in?: number | null;
+            /**
+             * Scope
+             * @description Space-separated scopes the token grants.
+             */
+            scope?: string | null;
+            /**
+             * Token Type
+             * @description Always `Bearer`.
+             * @default Bearer
+             * @constant
+             */
+            token_type: "Bearer";
         };
         /** DirectoryUriParameterModel */
         DirectoryUriParameterModel: {
@@ -47986,6 +48052,60 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    token_api_oauth_token_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_token_api_oauth_token_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceTokenResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthErrorResponse"];
+                };
             };
             /** @description Request Error */
             "4XX": {

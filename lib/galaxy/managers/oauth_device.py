@@ -8,6 +8,7 @@ from datetime import timedelta
 from sqlalchemy import (
     exists,
     select,
+    update,
 )
 
 from galaxy import model
@@ -30,6 +31,10 @@ KNOWN_APPS: dict[str, str] = {
 # Seconds a device login stays valid, and the minimum seconds between token requests.
 DEVICE_CODE_EXPIRES_IN = 900
 POLLING_INTERVAL = 5
+
+# The `grant_type` RFC 8628 §3.4 defines for device flow token requests. OAuth has a single token
+# endpoint for every kind of grant, so the app names which one it is using with this standard URN.
+DEVICE_CODE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code"
 
 # Consonants only, so codes are easy to read and type and can't spell words (RFC 8628 §6.1).
 USER_CODE_ALPHABET = "BCDFGHJKLMNPQRSTVWXZ"
@@ -126,6 +131,48 @@ class OAuthDeviceManager:
         if authorization.status != OAuthDeviceAuthorization.statuses.PENDING:
             raise Conflict("This code has already been used.")
         return authorization
+
+    def respond_to_poll(self, client_id: str, device_code: str) -> IssuedToken:
+        """Respond to an app's poll for a device login, returning a token once the user has approved it.
+
+        Raises the RFC 8628 §3.5 errors until then. A device code gets at most one token.
+        """
+        self.get_app_name(client_id)
+        statuses = OAuthDeviceAuthorization.statuses
+        stmt = select(OAuthDeviceAuthorization).where(
+            OAuthDeviceAuthorization.device_code_hash == hash_device_code(device_code)
+        )
+        authorization = self.sa_session.scalars(stmt).first()
+        if authorization is None or authorization.client_id != client_id or authorization.status == statuses.USED:
+            raise OAuthError(OAuthErrorCode.INVALID_GRANT, "Unknown or already used device_code.")
+        if authorization.expires_at <= now():
+            raise OAuthError(OAuthErrorCode.EXPIRED_TOKEN, "The device_code has expired.")
+
+        last_polled_at = authorization.last_polled_at
+        authorization.last_polled_at = now()
+        self.sa_session.commit()
+        if last_polled_at and authorization.last_polled_at - last_polled_at < timedelta(seconds=POLLING_INTERVAL):
+            raise OAuthError(OAuthErrorCode.SLOW_DOWN, f"Wait at least {POLLING_INTERVAL} seconds between requests.")
+        if authorization.status == statuses.PENDING:
+            raise OAuthError(OAuthErrorCode.AUTHORIZATION_PENDING, "The user has not approved the login yet.")
+        if authorization.status == statuses.DENIED:
+            raise OAuthError(OAuthErrorCode.ACCESS_DENIED, "The user denied the login.")
+
+        # Only the request that moves the row from approved to used gets the token, even if two arrive at once.
+        mark_used = (
+            update(OAuthDeviceAuthorization)
+            .where(
+                OAuthDeviceAuthorization.id == authorization.id, OAuthDeviceAuthorization.status == statuses.APPROVED
+            )
+            .values(status=statuses.USED)
+            .returning(OAuthDeviceAuthorization.id)
+        )
+        marked_id = self.sa_session.scalar(mark_used)
+        self.sa_session.commit()
+        if marked_id is None:
+            raise OAuthError(OAuthErrorCode.INVALID_GRANT, "Unknown or already used device_code.")
+        assert authorization.user, "An approved device login always has a user."
+        return self.issue_token(authorization.user, client_id, authorization.scope)
 
     def issue_token(self, user: model.User, client_id: str, scope: str | None) -> IssuedToken:
         """Issue a token for a user who approved a device flow login.

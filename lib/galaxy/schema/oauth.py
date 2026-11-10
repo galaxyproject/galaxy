@@ -2,11 +2,13 @@
 
 Field names follow the OAuth specifications, since standard OAuth libraries read them as is:
 - Device authorization response: https://datatracker.ietf.org/doc/html/rfc8628#section-3.2
+- Token response: https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
 - Error response: https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
 - Device flow error codes: https://datatracker.ietf.org/doc/html/rfc8628#section-3.5
 """
 
 from enum import Enum
+from typing import Literal
 
 from pydantic import Field
 
@@ -40,6 +42,15 @@ class DeviceAuthorizationResponse(Model):
     verification_uri: str = Field(..., description="Page where the user enters the code.")
     expires_in: int = Field(..., description="Seconds until both codes expire.")
     interval: int = Field(..., description="Minimum seconds the app waits between token requests.")
+
+
+class DeviceTokenResponse(Model):
+    """Token issued once the user approves a device flow login (RFC 6749 §5.1)."""
+
+    access_token: str = Field(..., description="Token the app sends with its Galaxy API requests.")
+    token_type: Literal["Bearer"] = Field("Bearer", description="Always `Bearer`.")
+    expires_in: int | None = Field(None, description="Seconds until the token expires. Left out if it does not expire.")
+    scope: str | None = Field(None, description="Space-separated scopes the token grants.")
 
 
 class OAuthErrorResponse(Model):
