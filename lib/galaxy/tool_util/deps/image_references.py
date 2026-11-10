@@ -6,6 +6,7 @@ canonicalized like the Docker CLI does (``python:3.13`` is
 than string prefixes. ``registry-1.docker.io``, the host that serves Docker
 Hub's registry API, is canonicalized to ``docker.io`` as well, which the
 Docker CLI does not do, so a denied Docker Hub image cannot be named through it.
+For the same reason an explicit default HTTPS port (``quay.io:443``) is dropped.
 
 Allowlist entries: ``*`` allows anything; ``<registry-or-path>/*`` allows any
 repository below it, at any depth; ``<repository>`` allows any tag or digest of
@@ -56,7 +57,8 @@ def _split_name(value: str, name: str, namespace: bool = False) -> tuple[str, st
     ):
         if not _REGISTRY_RE.fullmatch(components[0]):
             raise ImageReferenceError(f"'{value}' has an invalid registry '{components[0]}'")
-        registry = components[0].lower()
+        # Registries are served over HTTPS, so an explicit :443 names the same registry.
+        registry = components[0].lower().removesuffix(":443")
         registry = DOCKER_HUB if registry in DOCKER_HUB_ALIASES else registry
         components = components[1:]
     else:

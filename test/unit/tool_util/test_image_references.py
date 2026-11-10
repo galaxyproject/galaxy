@@ -22,6 +22,8 @@ SHA_B = "sha256:" + "b" * 64
         ("Quay.IO/biocontainers/samtools", ImageReference("quay.io", "biocontainers/samtools")),
         ("localhost/x", ImageReference("localhost", "x")),
         ("localhost:5000/x:1", ImageReference("localhost:5000", "x", tag="1")),
+        ("quay.io:443/biocontainers/samtools", ImageReference("quay.io", "biocontainers/samtools")),
+        ("docker.io:443/busybox", ImageReference("docker.io", "library/busybox")),
         (f"ghcr.io/org/img:1.2@{SHA_A}", ImageReference("ghcr.io", "org/img", tag="1.2", digest=SHA_A)),
     ],
 )
@@ -97,6 +99,7 @@ def test_container_allowlist_rejects_malformed_entries(entry):
         (["quay.io/org/*"], ["quay.io/org/bad"], "quay.io/org/bad:1", False),
         (["quay.io/org/*"], ["quay.io/org/bad"], f"quay.io/org/bad@{SHA_A}", False),
         (["quay.io/org/*"], ["quay.io/org/bad"], "quay.io/org/good:1", True),
+        (["*"], ["quay.io/org/bad"], "quay.io:443/org/bad:1", False),
         (["quay.io/org/*"], ["quay.io/org/sub/*"], "quay.io/org/sub/x:1", False),
         (["*"], ["busybox"], "docker.io/library/busybox:1", False),
         (["*"], ["busybox"], "python:3.13", True),

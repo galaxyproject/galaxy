@@ -150,7 +150,7 @@ user_defined_tool_allowed_containers:
 
 Each entry and each tool's `container` are parsed into registry, repository, tag and digest and compared part by part, never as string prefixes:
 
-- An unqualified name is on Docker Hub, and a single-component Docker Hub name is in `library/`: `python:3.13` is `docker.io/library/python:3.13`. A `docker://` prefix is ignored, and registry host names are compared case-insensitively.
+- An unqualified name is on Docker Hub, and a single-component Docker Hub name is in `library/`: `python:3.13` is `docker.io/library/python:3.13`. A `docker://` prefix and an explicit `:443` port are ignored, and registry host names are compared case-insensitively.
 - `<registry>/<path>/*` allows any repository strictly below `<path>` on that registry. `quay.io/biocontainers/*` does not allow `quay.io/biocontainers-evil/x`, `quay.io.evil.com/biocontainers/x`, or `quay.io/biocontainers` itself. `<registry>/*` allows a whole registry, and `<path>/*` without a registry a Docker Hub namespace.
 - An entry with a tag allows only references with that tag and without a digest. An entry with a digest allows only references with that digest, whatever tag they also carry. Container runtimes pull the digest of a reference that has both and ignore its tag, so a tag entry cannot allow `image:<tag>@<any digest>`.
 - References with any other scheme, such as `oras://`, never match: user-defined tool images are Docker image references, which the explicit Singularity resolvers pull with a `docker://` prefix.
