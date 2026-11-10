@@ -1,6 +1,12 @@
 """Integration tests for the OAuth 2.0 device flow endpoints (RFC 8628)."""
 
+import time
+
+from galaxy.managers.oauth_device import POLLING_INTERVAL
 from galaxy_test.driver import integration_util
+
+# Written out, not imported, so the tests check the exact value RFC 8628 §3.4 requires.
+DEVICE_CODE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code"
 
 
 class TestOAuthDeviceFlow(integration_util.IntegrationTestCase):
@@ -58,6 +64,62 @@ class TestOAuthDeviceFlow(integration_util.IntegrationTestCase):
         response = self._put(f"oauth/device_authorization/{user_code}", data={"approve": True}, anon=True, json=True)
         self._assert_status_code_is(response, 403)
 
+    def test_token(self):
+        started = self._start_device_authorization(scope="histories:read").json()
+        self._decide_device_authorization(started["user_code"], approve=True)
+        response = self._token(started["device_code"])
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Cache-Control"] == "no-store"
+        body = response.json()
+        assert body["token_type"] == "Bearer"
+        assert body["scope"] == "histories:read"
+        assert "expires_in" not in body
+
+        # The token works with the Galaxy API, as the user who approved the login.
+        me = self._get("users/current", key=body["access_token"]).json()
+        assert me["id"] == self._get("users/current").json()["id"]
+
+    def test_token_used_twice(self):
+        started = self._start_device_authorization().json()
+        self._decide_device_authorization(started["user_code"], approve=True)
+        self._assert_status_code_is(self._token(started["device_code"]), 200)
+        self._assert_oauth_error(self._token(started["device_code"]), "invalid_grant")
+
+    def test_token_pending_then_slow_down(self):
+        device_code = self._start_device_authorization().json()["device_code"]
+        self._assert_oauth_error(self._token(device_code), "authorization_pending")
+        self._assert_oauth_error(self._token(device_code), "slow_down")
+
+    def test_token_polling_until_approved(self):
+        # Polls at the given interval, as an app would, while the user takes their time to approve.
+        started = self._start_device_authorization().json()
+        self._assert_oauth_error(self._token(started["device_code"]), "authorization_pending")
+        time.sleep(POLLING_INTERVAL)
+        self._assert_oauth_error(self._token(started["device_code"]), "authorization_pending")
+        self._decide_device_authorization(started["user_code"], approve=True)
+        time.sleep(POLLING_INTERVAL)
+        self._assert_status_code_is(self._token(started["device_code"]), 200)
+
+    def test_token_denied(self):
+        started = self._start_device_authorization().json()
+        self._decide_device_authorization(started["user_code"], approve=False)
+        self._assert_oauth_error(self._token(started["device_code"]), "access_denied")
+
+    def test_token_unknown_device_code(self):
+        self._assert_oauth_error(self._token("not-a-real-device-code"), "invalid_grant")
+
+    def test_token_unknown_app(self):
+        device_code = self._start_device_authorization().json()["device_code"]
+        self._assert_oauth_error(self._token(device_code, client_id="evil-app"), "invalid_client")
+
+    def test_token_unsupported_grant_type(self):
+        response = self._token("x", grant_type="password")
+        self._assert_oauth_error(response, "unsupported_grant_type")
+
+    def test_token_missing_fields(self):
+        response = self._post("oauth/token", data={"client_id": "galaxy-cli"}, anon=True)
+        self._assert_oauth_error(response, "invalid_request")
+
     def _start_device_authorization(self, client_id="galaxy-cli", scope=None):
         data = {"client_id": client_id}
         if scope:
@@ -67,6 +129,10 @@ class TestOAuthDeviceFlow(integration_util.IntegrationTestCase):
 
     def _decide_device_authorization(self, user_code, approve):
         return self._put(f"oauth/device_authorization/{user_code}", data={"approve": approve}, json=True)
+
+    def _token(self, device_code, client_id="galaxy-cli", grant_type=DEVICE_CODE_GRANT_TYPE):
+        data = {"grant_type": grant_type, "device_code": device_code, "client_id": client_id}
+        return self._post("oauth/token", data=data, anon=True)
 
     def _assert_oauth_error(self, response, error):
         self._assert_status_code_is(response, 400)
@@ -78,4 +144,6 @@ class TestOAuthDeviceFlowDisabled(integration_util.IntegrationTestCase):
         response = self._post("oauth/device_authorization", data={"client_id": "galaxy-cli"}, anon=True)
         self._assert_status_code_is(response, 404)
         response = self._put("oauth/device_authorization/BBBB-BBBB", data={"approve": True}, json=True)
+        self._assert_status_code_is(response, 404)
+        response = self._post("oauth/token", data={"client_id": "galaxy-cli"}, anon=True)
         self._assert_status_code_is(response, 404)

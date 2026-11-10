@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import select
@@ -12,9 +13,11 @@ from galaxy.managers.oauth_device import (
     DEVICE_CODE_EXPIRES_IN,
     generate_user_code,
     hash_device_code,
+    KNOWN_APPS,
     normalize_user_code,
     OAuthDeviceManager,
     OAuthError,
+    POLLING_INTERVAL,
     USER_CODE_ALPHABET,
 )
 from galaxy.model import OAuthDeviceAuthorization
@@ -87,12 +90,75 @@ class TestOAuthDeviceManager(BaseTestCase):
         with pytest.raises(Conflict, match="already been used"):
             self.manager.decide(user_code, self.admin_user, approve=True)
 
+    def test_poll_approved(self):
+        started = self._start_authorization(scope="histories:read")
+        self.manager.decide(started.authorization.user_code, self.admin_user, approve=True)
+        token = self.manager.respond_to_poll("galaxy-cli", started.device_code)
+        assert token.access_token == self.app[ApiKeyManager].get_or_create_api_key(self.admin_user)
+        assert token.scope == "histories:read"
+        assert started.authorization.status == statuses.USED
+
+    def test_poll_used_code_refused(self):
+        started = self._start_authorization()
+        self.manager.decide(started.authorization.user_code, self.admin_user, approve=True)
+        self.manager.respond_to_poll("galaxy-cli", started.device_code)
+        self._assert_poll_error(started.device_code, OAuthErrorCode.INVALID_GRANT)
+
+    def test_poll_pending(self):
+        started = self._start_authorization()
+        self._assert_poll_error(started.device_code, OAuthErrorCode.AUTHORIZATION_PENDING)
+        assert started.authorization.last_polled_at is not None
+
+    def test_poll_slow_down(self):
+        started = self._start_authorization()
+        self._assert_poll_error(started.device_code, OAuthErrorCode.AUTHORIZATION_PENDING)
+        self._assert_poll_error(started.device_code, OAuthErrorCode.SLOW_DOWN)
+
+    def test_poll_pending_after_waiting(self):
+        started = self._start_authorization()
+        self._assert_poll_error(started.device_code, OAuthErrorCode.AUTHORIZATION_PENDING)
+        started.authorization.last_polled_at = now() - timedelta(seconds=POLLING_INTERVAL)
+        self.trans.sa_session.commit()
+        self._assert_poll_error(started.device_code, OAuthErrorCode.AUTHORIZATION_PENDING)
+
+    def test_poll_denied(self):
+        started = self._start_authorization()
+        self.manager.decide(started.authorization.user_code, self.admin_user, approve=False)
+        self._assert_poll_error(started.device_code, OAuthErrorCode.ACCESS_DENIED)
+
+    def test_poll_expired_even_if_approved(self):
+        started = self._start_authorization()
+        self.manager.decide(started.authorization.user_code, self.admin_user, approve=True)
+        started.authorization.expires_at = now() - timedelta(seconds=1)
+        self.trans.sa_session.commit()
+        self._assert_poll_error(started.device_code, OAuthErrorCode.EXPIRED_TOKEN)
+
+    def test_poll_unknown_device_code(self):
+        self._assert_poll_error("not-a-real-device-code", OAuthErrorCode.INVALID_GRANT)
+
+    def test_poll_unknown_app(self):
+        started = self._start_authorization()
+        self._assert_poll_error(started.device_code, OAuthErrorCode.INVALID_CLIENT, client_id="evil-app")
+
+    def test_poll_device_code_of_another_app(self):
+        started = self._start_authorization()
+        with patch.dict(KNOWN_APPS, {"other-app": "Other App"}):
+            self._assert_poll_error(started.device_code, OAuthErrorCode.INVALID_GRANT, client_id="other-app")
+
     def _start(self) -> str:
         return self.manager.start_authorization("galaxy-cli", None, None).authorization.user_code
 
     def _get(self, user_code: str) -> OAuthDeviceAuthorization:
         stmt = select(OAuthDeviceAuthorization).where(OAuthDeviceAuthorization.user_code == user_code)
         return self.trans.sa_session.scalars(stmt).one()
+
+    def _start_authorization(self, scope=None):
+        return self.manager.start_authorization("galaxy-cli", scope, None)
+
+    def _assert_poll_error(self, device_code, error, client_id="galaxy-cli"):
+        with pytest.raises(OAuthError) as e:
+            self.manager.respond_to_poll(client_id, device_code)
+        assert e.value.error == error
 
 
 def test_generate_user_code():
