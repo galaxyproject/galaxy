@@ -6456,6 +6456,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_oauth_device_flow``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable the OAuth 2.0 device flow (RFC 8628), which lets an
+    external app such as a command-line tool log in to Galaxy for a
+    user. The app shows the user a short code, the user enters it at
+    /login/device after logging in to Galaxy, and approves or denies
+    the access the app asked for.
+    This feature is experimental and disabled by default.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``expired_notifications_cleanup_interval``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -3530,6 +3530,14 @@ galaxy:
   # base URL.
   #mcp_server_path: /api/mcp
 
+  # Enable the OAuth 2.0 device flow (RFC 8628), which lets an external
+  # app such as a command-line tool log in to Galaxy for a user. The app
+  # shows the user a short code, the user enters it at /login/device
+  # after logging in to Galaxy, and approves or denies the access the
+  # app asked for.
+  # This feature is experimental and disabled by default.
+  #enable_oauth_device_flow: false
+
   # The interval in seconds between attempts to delete all expired
   # notifications from the database (every 24 hours by default). Runs in
   # a Celery task.
