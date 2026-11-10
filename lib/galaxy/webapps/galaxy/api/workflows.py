@@ -548,7 +548,10 @@ class WorkflowsAPIController(
                     )
                 except MissingToolsException as e:
                     details = "; ".join(e.errors)
-                    raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed."f" Details: {details}") from e
+                    raise exceptions.MessageException(
+                        "This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed."
+                        f" Details: {details}"
+                    ) from e
 
         else:
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
