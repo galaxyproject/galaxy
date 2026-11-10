@@ -25,8 +25,12 @@ const settings = ref({
     height: 600,
 });
 
-// empty or partial number input emits ""; keep the last size
-function toSize(value: string | null, current: number) {
+// v-model casts a type="number" input's value to a number, but an empty or partial
+// number ("-", "1e") comes through as ""; keep the last size then
+function toSize(value: string | number | null, current: number) {
+    if (typeof value === "number") {
+        return value;
+    }
     const size = parseFloat(value ?? "");
     return Number.isNaN(size) ? current : size;
 }
