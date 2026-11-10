@@ -11,7 +11,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCard, BCardBody, BCardFooter, BCardHeader } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import { isRegisteredUser } from "@/api";
 import {
@@ -61,9 +61,40 @@ const username = computed(() => (isRegisteredUser(currentUser.value) && currentU
 const canLookUp = computed(() => !loading.value && userCode.value !== failedCode.value);
 const codeState = computed(() => (codeError.value ? false : null));
 
-watch(userCode, () => {
+const codeInput = ref<InstanceType<typeof GFormInput>>();
+
+// Ensure the user cannot type invalid characters or exceed the expected format for the user code.
+watch(userCode, async (value) => {
+    const formatted = formatUserCode(value);
+    if (formatted !== value) {
+        // Runs this watcher again with the formatted code
+        userCode.value = formatted;
+        // A dropped keystroke (e.g. a 10th letter) restores the previous value, which Vue doesn't re-render
+        await nextTick();
+        const element = codeInput.value?.getInputElement();
+        if (element && element.value !== formatted) {
+            element.value = formatted;
+        }
+        return;
+    }
     codeError.value = null;
 });
+
+/**
+ * Format typed or pasted text as a user code like `WDJB-MJHT`: uppercase letters only
+ * (codes have no digits), with the dash added before the 5th letter.
+ */
+function formatUserCode(value: string): string {
+    const letters = value
+        .toUpperCase()
+        .replace(/[^A-Z]/g, "")
+        .slice(0, 8);
+    if (letters.length > 4) {
+        return `${letters.slice(0, 4)}-${letters.slice(4)}`;
+    }
+    // Keep a dash the user typed after the 4th letter
+    return letters.length === 4 && value.endsWith("-") ? `${letters}-` : letters;
+}
 
 /** Convert an unknown error into a `PageError` made for this component as it includes a `reason`. */
 function toPageError(e: unknown, defaultMessage: string): PageError {
@@ -150,6 +181,7 @@ function reset() {
                                 <GFormLabel :title="localize('Enter the code shown in your application')">
                                     <GFormInput
                                         id="device-user-code"
+                                        ref="codeInput"
                                         v-model="userCode"
                                         required
                                         autocomplete="off"
@@ -157,7 +189,7 @@ function reset() {
                                         placeholder="XXXX-XXXX"
                                         :state="codeState"
                                         :aria-describedby="codeError ? 'device-user-code-feedback' : undefined"
-                                        class="device-user-code text-uppercase" />
+                                        class="device-user-code" />
                                 </GFormLabel>
                                 <!-- Not GFormLabel's `invalid-feedback`, which takes plain text, so the `reason` icon fits -->
                                 <span v-if="codeError" id="device-user-code-feedback" class="device-user-code-feedback">

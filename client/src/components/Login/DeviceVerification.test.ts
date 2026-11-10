@@ -40,6 +40,34 @@ async function mountAndEnterCode(code = "wdjb-mjht") {
 
 describe("DeviceVerification", () => {
     it.each([
+        ["wdjb mjht", "WDJB-MJHT"],
+        ["WDJBMJHT", "WDJB-MJHT"],
+        ["WDJB-MJHT", "WDJB-MJHT"],
+        ["wd1jb", "WDJB"],
+        ["WDJB-", "WDJB-"],
+        ["WDJBM", "WDJB-M"],
+        ["WDJB-MJHTX", "WDJB-MJHT"],
+    ])("formats the typed code %j as %j", async (typed, shown) => {
+        const wrapper = mount(DeviceVerification as object, { global: globalConfig });
+        const input = wrapper.find("#device-user-code");
+        await input.setValue(typed);
+        await flushPromises();
+        expect((input.element as HTMLInputElement).value).toBe(shown);
+    });
+
+    it.each([
+        ["WDJB-MJHT", "WDJB-MJHTX", "WDJB-MJHT"],
+        ["WD", "WD1", "WD"],
+    ])("drops a keystroke that can't be part of %j", async (before, typed, shown) => {
+        const wrapper = mount(DeviceVerification as object, { global: globalConfig });
+        const input = wrapper.find("#device-user-code");
+        await input.setValue(before);
+        await input.setValue(typed);
+        await flushPromises();
+        expect((input.element as HTMLInputElement).value).toBe(shown);
+    });
+
+    it.each([
         [true, "Login approved"],
         [false, "Login denied"],
     ])("shows the requesting app and records approve=%s", async (approve, heading) => {
