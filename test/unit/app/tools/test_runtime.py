@@ -1,3 +1,4 @@
+import os
 from decimal import Decimal
 from typing import (
     Any,
@@ -8,6 +9,7 @@ import pytest
 from pydantic import ValidationError
 
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
     Dataset,
     DatasetCollection,
@@ -17,6 +19,7 @@ from galaxy.model import (
     ImplicitlyConvertedDatasetAssociation,
     set_datatypes_registry,
 )
+from galaxy.model.metadata import MetadataTempFile
 from galaxy.tool_util.parameters.convert import runtimeify
 from galaxy.tool_util.parameters.state import JobInternalToolState
 from galaxy.tool_util_models.parameters import (
@@ -273,6 +276,13 @@ class RewritingComputeEnvironment:
     def input_extra_files_rewrite(self, dataset):
         return f"/job/inputs/dataset_{dataset.id}_files"
 
+    def __init__(self):
+        self.metadata_rewrites: list[str] = []
+
+    def input_metadata_rewrite(self, dataset, metadata_value):
+        self.metadata_rewrites.append(metadata_value)
+        return f"/job/inputs/metadata_{os.path.basename(metadata_value)}"
+
 
 class DatatypesApp:
     def __init__(self, datatypes_registry):
@@ -476,6 +486,7 @@ def test_user_tool_requires_a_quotable_path_only_for_shell_command(command):
         base_command=command.get("base_command"),
         tool_source=Bunch(trusted=False),
         has_data_table=False,
+        inputs={},
     )
     evaluator = UserToolEvaluator(cast(Any, Bunch()), cast(Any, tool), cast(Any, None), "/job")
     evaluator.compute_environment = cast(Any, WorkingDirectoryComputeEnvironment())
@@ -576,3 +587,125 @@ def test_runtimeify_resolves_a_dataset_used_directly_and_converted():
     assert runtime_state["as_csv"]["path"] == "/job/inputs/dataset_1.dat"
     assert runtime_state["as_tabular"]["format"] == "tabular"
     assert runtime_state["as_tabular"]["path"] == "/job/inputs/dataset_2.dat"
+
+
+BAI_CONTENT = b"BAI\x01rest of the index"
+CSI_CONTENT = b"\x1f\x8b\x08\x04bgzf compressed CSI index"
+
+
+def _indexed_hda(tmp_path, extension="bam", **indexes: bytes) -> HistoryDatasetAssociation:
+    """Return a dataset named sample1.bam whose metadata holds the given index files."""
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, extension)
+    hda.name = "sample1.bam"
+    for metadata_name, content in indexes.items():
+        index = tmp_path / f"{metadata_name}.dat"
+        index.write_bytes(content)
+        setattr(hda.metadata, metadata_name, MetadataTempFile.from_JSON({"kwds": {}, "filename": str(index)}))
+    return hda
+
+
+def _adapt_indexed(hda, secondary_file_datasets):
+    compute_environment = RewritingComputeEnvironment()
+    _, adapt_dataset, _ = setup_for_runtimeify(
+        cast(Any, DatatypesApp(example_datatype_registry_for_sample())),
+        cast(Any, compute_environment),
+        {"input": hda},
+        secondary_file_datasets=secondary_file_datasets,
+    )
+    return adapt_dataset(DataRequestInternalHda(src="hda", id=1), [hda.extension]), compute_environment
+
+
+def test_adapt_dataset_lists_and_registers_the_index(tmp_path):
+    hda = _indexed_hda(tmp_path, bam_index=BAI_CONTENT)
+
+    result, compute_environment = _adapt_indexed(hda, {hda})
+
+    assert result.path == "/job/inputs/dataset_1.dat"
+    [secondary_file] = result.model_dump(by_alias=True)["secondary_files"]
+    assert secondary_file == {
+        "class": "File",
+        "path": "/job/inputs/metadata_bam_index.dat",
+        "basename": "sample1.bam.bai",
+        "nameroot": "sample1.bam",
+        "nameext": ".bai",
+        "format": "bai",
+    }
+    assert compute_environment.metadata_rewrites == [str(tmp_path / "bam_index.dat")]
+
+
+@pytest.mark.parametrize(
+    "extension,indexes,expected",
+    [
+        pytest.param("bam", {"bam_index": CSI_CONTENT}, [(".csi", "csi")], id="csi-kept-in-bam_index"),
+        pytest.param(
+            "bam", {"bam_index": CSI_CONTENT, "bam_csi_index": CSI_CONTENT}, [(".csi", "csi")], id="one-per-suffix"
+        ),
+        pytest.param("cram", {"cram_index": b"crai"}, [(".crai", "crai")], id="cram"),
+    ],
+)
+def test_adapt_dataset_names_the_index_by_its_format(tmp_path, extension, indexes, expected):
+    hda = _indexed_hda(tmp_path, extension, **indexes)
+
+    result, _ = _adapt_indexed(hda, {hda})
+
+    assert [(f.nameext, f.format) for f in result.secondary_files] == expected
+
+
+def _deferred(hda):
+    assert hda.dataset is not None
+    hda.dataset.state = Dataset.states.DEFERRED
+    hda.dataset.sources = [DatasetSource(source_uri="https://example.org/a.bam")]
+    return hda
+
+
+@pytest.mark.parametrize(
+    "make_hda,opted_in",
+    [
+        pytest.param(lambda tmp_path: _indexed_hda(tmp_path, bam_index=BAI_CONTENT), False, id="not-opted-in"),
+        pytest.param(lambda tmp_path: _indexed_hda(tmp_path, "sam"), True, id="datatype-without-index"),
+        pytest.param(lambda tmp_path: _deferred(_indexed_hda(tmp_path)), True, id="deferred"),
+    ],
+)
+def test_adapt_dataset_without_secondary_files(tmp_path, make_hda, opted_in):
+    hda = make_hda(tmp_path)
+
+    result, compute_environment = _adapt_indexed(hda, {hda} if opted_in else None)
+
+    assert result.secondary_files == []
+    assert compute_environment.metadata_rewrites == []
+
+
+def test_adapt_dataset_rejects_a_missing_index(tmp_path):
+    hda = _indexed_hda(tmp_path)
+
+    with pytest.raises(RequestParameterInvalidException, match="'sample1.bam' has no index"):
+        _adapt_indexed(hda, {hda})
+
+
+def test_to_cwl_lists_the_index_for_user_tools_only(tmp_path):
+    hda = _indexed_hda(tmp_path, bam_index=BAI_CONTENT)
+    compute_environment = cast(Any, RewritingComputeEnvironment())
+
+    opted_in = to_cwl(hda, [], compute_environment=compute_environment, secondary_file_datasets={hda})
+    opted_out = to_cwl(hda, [], compute_environment=compute_environment, secondary_file_datasets=set())
+    workflow = to_cwl(hda, [], compute_environment=compute_environment)
+
+    assert [f["basename"] for f in opted_in["secondary_files"]] == ["sample1.bam.bai"]
+    assert opted_out["secondary_files"] == []
+    assert "secondary_files" not in workflow
+
+
+def test_user_tool_finds_a_converted_input_of_an_input_with_secondary_files():
+    _, original, converted = _csv_with_tabular_conversion()
+    wanted = Bunch(name="wanted", label="wanted", secondary_files=True)
+    unwanted = _hda(3, "txt")
+    other = Bunch(name="other", label="other", secondary_files=False)
+    tool = Bunch(inputs={"wanted": wanted, "other": other})
+    evaluator = UserToolEvaluator(cast(Any, Bunch()), cast(Any, tool), cast(Any, None), "/job")
+
+    datasets = evaluator._datasets_with_secondary_files(
+        {"wanted": original, "other": unwanted}, {"wanted": converted, "other": unwanted}
+    )
+
+    assert datasets == {original, converted}

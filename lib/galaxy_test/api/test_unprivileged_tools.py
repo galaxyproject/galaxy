@@ -1,5 +1,8 @@
 # Test tools API.
 import base64
+import hashlib
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 from uuid import uuid4
 
@@ -26,6 +29,17 @@ TOOL_WITH_REFERENCE_DATA = {
     ),
     "inputs": [{"name": "reference", "type": "reference_data", "table": "test_fasta_indexes"}],
     "outputs": [{"name": "output", "type": "data", "format": "txt", "from_work_dir": "output.txt"}],
+}
+
+
+TOOL_LINKING_BAM_INDEX = {
+    **TOOL_WITH_SHELL_COMMAND,
+    "shell_command": (
+        "ln -s '$(inputs.input.path)' input.bam && "
+        "ln -s '$(inputs.input.secondary_files[0].path)' 'input.bam$(inputs.input.secondary_files[0].nameext)' && "
+        "md5sum input.bam.bai | cut -d ' ' -f 1 > output.fastq"
+    ),
+    "inputs": [{"type": "data", "name": "input", "format": "bam", "secondary_files": True}],
 }
 
 
@@ -333,6 +347,130 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             output_content = self.dataset_populator.get_history_dataset_content(history_id)
         assert output_content == "reads.txt\n"
+
+    def test_run_links_secondary_file_next_to_input(self):
+        self._assert_links_bam_index(via_tool_request=False)
+
+    def test_tool_request_links_secondary_file_next_to_input(self):
+        self._assert_links_bam_index(via_tool_request=True)
+
+    def _assert_links_bam_index(self, via_tool_request: bool) -> None:
+        with self._user_tool_history() as history_id:
+            bam = self.dataset_populator.new_bam_dataset(history_id, self.test_data_resolver)
+            output = self._run_user_tool(
+                history_id, TOOL_LINKING_BAM_INDEX, {"input": {"src": "hda", "id": bam["id"]}}, via_tool_request
+            )
+            assert output.strip() == self._bam_index_md5(history_id, bam)
+
+    def test_run_multiple_input_lists_secondary_files(self):
+        tool = {
+            **TOOL_LINKING_BAM_INDEX,
+            "shell_command": "echo '$(inputs.input.map((f) => f.secondary_files[0].format).join(\",\"))' > output.fastq",
+            "inputs": [{**TOOL_LINKING_BAM_INDEX["inputs"][0], "multiple": True}],
+        }
+        with self._user_tool_history() as history_id:
+            bams = self._new_bams(history_id, 2)
+            inputs = {"input": [{"src": "hda", "id": bam["id"]} for bam in bams]}
+            assert self._run_user_tool(history_id, tool, inputs) == "bai,bai\n"
+
+    def test_run_collection_input_lists_secondary_files(self):
+        self._assert_collection_input_lists_secondary_files(via_tool_request=False)
+
+    def test_tool_request_collection_input_lists_secondary_files(self):
+        self._assert_collection_input_lists_secondary_files(via_tool_request=True)
+
+    def _assert_collection_input_lists_secondary_files(self, via_tool_request: bool) -> None:
+        # /api/tools and tool requests give a list different shapes, elements only appears in the latter.
+        tool = {
+            **TOOL_LINKING_BAM_INDEX,
+            "shell_command": (
+                "echo '$((inputs.input.elements || inputs.input).map((f) => f.secondary_files[0].format).join(\",\"))'"
+                " > output.fastq"
+            ),
+            "inputs": [
+                {"type": "data_collection", "name": "input", "collection_type": "list", "secondary_files": True}
+            ],
+        }
+        with self._user_tool_history() as history_id:
+            hdca = self._new_bam_list(history_id, 2)
+            output = self._run_user_tool(
+                history_id, tool, {"input": {"src": "hdca", "id": hdca["id"]}}, via_tool_request
+            )
+            assert output == "bai,bai\n"
+
+    def test_run_mapped_over_list_lists_secondary_files(self):
+        tool = {
+            **TOOL_LINKING_BAM_INDEX,
+            "shell_command": "echo '$(inputs.input.secondary_files[0].nameext)' > output.fastq",
+        }
+        with self._user_tool_history() as history_id:
+            hdca = self._new_bam_list(history_id, 1)
+            inputs = {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"]}]}}
+            assert self._run_user_tool(history_id, tool, inputs) == ".bai\n"
+
+    def test_run_secondary_files_empty_unless_asked_for_and_indexed(self):
+        # Only a dataset in a format Galaxy indexes, on an input that sets secondary_files, gets an index.
+        tool = {
+            **TOOL_LINKING_BAM_INDEX,
+            "shell_command": (
+                "echo '$(inputs.not_asked.secondary_files.length) $(inputs.not_indexed.secondary_files.length)'"
+                " > output.fastq"
+            ),
+            "inputs": [
+                {"type": "data", "name": "not_asked", "format": "bam"},
+                {"type": "data", "name": "not_indexed", "format": ["bam", "txt"], "secondary_files": True},
+            ],
+        }
+        with self._user_tool_history() as history_id:
+            bam = self.dataset_populator.new_bam_dataset(history_id, self.test_data_resolver)
+            txt = self.dataset_populator.new_dataset(history_id=history_id, content="abc", wait=True)
+            inputs = {"not_asked": {"src": "hda", "id": bam["id"]}, "not_indexed": {"src": "hda", "id": txt["id"]}}
+            assert self._run_user_tool(history_id, tool, inputs) == "0 0\n"
+
+    @contextmanager
+    def _user_tool_history(self) -> Iterator[str]:
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            yield history_id
+
+    def _run_user_tool(
+        self, history_id: str, tool: dict[str, Any], inputs: dict[str, Any], via_tool_request: bool = False
+    ) -> str:
+        """Create a UDT, run it via /api/tools or a tool request, and return the newest dataset's content."""
+        tool_uuid = self.dataset_populator.create_unprivileged_tool(UserToolSource(**tool))["uuid"]
+        if via_tool_request:
+            response = self.dataset_populator.tool_request_raw(
+                tool_id=None, inputs=inputs, history_id=history_id, tool_uuid=tool_uuid
+            )
+            self._assert_status_code_is(response, 200)
+            assert self.dataset_populator.wait_on_tool_request(response.json()["tool_request_id"])
+        else:
+            self._run(history_id=history_id, tool_uuid=tool_uuid, inputs=inputs, assert_ok=True)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return self.dataset_populator.get_history_dataset_content(history_id)
+
+    def _new_bams(self, history_id: str, count: int) -> list[dict[str, Any]]:
+        return [self.dataset_populator.new_bam_dataset(history_id, self.test_data_resolver) for _ in range(count)]
+
+    def _new_bam_list(self, history_id: str, count: int) -> dict[str, Any]:
+        return self.dataset_collection_populator.create_list_in_history(
+            history_id,
+            direct_upload=False,
+            element_identifiers=[
+                {"name": f"sample_{i}", "src": "hda", "id": bam["id"]}
+                for i, bam in enumerate(self._new_bams(history_id, count))
+            ],
+            wait=True,
+        ).json()
+
+    def _bam_index_md5(self, history_id: str, bam: dict[str, Any]) -> str:
+        details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=bam["id"])
+        [index] = [meta_file for meta_file in details["meta_files"] if meta_file["file_type"] == "bam_index"]
+        response = self._get(index["download_url"].split("api/", 1)[1])
+        self._assert_status_code_is(response, 200)
+        return hashlib.md5(response.content).hexdigest()
 
     def _run_mapped_over_list(
         self, tool: dict[str, Any], elements: list[tuple[str, str]], ext: str = "txt"
