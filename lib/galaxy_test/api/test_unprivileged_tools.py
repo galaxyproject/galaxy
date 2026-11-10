@@ -31,6 +31,7 @@ TOOL_WITH_REFERENCE_DATA = {
 }
 
 
+BAM_INPUT_WITH_SECONDARY_FILES = {"type": "data", "name": "input", "format": "bam", "secondary_files": True}
 TOOL_LINKING_BAM_INDEX = {
     **TOOL_WITH_SHELL_COMMAND,
     "shell_command": (
@@ -38,7 +39,7 @@ TOOL_LINKING_BAM_INDEX = {
         "ln -s '$(inputs.input.secondary_files[0].path)' 'input.bam$(inputs.input.secondary_files[0].nameext)' && "
         "od -An -v -tx1 input.bam.bai | tr -d ' \\n' > output.fastq"
     ),
-    "inputs": [{"type": "data", "name": "input", "format": "bam", "secondary_files": True}],
+    "inputs": [BAM_INPUT_WITH_SECONDARY_FILES],
 }
 
 
@@ -365,7 +366,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
         tool = {
             **TOOL_LINKING_BAM_INDEX,
             "shell_command": "echo '$(inputs.input.map((f) => f.secondary_files[0].format).join(\",\"))' > output.fastq",
-            "inputs": [{**TOOL_LINKING_BAM_INDEX["inputs"][0], "multiple": True}],
+            "inputs": [{**BAM_INPUT_WITH_SECONDARY_FILES, "multiple": True}],
         }
         with self._user_tool_history() as history_id:
             bams = self._new_bams(history_id, 2)
