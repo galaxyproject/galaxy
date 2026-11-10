@@ -22,6 +22,8 @@ class WorkflowCanvas:
         self.max_y = 0
         self.max_width = 0
         self.data = []
+        self.fallback_positions = {}
+        self.fallback_top = 0
 
     def finish(self, for_embed=False):
         # max_x, max_y, max_width = self.max_x, self.max_y, self.max_width
@@ -58,8 +60,18 @@ class WorkflowCanvas:
             )
         )
 
+    def position(self, step, rows):
+        """The step's stored position, or a stacked one for a workflow that has not been laid out yet."""
+        if step.position:
+            return step.position
+        if step.order_index not in self.fallback_positions:
+            self.fallback_positions[step.order_index] = {"left": 0, "top": self.fallback_top}
+            self.fallback_top += rows * LINE_SPACING + 80
+        return self.fallback_positions[step.order_index]
+
     def add_text(self, module_data_inputs, module_data_outputs, step, module_name):
-        left, top = step.position["left"], step.position["top"]
+        position = self.position(step, len(module_data_inputs) + len(module_data_outputs))
+        left, top = position["left"], position["top"]
         x, y = left, top
         order_index = step.order_index
         max_len = len(module_name) * 1.5
@@ -170,7 +182,7 @@ class WorkflowCanvas:
             "id": step.order_index,
             "data_inputs": module_data_inputs,
             "data_outputs": module_data_outputs,
-            "position": step.position,
+            "position": self.position(step, len(module_data_inputs) + len(module_data_outputs)),
         }
         if tool_errors:
             step_dict["tool_errors"] = tool_errors
