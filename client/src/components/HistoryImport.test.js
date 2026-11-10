@@ -106,6 +106,25 @@ describe("HistoryImport.vue", () => {
         expect(wrapper.vm.complete).toBeTruthy();
     });
 
+    it("posts the import when the form is submitted, without leaving the page", async () => {
+        await wrapper.get("input[type=url]").setValue(TEST_SOURCE_URL);
+        let formData;
+        server.use(
+            http.post("/api/histories", async ({ response, request }) => {
+                formData = await request.formData();
+                return response(200).json({ job_id: TEST_JOB_ID });
+            }),
+        );
+        vi.mocked(waitOnJob).mockReturnValue(new Promise(() => {}));
+
+        const submit = new Event("submit", { cancelable: true });
+        wrapper.get("form").element.dispatchEvent(submit);
+        await flushPromises();
+
+        expect(submit.defaultPrevented).toBe(true);
+        expect(formData.get("archive_source")).toBe(TEST_SOURCE_URL);
+    });
+
     it("switches the import source from a labelled radio group", async () => {
         const group = wrapper.find("[role=radiogroup]");
         const legend = group.find("legend");

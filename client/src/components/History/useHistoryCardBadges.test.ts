@@ -8,6 +8,12 @@ import { useUserStore } from "@/stores/userStore";
 
 import { useHistoryCardBadges } from "./useHistoryCardBadges";
 
+// A one-entry dictionary, so the spec can tell whether the action part of the name is translated.
+vi.mock("@/utils/localization", () => {
+    const localize = (text: string) => (text === "Filter by owner" ? "Nach Besitzer filtern" : text);
+    return { default: localize, localize };
+});
+
 const OWNER = "jdoe";
 
 function ownerBadge(history: object, sharedView: boolean, publishedView: boolean, id: string) {
@@ -34,7 +40,7 @@ describe("useHistoryCardBadges", () => {
         const { badge, updateFilter } = ownerBadge(history, sharedView, publishedView, id);
 
         expect(badge?.visible).toBe(true);
-        expect(badge?.ariaLabel).toBe(`Filter by owner ${OWNER}`);
+        expect(badge?.ariaLabel).toBe(`Nach Besitzer filtern ${OWNER}`);
         badge?.handler?.();
         expect(updateFilter).toHaveBeenCalledWith("user", OWNER);
     });

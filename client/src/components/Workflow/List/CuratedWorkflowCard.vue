@@ -13,6 +13,7 @@ import { computed, onBeforeUnmount, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import type { CuratedWorkflow } from "@/api/curatedWorkflows";
+import { badgeActionLabel } from "@/components/Common/cardBadgeLabel";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import { compareTrsVersions } from "@/components/Workflow/Import/trsVersion";
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
@@ -21,6 +22,7 @@ import { copyWorkflow } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
 import { useCanRequestToolInstallation } from "@/composables/toolInstallationRequest";
 import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 import { ApiError } from "@/utils/simple-error";
 
 import GCard from "@/components/Common/GCard.vue";
@@ -69,6 +71,7 @@ const titleBadges = computed<CardBadge[]>(() =>
     (workflow.value.collections ?? []).map((collection: string) => ({
         id: `curated-collection-${collection}`,
         label: collection,
+        ariaLabel: badgeActionLabel("Show collection", collection),
         title: `Part of the ${collection} collection. Click to show the whole collection.`,
         type: "badge",
         variant: "outline-secondary",
@@ -112,9 +115,13 @@ const missingToolsDetail = computed<CardBadge | null>(() => {
     }
     const names = [...new Set(missingTools.map(shortToolName))];
     const canAsk = canRequestMissingTools.value && !props.installationRequested;
+    const label = `Needs ${names.length} ${names.length === 1 ? "tool" : "tools"}`;
+    // When clickable, the name says what the click does and still starts with the visible label.
+    const action = names.length === 1 ? "Ask the admins to install it" : "Ask the admins to install them";
     return {
         id: "curated-missing-tools",
-        label: `Needs ${names.length} ${names.length === 1 ? "tool" : "tools"}`,
+        label,
+        ariaLabel: canAsk ? `${label}. ${localize(action)}` : undefined,
         title: `Not installed on this Galaxy: ${names.join(", ")}${canAsk ? ". Click to ask the admins to install them." : ""}`,
         icon: faExclamationTriangle,
         variant: "warning",
@@ -390,6 +397,7 @@ async function onImportLocal() {
                             :is="detail.handler ? 'button' : 'span'"
                             :type="detail.handler ? 'button' : undefined"
                             :class="{ 'curated-detail-button': detail.handler }"
+                            :aria-label="detail.ariaLabel"
                             @click="detail.handler && detail.handler()">
                             <FontAwesomeIcon
                                 v-if="detail.icon"

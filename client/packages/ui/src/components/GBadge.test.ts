@@ -156,7 +156,7 @@ describe("GBadge", () => {
         expect(wrapper.attributes("href")).toBeUndefined();
     });
 
-    it("prefers to over href", async () => {
+    it("prefers to over href", () => {
         const router = makeRouter();
         const wrapper = mount(GBadge, {
             props: { to: "/workflows/list", href: "https://example.org" },

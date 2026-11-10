@@ -135,6 +135,7 @@ describe("WorkflowMissingToolsRequest", () => {
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
+        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
         expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(false);
         expect(wrapper.find(".alert-success").text()).toContain("Installation request sent");
     });
@@ -151,10 +152,15 @@ describe("WorkflowMissingToolsRequest", () => {
 
         // The open <dialog> makes the rest of the page inert, so the alert must live inside it.
         const modal = wrapper.findComponent(GModal);
+        const alert = modal.find(".alert-danger");
         expect(modal.props("show")).toBe(true);
-        expect(modal.find(".alert-danger").exists()).toBe(true);
-        expect(modal.find(".alert-danger").text()).toContain("Server error");
+        expect(alert.attributes("role")).toBe("alert");
+        expect(alert.text()).toContain("Server error");
         expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(true);
+
+        await alert.find("button[aria-label='Close']").trigger("click");
+        expect(modal.find(".alert-danger").exists()).toBe(false);
+        expect(modal.props("show")).toBe(true);
     });
 
     it("clears the error when the dialog is cancelled after a failure", async () => {
