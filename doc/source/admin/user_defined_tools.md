@@ -172,7 +172,7 @@ Denied entries are parsed and compared like allowed ones, with these differences
 - When the list is not empty, a reference Galaxy cannot parse, such as an `oras://` one, is refused even if `user_defined_tool_allowed_containers` is `*`, because it cannot be compared against the denied entries.
 - `<path>/*` does not include `<path>` itself. To deny both, list both.
 
-A denied entry only blocks the registry and path it names, not the image content. When `user_defined_tool_allowed_containers` is `*`, the same image can still be named through another registry, such as a mirror or the same host with an explicit port, and a tool author can push a copy to any registry. Rely on the denied list only below an allowed list narrower than `*`, for example to exclude one image from `quay.io/biocontainers/*`.
+A denied entry overrides any allowed entry, including `*`, for every tag and digest of the image it names. Entries match image names, not image content, so a copy of the image published under another name or on another registry, such as a pull-through mirror, is not denied.
 
 Galaxy resolves an unqualified name against Docker Hub, as Docker does. Podman may instead search the registries listed in its `unqualified-search-registries` setting, so a tool allowed to use `python:3.13` because `docker.io/library/python` is listed could pull `python` from another registry. On destinations that run Podman, either set `unqualified-search-registries = ["docker.io"]` or do not list Docker Hub images. The default list is not affected: an unqualified name never matches `quay.io/biocontainers/*`.
 
