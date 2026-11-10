@@ -466,11 +466,8 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
         ).json()
 
     def _bam_index_md5(self, history_id: str, bam: dict[str, Any]) -> str:
-        details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=bam["id"])
-        [index] = [meta_file for meta_file in details["meta_files"] if meta_file["file_type"] == "bam_index"]
-        response = self._get(index["download_url"].split("api/", 1)[1])
-        self._assert_status_code_is(response, 200)
-        return hashlib.md5(response.content).hexdigest()
+        index = self.dataset_populator.get_history_dataset_metadata_file(history_id, bam["id"], "bam_index")
+        return hashlib.md5(index).hexdigest()
 
     def _run_mapped_over_list(
         self, tool: dict[str, Any], elements: list[tuple[str, str]], ext: str = "txt"
