@@ -144,7 +144,11 @@ def validate_column_value(
     elif column_type == "string":
         if not isinstance(column_value, (str,)):
             raise RequestParameterInvalidException(f"{column_value} was not a string as expected")
-        strip_control_characters(column_value)
+        #strip_control_characters(column_value)
+        if strip_control_characters(column_value) != column_value:
+            raise RequestParameterInvalidException(
+                f"Column '{column_definition_model.name}' contains control characters that are not allowed."
+            )
     elif column_type == "boolean":
         if not isinstance(column_value, (bool,)):
             raise RequestParameterInvalidException(f"{column_value} was not a boolean as expected")
