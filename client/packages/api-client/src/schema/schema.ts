@@ -4390,6 +4390,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/oauth/device_authorization/{user_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Approve or deny an OAuth device flow login
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        put: operations["decide_device_authorization_api_oauth_device_authorization__user_code__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/object_store_instances": {
         parameters: {
             query?: never;
@@ -12710,6 +12730,17 @@ export interface components {
              * @description The name of the user.
              */
             username: string;
+        };
+        /**
+         * DeviceAuthorizationDecisionPayload
+         * @description The user's answer to a pending device flow login.
+         */
+        DeviceAuthorizationDecisionPayload: {
+            /**
+             * Approve
+             * @description Whether the user approves the login (`true`) or denies it (`false`).
+             */
+            approve: boolean;
         };
         /**
          * DeviceAuthorizationResponse
@@ -47909,6 +47940,52 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OAuthErrorResponse"];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    decide_device_authorization_api_oauth_device_authorization__user_code__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The code shown in the app's terminal, e.g. `WDJB-MJHT`. */
+                user_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeviceAuthorizationDecisionPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {

@@ -8,7 +8,10 @@ from typing import Any
 
 from fastapi import (
     Form,
+    Path,
     Request,
+    Response,
+    status,
 )
 from fastapi.responses import JSONResponse
 
@@ -21,7 +24,9 @@ from galaxy.managers.oauth_device import (
     OAuthError,
     POLLING_INTERVAL,
 )
+from galaxy.model import User
 from galaxy.schema.oauth import (
+    DeviceAuthorizationDecisionPayload,
     DeviceAuthorizationResponse,
     OAuthErrorCode,
     OAuthErrorResponse,
@@ -30,6 +35,7 @@ from galaxy.work.context import SessionRequestContext
 from . import (
     depends,
     DependsOnTrans,
+    DependsOnUser,
     Router,
 )
 
@@ -91,3 +97,25 @@ def device_authorization(
         expires_in=DEVICE_CODE_EXPIRES_IN,
         interval=POLLING_INTERVAL,
     )
+
+
+@router.put(
+    "/api/oauth/device_authorization/{user_code}",
+    summary="Approve or deny an OAuth device flow login",
+    unstable=True,
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def decide_device_authorization(
+    payload: DeviceAuthorizationDecisionPayload,
+    user_code: str = Path(..., description="The code shown in the app's terminal, e.g. `WDJB-MJHT`."),
+    trans: SessionRequestContext = DependsOnTrans,
+    user: User = DependsOnUser,
+    manager: OAuthDeviceManager = depends(OAuthDeviceManager),
+) -> Response:
+    """Record the logged-in user's approval or denial of a pending device login.
+
+    Called by Galaxy's verification page, so it uses Galaxy's usual errors, not the OAuth shape.
+    """
+    require_device_flow_enabled(trans.app.config)
+    manager.decide(user_code, user, payload.approve)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

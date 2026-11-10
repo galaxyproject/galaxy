@@ -47,3 +47,9 @@ class OAuthErrorResponse(Model):
 
     error: OAuthErrorCode = Field(..., description="OAuth error code, such as `invalid_client`.")
     error_description: str | None = Field(None, description="Human-readable explanation of the error.")
+
+
+class DeviceAuthorizationDecisionPayload(Model):
+    """The user's answer to a pending device flow login."""
+
+    approve: bool = Field(..., description="Whether the user approves the login (`true`) or denies it (`false`).")

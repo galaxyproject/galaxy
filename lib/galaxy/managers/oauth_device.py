@@ -11,6 +11,10 @@ from sqlalchemy import (
 )
 
 from galaxy import model
+from galaxy.exceptions import (
+    Conflict,
+    ObjectNotFound,
+)
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.model import OAuthDeviceAuthorization
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -59,6 +63,12 @@ def hash_device_code(device_code: str) -> str:
     return hashlib.sha256(device_code.encode()).hexdigest()
 
 
+def normalize_user_code(user_code: str) -> str:
+    """Accept codes typed in any case, with or without the dash, e.g. `wdjb mjht`."""
+    chars = "".join(c for c in user_code.upper() if c.isalpha())
+    return f"{chars[:4]}-{chars[4:]}"
+
+
 def generate_user_code() -> str:
     """Return a code like `WDJB-MJHT`."""
     chars = [secrets.choice(USER_CODE_ALPHABET) for _ in range(8)]
@@ -94,6 +104,28 @@ class OAuthDeviceManager:
         self.sa_session.add(authorization)
         self.sa_session.commit()
         return StartedAuthorization(authorization=authorization, device_code=device_code)
+
+    def decide(self, user_code: str, user: model.User, approve: bool) -> None:
+        """Record a user's approval or denial of a pending device login."""
+        authorization = self.get_pending(user_code)
+        statuses = OAuthDeviceAuthorization.statuses
+        authorization.status = statuses.APPROVED if approve else statuses.DENIED
+        authorization.user = user
+        self.sa_session.commit()
+
+    def get_pending(self, user_code: str) -> OAuthDeviceAuthorization:
+        """Return the device login for a user code, if it can still be approved or denied."""
+        stmt = select(OAuthDeviceAuthorization).where(
+            OAuthDeviceAuthorization.user_code == normalize_user_code(user_code)
+        )
+        authorization = self.sa_session.scalars(stmt).first()
+        if authorization is None:
+            raise ObjectNotFound("No login request found for this code. Check the code in your terminal.")
+        if authorization.expires_at <= now():
+            raise Conflict("This code has expired. Start the login again from your terminal.")
+        if authorization.status != OAuthDeviceAuthorization.statuses.PENDING:
+            raise Conflict("This code has already been used.")
+        return authorization
 
     def issue_token(self, user: model.User, client_id: str, scope: str | None) -> IssuedToken:
         """Issue a token for a user who approved a device flow login.
