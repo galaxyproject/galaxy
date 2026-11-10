@@ -45,16 +45,17 @@ still be in use: deleting them may end a browser login or remove anonymous acces
 to a history. The examples below preserve anonymous sessions linked to histories
 and sessions needed by jobs without a user.
 
-``galaxy-data`` installs the command in Galaxy's Python environment (``.venv``
-below). For a source checkout without it, substitute
-``.venv/bin/python lib/galaxy/model/scripts/delete_galaxy_sessions.py``.
-Replace the example configuration and cutoff with your own.
+Run the script from the Galaxy root directory with Galaxy's Python environment
+(``.venv`` below); it reads the database connection from ``config/galaxy.yml``,
+or from the file given with ``--config``. If Galaxy is installed from packages,
+``galaxy-data`` provides the same script as the ``galaxy-delete-sessions``
+command. Replace the example cutoff with your own.
 
 Preview a limited scan; ``--dry-run`` does not change any records:
 
 .. code-block:: console
 
-    $ .venv/bin/galaxy-delete-sessions --config config/galaxy-test.yml --updated 2026-08-07 \
+    $ .venv/bin/python lib/galaxy/model/scripts/delete_galaxy_sessions.py --updated 2026-08-07 \
         --anonymous-only --preserve-anonymous-histories --preserve-sessions-with-jobs \
         --batch-size 100 --max-batches 5 --dry-run
 
@@ -62,7 +63,7 @@ If the results look right, try a small cleanup run:
 
 .. code-block:: console
 
-    $ .venv/bin/galaxy-delete-sessions --config config/galaxy-test.yml --updated 2026-08-07 \
+    $ .venv/bin/python lib/galaxy/model/scripts/delete_galaxy_sessions.py --updated 2026-08-07 \
         --anonymous-only --preserve-anonymous-histories --preserve-sessions-with-jobs \
         --batch-size 100 --max-batches 5 --pause 1
 
@@ -70,7 +71,7 @@ Check database load before removing the limit:
 
 .. code-block:: console
 
-    $ .venv/bin/galaxy-delete-sessions --config config/galaxy-test.yml --updated 2026-08-07 \
+    $ .venv/bin/python lib/galaxy/model/scripts/delete_galaxy_sessions.py --updated 2026-08-07 \
         --anonymous-only --preserve-anonymous-histories --preserve-sessions-with-jobs \
         --batch-size 1000 --pause 0.5
 
