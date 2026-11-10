@@ -22,10 +22,7 @@ from boltons.iterutils import remap
 from packaging.version import Version
 
 from galaxy import model
-from galaxy.exceptions import (
-    ToolInputsNotOKException,
-    ToolInputsNotReadyException,
-)
+from galaxy.exceptions import ToolInputsNotOKException
 from galaxy.model import (
     PostJobAction,
     ToolRequest,
@@ -53,6 +50,10 @@ from galaxy.tools.parameters.workflow_utils import (
     NO_REPLACEMENT,
 )
 from galaxy.util.json import swap_inf_nan
+from galaxy.workflow.scheduling_dependencies import (
+    ToolInputsNotReadyWithDependencies,
+    unpopulated_collection_dependencies,
+)
 from ._types import (
     ToolRequestT,
     ToolStateJobInstancePopulatedT,
@@ -107,7 +108,7 @@ class MappingParameters(NamedTuple):
         produces zero jobs (e.g. mapping over an empty collection),
         falls back to a resolved copy of ``param_template``: batch
         wrappers and raw ``{"src", "id"}`` refs are replaced with
-        HDCA/DCE ORM objects. Raises :class:`ToolInputsNotReadyException`
+        HDCA/DCE ORM objects. Raises :class:`~galaxy.exceptions.ToolInputsNotReadyException`
         if a referenced collection exists but is not populated yet, so
         the scheduler retries instead of surfacing the cryptic
         "Referenced input parameter is not a collection." error.
@@ -156,13 +157,19 @@ def _resolve_collection_ref(
         if hdca is None:
             return raw_fallback
         if not hdca.collection.populated_optimized:
-            raise ToolInputsNotReadyException("An input collection is not populated.")
+            raise ToolInputsNotReadyWithDependencies(
+                "An input collection is not populated.",
+                dependencies=unpopulated_collection_dependencies(hdca.collection),
+            )
         return hdca
     dce = sa_session.get(model.DatasetCollectionElement, decoded)
     if dce is None or dce.child_collection is None:
         return raw_fallback
     if not dce.child_collection.populated_optimized:
-        raise ToolInputsNotReadyException("An input collection is not populated.")
+        raise ToolInputsNotReadyWithDependencies(
+            "An input collection is not populated.",
+            dependencies=unpopulated_collection_dependencies(dce.child_collection),
+        )
     return dce
 
 
