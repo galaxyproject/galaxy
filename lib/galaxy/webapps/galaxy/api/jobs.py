@@ -77,11 +77,11 @@ from galaxy.webapps.galaxy.services.jobs import (
     JobRequest,
     JobsService,
 )
+from galaxy.webapps.galaxy.services.tools import validate_not_protected
 from galaxy.work.context import (
     proxy_work_context_for_history,
     SessionRequestContext,
 )
-from .tools import validate_not_protected
 
 log = logging.getLogger(__name__)
 

@@ -10,6 +10,7 @@ import json
 import requests
 
 from galaxy_test.base.mcp_util import mcp_request
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
@@ -25,12 +26,17 @@ def mcp_server_info(url: str) -> dict:
 
 class TestMCPEndpoint(IntegrationTestCase):
     mcp_server_path = "/api/mcp"
+    dataset_populator: DatasetPopulator
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         super().handle_galaxy_config_kwds(config)
         config["enable_mcp_server"] = True
         config["mcp_server_path"] = cls.mcp_server_path
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_endpoint_without_trailing_slash(self) -> None:
         assert mcp_server_info(f"{self.url}{self.mcp_server_path.strip('/')}")["name"] == "Galaxy"
@@ -42,6 +48,26 @@ class TestMCPEndpoint(IntegrationTestCase):
         response = requests.get(f"{self.url}api/version", allow_redirects=False)
         assert response.status_code == 200
         assert "version_major" in response.json()
+
+    def test_run_tool_refuses_protected_tools(self) -> None:
+        # __DATA_FETCH__ trusts its request_json, so it is only reachable through the fetch route
+        history_id = self.dataset_populator.new_history()
+        inputs = {"request_version": "1", "request_json": "{}", "file_count": "0"}
+        result = mcp_request(
+            f"{self.url}{self.mcp_server_path.strip('/')}",
+            "tools/call",
+            {
+                "name": "run_tool",
+                "arguments": {
+                    "history_id": history_id,
+                    "tool_id": "__DATA_FETCH__",
+                    "inputs": inputs,
+                    "api_key": self.galaxy_interactor.api_key,
+                },
+            },
+        )
+        assert result.get("isError"), result
+        assert "must use alternative endpoint" in result["content"][0]["text"], result
 
 
 class TestMCPEndpointWithUrlPrefix(TestMCPEndpoint):
