@@ -6678,7 +6678,10 @@
     (``quay.io/biocontainers/*``). An image without a tag or digest
     allows any tag or digest of it (``docker.io/library/python``),
     ``<image>:<tag>`` only that tag, and ``<image>@<digest>`` only
-    that digest. A lone ``*`` allows any image. An empty list allows
+    that digest. A lone ``*`` allows any image; it is meant for
+    testing and is not recommended in production, because users can
+    then run any image from any registry, and denied entries can't
+    block copies of an image on other registries. An empty list allows
     none, so no user defined tool can be created or run. References
     are canonicalized before they are compared, so ``python`` and
     ``docker.io/library/python`` are the same image. Tools are checked

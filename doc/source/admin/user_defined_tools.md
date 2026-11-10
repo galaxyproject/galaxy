@@ -154,7 +154,7 @@ Each entry and each tool's `container` are parsed into registry, repository, tag
 - `<registry>/<path>/*` allows any repository strictly below `<path>` on that registry. `quay.io/biocontainers/*` does not allow `quay.io/biocontainers-evil/x`, `quay.io.evil.com/biocontainers/x`, or `quay.io/biocontainers` itself. `<registry>/*` allows a whole registry, and `<path>/*` without a registry a Docker Hub namespace.
 - An entry with a tag allows only references with that tag and without a digest. An entry with a digest allows only references with that digest, whatever tag they also carry. Container runtimes pull the digest of a reference that has both and ignore its tag, so a tag entry cannot allow `image:<tag>@<any digest>`.
 - References with any other scheme, such as `oras://`, never match: user-defined tool images are Docker image references, which the explicit Singularity resolvers pull with a `docker://` prefix.
-- A lone `*` allows any image. An empty list allows none, so no user-defined tool can be created or run. Leaving the option unset uses the default.
+- A lone `*` allows any image. It is meant for testing and is not recommended in production: users can then run any image from any registry, and denied entries can't block copies of an image on other registries or mirrors. An empty list allows none, so no user-defined tool can be created or run. Leaving the option unset uses the default.
 
 To exclude images from what the allowed list permits, list them in `user_defined_tool_denied_containers`, which is empty by default. A denied entry takes precedence over an allowed one:
 
