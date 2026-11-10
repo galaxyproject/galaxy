@@ -444,6 +444,23 @@ class WorkflowsAPIController(
 
                 True iff encoded state coming in is encoded for the tool form.
 
+            :exact_tools:
+
+                    Optional boolean (default: true). Require exact
+                    tool-version matching when updating a workflow.
+                    Set to false to permit less strict tool resolution.
+                    Workflow invocation uses the related option
+                    require_exact_tool_versions.
+
+            :allow_missing_tools:
+
+                    Optional boolean (default: false). Allow saving
+                    a workflow even when required tools are missing.
+                    This controls saving, not whether the workflow
+                    can execute. Workflow invocation separately
+                    provides allow_tool_state_corrections for
+                    correcting tool state.
+
 
         :rtype:     dict
         :returns:   serialized version of the workflow
@@ -529,10 +546,9 @@ class WorkflowsAPIController(
                         raw_workflow_description,
                         workflow_update_options,
                     )
-                except MissingToolsException:
-                    raise exceptions.MessageException(
-                        "This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed."
-                    )
+                except MissingToolsException as e:
+                    details = "; ".join(e.errors)
+                    raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed."f" Details: {details}") from e
 
         else:
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
