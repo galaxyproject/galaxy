@@ -225,12 +225,21 @@ def _evaluate_in_subprocess(program: str, timeout: float, sandbox_command: Seque
         if not isinstance(response, dict):
             raise ValueError("Expected a response object")
         if "worker_error" in response:
-            raise ExpressionWorkerError(str(response["worker_error"])[:500])
+            raise ExpressionWorkerError(_error_text(response["worker_error"]))
         if "error" in response:
-            raise JavascriptException(str(response["error"])[:500])
+            raise JavascriptException(_error_text(response["error"]))
         return cast(CWLOutputType, response["result"])
     except (ValueError, KeyError, RecursionError) as e:
         raise ExpressionWorkerError("Malformed response from expression worker") from e
+
+
+def _error_text(message: Any) -> str:
+    """An error from the worker as text that encodes as UTF-8.
+
+    JavaScript strings can hold lone UTF-16 surrogates; they are escaped so the error can be
+    logged, sent between processes and stored as the job's info.
+    """
+    return str(message)[:500].encode("utf-8", "backslashreplace").decode("utf-8")
 
 
 class SandboxedJSEngine(NodeJSEngine):
