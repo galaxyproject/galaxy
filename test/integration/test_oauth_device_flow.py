@@ -69,10 +69,14 @@ class TestOAuthDeviceFlow(integration_util.IntegrationTestCase):
     def test_get_after_decision(self):
         user_code = self._start_device_authorization().json()["user_code"]
         self._decide_device_authorization(user_code, approve=True)
-        self._assert_status_code_is(self._get(f"oauth/device_authorization/{user_code}"), 409)
+        response = self._get(f"oauth/device_authorization/{user_code}")
+        self._assert_status_code_is(response, 409)
+        assert response.json()["reason"] == "used"
 
     def test_get_unknown_code(self):
-        self._assert_status_code_is(self._get("oauth/device_authorization/BBBB-BBBB"), 404)
+        response = self._get("oauth/device_authorization/BBBB-BBBB")
+        self._assert_status_code_is(response, 404)
+        assert response.json()["reason"] == "unknown"
 
     def test_get_requires_login(self):
         user_code = self._start_device_authorization().json()["user_code"]
@@ -99,10 +103,12 @@ class TestOAuthDeviceFlow(integration_util.IntegrationTestCase):
         response = self._decide_device_authorization(user_code, approve=True)
         self._assert_status_code_is(response, 409)
         assert "already been used" in response.json()["err_msg"]
+        assert response.json()["reason"] == "used"
 
     def test_decide_unknown_code(self):
         response = self._decide_device_authorization("BBBB-BBBB", approve=True)
         self._assert_status_code_is(response, 404)
+        assert response.json()["reason"] == "unknown"
 
     def test_decide_requires_login(self):
         user_code = self._start_device_authorization().json()["user_code"]
@@ -190,7 +196,10 @@ class TestOAuthDeviceFlowDisabled(integration_util.IntegrationTestCase):
         self._assert_status_code_is(response, 404)
         response = self._post("oauth/device_authorization", data={"client_id": "galaxy-cli"}, anon=True)
         self._assert_status_code_is(response, 404)
-        self._assert_status_code_is(self._get("oauth/device_authorization/BBBB-BBBB"), 404)
+        # Flow off is a 404 without a `reason`, so the page doesn't mistake it for an unknown code.
+        response = self._get("oauth/device_authorization/BBBB-BBBB")
+        self._assert_status_code_is(response, 404)
+        assert "reason" not in response.json()
         response = self._put("oauth/device_authorization/BBBB-BBBB", data={"approve": True}, json=True)
         self._assert_status_code_is(response, 404)
         response = self._post("oauth/token", data={"client_id": "galaxy-cli"}, anon=True)

@@ -119,17 +119,22 @@ class OAuthDeviceManager:
         self.sa_session.commit()
 
     def get_pending(self, user_code: str) -> OAuthDeviceAuthorization:
-        """Return the device login for a user code, if it can still be approved or denied."""
+        """Return the device login for a user code, if it can still be approved or denied.
+
+        Errors carry a `reason` (`unknown`, `expired` or `used`) so the verification page can tell them apart.
+        """
         stmt = select(OAuthDeviceAuthorization).where(
             OAuthDeviceAuthorization.user_code == normalize_user_code(user_code)
         )
         authorization = self.sa_session.scalars(stmt).first()
         if authorization is None:
-            raise ObjectNotFound("No login request found for this code. Check the code in your terminal.")
+            raise ObjectNotFound(
+                "No login request found for this code. Check the code in your terminal.", reason="unknown"
+            )
         if authorization.expires_at <= now():
-            raise Conflict("This code has expired. Start the login again from your terminal.")
+            raise Conflict("This code has expired. Start the login again from your terminal.", reason="expired")
         if authorization.status != OAuthDeviceAuthorization.statuses.PENDING:
-            raise Conflict("This code has already been used.")
+            raise Conflict("This code has already been used.", reason="used")
         return authorization
 
     def respond_to_poll(self, client_id: str, device_code: str) -> IssuedToken:

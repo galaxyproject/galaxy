@@ -74,21 +74,24 @@ class TestOAuthDeviceManager(BaseTestCase):
         assert self._get(user_code).status == statuses.APPROVED
 
     def test_get_pending_unknown_code(self):
-        with pytest.raises(ObjectNotFound):
+        with pytest.raises(ObjectNotFound) as e:
             self.manager.get_pending("BBBB-BBBB")
+        assert e.value.extra_error_info["reason"] == "unknown"
 
     def test_get_pending_expired(self):
         user_code = self._start()
         self._get(user_code).expires_at = now() - timedelta(seconds=1)
         self.trans.sa_session.commit()
-        with pytest.raises(Conflict, match="expired"):
+        with pytest.raises(Conflict, match="expired") as e:
             self.manager.get_pending(user_code)
+        assert e.value.extra_error_info["reason"] == "expired"
 
     def test_get_pending_already_decided(self):
         user_code = self._start()
         self.manager.decide(user_code, self.admin_user, approve=False)
-        with pytest.raises(Conflict, match="already been used"):
+        with pytest.raises(Conflict, match="already been used") as e:
             self.manager.decide(user_code, self.admin_user, approve=True)
+        assert e.value.extra_error_info["reason"] == "used"
 
     def test_poll_approved(self):
         started = self._start_authorization(scope="histories:read")
