@@ -1,6 +1,6 @@
 import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
 import { SELECTION_STATES } from "./selectionTypes";
@@ -8,6 +8,14 @@ import { SELECTION_STATES } from "./selectionTypes";
 import DataDialogSearch from "./DataDialogSearch.vue";
 import SelectionDialog from "./SelectionDialog.vue";
 import GTable from "@/components/Common/GTable.vue";
+
+// Translates only what a test asks for, so the other assertions see the source strings.
+const translations = vi.hoisted(() => ({}));
+vi.mock("@/utils/localization", async (importOriginal) => {
+    const actual = await importOriginal();
+    const localize = (text) => translations[text] ?? actual.localize(text);
+    return { ...actual, default: localize, localize };
+});
 
 const mockOptions = {
     callback: () => {},
@@ -45,6 +53,10 @@ describe("SelectionDialog.vue", () => {
         expect(wrapper.emitted("onClick")).toBeUndefined();
     });
 
+    afterEach(() => {
+        Object.keys(translations).forEach((text) => delete translations[text]);
+    });
+
     it("names the search and its clear button", () => {
         expect(wrapper.get("input[type='text']").attributes("aria-label")).toContain("search");
         expect(wrapper.get("button[aria-label='Clear search']").exists()).toBe(true);
@@ -73,6 +85,17 @@ describe("SelectionDialog.vue", () => {
 
         const names = wrapper.findAll("tbody input[type='checkbox']").map((box) => box.attributes("aria-label"));
         expect(names).toEqual(["Select file1", "Select file2"]);
+    });
+
+    it("localizes the row selection checkbox name", async () => {
+        translations["Select"] = "Auswählen";
+        await wrapper.setProps({
+            optionsShow: true,
+            selectable: true,
+            items: [{ id: "1", label: "file1", isLeaf: true }],
+        });
+
+        expect(wrapper.get("tbody input[type='checkbox']").attributes("aria-label")).toBe("Auswählen file1");
     });
 
     it("syncs row selection state from incoming items", async () => {
