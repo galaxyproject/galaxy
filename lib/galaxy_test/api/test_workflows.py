@@ -13337,7 +13337,10 @@ steps:
                     {"type": "int", "name": "replicate", "default_value": 0, "optional": False},
                     {"type": "string", "name": "treatment", "default_value": "control", "optional": False},
                 ],
-                rows={"sample1": [1, "short;long"],"sample2": [2, "--min=10 --max=50"],},
+                rows={
+                    "sample1": [1, "short;long"],
+                    "sample2": [2, "--min=10 --max=50"],
+                },
             )
             create_response = self._post("dataset_collections", payload, json=True)
             self._assert_status_code_is(create_response, 200)

@@ -424,12 +424,8 @@ class TestDatasetCollectionsApi(ApiTestCase):
         response = self._post("dataset_collections", payload, json=True)
         collection = self._check_create_response(response)
 
-        assert collection["elements"][0]["columns"] == [
-            "short;long", "--min=10 --max=50"
-        ]
-        assert collection["elements"][1]["columns"] == [
-            "long", "/data/reference.v2"
-        ]
+        assert collection["elements"][0]["columns"] == ["short;long", "--min=10 --max=50"]
+        assert collection["elements"][1]["columns"] == ["long", "/data/reference.v2"]
 
         # Embedded control characters must be rejected.
         for invalid_value in ("short\nlong", "short\tlong", "short\x00long"):
