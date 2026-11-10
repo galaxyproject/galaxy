@@ -50,6 +50,7 @@ from galaxy.jobs.runners.pulsar import (  # type: ignore[attr-defined]
     effective_dependency_resolution,
     FAILED_REMOTE_ERROR,
     LOST_REMOTE_ERROR,
+    PulsarFinishJobResult,
     PulsarJobRunner,
 )
 from galaxy.jobs.runners.runner_state_definitions import RUNNER_STATE_DEFINITIONS
@@ -582,7 +583,15 @@ def _tool_failure_runner(job_state, handled):
     return runner
 
 
-RESULT = SimpleNamespace(tool_stdout="o", tool_stderr="e", exit_code=42, job_stdout="", job_stderr="")
+RESULT = PulsarFinishJobResult(
+    tool_stdout="o",
+    tool_stderr="e",
+    exit_code=42,
+    job_stdout="",
+    job_stderr="",
+    remote_metadata_directory=None,
+    job_metrics_directory="",
+)
 resubmitted_for_tool_failure = PulsarJobRunner._resubmitted_for_tool_failure
 
 

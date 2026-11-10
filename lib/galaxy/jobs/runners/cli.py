@@ -189,7 +189,7 @@ class ShellJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 if state == model.Job.states.ERROR and job_state != model.Job.states.STOPPED:
                     # Try to find out the reason for exiting - this needs to happen before change_state
                     # otherwise jobs depending on resubmission outputs see that job as failed and pause.
-                    self.__handle_job_failure_reasons(ajs, external_job_id)
+                    self._handle_job_failure_reasons(ajs, external_job_id)
                     self.work_queue.put((self.mark_as_failed, ajs))
                     # Don't add the job to the watched items once it fails, deals with https://github.com/galaxyproject/galaxy/issues/7820
                     continue
@@ -207,7 +207,7 @@ class ShellJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         # Replace the watch list with the updated version
         self.watched = new_watched
 
-    def __handle_job_failure_reasons(self, ajs, external_job_id):
+    def _handle_job_failure_reasons(self, ajs, external_job_id):
         shell_params, job_params = self.parse_destination_params(ajs.job_destination.params)
         shell, job_interface = self.get_cli_plugins(shell_params, job_params)
         cmd_out = shell.execute(job_interface.get_failure_reason(external_job_id))
