@@ -6,9 +6,10 @@ a restrictive jail (for example ``bubblewrap``) that has little more than the Py
 interpreter and its site-packages available read-only.
 
 Protocol: read one JSON object ``{"program", "timeout", "memory_limit"}`` from stdin
-and write one JSON object ``{"result": <value>}`` or ``{"error": <message>}`` to
-stdout. ``program`` must yield a JSON string (i.e. end in ``JSON.stringify(...)``) so
-its result round-trips as JSON.
+and write one JSON object to stdout: ``{"result": <value>}``, ``{"error": <message>}``
+when the program fails, or ``{"worker_error": <message>}`` when the worker itself does.
+``program`` must yield a JSON string (i.e. end in ``JSON.stringify(...)``) so its result
+round-trips as JSON.
 """
 
 import json
@@ -17,6 +18,21 @@ import sys
 # Bound protocol bytes separately from the QuickJS allocator limit.
 MAX_MESSAGE_BYTES = 16 * 1024 * 1024
 STACK_LIMIT_BYTES = 1024 * 1024
+
+# Runs the program with an indirect eval, so it keeps its own strict global-level scope, and turns
+# what it throws into ``String(e)``: the error without the stack QuickJS appends to JSException.
+CATCH_THROWN = """(function (program) {
+    try {
+        var value = (0, eval)(program);
+        return typeof value === "string" ? value : undefined;
+    } catch (e) {
+        return {thrown: String(e)};
+    }
+})(%s)"""
+
+
+class ProgramError(Exception):
+    """The program raised or produced a result the protocol cannot carry."""
 
 
 def run_program(program: str, timeout: float, memory_limit: int) -> str:
@@ -30,12 +46,19 @@ def run_program(program: str, timeout: float, memory_limit: int) -> str:
     ctx.set_memory_limit(memory_limit)
     ctx.set_time_limit(timeout)
     ctx.set_max_stack_size(STACK_LIMIT_BYTES)
-    raw = ctx.eval(program)
+    try:
+        raw = ctx.eval(CATCH_THROWN % json.dumps(program))
+    except quickjs.JSException as e:
+        # The program cannot catch QuickJS interrupting it at the time limit. That error's message is
+        # one line of QuickJS's own, followed by the stack.
+        raise ProgramError(str(e).partition("\n")[0]) from e
+    if isinstance(raw, quickjs.Object):
+        raise ProgramError(json.loads(raw.json())["thrown"])
     if not isinstance(raw, str):
         # JSON.stringify(undefined) yields JS ``undefined``; treat as null.
         return "null"
     if len(raw) > MAX_MESSAGE_BYTES:
-        raise ValueError("Expression result exceeds protocol limit")
+        raise ProgramError("Expression result exceeds protocol limit")
     return raw
 
 
@@ -49,9 +72,11 @@ def main() -> None:
         # Forward JSON without expanding it into Python objects in the worker.
         response = ('{"result":' + result + "}").encode("utf-8")
         if len(response) > MAX_MESSAGE_BYTES:
-            raise ValueError("Expression result exceeds protocol limit")
-    except Exception as e:
+            raise ProgramError("Expression result exceeds protocol limit")
+    except ProgramError as e:
         response = json.dumps({"error": str(e)[:500]}).encode("utf-8")
+    except Exception as e:
+        response = json.dumps({"worker_error": str(e)[:500]}).encode("utf-8")
     sys.stdout.buffer.write(response)
 
 

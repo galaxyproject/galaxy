@@ -43,6 +43,7 @@ class ToolAppConfig(NamedTuple):
     root: str
     is_admin_user: Callable
     admin_users: list = []
+    expose_dataset_path: bool = False
 
 
 class ToolApp(MinimalToolApp):
