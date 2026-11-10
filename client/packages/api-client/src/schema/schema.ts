@@ -4370,6 +4370,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/oauth/device_authorization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start an OAuth device flow login
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        post: operations["device_authorization_api_oauth_device_authorization_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/object_store_instances": {
         parameters: {
             query?: never;
@@ -8775,6 +8795,19 @@ export interface components {
             /** Uuid */
             uuid?: unknown;
         };
+        /** Body_device_authorization_api_oauth_device_authorization_post */
+        Body_device_authorization_api_oauth_device_authorization_post: {
+            /**
+             * Client Id
+             * @description Required. ID of the app asking for access, e.g. `galaxy-cli`.
+             */
+            client_id?: string | null;
+            /**
+             * Scope
+             * @description Space-separated scopes the app asks for.
+             */
+            scope?: string | null;
+        };
         /** Body_fetch_form_api_tools_fetch_post */
         Body_fetch_form_api_tools_fetch_post: {
             /** Files */
@@ -12677,6 +12710,40 @@ export interface components {
              * @description The name of the user.
              */
             username: string;
+        };
+        /**
+         * DeviceAuthorizationResponse
+         * @description Response to a device authorization request (RFC 8628 §3.2).
+         *
+         *     _The optional `verification_uri_complete` is left out on purpose, so the user always types the
+         *     code and can't approve a login from a link someone else sent them (RFC 8628 §5.4)._
+         */
+        DeviceAuthorizationResponse: {
+            /**
+             * Device Code
+             * @description Secret code the app polls the token endpoint with.
+             */
+            device_code: string;
+            /**
+             * Expires In
+             * @description Seconds until both codes expire.
+             */
+            expires_in: number;
+            /**
+             * Interval
+             * @description Minimum seconds the app waits between token requests.
+             */
+            interval: number;
+            /**
+             * User Code
+             * @description Short code the user enters on the verification page.
+             */
+            user_code: string;
+            /**
+             * Verification Uri
+             * @description Page where the user enters the code.
+             */
+            verification_uri: string;
         };
         /** DirectoryUriParameterModel */
         DirectoryUriParameterModel: {
@@ -21061,6 +21128,35 @@ export interface components {
         OAuth2Info: {
             /** Authorize Url */
             authorize_url: string;
+        };
+        /**
+         * OAuthErrorCode
+         * @description OAuth error codes Galaxy can return (RFC 6749 §5.2 and RFC 8628 §3.5).
+         * @enum {string}
+         */
+        OAuthErrorCode:
+            | "invalid_request"
+            | "invalid_client"
+            | "invalid_grant"
+            | "unauthorized_client"
+            | "unsupported_grant_type"
+            | "invalid_scope"
+            | "authorization_pending"
+            | "slow_down"
+            | "access_denied"
+            | "expired_token";
+        /**
+         * OAuthErrorResponse
+         * @description Error response from an OAuth endpoint (RFC 6749 §5.2).
+         */
+        OAuthErrorResponse: {
+            /** @description OAuth error code, such as `invalid_client`. */
+            error: components["schemas"]["OAuthErrorCode"];
+            /**
+             * Error Description
+             * @description Human-readable explanation of the error.
+             */
+            error_description?: string | null;
         };
         /** ObjectExportTaskResponse */
         ObjectExportTaskResponse: {
@@ -47759,6 +47855,60 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    device_authorization_api_oauth_device_authorization_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_device_authorization_api_oauth_device_authorization_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceAuthorizationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthErrorResponse"];
+                };
             };
             /** @description Request Error */
             "4XX": {
