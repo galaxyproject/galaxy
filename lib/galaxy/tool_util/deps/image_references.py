@@ -137,6 +137,11 @@ def _parse_denied_entry(entry: str) -> _Entry:
     if entry == "*":
         raise ImageReferenceError("'*' cannot be denied, allow no images with an empty list of allowed containers")
     parsed = _parse_entry(entry)
+    # A bare host parses as a Docker Hub image (``quay.io`` is docker.io/library/quay.io),
+    # which would deny nothing on that registry.
+    name = _strip_scheme(entry).partition("@")[0].partition(":")[0]
+    if not parsed.namespace and "/" not in name and ("." in name or name == "localhost"):
+        raise ImageReferenceError(f"'{entry}' names a registry, deny '{name}/*' to deny every image on it")
     if parsed.reference.tag or parsed.reference.digest:
         raise ImageReferenceError(
             f"'{entry}' names a tag or digest, deny the repository or namespace instead: "

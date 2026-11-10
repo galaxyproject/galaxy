@@ -111,3 +111,9 @@ def test_container_allowlist_denied(entries, denied, identifier, allowed):
 def test_container_allowlist_rejects_malformed_denied_entries(entry):
     with pytest.raises(ImageReferenceError):
         ContainerAllowlist(["*"], [entry])
+
+
+@pytest.mark.parametrize("entry", ["quay.io", "docker://quay.io", "localhost", "localhost:5000"])
+def test_container_allowlist_rejects_registry_as_denied_entry(entry):
+    with pytest.raises(ImageReferenceError, match="names a registry"):
+        ContainerAllowlist(["*"], [entry])

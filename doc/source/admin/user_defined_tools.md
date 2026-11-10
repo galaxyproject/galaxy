@@ -168,7 +168,7 @@ user_defined_tool_denied_containers:
 
 Denied entries are parsed and compared like allowed ones, with these differences:
 
-- An entry must name a repository or a namespace. Entries with a tag or digest are refused, because the same image can be named by another tag or digest. A lone `*` is refused too; use an empty allowed list to allow no images.
+- An entry must name a repository or a namespace. Entries with a tag or digest are refused, because the same image can be named by another tag or digest. A lone `*` is refused too; use an empty allowed list to allow no images. An entry that is only a registry host, such as `quay.io`, is refused; use `quay.io/*` to deny every image on that registry.
 - When the list is not empty, a reference Galaxy cannot parse, such as an `oras://` one, is refused even if `user_defined_tool_allowed_containers` is `*`, because it cannot be compared against the denied entries.
 - `<path>/*` does not include `<path>` itself. To deny both, list both.
 
