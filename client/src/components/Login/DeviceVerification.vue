@@ -6,11 +6,14 @@ import {
     faExclamationTriangle,
     faQuestionCircle,
     faTimes,
+    faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCard, BCardBody, BCardFooter, BCardHeader } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { isRegisteredUser } from "@/api";
 import {
     decideDeviceAuthorization,
     type DeviceAuthorizationDetails,
@@ -18,6 +21,7 @@ import {
     type DeviceAuthorizationErrorReason,
     fetchDeviceAuthorization,
 } from "@/api/oauth";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -50,6 +54,9 @@ const decisionError = ref<PageError | null>(null);
 
 /** The last code that failed for good, so Continue stays off until the user changes it. */
 const failedCode = ref("");
+
+const { currentUser } = storeToRefs(useUserStore());
+const username = computed(() => (isRegisteredUser(currentUser.value) && currentUser.value.username) || "");
 
 const canLookUp = computed(() => !loading.value && userCode.value !== failedCode.value);
 const codeState = computed(() => (codeError.value ? false : null));
@@ -128,6 +135,11 @@ function reset() {
                         {{ decisionError.message }}
                     </template>
                 </GAlert>
+
+                <p v-if="username" id="device-signed-in-as" class="text-muted small text-center mb-2">
+                    <FontAwesomeIcon :icon="faUser" fixed-width />
+                    {{ localize("Signed in as") }} <b>{{ username }}</b>
+                </p>
 
                 <BCard no-body class="device-verification-card">
                     <!-- 1. Enter the code from the requesting application/device -->
