@@ -14,7 +14,7 @@ def _handle(stdout):
     runner.parse_destination_params.return_value = ({}, {})
     runner.get_cli_plugins.return_value = (shell, Slurm())
     ajs = MagicMock(runner_state=None, fail_message=None)
-    ShellJobRunner._ShellJobRunner__handle_job_failure_reasons(runner, ajs, "12")
+    ShellJobRunner._handle_job_failure_reasons(runner, ajs, "12")
     return ajs
 
 
