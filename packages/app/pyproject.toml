@@ -29,6 +29,7 @@ dependencies = [
     "galaxy-util[image-util,jstree]",
     "galaxy-web-framework",
     "galaxy-web-stack",
+    "aiohttp",
     "Beaker",
     "boltons",
     "bx-python",
