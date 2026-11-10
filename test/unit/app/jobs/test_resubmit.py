@@ -3,15 +3,15 @@ from unittest.mock import MagicMock
 import pytest
 
 from galaxy.jobs.runners import JobState
+from galaxy.jobs.runners.runner_state_definitions import (
+    register_runner_state,
+    RUNNER_STATE_DEFINITIONS,
+)
 from galaxy.jobs.runners.state_handlers.resubmit import (
     _ExpressionContext,
     failure,
 )
-from galaxy.jobs.runners.util import (
-    register_runner_state,
-    RUNNER_STATE_DEFINITIONS,
-    runner_states,
-)
+from galaxy.jobs.runners.util import runner_states
 
 HANDLED_RUNNER_STATES = [
     (JobState.runner_states.WALLTIME_REACHED, "walltime_reached"),

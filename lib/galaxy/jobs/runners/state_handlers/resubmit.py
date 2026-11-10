@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from galaxy import model
 from galaxy.jobs.runners import JobState
-from galaxy.jobs.runners.util import RUNNER_STATE_DEFINITIONS
+from galaxy.jobs.runners.runner_state_definitions import RUNNER_STATE_DEFINITIONS
 from galaxy.util import now
 from ._safe_eval import safe_eval
 
