@@ -8968,6 +8968,14 @@ export interface components {
              */
             tags?: string[] | null;
         };
+        /** CollectionMetadata */
+        CollectionMetadata: {
+            /**
+             * Name
+             * @description Expected name of the output collection.
+             */
+            name?: string | null;
+        };
         /**
          * CollectionSourceType
          * @enum {string}
@@ -17824,7 +17832,7 @@ export interface components {
             new_history_name?: string | null;
             /**
              * No Add to History
-             * @description Indicates if the workflow invocation should not be added to the history.
+             * @description If true, workflow inputs from other histories or libraries are not copied into the target history.
              * @default false
              */
             no_add_to_history: boolean | null;
@@ -24408,6 +24416,8 @@ export interface components {
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Input"];
             } | null;
+            /** Metadata */
+            metadata?: components["schemas"]["CollectionMetadata"] | null;
         };
         /** TestCollectionOutputAssertions */
         "TestCollectionOutputAssertions-Output": {
@@ -24434,6 +24444,8 @@ export interface components {
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Output"];
             } | null;
+            /** Metadata */
+            metadata?: components["schemas"]["CollectionMetadata"] | null;
         };
         /** TestDataOutputAssertions */
         "TestDataOutputAssertions-Input": {

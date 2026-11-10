@@ -2,7 +2,7 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
-import Vue, { computed, onMounted, ref, watch } from "vue";
+import Vue, { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import {
     browseRemoteFiles,
@@ -84,6 +84,10 @@ const hasValue = ref(false);
 const showTime = ref(true);
 const showDetails = ref(true);
 const isBusy = ref(false);
+/** Recursive folder listings still loading; the files they return are not selected yet */
+const pendingListings = ref(0);
+/** Latest recursive listing of each folder still loading; earlier or abandoned listings are ignored */
+const folderListings = new Map<string, symbol>();
 const showFTPHelper = ref(false);
 /** Root URIs of RDM sources, only fetched in directory mode to prevent selecting a repository root */
 const rdmUriRoots = ref<string[]>([]);
@@ -105,6 +109,11 @@ const fields = computed(() => {
 
 const fileMode = computed(() => props.mode == "file");
 
+/** The rows are one page of a paginated folder, or its filter matches, rather than all of its contents */
+const isPaginated = computed(
+    () => Boolean(itemsProvider.value) && (totalItems.value > items.value.length || Boolean(query.value)),
+);
+
 /** RDM repositories (e.g. Dataverse, Invenio) only hold files inside their records, not at their root */
 const isAtRdmRepositoryRoot = computed(() => {
     const url = urlTracker.current.value?.url;
@@ -118,6 +127,7 @@ const okButtonDisabled = computed(
     () =>
         (fileMode.value && !hasValue.value) ||
         isBusy.value ||
+        pendingListings.value > 0 ||
         (!fileMode.value && (urlTracker.isAtRoot.value || isAtRdmRepositoryRoot.value)),
 );
 
@@ -193,13 +203,20 @@ function selectDirectoryRecursive(record: SelectionItem) {
     // if directory is `selected` or `mixed` unselect everything
     if (isDirectorySelected(record.id) || selectionModel.value.pathExists(record.url)) {
         unselectPath(record.url, false, record.id);
+        endFolderListing(record.id);
     } else {
         selectedDirectories.value.push(record);
         // look for subdirectories
         const recursive = true;
-        isBusy.value = true;
+        const listing = Symbol(record.id);
+        endFolderListing(record.id);
+        folderListings.set(record.id, listing);
+        pendingListings.value++;
         browseRemoteFiles(record.url, recursive)
             .then((incoming) => {
+                if (folderListings.get(record.id) !== listing || !isDirectorySelected(record.id)) {
+                    return;
+                }
                 incoming.entries.forEach((item) => {
                     // construct record
                     const subRecord = entryToRecord(item);
@@ -211,17 +228,29 @@ function selectDirectoryRecursive(record: SelectionItem) {
                         selectedDirectories.value.push(subRecord);
                     }
                 });
-                totalItems.value = incoming.totalMatches;
-                isBusy.value = false;
             })
             .catch((error) => {
+                if (folderListings.get(record.id) !== listing) {
+                    return;
+                }
                 // undo the directory selection made above; formatRows also disables OK again
                 unselectPath(record.url, false, record.id);
                 formatRows();
                 // a toast keeps the folder listed, so files can still be picked one by one
                 toast.error(errorMessageAsString(error));
-                isBusy.value = false;
+            })
+            .finally(() => {
+                if (folderListings.get(record.id) === listing) {
+                    endFolderListing(record.id);
+                }
             });
+    }
+}
+
+/** Stops waiting for the folder's listing, so its files are not selected when it returns */
+function endFolderListing(folderId: string) {
+    if (folderListings.delete(folderId)) {
+        pendingListings.value--;
     }
 }
 
@@ -257,13 +286,25 @@ function isDirectorySelected(directoryId: string): boolean {
     return selectedDirectories.value.some(({ id }) => id === directoryId);
 }
 
+/** whether the row, or anything under it, is selected **/
+function isRowSelected(item: SelectionItem): boolean {
+    return (
+        selectionModel.value.exists(item.id) || selectionModel.value.pathExists(item.id) || isDirectorySelected(item.id)
+    );
+}
+
 /** check if all objects in this folders are selected **/
 function checkIfAllSelected(): boolean {
     const isAllSelected =
         Boolean(items.value.length) &&
         items.value.every(({ id }) => selectionModel.value.exists(id) || isDirectorySelected(id));
 
-    if (isAllSelected && urlTracker.current.value && !isDirectorySelected(urlTracker.current.value.id)) {
+    if (
+        isAllSelected &&
+        !isPaginated.value &&
+        urlTracker.current.value &&
+        !isDirectorySelected(urlTracker.current.value.id)
+    ) {
         // if all selected, select current folder
         selectedDirectories.value.push(urlTracker.current.value);
     }
@@ -440,11 +481,14 @@ function onSelectAll() {
     if (!urlTracker.current.value) {
         return;
     }
-    const isUnselectAll = selectionModel.value.pathExists(urlTracker.current.value.url);
+    // a paginated folder shows one page, so select all toggles that page and keeps the other pages' selection
+    const isUnselectAll = isPaginated.value
+        ? items.value.some(isRowSelected)
+        : selectionModel.value.pathExists(urlTracker.current.value.url);
 
     for (const item of items.value) {
         if (isUnselectAll) {
-            if (selectionModel.value.exists(item.id) || selectionModel.value.pathExists(item.id)) {
+            if (isRowSelected(item)) {
                 item.isLeaf ? selectionModel.value.add(item) : selectDirectoryRecursive(item);
             }
         } else {
@@ -452,7 +496,12 @@ function onSelectAll() {
         }
     }
 
-    if (!isUnselectAll && items.value.length !== 0) {
+    if (isPaginated.value) {
+        if (isUnselectAll) {
+            // the folder is no longer selected as a whole, but files on its other pages stay selected
+            unselectPath(urlTracker.current.value.url, true);
+        }
+    } else if (!isUnselectAll && items.value.length !== 0) {
         selectedDirectories.value.push(urlTracker.current.value);
     } else if (isDirectorySelected(urlTracker.current.value.id)) {
         selectDirectoryRecursive(urlTracker.current.value);
@@ -493,6 +542,17 @@ function onGoBack(record?: SelectionItem) {
     }
 }
 
+// the table drops page and filter changes while busy, so list the current page again once listings finish
+watch(
+    () => pendingListings.value === 0,
+    async (allListed) => {
+        if (allListed && itemsProvider.value) {
+            await nextTick();
+            selectionDialog.value?.refresh();
+        }
+    },
+);
+
 watch(query, () => {
     selectionDialog.value?.resetPagination(1);
 });
@@ -513,7 +573,7 @@ onMounted(() => {
         :error-message="errorMessage"
         :file-mode="fileMode"
         :fields="fields"
-        :is-busy="isBusy"
+        :is-busy="isBusy || pendingListings > 0"
         :items="items"
         :items-provider="itemsProvider"
         :total-items="totalItems"

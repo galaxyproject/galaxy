@@ -61,6 +61,7 @@
   <tool file="filter_param_value_ref_attribute.xml" />
   <tool file="filter_param_value_nested_conditional.xml" />
   <tool file="filter_static_regexp.xml" />
+  <tool file="select_from_duplicate_value_table.xml" />
   <tool file="select_from_dataset.xml" />
   <tool file="select_from_dataset_in_conditional.xml" />
   <tool file="conditional_name_digit_suffix.xml" />
@@ -129,6 +130,7 @@
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_with_input_optional.xml" />
+  <tool file="output_filter_all_by_param.xml" />
   <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
@@ -155,6 +157,7 @@
   <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
+  <tool file="cache_dunder_section.xml" />
   <tool file="sam_to_unsorted_bam.xml" />
   <tool file="top_level_data.xml" />
   <tool file="validation_hdf5.xml" />
@@ -315,6 +318,12 @@
   <tool file="parameters/gx_boolean_user.yml" />
   <tool file="parameters/gx_data_user.yml" />
   <tool file="parameters/gx_data_multiple_user.yml" />
+  <tool file="parameters/gx_user_boolean_optional_null.yml" />
+  <tool file="parameters/gx_user_boolean_optional_omitted.yml" />
+  <tool file="parameters/gx_user_boolean_defaults.yml" />
+  <tool file="parameters/gx_user_boolean_conditional.yml" />
+  <tool file="parameters/gx_user_repeat.yml" />
+  <tool file="parameters/gx_user_section.yml" />
   <tool file="parameters/gx_select_multiple_one_default_user.yml" />
   <tool file="parameters/gx_data_collection_list_or_paired.yml" />
   <tool file="parameters/gx_data_collection_record.yml" />

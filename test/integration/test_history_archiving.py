@@ -2,11 +2,17 @@ from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import text
+from sqlalchemy import (
+    select,
+    text,
+)
 
 from galaxy import model
 from galaxy.schema.schema import ModelStoreFormat
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    wait_on,
+)
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
@@ -250,6 +256,14 @@ class TestHistoryArchivingAdmin(TestHistoryArchivingWithExportRecord):
 
     require_admin_user = True
 
+    def _user_update_time(self, user_db_id: int) -> datetime:
+        sa_session = self._app.model.session
+        update_time = sa_session.scalar(select(model.User.update_time).where(model.User.id == user_db_id))
+        # End the read transaction so the next read sees what the purge task commits.
+        sa_session.rollback()
+        assert update_time is not None
+        return update_time
+
     def test_user_archive_own_history_updates_update_time(self):
         """When a user archives their own history, their update_time should be updated."""
         history_name = f"for_archiving_{uuid4()}"
@@ -283,12 +297,12 @@ class TestHistoryArchivingAdmin(TestHistoryArchivingWithExportRecord):
         for dataset_id in dataset_ids:
             self.dataset_populator.wait_for_purge(history_id, dataset_id)
 
-        user = sa_session.get(model.User, user_db_id)
-        assert user is not None
-        assert user.update_time > old_update_time, (
-            f"User's update_time should be updated when archiving own history. "
-            f"Got {user.update_time}, expected > {old_update_time}"
-        )
+        # The purge commits the user after the datasets, so poll instead of reading once.
+        def user_update_time_changed():
+            update_time = self._user_update_time(user_db_id)
+            return update_time if update_time > old_update_time else None
+
+        wait_on(user_update_time_changed, "user's update_time to change after archiving own history")
 
     def test_admin_archive_other_user_history_does_not_update_owner_time(self):
         """When an admin archives another user's history, the owner's update_time should NOT be updated."""

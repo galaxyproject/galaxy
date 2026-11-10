@@ -189,6 +189,7 @@ class DefaultToolAction(ToolAction):
 
                 direct_match, target_ext, converted_dataset = data.find_conversion_destination(formats)
                 if not direct_match and target_ext:
+                    element_identifier = getattr(data, "element_identifier", None)
                     if converted_dataset:
                         data = converted_dataset
                     else:
@@ -199,6 +200,8 @@ class DefaultToolAction(ToolAction):
                             history=history,
                             use_cached_job=param_values.get("__use_cached_job__", False),
                         )
+                    if element_identifier is not None:
+                        data.element_identifier = element_identifier
 
                 input_name = prefixed_name
                 # Checked security of whole collection all at once if mapping over this input, else

@@ -1,4 +1,7 @@
+import pytest
+
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
+from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.parameters.dynamic_options import DynamicOptions
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.util import XML
@@ -102,3 +105,33 @@ def test_get_field_by_name_for_value_uses_first_entry_for_duplicate_values():
         "/local/mm10.fa",
     ]
     assert opts.get_field_by_name_for_value("path", "unknown", trans, {}) == []
+
+
+@pytest.mark.parametrize("version", ["4.3", "5.0", "5.1"])
+def test_merged_data_table_filters_versions_before_resolving_value(tmp_path, version):
+    configs = []
+    for source, versions in (("local", ["4.3"]), ("repository", ["5.0", "5.1"])):
+        loc = tmp_path / f"{source}.loc"
+        loc.write_text("".join(f"hg38\tHuman (hg38)\t{v}\t/indexes/{v}/hg38\n" for v in versions))
+        config = tmp_path / f"{source}.xml"
+        config.write_text(f"""<tables>
+  <table name="snpeff">
+    <columns>value, name, version, path</columns>
+    <file path="{loc}" />
+  </table>
+</tables>""")
+        configs.append(str(config))
+    app = MockApp()
+    app.tool_data_tables = ToolDataTableManager(tmp_path, ",".join(configs))
+    opts = DynamicOptions(
+        XML(f"""<options from_data_table="snpeff">
+  <filter type="static_value" column="version" value="{version}" />
+</options>"""),
+        Bunch(tool=Bunch(app=app)),
+    )
+    trans = WorkRequestContext(app=app)
+    for reload in (False, True):
+        if reload:
+            app.tool_data_tables.reload_tables()
+        assert opts.get_options(trans, {}) == [ParameterOption("Human (hg38)", "hg38", False)]
+        assert opts.get_field_by_name_for_value("path", "hg38", trans, {}) == [f"/indexes/{version}/hg38"]

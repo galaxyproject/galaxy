@@ -4,7 +4,10 @@ from datetime import (
     datetime,
     timezone,
 )
-from json import loads
+from json import (
+    dumps,
+    loads,
+)
 from typing import (
     Any,
     cast,
@@ -91,9 +94,15 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from galaxy.webapps.galaxy.api.common import serve_workbook
+from galaxy.webapps.galaxy.api.common import (
+    lift_headers,
+    serve_workbook,
+)
 from galaxy.webapps.galaxy.services.base import tool_request_detailed_to_model
-from galaxy.webapps.galaxy.services.tools import ToolsService
+from galaxy.webapps.galaxy.services.tools import (
+    PROTECTED_TOOLS,
+    ToolsService,
+)
 from . import (
     APIContentTypeRoute,
     as_form,
@@ -107,9 +116,6 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-# Do not allow these tools to be called directly - they (it) enforces extra security and
-# provides access via a different API endpoint.
-PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
@@ -894,21 +900,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         if dynamic_tool := getattr(tool, "dynamic_tool", None):
             if dynamic_tool.value.get("class") == "GalaxyUserTool":
                 status, lifted, errors = lift_user_tool_source(dynamic_tool.value)
-                if status == "lifted" and errors:
-                    compact = ",".join(errors)
-                    trans.response.headers["X-Galaxy-Deprecated-Fields"] = compact
-                    trans.response.headers["Warning"] = (
-                        f'299 - "Some conventions are no longer valid; ignored on read: {compact}"'
-                    )
-                elif status == "invalid":
-                    compact = "; ".join(errors)
-                    trans.response.headers["X-Galaxy-Schema-Errors"] = compact
-                    trans.response.headers["Warning"] = f'299 - "Stored tool no longer satisfies schema: {compact}"'
+                trans.response.headers.update(lift_headers(status, errors))
+                if status == "invalid":
                     # Return the raw stored value so callers can still inspect /
                     # repair the YAML manually.
-                    import json
-
-                    return json.dumps(dynamic_tool.value)
+                    return dumps(dynamic_tool.value)
                 assert isinstance(lifted, UserToolSource)
                 return lifted.model_dump_json(
                     by_alias=True,
@@ -948,20 +944,12 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
-        validate_not_protected(tool_id)
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         __tags = payload.get("__tags", [])
         if not isinstance(__tags, list) or not all(isinstance(tag, str) for tag in __tags):
             raise exceptions.RequestParameterInvalidException("__tags must be a list of strings.")
-        return self.service._create(trans, payload, **kwd)
-
-
-def validate_not_protected(tool_id: Optional[str]):
-    if tool_id in PROTECTED_TOOLS:
-        raise exceptions.RequestParameterInvalidException(
-            f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
-        )
+        return self.service.create(trans, payload, **kwd)
 
 
 def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:

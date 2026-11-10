@@ -84,6 +84,7 @@ const emit = defineEmits<{
 
 const filter = ref("");
 const currentPage = ref(1);
+const table = ref<BTable>();
 const perPage = ref(25);
 const showAdvancedSearch = ref(false);
 
@@ -147,6 +148,11 @@ function resetPagination(toInitialPage = 1) {
     currentPage.value = toInitialPage;
 }
 
+/** Calls the items provider again, e.g. for a page change dropped while the table was busy */
+function refresh() {
+    table.value?.refresh();
+}
+
 if (props.watchOnPageChanges) {
     watch(
         () => props.items,
@@ -170,6 +176,7 @@ watch(
 );
 
 defineExpose({
+    refresh,
     resetFilter,
     resetPagination,
     currentPage,
@@ -209,6 +216,7 @@ defineExpose({
         <div v-else>
             <div v-if="optionsShow" data-description="selection dialog options">
                 <BTable
+                    ref="table"
                     small
                     hover
                     class="selection-dialog-table"

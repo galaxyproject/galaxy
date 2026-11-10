@@ -533,6 +533,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             endpoint = f"histories/{history_id}?view={view}"
         return self.api_get(endpoint)
 
+    def history_collection_names(self, history_id: str) -> list[str]:
+        """Names of the collections in ``history_id``."""
+        response = self.api_get(f"histories/{history_id}/contents?type=dataset_collection", raw=True)
+        response.raise_for_status()
+        return [item["name"] for item in response.json()]
+
     def current_history(self) -> dict[str, Any]:
         full_url = self.build_url("history/current_history_json", for_selenium=False)
         response = requests.get(full_url, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT)
@@ -540,6 +546,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def current_history_id(self) -> str:
         return self.current_history()["id"]
+
+    def wait_for_current_history_id(self, history_id: str):
+        """Wait until ``history_id`` is the user's current history."""
+        self._wait_on(
+            lambda: self.current_history_id() == history_id,
+            f"history [{history_id}] to become current",
+            wait_type=WAIT_TYPES.DATABASE_OPERATION,
+        )
 
     def current_history_publish(self):
         self.click_history_option_sharing()
@@ -797,13 +811,16 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         target_card = self.get_history_card(card_name)
 
         if is_in_extra:
-            # Open the extra-actions dropdown and click the menu item directly.
-            # Bootstrap-vue keeps menu items in the DOM for every card, so the
-            # action lookup must be scoped to target_card to avoid picking a
-            # match from a closed dropdown on another card.
+            # Bootstrap-vue keeps menu items in the DOM for every card, so look up the item
+            # within target_card and wait for its dropdown to open before clicking it.
             target_card.find_element(By.CSS_SELECTOR, '[id^="g-card-extra-actions-history-"]').click()
-            self.sleep_for(self.wait_types.UX_RENDER)
-            target_card.find_element(By.CSS_SELECTOR, action_selector).click()
+            action_element = target_card.find_element(By.CSS_SELECTOR, action_selector)
+            self._wait_on(
+                lambda *_: action_element.is_displayed(),
+                f"history card action [{action_selector}] to be displayed",
+                wait_type=self.wait_types.UX_TRANSITION,
+            )
+            action_element.click()
             return
 
         action_element = target_card.find_element(By.CSS_SELECTOR, action_selector)
@@ -985,6 +1002,30 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.snapshot("logging-in")
         login.submit.wait_for_and_click()
         self.snapshot("login-submitted")
+
+    def request_password_reset(self, email: str) -> str:
+        """Request a reset email from the login page and return its confirmation."""
+        self.home()
+        self.components.masthead.login_masthead_button.wait_for_and_click()
+        login = self.components.login
+        self.fill(login.form.wait_for_visible(), {"login": email})
+        login.reset_password_link.wait_for_and_click()
+        return login.alert.wait_for_text()
+
+    def reset_password_from_link(self, link: str, password: str) -> None:
+        """Open the emailed reset link and save the new password."""
+        self.get(link)
+        self.change_password(password)
+
+    def change_password(self, password: str, current_password: Optional[str] = None) -> None:
+        """Save a new password from the reset or expired-password form."""
+        form = self.components.change_password
+        if current_password is not None:
+            form.current.wait_for_and_clear_and_send_keys(current_password)
+        form.password.wait_for_and_clear_and_send_keys(password)
+        form.confirm.wait_for_and_clear_and_send_keys(password)
+        form.save.wait_for_and_click()
+        form.form.wait_for_absent_or_hidden()
 
     def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True):
         if email is None:
@@ -1961,9 +2002,53 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_import_dir)
         self.select_dataset_from_lib_import_modal(filenames)
 
+    def libraries_folder_wait_for_datasets(self, names) -> list[str]:
+        """Wait until the open library folder lists ``names``; returns every row's name in display order."""
+        folder = self.components.libraries.folder
+
+        def rows_loaded():
+            row_count = len(self.libraries_table_elements())
+            row_names = [folder.row_name(row_index=index).wait_for_present().text.strip() for index in range(row_count)]
+            return row_names if set(names) <= set(row_names) else None
+
+        return self._wait_on(rows_loaded, f"datasets {sorted(names)} in the library folder")
+
+    def libraries_folder_select_datasets(self, names):
+        """Tick the open library folder's datasets named ``names``."""
+        folder = self.components.libraries.folder
+        row_names = self.libraries_folder_wait_for_datasets(names)
+        for index, row_name in enumerate(row_names):
+            if row_name in names:
+                folder.select_dataset(row_index=index).wait_for_and_click()
+                folder.selected_dataset_row(row_index=index).wait_for_present()
+
+    def libraries_folder_add_to_history(self, names, history_id=None, screenshot_name=None):
+        """Add the open folder's datasets ``names`` via Add to History > as Datasets, into ``history_id`` if given."""
+        folder = self.components.libraries.folder
+        self.libraries_folder_select_datasets(names)
+        folder.add_to_history.wait_for_and_click()
+        folder.add_to_history_datasets.wait_for_and_click()
+        if history_id:
+            folder.import_to_history_select.select_by_value(history_id)
+        if screenshot_name:
+            self.wait_for_fade_in(folder.add_to_history_modal)
+            self.screenshot(screenshot_name)
+        folder.import_datasets_ok_button.wait_for_and_click()
+        # the dialog closes once every dataset is added; its progress bar starts at zero width, so reads as hidden
+        folder.import_datasets_ok_button.wait_for_absent_or_hidden(wait_type=WAIT_TYPES.DATABASE_OPERATION)
+
     def navigate_to_new_library(self):
         self.create_new_library()
         self.libraries_open_with_name(self.name)
+
+    def wait_for_fade_in(self, target):
+        """Wait until ``target`` is visible and has finished fading in to full opacity."""
+        element = target.wait_for_visible()
+        self._wait_on(
+            lambda: self.execute_script("return getComputedStyle(arguments[0]).opacity;", element) == "1",
+            f"{target} to fade in",
+            wait_type=WAIT_TYPES.UX_TRANSITION,
+        )
 
     def wait_for_overlays_cleared(self):
         """Wait for modals and Toast notifications to disappear."""
@@ -2077,6 +2162,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.workflows.workflow_drop_down.wait_for_and_click()
         self.components.workflows.view_external_link.wait_for_and_click()
 
+    @retry_during_transitions
     def workflow_index_click_tag_display(self, workflow_index=0):
         workflow_element = self.workflow_card_element(workflow_index=workflow_index)
         workflow_element.find_element(By.CSS_SELECTOR, ".stateless-tags .headless-multiselect .toggle-button").click()
@@ -2624,15 +2710,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def history_panel_click_copy_elements(self):
         self.use_bootstrap_dropdown(option="copy datasets", menu="history options")
 
-    def use_bootstrap_dropdown(self, option=None, menu=None):
+    def use_bootstrap_dropdown(self, option=None, menu=None, scope=".history-index"):
         """uses bootstrap dropdown by data-description attributes"""
         if option is None:
             raise TypeError
         if menu is None:
             raise TypeError
-        toggle = self.history_element(menu).descendant("button")
+        toggle = self.history_element(menu, scope=scope).descendant("button")
         self.wait_for_and_click(toggle)
-        return self.history_element(option).wait_for_and_click()
+        return self.history_element(option, scope=scope).wait_for_and_click()
 
     @retry_during_transitions
     def histories_click_advanced_search(self):
@@ -2675,8 +2761,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def history_panel_multi_operations_show(self):
         return self.wait_for_and_click(self.navigation.history_panel.multi_operations.selectors.show_button)
 
-    def history_panel_muli_operation_select_hid(self, hid):
-        item_selector = self.history_panel_item_selector(hid, wait=True)
+    def history_panel_muli_operation_select_hid(self, hid, history_id=None):
+        item_selector = self.history_panel_item_selector(hid, wait=True, history_id=history_id)
         operation_radio_selector = f"{item_selector} .selector"
         self.wait_for_and_click_selector(operation_radio_selector)
 
@@ -2780,9 +2866,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         raise ValueError(f"No visualization [{visualization_name}] found.")
 
-    def history_panel_item_selector(self, hid, wait=False):
-        current_history_id = self.current_history_id()
-        contents = self.api_get(f"histories/{current_history_id}/contents")
+    def history_panel_item_selector(self, hid, wait=False, history_id=None):
+        history_id = history_id or self.current_history_id()
+        contents = self.api_get(f"histories/{history_id}/contents")
         try:
             history_item = [d for d in contents if d["hid"] == hid][0]
         except IndexError:
@@ -2836,8 +2922,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             return False
         return item_component.details.is_displayed
 
-    def history_panel_build_list_auto(self):
-        return self.use_bootstrap_dropdown(option="auto build list", menu="selected content menu")
+    def history_panel_build_list_auto(self, scope=".history-index"):
+        return self.use_bootstrap_dropdown(option="auto build list", menu="selected content menu", scope=scope)
 
     def history_panel_build_list_advanced(self):
         return self.use_bootstrap_dropdown(option="advanced build list", menu="selected content menu")

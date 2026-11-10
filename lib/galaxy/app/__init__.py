@@ -1,5 +1,4 @@
 import collections
-import errno
 import logging
 import os
 import signal
@@ -42,6 +41,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.datatypes.registry import Registry
 from galaxy.di import Container
+from galaxy.exceptions import ConfigurationError
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
@@ -168,7 +168,11 @@ from galaxy.tool_shed.galaxy_install.installed_repository_manager import (
 from galaxy.tool_shed.galaxy_install.update_repository_manager import (
     UpdateRepositoryManager,
 )
-from galaxy.tool_util.data import ToolDataTableManager as BaseToolDataTableManager
+from galaxy.tool_util.data import (
+    DataTableColumnMismatch,
+    tool_data_table_config_sources,
+    ToolDataTableManager as BaseToolDataTableManager,
+)
 from galaxy.tool_util.deps import containers
 from galaxy.tool_util.deps.dependencies import AppInfo
 from galaxy.tool_util.deps.views import DependencyResolversView
@@ -212,6 +216,22 @@ from galaxy.workflow.trs_proxy import TrsProxy
 
 log = logging.getLogger(__name__)
 app = None
+
+
+def data_table_conflict_message(e: DataTableColumnMismatch, shed_tool_data_table_config: str) -> str:
+    # Point at the shed definition even when admin-ordered sources load the shed config first.
+    remove_from = e.config_filename
+    if e.repository_info is None:
+        shed_identity = os.path.realpath(shed_tool_data_table_config)
+        remove_from = next(
+            (f for f in e.existing_config_filenames if os.path.realpath(f) == shed_identity),
+            remove_from,
+        )
+    return (
+        f"{e} To start Galaxy, remove the <table name=\"{e.table_name}\"> element from '{remove_from}' "
+        f"or remove the other definition of {e.table_name!r}; tools that rely on the removed definition will "
+        "not work until the conflict is resolved."
+    )
 
 
 class HaltableContainer(Container):
@@ -459,24 +479,30 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         )
 
     def _configure_tool_data_tables(self, from_shed_config):
-        # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
-        tool_data_tables: BaseToolDataTableManager = ToolDataTableManager(
-            tool_data_path=self.config.tool_data_path,
-            config_filename=self.config.tool_data_table_config_path,
-            other_config_dict=self.config,
+        sources = tool_data_table_config_sources(
+            self.config.tool_data_table_config_path,
+            self.config.shed_tool_data_table_config,
+            from_shed_config=from_shed_config,
+            managed_optional=not self.config.is_set("shed_tool_data_table_config"),
         )
-        # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
         try:
-            tool_data_tables.load_from_config_file(
-                config_filename=self.config.shed_tool_data_table_config,
-                tool_data_path=tool_data_tables.tool_data_path,
-                from_shed_config=from_shed_config,
+            self._tool_data_tables = ToolDataTableManager(
+                tool_data_path=self.config.tool_data_path,
+                config_sources=sources,
+                other_config_dict=self.config,
+                on_registration=self._tool_data_tables_registered,
             )
-        except OSError as exc:
-            # Missing shed_tool_data_table_config is okay if it's the default
-            if exc.errno != errno.ENOENT or self.config.is_set("shed_tool_data_table_config"):
-                raise
-        self._tool_data_tables = tool_data_tables
+        except DataTableColumnMismatch as e:
+            raise ConfigurationError(data_table_conflict_message(e, self.config.shed_tool_data_table_config)) from e
+
+    def _tool_data_tables_registered(self, table_names: list[str]) -> None:
+        if isinstance(self, StructuredApp):
+            self.watchers.update_watch_data_table_paths()
+        queue_worker: Optional[GalaxyQueueWorker] = getattr(self, "queue_worker", None)
+        if queue_worker is not None:
+            queue_worker.send_control_task(
+                "reload_tool_data_tables", noop_self=True, kwargs={"table_name": list(table_names)}
+            )
 
     @property
     def tool_data_tables(self) -> BaseToolDataTableManager:

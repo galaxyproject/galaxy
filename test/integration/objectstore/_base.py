@@ -23,8 +23,10 @@ from galaxy_test.driver.integration_util import (
 )
 
 OBJECT_STORE_HOST = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_HOST", "127.0.0.1")
-# Each pytest-xdist worker publishes its object store container on its own host port.
-OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_PORT", 8333)) + int(
+# Each pytest-xdist worker publishes its object store container on its own host port. The default
+# base sits outside the 8000-10000 range Galaxy test servers pick their ports from (see
+# galaxy_test.driver.driver_util) and below the kernel's ephemeral port range.
+OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_PORT", 18333)) + int(
     os.environ.get("PYTEST_XDIST_WORKER", "gw0").removeprefix("gw")
 )
 OBJECT_STORE_ACCESS_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_ACCESS_KEY", "admin")

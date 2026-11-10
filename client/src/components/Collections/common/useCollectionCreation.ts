@@ -4,7 +4,8 @@ import type { CollectionElementIdentifiers, CreateNewCollectionPayload } from "@
 import { createCollectionPayload } from "@/api/datasetCollections";
 import { useHistoryStore } from "@/stores/historyStore";
 
-export function useCollectionCreation() {
+/** `historyId` is the history to create collections in; the current history by default. */
+export function useCollectionCreation(historyId?: () => string) {
     const historyStore = useHistoryStore();
     const { currentHistoryId } = storeToRefs(historyStore);
 
@@ -19,7 +20,7 @@ export function useCollectionCreation() {
             collection_type: collection_type,
             element_identifiers: element_identifiers,
             hide_source_items: hide_source_items,
-            history_id: currentHistoryId.value || "current",
+            history_id: historyId?.() || currentHistoryId.value || "current",
         });
     }
 

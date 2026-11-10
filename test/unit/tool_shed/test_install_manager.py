@@ -6,6 +6,10 @@ from typing import (
 from unittest import mock
 
 from galaxy.tool_shed.galaxy_install import install_manager
+from galaxy.tool_util.data import (
+    ToolDataTableConfigSource,
+    ToolDataTableManager,
+)
 
 INSTALL_MANAGER_MODULE = "galaxy.tool_shed.galaxy_install.install_manager"
 
@@ -22,14 +26,14 @@ def _make_install_repository_manager():
     return irm, register_mock
 
 
-def _invoke_handle(irm, metadata_dict: dict[str, Any], repository_tools_tups: list[Any]):
+def _invoke_handle(irm, metadata_dict: dict[str, Any], repository_tools_tups: list[Any], table_config=None):
     irmm_instance = mock.MagicMock(name="irmm_instance")
     irmm_instance.get_metadata_dict.return_value = metadata_dict
     irmm_instance.get_repository_tools_tups.return_value = repository_tools_tups
 
     stdtm_instance = mock.MagicMock(name="stdtm_instance")
     stdtm_instance.get_tool_index_sample_files.return_value = []
-    stdtm_instance.install_tool_data_tables.return_value = (
+    stdtm_instance.install_tool_data_tables.return_value = table_config or (
         "/dev/null/tool_data_table_conf.xml",
         [object()],
     )
@@ -107,3 +111,31 @@ def test_data_manager_repo_invokes_handle_missing_data_table_entry():
     fake_tup = (mock.MagicMock(), "guid", mock.MagicMock())
     stdtm_instance = _invoke_handle(irm, metadata, [fake_tup])
     stdtm_instance.handle_missing_data_table_entry.assert_called_once()
+
+
+def test_install_rebuilds_tables_in_configured_order(tmp_path):
+    managed = tmp_path / "managed.xml"
+    managed.write_text("<tables />")
+    configs = []
+    for name in ("external", "incoming"):
+        loc = tmp_path / f"{name}.loc"
+        loc.write_text(f"hg38\tHuman\t/{name}\n")
+        conf = tmp_path / f"{name}.xml"
+        conf.write_text(f"""<tables><table name="references"><columns>value, name, path</columns>
+          <file path="{loc}" /></table></tables>""")
+        configs.append(conf)
+    on_registration = mock.Mock()
+    manager = ToolDataTableManager(
+        str(tmp_path),
+        config_sources=[ToolDataTableConfigSource(managed), ToolDataTableConfigSource(configs[0])],
+        on_registration=on_registration,
+    )
+    irm, _ = _make_install_repository_manager()
+    irm.app.tool_data_tables = manager
+    irm.app.config.shed_tool_data_table_config = str(managed)
+    table = manager["references"]
+    _invoke_handle(irm, {"sample_files": ["incoming.loc.sample"]}, [], table_config=(configs[1], [object()]))
+    assert manager["references"] is table
+    assert [row[2] for row in table.data] == ["/incoming", "/external"]
+    assert "incoming.loc" in managed.read_text()
+    on_registration.assert_called_once_with(["references"])

@@ -104,6 +104,11 @@ skip_if_workflowhub_down = skip_if_site_down(
         r"(responded with HTTP (403|429|5\d\d)|did not respond in time|could not be reached)"
     ),
 )
+# Quay's homepage can be available while API requests are rate-limited or fail during pagination.
+skip_if_quay_down = skip_if_site_down(
+    "https://quay.io/",
+    unavailable_pattern=r"\b(?:429 Client|5\d\d Server) Error: [^\n]* for url: https://quay\.io/api/",
+)
 
 
 def _identity(func: Callable[P, T]) -> Callable[P, T]:

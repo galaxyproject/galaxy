@@ -642,21 +642,25 @@ class JobConfiguration(ConfiguresHandlers):
         self.destinations["local"] = [JobDestination(id="local", runner="local")]
         log.debug("Done loading job configuration")
 
-    def get_tool_resource_xml(self, tool_id, tool_type):
-        """Given a tool id, return XML elements describing parameters to
+    def get_tool_resource_xml(self, tool_ids, tool_type):
+        """Given a tool's IDs, return XML elements describing parameters to
         insert into job resources.
 
-        :tool id: A tool ID (a string)
+        :tool ids: The tool's IDs in lookup order (see ``Tool.all_ids``), as
+            accepted by :meth:`get_job_tool_configurations`. The resource group
+            of the first ID whose tool definition sets one is used.
         :tool type: A tool type (a string)
 
         :returns: List of parameter elements.
         """
-        if tool_id and tool_type in ("default", "manage_data"):
-            # TODO: Only works with exact matches, should handle different kinds of ids
-            # the way destination lookup does.
+        tool_ids = util.listify(tool_ids)
+        if tool_ids and tool_type in ("default", "manage_data"):
             resource_group = None
-            if tool_id in self.tools:
-                resource_group = self.tools[tool_id][0].get_resource_group()
+            for tool_id in tool_ids:
+                if tool_id in self.tools:
+                    resource_group = self.tools[tool_id][0].get_resource_group()
+                    if resource_group:
+                        break
             resource_group = resource_group or self.default_resource_group
             if resource_group and resource_group in self.resource_groups:
                 fields_names = self.resource_groups[resource_group]
@@ -1276,6 +1280,10 @@ class MinimalJobWrapper(HasResourceParameters):
             os.mkdir(self.working_directory)
 
         job = self._load_job()
+        if (dynamic_tool := job.dynamic_tool) is not None and not dynamic_tool.public:
+            # The owner's execution role is checked when the job is created and again
+            # here, so revoking it also fails jobs that are already queued.
+            self.app.dynamic_tool_manager.ensure_can_use_unprivileged_tool(job.user)
 
         def get_special():
             stmt = select(model.JobExportHistoryArchive).filter_by(job=job).limit(1)
@@ -1300,10 +1308,21 @@ class MinimalJobWrapper(HasResourceParameters):
         ) = tool_evaluator.build()
         if tool_evaluator.use_cached_job and job.user and job.tool_id and not tool_evaluator.consumes_names:
             # search again, now we know tool doesn't require name match
-            param_dump = {p.name: p.value for p in job.parameters if not p.name.startswith("__")}
             assert self.tool
+            # Some wrappers (e.g. QIIME2) declare __-prefixed input sections.
+            # Keep these scientific parameters while excluding internal state.
+            param_dump = {
+                p.name: p.value for p in job.parameters if p.name in self.tool.inputs or not p.name.startswith("__")
+            }
             params = self.tool.params_from_strings(param_dump)
             json_internal = params_to_json_internal(self.tool.inputs, params, self.app)
+            element_identifiers = None
+            if tool_evaluator.consumes_identifiers:
+                element_identifiers = {
+                    name.removesuffix("|__identifier__"): json.loads(value)
+                    for name, value in param_dump.items()
+                    if name.endswith("|__identifier__")
+                }
             job_to_copy = self.app.job_search.by_tool_input(
                 job.user,
                 job.tool_id,
@@ -1311,9 +1330,16 @@ class MinimalJobWrapper(HasResourceParameters):
                 param=params,
                 param_dump=json_internal,
                 require_name_match=False,
+                element_identifiers=element_identifiers,
             )
             if job_to_copy and isinstance(job_to_copy, Job):
                 job.copy_from_job(job_to_copy, copy_outputs=True)
+                # The copied job never reaches finish(), so run its post job actions here.
+                for pjaa in job.post_job_actions:
+                    if pjaa.post_job_action.action_type not in ActionBox.immediate_actions:
+                        ActionBox.execute(
+                            self.app, self.sa_session, pjaa.post_job_action, job, final_job_state=job.state
+                        )
                 self.sa_session.commit()
                 return False
         job.command_line = self.command_line
@@ -2212,11 +2238,13 @@ class MinimalJobWrapper(HasResourceParameters):
                     import_options=import_options,
                     user=job.user,
                     tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
+                    # The imported outputs are committed together with the final job state below.
+                    commit=False,
                 )
                 object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
                 # Datasets discovered by the job are created by the import, without permissions.
                 # Precreated outputs (hdas_by_id) got their permissions when the job was created.
-                # The import's commit expired the new HDAs, so load them and their dataset permissions in one go.
+                # Load the new HDAs and their dataset permissions in one go.
                 if discovered_hda_ids := [
                     inspect(hda).identity[0] for hda in object_import_tracker.hdas_by_key.values()
                 ]:
@@ -2334,6 +2362,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         # Calculate dataset hash - only if the job completed successfully,
         # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).
+        hash_requests: list[ComputeDatasetHashTaskRequest] = []
         if final_job_state == job.states.OK:
             for dataset_assoc in output_dataset_associations:
                 dataset = dataset_assoc.dataset.dataset
@@ -2344,15 +2373,14 @@ class MinimalJobWrapper(HasResourceParameters):
                     ):
                         # Calculate dataset hash via a celery task
                         if self.app.config.enable_celery_tasks:
-                            from galaxy.celery.tasks import compute_dataset_hash
-
                             extra_files_path = dataset.extra_files_path if dataset.extra_files_path_exists() else None
-                            request = ComputeDatasetHashTaskRequest(
-                                dataset_id=dataset.id,
-                                extra_files_path=extra_files_path,
-                                hash_function=self.app.config.hash_function,
+                            hash_requests.append(
+                                ComputeDatasetHashTaskRequest(
+                                    dataset_id=dataset.id,
+                                    extra_files_path=extra_files_path,
+                                    hash_function=self.app.config.hash_function,
+                                )
                             )
-                            compute_dataset_hash.delay(request=request)
 
         user = job.user
         if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:
@@ -2384,23 +2412,37 @@ class MinimalJobWrapper(HasResourceParameters):
 
         self._fix_output_permissions()
 
-        # Empirically, we need to update job.user and
-        # job.workflow_invocation_step.workflow_invocation in separate
-        # transactions. Best guess as to why is that the workflow_invocation
-        # may or may not exist when the job is first loaded by the handler -
-        # and depending on whether it is or not sqlalchemy orders the updates
-        # differently and deadlocks can occur (one thread updates user and
-        # waits on invocation and the other updates invocation and waits on
-        # user).
-        self.sa_session.commit()
-
-        # Finally set the job state.  This should only happen *after* all
-        # dataset creation, and will allow us to eliminate force_history_refresh.
-        job.set_final_state(final_job_state)
+        # Outputs, metrics and the final job state are committed together, so
+        # readers never see finished outputs on a job that is still running, or
+        # a finished job without its metrics.
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
+        job.set_state(final_job_state)
         self.sa_session.commit()
+
+        # The hash tasks load the datasets, which may have been created in the commit above.
+        if hash_requests:
+            from galaxy.celery.tasks import compute_dataset_hash
+
+            for request in hash_requests:
+                try:
+                    compute_dataset_hash.delay(request=request)
+                except Exception:
+                    log.exception("Error queuing hash calculation for dataset %d", request.dataset_id)
+
+        # The update_time bumps wake the workflow scheduler. Every job of a
+        # mapped-over step bumps the same workflow_invocation_step row, so they
+        # run in their own short transaction after the outputs are visible,
+        # not in the one that holds the user's disk usage row. A failure here
+        # leaves the committed job state alone; the scheduler also checks job
+        # states directly.
+        try:
+            job.touch_dependent_update_times()
+            self.sa_session.commit()
+        except Exception:
+            log.exception(f"Updating update_time of collections and invocation steps failed for job {self.job_id}")
+            self.sa_session.rollback()
         if job.state == job.states.ERROR:
             self._report_error()
         elif task_wrapper:

@@ -37,7 +37,7 @@ def _conditional(test_validator: Dict[str, Any], when_validator: Dict[str, Any])
 
 
 def _repeat(validator: Dict[str, Any]) -> Dict[str, Any]:
-    return {"name": "rep", "type": "repeat", "blocks": [_text("repeat_text", validator)]}
+    return {"name": "rep", "type": "repeat", "parameters": [_text("repeat_text", validator)]}
 
 
 def _tool(tool_class: str, inputs: List[Dict[str, Any]], **extra) -> Dict[str, Any]:
@@ -80,7 +80,7 @@ NESTED_EXPRESSION_VALIDATORS = [
     pytest.param([_conditional(EXPRESSION_VALIDATOR, LENGTH_VALIDATOR)], id="conditional-test-parameter"),
     pytest.param([_conditional(LENGTH_VALIDATOR, EXPRESSION_VALIDATOR)], id="conditional-when"),
     pytest.param(
-        [{"name": "outer", "type": "repeat", "blocks": [_conditional(LENGTH_VALIDATOR, EXPRESSION_VALIDATOR)]}],
+        [{"name": "outer", "type": "repeat", "parameters": [_conditional(LENGTH_VALIDATOR, EXPRESSION_VALIDATOR)]}],
         id="conditional-in-repeat",
     ),
 ]
@@ -121,7 +121,7 @@ def test_user_tool_keeps_safe_validators():
                 {
                     "name": "rep",
                     "type": "repeat",
-                    "blocks": [{"name": "sel", "type": "select", "dynamic_options": "x()"}],
+                    "parameters": [{"name": "sel", "type": "select", "dynamic_options": "x()"}],
                 }
             ],
             id="repeat",

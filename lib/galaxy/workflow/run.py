@@ -17,6 +17,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
 )
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.model.orm.now import now
 from galaxy.schema.invocation import (
     CancelReason,
     FAILURE_REASONS_EXPECTED,
@@ -247,10 +248,18 @@ class WorkflowInvoker:
 
                     workflow_invocation.steps.append(workflow_invocation_step)
 
+                jobs_scheduled_before_step = self.progress.jobs_scheduled_this_iteration
                 incomplete_or_none = self._invoke_step(workflow_invocation_step)
                 if incomplete_or_none is False:
                     step_delayed = delayed_steps = True
                     workflow_invocation_step.state = "ready"
+                    if self.progress.jobs_scheduled_this_iteration > jobs_scheduled_before_step:
+                        # The step created jobs but hit the per-iteration cap.
+                        # The scheduler only revisits an invocation promptly
+                        # when its history or steps changed, and jobs whose
+                        # outputs are all filtered out add nothing to the
+                        # history, so record the progress on the step.
+                        workflow_invocation_step.update_time = now()
                     self.progress.mark_step_outputs_delayed(step, why="Not all jobs scheduled for state.")
                 else:
                     workflow_invocation_step.state = "scheduled"
@@ -630,7 +639,7 @@ class WorkflowProgress:
         if step.label and step.type == "parameter_input" and "output" in outputs:
             output_value = outputs["output"]
             if output_value is not NO_REPLACEMENT:
-                self.runtime_replacements[step.label] = str(output_value)
+                self.runtime_replacements[step.label] = str(modules.replace_expression_json_dataset(output_value, step))
         invocation = invocation_step.workflow_invocation
         if not invocation.has_input_for_step(step.id):
             content = outputs.get("output", NO_REPLACEMENT)
@@ -774,11 +783,17 @@ class WorkflowProgress:
             input_connections = step.input_connections
             for input_connection in input_connections:
                 if input_connection.input_subworkflow_step_id == subworkflow_step_id:
-                    is_data = input_connection.output_step.type != "parameter_input"
+                    is_parameter = input_subworkflow_step.type == "parameter_input"
+                    is_data = input_connection.output_step.type != "parameter_input" and not is_parameter
                     replacement = self.replacement_for_connection(
                         input_connection,
                         is_data=is_data,
                     )
+                    if is_parameter and input_subworkflow_step.label:
+                        # Read expression.json now so an unreadable file delays this step,
+                        # not just the inner input step while other inner steps run. The
+                        # value is discarded; the labeled inner input step stores it.
+                        modules.replace_expression_json_dataset(replacement, step)
                     subworkflow_inputs[subworkflow_step_id] = replacement
                     connection_found = True
                     break

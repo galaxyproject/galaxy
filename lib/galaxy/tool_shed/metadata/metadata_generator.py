@@ -1,6 +1,5 @@
 import logging
 import os
-import tempfile
 from typing import (
     Any,
     cast,
@@ -30,10 +29,7 @@ from galaxy.tool_shed.util import (
     tool_dependency_util,
     tool_util,
 )
-from galaxy.tool_shed.util.basic_util import (
-    remove_dir,
-    strip_path,
-)
+from galaxy.tool_shed.util.basic_util import strip_path
 from galaxy.tool_shed.util.hg_util import get_config_from_disk
 from galaxy.tool_shed.util.metadata_util import get_updated_changeset_revisions_from_tool_shed
 from galaxy.tool_shed.util.repository_util import get_repository_for_dependency_relationship
@@ -233,7 +229,7 @@ class BaseMetadataGenerator:
         tmp_url = remove_protocol_and_user_from_clone_url(self.repository_clone_url)
         return f"{tmp_url}/{guid_type}/{obj_id}/{version}"
 
-    def generate_metadata_for_changeset_revision(self):
+    def generate_metadata_for_changeset_revision(self) -> None:
         """
         Generate metadata for a repository using its files on disk.  To generate metadata
         for changeset revisions older than the repository tip, the repository will have been
@@ -269,13 +265,8 @@ class BaseMetadataGenerator:
             # Keep track of the location where the repository is temporarily cloned so that we can
             # strip the path when setting metadata.  The value of self.repository_files_dir is the
             # full path to the temporary directory to which self.repository was cloned.
-            work_dir = self.repository_files_dir
             files_dir = self.repository_files_dir
-            # Since we're working from a temporary directory, we can safely copy sample files included
-            # in the repository to the repository root.
         else:
-            # Use a temporary working directory to copy all sample files.
-            work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-gmfcr")
             # All other files are on disk in the repository's repo_path, which is the value of
             # self.relative_install_dir.
             assert self.relative_install_dir
@@ -283,8 +274,10 @@ class BaseMetadataGenerator:
             if self.shed_config_dict.get("tool_path"):
                 files_dir = os.path.join(self.shed_config_dict["tool_path"], files_dir)
         assert files_dir
-        # Create ValidationContext to load and validate tools, data tables and datatypes
-        with ValidationContext.from_app(app=self.app, work_dir=work_dir) as validation_context:
+        # Create ValidationContext to load and validate tools, data tables and datatypes; sample
+        # files are copied to its temporary tool data directory, never into files_dir.
+        with ValidationContext.from_app(app=self.app) as validation_context:
+            work_dir = validation_context.config.tool_data_path
             tv = ToolValidator(validation_context)
             # Get the relative path to all sample files included in the repository for storage in
             # the repository's metadata.
@@ -333,7 +326,7 @@ class BaseMetadataGenerator:
                         # See if we have one or more READ_ME files.
                         elif name.lower() in readme_file_names:
                             relative_path_to_readme = self.get_relative_path_to_repository_file(
-                                root, name, self.relative_install_dir, work_dir, self.shed_config_dict
+                                root, name, self.relative_install_dir, files_dir, self.shed_config_dict
                             )
                             readme_files.append(relative_path_to_readme)
                         # See if we have a tool config.
@@ -365,7 +358,7 @@ class BaseMetadataGenerator:
                                             break
                                     if can_set_metadata:
                                         relative_path_to_tool_config = self.get_relative_path_to_repository_file(
-                                            root, name, self.relative_install_dir, work_dir, self.shed_config_dict
+                                            root, name, self.relative_install_dir, files_dir, self.shed_config_dict
                                         )
                                         metadata_dict = self.generate_tool_metadata(
                                             relative_path_to_tool_config, tool, metadata_dict
@@ -397,9 +390,6 @@ class BaseMetadataGenerator:
                     invalid_tool_errors[name] = error_msg
             metadata_dict["invalid_tool_errors"] = invalid_tool_errors
         self.metadata_dict = metadata_dict
-        # Only remove work_dir if not resetting all metadata - in that case the caller handles cleanup
-        if not self.resetting_all_metadata_on_repository:
-            remove_dir(work_dir)
 
     def generate_package_dependency_metadata(self, elem, valid_tool_dependencies_dict, invalid_tool_dependencies_dict):
         """
@@ -758,10 +748,10 @@ class BaseMetadataGenerator:
     def get_metadata_dict(self):
         return self.metadata_dict
 
-    def get_relative_path_to_repository_file(self, root, name, relative_install_dir, work_dir, shed_config_dict):
+    def get_relative_path_to_repository_file(self, root, name, relative_install_dir, files_dir, shed_config_dict):
         if self.resetting_all_metadata_on_repository:
             full_path_to_file = os.path.join(root, name)
-            stripped_path_to_file = full_path_to_file.replace(work_dir, "")
+            stripped_path_to_file = full_path_to_file.replace(files_dir, "")
             if stripped_path_to_file.startswith("/"):
                 stripped_path_to_file = stripped_path_to_file[1:]
             relative_path_to_file = os.path.join(relative_install_dir, stripped_path_to_file)
@@ -797,10 +787,7 @@ class BaseMetadataGenerator:
                             relative_path_to_sample_file = os.path.join(
                                 relative_install_dir, stripped_path_to_sample_file
                             )
-                            if os.path.exists(relative_path_to_sample_file):
-                                sample_file_copy_paths.append(relative_path_to_sample_file)
-                            else:
-                                sample_file_copy_paths.append(full_path_to_sample_file)
+                            sample_file_copy_paths.append(full_path_to_sample_file)
                         else:
                             relative_path_to_sample_file = os.path.join(root, name)
                             sample_file_copy_paths.append(relative_path_to_sample_file)

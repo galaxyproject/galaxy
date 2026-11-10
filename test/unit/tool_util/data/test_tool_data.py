@@ -5,6 +5,8 @@ import pytest
 
 from galaxy.tool_util.data import (
     DataTableColumnMismatch,
+    tool_data_table_config_sources,
+    ToolDataTableConfigSource,
     ToolDataTableManager,
 )
 
@@ -34,6 +36,20 @@ COLUMN_DIVERGENT_TABLE_CONF_XML = """<tables>
   <table name="testalpha" comment_char="#">
     <columns>value, name, path, extra</columns>
     <file path="{loc_path}" />
+  </table>
+</tables>
+"""
+
+SHED_COLUMN_DIVERGENT_TABLE_CONF_XML = """<tables>
+  <table name="testalpha" comment_char="#">
+    <columns>value, name, path, extra</columns>
+    <file path="{loc_path}" />
+    <tool_shed_repository>
+      <tool_shed>toolshed.g2.bx.psu.edu</tool_shed>
+      <repository_name>data_manager_example</repository_name>
+      <repository_owner>iuc</repository_owner>
+      <installed_changeset_revision>abc123</installed_changeset_revision>
+    </tool_shed_repository>
   </table>
 </tables>
 """
@@ -89,7 +105,18 @@ def test_merging_tables(merged_tdt_manager):
     assert len(merged_tdt_manager["testbeta"].data) == 2
 
 
-def test_merging_tables_ignores_entries_with_known_value(tmp_path, caplog):
+def test_get_field_uses_first_entry_for_duplicate_values(tdt_manager):
+    table = tdt_manager["testalpha"]
+    first_entry = table.get_named_fields_list()[0]
+    table.add_entry(["data1", "Another data1", "/other/data1.txt"])
+
+    field = table.get_field("data1")
+    assert field is not None
+    assert field.data == first_entry
+    assert table.get_field("unknown") is None
+
+
+def test_merging_tables_preserves_distinct_rows_with_known_value(tmp_path, caplog):
     (tmp_path / "local.loc").write_text("hg38\tHuman (hg38)\t/local/hg38.fa\nmm10\tMouse (mm10)\t/local/mm10.fa\n")
     (tmp_path / "idc.loc").write_text(
         "hg38\tHuman (hg38)\t/idc/hg38.fa\nmm10\tMouse (mm10)\t/local/mm10.fa\ndm6\tFly (dm6)\t/idc/dm6.fa\n"
@@ -111,16 +138,15 @@ def test_merging_tables_ignores_entries_with_known_value(tmp_path, caplog):
     expected_data = [
         ["hg38", "Human (hg38)", "/local/hg38.fa"],
         ["mm10", "Mouse (mm10)", "/local/mm10.fa"],
+        ["hg38", "Human (hg38)", "/idc/hg38.fa"],
         ["dm6", "Fly (dm6)", "/idc/dm6.fa"],
     ]
     assert table.data == expected_data
-    # the conflicting hg38 entry is an error, the identical mm10 entry only a warning
     errors = [r.getMessage() for r in caplog.records if r.levelno == logging.ERROR]
-    assert len(errors) == 1
-    assert "/idc/hg38.fa" in errors[0]
+    assert not errors
     warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
     assert len(warnings) == 1
-    assert "Ignoring duplicate entry ['mm10'" in warnings[0]
+    assert "this entry already exists and allow_duplicates is False" in warnings[0]
     # reloading re-applies the same merge rules
     table.reload_from_files()
     assert table.data == expected_data
@@ -152,6 +178,54 @@ def test_assert_data_table_consistency_raises_column_mismatch(tdt_manager):
             {"value": 0, "name": 1, "path": 2, "extra": 3},
         )
     assert exc_info.value.table_name == "testalpha"
+
+
+@pytest.fixture
+def divergent_conf(tmp_path):
+    loc_path = tmp_path / "divergent.loc"
+    loc_path.write_text("data9\tdata9name\t/data9\textra9\n")
+    conf = tmp_path / "divergent_tool_data_table_conf.xml"
+    conf.write_text(COLUMN_DIVERGENT_TABLE_CONF_XML.format(loc_path=loc_path))
+    return conf
+
+
+def test_load_from_config_file_raises_column_mismatch(tdt_manager, tmp_path, divergent_conf):
+    with pytest.raises(DataTableColumnMismatch) as exc_info:
+        tdt_manager.load_from_config_file(divergent_conf, tmp_path)
+    assert exc_info.value.table_name == "testalpha"
+    assert exc_info.value.config_filename == divergent_conf
+    assert exc_info.value.repository_info is None
+    assert str(divergent_conf) in str(exc_info.value)
+
+
+def test_load_from_config_file_column_mismatch_names_repository(tdt_manager, tmp_path):
+    loc_path = tmp_path / "divergent.loc"
+    loc_path.write_text("data9\tdata9name\t/data9\textra9\n")
+    conf = tmp_path / "shed_tool_data_table_conf.xml"
+    conf.write_text(SHED_COLUMN_DIVERGENT_TABLE_CONF_XML.format(loc_path=loc_path))
+    with pytest.raises(DataTableColumnMismatch) as exc_info:
+        tdt_manager.load_from_config_file(conf, tmp_path, from_shed_config=True)
+    assert exc_info.value.repository_info == {
+        "tool_shed": "toolshed.g2.bx.psu.edu",
+        "name": "data_manager_example",
+        "owner": "iuc",
+        "installed_changeset_revision": "abc123",
+    }
+    assert "installed by repository iuc/data_manager_example revision abc123" in str(exc_info.value)
+    assert tdt_manager["testalpha"].columns == {"value": 0, "name": 1, "path": 2}
+
+
+def test_merge_tool_data_table_raises_column_mismatch(tdt_manager, tmp_path, divergent_conf):
+    divergent = ToolDataTableManager(tmp_path, divergent_conf)["testalpha"]
+    table = tdt_manager["testalpha"]
+    original_data = list(table.data)
+    original_filenames = dict(table.filenames)
+    with pytest.raises(DataTableColumnMismatch) as exc_info:
+        table.merge_tool_data_table(divergent)
+    assert exc_info.value.table_name == "testalpha"
+    assert exc_info.value.incoming_columns == divergent.columns
+    assert table.data == original_data
+    assert table.filenames == original_filenames
 
 
 def test_get_filename_for_source_falls_back_to_shared_filename(tdt_manager):
@@ -292,3 +366,41 @@ def test_exists_outside_load_pass_does_not_walk(tmp_path):
     assert tdpf.exists(str(tmp_path / "missing.loc")) is False
     assert fs.walks == 0, f"exists() outside a load pass must not walk, got {fs.walks}"
     assert tdpf._tool_data_path_files is None
+
+
+def test_config_sources_and_config_filename_are_exclusive(tmp_path):
+    conf = _write_multi_table_conf(tmp_path)
+    with pytest.raises(ValueError, match="not both"):
+        ToolDataTableManager(str(tmp_path), conf, config_sources=[ToolDataTableConfigSource(conf)])
+
+
+@pytest.mark.parametrize("as_string", [False, True])
+def test_config_sources_keep_first_managed_position_across_aliases(tmp_path, as_string):
+    managed = tmp_path / "managed.xml"
+    managed.write_text("<tables />")
+    alias = tmp_path / "alias.xml"
+    alias.symlink_to(managed)
+    paths = [str(tmp_path / "local.xml"), str(alias), "", str(tmp_path / "external.xml"), str(managed)]
+    sources = tool_data_table_config_sources(
+        ",".join(p for p in paths if p) if as_string else paths,
+        str(managed),
+        from_shed_config=True,
+        managed_optional=True,
+    )
+    assert sources == [
+        ToolDataTableConfigSource(paths[0]),
+        ToolDataTableConfigSource(paths[1], from_shed_config=True, optional=True),
+        ToolDataTableConfigSource(paths[3]),
+    ]
+
+
+@pytest.mark.parametrize("managed_optional", [False, True])
+def test_config_sources_append_unlisted_managed_file(tmp_path, managed_optional):
+    managed = str(tmp_path / "missing" / "managed.xml")
+    sources = tool_data_table_config_sources(
+        str(tmp_path / "local.xml"), managed, from_shed_config=False, managed_optional=managed_optional
+    )
+    assert sources == [
+        ToolDataTableConfigSource(str(tmp_path / "local.xml")),
+        ToolDataTableConfigSource(managed, optional=managed_optional),
+    ]

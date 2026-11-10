@@ -59,7 +59,6 @@ from galaxy.tool_util.parser.util import (
     boolean_true_and_false_values,
     multiple_select_value_split,
     ParameterParseException,
-    text_input_is_optional,
 )
 from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
 from galaxy.tool_util_models.untrusted import is_loading_untrusted_tools
@@ -438,7 +437,7 @@ class TextToolParameter(SimpleTextToolParameter):
 
         # why does Integer and Float subclass this :_(
         if self.type == "text":
-            self.optional, self.optionality_inferred = text_input_is_optional(input_source)
+            self.optional, self.optionality_inferred = input_source.parse_text_optional()
         else:
             self.optionality_inferred = False
         self.value = input_source.get("value")
@@ -1219,12 +1218,28 @@ class SelectToolParameter(ToolParameter):
         else:
             return []
 
+    def get_display_options(self, trans, other_values) -> list[ParameterOption]:
+        """Options to offer as choices; data table rows sharing a value collapse to the first."""
+        options = cast(list[ParameterOption], self.get_options(trans, other_values))
+        if not (isinstance(self.options, dynamic_options.DynamicOptions) and self.options.tool_data_table_name):
+            return options
+        # Raw options stay available for validation aliases and ambiguous field lookup warnings.
+        seen_values: set[str] = set()
+        display_options = []
+        for option in options:
+            if option.dataset is None:
+                if option.value in seen_values:
+                    continue
+                seen_values.add(option.value)
+            display_options.append(option)
+        return display_options
+
     def to_dict(self, trans, other_values=None):
         other_values = other_values or {}
         d = super().to_dict(trans, other_values)
 
         # Get options, value.
-        options = cast(list[ParameterOption], self.get_options(trans, other_values))
+        options = self.get_display_options(trans, other_values)
         d["options"] = serialize_options(trans.security, options)
         d["display"] = self.display
         d["multiple"] = self.multiple

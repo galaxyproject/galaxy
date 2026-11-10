@@ -141,11 +141,14 @@ from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
 from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.workflow.workflow_parameter_input_definitions import (
+    check_validators,
     get_default_parameter,
     INPUT_PARAMETER_TYPES,
     numeric_bounds_inverted,
     NumericBounds,
     split_numeric_bounds,
+    validators_from_form,
+    validators_to_form,
 )
 
 if TYPE_CHECKING:
@@ -262,7 +265,11 @@ def replace_expression_json_dataset(
 
 
 def to_cwl(
-    value, hda_references, step: Optional[WorkflowStep] = None, compute_environment: Optional[ComputeEnvironment] = None
+    value,
+    hda_references,
+    step: Optional[WorkflowStep] = None,
+    compute_environment: Optional[ComputeEnvironment] = None,
+    element_identifiers: Optional[dict[DatasetInstance, str]] = None,
 ):
     element_identifier = None
     if isinstance(value, NoReplacement):
@@ -302,14 +309,23 @@ def to_cwl(
                 "format": value.extension,
                 "path": compute_environment.input_path_rewrite(value) if compute_environment else value.get_file_name(),
             }
-            set_basename_and_derived_properties(
-                properties, value.dataset.created_from_basename or element_identifier or value.name
-            )
+            set_basename_and_derived_properties(properties, value.dataset.created_from_basename or value.name)
+            if element_identifier:
+                properties["element_identifier"] = element_identifier
+            elif element_identifiers is not None:
+                # Passed by the UDT evaluator only; falls back to the dataset name like Cheetah.
+                properties["element_identifier"] = element_identifiers.get(value) or value.name
             return properties
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":
             return [
-                to_cwl(dce, hda_references=hda_references, step=step, compute_environment=compute_environment)
+                to_cwl(
+                    dce,
+                    hda_references=hda_references,
+                    step=step,
+                    compute_environment=compute_environment,
+                    element_identifiers=element_identifiers,
+                )
                 for dce in value.dataset_elements
             ]
         else:
@@ -317,22 +333,36 @@ def to_cwl(
             rval = {}
             for element in value.elements:
                 rval[element.element_identifier] = to_cwl(
-                    element.element_object,
+                    element,
                     hda_references=hda_references,
                     step=step,
                     compute_environment=compute_environment,
+                    element_identifiers=element_identifiers,
                 )
             return rval
     elif isinstance(value, list):
         return [
-            to_cwl(v, hda_references=hda_references, step=step, compute_environment=compute_environment) for v in value
+            to_cwl(
+                v,
+                hda_references=hda_references,
+                step=step,
+                compute_environment=compute_environment,
+                element_identifiers=element_identifiers,
+            )
+            for v in value
         ]
     elif is_runtime_value(value):
         return None
     elif isinstance(value, dict):
         # Nested tool state, such as conditionals
         return {
-            k: to_cwl(v, hda_references=hda_references, step=step, compute_environment=compute_environment)
+            k: to_cwl(
+                v,
+                hda_references=hda_references,
+                step=step,
+                compute_environment=compute_environment,
+                element_identifiers=element_identifiers,
+            )
             for k, v in value.items()
         }
     else:
@@ -1473,6 +1503,14 @@ class InputParameterModule(WorkflowModule):
                             "help": "This message will be shown if the regular does not match the input",
                         },
                     ),
+                    "regex_negate": BooleanToolParameter(
+                        None,
+                        {
+                            "name": "regex_negate",
+                            "label": "Reject values matching this expression",
+                            "help": "If set, input values matching the regular expression are invalid",
+                        },
+                    ),
                 }
 
                 return add_validators_repeat
@@ -1611,6 +1649,9 @@ class InputParameterModule(WorkflowModule):
                 )
             if param_type == "directory_uri":
                 when_this_type.inputs["validators"] = regex_validator_definition()
+            when_this_type.inputs["extra_validators"] = HiddenToolParameter(
+                None, {"name": "extra_validators", "value": ""}
+            )
 
             cases.append(when_this_type)
 
@@ -1637,8 +1678,10 @@ class InputParameterModule(WorkflowModule):
                     tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
 
                     def callback(input, prefixed_name, context, **kwargs):
-                        if prefixed_name == connection.input_name and hasattr(input, "get_options"):  # noqa: B023
-                            static_options.append(input.get_options(self.trans, context))
+                        if prefixed_name != connection.input_name:  # noqa: B023
+                            return
+                        if isinstance(input, SelectToolParameter):
+                            static_options.append(input.get_display_options(self.trans, context))
 
                     visit_input_values(tool_inputs, module.state.inputs, callback)
                 elif isinstance(module, SubWorkflowModule):
@@ -1823,11 +1866,15 @@ class InputParameterModule(WorkflowModule):
                 # likely most important for parent workflows, where they run on primitive values.
                 input_param.validate(input_value, trans)
         except ValueError as e:
+            details = str(e)
+            if isinstance(e, ParameterValueError):
+                # Match run_request.py: name the step, not the runtime parameter "input".
+                details = f"{self.label or invocation_step.workflow_step.order_index + 1}: {e.message_suffix}"
             raise FailWorkflowEvaluation(
                 why=InvocationFailureWorkflowParameterInvalid(
                     reason=FailureReason.workflow_parameter_invalid,
-                    workflow_step_id=invocation_step.workflow_step_id,
-                    details=str(e),
+                    workflow_step_id=invocation_step.workflow_step.id,
+                    details=details,
                 )
             )
         step_outputs = dict(output=input_value)
@@ -1858,6 +1905,7 @@ class InputParameterModule(WorkflowModule):
 
     def step_state_to_tool_state(self, state):
         state = safe_loads(state)
+        parameter_type = state["parameter_type"]
         default_set, default_value = False, None
         if "default" in state:
             default_set = True
@@ -1877,29 +1925,16 @@ class InputParameterModule(WorkflowModule):
 
         state = {
             "parameter_definition": {
-                "parameter_type": state["parameter_type"],
+                "parameter_type": parameter_type,
                 "optional": {"optional": str(state.get("optional", False))},
             }
         }
         if multiple is not None:
             state["parameter_definition"]["multiple"] = multiple
         if source_validators is not None:
-            form_validators = []
             # the form definition can change from Galaxy to Galaxy fairly freely, but the source validators are persisted
             # and need to be consistent - here we convert the persisted/YAML tool definition version to the "tool form" version.
-            for source_validator in source_validators:
-                source_type = source_validator["type"]
-                if source_type == "regex":
-                    form_validators.append(
-                        {
-                            "regex_doc": source_validator.get("message"),
-                            "regex_match": source_validator.get("expression"),
-                        }
-                    )
-                elif source_type == "in_range":
-                    state["parameter_definition"]["min"] = source_validator.get("min")
-                    state["parameter_definition"]["max"] = source_validator.get("max")
-            state["parameter_definition"]["validators"] = form_validators
+            state["parameter_definition"].update(validators_to_form(parameter_type, source_validators))
         state["parameter_definition"]["restrictions"] = {}
         state["parameter_definition"]["restrictions"]["how"] = restrictions_how
 
@@ -1943,32 +1978,7 @@ class InputParameterModule(WorkflowModule):
                 optional = False
             if "multiple" in parameters_def:
                 rval["multiple"] = parameters_def["multiple"]
-            source_validators = []
-            if "min" in parameters_def or "max" in parameters_def:
-                min = parameters_def.get("min")
-                max = parameters_def.get("max")
-                source_validators.append(
-                    {
-                        "min": min,
-                        "max": max,
-                        "negate": False,
-                        "type": "in_range",
-                    }
-                )
-
-            if "validators" in parameters_def:
-                form_validators = parameters_def["validators"]
-                # convert the current tool form structure to the persisted YAML-definition style
-                for form_validator in form_validators:
-                    source_validators.append(
-                        {
-                            "message": form_validator["regex_doc"],
-                            "expression": form_validator["regex_match"],
-                            "negate": False,
-                            "type": "regex",
-                        }
-                    )
-            rval["validators"] = source_validators
+            rval["validators"] = validators_from_form(parameters_def)
             restrictions_cond_values = parameters_def.get("restrictions")
             if restrictions_cond_values:
 
@@ -2005,7 +2015,15 @@ class InputParameterModule(WorkflowModule):
 
     def save_to_step(self, step, detached=False):
         step.type = self.type
-        step.tool_inputs = self._parse_state_into_dict()
+        tool_inputs = self._parse_state_into_dict()
+        try:
+            check_validators(tool_inputs["parameter_type"], tool_inputs.get("validators", []))
+        except ValueError as e:
+            label = f"'{self.label}'" if self.label else "(unlabeled)"
+            raise exceptions.RequestParameterInvalidException(
+                f"Invalid validator on workflow parameter input {label}: {e}"
+            )
+        step.tool_inputs = tool_inputs
 
 
 class PauseModule(WorkflowModule):
@@ -2437,27 +2455,14 @@ class ToolModule(WorkflowModule):
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def from_dict(Class, trans: "ProvidesUserContext", d, **kwds):
+    def resolve_tool_uuid(Class, trans: "ProvidesUserContext", d):
+        """Resolve embedded tools with the user's permissions, creating and committing them if needed."""
         tool_id = d.get("content_id") or d.get("tool_id")
-        tool_version = d.get("tool_version")
-        if tool_version:
-            tool_version = str(tool_version)
-        tool_uuid = d.get("tool_uuid", None)
-        if tool_version == "latest":
-            # Resolve to the actual latest installed version via lineage rather than matching the exact GUID.
-            # This mirrors what &version=latest does in the tool form.
-            tool_version = None
-            if tool_id:
-                tool_id = remove_version_from_guid(tool_id) or tool_id
-            kwds = dict(kwds, exact_tools=False)
+        tool_uuid = d.get("tool_uuid")
         tool_representation = d.get("tool_representation")
         if tool_representation and tool_representation.get("class") == "GalaxyUserTool":
-            # User-defined tool embedded in the workflow. A referenced tool the
-            # importing user owns is reused; otherwise (an export by another
-            # user or from another Galaxy) the embedded definition becomes a
-            # private UDT owned by the importing user. Requires
-            # USER_TOOL_EXECUTE; create_unprivileged_tool raises
-            # InsufficientPermissionsException otherwise.
+            # Reuse a tool owned by this user, or create a private copy of the
+            # embedded definition when importing another user's workflow.
             if trans.user is None:
                 raise exceptions.InsufficientPermissionsException("User is not allowed to run unprivileged tools")
             if not (tool_uuid and trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)):
@@ -2470,6 +2475,22 @@ class ToolModule(WorkflowModule):
             create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
             dynamic_tool = trans.app.dynamic_tool_manager.create_tool(create_request)
             tool_uuid = dynamic_tool.uuid
+        return tool_uuid
+
+    @classmethod
+    def from_dict(Class, trans: "ProvidesUserContext", d, **kwds):
+        tool_id = d.get("content_id") or d.get("tool_id")
+        tool_version = d.get("tool_version")
+        if tool_version:
+            tool_version = str(tool_version)
+        tool_uuid = Class.resolve_tool_uuid(trans, d)
+        if tool_version == "latest":
+            # Resolve to the actual latest installed version via lineage rather than matching the exact GUID.
+            # This mirrors what &version=latest does in the tool form.
+            tool_version = None
+            if tool_id:
+                tool_id = remove_version_from_guid(tool_id) or tool_id
+            kwds = dict(kwds, exact_tools=False)
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException(f"No content id could be located for for step [{d}]")
         module = super().from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
@@ -3015,10 +3036,17 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         complete = False
+        # A step resumed after a capped scheduling iteration skips the jobs it already created.
+        recorded_job_indexes: set[int] = set()
+        if collection_info and not invocation_step.is_new:
+            implicit_collection_jobs = invocation_step.implicit_collection_jobs
+            if implicit_collection_jobs is not None:
+                recorded_job_indexes = implicit_collection_jobs.recorded_order_indexes()
         completed_jobs: dict[int, Optional[Job]] = tool.completed_jobs(
             trans,
             use_cached_job,
             param_combinations,
+            recorded_job_indexes=recorded_job_indexes,
         )
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
@@ -3046,6 +3074,7 @@ class ToolModule(WorkflowModule):
                     step, job, progress.effective_replacement_dict()
                 ),
                 completed_jobs=completed_jobs,
+                recorded_job_indexes=recorded_job_indexes,
                 workflow_resource_parameters=resource_parameters,
                 credentials_context=credentials_context,
             )
@@ -3214,13 +3243,12 @@ class ToolModule(WorkflowModule):
         return PostJobAction(value["action_type"], step, output_name, action_arguments)
 
     def get_informal_replacement_parameters(self, step: WorkflowStep) -> list[str]:
-        """Return a list of replacement parameters."""
+        """Return the ``${...}`` names in rename actions, the only actions that substitute them at runtime."""
         replacement_parameters = set()
         for pja in step.post_job_actions:
-            if action_arguments := pja.action_arguments:
-                for argument in action_arguments.values():
-                    for match in re.findall(r"\$\{(.+?)\}", unicodify(argument)):
-                        replacement_parameters.add(match)
+            if pja.action_type == "RenameDatasetAction":
+                newname = (pja.action_arguments or {}).get("newname") or ""
+                replacement_parameters.update(re.findall(r"\$\{(.+?)\}", unicodify(newname)))
 
         return list(replacement_parameters)
 

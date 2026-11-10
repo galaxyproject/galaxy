@@ -1,5 +1,4 @@
 import json
-from datetime import timedelta
 from typing import (
     Any,
     NamedTuple,
@@ -22,11 +21,11 @@ from galaxy.tools.parameters.workflow_utils import (
 )
 from galaxy.util import (
     bunch,
-    now,
 )
 from galaxy.workflow import modules
 from galaxy.workflow.workflow_parameter_input_definitions import split_numeric_bounds
 from .workflow_support import (
+    expression_json_hda,
     MockTrans,
     yaml_to_model,
 )
@@ -254,9 +253,56 @@ def test_split_numeric_bounds(parameter_type, min, max, expected_bounds):
     assert validators == expected_validators
 
 
+@pytest.mark.parametrize(
+    "parameter_type,range_validator",
+    [
+        ("integer", {"type": "in_range", "min": 1, "max": 5, "negate": True}),
+        ("integer", {"type": "in_range", "min": 1, "max": 5, "exclude_min": True}),
+        ("integer", {"type": "in_range", "min": 1, "max": 5, "message": "1-5 only"}),
+        ("integer", {"type": "in_range", "min": 1.5, "max": 5}),
+    ],
+)
+def test_split_numeric_bounds_keeps_ranges_bounds_cannot_express(parameter_type, range_validator):
+    bounds, validators = split_numeric_bounds({"parameter_type": parameter_type, "validators": [range_validator]})
+    assert bounds is None
+    assert validators == [range_validator]
+
+
+def test_split_numeric_bounds_separates_inverted_bounds():
+    bounds, validators = split_numeric_bounds(
+        {"parameter_type": "integer", "validators": [{"type": "in_range", "min": 5, "max": 1, "negate": False}]}
+    )
+    assert bounds == {"min": 5, "max": 1}
+    assert validators == []
+
+
 def test_parameter_input_ordered_bounds_have_no_errors():
     assert __numeric_editor_module("integer", 1, 5).get_errors() is None
     assert __numeric_editor_module("float", 2.5, 2.5).get_errors() is None
+
+
+@pytest.mark.parametrize("form_value,negate", [("true", True), ("false", False)])
+def test_text_input_regex_validator_negate_from_tool_form(form_value, negate):
+    trans = MockTrans()
+    trans.workflow_building_mode = workflow_building_modes.ENABLED
+    module = modules.module_factory.from_dict(trans, {"type": "parameter_input"}, from_tool_form=True)
+    incoming = {
+        "parameter_definition|parameter_type": "text",
+        "parameter_definition|optional|optional": "false",
+        "parameter_definition|validators_0|regex_match": "cow",
+        "parameter_definition|validators_0|regex_doc": "no cows",
+        "parameter_definition|validators_0|regex_negate": form_value,
+    }
+    module_state = {}
+    errors = {}
+    populate_state(trans, module.get_inputs(), incoming, module_state, errors=errors, check=True)
+    assert not errors
+    module.recover_state(module_state, from_tool_form=True)
+    step = model.WorkflowStep()
+    module.save_to_step(step)
+    assert step.tool_inputs["validators"] == [
+        {"type": "regex", "expression": "cow", "negate": negate, "message": "no cows"}
+    ]
 
 
 def test_cannot_create_tool_modules_for_missing_tools():
@@ -423,7 +469,7 @@ def test_to_cwl_purged_dataset():
 
 
 def test_to_cwl_nested_collection():
-    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda = model.HistoryDatasetAssociation(name="reads.fq", create_dataset=True, flush=False)
     hda.dataset.state = model.Dataset.states.OK
     dc_inner = model.DatasetCollection(collection_type="list")
     model.DatasetCollectionElement(collection=dc_inner, element_identifier="inner", element=hda)
@@ -432,11 +478,12 @@ def test_to_cwl_nested_collection():
     hdca = model.HistoryDatasetCollectionAssociation(name="the collection", collection=dc_outer)
     result = modules.to_cwl(hdca, [], model.WorkflowStep())
     assert result["outer"][0]["class"] == "File"
-    assert result["outer"][0]["basename"] == "inner"
+    assert result["outer"][0]["basename"] == "reads.fq"
+    assert result["outer"][0]["element_identifier"] == "inner"
 
 
 def test_to_cwl_dataset_collection_element():
-    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda = model.HistoryDatasetAssociation(name="reads.fq", create_dataset=True, flush=False)
     hda.dataset.state = model.Dataset.states.OK
     dc_inner = model.DatasetCollection(collection_type="list")
     model.DatasetCollectionElement(collection=dc_inner, element_identifier="inner", element=hda)
@@ -444,19 +491,22 @@ def test_to_cwl_dataset_collection_element():
     dce_outer = model.DatasetCollectionElement(collection=dc_outer, element_identifier="outer", element=dc_inner)
     result = modules.to_cwl(dce_outer, [], model.WorkflowStep())
     assert result[0]["class"] == "File"
-    assert result[0]["basename"] == "inner"
+    assert result[0]["basename"] == "reads.fq"
+    assert result[0]["element_identifier"] == "inner"
 
 
-def _expression_json_hda(path, content: Optional[str], seconds_since_updated: int = 0):
-    hda = model.HistoryDatasetAssociation(extension="expression.json", create_dataset=True, flush=False)
-    hda.id = 1
-    assert hda.dataset is not None
-    hda.dataset.state = model.Dataset.states.OK
-    if content is not None:
-        path.write_text(content)
-    hda.dataset.external_filename = str(path)
-    hda.update_time = now() - timedelta(seconds=seconds_since_updated)
-    return hda
+def test_to_cwl_record_collection():
+    dc = model.DatasetCollection(collection_type="paired")
+    for identifier, name in (("forward", "r1.fq"), ("reverse", "r2.fq")):
+        hda = model.HistoryDatasetAssociation(name=name, create_dataset=True, flush=False)
+        hda.dataset.state = model.Dataset.states.OK
+        model.DatasetCollectionElement(collection=dc, element_identifier=identifier, element=hda)
+    hdca = model.HistoryDatasetCollectionAssociation(name="the pair", collection=dc)
+    result = modules.to_cwl(hdca, [], model.WorkflowStep())
+    assert {k: (v["basename"], v["element_identifier"]) for k, v in result.items()} == {
+        "forward": ("r1.fq", "forward"),
+        "reverse": ("r2.fq", "reverse"),
+    }
 
 
 def _workflow_step():
@@ -466,19 +516,19 @@ def _workflow_step():
 
 
 def test_to_cwl_expression_json(tmp_path):
-    hda = _expression_json_hda(tmp_path / "expression.json", '"abs(c3)>0.5"')
+    hda = expression_json_hda(tmp_path / "expression.json", '"abs(c3)>0.5"')
     assert modules.to_cwl(hda, [], _workflow_step()) == "abs(c3)>0.5"
 
 
 def test_to_cwl_expression_json_empty_file_recently_updated_delays(tmp_path):
-    hda = _expression_json_hda(tmp_path / "expression.json", "")
+    hda = expression_json_hda(tmp_path / "expression.json", "")
     with pytest.raises(modules.DelayedWorkflowEvaluation) as exc_info:
         modules.to_cwl(hda, [], _workflow_step())
     assert "could not be read" in exc_info.value.why
 
 
 def test_to_cwl_expression_json_malformed_fails_after_grace_period(tmp_path):
-    hda = _expression_json_hda(
+    hda = expression_json_hda(
         tmp_path / "expression.json",
         "{not json",
         seconds_since_updated=modules.EXPRESSION_JSON_GRACE_PERIOD_SECONDS + 1,
@@ -493,7 +543,7 @@ def test_to_cwl_expression_json_malformed_fails_after_grace_period(tmp_path):
 
 
 def test_to_cwl_expression_json_missing_file_fails_after_grace_period(tmp_path):
-    hda = _expression_json_hda(
+    hda = expression_json_hda(
         tmp_path / "expression.json", None, seconds_since_updated=modules.EXPRESSION_JSON_GRACE_PERIOD_SECONDS + 1
     )
     with pytest.raises(modules.FailWorkflowEvaluation) as exc_info:
@@ -505,7 +555,7 @@ def test_to_cwl_expression_json_missing_file_fails_after_grace_period(tmp_path):
 
 
 def test_read_expression_json_without_update_time_fails_immediately(tmp_path):
-    hda = _expression_json_hda(tmp_path / "expression.json", "")
+    hda = expression_json_hda(tmp_path / "expression.json", "")
     hda.update_time = None
     with pytest.raises(modules.FailWorkflowEvaluation) as exc_info:
         modules.read_expression_json(hda, _workflow_step())
@@ -515,24 +565,24 @@ def test_read_expression_json_without_update_time_fails_immediately(tmp_path):
 def test_read_expression_json_does_not_swallow_other_os_errors(tmp_path):
     a_directory = tmp_path / "expression.json"
     a_directory.mkdir()
-    hda = _expression_json_hda(a_directory, None)
+    hda = expression_json_hda(a_directory, None)
     with pytest.raises(IsADirectoryError):
         modules.read_expression_json(hda, _workflow_step())
 
 
 def test_read_expression_json_without_step_reraises_read_error(tmp_path):
-    hda = _expression_json_hda(tmp_path / "expression.json", "")
+    hda = expression_json_hda(tmp_path / "expression.json", "")
     with pytest.raises(json.JSONDecodeError):
         modules.read_expression_json(hda)
 
 
 def test_replace_expression_json_dataset(tmp_path):
-    hda = _expression_json_hda(tmp_path / "expression.json", "0.5")
+    hda = expression_json_hda(tmp_path / "expression.json", "0.5")
     assert modules.replace_expression_json_dataset(hda, _workflow_step()) == 0.5
 
 
 def test_replace_expression_json_dataset_collection_element(tmp_path):
-    hda = _expression_json_hda(tmp_path / "expression.json", "true")
+    hda = expression_json_hda(tmp_path / "expression.json", "true")
     collection = model.DatasetCollection(collection_type="list")
     element = model.DatasetCollectionElement(collection=collection, element_identifier="true", element=hda)
     assert modules.replace_expression_json_dataset(element, _workflow_step()) is True

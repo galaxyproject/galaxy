@@ -24,6 +24,7 @@ from rocrate_validator import (
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.exceptions import MalformedContents
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.scoped_session import galaxy_scoped_session as scoped_session
@@ -333,6 +334,47 @@ def test_import_library_from_dict():
     assert len(all_libraries) == 1, len(all_libraries)
     all_lddas = sa_session.scalars(select(model.LibraryDatasetDatasetAssociation)).all()
     assert len(all_lddas) == 1, len(all_lddas)
+
+
+@pytest.mark.parametrize(
+    "extension, expected_extension",
+    [
+        ("notadatatype", "data"),
+        ("bed", "bed"),
+        ("auto", "auto"),
+    ],
+)
+def test_import_from_dict_unregistered_extension(extension, expected_extension):
+    fixture_context = setup_fixture_context_with_history()
+    import_dict = one_hda_model_store_dict()
+    import_dict["datasets"][0]["extension"] = extension
+    perform_import_from_store_dict(fixture_context, import_dict)
+    assert fixture_context.history.datasets[0].extension == expected_extension
+
+
+def test_import_library_from_dict_unregistered_extension():
+    fixture_context = setup_fixture_context_with_history()
+    import_dict = one_ld_library_model_store_dict()
+    import_dict["datasets"][0]["extension"] = "not_a_registered_datatype"
+    import_options = store.ImportOptions()
+    import_options.allow_library_creation = True
+    perform_import_from_store_dict(fixture_context, import_dict, import_options=import_options)
+    ldda = fixture_context.sa_session.scalars(select(model.LibraryDatasetDatasetAssociation)).one()
+    assert ldda.extension == "data"
+
+
+def test_import_edit_dataset_unregistered_extension():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    datasets_metadata_path = os.path.join(temp_directory, store.ATTRS_FILENAME_DATASETS)
+    with open(datasets_metadata_path) as f:
+        datasets_metadata = json.load(f)
+    datasets_metadata[0]["extension"] = "not_a_registered_datatype"
+    with open(datasets_metadata_path, "w") as f:
+        json.dump(datasets_metadata, f)
+
+    _perform_import_from_directory(temp_directory, app, h.user, import_history, store.ImportOptions(allow_edit=True))
+
+    assert h.datasets[0].extension == "data"
 
 
 def test_import_allow_discarded():
@@ -1012,6 +1054,44 @@ def test_export_history_with_extra_files_but_no_primary_file(tmp_path):
     app.add_and_commit(import_history)
     _perform_import_from_directory(tmp_path, app, u, import_history)
     assert len(import_history.datasets) == 1
+
+
+def _outside_absolute(outside_dir, export_dir):
+    return str(outside_dir)
+
+
+def _outside_relative(outside_dir, export_dir):
+    return os.path.relpath(outside_dir, export_dir)
+
+
+def _outside_symlink(outside_dir, export_dir):
+    os.symlink(outside_dir, export_dir / "linked_files")
+    return "linked_files"
+
+
+@pytest.mark.parametrize("extra_files_path", [_outside_absolute, _outside_relative, _outside_symlink])
+def test_import_refuses_extra_files_outside_archive(tmp_path, extra_files_path):
+    outside_dir = tmp_path / "outside"
+    outside_dir.mkdir()
+    (outside_dir / "not_in_archive").write_text("not in archive")
+    export_dir = tmp_path / "export"
+    app = _mock_app()
+    u = model.User(email="collection@example.com", password="password")
+    h = model.History(name="Test History", user=u)
+    d1 = _create_datasets(app.model.context, h, 1)[0]
+    app.add_and_commit(h, d1)
+    app.write_primary_file(d1, "cool primary file")
+    with store.DirectoryModelExportStore(export_dir, app=app, export_files="copy") as export_store:
+        export_store.add_dataset(d1)
+    attrs_path = export_dir / store.ATTRS_FILENAME_DATASETS
+    datasets_attrs = json.loads(attrs_path.read_text())
+    datasets_attrs[0]["extra_files_path"] = extra_files_path(outside_dir, export_dir)
+    attrs_path.write_text(json.dumps(datasets_attrs))
+
+    import_history = model.History(name="Test History for Import", user=u)
+    app.add_and_commit(import_history)
+    with pytest.raises(MalformedContents, match="Invalid dataset path"):
+        _perform_import_from_directory(export_dir, app, u, import_history)
 
 
 def _assert_extra_files_has_parent_directory_with_single_file_containing(

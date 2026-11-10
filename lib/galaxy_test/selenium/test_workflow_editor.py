@@ -17,8 +17,10 @@ from selenium.webdriver.remote.webelement import WebElement
 from galaxy.selenium.navigates_galaxy import ColumnDefinition
 from galaxy.selenium.web_element_protocol import WebElementProtocol
 from galaxy_test.base.workflow_fixtures import (
+    parameter_input_workflow,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
+    WORKFLOW_RENAME_ON_REPLACEMENT_PARAM,
     WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
@@ -152,6 +154,29 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.workflow_run_submit()
         element = workflow_run.run_error.wait_for_present()
         assert "input must start with moocow" in element.text
+
+    @selenium_test
+    def test_parameter_editor_save_keeps_validators_the_form_cannot_show(self):
+        hidden = {"type": "length", "min": 2, "negate": False}
+        workflow = parameter_input_workflow("text_param", "text", [hidden])
+        name = workflow["name"] = self._get_random_name()
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        self.workflow_editor_open_with_name(name)
+
+        self.components.workflow_editor.node._(label="text_param").wait_for_and_click()
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.components.tool_form.parameter_input(
+            parameter="parameter_definition|validators_0|regex_match"
+        ).wait_for_and_send_keys("^good")
+        self.components.tool_form.parameter_input(
+            parameter="parameter_definition|validators_0|regex_doc"
+        ).wait_for_and_send_keys("must start with good")
+        self.screenshot("workflow_editor_parameter_input_validator_added")
+        self.save_after_node_form_changes()
+
+        tool_state = json.loads(self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]["tool_state"])
+        added = {"type": "regex", "expression": "^good", "message": "must start with good", "negate": False}
+        assert tool_state["validators"] == [hidden, added], tool_state["validators"]
 
     @selenium_test
     def test_int_parameter_minimum_validation(self):
@@ -565,6 +590,33 @@ steps:
             assert section_element.get_attribute("data-lint-status") == "ok"
 
         assert_linting_input_metadata_okay()
+
+    @selenium_test
+    def test_best_practices_extract_untyped_rename_parameter(self):
+        editor = self.components.workflow_editor
+        # No auto layout: it marks the workflow changed and the refactor would add a save-first confirm.
+        self.open_in_workflow_editor(WORKFLOW_RENAME_ON_REPLACEMENT_PARAM, auto_layout=False)
+        # Refactors are silently dropped while the workflow is still loading.
+        editor.canvas_loading.wait_for_absent()
+        editor.tool_bar.best_practices.wait_for_and_click()
+        best_practices = editor.best_practices
+        section_element = best_practices.section_formal_inputs.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
+        item = best_practices.item_formal_input(index=0)
+        assert "replaceme" in item.wait_for_present().text
+        self.screenshot("workflow_editor_best_practices_untyped_parameter")
+
+        item.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        editor.node._(label="replaceme").wait_for_present()
+
+        @retry_assertion_during_transitions
+        def assert_linting_formal_inputs_okay():
+            section_element = best_practices.section_formal_inputs.wait_for_present()
+            assert section_element.get_attribute("data-lint-status") == "ok"
+
+        assert_linting_formal_inputs_okay()
+        self.screenshot("workflow_editor_best_practices_untyped_parameter_extracted")
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
@@ -1899,13 +1951,16 @@ steps:
 
     def open_in_workflow_editor(self, yaml_content, auto_layout=True):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
-        self.workflow_index_open()
-        self.workflow_index_open_with_name(name)
-        self.workflow_editor_dismiss_state_upgrade_modal()
+        self.workflow_editor_open_with_name(name)
         if auto_layout:
             self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
         return name
+
+    def workflow_editor_open_with_name(self, name: str):
+        self.workflow_index_open()
+        self.workflow_index_open_with_name(name)
+        self.workflow_editor_dismiss_state_upgrade_modal()
 
     def workflow_editor_dismiss_state_upgrade_modal(self):
         """Dismiss the StateUpgradeModal if it appears when opening a workflow.

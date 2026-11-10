@@ -13,7 +13,10 @@ from typing import (
     Optional,
     TYPE_CHECKING,
 )
-from unittest.mock import MagicMock
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import jwt
 import pytest
@@ -34,6 +37,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from galaxy import model
+from galaxy.authnz.cilogon import CILogonOpenIdConnect
 from galaxy.authnz.managers import AuthnzManager
 from galaxy.authnz.oidc_utils import decode_access_token as decode_access_token_oidc
 from galaxy.authnz.psa_authnz import (
@@ -262,6 +266,37 @@ def test_decode_access_token_invalid_issuer():
     assert result["access_token"] is None
     # Test the actual decoding raises expected error
     with pytest.raises(InvalidIssuerError):
+        decode_access_token_oidc(token_str=dummy_access_token.access_token_str, backend=mock_backend)
+
+
+def test_decode_access_token_other_provider_without_matching_key():
+    """
+    Test that a token from another provider reads as an issuer mismatch even when this
+    provider has no key for it, so the next configured provider gets to try it
+    """
+    dummy_access_token = create_access_token(iss="https://other-provider.url")
+    mock_backend = MagicMock()
+    mock_backend.find_valid_key.return_value = None
+    mock_backend.strategy.config = {"accepted_audiences": dummy_access_token.access_token_data["aud"]}
+    mock_backend.id_token_issuer.return_value = "https://validissuer.com"
+    mock_backend.__class__ = OpenIdConnectAuth  # type: ignore[assignment]
+    with pytest.raises(InvalidIssuerError):
+        decode_access_token_oidc(token_str=dummy_access_token.access_token_str, backend=mock_backend)
+    mock_backend.find_valid_key.assert_not_called()
+
+
+def test_decode_access_token_no_matching_key():
+    """
+    Test that a token from this provider with no matching signing key is an invalid token
+    rather than an unexpected error
+    """
+    dummy_access_token = create_access_token()
+    mock_backend = MagicMock()
+    mock_backend.find_valid_key.return_value = None
+    mock_backend.strategy.config = {"accepted_audiences": dummy_access_token.access_token_data["aud"]}
+    mock_backend.id_token_issuer.return_value = dummy_access_token.access_token_data["iss"]
+    mock_backend.__class__ = OpenIdConnectAuth  # type: ignore[assignment]
+    with pytest.raises(InvalidSignatureError):
         decode_access_token_oidc(token_str=dummy_access_token.access_token_str, backend=mock_backend)
 
 
@@ -562,3 +597,61 @@ def test_sync_user_profile_updates_when_account_interface_disabled():
     manager.update_username.assert_called_once_with(trans, user, "newname", commit=False)
     assert session.commit.call_count == 1
     notify.assert_called_once()
+
+
+def test_authenticate_with_extra_scopes_does_not_accumulate(tmp_path, mock_oidc_config_file):
+    backend_config_file = tmp_path / "oidc_backends_config_extra_scopes.xml"
+    backend_config_file.write_text("""<?xml version="1.0"?>
+    <OIDC>
+        <provider name="cilogon">
+            <url>https://cilogon.org</url>
+            <client_id>gxyclient</client_id>
+            <client_secret>dummyclientsecret</client_secret>
+            <redirect_uri>https://galaxy.example.com/authnz/cilogon/callback</redirect_uri>
+            <extra_scopes>profile</extra_scopes>
+        </provider>
+    </OIDC>
+    """)
+    mock_app = MagicMock()
+    mock_app.config = SimpleNamespace(
+        oidc_auth_pipeline=None,
+        oidc_auth_pipeline_extra=None,
+        oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
+    )
+    manager = AuthnzManager(
+        app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=backend_config_file
+    )
+    psa_authnz = PSAAuthnz(
+        provider="cilogon",
+        oidc_config=manager.oidc_config,
+        oidc_backend_config=manager.oidc_backends_config["cilogon"],
+        app_config=mock_app.config,
+    )
+    original_default_scope = CILogonOpenIdConnect.DEFAULT_SCOPE
+    expected_default_scope = list(original_default_scope)
+    observed_scopes = []
+
+    def fake_do_auth(backend):
+        observed_scopes.append(sorted(backend.get_scope()))
+        return MagicMock()
+
+    trans = MagicMock()
+    trans.request.host = "https://galaxy.example.com"
+    try:
+        with (
+            patch("galaxy.authnz.psa_authnz.on_the_fly_config"),
+            patch("galaxy.authnz.psa_authnz.FlowState"),
+            patch("galaxy.authnz.psa_authnz.authentication_id"),
+            patch("galaxy.authnz.psa_authnz.do_auth", side_effect=fake_do_auth),
+        ):
+            for _ in range(3):
+                psa_authnz.authenticate(trans)
+
+        expected_scope = sorted(expected_default_scope + ["profile"])
+        assert observed_scopes == [expected_scope] * 3
+        assert CILogonOpenIdConnect.DEFAULT_SCOPE is original_default_scope
+        assert CILogonOpenIdConnect.DEFAULT_SCOPE == expected_default_scope
+    finally:
+        original_default_scope[:] = expected_default_scope
+        CILogonOpenIdConnect.DEFAULT_SCOPE = original_default_scope

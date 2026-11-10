@@ -90,6 +90,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ build ]
     steps:
+      - name: Allow processes in containers to signal each other
+        # Ubuntu 26.04 runners set kernel.apparmor_restrict_unprivileged_unconfined=1,
+        # which stacks "//&unconfined" onto the containerd AppArmor profile. The
+        # default profile does not match the stacked label, so signals between a
+        # container's own processes are denied and PostgreSQL fails to start with
+        # "could not signal for checkpoint: Permission denied".
+        # See https://github.com/containerd/containerd/issues/14485
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0
       - name: Start k8s locally
         uses: jupyterhub/action-k3s-helm@v4
         with:
@@ -162,6 +170,16 @@ jobs:
           for pod in $(kubectl get pods -n galaxy-deps --field-selector=status.phase!=Running,status.phase!=Succeeded -o name 2>/dev/null); do
             echo "--- Describing $pod ---"
             kubectl describe -n galaxy-deps $pod
+          done
+
+          echo "=== Logs of pods with unready containers in galaxy namespace ==="
+          for pod in $(kubectl get pods -n galaxy -o json | jq -r '.items[] | select(any(.status.containerStatuses[]?; .ready == false)) | .metadata.name'); do
+            echo "--- Describing $pod ---"
+            kubectl describe -n galaxy pod/$pod
+            echo "--- Logs of $pod ---"
+            kubectl logs -n galaxy pod/$pod --all-containers --tail=300 || true
+            echo "--- Logs of $pod (previous containers) ---"
+            kubectl logs -n galaxy pod/$pod --all-containers --previous --tail=300 || true
           done
       - name: Check the version
         run: |

@@ -59,6 +59,37 @@ describe("stores/EntryPointStore", () => {
         expect(store.entryPoints[0].name).toBe("Oh there you go, bringing class into it again.");
         expect(store.entryPoints[0].active).toBeTruthy();
     });
+
+    it("adds a newly started entry point to a non-empty list", async () => {
+        const newEntryPoint = {
+            model_class: "InteractiveToolEntryPoint",
+            id: "a1b2c3d4e5f60718",
+            job_id: "0f1e2d3c4b5a6978",
+            name: "RStudio",
+            active: true,
+            created_time: "2020-03-24T15:59:22.406480",
+            modified_time: "2020-03-24T15:59:24.757453",
+            output_datasets_ids: ["9a8b7c6d5e4f3021"],
+        };
+        store.updateEntryPoints([...store.entryPoints, newEntryPoint]);
+        expect(store.entryPoints.length).toBe(3);
+        expect(store.entryPoints.map((ep) => ep.id)).toContain("a1b2c3d4e5f60718");
+    });
+
+    it("replaces a finished entry point with a newly started one", async () => {
+        const newEntryPoint = {
+            model_class: "InteractiveToolEntryPoint",
+            id: "a1b2c3d4e5f60718",
+            job_id: "0f1e2d3c4b5a6978",
+            name: "RStudio",
+            active: true,
+            created_time: "2020-03-24T15:59:22.406480",
+            modified_time: "2020-03-24T15:59:24.757453",
+            output_datasets_ids: ["9a8b7c6d5e4f3021"],
+        };
+        store.updateEntryPoints([store.entryPoints[0], newEntryPoint]);
+        expect(store.entryPoints.map((ep) => ep.id)).toEqual(["52e496b945151ee8", "a1b2c3d4e5f60718"]);
+    });
     it("removes an entry point of given id", async () => {
         let entryPointForId = store.entryPoints.filter((item) => item.id === "52e496b945151ee8");
         expect(entryPointForId.length).toBe(1);

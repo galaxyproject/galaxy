@@ -15,10 +15,7 @@ from uuid import uuid4
 import pytest
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
-from requests import (
-    get,
-    put,
-)
+from requests import get
 
 from galaxy.tool_util.verify.interactor import ValidToolTestDict
 from galaxy.util import galaxy_root_path
@@ -891,17 +888,16 @@ class TestToolsApi(ApiTestCase, TestsTools):
         return tool_info
 
     @skip_without_tool("model_attributes")
+    @requires_new_user
     def test_model_attributes_sanitization(self):
-        with self.dataset_populator.test_history(require_new=False) as history_id:
-            cool_name_with_quote = 'cool name with a quo"te'
-            cool_name_without_quote = "cool name with a quo__dq__te"
-
+        cool_name_with_quote = 'cool name with a quo"te'
+        cool_name_without_quote = "cool name with a quo__dq__te"
+        with (
+            self._different_user_with_address(cool_name_with_quote),
+            self.dataset_populator.test_history() as history_id,
+        ):
             current_user = self._get("users/current").json()
-            user_info_url = self._api_url(f"users/{current_user['id']}/information/inputs", use_key=True)
-            put_response = put(user_info_url, data=json.dumps({"address_0|desc": cool_name_with_quote}))
-            put_response.raise_for_status()
-
-            response = get(user_info_url).json()
+            response = self._get(f"users/{current_user['id']}/information/inputs").json()
             assert len(response["addresses"]) == 1
             assert response["addresses"][0]["desc"] == cool_name_with_quote
 
@@ -3486,6 +3482,27 @@ class TestToolsApi(ApiTestCase, TestsTools):
             self._run("collection_type_source", history_id, inputs, assert_ok=True, wait_for_job=True)
             collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=4)
             assert collection_details["elements"][0]["object"]["elements"][0]["element_type"] == "hda"
+
+    @skip_without_tool("collection_type_source")
+    def test_discovered_collection_format_source(self):
+        with self.dataset_populator.test_history() as history_id:
+            header = self.dataset_populator.new_dataset(history_id, content="1\t2\n", file_type="tabular", wait=True)
+            hdca_id = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[("A", "3\t4\n"), ("B", "5\t6\n")], wait=True
+            ).json()["outputs"][0]["id"]
+            inputs = {
+                "header": {"src": "hda", "id": header["id"]},
+                "input_collect": {"src": "hdca", "id": hdca_id},
+            }
+            response = self._run("collection_type_source", history_id, inputs, assert_ok=True, wait_for_job=True)
+            output_collection = response["output_collections"][0]
+            collection_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=output_collection["id"]
+            )
+            assert [element["object"]["file_ext"] for element in collection_details["elements"]] == [
+                "tabular",
+                "tabular",
+            ]
 
     @skip_without_tool("multi_data_param")
     def test_reduce_collections_legacy(self):

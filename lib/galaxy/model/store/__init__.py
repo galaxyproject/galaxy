@@ -288,6 +288,17 @@ def replace_metadata_file(
     return remap(metadata, remap_objects)
 
 
+def _path_in_archive(archive_root: str, path: str) -> str:
+    """Resolve a path the model store names relative to its archive, refusing links and paths outside it."""
+    archive_path = os.path.abspath(os.path.join(archive_root, path))
+    if os.path.islink(archive_path):
+        raise MalformedContents(f"Invalid dataset path: {archive_path}")
+    real_path = os.path.realpath(archive_path)
+    if not in_directory(real_path, archive_root):
+        raise MalformedContents(f"Invalid dataset path: {real_path}")
+    return real_path
+
+
 class ModelImportStore(metaclass=abc.ABCMeta):
     app: Optional[StoreAppProtocol]
     archive_dir: str
@@ -300,6 +311,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         user: Optional[model.User] = None,
         object_store: Optional[ObjectStore] = None,
         tag_handler: Optional["GalaxyTagHandlerSession"] = None,
+        commit: bool = True,
     ) -> None:
         if object_store is None:
             if app is not None:
@@ -316,6 +328,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.import_options = import_options or ImportOptions()
         self.dataset_state_serialized = True
         self.tag_handler = tag_handler
+        # With commit=False the import only flushes and the caller owns the transaction.
+        self.commit = commit
         if self.defines_new_history():
             self.import_history_encoded_id = self.new_history_properties().get("encoded_id")
         else:
@@ -556,6 +570,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         value = dataset_attrs[attribute]
                         if attribute == "metadata":
                             value = replace_metadata_file(value, dataset_instance, self.sa_session)
+                        elif attribute == "extension":
+                            value = self._registered_extension(value)
                         setattr(dataset_instance, attribute, value)
 
                 handle_dataset_object_edit(dataset_instance, dataset_attrs)
@@ -583,7 +599,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     # Create dataset and HDA.
                     dataset_instance = model.HistoryDatasetAssociation(
                         name=dataset_attrs["name"],
-                        extension=dataset_attrs["extension"],
+                        extension=self._registered_extension(dataset_attrs["extension"]),
                         info=dataset_attrs["info"],
                         blurb=dataset_attrs["blurb"],
                         peek=dataset_attrs["peek"],
@@ -604,7 +620,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     # Create dataset and LDDA.
                     dataset_instance = model.LibraryDatasetDatasetAssociation(
                         name=dataset_attrs["name"],
-                        extension=dataset_attrs["extension"],
+                        extension=self._registered_extension(dataset_attrs["extension"]),
                         info=dataset_attrs["info"],
                         blurb=dataset_attrs["blurb"],
                         peek=dataset_attrs["peek"],
@@ -667,15 +683,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     file_name = dataset_attrs.get("file_name")
                     if file_name:
                         assert file_source_root
-                        # Do security check and move/copy dataset data.
-                        archive_path = os.path.abspath(os.path.join(file_source_root, file_name))
-                        if os.path.islink(archive_path):
-                            raise MalformedContents(f"Invalid dataset path: {archive_path}")
-
-                        temp_dataset_file_name = os.path.realpath(archive_path)
-
-                        if not in_directory(temp_dataset_file_name, file_source_root):
-                            raise MalformedContents(f"Invalid dataset path: {temp_dataset_file_name}")
+                        temp_dataset_file_name = _path_in_archive(file_source_root, file_name)
 
                     has_good_source = False
                     file_metadata = dataset_attrs.get("file_metadata") or {}
@@ -724,7 +732,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                             dataset_extra_files_path = dataset_attrs.get("extra_files_path", None)
                             if dataset_extra_files_path:
                                 assert file_source_root
-                                dataset_extra_files_path = os.path.join(file_source_root, dataset_extra_files_path)
+                                dataset_extra_files_path = _path_in_archive(file_source_root, dataset_extra_files_path)
                                 persist_extra_files(self.object_store, dataset_extra_files_path, dataset_instance)
                             # Only trust file size if the dataset is purged. If we keep the data we should check the file size.
                             dataset_instance.dataset.file_size = None
@@ -832,7 +840,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     ld.library_dataset_dataset_association = ldda
                 self._session_add(ld)
 
-            self.sa_session.commit()
+            self._flush()
             return library_folder
 
         libraries_attrs = self.library_properties()
@@ -968,6 +976,20 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     object_import_tracker.hdcas_by_id[collection_attrs["id"]] = hdca
             else:
                 import_collection(collection_attrs)
+
+    def _registered_extension(self, extension: str | None) -> str | None:
+        """Return ``extension``, or ``data`` if it is not a registered datatype.
+
+        ``auto`` is kept, deferred datasets resolve it on materialization.
+        """
+        if (
+            self.app is None
+            or not extension
+            or extension == "auto"
+            or self.app.datatypes_registry.get_datatype_by_extension(extension) is not None
+        ):
+            return extension
+        return "data"
 
     def _attach_raw_id_if_editing(
         self,
@@ -1437,7 +1459,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.sa_session.add(obj)
 
     def _flush(self) -> None:
-        self.sa_session.commit()
+        if self.commit:
+            self.sa_session.commit()
+        else:
+            self.sa_session.flush()
 
 
 def _copied_from_object_key(

@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -35,8 +36,6 @@ describe("ChangePassword", () => {
                 return HttpResponse.json({});
             }),
         );
-        // Navigate to a different route to avoid NavigationDuplicated error
-        // when the component calls router.push("/") on successful submit
         await router.push("/change-password").catch(() => {});
         wrapper = mount(MountTarget as object, {
             propsData: {
@@ -45,6 +44,7 @@ describe("ChangePassword", () => {
             },
             localVue,
             router,
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
     });
 

@@ -284,7 +284,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         mock_result = {"jobs": [{"id": "job123"}], "outputs": [{"id": "dataset123"}]}
 
         mock_service = mock.MagicMock()
-        mock_service._create.return_value = mock_result
+        mock_service.create.return_value = mock_result
 
         with mock.patch.object(
             type(self.agent_ops), "tools_service", new_callable=lambda: property(lambda self: mock_service)
@@ -293,7 +293,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         assert result["jobs"] == [{"id": "job123"}]
         assert result["outputs"] == [{"id": "dataset123"}]
-        call_args = mock_service._create.call_args
+        call_args = mock_service.create.call_args
         payload = call_args[0][1] if call_args[0] else call_args[1].get("payload")
         assert payload["tool_id"] == "cat1"
         assert payload["history_id"] == "hist123"
