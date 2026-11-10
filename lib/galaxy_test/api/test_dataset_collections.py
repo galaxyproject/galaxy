@@ -432,6 +432,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
             payload["rows"]["sample1"][0] = invalid_value
             response = self._post("dataset_collections", payload, json=True)
             assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "Column 'db_type' contains control characters")
 
     def test_sample_sheet_requires_columns(self, history_id):
         contents = [
