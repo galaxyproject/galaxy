@@ -58,7 +58,7 @@ const props = defineProps({
     detailedView: { type: Boolean, default: false },
 });
 
-const { stateStore, stepStore, connectionStore, undoRedoStore, workflowId } = useWorkflowStores();
+const { stateStore, stepStore, connectionStore, workflowId } = useWorkflowStores();
 const { scale, activeNodeId, draggingPosition, draggingTerminal, pendingHighlight } = storeToRefs(stateStore);
 
 const { focusedNodeIds } = useFocusedNodes(activeNodeId, {
@@ -140,22 +140,27 @@ const drawnSteps = computed(() => {
 });
 
 // A workflow that arrived without positions gets Auto Layout once, as soon as every node has a measured size.
-// In the editor this is an undoable change the owner may save; read-only views only display it.
+// It is part of loading the workflow, as if it had been stored laid out: no undo entry, and the editor doesn't
+// count it as a change. The positions are saved with the next save.
 const nodesMeasured = computed(() =>
     Object.values(props.steps).every((step) => (stateStore.stepPosition[step.id]?.height ?? 0) > 0),
 );
+let layingOut = false;
 watch(
     () => stateStore.needsInitialLayout && nodesMeasured.value,
     async (ready) => {
-        if (!ready) {
+        if (!ready || layingOut) {
             return;
         }
-        stateStore.needsInitialLayout = false;
-        const action = new AutoLayoutAction(workflowId, { keepFrameMembership: true });
-        undoRedoStore.applyAction(action);
-        await action.finished;
-        if (lastFit) {
-            fitWorkflow(...lastFit);
+        layingOut = true;
+        try {
+            await new AutoLayoutAction(workflowId, { keepFrameMembership: true }).run();
+            if (lastFit) {
+                fitWorkflow(...lastFit);
+            }
+        } finally {
+            layingOut = false;
+            stateStore.needsInitialLayout = false;
         }
     },
     { immediate: true },

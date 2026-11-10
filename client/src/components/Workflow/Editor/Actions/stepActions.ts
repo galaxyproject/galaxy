@@ -446,9 +446,6 @@ export class AutoLayoutAction extends UndoRedoAction {
     workflowId;
     ran;
     keepFrameMembership;
-    /** Resolves once the computed positions have been applied */
-    finished: Promise<void>;
-    private resolveFinished: () => void = () => {};
 
     /**
      * @param keepFrameMembership use the frames' stored `child_steps` instead of re-deriving them from
@@ -459,7 +456,6 @@ export class AutoLayoutAction extends UndoRedoAction {
 
         this.workflowId = workflowId;
         this.keepFrameMembership = keepFrameMembership;
-        this.finished = new Promise((resolve) => (this.resolveFinished = resolve));
         this.stepStore = useWorkflowStepStore(workflowId);
         this.commentStore = useWorkflowCommentStore(workflowId);
 
@@ -526,19 +522,15 @@ export class AutoLayoutAction extends UndoRedoAction {
             this.commentStore.resolveStepsInFrames();
         }
 
-        try {
-            const newPositions = await autoLayout(this.workflowId, this.stepStore.steps, this.commentStore.comments);
+        const newPositions = await autoLayout(this.workflowId, this.stepStore.steps, this.commentStore.comments);
 
-            assertDefined(newPositions);
+        assertDefined(newPositions);
 
-            this.positions = newPositions as Positions;
+        this.positions = newPositions as Positions;
 
-            if (this.ran) {
-                this.mapPositionsToStore(this.positions);
-                useUndoRedoStore(this.workflowId).changeId += 1;
-            }
-        } finally {
-            this.resolveFinished();
+        if (this.ran) {
+            this.mapPositionsToStore(this.positions);
+            useUndoRedoStore(this.workflowId).changeId += 1;
         }
     }
 
