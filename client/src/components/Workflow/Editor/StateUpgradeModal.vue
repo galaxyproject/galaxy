@@ -23,6 +23,11 @@ interface Props {
     message?: string;
 }
 
+const emit = defineEmits<{
+    /** The user accepted the filled defaults; the workflow now differs from what is stored */
+    (e: "accept"): void;
+}>();
+
 const props = withDefaults(defineProps<Props>(), {
     filledDefaults: () => [],
     title: "Issues loading this workflow",
@@ -70,6 +75,13 @@ const filledDefaultsSummary = computed(() => {
     return `Galaxy filled in ${values} in ${steps}`;
 });
 const modalTitle = computed(() => (props.stateMessages.length > 0 ? props.title : "Default values filled in"));
+
+function onOk() {
+    if (props.filledDefaults.length > 0) {
+        emit("accept");
+    }
+    show.value = false;
+}
 </script>
 
 <template>
@@ -103,8 +115,8 @@ const modalTitle = computed(() => (props.stateMessages.length > 0 ? props.title 
                 data-description="workflow state upgrade filled defaults">
                 <p class="mb-1">
                     {{ filledDefaultsSummary }}. The workflow gives these parameters no value, so Galaxy uses each
-                    tool's default, as it does when the workflow runs. They are stored with the workflow the next time
-                    you save it.
+                    tool's default, as it does when the workflow runs. Accept them and save the workflow to store them,
+                    so this note doesn't come back.
                 </p>
                 <GButton
                     v-model:pressed="showFilledDefaults"
@@ -134,8 +146,8 @@ const modalTitle = computed(() => (props.stateMessages.length > 0 ? props.title 
             </div>
         </div>
         <template v-slot:footer>
-            <GButton color="blue" data-description="workflow state upgrade modal ok" @click="show = false">
-                OK
+            <GButton color="blue" data-description="workflow state upgrade modal ok" @click="onOk">
+                {{ filledDefaults.length > 0 ? "Accept" : "OK" }}
             </GButton>
         </template>
     </GModal>

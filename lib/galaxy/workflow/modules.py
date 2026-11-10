@@ -530,6 +530,8 @@ class WorkflowModule:
         self.trans = trans
         self.content_id = content_id
         self.state = DefaultToolState()
+        # parameters the step gave no value for that got their default; set by check_and_update_state
+        self.filled_defaults: dict[str, Any] = {}
 
     # ---- Creating modules from various representations ---------------------
 
@@ -931,11 +933,9 @@ class SubWorkflowModule(WorkflowModule):
         return version_changes
 
     def check_and_update_state(self):
-        modules = list(self.get_modules())
+        modules = self.get_modules()
         states = [m.check_and_update_state() for m in modules]
-        self.filled_defaults = {
-            f"Step {i + 1}": filled for i, m in enumerate(modules) if (filled := getattr(m, "filled_defaults", None))
-        }
+        self.filled_defaults = {f"Step {i + 1}": m.filled_defaults for i, m in enumerate(modules) if m.filled_defaults}
         # TODO: key ("Step N:") is not currently consumed in UI
         return {f"Step {i + 1}": upgrade_message for i, upgrade_message in enumerate(states) if upgrade_message} or None
 
@@ -3036,10 +3036,14 @@ class ToolModule(WorkflowModule):
 
     def check_and_update_state(self):
         if self.tool:
-            # parameters that only lacked a value get their default; they are not upgrade problems
+            # Parameters that only lacked a value get their default and are not upgrade problems, unless the tool
+            # version changed: then they may be new or renamed parameters, so they stay upgrade messages.
             self.filled_defaults = {}
             return self.tool.check_and_update_param_values(
-                self.state.inputs, self.trans, workflow_building_mode=True, filled_defaults=self.filled_defaults
+                self.state.inputs,
+                self.trans,
+                workflow_building_mode=True,
+                filled_defaults=None if self.version_changes else self.filled_defaults,
             )
 
     def add_dummy_datasets(self, connections: Iterable[InputConnection] | None = None, steps=None):
@@ -3730,7 +3734,7 @@ class WorkflowModuleInjector:
 
         # Fix any missing parameters
         step.upgrade_messages = step.module.check_and_update_state()
-        step.filled_defaults = getattr(step.module, "filled_defaults", None) or {}
+        step.filled_defaults = step.module.filled_defaults
 
         return step_errors
 

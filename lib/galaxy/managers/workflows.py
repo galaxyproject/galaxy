@@ -1609,8 +1609,8 @@ class WorkflowContentsManager(UsesAnnotations):
             self.__set_default_label(step, module, step.tool_inputs)
             # Fix any missing parameters
             upgrade_message_dict = module.check_and_update_state() or {}
-            if filled_defaults := getattr(module, "filled_defaults", None):
-                data["filled_defaults"][step.order_index] = filled_defaults
+            if module.filled_defaults:
+                data["filled_defaults"][step.order_index] = module.filled_defaults
             version_changes = getattr(module, "version_changes", None)
             if version_changes:
                 upgrade_message_dict[module.get_name()] = "\n".join(version_changes)

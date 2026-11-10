@@ -1349,6 +1349,30 @@ steps:
             # runs without allow_tool_state_corrections, which bioblend leaves off
             self.workflow_populator.invoke_workflow_raw(workflow_id, request, assert_ok=True)
 
+    def test_filled_defaults_after_a_tool_version_change_need_corrections(self):
+        # 0.05 isn't installed, so 0.2 runs, and its new floattest parameter has no stored value
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  multiple_versions_changes:
+    tool_id: multiple_versions_changes
+    tool_version: "0.05"
+    state:
+      inttest: 1
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        with self.dataset_populator.test_history() as history_id:
+            request = {"history_id": history_id}
+            response = self.workflow_populator.invoke_workflow_raw(workflow_id, request)
+            self._assert_status_code_is(response, 400)
+            assert "upgrade messages" in response.json()["err_msg"]
+            request["allow_tool_state_corrections"] = True
+            self.workflow_populator.invoke_workflow_raw(workflow_id, request, assert_ok=True)
+
     def test_replaced_tool_state_values_are_upgrade_messages(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """
