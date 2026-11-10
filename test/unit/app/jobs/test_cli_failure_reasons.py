@@ -2,10 +2,8 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from galaxy.jobs.runners.cli import ShellJobRunner
-from galaxy.jobs.runners.util import (
-    RUNNER_STATE_DEFINITIONS,
-    runner_states,
-)
+from galaxy.jobs.runners.runner_state_definitions import RUNNER_STATE_DEFINITIONS
+from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.cli.job.slurm import Slurm
 
 

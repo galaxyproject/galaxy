@@ -45,7 +45,6 @@ from galaxy.jobs.runners import (
     JobState,
     pulsar as pulsar_runner,
 )
-from galaxy.jobs.runners.util import RUNNER_STATE_DEFINITIONS
 from galaxy.jobs.runners.pulsar import (  # type: ignore[attr-defined]
     build_client_manager,
     effective_dependency_resolution,
@@ -53,6 +52,7 @@ from galaxy.jobs.runners.pulsar import (  # type: ignore[attr-defined]
     LOST_REMOTE_ERROR,
     PulsarJobRunner,
 )
+from galaxy.jobs.runners.runner_state_definitions import RUNNER_STATE_DEFINITIONS
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 
 
