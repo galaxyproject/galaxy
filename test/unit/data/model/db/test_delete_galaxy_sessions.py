@@ -1,5 +1,6 @@
 """Run the cleanup command against real disposable databases, without mocks."""
 
+import filecmp
 import json
 import os
 import shutil
@@ -65,6 +66,18 @@ def cli(engine, tmp_path):
     )
     env = {k: v for k, v in os.environ.items() if not k.startswith("GALAXY_CONFIG_")}
     executable = shutil.which("galaxy-delete-sessions", path=os.path.dirname(sys.executable))
+    if executable:
+        # The installed command must run the code under test, not another version.
+        # Package tests import it from packages/data/src but install a site-packages copy.
+        installed = subprocess.run(
+            [sys.executable, "-c", f"import {cleanup.__name__} as m; print(m.__file__)"],
+            cwd=tmp_path,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        assert filecmp.cmp(installed, cleanup.__file__, shallow=False), installed
     command = [executable] if executable else [sys.executable, cleanup.__file__]
 
     def invoke(*args, expected_code=0):
