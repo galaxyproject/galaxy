@@ -13218,6 +13218,36 @@ class APIKeys(Base, RepresentById):
     deleted: Mapped[bool] = mapped_column(index=True, server_default=false())
 
 
+class OAuthDeviceAuthorization(Base, RepresentById):
+    """A pending OAuth 2.0 device flow login (RFC 8628), from request until approved, denied or expired."""
+
+    __tablename__ = "oauth_device_authorization"
+
+    class statuses(str, Enum):
+        PENDING = "pending"
+        APPROVED = "approved"
+        DENIED = "denied"
+        USED = "used"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    expires_at: Mapped[datetime]
+    # Only a hash of the device code is stored; the app holds the code itself.
+    device_code_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    # The user code is shown to the user and entered on the verification page.
+    user_code: Mapped[str] = mapped_column(String(16), unique=True)
+    # The client ID identifies the app requesting access.
+    client_id: Mapped[str] = mapped_column(String(255))
+    # The scopes requested by the app, as a space-separated string (as in the OAuth 2.0 specification).
+    scope: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16), default=statuses.PENDING)
+    # Empty until the user approves or denies the request. Once approved, this links to the user who authorized it.
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    requesting_ip: Mapped[str | None] = mapped_column(String(255))
+    last_polled_at: Mapped[datetime | None]
+    user: Mapped[Optional["User"]] = relationship()
+
+
 def copy_list(lst, *args, **kwds):
     if lst is None:
         return lst
