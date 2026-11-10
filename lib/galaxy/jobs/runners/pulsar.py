@@ -58,7 +58,7 @@ from galaxy.jobs.runners import (
     ContainerRequiredException,
     JobState,
 )
-from galaxy.jobs.runners.util import RUNNER_STATE_DEFINITIONS
+from galaxy.jobs.runners.runner_state_definitions import RUNNER_STATE_DEFINITIONS
 from galaxy.model.base import check_database_connection
 from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.tool_util.deps import dependencies
@@ -276,10 +276,8 @@ PULSAR_PARAM_SPECS = dict(
 )
 
 
-# What a user is told when a Pulsar server reports why their job failed. Resubmission
-# handlers only understand these states, so others from a newer server are ignored.
-# A reason this Galaxy has no definition for is still useful to resubmit conditions,
-# but it has to at least look like a reason.
+# A reason this Galaxy has no definition for, e.g. from a newer Pulsar server, is still
+# offered to resubmit conditions, but it has to at least look like a reason.
 REMOTE_RUNNER_STATE = re.compile(r"[a-z][a-z0-9_]*")
 PARAMETER_SPECIFICATION_REQUIRED = object()
 PARAMETER_SPECIFICATION_IGNORED = object()

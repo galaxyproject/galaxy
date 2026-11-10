@@ -12,7 +12,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
 )
-from galaxy.jobs.runners.util import RUNNER_STATE_DEFINITIONS
+from galaxy.jobs.runners.runner_state_definitions import RUNNER_STATE_DEFINITIONS
 from galaxy.util import asbool
 from .util.cli import (
     CliInterface,
