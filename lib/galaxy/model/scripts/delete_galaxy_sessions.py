@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from types import FrameType
 
 from sqlalchemy import (
-    bindparam,
     create_engine,
     event,
     text,
@@ -156,6 +155,8 @@ def _get_parser() -> argparse.ArgumentParser:
 # Materialize one newest-session result per distinct candidate-page user. Without
 # this boundary, a planner can repeat the user-index scan for every candidate.
 # Both preview and DELETE compute this afresh within their statement snapshot.
+# Pages are bound by ID range, not by an IN list of the scanned IDs, so the
+# number of bind parameters does not grow with the batch size.
 NEWEST_SESSIONS = """
     WITH newest_sessions AS MATERIALIZED (
         SELECT users.user_id, (
@@ -165,7 +166,7 @@ NEWEST_SESSIONS = """
         ) AS id
         FROM (
             SELECT DISTINCT user_id FROM galaxy_session
-            WHERE id IN :ids AND user_id IS NOT NULL AND update_time < :update_time
+            WHERE id > :after_id AND id <= :page_end AND user_id IS NOT NULL AND update_time < :update_time
         ) users
     )
 """
@@ -202,20 +203,22 @@ def _eligibility(
     return predicate
 
 
-def _eligible_ids(conn: Connection, ids: list[int], predicate: str, cutoff: datetime.date) -> list[int]:
-    stmt = text(f"{NEWEST_SESSIONS} SELECT s.id FROM galaxy_session s WHERE s.id IN :ids AND {predicate} ORDER BY s.id")
-    return list(conn.scalars(stmt.bindparams(bindparam("ids", expanding=True)), {"ids": ids, "update_time": cutoff}))
+PAGE = "s.id > :after_id AND s.id <= :page_end"
 
 
-def _delete_batch(conn: Connection, ids: list[int], predicate: str, cutoff: datetime.date) -> int:
+def _eligible_ids(conn: Connection, after_id: int, page_end: int, predicate: str, cutoff: datetime.date) -> list[int]:
+    stmt = text(f"{NEWEST_SESSIONS} SELECT s.id FROM galaxy_session s WHERE {PAGE} AND {predicate} ORDER BY s.id")
+    return list(conn.scalars(stmt, {"after_id": after_id, "page_end": page_end, "update_time": cutoff}))
+
+
+def _delete_batch(conn: Connection, after_id: int, page_end: int, predicate: str, cutoff: datetime.date) -> int:
     # Re-evaluate age, ownership, newest-session, history and job protection at DELETE
-    # time, rather than deleting the previously selected IDs unconditionally.
-    stmt = text(f"{NEWEST_SESSIONS} DELETE FROM galaxy_session AS s WHERE s.id IN :ids AND {predicate} RETURNING id")
+    # time, rather than deleting the previously scanned IDs unconditionally. This
+    # also decides for rows committed inside the page's ID range after the scan.
+    stmt = text(f"{NEWEST_SESSIONS} DELETE FROM galaxy_session AS s WHERE {PAGE} AND {predicate} RETURNING id")
     # SQLite reports rowcount=-1 for WITH-prefixed DML. RETURNING counts actual
     # deletions reliably on both backends, with at most one page in memory.
-    return len(
-        list(conn.scalars(stmt.bindparams(bindparam("ids", expanding=True)), {"ids": ids, "update_time": cutoff}))
-    )
+    return len(list(conn.scalars(stmt, {"after_id": after_id, "page_end": page_end, "update_time": cutoff})))
 
 
 @contextmanager
@@ -336,11 +339,11 @@ def run(
                 if not ids:
                     selected = deleted = 0
                 elif dry_run:
-                    selected, deleted = len(_eligible_ids(conn, ids, predicate, cutoff)), 0
+                    selected, deleted = len(_eligible_ids(conn, progress.after_id, ids[-1], predicate, cutoff)), 0
                 else:
                     # The DELETE re-evaluates the whole predicate, so a separate
                     # SELECT would only repeat the newest-session lookups.
-                    selected = deleted = _delete_batch(conn, ids, predicate, cutoff)
+                    selected = deleted = _delete_batch(conn, progress.after_id, ids[-1], predicate, cutoff)
             # Publish only after commit. A failed page must be scanned again.
             if not ids:
                 progress.after_id = progress.through_id

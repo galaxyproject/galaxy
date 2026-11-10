@@ -3,6 +3,7 @@
 import json
 import os
 import shutil
+import sqlite3
 import subprocess
 import sys
 from datetime import (
@@ -15,6 +16,8 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import (
     create_engine,
+    event,
+    insert,
     select,
     text,
     update,
@@ -156,12 +159,33 @@ def test_refreshed_session_is_rechecked(engine, session, make_galaxy_session):
     session.commit()
     predicate = cleanup._eligibility(False, False)
     with engine.begin() as conn:
-        ids = cleanup._eligible_ids(conn, [row_id], predicate, CUTOFF)
+        ids = cleanup._eligible_ids(conn, row_id - 1, row_id, predicate, CUTOFF)
     assert ids == [row_id]
     session.execute(update(m.GalaxySession).where(m.GalaxySession.id == row_id).values(update_time=CUTOFF))
     session.commit()
     with engine.begin() as conn:
-        assert cleanup._delete_batch(conn, ids, predicate, CUTOFF) == 0
+        assert cleanup._delete_batch(conn, row_id - 1, row_id, predicate, CUTOFF) == 0
+
+
+def test_large_page_fits_sqlite_variable_limit(engine):
+    # Stock SQLite allows 32766 bind parameters per statement; binding each page ID
+    # twice failed for pages above 16383 sessions.
+    rows = 16384
+    page_engine = create_engine(engine.url)
+    if page_engine.dialect.name == "sqlite":
+
+        @event.listens_for(page_engine, "connect")
+        def cap_variables(dbapi_connection, connection_record):
+            # Builds such as Debian's raise the cap.
+            dbapi_connection.setlimit(sqlite3.SQLITE_LIMIT_VARIABLE_NUMBER, 32766)
+
+    try:
+        with page_engine.begin() as conn:
+            conn.execute(insert(m.GalaxySession), [{"update_time": OLD}] * rows)
+        progress = cleanup.run(page_engine, CUTOFF, batch_size=rows, pause=0)
+    finally:
+        page_engine.dispose()
+    assert (progress.batches, progress.deleted) == (1, rows)
 
 
 def test_postgres_transaction_guards(engine, session, make_galaxy_session, cli):
