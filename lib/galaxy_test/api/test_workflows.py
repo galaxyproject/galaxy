@@ -13337,7 +13337,7 @@ steps:
                     {"type": "int", "name": "replicate", "default_value": 0, "optional": False},
                     {"type": "string", "name": "treatment", "default_value": "control", "optional": False},
                 ],
-                rows={"sample1": [1, "treatment"], "sample2": [2, "control"]},
+                rows={"sample1": [1, "short;long"],"sample2": [2, "--min=10 --max=50"],},
             )
             create_response = self._post("dataset_collections", payload, json=True)
             self._assert_status_code_is(create_response, 200)
@@ -13364,6 +13364,16 @@ steps:
             first_job_details = self.dataset_populator.get_job_details(first_job_id, full=True).json()
             assert first_job_details["state"] == "ok"
             assert not first_job_details["copied_from_job_id"]
+            # Verify nf-core values are preserved in the exported TSV.
+            output_id = first_job_details["outputs"]["output"]["id"]
+
+            tsv_content = self.dataset_populator.get_history_dataset_content(
+                history_id=history_id,
+                content_id=output_id,
+            )
+
+            assert "sample1\t1\tshort;long" in tsv_content.splitlines()
+            assert "sample2\t2\t--min=10 --max=50" in tsv_content.splitlines()
 
             # Second invocation - run with cached jobs
             workflow_request["use_cached_job"] = True
