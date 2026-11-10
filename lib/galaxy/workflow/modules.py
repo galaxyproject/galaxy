@@ -392,7 +392,7 @@ def to_cwl(
                 properties["element_identifier"] = element_identifiers.get(value) or value.name
             if secondary_file_datasets is not None:
                 # Passed by the UDT evaluator only, like element_identifiers.
-                properties["secondary_files"] = (
+                properties["secondaryFiles"] = (
                     secondary_files_json(value, properties["basename"], compute_environment)
                     if value in secondary_file_datasets
                     else []

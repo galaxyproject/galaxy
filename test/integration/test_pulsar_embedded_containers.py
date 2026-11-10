@@ -35,7 +35,7 @@ def _home_probe_tool(probe_name: str) -> dict:
 
 
 def _index_probe_tool() -> dict:
-    index = "$(inputs.input.secondary_files[0].path)"
+    index = "$(inputs.input.secondaryFiles[0].path)"
     return {
         "class": "GalaxyUserTool",
         "id": "index_probe",

@@ -147,7 +147,7 @@ def _runtime_inputs(tool: UserToolSource) -> dict[str, Any]:
         if parameter.type == "data":
             values[parameter.name] = {"path": f"/tmp/{parameter.name}.txt"}
             if parameter.secondary_files:
-                values[parameter.name]["secondary_files"] = [
+                values[parameter.name]["secondaryFiles"] = [
                     {"path": f"/tmp/{parameter.name}.txt.bai", "nameext": ".bai", "format": "bai"}
                 ]
         elif parameter.type == "integer":

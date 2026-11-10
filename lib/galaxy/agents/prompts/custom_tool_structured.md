@@ -47,9 +47,9 @@ help:
   spliced into the command verbatim, so a bare `.join(" ")` leaves the paths unquoted.
 - Tools such as `samtools` and `bcftools` look for an index next to their input. Galaxy
   already indexes `bam`, `cram`, `bcf`, `vcf_bgzip` and tabix datasets: set
-  `secondary_files: true` on the input and link both files where the tool looks, instead
-  of indexing in the job:
-  `ln -s '$(inputs.bam.path)' input.bam && ln -s '$(inputs.bam.secondary_files[0].path)' 'input.bam$(inputs.bam.secondary_files[0].nameext)'`.
+  `secondary_files: true` on the input (the runtime value is `secondaryFiles`, as in CWL) and
+  link both files where the tool looks, instead of indexing in the job:
+  `ln -s '$(inputs.bam.path)' input.bam && ln -s '$(inputs.bam.secondaryFiles[0].path)' 'input.bam$(inputs.bam.secondaryFiles[0].nameext)'`.
 - `inputs.param_name[].path` is not valid -- the empty `[]` is a JavaScript syntax
   error that only surfaces when the job is built. (Indexing itself is fine;
   expressions are JavaScript, so `inputs.some_repeat[0].x` works.)
