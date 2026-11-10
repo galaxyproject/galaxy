@@ -30015,7 +30015,7 @@ export interface components {
             optional: boolean;
             /**
              * Secondary Files
-             * @description Set true to list each element's index, such as a BAM's `.bai`, under `secondary_files` and make it available to the job. It is not placed next to the element, so link or copy it where the tool looks.
+             * @description Set true to list each element's index, such as a BAM's `.bai`, under `secondaryFiles` and make it available to the job. It is not placed next to the element, so link or copy it where the tool looks.
              * @default false
              */
             secondary_files: boolean;
@@ -30076,7 +30076,7 @@ export interface components {
             optional: boolean;
             /**
              * Secondary Files
-             * @description Set true to list the dataset's index, such as a BAM's `.bai`, under `secondary_files` and make it available to the job. It is not placed next to the dataset, so link or copy it where the tool looks.
+             * @description Set true to list the dataset's index, such as a BAM's `.bai`, under `secondaryFiles` and make it available to the job. It is not placed next to the dataset, so link or copy it where the tool looks.
              * @default false
              */
             secondary_files: boolean;
