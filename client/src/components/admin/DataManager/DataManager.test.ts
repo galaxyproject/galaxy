@@ -40,13 +40,16 @@ async function mountDataManager() {
 }
 
 function clearButton(wrapper: Awaited<ReturnType<typeof mountDataManager>>) {
-    return wrapper.find(".input-group-append .g-button");
+    const button = wrapper.findAll("button").find((candidate) => candidate.text() === "Clear (esc)");
+    if (!button) {
+        throw new Error("No Clear (esc) button");
+    }
+    return button;
 }
 
 describe("DataManager", () => {
     it("clears the search with the Clear button", async () => {
         const wrapper = await mountDataManager();
-        expect(clearButton(wrapper).text()).toBe("Clear (esc)");
         expect(clearButton(wrapper).attributes("aria-disabled")).toBe("true");
 
         await wrapper.find("input").setValue("fetch");
