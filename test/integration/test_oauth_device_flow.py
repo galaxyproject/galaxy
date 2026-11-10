@@ -51,6 +51,33 @@ class TestOAuthDeviceFlow(integration_util.IntegrationTestCase):
         response = self._post("oauth/device_authorization", data={}, anon=True)
         self._assert_oauth_error(response, "invalid_request")
 
+    def test_get(self):
+        user_code = self._start_device_authorization(scope="histories:read tools:run").json()["user_code"]
+        response = self._get(f"oauth/device_authorization/{user_code.lower()}")
+        self._assert_status_code_is(response, 200)
+        details = response.json()
+        assert details["user_code"] == user_code
+        assert details["client_id"] == "galaxy-cli"
+        assert details["app_name"] == "Galaxy CLI"
+        assert details["scopes"] == ["histories:read", "tools:run"]
+        self._assert_has_keys(details, "requesting_ip", "create_time", "expires_at")
+
+    def test_get_without_scope(self):
+        user_code = self._start_device_authorization().json()["user_code"]
+        assert self._get(f"oauth/device_authorization/{user_code}").json()["scopes"] == []
+
+    def test_get_after_decision(self):
+        user_code = self._start_device_authorization().json()["user_code"]
+        self._decide_device_authorization(user_code, approve=True)
+        self._assert_status_code_is(self._get(f"oauth/device_authorization/{user_code}"), 409)
+
+    def test_get_unknown_code(self):
+        self._assert_status_code_is(self._get("oauth/device_authorization/BBBB-BBBB"), 404)
+
+    def test_get_requires_login(self):
+        user_code = self._start_device_authorization().json()["user_code"]
+        self._assert_status_code_is(self._get(f"oauth/device_authorization/{user_code}", anon=True), 403)
+
     def test_approve(self):
         user_code = self._start_device_authorization().json()["user_code"]
         response = self._decide_device_authorization(user_code, approve=True)
@@ -163,6 +190,7 @@ class TestOAuthDeviceFlowDisabled(integration_util.IntegrationTestCase):
         self._assert_status_code_is(response, 404)
         response = self._post("oauth/device_authorization", data={"client_id": "galaxy-cli"}, anon=True)
         self._assert_status_code_is(response, 404)
+        self._assert_status_code_is(self._get("oauth/device_authorization/BBBB-BBBB"), 404)
         response = self._put("oauth/device_authorization/BBBB-BBBB", data={"approve": True}, json=True)
         self._assert_status_code_is(response, 404)
         response = self._post("oauth/token", data={"client_id": "galaxy-cli"}, anon=True)

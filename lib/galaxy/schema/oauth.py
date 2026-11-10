@@ -8,6 +8,7 @@ Field names follow the OAuth specifications, since standard OAuth libraries read
 - Device flow error codes: https://datatracker.ietf.org/doc/html/rfc8628#section-3.5
 """
 
+from datetime import datetime
 from enum import Enum
 from typing import Literal
 
@@ -73,6 +74,18 @@ class OAuthErrorResponse(Model):
 
     error: OAuthErrorCode = Field(..., description="OAuth error code, such as `invalid_client`.")
     error_description: str | None = Field(None, description="Human-readable explanation of the error.")
+
+
+class DeviceAuthorizationDetails(Model):
+    """A pending device flow login, as shown to the user before they approve or deny it."""
+
+    user_code: str = Field(..., description="The code the user entered, e.g. `WDJB-MJHT`.")
+    client_id: str = Field(..., description="ID of the app asking for access, e.g. `galaxy-cli`.")
+    app_name: str = Field(..., description="Display name of the app, e.g. `Galaxy CLI`.")
+    scopes: list[str] = Field(..., description="Scopes the app asks for. Empty if it asked for none.")
+    requesting_ip: str | None = Field(None, description="IP address the app started the login from.")
+    create_time: datetime = Field(..., description="When the app started the login (UTC).")
+    expires_at: datetime = Field(..., description="When the code expires (UTC).")
 
 
 class DeviceAuthorizationDecisionPayload(Model):

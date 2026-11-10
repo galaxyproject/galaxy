@@ -29,6 +29,7 @@ from galaxy.model import User
 from galaxy.schema.oauth import (
     AuthorizationServerMetadata,
     DeviceAuthorizationDecisionPayload,
+    DeviceAuthorizationDetails,
     DeviceAuthorizationResponse,
     DeviceTokenResponse,
     OAuthErrorCode,
@@ -43,6 +44,8 @@ from . import (
 )
 
 router = Router(tags=["oauth"])
+
+UserCodePathParam: str = Path(..., description="The code shown in the app's terminal, e.g. `WDJB-MJHT`.")
 
 OAUTH_ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {400: {"model": OAuthErrorResponse}}
 
@@ -124,6 +127,34 @@ def device_authorization(
     )
 
 
+@router.get(
+    "/api/oauth/device_authorization/{user_code}",
+    summary="Get a pending OAuth device flow login",
+    unstable=True,
+)
+def get_device_authorization(
+    user_code: str = UserCodePathParam,
+    trans: SessionRequestContext = DependsOnTrans,
+    user: User = DependsOnUser,
+    manager: OAuthDeviceManager = depends(OAuthDeviceManager),
+) -> DeviceAuthorizationDetails:
+    """Return which app is asking for access and what it asks for, before the user approves or denies it.
+
+    Requires login, so only users who could approve a login can see its details.
+    """
+    require_device_flow_enabled(trans.app.config)
+    authorization = manager.get_pending(user_code)
+    return DeviceAuthorizationDetails(
+        user_code=authorization.user_code,
+        client_id=authorization.client_id,
+        app_name=manager.get_app_name(authorization.client_id),
+        scopes=authorization.scope.split() if authorization.scope else [],
+        requesting_ip=authorization.requesting_ip,
+        create_time=authorization.create_time,
+        expires_at=authorization.expires_at,
+    )
+
+
 @router.put(
     "/api/oauth/device_authorization/{user_code}",
     summary="Approve or deny an OAuth device flow login",
@@ -132,7 +163,7 @@ def device_authorization(
 )
 def decide_device_authorization(
     payload: DeviceAuthorizationDecisionPayload,
-    user_code: str = Path(..., description="The code shown in the app's terminal, e.g. `WDJB-MJHT`."),
+    user_code: str = UserCodePathParam,
     trans: SessionRequestContext = DependsOnTrans,
     user: User = DependsOnUser,
     manager: OAuthDeviceManager = depends(OAuthDeviceManager),

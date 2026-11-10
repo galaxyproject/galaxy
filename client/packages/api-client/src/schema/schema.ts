@@ -4417,7 +4417,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get a pending OAuth device flow login
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        get: operations["get_device_authorization_api_oauth_device_authorization__user_code__get"];
         /**
          * Approve or deny an OAuth device flow login
          * @description **Warning**: This API is unstable and may change without notice.
@@ -12839,6 +12843,49 @@ export interface components {
              * @description Whether the user approves the login (`true`) or denies it (`false`).
              */
             approve: boolean;
+        };
+        /**
+         * DeviceAuthorizationDetails
+         * @description A pending device flow login, as shown to the user before they approve or deny it.
+         */
+        DeviceAuthorizationDetails: {
+            /**
+             * App Name
+             * @description Display name of the app, e.g. `Galaxy CLI`.
+             */
+            app_name: string;
+            /**
+             * Client Id
+             * @description ID of the app asking for access, e.g. `galaxy-cli`.
+             */
+            client_id: string;
+            /**
+             * Create Time
+             * Format: date-time
+             * @description When the app started the login (UTC).
+             */
+            create_time: string;
+            /**
+             * Expires At
+             * Format: date-time
+             * @description When the code expires (UTC).
+             */
+            expires_at: string;
+            /**
+             * Requesting Ip
+             * @description IP address the app started the login from.
+             */
+            requesting_ip?: string | null;
+            /**
+             * Scopes
+             * @description Scopes the app asks for. Empty if it asked for none.
+             */
+            scopes: string[];
+            /**
+             * User Code
+             * @description The code the user entered, e.g. `WDJB-MJHT`.
+             */
+            user_code: string;
         };
         /**
          * DeviceAuthorizationResponse
@@ -48106,6 +48153,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OAuthErrorResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_device_authorization_api_oauth_device_authorization__user_code__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The code shown in the app's terminal, e.g. `WDJB-MJHT`. */
+                user_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceAuthorizationDetails"];
                 };
             };
             /** @description Request Error */
