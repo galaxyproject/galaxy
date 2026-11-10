@@ -1427,7 +1427,10 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         self.job_wrapper = job_wrapper
         self.local_path_config = job_wrapper.default_compute_environment()
 
+        # Local path -> name the file is staged under; Pulsar uploads these as arbitrary files.
         self.path_rewrites_unstructured = {}
+        # Parameter value -> remote path it was rewritten to.
+        self._unstructured_rewrites = {}
         self.path_rewrites_input_extra = {}
         self.path_rewrites_input_metadata = {}
 
@@ -1494,14 +1497,13 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         return None
 
     def unstructured_path_rewrite(self, parameter_value):
-        path_rewrites_unstructured = self.path_rewrites_unstructured
-        if parameter_value in path_rewrites_unstructured:
-            # Path previously mapped, use previous mapping.
-            return path_rewrites_unstructured[parameter_value]
+        if parameter_value in self._unstructured_rewrites:
+            return self._unstructured_rewrites[parameter_value]
 
         rewrite, new_unstructured_path_rewrites = self.path_mapper.check_for_arbitrary_rewrite(parameter_value)
         if rewrite:
-            path_rewrites_unstructured.update(new_unstructured_path_rewrites)
+            self.path_rewrites_unstructured.update(new_unstructured_path_rewrites)
+            self._unstructured_rewrites[parameter_value] = rewrite
             return rewrite
         else:
             # Did not need to rewrite, use original path or value.

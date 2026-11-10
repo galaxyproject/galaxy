@@ -39,6 +39,7 @@ from galaxy.jobs.runners import (
 )
 from galaxy.jobs.runners.pulsar import (  # type: ignore[attr-defined]
     build_client_manager,
+    PulsarComputeEnvironment,
     PulsarJobRunner,
 )
 
@@ -96,6 +97,44 @@ def test_rewrite_container_noop_without_container():
     # Should not raise when there is no resolved container.
     compute_environment = _ComputeEnvironment({IMAGE: REWRITTEN})
     PulsarJobRunner._rewrite_container_for_compute_environment(None, compute_environment)
+
+
+def _compute_environment(file_actions):
+    client = SimpleNamespace(
+        action_config_path=None,
+        file_actions=file_actions,
+        default_file_action="none",
+        files_endpoint=None,
+    )
+    job_wrapper = SimpleNamespace(
+        default_compute_environment=lambda: SimpleNamespace(
+            working_directory=lambda: "/galaxy/jobs/1/working",
+            version_path=lambda: "/galaxy/jobs/1/outputs/COMMAND_VERSION",
+        )
+    )
+    remote_job_config = {
+        "inputs_directory": "/r/inputs",
+        "outputs_directory": "/r/outputs",
+        "working_directory": "/r/working",
+        "unstructured_files_directory": "/r/u",
+        "configs_directory": "/r/configs",
+        "tools_directory": "/r/tools",
+        "system_properties": {"separator": "/"},
+    }
+    return PulsarComputeEnvironment(client, job_wrapper, remote_job_config)
+
+
+def test_unstructured_path_rewrite_is_stable_across_lookups():
+    reference = "/data/genomes/hg19.fa"
+    compute_environment = _compute_environment(
+        {"paths": [{"path": "/data/genomes", "action": "transfer", "path_types": "unstructured"}]}
+    )
+
+    first = compute_environment.unstructured_path_rewrite(reference)
+    second = compute_environment.unstructured_path_rewrite(reference)
+
+    staged_name = compute_environment.path_rewrites_unstructured[reference]
+    assert first == second == f"/r/u/{staged_name}"
 
 
 def test_finishing_uses_the_version_the_job_was_submitted_for(tmp_path):
