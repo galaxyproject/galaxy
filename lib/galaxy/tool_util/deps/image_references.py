@@ -157,9 +157,6 @@ class ContainerAllowlist:
         self._rules = [_parse_entry(entry) for entry in self.raw_entries if entry != "*"]
         self._denied_rules = [_parse_denied_entry(entry) for entry in denied]
 
-    def allows(self, identifier: str) -> bool:
-        return self.rejection(identifier) is None
-
     def rejection(self, identifier: str) -> str | None:
         """Return why ``identifier`` is not allowed, or ``None`` if it is."""
         if self.unrestricted and not self._denied_rules:

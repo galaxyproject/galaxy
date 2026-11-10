@@ -79,7 +79,7 @@ DEFAULT = ["quay.io/biocontainers/*"]
     ],
 )
 def test_container_allowlist(entries, identifier, allowed):
-    assert ContainerAllowlist(entries).allows(identifier) is allowed
+    assert (ContainerAllowlist(entries).rejection(identifier) is None) is allowed
 
 
 @pytest.mark.parametrize(
@@ -104,7 +104,7 @@ def test_container_allowlist_rejects_malformed_entries(entry):
     ],
 )
 def test_container_allowlist_denied(entries, denied, identifier, allowed):
-    assert ContainerAllowlist(entries, denied).allows(identifier) is allowed
+    assert (ContainerAllowlist(entries, denied).rejection(identifier) is None) is allowed
 
 
 @pytest.mark.parametrize("entry", ["*", "quay.io/org/bad:1", f"quay.io/org/bad@{SHA_A}", "quay.io/bio*"])
