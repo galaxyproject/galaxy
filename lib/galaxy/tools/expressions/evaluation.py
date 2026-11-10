@@ -71,9 +71,14 @@ def _unterminated_message(expression: str, scan: str, consumed: int, description
 
 
 def expression_error_message(exc: Exception) -> str:
-    """The JavaScript error from a failed evaluation (e.g. ``TypeError: ...``), without cwl_utils' header."""
+    """The JavaScript error from a failed evaluation (e.g. ``TypeError: ...``), without cwl_utils' header.
+
+    JavaScript strings can hold lone UTF-16 surrogates, which cannot be encoded as UTF-8; they are
+    escaped so the message can be stored as the job's info.
+    """
     cause = exc.__cause__
-    return str(cause if isinstance(cause, JavascriptException) else exc)
+    message = str(cause if isinstance(cause, JavascriptException) else exc)
+    return message.encode("utf-8", "backslashreplace").decode("utf-8")
 
 
 def do_eval(

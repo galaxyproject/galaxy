@@ -460,6 +460,7 @@ def test_unterminated_expression_reports_a_description():
         ("cat '$(inputs.x.elements[0].path)' > out.txt", "TypeError: cannot read property '0' of undefined"),
         ("${ throw new Error('first line\\nsecond line'); }", "Error: first line\nsecond line"),
         ("${ throw 'at least one input is required'; }", "at least one input is required"),
+        ("${ throw '\\uD800'; }", "\\ud800"),
     ],
 )
 def test_expression_error_message_is_the_javascript_error(expression, message):
