@@ -393,6 +393,7 @@ function unexpandedClick(event: Event) {
                         v-if="item.sub_items?.length && !isSubItem"
                         v-g-tooltip.hover
                         title="Show converted items"
+                        :aria-expanded="String(subItemsVisible)"
                         :aria-label="`${localize('Show converted items')} (${item.sub_items.length})`"
                         tabindex="0"
                         class="display-btn px-1 align-items-center"

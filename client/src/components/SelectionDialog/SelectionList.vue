@@ -145,6 +145,7 @@ function formatTime(date?: Date) {
                 :indeterminate-items="indeterminateItems"
                 :per-page="localPaging ? perPage : undefined"
                 :selectable="selectable"
+                :select-checkbox-title="(item) => `Select ${item.label}`"
                 :selected-items="selectedItems"
                 :show-select-all="selectable"
                 :sort-by="sortBy"

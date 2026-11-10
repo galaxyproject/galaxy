@@ -49,6 +49,16 @@ describe("GTable selection", () => {
         }
     });
 
+    it("names each row's selection checkbox after its row", () => {
+        const wrapper = mountSelectable({
+            selectCheckboxTitle: (item: { name: string }) => `Select ${item.name}`,
+        });
+
+        const [first, second] = wrapper.findAll("tbody input");
+        expect(first!.element).toHaveAccessibleName("Select first");
+        expect(second!.element).toHaveAccessibleName("Select second");
+    });
+
     // Selenium clicks the checkbox's label; the click must stop at the checkbox rather than
     // also reaching the row, whose own handler would toggle the selection a second time.
     it("selects a row once from its checkbox without counting a row click", async () => {
