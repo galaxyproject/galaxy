@@ -130,7 +130,7 @@ Set `require_container: true` on any destination that accepts user-defined tools
 
 ## Reference data
 
-A user-defined tool reads reference data with a `reference_data` input, which offers the entries of a [tool data table](https://galaxyproject.org/admin/data-tables/) and passes the selected entry to the command as `inputs.<name>.path`, with the table's other columns under `inputs.<name>.metadata`. With `multiple: true`, users can select several entries and `inputs.<name>` is a list of them. Tables are closed to user-defined tools by default. Open one by adding `user_accessible="true"` to it in `tool_data_table_conf.xml`:
+A user-defined tool reads reference data with a `reference_data` input, which offers the entries of a [tool data table](https://galaxyproject.org/admin/data-tables/) and passes the selected entry to the command as `inputs.<name>.path`, with the table's other columns under `inputs.<name>.metadata`. With `multiple: true`, users can select several entries and `inputs.<name>` is a list of them. The input only offers entries of tables an administrator opened to user-defined tools, which none are by default. Open one by adding `user_accessible="true"` to it in `tool_data_table_conf.xml`:
 
 ```xml
 <table name="fasta_indexes" comment_char="#" user_accessible="true">
@@ -142,6 +142,8 @@ A user-defined tool reads reference data with a `reference_data` input, which of
 Opening a table lets anyone allowed to run user-defined tools read everything in it, and the setting has no effect on the tool data table API. Galaxy ignores this attribute in a `tool_data_table_conf.xml` supplied by a Tool Shed repository, so it has to be set on the table in a configuration file you manage. Admin-installed `GalaxyTool` YAML tools can read every table.
 
 The container has to be able to see the files. `$tool_data_path` and `$shed_tool_data_path` are part of the default container volumes; a table whose `path` column points elsewhere, such as CVMFS, needs that location added to `docker_volumes` or `singularity_volumes` on the destination.
+
+`user_accessible` decides which entries the input offers, not which files a tool can read. A user-defined tool can read everything in the volumes mounted into its container, including the `.loc` files and data of tables you have not opened. The default volumes include `$tool_data_path`, `$galaxy_data_manager_data_path` and `$shed_tool_data_path`. To keep reference data away from user-defined tools, store it outside the volumes mounted on the destinations they run on, or set `docker_volumes` or `singularity_volumes` on those destinations without these paths. Opened tables then need their locations listed explicitly.
 
 ## Limitations
 
