@@ -933,6 +933,38 @@ execution:
        #file_action_config: file_actions.yaml
        #file_actions: {}
 
+       # With 'remote_transfer', Pulsar fetches inputs through Galaxy's job
+       # files API, which reads them from paths on Galaxy's disk. Set
+       # 'object_store_staging' to have Galaxy serve inputs from the object
+       # store by identity instead, so they are not pulled into Galaxy's cache
+       # first: 'stream' streams them through Galaxy, while 'redirect' sends
+       # Pulsar (0.15.16 or later) to a presigned URL when the object store has
+       # enable_direct_download set, and streams otherwise. Use 'redirect' only
+       # if Pulsar can reach the object store, and only with stores whose
+       # presigned URLs expire (s3, aws_s3, generic_s3, swift, boto3, cloud and
+       # azure_blob), not irods or pithos. Requires rewrite_parameters, and a
+       # default_file_action of 'remote_transfer' or 'remote_transfer_tus', the
+       # actions that fetch inputs from these URLs; jobs fail without them.
+       # Extra files of composite inputs are listed in the object store, which
+       # irods, pithos, rucio and onedata stores cannot do, so a job reading
+       # them from such a store fails, giving the store as the reason.
+       # Each input's URL is signed in its query string and works until the
+       # job finishes, and a presigned URL for 15 minutes, or the store's
+       # direct_download_expires_in if shorter, so keep query strings out of
+       # access logs, as for the job_key of job files URLs.
+       # Pulsar needs no object store credentials for this; where Pulsar mounts
+       # Galaxy's disk, the path rules above avoid the transfer instead.
+       # Galaxy pulls no input into its cache here, so a path rule that sends
+       # an object store input to any other action, which needs the input on
+       # Galaxy's disk ('transfer', 'copy', 'remote_object_store_copy' and so
+       # on), fails the job; such rules suit disk stores only.
+       # Inputs with no copy in the object store, such as deferred datasets
+       # Galaxy materializes for the job, still go through the job files API,
+       # as do tool files and outputs, so the Galaxy hosts answering Pulsar
+       # must still see the handler's job directory; only the object store
+       # cache need not be shared.
+       #object_store_staging: stream
+
        # The non-legacy Pulsar runners will attempt to resolve Galaxy
        # dependencies remotely - to enable this set a tool_dependency_dir
        # in Pulsar's configuration (can work with all the same dependency

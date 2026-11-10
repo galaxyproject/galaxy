@@ -4,6 +4,7 @@ import shutil
 from collections.abc import (
     Callable,
     Generator,
+    Iterable,
     Iterator,
 )
 from contextlib import (
@@ -210,7 +211,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         data_file.close()
         return content
 
-    def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
+    def _get_data_stream(self, obj, write_cache: bool = True, **kwargs) -> DataStream | None:
         rel_path = self._construct_path(obj, **kwargs)
         object_id = self._get_object_id(obj)
         cache_path = self._get_cache_path(rel_path, object_id)
@@ -224,7 +225,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 # checked for truncation, so leave this download to the pull path.
                 return None
             cache_target = self._cache_shards.get_cache_target(object_id)
-            write_cache = cache_target.fits_in_cache(remote_size)
+            write_cache = write_cache and cache_target.fits_in_cache(remote_size)
             # Opening the remote read comes last: everything that can decide against streaming has
             # already decided, so no bail-out below leaves an open connection with no owner.
             stream = self._stream_remote(rel_path)
@@ -503,6 +504,20 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         # Azure and Cloud object stores to fix those object stores. New
         # object stores should definitely override this.
         pass
+
+    def _list_files(self, obj, extra_dir: str, **kwargs) -> list[str]:
+        # Ends with "/", so a neighbouring directory sharing this one's name as a prefix is excluded.
+        rel_path = self._construct_path(obj, dir_only=True, extra_dir=extra_dir)
+        return sorted(
+            key[len(rel_path) :]
+            for key in self._list_remote_keys(rel_path)
+            # A key ending with "/" marks a directory rather than holding a file.
+            if key.startswith(rel_path) and not key.endswith("/")
+        )
+
+    def _list_remote_keys(self, rel_path: str) -> Iterable[str]:
+        """Keys of the remote objects whose key starts with ``rel_path``."""
+        raise NotImplementedError(f"{type(self).__name__} cannot list the files in a directory")
 
     def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         rel_path = self._construct_path(obj, **kwargs)
