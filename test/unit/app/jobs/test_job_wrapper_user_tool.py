@@ -1,3 +1,6 @@
+import json
+import os
+from typing import cast
 from unittest.mock import Mock
 from uuid import uuid4
 
@@ -52,3 +55,21 @@ class TestUserToolJobWrapper(test_job_wrapper.AbstractTestCases.BaseWrapperTestC
 
     def test_prepare_does_not_check_containers_of_other_tools(self):
         self._prepare("busybox", tool_type="default")
+
+    def test_prepare_skips_upload_paramfile_copy_for_user_tool_with_upload_id(self):
+        # A user tool picks its own id and inputs, so sharing the upload tool's id and
+        # paramfile parameter name must not get the upload tool's paramfile handling.
+        param_file_path = os.path.join(self.test_directory, "not_a_paramfile.txt")
+        with open(param_file_path, "w") as f:
+            f.write("contents")
+        self.job.tool_id = "upload1"
+        self.job.add_parameter("paramfile", json.dumps(param_file_path))
+        toolbox = cast(test_job_wrapper.MockToolbox, self.app._toolbox)
+        toolbox.get = lambda tool_id, default=None: toolbox.test_tool  # type: ignore[method-assign]
+        wrapper = self._wrapper()
+        wrapper._get_tool_evaluator = lambda *args, **kwargs: test_job_wrapper.MockEvaluator(  # type: ignore[method-assign]
+            wrapper.app, wrapper.tool, wrapper.get_job(), wrapper.working_directory
+        )
+        wrapper.prepare()
+        assert not os.path.exists(os.path.join(wrapper.working_directory, "configs", "upload_params.json"))
+        assert [json.loads(p.value) for p in self.job.parameters if p.name == "paramfile"] == [param_file_path]
