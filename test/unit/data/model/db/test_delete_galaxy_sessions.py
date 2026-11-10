@@ -22,6 +22,7 @@ from sqlalchemy import (
     text,
     update,
 )
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
 
@@ -209,6 +210,13 @@ def test_postgres_transaction_guards(engine, session, make_galaxy_session, cli):
         result = cli("--batch-size", "1", "--lock-timeout", "50", expected_code=1)
     assert (result["status"], result["deleted"], result["after_id"]) == ("failed", "1", str(ids[0]))
     assert set(session.scalars(select(m.GalaxySession.id))) == {ids[1]}
+
+
+@pytest.mark.parametrize("version, hint", [((11, 22), False), ((12, 0), True)])
+def test_materialized_hint_needs_postgresql_12(version, hint):
+    dialect = postgresql.dialect()
+    dialect.server_version_info = version
+    assert ("MATERIALIZED" in cleanup._newest_sessions(dialect)) == hint
 
 
 def test_default_cutoff():

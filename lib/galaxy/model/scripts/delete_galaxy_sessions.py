@@ -17,6 +17,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.engine import (
     Connection,
+    Dialect,
     Engine,
 )
 from sqlalchemy.exc import SQLAlchemyError
@@ -158,7 +159,7 @@ def _get_parser() -> argparse.ArgumentParser:
 # Pages are bound by ID range, not by an IN list of the scanned IDs, so the
 # number of bind parameters does not grow with the batch size.
 NEWEST_SESSIONS = """
-    WITH newest_sessions AS MATERIALIZED (
+    WITH newest_sessions AS {materialized} (
         SELECT users.user_id, (
             SELECT newer.id FROM galaxy_session newer
             WHERE newer.user_id = users.user_id
@@ -206,8 +207,16 @@ def _eligibility(
 PAGE = "s.id > :after_id AND s.id <= :page_end"
 
 
+def _newest_sessions(dialect: Dialect) -> str:
+    # PostgreSQL added the keyword in 12; before that it always materializes CTEs.
+    hint = dialect.name == "sqlite" or (dialect.server_version_info or (0,)) >= (12,)
+    return NEWEST_SESSIONS.format(materialized="MATERIALIZED" if hint else "")
+
+
 def _eligible_ids(conn: Connection, after_id: int, page_end: int, predicate: str, cutoff: datetime.date) -> list[int]:
-    stmt = text(f"{NEWEST_SESSIONS} SELECT s.id FROM galaxy_session s WHERE {PAGE} AND {predicate} ORDER BY s.id")
+    stmt = text(
+        f"{_newest_sessions(conn.dialect)} SELECT s.id FROM galaxy_session s WHERE {PAGE} AND {predicate} ORDER BY s.id"
+    )
     return list(conn.scalars(stmt, {"after_id": after_id, "page_end": page_end, "update_time": cutoff}))
 
 
@@ -215,7 +224,9 @@ def _delete_batch(conn: Connection, after_id: int, page_end: int, predicate: str
     # Re-evaluate age, ownership, newest-session, history and job protection at DELETE
     # time, rather than deleting the previously scanned IDs unconditionally. This
     # also decides for rows committed inside the page's ID range after the scan.
-    stmt = text(f"{NEWEST_SESSIONS} DELETE FROM galaxy_session AS s WHERE {PAGE} AND {predicate} RETURNING id")
+    stmt = text(
+        f"{_newest_sessions(conn.dialect)} DELETE FROM galaxy_session AS s WHERE {PAGE} AND {predicate} RETURNING id"
+    )
     # SQLite reports rowcount=-1 for WITH-prefixed DML. RETURNING counts actual
     # deletions reliably on both backends, with at most one page in memory.
     return len(list(conn.scalars(stmt, {"after_id": after_id, "page_end": page_end, "update_time": cutoff})))

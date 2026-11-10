@@ -84,7 +84,7 @@ Each batch commits separately. After stopping, resume with the reported
 ``--after-id`` and ``--through-id``, keeping the same cutoff and retention flags,
 or restart from the beginning. Histories and datasets remain, but session links
 are removed. Deletion makes space reusable; it does not immediately shrink files
-or run VACUUM/REINDEX. Requires PostgreSQL 12+ or SQLite 3.35+.
+or run VACUUM/REINDEX. On SQLite, the script requires SQLite 3.35+.
 
 Deleting old job metrics
 -------------------------
