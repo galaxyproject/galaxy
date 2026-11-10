@@ -829,6 +829,15 @@ class DataRequestInternalDce(StrictModel):
     id: StrictInt
 
 
+class SecondaryFileInternalJson(StrictModel):
+    class_: Annotated[Literal["File"], Field(alias="class")]
+    basename: Annotated[str, Field(description="The primary file's basename followed by the index suffix.")]
+    path: Annotated[str, Field(description="The absolute path to the index file on disk.")]
+    nameroot: Annotated[str, Field(description="The basename root such that nameroot + nameext == basename")]
+    nameext: Annotated[str, Field(description="The suffix tools expect on this index, e.g. '.bai' or '.csi'.")]
+    format: Annotated[str, Field(description="The index format, e.g. 'bai', 'csi', 'crai', 'tbi'.")]
+
+
 class DataInternalJson(StrictModel):
     class_: Annotated[
         Literal["File", "Directory"],
@@ -869,7 +878,10 @@ class DataInternalJson(StrictModel):
     nameroot: Annotated[str | None, Field(description="The basename root such that nameroot + nameext == basename")]
     nameext: Annotated[str | None, Field(description="The basename extension such that nameroot + nameext == basename")]
     format: Annotated[str, Field(description="The datatype extension of the file, e.g. 'txt', 'bam', 'fastq.gz'.")]
-    # "secondaryFiles": List[Any],
+    secondary_files: Annotated[
+        list[SecondaryFileInternalJson],
+        Field(description="The dataset's index files, for inputs that set ``secondary_files``; otherwise empty."),
+    ] = []
     checksum: str | None = None
     size: int
     # When a gx_data param receives a DCE (subcollection mapping), preserve element_identifier

@@ -1,3 +1,4 @@
+import hashlib
 import os
 import uuid
 
@@ -30,6 +31,23 @@ def _home_probe_tool(probe_name: str) -> dict:
         "outputs": [
             {"name": "home", "type": "data", "format": "txt", "from_work_dir": "home.txt"},
             {"name": "pwd", "type": "data", "format": "txt", "from_work_dir": "pwd.txt"},
+        ],
+    }
+
+
+def _index_probe_tool() -> dict:
+    index = "$(inputs.input.secondary_files[0].path)"
+    return {
+        "class": "GalaxyUserTool",
+        "id": "index_probe",
+        "name": "index_probe",
+        "version": "0.1",
+        "container": "busybox:1.36.1-glibc",
+        "shell_command": f"echo '{index}' > path.txt && md5sum '{index}' | cut -d ' ' -f 1 > md5.txt",
+        "inputs": [{"type": "data", "name": "input", "format": "bam", "secondary_files": True}],
+        "outputs": [
+            {"name": "path", "type": "data", "format": "txt", "from_work_dir": "path.txt"},
+            {"name": "md5", "type": "data", "format": "txt", "from_work_dir": "md5.txt"},
         ],
     }
 
@@ -85,6 +103,28 @@ class BaseEmbeddedPulsarContainerIntegration(integration_util.IntegrationTestCas
         assert home == pwd
         assert home.startswith(self.pulsar_staging_directory)
         assert home.endswith("/working")
+
+    def test_user_defined_tool_secondary_files_are_staged(self) -> None:
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            bam = self.dataset_populator.new_bam_dataset(history_id, self.test_data_resolver)
+            tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**_index_probe_tool()))
+            inputs = {"input": {"src": "hda", "id": bam["id"]}}
+            response = self.dataset_populator.run_tool_raw(None, inputs, history_id, tool_uuid=tool["uuid"]).json()
+            self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True, timeout=EXTENDED_TIMEOUT)
+            outputs = {output["output_name"]: output["id"] for output in response["outputs"]}
+            path, md5 = (
+                self.dataset_populator.get_history_dataset_content(history_id, content_id=outputs[name]).strip()
+                for name in ("path", "md5")
+            )
+            details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=bam["id"])
+            [index] = [meta_file for meta_file in details["meta_files"] if meta_file["file_type"] == "bam_index"]
+            index_response = self._get(index["download_url"].split("api/", 1)[1])
+            self._assert_status_code_is(index_response, 200)
+        assert path.startswith(self.pulsar_staging_directory)
+        assert md5 == hashlib.md5(index_response.content).hexdigest()
 
 
 class TestEmbeddedSingularityPulsarIntegration(
