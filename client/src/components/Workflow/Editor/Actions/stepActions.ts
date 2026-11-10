@@ -445,11 +445,21 @@ export class AutoLayoutAction extends UndoRedoAction {
     oldPositions: Positions;
     workflowId;
     ran;
+    keepFrameMembership;
+    /** Resolves once the computed positions have been applied */
+    finished: Promise<void>;
+    private resolveFinished: () => void = () => {};
 
-    constructor(workflowId: string) {
+    /**
+     * @param keepFrameMembership use the frames' stored `child_steps` instead of re-deriving them from
+     *   current positions, which are meaningless before a workflow's first layout
+     */
+    constructor(workflowId: string, { keepFrameMembership = false } = {}) {
         super();
 
         this.workflowId = workflowId;
+        this.keepFrameMembership = keepFrameMembership;
+        this.finished = new Promise((resolve) => (this.resolveFinished = resolve));
         this.stepStore = useWorkflowStepStore(workflowId);
         this.commentStore = useWorkflowCommentStore(workflowId);
 
@@ -511,18 +521,24 @@ export class AutoLayoutAction extends UndoRedoAction {
             h: comment.size[1],
         }));
 
-        this.commentStore.resolveCommentsInFrames();
-        this.commentStore.resolveStepsInFrames();
+        if (!this.keepFrameMembership) {
+            this.commentStore.resolveCommentsInFrames();
+            this.commentStore.resolveStepsInFrames();
+        }
 
-        const newPositions = await autoLayout(this.workflowId, this.stepStore.steps, this.commentStore.comments);
+        try {
+            const newPositions = await autoLayout(this.workflowId, this.stepStore.steps, this.commentStore.comments);
 
-        assertDefined(newPositions);
+            assertDefined(newPositions);
 
-        this.positions = newPositions as Positions;
+            this.positions = newPositions as Positions;
 
-        if (this.ran) {
-            this.mapPositionsToStore(this.positions);
-            useUndoRedoStore(this.workflowId).changeId += 1;
+            if (this.ran) {
+                this.mapPositionsToStore(this.positions);
+                useUndoRedoStore(this.workflowId).changeId += 1;
+            }
+        } finally {
+            this.resolveFinished();
         }
     }
 

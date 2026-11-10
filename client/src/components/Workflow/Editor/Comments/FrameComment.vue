@@ -223,6 +223,10 @@ function onFitToContent() {
         targetAABB.fitRectangle(commentRect);
     });
 
+    if (!Number.isFinite(targetAABB.x)) {
+        return; // nothing inside the frame to fit to
+    }
+
     targetAABB.expand(20);
     targetAABB.y -= 20;
 

@@ -205,6 +205,28 @@ describe("workflowEditorCommentStore", () => {
         expect(frameTwo?.child_steps).not.toContain(0);
     });
 
+    it("keeps the saved members of a frame that has not been laid out", () => {
+        const commentStore = useWorkflowCommentStore("mock-id");
+        const unplaced: FrameWorkflowComment = {
+            ...frameComment,
+            id: 5,
+            position: [0, 0],
+            size: [0, 0],
+            child_steps: [1],
+            child_comments: [textComment.id],
+        };
+        commentStore.addComments([textComment, frameComment, unplaced]);
+
+        commentStore.resolveStepsInFrames();
+        commentStore.resolveCommentsInFrames();
+
+        expect(commentStore.commentsRecord[5]?.child_steps).toEqual([1]);
+        expect(commentStore.commentsRecord[5]?.child_comments).toEqual([textComment.id]);
+        // the placed frame around them doesn't take them over
+        expect(commentStore.commentsRecord[frameComment.id]?.child_steps).toEqual([0]);
+        expect(commentStore.commentsRecord[frameComment.id]?.child_comments).not.toContain(textComment.id);
+    });
+
     it("keeps track of selected comments", () => {
         const commentStore = useWorkflowCommentStore("mock-id");
         commentStore.addComments([freehandComment, textComment, markdownComment, frameComment, frameCommentTwo]);
