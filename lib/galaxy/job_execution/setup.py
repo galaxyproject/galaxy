@@ -364,6 +364,8 @@ def read_job_files_manifest(job_directory: str) -> JobFilesManifest | None:
         with open(os.path.join(job_directory, JOB_FILES_MANIFEST)) as fh:
             manifest = json.load(fh)
     except FileNotFoundError:
+        # Only the Pulsar runner writes a manifest, when it submits the job. A job without one was not submitted to
+        # Pulsar, has not been submitted yet, or was submitted by a Galaxy release that did not write manifests.
         return None
     return JobFilesManifest(
         frozenset(manifest["readable_paths"]), manifest["remote_metadata"], manifest["remote_extended_metadata"]

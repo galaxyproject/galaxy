@@ -42,7 +42,7 @@ class JobFilesManager:
     """Job runner access to low-level job files, authorized by job key only - never by user credentials.
 
     With ``job_files_strict_access``, a job may read only the files its manifest lists, which are the files Galaxy
-    told the runner to stage, and write only its outputs and the job directories results are staged back to.
+    told the runner to stage, and write only its outputs and the job directories that results are staged back to.
     """
 
     def __init__(
@@ -109,8 +109,8 @@ class JobFilesManager:
             raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
         if strict_directory is None:
             log.warning(
-                "Job %s wrote %s, which is not one of its outputs or job directories results are staged back to. "
-                "This write will be refused once job_files_strict_access is enabled.",
+                "Job %s wrote %s, which is neither one of its outputs nor in a job directory that results are staged "
+                "back to. This write will be refused once job_files_strict_access is enabled.",
                 job.id,
                 path,
             )
@@ -119,8 +119,9 @@ class JobFilesManager:
     def _strict_write_directory(self, job: Job, path: str) -> str | None:
         """Return a staging directory if ``job_files_strict_access`` allows writing ``path``, otherwise ``None``.
 
-        A job with a manifest may write its outputs and the job directories results are staged back to. Job scripts,
-        the manifest, ``configs/`` and ``inputs/`` are Galaxy-produced inputs the runner has no reason to rewrite.
+        A job with a manifest may write its outputs and the job directories that results are staged back to. Job
+        scripts, the manifest, ``configs/`` and ``inputs/`` are inputs that Galaxy produces, so the runner has no reason
+        to rewrite them.
         """
         if os.path.islink(path):
             return None
