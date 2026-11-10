@@ -333,17 +333,23 @@ def run(
                         {"after_id": progress.after_id, "through_id": progress.through_id, "batch_size": batch_size},
                     )
                 )
-                selected = _eligible_ids(conn, ids, predicate, cutoff) if ids else []
-                deleted = _delete_batch(conn, selected, predicate, cutoff) if selected and not dry_run else 0
+                if not ids:
+                    selected = deleted = 0
+                elif dry_run:
+                    selected, deleted = len(_eligible_ids(conn, ids, predicate, cutoff)), 0
+                else:
+                    # The DELETE re-evaluates the whole predicate, so a separate
+                    # SELECT would only repeat the newest-session lookups.
+                    selected = deleted = _delete_batch(conn, ids, predicate, cutoff)
             # Publish only after commit. A failed page must be scanned again.
             if not ids:
                 progress.after_id = progress.through_id
                 break
             progress.batches += 1
             progress.scanned += len(ids)
-            progress.selected += len(selected)
+            progress.selected += selected
             progress.deleted += deleted
-            progress.would_delete += len(selected) if dry_run else 0
+            progress.would_delete += selected if dry_run else 0
             progress.after_id = ids[-1]
             print(progress.report(), flush=True)
             if progress.after_id >= progress.through_id:
