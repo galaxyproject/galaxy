@@ -1312,6 +1312,25 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert "sample1" in element_identifiers
             assert "sample2" in element_identifiers
 
+    @skip_without_tool("__SAMPLE_SHEET_TO_TABULAR__")
+    def test_sample_sheet_to_tabular_preserves_punctuation(self):
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            create_response = self.dataset_collection_populator.create_sample_sheet(
+                history_id,
+                contents=[("sample1", "content1"), ("sample2", "content2")],
+                column_definitions=[
+                    {"type": "int", "name": "replicate", "optional": False},
+                    {"type": "string", "name": "db_params", "optional": False},
+                ],
+                rows={"sample1": [1, "short;long"], "sample2": [2, "--min=10 --max=50"]},
+            )
+            self._assert_status_code_is(create_response, 200)
+            inputs = {"input": {"src": "hdca", "id": create_response.json()["id"]}}
+            response = self._run("__SAMPLE_SHEET_TO_TABULAR__", history_id, inputs, assert_ok=True)
+            self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=response["outputs"][0])
+            assert content.splitlines() == ["sample1\t1\tshort;long", "sample2\t2\t--min=10 --max=50"]
+
     @skip_without_tool("__CONVERT_SAMPLE_SHEET__")
     def test_convert_sample_sheet_paired_to_list_paired(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
