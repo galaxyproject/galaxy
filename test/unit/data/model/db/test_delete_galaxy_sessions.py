@@ -168,6 +168,34 @@ def test_refreshed_session_is_rechecked(engine, session, make_galaxy_session):
         assert cleanup._delete_batch(conn, row_id - 1, row_id, predicate, CUTOFF) == 0
 
 
+def test_interrupted_page_rolls_back(engine, session, make_galaxy_session, capsys):
+    # SIGTERM raises KeyboardInterrupt. Arriving after a page's DELETE but before its
+    # commit, it must leave that page in place for the next run.
+    ids = [make_galaxy_session(update_time=OLD).id for _ in range(2)]
+    session.commit()
+    deletes = 0
+
+    def interrupt(conn, cursor, statement, parameters, context, executemany):
+        nonlocal deletes
+        if "DELETE FROM galaxy_session AS s" in statement:
+            deletes += 1
+            if deletes == 2:
+                # Finish RETURNING before interrupting the uncommitted page.
+                cursor.fetchall()
+                cursor.close()
+                raise KeyboardInterrupt
+
+    event.listen(engine, "after_cursor_execute", interrupt)
+    try:
+        with pytest.raises(KeyboardInterrupt):
+            cleanup.run(engine, CUTOFF, batch_size=1, pause=0)
+    finally:
+        event.remove(engine, "after_cursor_execute", interrupt)
+    report = dict(item.split("=", 1) for item in capsys.readouterr().out.splitlines()[-1].split())
+    assert (report["status"], report["deleted"], report["after_id"]) == ("interrupted", "1", str(ids[0]))
+    assert set(session.scalars(select(m.GalaxySession.id))) == {ids[1]}
+
+
 def test_large_page_fits_sqlite_variable_limit(engine):
     # Stock SQLite allows 32766 bind parameters per statement; binding each page ID
     # twice failed for pages above 16383 sessions.
