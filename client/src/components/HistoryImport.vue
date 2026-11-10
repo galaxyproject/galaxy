@@ -28,7 +28,7 @@
                 :identifier-text-capitalized="identifierTextCapitalized" />
         </div>
         <div v-else>
-            <BForm @submit.prevent="submit">
+            <form @submit.prevent="submit">
                 <GRadioGroup v-model="importType" stacked class="mb-3" name="import-type" :label="howLabel">
                     <GRadio value="externalUrl">
                         Export URL from another Galaxy instance
@@ -78,7 +78,7 @@
                 <GButton class="import-button" color="blue" type="submit" :disabled="!importReady">
                     Import {{ identifierText }}
                 </GButton>
-            </BForm>
+            </form>
         </div>
     </div>
 </template>
@@ -88,7 +88,7 @@ import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-sol
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
-import { BForm, BFormFile, BFormGroup } from "bootstrap-vue";
+import { BFormFile, BFormGroup } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import { fetchFileSources } from "@/api/remoteFiles";
@@ -110,7 +110,6 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export default {
     components: {
-        BForm,
         BFormFile,
         BFormGroup,
         FilesInput,
