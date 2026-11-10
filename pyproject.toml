@@ -14,6 +14,7 @@ requires-python = ">=3.10"
 dependencies = [
     "a2wsgi",
     "aiofiles",
+    "aiohttp",
     "alembic",
     "apispec",
     "Babel",
@@ -76,7 +77,7 @@ dependencies = [
     "pillow",
     "pkg-resources-backport",  # needed by fs https://github.com/PyFilesystem/pyfilesystem2/issues/577
     "psutil",
-    "pulsar-galaxy-lib>=0.16.0",
+    "pulsar-galaxy-lib @ git+https://github.com/mvdbeek/pulsar@0c2fd2cc575b46b8b928d34e83a0bf4a284d0d61",
     "pycryptodome",
     "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
     "pydantic-ai>=1.56.0",  # https://github.com/pydantic/pydantic-ai/security/advisories/GHSA-2jrp-274c-jhv3
@@ -276,6 +277,8 @@ default-groups = []
 extra-index-url = ["https://wheels.galaxyproject.org/simple"]
 index-strategy = "unsafe-best-match"
 package = false
+# Build pulsar-galaxy-lib from a git source under its own name (setup.py defaults to pulsar-app).
+extra-build-variables = { pulsar-galaxy-lib = { PULSAR_GALAXY_LIB = "1" } }
 
 # Galaxy's index carries wheels for some releases that only cover a subset of
 # Python versions (isal 1.8.0 for Python 3.15 only, lxml 6.1.3 for Python 3.8

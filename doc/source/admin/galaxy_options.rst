@@ -2974,6 +2974,31 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``job_files_strict_access``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Confine the job files API, which Pulsar destinations with
+    ``remote_transfer`` file actions use, to each job's own files.
+    When Galaxy submits a job, it records the files Pulsar will fetch
+    in ``job_files_manifest.json`` in the job directory. With this
+    option, a job may read only the files in its manifest, and a job
+    without a manifest may neither read nor write. Writes are limited
+    to the job's outputs and its ``working``, ``outputs`` and
+    ``metadata`` directories. A job that sets metadata in Galaxy may
+    write only job metrics files and tool streams to ``metadata``, and
+    the extended metadata model store (``metadata/outputs_populated``)
+    is writable only for jobs that use remote extended metadata.
+    Symlinks are never written. Without this option, Galaxy logs a
+    warning for each read and write that it would refuse, so admins
+    can check what enabling it would break. Enable it on servers that
+    run user-defined tools or interactive tools. It will be enabled by
+    default in a future release.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``tus_upload_store``
 ~~~~~~~~~~~~~~~~~~~~

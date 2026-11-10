@@ -5,6 +5,7 @@ More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 
 import copy
 import errno
+import functools
 import logging
 import os
 import re
@@ -48,6 +49,7 @@ from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
 )
+from galaxy.job_execution.setup import write_job_files_manifest
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
@@ -560,7 +562,19 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 guest_ports=job_wrapper.guest_ports,
                 tool_directory_required_files=tool_directory_required_files,
             )
-            external_job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
+            remote_metadata = PulsarJobRunner.__remote_metadata(client)
+            remote_extended_metadata = bool(remote_metadata and job_wrapper.external_output_metadata.extended)
+            external_job_id = pulsar_submit_job(
+                client,
+                client_job_description,
+                remote_job_config,
+                staging_manifest_callback=functools.partial(
+                    write_job_files_manifest,
+                    job_wrapper.working_directory,
+                    remote_metadata=remote_metadata,
+                    remote_extended_metadata=remote_extended_metadata,
+                ),
+            )
             log.info(f"Pulsar job submitted with job_id {external_job_id}")
             job = job_wrapper.get_job()
             # Set the job destination here (unlike other runners) because there are likely additional job destination
@@ -1433,7 +1447,10 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         self.job_wrapper = job_wrapper
         self.local_path_config = job_wrapper.default_compute_environment()
 
+        # Local path -> name the file is staged under; Pulsar uploads these as arbitrary files.
         self.path_rewrites_unstructured = {}
+        # Parameter value -> remote path it was rewritten to.
+        self._unstructured_rewrites = {}
         self.path_rewrites_input_extra = {}
         self.path_rewrites_input_metadata = {}
 
@@ -1505,14 +1522,13 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         return None
 
     def unstructured_path_rewrite(self, parameter_value):
-        path_rewrites_unstructured = self.path_rewrites_unstructured
-        if parameter_value in path_rewrites_unstructured:
-            # Path previously mapped, use previous mapping.
-            return path_rewrites_unstructured[parameter_value]
+        if parameter_value in self._unstructured_rewrites:
+            return self._unstructured_rewrites[parameter_value]
 
         rewrite, new_unstructured_path_rewrites = self.path_mapper.check_for_arbitrary_rewrite(parameter_value)
         if rewrite:
-            path_rewrites_unstructured.update(new_unstructured_path_rewrites)
+            self.path_rewrites_unstructured.update(new_unstructured_path_rewrites)
+            self._unstructured_rewrites[parameter_value] = rewrite
             return rewrite
         else:
             # Did not need to rewrite, use original path or value.

@@ -196,7 +196,7 @@ proto-plus==1.29.0
 protobuf==7.36.2
 prov==1.5.1
 psutil==7.2.2
-pulsar-galaxy-lib==0.16.0
+pulsar-galaxy-lib @ git+https://github.com/mvdbeek/pulsar@0c2fd2cc575b46b8b928d34e83a0bf4a284d0d61
 pulsar-relay-client==0.2.2
 py-key-value-aio==0.4.6
 pyasn1==0.6.4

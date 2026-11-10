@@ -3082,6 +3082,7 @@ name = "galaxy-app"
 version = "26.2.0rc1"
 source = { editable = "packages/app" }
 dependencies = [
+    { name = "aiohttp" },
     { name = "beaker" },
     { name = "boltons" },
     { name = "bx-python" },
@@ -3151,6 +3152,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiohttp" },
     { name = "beaker" },
     { name = "boltons" },
     { name = "bx-python" },
@@ -3186,7 +3188,7 @@ requires-dist = [
     { name = "paramiko", specifier = "!=2.9.0,!=2.9.1" },
     { name = "pebble", specifier = "!=5.2.1,!=5.2.2" },
     { name = "pkce", marker = "extra == 'test'" },
-    { name = "pulsar-galaxy-lib", specifier = ">=0.16.0" },
+    { name = "pulsar-galaxy-lib", git = "https://github.com/mvdbeek/pulsar?rev=0c2fd2cc575b46b8b928d34e83a0bf4a284d0d61" },
     { name = "pydantic", specifier = ">=2.7.4" },
     { name = "pydantic-ai", specifier = ">=1.99.0" },
     { name = "pyjwt" },
@@ -4251,6 +4253,7 @@ default-groups = []
 dependencies = [
     { name = "a2wsgi" },
     { name = "aiofiles" },
+    { name = "aiohttp" },
     { name = "alembic" },
     { name = "apispec" },
     { name = "babel" },
@@ -4485,6 +4488,7 @@ typecheck = [
 requires-dist = [
     { name = "a2wsgi" },
     { name = "aiofiles" },
+    { name = "aiohttp" },
     { name = "alembic" },
     { name = "apispec" },
     { name = "babel" },
@@ -4548,7 +4552,7 @@ requires-dist = [
     { name = "pillow" },
     { name = "pkg-resources-backport" },
     { name = "psutil" },
-    { name = "pulsar-galaxy-lib", specifier = ">=0.16.0" },
+    { name = "pulsar-galaxy-lib", git = "https://github.com/mvdbeek/pulsar?rev=0c2fd2cc575b46b8b928d34e83a0bf4a284d0d61" },
     { name = "pycryptodome" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.7.4" },
     { name = "pydantic-ai", specifier = ">=1.56.0" },
@@ -8698,8 +8702,8 @@ wheels = [
 
 [[package]]
 name = "pulsar-galaxy-lib"
-version = "0.16.0"
-source = { registry = "https://pypi.org/simple" }
+version = "0.16.1.dev0"
+source = { git = "https://github.com/mvdbeek/pulsar?rev=0c2fd2cc575b46b8b928d34e83a0bf4a284d0d61#0c2fd2cc575b46b8b928d34e83a0bf4a284d0d61" }
 dependencies = [
     { name = "google-cloud-batch" },
     { name = "paramiko" },
@@ -8709,13 +8713,8 @@ dependencies = [
     { name = "pyjwt" },
     { name = "pyyaml" },
     { name = "requests" },
-    { name = "tuspy" },
     { name = "typing-extensions" },
     { name = "webob" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/42/15/063a2c2b4ad4f7d7c98840e541e01e7695bfcaeb7b892922d2b1ccad7e37/pulsar_galaxy_lib-0.16.0.tar.gz", hash = "sha256:f777b2e6e711bda76c38149c70ad259b9f0fc4d61738c9509483494ce77f3773", size = 251789, upload-time = "2026-10-11T22:01:30.42Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/70/2380d13709a220d948278472c7ccc57a135a821c8f47643ea9f71e3a0f0e/pulsar_galaxy_lib-0.16.0-py3-none-any.whl", hash = "sha256:6488d4eb0fd8ad59e922296a30e20e91c79e644356c2d308dd3a1e9cd8a98a32", size = 265054, upload-time = "2026-10-11T22:01:26.693Z" },
 ]
 
 [[package]]
