@@ -18,6 +18,8 @@ def _allowed(**kwargs) -> list[str]:
             {"user_defined_tool_allowed_containers": "quay.io/biocontainers/*, docker.io/library/python"},
             ["quay.io/biocontainers/*", "docker.io/library/python"],
         ),
+        ({"user_defined_tool_allowed_containers": " quay.io/biocontainers/*"}, ["quay.io/biocontainers/*"]),
+        ({"user_defined_tool_allowed_containers": "quay.io/biocontainers/*,"}, ["quay.io/biocontainers/*"]),
     ],
 )
 def test_user_defined_tool_allowed_containers(kwargs, expected):
