@@ -114,9 +114,17 @@ class OAuthDeviceManager:
         """Record a user's approval or denial of a pending device login."""
         authorization = self.get_pending(user_code)
         statuses = OAuthDeviceAuthorization.statuses
-        authorization.status = statuses.APPROVED if approve else statuses.DENIED
-        authorization.user = user
+        # Only a still-pending row is changed, so two answers at once can't overwrite each other.
+        stmt = (
+            update(OAuthDeviceAuthorization)
+            .where(OAuthDeviceAuthorization.id == authorization.id, OAuthDeviceAuthorization.status == statuses.PENDING)
+            .values(status=statuses.APPROVED if approve else statuses.DENIED, user_id=user.id)
+            .returning(OAuthDeviceAuthorization.id)
+        )
+        decided_id = self.sa_session.scalar(stmt)
         self.sa_session.commit()
+        if decided_id is None:
+            raise Conflict("This code has already been used.", reason="used")
 
     def get_pending(self, user_code: str) -> OAuthDeviceAuthorization:
         """Return the device login for a user code, if it can still be approved or denied.

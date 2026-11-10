@@ -93,6 +93,17 @@ class TestOAuthDeviceManager(BaseTestCase):
             self.manager.decide(user_code, self.admin_user, approve=True)
         assert e.value.extra_error_info["reason"] == "used"
 
+    def test_decide_does_not_overwrite_a_concurrent_decision(self):
+        user_code = self._start()
+        checked = self.manager.get_pending(user_code)
+        # Another request approves after this one already checked the code was pending
+        self.manager.decide(user_code, self.admin_user, approve=True)
+        with patch.object(self.manager, "get_pending", return_value=checked):
+            with pytest.raises(Conflict) as e:
+                self.manager.decide(user_code, self.admin_user, approve=False)
+        assert e.value.extra_error_info["reason"] == "used"
+        assert self._get(user_code).status == statuses.APPROVED
+
     def test_poll_approved(self):
         started = self._start_authorization(scope="histories:read")
         self.manager.decide(started.authorization.user_code, self.admin_user, approve=True)
