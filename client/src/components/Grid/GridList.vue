@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faCaretUp, faShieldAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
 import { BCard, BPagination } from "bootstrap-vue";
@@ -8,11 +8,21 @@ import { useRouter } from "vue-router";
 
 import localize from "@/utils/localization";
 
-import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
+import type {
+    BatchOperation,
+    FieldEntry,
+    FieldFilter,
+    FieldHandler,
+    FilterOption,
+    GridConfig,
+    Operation,
+    RowData,
+} from "./configs/types";
 
 import LoadingOverlay from "../Common/LoadingOverlay.vue";
 import HelpText from "../Help/HelpText.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
+import GridColumnFilter from "./GridColumnFilter.vue";
 import GridBoolean from "./GridElements/GridBoolean.vue";
 import GridExpand from "./GridElements/GridExpand.vue";
 import GridLink from "./GridElements/GridLink.vue";
@@ -104,6 +114,12 @@ const hasInvalidFilters = computed(
     () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value || {}).length > 0,
 );
 
+// column filters stay reachable when the current filters match nothing
+const hasColumnFilters = computed(() => props.gridConfig.fields.some((fieldEntry) => fieldEntry.filter));
+const showTable = computed(
+    () => !hasInvalidFilters.value && (isAvailable.value || (hasColumnFilters.value && !!filterText.value)),
+);
+
 // hide message helper
 const hideMessage = useDebounceFn(() => {
     operationMessage.value = "";
@@ -118,6 +134,75 @@ function applyFilter(filter: string, value: string | boolean, quoted = false) {
     if (filtering) {
         filterText.value = filtering.setFilterValue(filterText.value, filter, quotedValue.toString()) || "";
     }
+}
+
+/**
+ * Set or remove (`undefined` value) several filters in the filter text at once
+ */
+function setFilters(filters: Record<string, string | string[] | undefined>) {
+    if (!filterClass) {
+        return;
+    }
+    const toRemove = Object.fromEntries(Object.entries(filters).filter(([, value]) => value === undefined));
+    const toSet = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== undefined));
+    let text = filterText.value;
+    if (Object.keys(toRemove).length > 0) {
+        text = filterClass.applyFiltersToText(toRemove, text, true);
+    }
+    if (Object.keys(toSet).length > 0) {
+        text = filterClass.applyFiltersToText(toSet, text);
+    }
+    filterText.value = text;
+}
+
+// names of the items picked in column filter dropdowns, by filter key and id
+const columnFilterNames = ref<Record<string, Record<string, FilterOption>>>({});
+
+/**
+ * Items currently selected in a column filter, read from the repeated `key:<id>` filter terms
+ */
+function columnFilterSelection(filter: FieldFilter): FilterOption[] {
+    const ids = rawFilters.value[filter.key];
+    if (!Array.isArray(ids)) {
+        return [];
+    }
+    const known = columnFilterNames.value[filter.key] ?? {};
+    return ids.map((id: string) => known[id] ?? { id, name: id });
+}
+
+const activeColumnFilters = computed(() =>
+    props.gridConfig.fields.flatMap((fieldEntry) => {
+        const filter = fieldEntry.filter;
+        if (!filter) {
+            return [];
+        }
+        return columnFilterSelection(filter).map((option) => ({ title: fieldTitle(fieldEntry), filter, option }));
+    }),
+);
+
+const reachedColumnFilterLimit = computed(() => {
+    const limit = props.gridConfig.maxColumnFilterPicks;
+    return limit !== undefined && activeColumnFilters.value.length >= limit ? limit : undefined;
+});
+
+function onColumnFilter(filter: FieldFilter, options: FilterOption[]) {
+    columnFilterNames.value = {
+        ...columnFilterNames.value,
+        [filter.key]: {
+            ...columnFilterNames.value[filter.key],
+            ...Object.fromEntries(options.map((option) => [option.id, option])),
+        },
+    };
+    const cleared = Object.fromEntries((filter.clears ?? []).map((key) => [key, undefined]));
+    const value = options.length > 0 ? options.map((option) => option.id) : undefined;
+    setFilters({ ...cleared, [filter.key]: value });
+}
+
+function removeColumnFilterOption(filter: FieldFilter, option: FilterOption) {
+    onColumnFilter(
+        filter,
+        columnFilterSelection(filter).filter((selectedOption) => selectedOption.id !== option.id),
+    );
 }
 
 /**
@@ -154,10 +239,14 @@ function fieldTitle(fieldEntry: FieldEntry): string | null {
     }
 }
 
+// only the newest `getGridData` request may update the grid
+let latestRequest = 0;
+
 /**
  * Request grid data
  */
 async function getGridData() {
+    const requestId = ++latestRequest;
     resultsLoading.value = true;
     selected.value = new Set();
     if (props.gridConfig) {
@@ -177,14 +266,20 @@ async function getGridData() {
                 sortDesc.value,
                 props.extraProps,
             );
-            gridData.value = responseData;
-            totalRows.value = responseTotal;
-            errorMessage.value = "";
+            if (requestId === latestRequest) {
+                gridData.value = responseData;
+                totalRows.value = responseTotal;
+                errorMessage.value = "";
+            }
         } catch (e) {
-            errorMessage.value = `Failed to obtain grid data: ${e}`;
+            if (requestId === latestRequest) {
+                errorMessage.value = `Failed to obtain grid data: ${e}`;
+            }
         } finally {
-            initDataLoading.value = false;
-            resultsLoading.value = false;
+            if (requestId === latestRequest) {
+                initDataLoading.value = false;
+                resultsLoading.value = false;
+            }
         }
     }
 }
@@ -358,11 +453,30 @@ watch(operationMessage, () => {
                 :filter-class="filterClass"
                 :loading="initDataLoading || resultsLoading"
                 view="compact" />
+            <div
+                v-if="activeColumnFilters.length > 0"
+                class="d-flex flex-wrap align-items-center"
+                data-description="grid active column filters">
+                <GButton
+                    v-for="chip in activeColumnFilters"
+                    :key="`${chip.filter.key}-${chip.option.id}`"
+                    class="mr-1 mb-1"
+                    size="small"
+                    outline
+                    color="blue"
+                    :title="localize('Remove this filter')"
+                    :data-description="`grid active column filter ${chip.filter.key}`"
+                    :data-option-id="chip.option.id"
+                    @click="removeColumnFilterOption(chip.filter, chip.option)">
+                    <span>{{ chip.title }}: {{ chip.option.name }}</span>
+                    <FontAwesomeIcon :icon="faTimes" class="ml-1" />
+                </GButton>
+            </div>
         </div>
         <div v-if="initDataLoading" class="position-relative h-100" data-description="grid initial loading">
             <LoadingOverlay />
         </div>
-        <span v-else-if="!isAvailable || hasInvalidFilters">
+        <span v-if="!initDataLoading && (!isAvailable || hasInvalidFilters)">
             <GAlert v-if="!hasInvalidFilters" variant="info" show>
                 <span v-if="filterText">
                     <span v-localize>Nothing found with:</span>
@@ -392,7 +506,7 @@ watch(operationMessage, () => {
                 </a>
             </GAlert>
         </span>
-        <template v-else>
+        <template v-if="!initDataLoading && showTable">
             <div class="position-relative">
                 <LoadingOverlay v-if="resultsLoading" />
                 <table class="grid-table">
@@ -428,6 +542,13 @@ watch(operationMessage, () => {
                                 </GButton>
                             </span>
                             <span v-else-if="fieldTitle(fieldEntry)">{{ fieldTitle(fieldEntry) }}</span>
+                            <GridColumnFilter
+                                v-if="fieldEntry.filter"
+                                :filter="fieldEntry.filter"
+                                :title="fieldTitle(fieldEntry) ?? fieldEntry.key"
+                                :selected="columnFilterSelection(fieldEntry.filter)"
+                                :reached-limit="reachedColumnFilterLimit"
+                                @update:selected="onColumnFilter(fieldEntry.filter, $event)" />
                         </th>
                     </thead>
                     <tbody v-for="(rowData, rowIndex) in gridData" :key="rowIndex" data-description="grid item">

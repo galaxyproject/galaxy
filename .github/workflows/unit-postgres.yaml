@@ -83,3 +83,8 @@ jobs:
           GALAXY_TEST_SESSION_CLEANUP_DATABASE_URL: ${{ env.GALAXY_TEST_DBURI }}
         run: ./run_tests.sh -unit test/unit/data/model/db/test_delete_galaxy_sessions.py
         working-directory: 'galaxy root'
+      - name: Run disk usage recalculation task tests with PostgreSQL
+        env:
+          GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE: 'postgresql+psycopg://postgres:postgres@localhost:5432/'
+        run: ./run_tests.sh -unit test/unit/app/test_disk_usage_recalculation.py
+        working-directory: 'galaxy root'

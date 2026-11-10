@@ -2,7 +2,7 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getData as getInvocationsData } from "@/components/Grid/configs/invocations";
+import { fetchInvocations as getInvocationsData } from "@/components/Grid/configs/invocationsIndex";
 import { useInvocationStore } from "@/stores/invocationStore";
 
 import { makeCtx } from "../test-utils";
@@ -11,8 +11,8 @@ import { invocationsProvider } from "./invocations";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
-vi.mock("@/components/Grid/configs/invocations", () => ({
-    getData: vi.fn(),
+vi.mock("@/components/Grid/configs/invocationsIndex", () => ({
+    fetchInvocations: vi.fn(),
 }));
 
 const WORKFLOW_NAMES: Record<string, string> = { wf1: "Variant calling", wf2: "RNA-seq" };

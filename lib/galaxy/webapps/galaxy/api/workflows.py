@@ -444,6 +444,23 @@ class WorkflowsAPIController(
 
                 True iff encoded state coming in is encoded for the tool form.
 
+            :exact_tools:
+
+                    Optional boolean (default: true). Require exact
+                    tool-version matching when updating a workflow.
+                    Set to false to permit less strict tool resolution.
+                    Workflow invocation uses the related option
+                    require_exact_tool_versions.
+
+            :allow_missing_tools:
+
+                    Optional boolean (default: false). Allow saving
+                    a workflow even when required tools are missing.
+                    This controls saving, not whether the workflow
+                    can execute. Workflow invocation separately
+                    provides allow_tool_state_corrections for
+                    correcting tool state.
+
 
         :rtype:     dict
         :returns:   serialized version of the workflow
@@ -529,10 +546,12 @@ class WorkflowsAPIController(
                         raw_workflow_description,
                         workflow_update_options,
                     )
-                except MissingToolsException:
+                except MissingToolsException as e:
+                    details = "; ".join(e.errors)
                     raise exceptions.MessageException(
                         "This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed."
-                    )
+                        f" Details: {details}"
+                    ) from e
 
         else:
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
@@ -1338,6 +1357,19 @@ HistoryIdQueryParam = Annotated[
     ),
 ]
 
+InvocationsSearchQueryParam = Annotated[
+    str | None,
+    Query(
+        title="Search",
+        description=(
+            "Return only invocations matching every term. `workflow:<name>` and `history:<name>` match the name "
+            "of the invocation's workflow or history, as a substring or, when the name is quoted, exactly. "
+            "Text without a key matches the workflow name. `workflow_id:<id>` and `history_id:<id>` can repeat, "
+            "and match any of the given ids. At most 10 keyed or quoted terms are used."
+        ),
+    ),
+]
+
 JobIdQueryParam = Annotated[
     DecodedDatabaseIdField | None,
     Query(
@@ -1452,6 +1484,7 @@ class FastAPIInvocations:
         view: SerializationViewQueryParam = None,
         step_details: StepDetailQueryParam = False,
         include_nested_invocations: bool = True,
+        search: InvocationsSearchQueryParam = None,
         trans: SessionRequestContext = DependsOnTrans,
     ) -> list[WorkflowInvocationResponse]:
         if not trans.user:
@@ -1461,6 +1494,7 @@ class FastAPIInvocations:
         invocation_payload = InvocationIndexPayload(
             workflow_id=workflow_id,
             history_id=history_id,
+            search=search,
             job_id=job_id,
             user_id=user_id,
             sort_by=sort_by,

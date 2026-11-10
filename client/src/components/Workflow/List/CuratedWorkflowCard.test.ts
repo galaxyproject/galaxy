@@ -355,6 +355,7 @@ describe("CuratedWorkflowCard", () => {
 
         const badge = wrapper.find("[id^='g-card-badge-curated-collection-']");
         expect(badge.text()).toContain("Single Cell");
+        expect(badge.attributes("aria-label")).toBe("Show collection Single Cell");
         await badge.trigger("click");
 
         expect(wrapper.emitted("collectionClick")).toEqual([["Single Cell"]]);
@@ -456,8 +457,10 @@ describe("CuratedWorkflowCard", () => {
         it("asks the list to request the tools, from the menu or the missing-tools note", async () => {
             const workflow = iwcWorkflow({ missing_tools: MISSING });
             const wrapper = mountCard(workflow);
+            const button = missingToolsOf(wrapper, workflow).find("button");
 
-            await missingToolsOf(wrapper, workflow).find("button").trigger("click");
+            expect(button.attributes("aria-label")).toBe("Needs 1 tool. Ask the admins to install it");
+            await button.trigger("click");
             extraActionById(wrapper, "curated-request-tools").handler!();
 
             expect(wrapper.emitted("requestTools")).toEqual([[workflow], [workflow]]);
@@ -472,6 +475,7 @@ describe("CuratedWorkflowCard", () => {
                 disabled: true,
             });
             expect(missingToolsOf(wrapper, workflow).find("button").exists()).toBe(false);
+            expect(missingToolsOf(wrapper, workflow).find("[aria-label]").exists()).toBe(false);
         });
 
         it("offers nothing when the workflow lacks no tools", () => {

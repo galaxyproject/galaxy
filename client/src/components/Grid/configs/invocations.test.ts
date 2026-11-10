@@ -19,10 +19,16 @@ const INVOCATIONS = [
 
 const workflowRequests = vi.fn();
 const historyRequests = vi.fn();
+const invocationQueries = vi.fn();
 
 function mockServer(workflowFails = false, historyFails = false) {
     server.use(
-        http.get("/api/invocations", ({ response }) => {
+        http.get("/api/invocations", ({ request, response }) => {
+            const searchParams = new URL(request.url).searchParams;
+            invocationQueries({
+                search: searchParams.get("search"),
+                user_id: searchParams.get("user_id"),
+            });
             return response.untyped(HttpResponse.json(INVOCATIONS, { headers: { total_matches: "4" } }));
         }),
         http.get("/api/histories/{history_id}", ({ params, response }) => {
@@ -49,6 +55,7 @@ describe("invocations grid getData", () => {
         setActivePinia(createPinia());
         workflowRequests.mockReset();
         historyRequests.mockReset();
+        invocationQueries.mockReset();
     });
 
     afterEach(() => {
@@ -97,5 +104,32 @@ describe("invocations grid getData", () => {
         await getData(0, 25, "", "create_time", true);
         await flushPromises();
         expect(historyRequests).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe("invocations grid filtering", () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        invocationQueries.mockReset();
+    });
+
+    it("sends name filters and picked ids as search terms", async () => {
+        mockServer();
+
+        const [data, total] = await getData(
+            0,
+            25,
+            "rna history_id:1cd8e2f6b131e891 history_id:f2db41e1fa331b3e",
+            "create_time",
+            true,
+            { user_id: "user-1" },
+        );
+
+        expect(data).toHaveLength(4);
+        expect(total).toBe(4);
+        expect(invocationQueries).toHaveBeenCalledWith({
+            search: "workflow:rna history_id:1cd8e2f6b131e891 history_id:f2db41e1fa331b3e",
+            user_id: "user-1",
+        });
     });
 });

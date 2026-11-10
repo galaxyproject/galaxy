@@ -189,9 +189,7 @@ describe("JobsList", () => {
         await rowBoxes(wrapper)[0]!.setValue(true);
         await wrapper.find("#stop-message").setValue("maintenance");
 
-        const submit = wrapper.find("#stop-message").element.closest("form")!.querySelector(".g-button")!;
-        expect(submit.getAttribute("type")).toBe("submit");
-        (submit as HTMLButtonElement).click();
+        (stopFormOf(wrapper)!.get("button[type='submit']").element as HTMLButtonElement).click();
         await flushPromises();
 
         expect(stopJobs).toHaveBeenCalledTimes(1);

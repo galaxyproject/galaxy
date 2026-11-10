@@ -4,6 +4,7 @@ import type { Ref } from "vue";
 
 import type { AnyHistoryEntry, PublishedHistory, SharedHistory } from "@/api/histories";
 import { currentUserOwnsHistory, isArchivedHistory, isPublishedHistory, isSharedHistory } from "@/api/histories";
+import { badgeActionLabel } from "@/components/Common/cardBadgeLabel";
 import type { CardBadge } from "@/components/Common/GCard.types";
 import localize from "@/utils/localization";
 
@@ -79,7 +80,7 @@ export function useHistoryCardBadges(
         historyCardTitleBadges.unshift({
             id: "owner-shared",
             label: username,
-            ariaLabel: `Filter by owner ${username}`,
+            ariaLabel: badgeActionLabel("Filter by owner", username),
             title: localize(
                 `'${username}' shared this history with you. Click to view all histories shared with you by '${username}'`,
             ),
@@ -100,7 +101,7 @@ export function useHistoryCardBadges(
         historyCardTitleBadges.unshift({
             id: "owner-published",
             label: username,
-            ariaLabel: `Filter by owner ${username}`,
+            ariaLabel: badgeActionLabel("Filter by owner", username),
             title: ownerBadgeTitle(history.value),
             icon: faUser,
             type: "badge",

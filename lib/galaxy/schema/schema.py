@@ -2009,6 +2009,9 @@ class InvocationIndexQueryPayload(Model):
         None, title="Workflow ID", description="Return only invocations for this Workflow ID"
     )
     history_id: int | None = Field(None, title="History ID", description="Return only invocations for this History ID")
+    search: str | None = Field(
+        None, title="Search", description="Return only invocations whose workflow or history matches these terms"
+    )
     job_id: int | None = Field(None, title="Job ID", description="Return only invocations for this Job ID")
     user_id: int | None = Field(None, title="User ID", description="Return invocations for this User ID")
     sort_by: InvocationSortByEnum | None = Field(
