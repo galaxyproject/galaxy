@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import (
     datetime,
+    timedelta,
     timezone,
 )
 from typing import (
@@ -18,8 +19,14 @@ from cachetools import LRUCache
 
 import galaxy.queue_worker as queue_worker_mod
 import galaxy.tools.cached_toolbox as mod
+from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.app_unittest_utils.tool_source_support import populate_config
 from galaxy.exceptions import ConfigurationError
+from galaxy.model.tool_shed_install import (
+    mapping as install_mapping,
+    ToolShedRepository,
+)
+from galaxy.tool_shed.cache import ToolShedRepositoryCache
 from galaxy.tool_util.toolbox.base import NullToolTagManager
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.panel import (
@@ -715,6 +722,111 @@ def test_index_reload_refreshes_existing_stub_entries():
     assert stub.to_panel_entry()["tool_shed_repository"]["name"] == "fastp"
 
 
+SHED_IMAGE_GUID = "toolshed.g2.bx.psu.edu/repos/iuc/bedtools/bedtools_mergebed/2.31.1+galaxy2"
+SHED_IMAGE_TOOL_XML = """<tool id="bedtools_mergebed" name="MergeBED" version="2.31.1+galaxy2" profile="21.09">
+    <command>echo merge</command>
+    <help><![CDATA[
+**What it does**
+
+.. image:: $PATH_TO_IMAGES/merge-glyph.png
+    ]]></help>
+</tool>
+"""
+
+
+def _shed_image_entry():
+    return _entry(
+        id=SHED_IMAGE_GUID,
+        version="2.31.1+galaxy2",
+        name="MergeBED",
+        is_local=False,
+        tool_shed="toolshed.g2.bx.psu.edu",
+        repository_name="bedtools",
+        repository_owner="iuc",
+        changeset_revision="d57471728f7b",
+    )
+
+
+def _shed_image_stored(tool_dir):
+    return StoredToolSource(
+        hash="abc",
+        tool_source_class="XmlToolSource",
+        raw_source=SHED_IMAGE_TOOL_XML,
+        tool_id=SHED_IMAGE_GUID,
+        tool_dir=tool_dir,
+        source_path=None,
+        stored_at=datetime.now(timezone.utc),
+    )
+
+
+def _materializing_box(with_repository_cache=True):
+    box = _seam_box()
+    # ``Any``: MockApp declares no ``tool_shed_repository_cache`` slot.
+    app: Any = MockApp()
+    # Empty install database: the published conf's repository has no row.
+    app.install_model = install_mapping.init("sqlite:///:memory:", create_tables=True)
+    # ``UniverseApplication`` drops the cache once startup finishes.
+    app.tool_shed_repository_cache = (
+        ToolShedRepositoryCache(session=app.install_model.context) if with_repository_cache else None
+    )
+    box.app = app
+    box._cached_materialize_count = 0
+    return box
+
+
+@pytest.mark.parametrize("with_repository_cache", [True, False], ids=["during_startup", "after_startup"])
+def test_materialized_shed_tool_without_install_row_rewrites_help_images(tmp_path, with_repository_cache):
+    # Regression for #24527: a published shed tool absent from the install
+    # database kept a literal ``$PATH_TO_IMAGES`` image URL in its help.
+    box = _materializing_box(with_repository_cache)
+    entry = _shed_image_entry()
+
+    tool = box._create_tool_from_stored_source(_shed_image_stored(str(tmp_path)), entry=entry)
+
+    repository = tool.tool_shed_repository
+    assert repository is not None
+    assert (repository.tool_shed, repository.owner, repository.name) == ("toolshed.g2.bx.psu.edu", "iuc", "bedtools")
+    assert repository.installed_changeset_revision == "d57471728f7b"
+    help_text = tool.raw_help.content
+    assert "$PATH_TO_IMAGES" not in help_text
+    assert (
+        ".. image:: shed_tool_static/toolshed.g2.bx.psu.edu/iuc/bedtools/bedtools_mergebed/2.31.1%2Bgalaxy2/merge-glyph.png"
+        in help_text
+    )
+
+
+def test_materializing_shed_tools_leaves_repository_cache_untouched(tmp_path):
+    box = _materializing_box()
+    entry = _shed_image_entry()
+    for _ in range(3):
+        tool = box._create_tool_from_stored_source(_shed_image_stored(str(tmp_path)), entry=entry)
+        assert tool.tool_shed_repository.installed_changeset_revision == "d57471728f7b"
+    assert box.app.tool_shed_repository_cache.local_repositories == []
+
+
+@pytest.mark.parametrize("with_repository_cache", [True, False], ids=["during_startup", "after_startup"])
+def test_materializing_shed_tool_keeps_install_database_repository(tmp_path, with_repository_cache):
+    box = _materializing_box(with_repository_cache=False)
+    app = box.app
+    installed = ToolShedRepository(
+        tool_shed="toolshed.g2.bx.psu.edu",
+        name="bedtools",
+        owner="iuc",
+        installed_changeset_revision="d57471728f7b",
+        changeset_revision="d57471728f7b",
+    )
+    app.install_model.context.add(installed)
+    app.install_model.context.commit()
+    if with_repository_cache:
+        app.tool_shed_repository_cache = ToolShedRepositoryCache(session=app.install_model.context)
+
+    tool = box._create_tool_from_stored_source(_shed_image_stored(str(tmp_path)), entry=_shed_image_entry())
+
+    repository = tool.tool_shed_repository
+    assert isinstance(repository, ToolShedRepository)
+    assert repository.id == installed.id
+
+
 def test_create_tool_raises_on_index_miss():
     # The populator owns the index — including the Galaxy-internal lib
     # tools listed in ``galaxy.tools.special_tools.hidden_lib_tool_paths``.
@@ -967,6 +1079,23 @@ def test_guid_sibling_versions_reset_on_in_place_removal():
     assert box._index_versions_for(f"{prefix}/0.20.1") == ["0.20.1"]
 
 
+def test_versionless_guid_resolves_remaining_version_after_removal():
+    box = _registry_box()
+    box._guid_sibling_versions_cache = None
+    prefix = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp"
+    for version in ("0.20.1", "0.23.2"):
+        entry = _entry(id=f"{prefix}/{version}", version=version)
+        box._tool_index.add_entry(entry)
+        box._register_cached_entry(entry)
+    remaining = box.get_tool(f"{prefix}/0.20.1")
+    assert isinstance(remaining, CachedTool)
+    box._remove_tool_in_memory(f"{prefix}/0.23.2")
+    tool = box.get_tool(prefix, tool_version="0.20.1")
+    assert tool is not None and tool.id == f"{prefix}/0.20.1"
+    assert remaining.lineage is not None
+    assert list(remaining.lineage.tool_versions) == ["0.20.1"]
+
+
 def test_get_tool_short_id_missing_version_honors_exact():
     box = _registry_box()
     guid = "toolshed.example.com/repos/owner/repo/cat/1.0"
@@ -976,6 +1105,32 @@ def test_get_tool_short_id_missing_version_honors_exact():
     default_tool = box.get_tool("cat", tool_version="9.9", exact=False)
     assert isinstance(default_tool, CachedTool)
     assert default_tool.id == guid
+
+
+def test_get_tool_short_id_prefers_guid_with_requested_version():
+    box = _registry_box()
+    prefix = "toolshed.example.com/repos/owner/repo/cat"
+    for version in ("1.0", "2.0"):
+        box._tool_index.add_entry(_entry(id=f"{prefix}/{version}", version=version))
+    box._shed_short_id_to_guids = {"cat": {f"{prefix}/1.0", f"{prefix}/2.0"}}
+    for exact in (True, False):
+        tool = box.get_tool("cat", tool_version="1.0", exact=exact)
+        assert isinstance(tool, CachedTool)
+        assert tool.id == f"{prefix}/1.0"
+    newest = box.get_tool("cat", tool_version="9.9", exact=False)
+    assert isinstance(newest, CachedTool)
+    assert newest.id == f"{prefix}/2.0"
+
+
+def test_get_tool_all_versions_of_shed_guid_includes_sibling_versions():
+    box = _registry_box()
+    box._guid_sibling_versions_cache = None
+    prefix = "toolshed.example.com/repos/owner/repo/cat"
+    for version in ("2.0", "1.0"):
+        box._tool_index.add_entry(_entry(id=f"{prefix}/{version}", version=version))
+    for version in ("1.0", "2.0"):
+        tools = box.get_tool(f"{prefix}/{version}", get_all_versions=True)
+        assert [tool.id for tool in tools] == [f"{prefix}/1.0", f"{prefix}/2.0"]
 
 
 def _materialising_box(source_hash):
@@ -1402,3 +1557,46 @@ def test_toolbox_refuses_to_build_without_read_only_store_index(monkeypatch, rea
     with pytest.raises(ConfigurationError, match=message):
         box._init_tools_from_configs([])
     default.load_index.assert_not_called()
+
+
+def test_toolbox_waits_for_a_peer_populating_the_store(tmp_path, monkeypatch):
+    store = SqlAlchemyToolSourceStore(url=f"sqlite:///{tmp_path / 'store.sqlite'}", freshness_probe=lambda: "current")
+    peer_lease = store.populate_lease()
+    assert peer_lease is not None
+    assert peer_lease.try_acquire("peer", ttl=timedelta(minutes=1))
+    lease = store.populate_lease()
+    assert lease is not None
+    waiting = threading.Event()
+    try_acquire = lease.try_acquire
+
+    def try_acquire_and_signal(holder, ttl):
+        acquired = try_acquire(holder, ttl)
+        if not acquired:
+            waiting.set()
+        return acquired
+
+    monkeypatch.setattr(lease, "try_acquire", try_acquire_and_signal)
+    monkeypatch.setattr(store, "populate_lease", lambda: lease)
+    box = _seam_box()
+    box._store = store
+    populated = MagicMock()
+    monkeypatch.setattr(box, "_run_inline_populator", populated)
+    monkeypatch.setattr(box, "_init_tools_from_index", lambda config_filenames: True)
+    needs_population = MagicMock(wraps=box._index_needs_population)
+    monkeypatch.setattr(box, "_index_needs_population", needs_population)
+
+    boot = threading.Thread(target=box._init_tools_from_configs, args=([],))
+    boot.start()
+    assert waiting.wait(10)
+    # The peer finishes its populate while this process waits for the lease.
+    store.store(StoredToolSource(hash="abc", tool_source_class="XmlToolSource", raw_source="<tool/>"))
+    store.store_index(ToolIndex(entries={"bowtie2": _entry()}, freshness_token="current"))
+    peer_lease.release("peer", populated=True)
+    boot.join(10)
+
+    assert not boot.is_alive()
+    populated.assert_not_called()
+    # Only the check before waiting; the peer's index is used without a second one.
+    assert needs_population.call_count == 1
+    assert box._tool_index is not None
+    assert "bowtie2" in box._tool_index.entries

@@ -77,14 +77,18 @@ class FilterFactory:
                 if value and value.strip():
                     user_filters = listify(value, do_strip=True)
                     category = ""
+                    config_option = ""
                     if name == "toolbox_tool_filters":
                         category = "tool"
+                        config_option = "user_tool_filters"
                     elif name == "toolbox_section_filters":
                         category = "section"
+                        config_option = "user_tool_section_filters"
                     elif name == "toolbox_label_filters":
                         category = "label"
+                        config_option = "user_tool_label_filters"
                     if category:
-                        validate = getattr(trans.app.config, f"user_tool_{category}_filters", [])
+                        validate = getattr(trans.app.config, config_option, [])
                         self.__init_filters(category, user_filters, filters, validate=validate)
 
         return filters

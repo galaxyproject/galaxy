@@ -382,6 +382,18 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                     discriminator=typed_value, parameters=tool_parameter_models, is_default_when=is_default_when
                 )
             )
+        if isinstance(test_parameter, BooleanParameterModel):
+            # Tool.parse_input_elem supplies empty cases for omitted boolean
+            # branches. Model those execution states as well as declared whens.
+            for boolean_value in (True, False):
+                if not any(when.discriminator == boolean_value for when in whens):
+                    whens.append(
+                        ConditionalWhen(
+                            discriminator=boolean_value,
+                            parameters=[],
+                            is_default_when=boolean_value == default_test_value,
+                        )
+                    )
         return ConditionalParameterModel(
             type="conditional",
             name=input_source.parse_name(),

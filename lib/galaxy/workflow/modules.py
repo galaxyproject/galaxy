@@ -12,8 +12,6 @@ from collections.abc import (
     Callable,
     Iterable,
 )
-from dataclasses import dataclass
-from enum import Enum
 from typing import (
     Any,
     cast,
@@ -44,7 +42,6 @@ from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.managers.credentials import _build_user_credentials_query
 from galaxy.managers.tool_source import get_or_create_tool_source
 from galaxy.model import (
-    DatasetCollection,
     DatasetInstance,
     DynamicTool,
     HistoryDatasetCollectionAssociation,
@@ -169,6 +166,11 @@ from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_r
 from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.workflow.map_over import (
     MapOverPlanner,
+)
+from galaxy.workflow.scheduling_dependencies import (
+    DependencyType,
+    SchedulingDependency,
+    ToolInputsNotReadyWithDependencies,
 )
 from galaxy.workflow.workflow_parameter_input_definitions import (
     check_validators,
@@ -2405,6 +2407,8 @@ class PickValueModule(WorkflowModule):
         object_store_populator = ObjectStorePopulator(trans.app, trans.user)
         hda.set_skipped(object_store_populator, replace_dataset=False)
         trans.sa_session.add(hda)
+        # The callers reference the HDA by id
+        trans.sa_session.flush()
         return hda
 
     def _create_collection_from_list(self, trans: "ProvidesHistoryContext", invocation_step, hdas):
@@ -3409,9 +3413,10 @@ class ToolModule(WorkflowModule):
         except PartialJobExecution as pje:
             execution_tracker = pje.execution_tracker
 
-        except ToolInputsNotReadyException:
+        except ToolInputsNotReadyException as exc:
             delayed_why = f"tool [{tool.id}] inputs are not ready, this special tool requires inputs to be ready"
-            raise DelayedWorkflowEvaluation(why=delayed_why)
+            dependencies = exc.dependencies if isinstance(exc, ToolInputsNotReadyWithDependencies) else ()
+            raise DelayedWorkflowEvaluation(why=delayed_why, dependencies=dependencies) from exc
 
         progress.record_executed_job_count(len(execution_tracker.successful_jobs))
         step_outputs: dict[str, model.HistoryDatasetCollectionAssociation | model.HistoryDatasetAssociation] = {}
@@ -3613,38 +3618,6 @@ module_types = dict(
     subworkflow=SubWorkflowModule,
 )
 module_factory = WorkflowModuleFactory(module_types)
-
-
-class DependencyType(str, Enum):
-    JOB = "job"
-    HDA = "hda"
-    DATASET_COLLECTION = "dataset_collection"
-    WORKFLOW_INVOCATION_STEP = "workflow_invocation_step"
-
-
-@dataclass(frozen=True)
-class SchedulingDependency:
-    dependency_type: DependencyType
-    id: int
-
-
-@dataclass(frozen=True)
-class SchedulingDependencies:
-    """What the next scheduling attempt of an invocation waits on."""
-
-    tracked: frozenset[SchedulingDependency]
-    # Why steps were delayed without a tracked dependency. The invocation is
-    # scheduled again on the next iteration and the reasons are logged.
-    untracked: tuple[str, ...]
-    # The iteration stopped before scheduling everything it could.
-    more_work: bool
-
-
-def unpopulated_collection_dependencies(collection: DatasetCollection) -> list[SchedulingDependency]:
-    return [
-        SchedulingDependency(DependencyType.DATASET_COLLECTION, collection_id)
-        for collection_id in collection.unpopulated_collection_ids()
-    ]
 
 
 class DelayedWorkflowEvaluation(Exception):

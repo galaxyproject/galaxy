@@ -15,6 +15,7 @@ import shutil
 import sys
 import time
 import traceback
+from collections import defaultdict
 from collections.abc import (
     Callable,
     Iterable,
@@ -1311,6 +1312,24 @@ class MinimalJobWrapper(HasResourceParameters):
         assert job
         return job
 
+    def _charge_outputs(self, datasets: list[model.Dataset]) -> None:
+        """
+        Increase the disk usage of every user with an HDA of the outputs: the owner of the job's history, who is
+        the user who logged in for a job run before logging in, and the owners of copies made while the job ran.
+        """
+        sizes = {dataset: int(dataset.total_size or 0) for dataset in datasets if not dataset.purged}
+        holders = model.dataset_holders(self.sa_session, [dataset for dataset, size in sizes.items() if size])
+        sizes_by_user_id: dict[int, dict[model.Dataset, int]] = defaultdict(dict)
+        for dataset, user_ids in holders.items():
+            for user_id in user_ids:
+                sizes_by_user_id[user_id][dataset] = sizes[dataset]
+        # Lock the users' rows in the order of their ids, so jobs charging the same users can't deadlock
+        for user_id in sorted(sizes_by_user_id):
+            user = self.sa_session.get(model.User, user_id)
+            assert user
+            user.adjust_disk_usage_for_datasets(sizes_by_user_id[user_id])
+            self.sa_session.flush([user])
+
     def get_id_tag(self):
         # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
         return self.get_job().get_id_tag()
@@ -1388,8 +1407,12 @@ class MinimalJobWrapper(HasResourceParameters):
         ) = tool_evaluator.build()
         if tool_evaluator.use_cached_job and job.user and job.tool_id and not tool_evaluator.consumes_names:
             # search again, now we know tool doesn't require name match
-            param_dump = {p.name: p.value for p in job.parameters if not p.name.startswith("__")}
             assert self.tool
+            # Some wrappers (e.g. QIIME2) declare __-prefixed input sections.
+            # Keep these scientific parameters while excluding internal state.
+            param_dump = {
+                p.name: p.value for p in job.parameters if p.name in self.tool.inputs or not p.name.startswith("__")
+            }
             params = self.tool.params_from_strings(param_dump)
             json_internal = params_to_json_internal(self.tool.inputs, params, self.app)
             element_identifiers = None
@@ -1410,6 +1433,9 @@ class MinimalJobWrapper(HasResourceParameters):
             )
             if job_to_copy and isinstance(job_to_copy, Job):
                 job.copy_from_job(job_to_copy, copy_outputs=True)
+                if job.history:
+                    # The outputs are the cached job's datasets, possibly another user's from a published history
+                    job.history.charge_added_datasets(job.output_hdas())
                 # The copied job never reaches finish(), so run its post job actions here.
                 for pjaa in job.post_job_actions:
                     if pjaa.post_job_action.action_type not in ActionBox.immediate_actions:
@@ -1604,6 +1630,13 @@ class MinimalJobWrapper(HasResourceParameters):
                             log.warning("fail(): Missing output file in working directory: %s", unicodify(e))
             except Exception as e:
                 log.exception(str(e))
+            # finish() sets the total size of the outputs in the same transaction that charges them to the user,
+            # so outputs without a total size haven't been charged yet
+            uncharged_datasets = [
+                output_dataset
+                for dataset_assoc in job.output_datasets
+                if (output_dataset := dataset_assoc.dataset.dataset) is not None and output_dataset.total_size is None
+            ]
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -1629,6 +1662,8 @@ class MinimalJobWrapper(HasResourceParameters):
                         "Execution of this dataset's job is paused because its input datasets are in an error state.",
                     )
             self._set_unknown_output_extensions_to_data(job)
+            # Failed outputs keep their partial content, charge it like finish() does
+            self._charge_outputs(uncharged_datasets)
             job.set_final_state(job.states.ERROR)
             job.command_line = self.command_line
             job.info = message
@@ -2507,18 +2542,13 @@ class MinimalJobWrapper(HasResourceParameters):
             job.exit_code = tool_exit_code
         # custom post process setup
 
-        collected_bytes = 0
-        quota_source_info = None
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset.dataset
-            # assume all datasets in a job get written to the same objectstore
-            quota_source_info = dataset.quota_source_info
-            collected_bytes += dataset.set_total_size()
+            dataset.set_total_size()
             if dataset.purged:
                 # Purge, in case job wrote directly to object store
                 dataset.full_delete()
-                collected_bytes = 0
 
         # Calculate dataset hash - only if the job completed successfully,
         # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).
@@ -2542,9 +2572,7 @@ class MinimalJobWrapper(HasResourceParameters):
                                 )
                             )
 
-        user = job.user
-        if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:
-            user.adjust_total_disk_usage(collected_bytes, quota_source_info.label)
+        self._charge_outputs([dataset_assoc.dataset.dataset for dataset_assoc in job.output_datasets])
 
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).

@@ -177,10 +177,37 @@ DEFAULT_EMAIL_FROM_LOCAL_PART = "galaxy-no-reply"
 DISABLED_FLAG = "disabled"  # Used to mark a config option as disabled
 
 
+COMPLIANCE_LOGGER_NAME = "COMPLIANCE"
+"""Name of the logger recording events needed for data protection compliance, e.g. user purges"""
+
+
+class LogLevelFilter(logging.Filter):
+    """Pass records at or above ``level``, and all records of the compliance logger.
+
+    Used in place of a handler level, so that compliance records are not dropped
+    when the configured log level is higher than theirs.
+    """
+
+    def __init__(self, level: int | str) -> None:
+        super().__init__()
+        levelno = logging.getLevelName(level) if isinstance(level, str) else level
+        if not isinstance(levelno, int):
+            raise ValueError(f"Unknown log level: {level}")
+        self.levelno = levelno
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.levelno >= self.levelno or record.name == COMPLIANCE_LOGGER_NAME
+
+
 def default_log_config(log_level: str = "DEBUG") -> dict[str, Any]:
     logging_conf = copy.deepcopy(LOGGING_CONFIG_DEFAULT)
-    if log_level != "DEBUG":
-        logging_conf["handlers"]["console"]["level"] = log_level
+    console = logging_conf["handlers"]["console"]
+    console.pop("level", None)
+    logging_conf["filters"]["log_level"] = {
+        "()": "galaxy.config.LogLevelFilter",
+        "level": log_level,
+    }
+    console["filters"] = [*console.get("filters", []), "log_level"]
     return logging_conf
 
 
@@ -191,7 +218,7 @@ def configure_logging(config, facts=None):
     or a simple dictionary of configuration variables.
     """
     facts = facts or get_facts(config=config)
-    # Get root logger
+    # Already registered when galaxy.util.custom_logging is imported, repeated here for clarity
     logging.addLevelName(LOGLV_TRACE, "TRACE")
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
@@ -1285,21 +1312,6 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
             self.redact_user_details_in_bugreport = True
             self.redact_user_address_during_deletion = True
             self.allow_user_deletion = True
-
-            LOGGING_CONFIG_DEFAULT["formatters"]["brief"] = {
-                "format": "%(asctime)s %(levelname)-8s %(name)-15s %(message)s"
-            }
-            LOGGING_CONFIG_DEFAULT["handlers"]["compliance_log"] = {
-                "class": "logging.handlers.RotatingFileHandler",
-                "formatter": "brief",
-                "filename": "compliance.log",
-                "backupCount": 0,
-            }
-            LOGGING_CONFIG_DEFAULT["loggers"]["COMPLIANCE"] = {
-                "handlers": ["compliance_log"],
-                "level": "DEBUG",
-                "qualname": "COMPLIANCE",
-            }
 
         log_destination = kwargs.get("log_destination")
         log_rotate_size = size_to_bytes(unicodify(kwargs.get("log_rotate_size", 0)))

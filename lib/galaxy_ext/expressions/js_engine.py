@@ -28,7 +28,7 @@ from typing import (
 from cwl_utils.errors import JavascriptException
 from cwl_utils.sandboxjs import (
     default_timeout,
-    NodeJSEngine,
+    JSEngine,
     set_js_engine,
 )
 from cwl_utils.types import CWLOutputType
@@ -227,12 +227,14 @@ def _evaluate_in_subprocess(program: str, timeout: float, sandbox_command: Seque
         raise JavascriptException("Malformed response from expression worker") from e
 
 
-class SandboxedJSEngine(NodeJSEngine):
+class SandboxedJSEngine(JSEngine):
     """A ``cwl_utils`` JS engine backed by a QuickJS worker subprocess.
 
-    Only :meth:`eval` (full JavaScript expressions) is overridden. ``regex_eval``
-    (pure-Python CWL parameter-reference resolution, e.g. ``$(inputs.foo)``) is
-    inherited unchanged from :class:`NodeJSEngine` and never touches JavaScript.
+    :meth:`eval` runs full JavaScript expressions in the worker. ``regex_eval``
+    (pure-Python CWL parameter-reference resolution, e.g. ``$(inputs.foo)``) comes
+    from :class:`JSEngine` and never touches JavaScript. The engine has no
+    ``exec_js_process``, so cwl_utils' module-level helpers that run JavaScript
+    outside :meth:`eval` raise ``NotImplementedError``.
     """
 
     def eval(

@@ -22,7 +22,6 @@ from galaxy.exceptions import (
     AuthenticationRequired,
     ItemAccessibilityException,
     RequestParameterInvalidException,
-    ToolInputsNotReadyException,
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.output_format import (
@@ -81,6 +80,10 @@ from galaxy.tools.parameters.wrapped import (
 )
 from galaxy.util import ExecutionTimer
 from galaxy.util.template import fill_template
+from galaxy.workflow.scheduling_dependencies import (
+    input_readiness_dependencies,
+    ToolInputsNotReadyWithDependencies,
+)
 
 if TYPE_CHECKING:
     from galaxy.model import (
@@ -346,9 +349,17 @@ class DefaultToolAction(ToolAction):
                 for ext in extensions:
                     if ext:
                         if ext in ("auto", "_sniff_"):
-                            if set(summary.states) & set(Dataset.non_ready_states):
-                                raise ToolInputsNotReadyException(
-                                    f"Extension '{ext}' not yet resolved, cannot use dataset collection as input"
+                            # A member that finished without resolving its datatype
+                            # must not hide another one that may still resolve.
+                            dependencies = input_readiness_dependencies(
+                                collection,
+                                states=(*Dataset.non_ready_states, Dataset.states.PAUSED),
+                                extensions=(ext,),
+                            )
+                            if dependencies:
+                                raise ToolInputsNotReadyWithDependencies(
+                                    f"Extension '{ext}' not yet resolved, cannot use dataset collection as input",
+                                    dependencies=dependencies,
                                 )
                         datatype = trans.app.datatypes_registry.get_datatype_by_extension(ext)
                         if not datatype:
@@ -815,6 +826,9 @@ class DefaultToolAction(ToolAction):
         self._handle_credentials_context(trans.sa_session, job, credentials_context)
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
+        if completed_job:
+            # The outputs are the cached job's datasets, possibly another user's from a published history
+            history.charge_added_datasets(job.output_hdas())
         # execute immediate post job actions and associate post job actions that are to be executed after the job is complete
         if job_callback:
             job_callback(job)

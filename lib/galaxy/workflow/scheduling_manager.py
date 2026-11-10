@@ -21,6 +21,10 @@ from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.jobs.handler import InvocationGrabber
 from galaxy.model.base import check_database_connection
+from galaxy.model.dataset_collections.readiness import (
+    readiness_snapshots,
+    ReadinessSnapshot,
+)
 from galaxy.schema.invocation import (
     FailureReason,
     InvocationFailureDatasetFailed,
@@ -41,7 +45,7 @@ from galaxy.util.monitors import Monitors
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.web_stack.message import WorkflowSchedulingMessage
-from galaxy.workflow.modules import (
+from galaxy.workflow.scheduling_dependencies import (
     DependencyType,
     SchedulingDependencies,
     SchedulingDependency,
@@ -408,9 +412,22 @@ class WorkflowRequestMonitor(Monitors):
         if session is None:
             return True
 
+        # A delayed step records one observed input, including paused states
+        # and unresolved datatypes. Poll that dataset instead of its collection.
+        input_dependencies: dict[int, set[ReadinessSnapshot]] = {}
+        for dependency in dependencies:
+            if dependency.dependency_type == DependencyType.HDA and dependency.readiness is not None:
+                input_dependencies.setdefault(dependency.id, set()).add(dependency.readiness)
+        if input_dependencies:
+            current = readiness_snapshots(session, input_dependencies)
+            for hda_id, recorded in input_dependencies.items():
+                # A missing row or steps that recorded different snapshots also wake.
+                if {current.get(hda_id)} != recorded:
+                    return True
+
         # Group dependencies by type for batch queries
         job_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.JOB}
-        hda_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.HDA}
+        hda_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.HDA and d.readiness is None}
         collection_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.DATASET_COLLECTION}
         step_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.WORKFLOW_INVOCATION_STEP}
 

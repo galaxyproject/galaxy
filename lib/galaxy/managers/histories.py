@@ -26,7 +26,10 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import (
+    aliased,
+    selectinload,
+)
 
 from galaxy import model
 from galaxy.exceptions import (
@@ -317,9 +320,25 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
             result = purge_history_datasets.delay(request=request, task_user_id=user.id if user else None)
         else:
             result = None
-            for hda in item.datasets:
-                if not hda.purged:
-                    self.hda_manager.purge(hda, flush=True, **kwargs)
+            HDA = model.HistoryDatasetAssociation
+            stmt = (
+                select(HDA)
+                .where(HDA.history_id == item.id, HDA.purged.is_not(true()))
+                .options(selectinload(HDA.dataset))
+            )
+            hdas = self.session().scalars(stmt).all()
+            # A disk usage recalculation skips purged histories, so the datasets must be marked purged, and the
+            # user's usage decreased, before the history is.
+            hda_ids = {hda.id for hda in hdas}
+            self.hda_manager.mark_purged(
+                item.user, hdas, preserve_owner_update_time=kwargs.get("preserve_owner_update_time", False)
+            )
+            # Reload the HDAs, expired by the commit, in one query; by history, as an IN of every id overflows SQLite
+            stmt = select(HDA).where(HDA.history_id == item.id).options(selectinload(HDA.dataset))
+            hdas = [hda for hda in self.session().scalars(stmt) if hda.id in hda_ids]
+            # Then remove their files, and purge the outputs of jobs that haven't finished
+            for hda in hdas:
+                self.hda_manager.purge(hda, flush=True, **kwargs)
             for hdca in item.dataset_collections:
                 if not hdca.deleted:
                     hdca.deleted = True
@@ -718,9 +737,11 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
             try:
                 history = self.history_manager.get_owned(history_id, user)
                 self._unarchive_if_needed(history)
+                # Purging the history marks its datasets purged, which leaves its size at 0
+                freed_bytes = int(history.disk_size)
                 self.history_manager.purge(history, flush=False, user=user)
                 success_item_count += 1
-                total_free_bytes += int(history.disk_size)
+                total_free_bytes += freed_bytes
             except Exception as e:
                 errors.append(StorageItemCleanupError(item_id=history_id, error=str(e)))
 

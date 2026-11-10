@@ -374,7 +374,7 @@ def build_workflow_run_configs(
         raise exceptions.RequestParameterInvalidException(
             "Cannot specify both legacy parameters and step_parameters attributes."
         )
-    if "inputs" in payload and "ds_map" in payload:
+    if payload.get("inputs") is not None and payload.get("ds_map"):
         raise exceptions.RequestParameterInvalidException("Cannot specify both legacy ds_map and input attributes.")
 
     if payload.get("effective_outputs"):
@@ -402,7 +402,7 @@ def build_workflow_run_configs(
             if validation_error:
                 raise exceptions.RequestParameterInvalidException(validation_error)
 
-    add_to_history = "no_add_to_history" not in payload
+    add_to_history = not payload.get("no_add_to_history", False)
     legacy = payload.get("legacy", False)
     already_normalized = payload.get("parameters_normalized", False)
     raw_parameters = payload.get("parameters") or {}
@@ -535,9 +535,12 @@ def build_workflow_run_configs(
                 if not added_to_history and add_to_history and content.history != history:
                     if isinstance(content, HistoryDatasetCollectionAssociation):
                         content = content.copy(element_destination=history, flush=False)
+                        copied_hdas = content.dataset_instances
                     else:
                         content = content.copy(copy_tags=content.tags, flush=False)
+                        copied_hdas = [content]
                     history.stage_addition(content)
+                    history.charge_added_datasets(copied_hdas)
                 input_dict["content"] = content
             except AssertionError:
                 raise exceptions.ItemAccessibilityException(

@@ -131,6 +131,7 @@ from galaxy.tool_util.toolbox import (
     ToolLoadError,
     ToolSection,
 )
+from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.tool_util.toolbox.entry import (
     ToolPanelEntry,
     ToolShedRepositoryInfo,
@@ -249,6 +250,11 @@ from galaxy.version import VERSION_MAJOR
 from galaxy.work.context import (
     proxy_work_context_for_history,
     WorkRequestContext,
+)
+from galaxy.workflow.scheduling_dependencies import (
+    dataset_dependencies,
+    ToolInputsNotReadyWithDependencies,
+    unpopulated_collection_dependencies,
 )
 from ._types import (
     InputFormatT,
@@ -1216,6 +1222,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     tool_action: ToolAction
     tool_type_local = False
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
+    _conf_tool_shed_repository: ToolConfRepository | None = None
     job_search: "JobSearch"
     uses_tool_provided_metadata: bool
     allows_unnamed_outputs: bool
@@ -1367,7 +1374,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     def tool_shed_repository(self):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return get_installed_repository(
+            repository = get_installed_repository(
                 self.app,
                 tool_shed=self.tool_shed,
                 name=self.repository_name,
@@ -1375,6 +1382,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 installed_changeset_revision=self.installed_changeset_revision,
                 from_cache=True,
             )
+            # Conf-only repositories outlive the startup-scoped repository cache.
+            return repository or self._conf_tool_shed_repository
 
     @property
     def valid_input_states(self):
@@ -2035,6 +2044,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 inputs.append(resource_xml)
 
     def populate_tool_shed_info(self, tool_shed_repository):
+        if isinstance(tool_shed_repository, ToolConfRepository):
+            self._conf_tool_shed_repository = tool_shed_repository
         if tool_shed_repository:
             self.tool_shed = tool_shed_repository.tool_shed
             assert self.tool_shed
@@ -3852,37 +3863,41 @@ class DatabaseOperationTool(Tool):
         return not self.require_dataset_ok
 
     def check_inputs_ready(self, input_datasets, input_dataset_collections, security):
-        def check_dataset_state(input_key, state):
+        def check_dataset_state(input_key, input_dataset):
+            state = input_dataset.state
             if self.require_terminal_states and state in model.Dataset.non_ready_states:
-                raise ToolInputsNotReadyException("An input dataset is pending.")
-
+                raise ToolInputsNotReadyWithDependencies(
+                    "An input dataset is pending.", dependencies=dataset_dependencies(input_dataset)
+                )
             if state == model.Dataset.states.PAUSED and not self.require_terminal_or_paused_states:
-                raise ToolInputsNotReadyException(f"Input '{input_key}' is paused; the file is not yet available.")
+                raise ToolInputsNotReadyWithDependencies(
+                    f"Input '{input_key}' is paused; the file is not yet available.",
+                    dependencies=dataset_dependencies(input_dataset),
+                )
+            if self.require_dataset_ok and state != model.Dataset.states.OK:
+                raise ToolInputsNotOKException(
+                    f"Tool requires inputs to be in valid state, but dataset with hid {input_dataset.hid} is in state '{state}'",
+                    src="hda",
+                    id=input_dataset.id,
+                    input_name=input_key,
+                )
 
-            if self.require_dataset_ok:
-                if state != model.Dataset.states.OK:
-                    # TODO: frontend component should intercept and point to problematic input
-                    raise ToolInputsNotOKException(
-                        f"Tool requires inputs to be in valid state, but dataset with hid {input_dataset.hid} is in state '{input_dataset.state}'",
-                        src="hda",
-                        id=input_dataset.id,
-                        input_name=input_key,
-                    )
-
+        # Collection inputs are flattened into input_datasets as well, so this
+        # also covers their members. The first wait becomes the step's blocker.
         for input_key, input_dataset in input_datasets.items():
-            if input_dataset:
-                # None is a possible input for optional inputs
-                check_dataset_state(input_key, input_dataset.state)
+            if input_dataset is not None:
+                check_dataset_state(input_key, input_dataset)
 
-        for input_key, input_dataset_collection_pairs in input_dataset_collections.items():
-            for input_dataset_collection, _ in input_dataset_collection_pairs:
-                if not input_dataset_collection.collection.populated_optimized:
-                    raise ToolInputsNotReadyException("An input collection is not populated.")
-
-            summary = input_dataset_collection.collection.dataset_states_and_extensions_summary
-            states = summary.states
-            for state in states.keys():
-                check_dataset_state(input_key, state)
+        for pairs in input_dataset_collections.values():
+            for input_collection, _ in pairs:
+                if input_collection is None:
+                    continue
+                collection = input_collection.collection
+                if not collection.populated_optimized:
+                    raise ToolInputsNotReadyWithDependencies(
+                        "An input collection is not populated.",
+                        dependencies=unpopulated_collection_dependencies(collection),
+                    )
 
     def _check_output_count(self, count: int) -> None:
         max_outputs = self.app.config.max_discovered_files
@@ -4398,7 +4413,9 @@ class KeepSuccessDatasetsTool(FilterDatasetsTool):
         element_object = element.element_object
         assert isinstance(element_object, model.DatasetInstance)
         if element_object.is_pending:
-            raise ToolInputsNotReadyException("An input dataset is pending.")
+            raise ToolInputsNotReadyWithDependencies(
+                "An input dataset is pending.", dependencies=dataset_dependencies(element_object)
+            )
         return element_object.is_ok
 
 

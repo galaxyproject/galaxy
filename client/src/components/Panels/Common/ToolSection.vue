@@ -313,7 +313,12 @@ async function onFavoriteSectionToggle() {
                 data-description="favorite-top-level-drag-target">
                 <FontAwesomeIcon :icon="faGripLines" />
             </div>
-            <a class="title-link" href="javascript:void(0)" role="button" :aria-expanded="opened" @click="toggleMenu()">
+            <a
+                class="title-link"
+                href="javascript:void(0)"
+                role="button"
+                :aria-expanded="String(opened)"
+                @click="toggleMenu()">
                 <span>
                     <span class="name">
                         <FontAwesomeIcon

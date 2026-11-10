@@ -37,6 +37,7 @@
                     :items="folderContents"
                     :per-page="perPage"
                     :selected-items="selectedIndices"
+                    :select-checkbox-title="selectCheckboxTitle"
                     :sort-by="sortBy"
                     :sort-desc="sortDesc"
                     :local-sorting="false"
@@ -304,6 +305,7 @@ import { Toast } from "@/composables/toast";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 import Utils from "@/utils/utils";
 
 import { Services } from "./services";
@@ -539,6 +541,10 @@ export default {
                 description: "",
             });
             this.refreshTable();
+        },
+        selectCheckboxTitle(item) {
+            // A new folder row has no name until the user types one.
+            return item.name ? `${localize("Select")} ${item.name}` : localize("Select for bulk actions");
         },
         isRowSelected(row) {
             if (this.isAllSelectedMode) {

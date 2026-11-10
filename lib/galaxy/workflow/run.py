@@ -17,6 +17,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
 )
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.model.dataset_collections.readiness import dataset_readiness
 from galaxy.model.orm.now import now
 from galaxy.schema.invocation import (
     CancelReason,
@@ -45,6 +46,12 @@ from galaxy.workflow.run_request import (
     workflow_run_config_to_request,
     WorkflowRunConfig,
 )
+from galaxy.workflow.scheduling_dependencies import (
+    DependencyType,
+    SchedulingDependencies,
+    SchedulingDependency,
+    unpopulated_collection_dependencies,
+)
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesHistoryContext
@@ -68,7 +75,7 @@ def schedule(
     workflow: "Workflow",
     workflow_run_config: WorkflowRunConfig,
     workflow_invocation: WorkflowInvocation,
-) -> modules.SchedulingDependencies:
+) -> SchedulingDependencies:
     _outputs, _workflow_invocation, scheduling_dependencies = __invoke(
         trans, workflow, workflow_run_config, workflow_invocation
     )
@@ -81,7 +88,7 @@ def __invoke(
     workflow_run_config: WorkflowRunConfig,
     workflow_invocation: WorkflowInvocation | None = None,
     populate_state: bool = False,
-) -> tuple[WorkflowOutputsType, WorkflowInvocation, modules.SchedulingDependencies]:
+) -> tuple[WorkflowOutputsType, WorkflowInvocation, SchedulingDependencies]:
     """Run the supplied workflow in the supplied target_history."""
     if populate_state:
         modules.populate_module_and_state(
@@ -368,7 +375,7 @@ class WorkflowInvoker:
                 )
                 raise modules.DelayedWorkflowEvaluation(
                     why=delayed_why,
-                    dependencies=[modules.SchedulingDependency(modules.DependencyType.JOB, job.id)],
+                    dependencies=[SchedulingDependency(DependencyType.JOB, job.id)],
                 )
 
             if job.state != job.states.OK:
@@ -423,7 +430,7 @@ class WorkflowProgress:
         when_values=None,
     ) -> None:
         self.outputs: dict[int, Any] = {}
-        self.tracked_dependencies: set[modules.SchedulingDependency] = set()
+        self.tracked_dependencies: set[SchedulingDependency] = set()
         self.untracked_delays: list[str] = []
         self.more_work = False
         self.module_injector = module_injector
@@ -581,7 +588,7 @@ class WorkflowProgress:
                 delayed_why = f"dependent collection [{replacement.id}] not yet populated with datasets"
                 raise modules.DelayedWorkflowEvaluation(
                     why=delayed_why,
-                    dependencies=modules.unpopulated_collection_dependencies(replacement.collection),
+                    dependencies=unpopulated_collection_dependencies(replacement.collection),
                 )
 
         if isinstance(replacement, model.DatasetCollection):
@@ -598,7 +605,9 @@ class WorkflowProgress:
             if isinstance(replacement, model.HistoryDatasetAssociation):
                 if not_yet_available(replacement):
                     raise modules.DelayedWorkflowEvaluation(
-                        dependencies=[modules.SchedulingDependency(modules.DependencyType.HDA, replacement.id)]
+                        dependencies=[
+                            SchedulingDependency(DependencyType.HDA, replacement.id, dataset_readiness(replacement))
+                        ]
                     )
                 if not is_data and not replacement.is_ok:
                     raise modules.FailWorkflowEvaluation(
@@ -612,7 +621,7 @@ class WorkflowProgress:
             else:
                 if not replacement.collection.populated:
                     raise modules.DelayedWorkflowEvaluation(
-                        dependencies=modules.unpopulated_collection_dependencies(replacement.collection)
+                        dependencies=unpopulated_collection_dependencies(replacement.collection)
                     )
                 pending = False
                 pending_dataset_instance = None
@@ -633,7 +642,11 @@ class WorkflowProgress:
                     assert pending_dataset_instance is not None
                     raise modules.DelayedWorkflowEvaluation(
                         dependencies=[
-                            modules.SchedulingDependency(modules.DependencyType.HDA, pending_dataset_instance.id)
+                            SchedulingDependency(
+                                DependencyType.HDA,
+                                pending_dataset_instance.id,
+                                dataset_readiness(pending_dataset_instance),
+                            )
                         ]
                     )
 
@@ -884,8 +897,8 @@ class WorkflowProgress:
         self.untracked_delays.extend(subworkflow_progress.untracked_delays)
         self.more_work = self.more_work or subworkflow_progress.more_work
 
-    def scheduling_dependencies(self) -> modules.SchedulingDependencies:
-        return modules.SchedulingDependencies(
+    def scheduling_dependencies(self) -> SchedulingDependencies:
+        return SchedulingDependencies(
             tracked=frozenset(self.tracked_dependencies),
             untracked=tuple(self.untracked_delays),
             more_work=self.more_work,

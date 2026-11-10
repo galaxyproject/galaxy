@@ -108,6 +108,12 @@ class HistoryEntry(NamedTuple):
     history_content_type: str
 
 
+class FormField(NamedTuple):
+    name: str
+    label: str
+    value: str
+
+
 # Default wait times should make sense for a development server under low
 # load. Wait times for production servers can be scaled up with a multiplier.
 class WAIT_TYPES:
@@ -934,6 +940,20 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         ).wait_for_and_click()
         self.components.edit_dataset_attributes.save_button.wait_for_and_click()
 
+    def edit_dataset_attribute_fields(self) -> list[FormField]:
+        """On the dataset edit view, return the Attributes tab's visible fields."""
+        edit = self.components.edit_dataset_attributes
+        edit.name_input.wait_for_visible()
+        return [
+            FormField(
+                field.get_attribute("data-name") or "",
+                field.get_attribute("data-label") or "",
+                self.form_field_value(field),
+            )
+            for field in edit.attribute_field.all()
+            if field.is_displayed()
+        ]
+
     def edit_dataset_permission_roles(self) -> dict[str, list[str]]:
         """On the dataset edit view, open the Permissions tab; return its ``manage`` and ``access`` role names."""
         edit = self.components.edit_dataset_attributes
@@ -1000,6 +1020,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         checkbox = filter_div.find_element(By.CSS_SELECTOR, "input")
         # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable
         self.execute_script("$(arguments[0]).click();", checkbox)
+
+    def histories_purge_all(self):
+        """Purge every listed history: Histories > Select all > Purge (N) > Purge histories."""
+        histories = self.components.histories
+        histories.select_all.wait_for_and_click()
+        histories.bulk_purge_button.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        histories.bulk_purge_button.wait_for_absent_or_hidden()
 
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(
@@ -2522,6 +2550,84 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             input_element.clear()
             input_element.send_keys(value)
 
+    def form_field(self, parameter: str) -> WebElementProtocol:
+        """Wait for and return form element ``parameter``'s ``.ui-form-field``."""
+        return self.components.tool_form.parameter_field(parameter=parameter).wait_for_visible()
+
+    @staticmethod
+    def form_field_kind(field: WebElementProtocol) -> str:
+        """Widget kind of a ``.ui-form-field``: boolean, color, drill_down, checkboxes, radio, select or text."""
+        field_type = field.get_attribute("data-type") or ""
+        if field_type in ("boolean", "color", "drill_down"):
+            return field_type
+        display = field.get_attribute("data-display")
+        if display in ("checkboxes", "radio"):
+            return display
+        if field.find_elements(By.CSS_SELECTOR, ".multiselect"):
+            return "select"
+        return "text"
+
+    def form_field_value(self, field: WebElementProtocol) -> str:
+        """Value of a ``.ui-form-field`` as ``form_element_set_value`` takes it; lists joined by ``, ``."""
+        kind = self.form_field_kind(field)
+        if kind == "boolean":
+            return str(field.find_element(By.CSS_SELECTOR, "input[type=checkbox]").is_selected()).lower()
+        if kind == "checkboxes":
+            boxes = field.find_elements(By.CSS_SELECTOR, '[role="group"] input[type=checkbox]')
+            return ", ".join(box.get_attribute("value") or "" for box in boxes if box.is_selected())
+        if kind == "radio":
+            radios = field.find_elements(By.CSS_SELECTOR, "input[type=radio]")
+            return next((radio.get_attribute("value") or "" for radio in radios if radio.is_selected()), "")
+        if kind == "drill_down":
+            options = field.find_elements(By.CSS_SELECTOR, '[id^="drilldown-option-"]')
+            return ", ".join(
+                (option.get_attribute("id") or "").removeprefix("drilldown-option-")
+                for option in options
+                if option.is_selected()
+            )
+        if kind == "select":
+            chosen = field.find_elements(By.CSS_SELECTOR, ".multiselect__single, .multiselect__tag")
+            return ", ".join(option.text.strip() for option in chosen)
+        inputs = field.find_elements(By.CSS_SELECTOR, "input:not([type=checkbox]):not(.multiselect__input), textarea")
+        return (inputs[0].get_attribute("value") or "") if inputs else ""
+
+    def form_element_value(self, parameter: str) -> str:
+        """Value of form element ``parameter``, see ``form_field_value``."""
+        return self.form_field_value(self.form_field(parameter))
+
+    def form_element_set_value(self, parameter: str, value):
+        """Set form element ``parameter``; checkboxes and drill-downs take a value or list of values."""
+        tool_form = self.components.tool_form
+        kind = self.form_field_kind(self.form_field(parameter))
+        if kind == "checkboxes":
+            boxes = tool_form.parameter_checkbox_input(parameter=parameter).all()
+            for option_value in value if isinstance(value, list) else [value]:
+                matched = [box for box in boxes if box.get_attribute("value") == option_value]
+                assert matched, f"No checkbox with value '{option_value}' in param {parameter}"
+                if not matched[0].is_selected():
+                    self.execute_script_click(matched[0])
+        elif kind == "radio":
+            radios = self.form_field(parameter).find_elements(By.CSS_SELECTOR, "input[type=radio]")
+            matched = [radio for radio in radios if radio.get_attribute("value") == value]
+            assert matched, f"No radio with value '{value}' in param {parameter}"
+            self.execute_script_click(matched[0])
+        elif kind == "drill_down":
+            # option ids use option names, so this only works where name == value
+            for option_value in value if isinstance(value, list) else [value]:
+                option = tool_form.parameter_drilldown_option(
+                    parameter=parameter, value=option_value
+                ).wait_for_present()
+                if not option.is_selected():
+                    self.execute_script_click(option)
+        elif kind == "boolean":
+            self.tool_form_set_switch(parameter, str(value).lower() in ("true", "1", "yes"))
+        elif kind == "select":
+            self.tool_set_value(parameter, str(value), expected_type="select")
+        elif kind == "color":
+            self.set_element_value(tool_form.parameter_color_input(parameter=parameter).wait_for_present(), str(value))
+        else:
+            self.set_element_value(tool_form.parameter_text_input(parameter=parameter).wait_for_present(), str(value))
+
     def tool_form_generate_tour(self):
         self.components.tool_form.options.wait_for_and_click()
         self.components.tool_form.generate_tour.wait_for_and_click()
@@ -2549,6 +2655,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         select_field = self.components.tool_form.parameter_data_select(parameter=parameter)
         self.select_set_value(select_field, value, multiple=multiple)
         self.components.tool_form.parameter_data_select_dropdown(parameter=parameter).wait_for_absent_or_hidden()
+
+    def tool_form_accepted_formats(self, parameter: str) -> list[str]:
+        """Open data parameter's accepted formats list; return the datatypes it shows."""
+        self.components.tool_form.parameter_data_formats_button(parameter=parameter).wait_for_and_click()
+        formats = self.components.tool_form.parameter_data_format(parameter=parameter)
+        formats.wait_for_visible()
+        return [element.text.strip() for element in formats.all()]
 
     def tool_form_wait_for_batch_info(self, parameter: str, text: str) -> str:
         batch_info = self.components.tool_form.parameter_batch_info(parameter=parameter)
@@ -2694,6 +2807,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         """Open History options > Export Tool References and wait for the references."""
         self.use_bootstrap_dropdown(option="export tool references", menu="history options")
         self.components.citations._.reference.wait_for_visible()
+
+    def navigate_to_history_view(self, history_id):
+        """Open the history view page of history ``history_id``."""
+        self.navigate_to(self.build_url(f"histories/view?id={history_id}"))
+
+    def history_view_import(self, new_name=None):
+        """Import the open history view's history: Import this history > Copy History."""
+        self.components.history_view.import_button.wait_for_and_click()
+        copy_modal = self.components.copy_history_modal
+        if new_name is not None:
+            copy_modal.name_input.wait_for_and_clear_aggressive_and_send_keys(new_name)
+        copy_modal.copy_button.wait_for_and_click()
+        copy_modal._.wait_for_absent_or_hidden()
 
     def click_history_option_extract_workflow(self):
         self.use_bootstrap_dropdown(option="extract workflow", menu="history options")
@@ -2977,14 +3103,18 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     @edit_details
     def history_panel_add_tags(self, tags):
-        tag_area_button = self.components.history_panel.tag_area_button
+        history_panel = self.components.history_panel
+        self.tags_add_from_button(history_panel.tag_area_button, history_panel.tag_area_input, tags)
 
+    def tags_add_from_button(self, tag_area_button, tag_area_input, tags):
+        """Open a tag editor with ``tag_area_button`` and enter each tag in ``tags``."""
         tag_area_button.wait_for_and_click()
-        input_element = self.components.history_panel.tag_area_input.wait_for_visible()
+        input_element = tag_area_input.wait_for_visible()
 
         for tag in tags:
             input_element.send_keys(tag)
             self.send_enter(input_element)
+            # StatelessTags appends to the parent's tags, so let the parent take this one before the next
             self.sleep_for(self.wait_types.UX_RENDER)
 
         self.send_escape(input_element)
@@ -3199,6 +3329,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         item_component = self.history_panel_item_component(hid=hid)
         item_component.wait_for_visible()
         return [e.text for e in item_component.alltags.all()]
+
+    def history_panel_item_add_tags(self, hid, tags):
+        """Expand dataset ``hid`` and add each tag in ``tags`` from its Add Tags button."""
+        item_component = self.history_panel_ensure_showing_item_details(hid)
+        self.tags_add_from_button(item_component.tag_area_button, item_component.tag_area_input, tags)
 
     def history_panel_item_available_visualizations(self, hid):
         # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu

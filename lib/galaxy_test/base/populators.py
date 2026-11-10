@@ -1785,6 +1785,11 @@ class BaseDatasetPopulator(BasePopulator):
         assert "total_disk_usage" in user_object
         return user_object["total_disk_usage"]
 
+    def recalculate_disk_usage(self) -> None:
+        """Recalculate the current user's disk usage, waiting on the task."""
+        recalculate_response = self._put("users/current/recalculate_disk_usage")
+        assert self.wait_on_task(recalculate_response)
+
     def update_object_store_id(self, dataset_id: str, object_store_id: str):
         payload = {"object_store_id": object_store_id}
         url = f"datasets/{dataset_id}/object_store_id"
