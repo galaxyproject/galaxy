@@ -221,6 +221,8 @@ class Data(metaclass=DataMeta):
     is_subclass = False
     # Data is not chunkable by default.
     CHUNKABLE = False
+    # Metadata files that index the dataset, mapped to the suffix tools look for next to the indexed file.
+    secondary_file_suffixes: dict[str, str] = {}
 
     #: Dictionary of metadata fields for this datatype
     metadata_spec: metadata.MetadataSpecCollection
@@ -1031,6 +1033,10 @@ class Data(metaclass=DataMeta):
         """
         datatype_classes = tuple(datatype if isclass(datatype) else datatype.__class__ for datatype in target_datatypes)
         return isinstance(self, datatype_classes)
+
+    def secondary_file_suffix(self, metadata_name: str, file_name: str) -> str:
+        """Return the suffix tools expect on the index stored in this metadata file."""
+        return self.secondary_file_suffixes[metadata_name]
 
     @staticmethod
     def merge(split_files: list[str], output_file: str) -> None:

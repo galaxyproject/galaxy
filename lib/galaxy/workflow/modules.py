@@ -160,6 +160,7 @@ from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.tools.runtime import (
     dataset_path,
     input_extra_files_path,
+    secondary_files_json,
 )
 from galaxy.util import (
     listify,
@@ -330,6 +331,7 @@ def to_cwl(
     compute_environment: ComputeEnvironment | None = None,
     shell_quotable: bool = False,
     element_identifiers: dict[DatasetInstance, str] | None = None,
+    secondary_file_datasets: set[DatasetInstance] | None = None,
 ):
     element_identifier = None
     if isinstance(value, NoReplacement):
@@ -388,6 +390,13 @@ def to_cwl(
             elif element_identifiers is not None:
                 # Passed by the UDT evaluator only; falls back to the dataset name like Cheetah.
                 properties["element_identifier"] = element_identifiers.get(value) or value.name
+            if secondary_file_datasets is not None:
+                # Passed by the UDT evaluator only, like element_identifiers.
+                properties["secondary_files"] = (
+                    secondary_files_json(value, properties["basename"], compute_environment)
+                    if value in secondary_file_datasets
+                    else []
+                )
             return properties
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":
@@ -399,6 +408,7 @@ def to_cwl(
                     compute_environment=compute_environment,
                     shell_quotable=shell_quotable,
                     element_identifiers=element_identifiers,
+                    secondary_file_datasets=secondary_file_datasets,
                 )
                 for dce in value.dataset_elements
             ]
@@ -413,6 +423,7 @@ def to_cwl(
                     compute_environment=compute_environment,
                     shell_quotable=shell_quotable,
                     element_identifiers=element_identifiers,
+                    secondary_file_datasets=secondary_file_datasets,
                 )
             return rval
     elif isinstance(value, list):
@@ -424,6 +435,7 @@ def to_cwl(
                 compute_environment=compute_environment,
                 shell_quotable=shell_quotable,
                 element_identifiers=element_identifiers,
+                secondary_file_datasets=secondary_file_datasets,
             )
             for v in value
         ]
@@ -439,6 +451,7 @@ def to_cwl(
                 compute_environment=compute_environment,
                 shell_quotable=shell_quotable,
                 element_identifiers=element_identifiers,
+                secondary_file_datasets=secondary_file_datasets,
             )
             for k, v in value.items()
         }
