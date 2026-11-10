@@ -29,7 +29,11 @@ import { useSpecialWorkflowActivities, useWorkflowActivities } from "@/component
 import { fromSimple, type Workflow } from "@/components/Workflow/Editor/modules/model";
 import { getUntypedWorkflowParameters, type UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { getModule, getVersions, saveWorkflow } from "@/components/Workflow/Editor/modules/services";
-import { getStateUpgradeMessages, type UpgradeMessage } from "@/components/Workflow/Editor/modules/utilities";
+import {
+    getFilledDefaults,
+    getStateUpgradeMessages,
+    type UpgradeMessage,
+} from "@/components/Workflow/Editor/modules/utilities";
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
 import { Services } from "@/components/Workflow/services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -317,6 +321,8 @@ function setTags(newTags: string[]) {
 // For the State Upgrade modal
 const stateMessages = ref<UpgradeMessage[]>([]);
 const insertedStateMessages = ref<UpgradeMessage[]>([]);
+const filledDefaults = ref<UpgradeMessage[]>([]);
+const insertedFilledDefaults = ref<UpgradeMessage[]>([]);
 
 /** Refactor actions that are queued up to be executed on the workflow. */
 const refactorActions = ref<RefactorRequestAction[]>([]);
@@ -722,6 +728,7 @@ async function copyIntoWorkflow(workflowId: string) {
         // Determine if any parameters were 'upgraded' and provide message
         const insertedStateMessagesGotten = getStateUpgradeMessages(data);
         insertedStateMessages.value = insertedStateMessagesGotten;
+        insertedFilledDefaults.value = getFilledDefaults(data);
     } finally {
         loadingWorkflow.value = false;
     }
@@ -1201,6 +1208,8 @@ async function loadEditorData(data: any) {
     hideErrorModal();
 
     stateMessages.value = getStateUpgradeMessages(data);
+    // defaults filled for parameters without a value are shown, but aren't changes to save
+    filledDefaults.value = getFilledDefaults(data);
     const hasStateMessages = stateMessages.value.length > 0;
     tags.value = data.tags;
     license.value = data.license;
@@ -1323,10 +1332,11 @@ initializeWorkflowEditor();
 
 <template>
     <div class="workflow-editor">
-        <StateUpgradeModal :state-messages="stateMessages" />
+        <StateUpgradeModal :state-messages="stateMessages" :filled-defaults="filledDefaults" />
 
         <StateUpgradeModal
             :state-messages="insertedStateMessages"
+            :filled-defaults="insertedFilledDefaults"
             title="Subworkflow embedded with changes"
             message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save." />
 

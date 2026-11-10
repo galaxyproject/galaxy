@@ -21,7 +21,7 @@ function flattenUpgradeMessages(messages: unknown): string[] {
     return [String(messages)];
 }
 
-export function getStateUpgradeMessages(data: {
+interface StepMessagesData {
     steps: {
         [step_id: string]: {
             name: string;
@@ -30,15 +30,32 @@ export function getStateUpgradeMessages(data: {
             errors?: string;
         };
     };
-    upgrade_messages: { [step_id: string]: any };
-}): UpgradeMessage[] {
+    upgrade_messages: { [step_id: string]: unknown };
+    filled_defaults?: { [step_id: string]: unknown };
+}
+
+/** Problems that need review: step errors, tool version changes and stored values that had to be replaced. */
+export function getStateUpgradeMessages(data: StepMessagesData): UpgradeMessage[] {
+    return collectStepMessages(data, data.upgrade_messages, true);
+}
+
+/** Parameters the workflow gives no value for, which Galaxy fills with the tool's default. */
+export function getFilledDefaults(data: StepMessagesData): UpgradeMessage[] {
+    return collectStepMessages(data, data.filled_defaults ?? {}, false);
+}
+
+function collectStepMessages(
+    data: StepMessagesData,
+    messagesByStep: { [step_id: string]: unknown },
+    includeErrors: boolean,
+): UpgradeMessage[] {
     const messages: UpgradeMessage[] = [];
     for (const [step_id, step] of Object.entries(data.steps)) {
         const details: string[] = [];
-        if (step.errors) {
+        if (includeErrors && step.errors) {
             details.push(step.errors);
         }
-        details.push(...flattenUpgradeMessages(data.upgrade_messages[step_id]));
+        details.push(...flattenUpgradeMessages(messagesByStep[step_id]));
         if (details.length) {
             const iconType = WorkflowIcons[step.type as keyof typeof WorkflowIcons];
             const message: UpgradeMessage = {

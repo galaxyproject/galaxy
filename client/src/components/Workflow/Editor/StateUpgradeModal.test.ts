@@ -7,20 +7,33 @@ import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import type { UpgradeMessage } from "./modules/utilities";
 
 import StateUpgradeModal from "./StateUpgradeModal.vue";
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 
 const MODAL_CONTENT_SELECTOR = '[data-description="workflow state upgrade modal content"]';
 
 describe("StateUpgradeModal.vue", () => {
     let wrapper: VueWrapper;
 
-    async function mountWith(stateMessages: UpgradeMessage[]) {
+    async function mountWith(stateMessages: UpgradeMessage[], filledDefaults: UpgradeMessage[] = []) {
         wrapper = mount(StateUpgradeModal as object, {
             propsData: {
                 stateMessages,
+                filledDefaults,
             },
         });
         await nextTick();
     }
+
+    const FILLED = '[data-description="workflow state upgrade filled defaults"]';
+    const REVIEW = '[data-description="workflow state upgrade review"]';
+    const filledDefaults = [
+        {
+            stepIndex: "1",
+            name: "FastQC",
+            details: ["No value found for 'Adapter list'.", "No value found for 'Kmers'."],
+        },
+        { stepIndex: "4", name: "MultiQC", details: ["No value found for 'Report title'."] },
+    ] as unknown as UpgradeMessage[];
 
     it("should not render if there are no messages", async () => {
         const stateMessages: UpgradeMessage[] = [];
@@ -93,5 +106,38 @@ describe("StateUpgradeModal.vue", () => {
 
         expect(sanitizeHtml).toHaveBeenCalledWith(detail, "links");
         expect(wrapper.find(".workflow-state-upgrade-step-details .sanitized a").exists()).toBe(true);
+    });
+
+    it("summarizes filled defaults, collapsed, when there is nothing to review", async () => {
+        await mountWith([], filledDefaults);
+        const filled = wrapper.find(FILLED);
+        expect(wrapper.find(REVIEW).exists()).toBe(false);
+        expect(filled.text()).toContain("Galaxy filled in 3 default values in 2 steps");
+        expect(wrapper.text()).toContain("Default values filled in");
+        const toggle = filled.find('[data-description="workflow state upgrade filled defaults toggle"]');
+        expect(wrapper.findComponent(GCollapse).props("visible")).toBe(false);
+        expect(toggle.text()).toContain("Show values");
+
+        await toggle.trigger("click");
+        expect(wrapper.findComponent(GCollapse).props("visible")).toBe(true);
+        expect(toggle.text()).toContain("Hide values");
+        expect(filled.text()).toContain("No value found for 'Report title'.");
+    });
+
+    it("keeps problems to review separate from filled defaults", async () => {
+        await mountWith(
+            [{ stepIndex: 2, name: "step", details: ["Tool version changed"] }] as unknown as UpgradeMessage[],
+            filledDefaults,
+        );
+        expect(wrapper.text()).toContain("Issues loading this workflow");
+        expect(wrapper.find(REVIEW).text()).toContain("Tool version changed");
+        expect(wrapper.find(REVIEW).text()).not.toContain("Adapter list");
+        expect(wrapper.find(FILLED).exists()).toBe(true);
+    });
+
+    it("closes on OK", async () => {
+        await mountWith([], filledDefaults);
+        await wrapper.find('[data-description="workflow state upgrade modal ok"]').trigger("click");
+        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBe(false);
     });
 });

@@ -931,7 +931,11 @@ class SubWorkflowModule(WorkflowModule):
         return version_changes
 
     def check_and_update_state(self):
-        states = (m.check_and_update_state() for m in self.get_modules())
+        modules = list(self.get_modules())
+        states = [m.check_and_update_state() for m in modules]
+        self.filled_defaults = {
+            f"Step {i + 1}": filled for i, m in enumerate(modules) if (filled := getattr(m, "filled_defaults", None))
+        }
         # TODO: key ("Step N:") is not currently consumed in UI
         return {f"Step {i + 1}": upgrade_message for i, upgrade_message in enumerate(states) if upgrade_message} or None
 
@@ -3032,7 +3036,11 @@ class ToolModule(WorkflowModule):
 
     def check_and_update_state(self):
         if self.tool:
-            return self.tool.check_and_update_param_values(self.state.inputs, self.trans, workflow_building_mode=True)
+            # parameters that only lacked a value get their default; they are not upgrade problems
+            self.filled_defaults = {}
+            return self.tool.check_and_update_param_values(
+                self.state.inputs, self.trans, workflow_building_mode=True, filled_defaults=self.filled_defaults
+            )
 
     def add_dummy_datasets(self, connections: Iterable[InputConnection] | None = None, steps=None):
         if self.tool:
@@ -3674,6 +3682,7 @@ class WorkflowModuleInjector:
         'state' else it is just obtained from the database.
         """
         step.upgrade_messages = {}
+        step.filled_defaults = {}
 
         # Make connection information available on each step by input name.
         step.setup_input_connections_by_name()
@@ -3721,6 +3730,7 @@ class WorkflowModuleInjector:
 
         # Fix any missing parameters
         step.upgrade_messages = step.module.check_and_update_state()
+        step.filled_defaults = getattr(step.module, "filled_defaults", None) or {}
 
         return step_errors
 
