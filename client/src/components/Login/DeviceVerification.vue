@@ -116,8 +116,9 @@ function errorIcon(error: PageError) {
  */
 async function lookUpCode() {
     loading.value = true;
+    codeError.value = null;
     try {
-        details.value = await fetchDeviceAuthorization(userCode.value.trim());
+        details.value = await fetchDeviceAuthorization(userCode.value);
     } catch (e) {
         codeError.value = toPageError(e, "Could not look up this code.");
         failedCode.value = codeError.value.reason ? userCode.value : "";
