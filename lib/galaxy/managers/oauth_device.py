@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from datetime import timedelta
 
 from sqlalchemy import (
-    exists,
     select,
     update,
 )
+from sqlalchemy.exc import IntegrityError
 
 from galaxy import model
 from galaxy.exceptions import (
@@ -38,6 +38,8 @@ DEVICE_CODE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code"
 
 # Consonants only, so codes are easy to read and type and can't spell words (RFC 8628 §6.1).
 USER_CODE_ALPHABET = "BCDFGHJKLMNPQRSTVWXZ"
+# How many fresh user codes to try if one is already taken.
+USER_CODE_ATTEMPTS = 5
 
 
 class OAuthError(Exception):
@@ -97,18 +99,31 @@ class OAuthDeviceManager:
         self.get_app_name(client_id)
         # TODO: Once scoped tokens exist, check each requested scope is a known one and raise
         #       `OAuthErrorCode.INVALID_SCOPE` if not.
-        device_code = secrets.token_urlsafe(32)
-        authorization = OAuthDeviceAuthorization(
-            device_code_hash=hash_device_code(device_code),
-            user_code=self._unused_user_code(),
-            client_id=client_id,
-            scope=scope,
-            requesting_ip=requesting_ip,
-            expires_at=now() + timedelta(seconds=DEVICE_CODE_EXPIRES_IN),
-        )
-        self.sa_session.add(authorization)
-        self.sa_session.commit()
-        return StartedAuthorization(authorization=authorization, device_code=device_code)
+        # A user code clash is very unlikely (20^8 codes), but codes must be unique. The unique
+        # constraint catches a clash, even with a login started at the same moment, and the
+        # savepoint undoes only this insert so a new code can be tried.
+        attempts = 0
+        while True:
+            attempts += 1
+            device_code = secrets.token_urlsafe(32)
+            authorization = OAuthDeviceAuthorization(
+                device_code_hash=hash_device_code(device_code),
+                user_code=generate_user_code(),
+                client_id=client_id,
+                scope=scope,
+                requesting_ip=requesting_ip,
+                expires_at=now() + timedelta(seconds=DEVICE_CODE_EXPIRES_IN),
+            )
+            try:
+                with self.sa_session.begin_nested():
+                    self.sa_session.add(authorization)
+                    self.sa_session.flush()
+            except IntegrityError:
+                if attempts == USER_CODE_ATTEMPTS:
+                    raise
+                continue
+            self.sa_session.commit()
+            return StartedAuthorization(authorization=authorization, device_code=device_code)
 
     def decide(self, user_code: str, user: model.User, approve: bool) -> None:
         """Record a user's approval or denial of a pending device login."""
@@ -198,11 +213,3 @@ class OAuthDeviceManager:
             expires_in=None,
             scope=scope,
         )
-
-    def _unused_user_code(self) -> str:
-        # A clash is very unlikely (20^8 codes), but user codes must be unique.
-        while True:
-            user_code = generate_user_code()
-            stmt = select(exists().where(OAuthDeviceAuthorization.user_code == user_code))
-            if not self.sa_session.scalar(stmt):
-                return user_code

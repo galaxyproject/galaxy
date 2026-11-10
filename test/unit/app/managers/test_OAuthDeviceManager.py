@@ -93,6 +93,13 @@ class TestOAuthDeviceManager(BaseTestCase):
             self.manager.decide(user_code, self.admin_user, approve=True)
         assert e.value.extra_error_info["reason"] == "used"
 
+    def test_start_authorization_retries_a_taken_user_code(self):
+        taken = self._start()
+        with patch("galaxy.managers.oauth_device.generate_user_code", side_effect=[taken, "BBBB-BBBB"]):
+            started = self._start_authorization()
+        assert started.authorization.user_code == "BBBB-BBBB"
+        assert self._get(taken).status == statuses.PENDING
+
     def test_decide_does_not_overwrite_a_concurrent_decision(self):
         user_code = self._start()
         checked = self.manager.get_pending(user_code)
