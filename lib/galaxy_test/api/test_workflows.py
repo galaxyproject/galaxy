@@ -1711,6 +1711,7 @@ steps:
         workflow_object["steps"]["2"]["tool_id"] = "cat-not-found"
         put_response = self._update_workflow(workflow_id, workflow_object)
         self._assert_status_code_is(put_response, 400)
+        assert "Requires tool 'cat-not-found'." in put_response.json()["err_msg"]
 
     def test_update_report_with_unsupported_fence(self):
         # Import keeps accepting existing reports; saving an edited one is rejected.
