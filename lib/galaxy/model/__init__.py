@@ -2441,20 +2441,26 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def touch_dependent_update_times(self):
         """Bump update_time on the collections and workflow invocation steps this job contributes to."""
+        self.touch_collections_update_time()
+        self.touch_invocation_steps_update_time()
+
+    def touch_collections_update_time(self):
+        """Bump update_time on the collections this job contributes to."""
+        self.update_hdca_update_time_for_job(update_time=now(), sa_session=required_object_session(self))
+        # The job wrapper sets the final output dataset states directly, so this is the last chance to let the
+        # collections containing them, such as the implicit output collections of a mapped tool, know about it.
+        self.touch_output_collections_update_time()
+
+    def touch_invocation_steps_update_time(self):
+        """Bump update_time on the workflow invocation steps this job contributes to."""
         # TODO: migrate to where-in subqueries?
         statement = text("""
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
         """)
-        sa_session = required_object_session(self)
-        update_time = now()
-        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
-        # The job wrapper sets the final output dataset states directly, so this is the last chance to let the
-        # collections containing them, such as the implicit output collections of a mapped tool, know about it.
-        self.touch_output_collections_update_time()
-        params = {"job_id": self.id, "update_time": update_time}
-        sa_session.execute(statement, params)
+        params = {"job_id": self.id, "update_time": now()}
+        required_object_session(self).execute(statement, params)
 
     def touch_output_collections_update_time(self, supports_skip_locked=None):
         """
