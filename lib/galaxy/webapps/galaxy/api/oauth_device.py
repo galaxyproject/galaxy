@@ -27,6 +27,7 @@ from galaxy.managers.oauth_device import (
 )
 from galaxy.model import User
 from galaxy.schema.oauth import (
+    AuthorizationServerMetadata,
     DeviceAuthorizationDecisionPayload,
     DeviceAuthorizationResponse,
     DeviceTokenResponse,
@@ -58,6 +59,28 @@ def oauth_error_response(error: OAuthError) -> JSONResponse:
 def require_device_flow_enabled(config: GalaxyAppConfiguration) -> None:
     if not config.enable_oauth_device_flow:
         raise ObjectNotFound("The OAuth device flow is not enabled on this Galaxy.")
+
+
+@router.get(
+    "/.well-known/oauth-authorization-server",
+    summary="Get this Galaxy's OAuth server metadata",
+    public=True,
+    unstable=True,
+    response_model=AuthorizationServerMetadata,
+)
+def authorization_server_metadata(trans: SessionRequestContext = DependsOnTrans) -> AuthorizationServerMetadata:
+    """List the OAuth endpoints and features of this Galaxy, so OAuth apps can find them (RFC 8414).
+
+    Served outside `/api` because RFC 8414 fixes this location:
+    https://datatracker.ietf.org/doc/html/rfc8414#section-3
+    """
+    require_device_flow_enabled(trans.app.config)
+    return AuthorizationServerMetadata(
+        issuer=galaxy_url_for_path(trans, "").rstrip("/"),
+        device_authorization_endpoint=galaxy_url_for_path(trans, "api/oauth/device_authorization"),
+        token_endpoint=galaxy_url_for_path(trans, "api/oauth/token"),
+        grant_types_supported=[DEVICE_CODE_GRANT_TYPE],
+    )
 
 
 @router.post(

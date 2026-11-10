@@ -1,6 +1,9 @@
 """Integration tests for the OAuth 2.0 device flow endpoints (RFC 8628)."""
 
 import time
+from urllib.parse import urljoin
+
+from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
 
 from galaxy.managers.oauth_device import POLLING_INTERVAL
 from galaxy_test.driver import integration_util
@@ -14,6 +17,21 @@ class TestOAuthDeviceFlow(integration_util.IntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         config["enable_oauth_device_flow"] = True
+
+    def test_server_metadata(self):
+        response = self._get(urljoin(self.url, ".well-known/oauth-authorization-server"), anon=True)
+        self._assert_status_code_is(response, 200)
+        metadata = response.json()
+        assert metadata["grant_types_supported"] == [DEVICE_CODE_GRANT_TYPE]
+        assert metadata["response_types_supported"] == []
+        # Valid RFC 8414 metadata, apart from the empty `response_types_supported` Authlib rejects.
+        AuthorizationServerMetadata({**metadata, "response_types_supported": ["code"]}).validate()
+
+        # The advertised endpoints are the ones that work.
+        response = self._post(metadata["device_authorization_endpoint"], data={"client_id": "galaxy-cli"}, anon=True)
+        self._assert_status_code_is(response, 200)
+        response = self._token(response.json()["device_code"], url=metadata["token_endpoint"])
+        self._assert_oauth_error(response, "authorization_pending")
 
     def test_start_login(self):
         response = self._start_device_authorization(scope="histories:read tools:run")
@@ -130,9 +148,9 @@ class TestOAuthDeviceFlow(integration_util.IntegrationTestCase):
     def _decide_device_authorization(self, user_code, approve):
         return self._put(f"oauth/device_authorization/{user_code}", data={"approve": approve}, json=True)
 
-    def _token(self, device_code, client_id="galaxy-cli", grant_type=DEVICE_CODE_GRANT_TYPE):
+    def _token(self, device_code, client_id="galaxy-cli", grant_type=DEVICE_CODE_GRANT_TYPE, url="oauth/token"):
         data = {"grant_type": grant_type, "device_code": device_code, "client_id": client_id}
-        return self._post("oauth/token", data=data, anon=True)
+        return self._post(url, data=data, anon=True)
 
     def _assert_oauth_error(self, response, error):
         self._assert_status_code_is(response, 400)
@@ -141,6 +159,8 @@ class TestOAuthDeviceFlow(integration_util.IntegrationTestCase):
 
 class TestOAuthDeviceFlowDisabled(integration_util.IntegrationTestCase):
     def test_endpoints_not_found(self):
+        response = self._get(urljoin(self.url, ".well-known/oauth-authorization-server"), anon=True)
+        self._assert_status_code_is(response, 404)
         response = self._post("oauth/device_authorization", data={"client_id": "galaxy-cli"}, anon=True)
         self._assert_status_code_is(response, 404)
         response = self._put("oauth/device_authorization/BBBB-BBBB", data={"approve": True}, json=True)

@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/.well-known/oauth-authorization-server": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get this Galaxy's OAuth server metadata
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        get: operations["authorization_server_metadata__well_known_oauth_authorization_server_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/extensions": {
         parameters: {
             query?: never;
@@ -8545,6 +8565,46 @@ export interface components {
             name?: string | null;
             /** Queue of task being done derived from Celery AsyncResult */
             queue?: string | null;
+        };
+        /**
+         * AuthorizationServerMetadata
+         * @description What a standard OAuth app needs to log in to this Galaxy (RFC 8414 §2).
+         */
+        AuthorizationServerMetadata: {
+            /**
+             * Device Authorization Endpoint
+             * @description URL to start a device flow login at.
+             */
+            device_authorization_endpoint: string;
+            /**
+             * Grant Types Supported
+             * @description OAuth grant types this Galaxy supports.
+             */
+            grant_types_supported: string[];
+            /**
+             * Issuer
+             * @description Base URL of this Galaxy.
+             */
+            issuer: string;
+            /**
+             * Response Types Supported
+             * @description Always empty: only the device flow is supported.
+             * @default []
+             */
+            response_types_supported: string[];
+            /**
+             * Token Endpoint
+             * @description URL to poll for the token at.
+             */
+            token_endpoint: string;
+            /**
+             * Token Endpoint Auth Methods Supported
+             * @description Always `none`: apps are public and have no secret.
+             * @default [
+             *       "none"
+             *     ]
+             */
+            token_endpoint_auth_methods_supported: string[];
         };
         /** Authorizations */
         Authorizations: {
@@ -34058,6 +34118,47 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    authorization_server_metadata__well_known_oauth_authorization_server_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthorizationServerMetadata"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     index_api_admin_extensions_get: {
         parameters: {
             query?: never;

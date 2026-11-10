@@ -1,6 +1,7 @@
 """Models for the OAuth 2.0 device flow endpoints.
 
 Field names follow the OAuth specifications, since standard OAuth libraries read them as is:
+- Server metadata: https://datatracker.ietf.org/doc/html/rfc8414#section-2
 - Device authorization response: https://datatracker.ietf.org/doc/html/rfc8628#section-3.2
 - Token response: https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
 - Error response: https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
@@ -28,6 +29,20 @@ class OAuthErrorCode(str, Enum):
     SLOW_DOWN = "slow_down"
     ACCESS_DENIED = "access_denied"
     EXPIRED_TOKEN = "expired_token"
+
+
+class AuthorizationServerMetadata(Model):
+    """What a standard OAuth app needs to log in to this Galaxy (RFC 8414 §2)."""
+
+    issuer: str = Field(..., description="Base URL of this Galaxy.")
+    device_authorization_endpoint: str = Field(..., description="URL to start a device flow login at.")
+    token_endpoint: str = Field(..., description="URL to poll for the token at.")
+    grant_types_supported: list[str] = Field(..., description="OAuth grant types this Galaxy supports.")
+    # Required by RFC 8414, but its values are for browser logins, which Galaxy does not offer (for now?)
+    response_types_supported: list[str] = Field([], description="Always empty: only the device flow is supported.")
+    token_endpoint_auth_methods_supported: list[str] = Field(
+        ["none"], description="Always `none`: apps are public and have no secret."
+    )
 
 
 class DeviceAuthorizationResponse(Model):
