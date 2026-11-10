@@ -287,7 +287,7 @@ def setup_for_runtimeify(
         # Like Cheetah's ``element_identifier``, fall back to the dataset name outside a collection.
         properties["element_identifier"] = element_identifiers.get(hda_entry) or hda_entry.name
         if hda_entry in secondary_file_datasets:
-            properties["secondary_files"] = secondary_files_json(hda_entry, properties["basename"], compute_environment)
+            properties["secondaryFiles"] = secondary_files_json(hda_entry, properties["basename"], compute_environment)
         return DataInternalJson(**properties)
 
     def adapt_collection(

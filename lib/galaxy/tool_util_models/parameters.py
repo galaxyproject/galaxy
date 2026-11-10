@@ -880,7 +880,10 @@ class DataInternalJson(StrictModel):
     format: Annotated[str, Field(description="The datatype extension of the file, e.g. 'txt', 'bam', 'fastq.gz'.")]
     secondary_files: Annotated[
         list[SecondaryFileInternalJson],
-        Field(description="The dataset's index files, for inputs that set ``secondary_files``; otherwise empty."),
+        Field(
+            alias="secondaryFiles",
+            description="The dataset's index files, for inputs that set ``secondary_files``; otherwise empty.",
+        ),
     ] = []
     checksum: str | None = None
     size: int

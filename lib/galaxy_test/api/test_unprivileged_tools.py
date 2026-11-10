@@ -36,7 +36,7 @@ TOOL_LINKING_BAM_INDEX = {
     **TOOL_WITH_SHELL_COMMAND,
     "shell_command": (
         "ln -s '$(inputs.input.path)' input.bam && "
-        "ln -s '$(inputs.input.secondary_files[0].path)' 'input.bam$(inputs.input.secondary_files[0].nameext)' && "
+        "ln -s '$(inputs.input.secondaryFiles[0].path)' 'input.bam$(inputs.input.secondaryFiles[0].nameext)' && "
         "od -An -v -tx1 input.bam.bai | tr -d ' \\n' > output.fastq"
     ),
     "inputs": [BAM_INPUT_WITH_SECONDARY_FILES],
@@ -365,7 +365,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
     def test_run_multiple_input_lists_secondary_files(self):
         tool = {
             **TOOL_LINKING_BAM_INDEX,
-            "shell_command": "echo '$(inputs.input.map((f) => f.secondary_files[0].format).join(\",\"))' > output.fastq",
+            "shell_command": "echo '$(inputs.input.map((f) => f.secondaryFiles[0].format).join(\",\"))' > output.fastq",
             "inputs": [{**BAM_INPUT_WITH_SECONDARY_FILES, "multiple": True}],
         }
         with self._user_tool_history() as history_id:
@@ -384,7 +384,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
         tool = {
             **TOOL_LINKING_BAM_INDEX,
             "shell_command": (
-                "echo '$((inputs.input.elements || inputs.input).map((f) => f.secondary_files[0].format).join(\",\"))'"
+                "echo '$((inputs.input.elements || inputs.input).map((f) => f.secondaryFiles[0].format).join(\",\"))'"
                 " > output.fastq"
             ),
             "inputs": [
@@ -401,7 +401,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
     def test_run_mapped_over_list_lists_secondary_files(self):
         tool = {
             **TOOL_LINKING_BAM_INDEX,
-            "shell_command": "echo '$(inputs.input.secondary_files[0].nameext)' > output.fastq",
+            "shell_command": "echo '$(inputs.input.secondaryFiles[0].nameext)' > output.fastq",
         }
         with self._user_tool_history() as history_id:
             hdca = self._new_bam_list(history_id, 1)
@@ -413,7 +413,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
         tool = {
             **TOOL_LINKING_BAM_INDEX,
             "shell_command": (
-                "echo '$(inputs.not_asked.secondary_files.length) $(inputs.not_indexed.secondary_files.length)'"
+                "echo '$(inputs.not_asked.secondaryFiles.length) $(inputs.not_indexed.secondaryFiles.length)'"
                 " > output.fastq"
             ),
             "inputs": [

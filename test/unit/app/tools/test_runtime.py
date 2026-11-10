@@ -622,7 +622,7 @@ def test_adapt_dataset_lists_and_registers_the_index(tmp_path):
     result, compute_environment = _adapt_indexed(hda, {hda})
 
     assert result.path == "/job/inputs/dataset_1.dat"
-    [secondary_file] = result.model_dump(by_alias=True)["secondary_files"]
+    [secondary_file] = result.model_dump(by_alias=True)["secondaryFiles"]
     assert secondary_file == {
         "class": "File",
         "path": "/job/inputs/metadata_bam_index.dat",
@@ -691,9 +691,9 @@ def test_to_cwl_lists_the_index_for_user_tools_only(tmp_path):
     opted_out = to_cwl(hda, [], compute_environment=compute_environment, secondary_file_datasets=set())
     workflow = to_cwl(hda, [], compute_environment=compute_environment)
 
-    assert [f["basename"] for f in opted_in["secondary_files"]] == ["sample1.bam.bai"]
-    assert opted_out["secondary_files"] == []
-    assert "secondary_files" not in workflow
+    assert [f["basename"] for f in opted_in["secondaryFiles"]] == ["sample1.bam.bai"]
+    assert opted_out["secondaryFiles"] == []
+    assert "secondaryFiles" not in workflow
 
 
 def test_user_tool_finds_a_converted_input_of_an_input_with_secondary_files():
