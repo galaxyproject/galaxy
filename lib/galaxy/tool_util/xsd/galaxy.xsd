@@ -6944,7 +6944,9 @@ Therefore a filter for such a variable looks like the following example.
     </xs:attribute>
     <xs:attribute name="pattern" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Regular expression used to find filenames and parse dynamic properties.</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[Regular expression used to find filenames and parse dynamic properties.
+
+The pattern must always capture an element identifier for every file it matches: a ``designation`` or ``name`` group, or - for nested collections - the ``identifier_0``, ``identifier_1``, etc. groups. Files that match the pattern but for which these groups do not participate in the match (for example because the groups are optional) are skipped with a warning, so do not make these groups optional.]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="directory" type="xs:string" use="optional">

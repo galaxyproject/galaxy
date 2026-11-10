@@ -663,6 +663,20 @@ class DatasetCollector:
         match_object = None
         if re_match := re.match(pattern, filename):
             match_object = RegexCollectedDatasetMatch(re_match, self, filename, path=path)
+            if not match_object.has_element_identifier:
+                # The pattern must always resolve an element identifier for a file
+                # (designation, name or identifier_N groups). Files matching without
+                # one - e.g. because an optional group did not participate in the
+                # match - are skipped instead of failing the job while collecting
+                # outputs.
+                log.warning(
+                    "Skipped discovered file [%s]: the discover pattern [%s] "
+                    "captured no element identifier (designation, name or identifier_N group), "
+                    "so no dataset was created for it.",
+                    filename,
+                    pattern,
+                )
+                return None
         return match_object
 
     def sort(self, matches):
