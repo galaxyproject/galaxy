@@ -37,7 +37,7 @@ TOOL_LINKING_BAM_INDEX = {
     "shell_command": (
         "ln -s '$(inputs.input.path)' input.bam && "
         "ln -s '$(inputs.input.secondary_files[0].path)' 'input.bam$(inputs.input.secondary_files[0].nameext)' && "
-        "md5sum input.bam.bai | cut -d ' ' -f 1 > output.fastq"
+        "sha256sum input.bam.bai | cut -d ' ' -f 1 > output.fastq"
     ),
     "inputs": [{"type": "data", "name": "input", "format": "bam", "secondary_files": True}],
 }
@@ -360,7 +360,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             output = self._run_user_tool(
                 history_id, TOOL_LINKING_BAM_INDEX, {"input": {"src": "hda", "id": bam["id"]}}, via_tool_request
             )
-            assert output.strip() == self._bam_index_md5(history_id, bam)
+            assert output.strip() == self._bam_index_sha256(history_id, bam)
 
     def test_run_multiple_input_lists_secondary_files(self):
         tool = {
@@ -465,9 +465,9 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             wait=True,
         ).json()
 
-    def _bam_index_md5(self, history_id: str, bam: dict[str, Any]) -> str:
+    def _bam_index_sha256(self, history_id: str, bam: dict[str, Any]) -> str:
         index = self.dataset_populator.get_history_dataset_metadata_file(history_id, bam["id"], "bam_index")
-        return hashlib.md5(index).hexdigest()
+        return hashlib.sha256(index).hexdigest()
 
     def _run_mapped_over_list(
         self, tool: dict[str, Any], elements: list[tuple[str, str]], ext: str = "txt"

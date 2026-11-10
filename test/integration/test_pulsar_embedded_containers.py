@@ -43,11 +43,11 @@ def _index_probe_tool() -> dict:
         "name": "index_probe",
         "version": "0.1",
         "container": "busybox:1.36.1-glibc",
-        "shell_command": f"echo '{index}' > path.txt && md5sum '{index}' | cut -d ' ' -f 1 > md5.txt",
+        "shell_command": f"echo '{index}' > path.txt && sha256sum '{index}' | cut -d ' ' -f 1 > sha256.txt",
         "inputs": [{"type": "data", "name": "input", "format": "bam", "secondary_files": True}],
         "outputs": [
             {"name": "path", "type": "data", "format": "txt", "from_work_dir": "path.txt"},
-            {"name": "md5", "type": "data", "format": "txt", "from_work_dir": "md5.txt"},
+            {"name": "sha256", "type": "data", "format": "txt", "from_work_dir": "sha256.txt"},
         ],
     }
 
@@ -115,13 +115,13 @@ class BaseEmbeddedPulsarContainerIntegration(integration_util.IntegrationTestCas
             response = self.dataset_populator.run_tool_raw(None, inputs, history_id, tool_uuid=tool["uuid"]).json()
             self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True, timeout=EXTENDED_TIMEOUT)
             outputs = {output["output_name"]: output["id"] for output in response["outputs"]}
-            path, md5 = (
+            path, sha256 = (
                 self.dataset_populator.get_history_dataset_content(history_id, content_id=outputs[name]).strip()
-                for name in ("path", "md5")
+                for name in ("path", "sha256")
             )
             index = self.dataset_populator.get_history_dataset_metadata_file(history_id, bam["id"], "bam_index")
         assert path.startswith(self.pulsar_staging_directory)
-        assert md5 == hashlib.md5(index).hexdigest()
+        assert sha256 == hashlib.sha256(index).hexdigest()
 
 
 class TestEmbeddedSingularityPulsarIntegration(
