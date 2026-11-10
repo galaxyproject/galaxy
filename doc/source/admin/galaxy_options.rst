@@ -6701,7 +6701,11 @@
     image. Entries with a tag or digest are not accepted, because the
     same image can be named by another tag or digest. When this list
     is not empty, references that cannot be parsed are refused even if
-    ``user_defined_tool_allowed_containers`` is ``*``. Malformed
+    ``user_defined_tool_allowed_containers`` is ``*``. A denied entry
+    only blocks the registry and path it names: when
+    ``user_defined_tool_allowed_containers`` is ``*``, the same image
+    can be named through a mirror or pushed to another registry, so
+    rely on this list only below a narrower allowed list. Malformed
     entries prevent Galaxy from starting. See the user defined tools
     admin documentation for details.
 :Default: ``[]``
