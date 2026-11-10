@@ -854,9 +854,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         return self.client_manager.get_client(job_destination_params, **get_client_kwds)
 
     def finish_job(self, job_state: JobState) -> None:
-        assert isinstance(job_state, AsynchronousJobState), (
-            f"job_state type is '{type(job_state)}', expected AsynchronousJobState"
-        )
+        assert isinstance(
+            job_state, AsynchronousJobState
+        ), f"job_state type is '{type(job_state)}', expected AsynchronousJobState"
         job_wrapper = job_state.job_wrapper
         try:
             client = self.get_client_from_state(job_state)
@@ -1048,9 +1048,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         )
         job_ext_output_metadata = job.get_external_output_metadata()
         if not PulsarJobRunner.__remote_metadata(client) and job_ext_output_metadata:
-            pid = (
-                job_ext_output_metadata[0].job_runner_external_pid
-            )  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
+            pid = job_ext_output_metadata[
+                0
+            ].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             if pid in [None, ""]:
                 log.warning(f"stop_job(): {job.id}: no PID in database for job, unable to stop")
                 return
