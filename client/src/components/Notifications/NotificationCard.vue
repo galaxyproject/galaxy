@@ -2,6 +2,7 @@
 import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import {
     faCheck,
+    faCheckCircle,
     faClock,
     faExternalLinkAlt,
     faHourglassHalf,
@@ -101,6 +102,10 @@ function handleMessageClick(event: MouseEvent) {
 const title = computed(() => {
     if (props.notification.category === "new_shared_item") {
         return `${sharedItemType.value} shared with you by ${props.notification.content.owner_name}`;
+    } else if (props.notification.category === "job_completion") {
+        const { job_count, history_name } = props.notification.content;
+        const jobs = job_count === 1 ? "Job" : `${job_count} jobs`;
+        return `${jobs} completed in history '${history_name}'`;
     } else if (props.notification.category === "storage_operation") {
         return props.notification.content.subject;
     } else if (props.notification.category === "tool_installation_request") {
@@ -116,6 +121,7 @@ const title = computed(() => {
 const titleIcon = computed<TitleIcon>(() => {
     const iconMap: Record<string, IconDefinition> = {
         new_shared_item: faRetweet,
+        job_completion: faCheckCircle,
         storage_operation: faHourglassHalf,
         tool_installation_request: faWrench,
     };
@@ -133,6 +139,31 @@ const singleRequestedTool = computed(() =>
 );
 
 const singleToolDetailRows = computed(() => toolDetailRows(singleRequestedTool.value));
+
+/** The content of a job completion notification. */
+const completionContent = computed(() =>
+    props.notification.category === "job_completion" ? props.notification.content : undefined,
+);
+
+/** How many jobs ended in each state, e.g. "1 error, 2 ok". */
+const completionStates = computed(() =>
+    Object.entries(completionContent.value?.state_counts ?? {})
+        .sort(([stateA], [stateB]) => stateA.localeCompare(stateB))
+        .map(([state, count]) => `${count} ${state}`)
+        .join(", "),
+);
+
+const completionHistoryLink = computed(() => `/histories/view?id=${completionContent.value?.history_id}`);
+
+const completionInvocationLink = computed(() =>
+    completionContent.value?.invocation_id
+        ? `/workflows/invocations/${completionContent.value.invocation_id}`
+        : undefined,
+);
+
+const jobCompletionOutputs = computed(() =>
+    props.notification.category === "job_completion" ? props.notification.content.outputs.join(", ") : undefined,
+);
 
 const sharedItemType = computed(() => {
     if (props.notification.category === "new_shared_item" && props.notification.content?.item_type) {
@@ -302,6 +333,17 @@ function markNotificationAsSeen() {
                             </dd>
                         </template>
                     </dl>
+                </template>
+                <template v-else-if="props.notification.category === 'job_completion'">
+                    <p v-if="jobCompletionOutputs" class="mb-1"><strong>Outputs:</strong> {{ jobCompletionOutputs }}</p>
+                    <p class="mb-1"><strong>Job states:</strong> {{ completionStates }}</p>
+                    <GLink :to="completionHistoryLink" @click="markNotificationAsSeen">Open history</GLink>
+                    <template v-if="completionInvocationLink">
+                        <span class="mx-2">|</span>
+                        <GLink :to="completionInvocationLink" @click="markNotificationAsSeen">
+                            Open workflow invocation
+                        </GLink>
+                    </template>
                 </template>
                 <template v-else-if="props.notification.category === 'storage_operation'">
                     <p>

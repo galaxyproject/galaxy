@@ -9,6 +9,7 @@ import type { ToolFormConfig } from "@/api/tools";
 import type { FormData, FormInputNode } from "@/components/Form/composables/useFormState";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import { findInputByDottedName } from "@/components/Form/utilities";
+import { useJobCompletionNotifications } from "@/composables/completionNotifications";
 import { useToast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useConfigStore } from "@/stores/configurationStore";
@@ -141,6 +142,20 @@ const tooltip = computed(() => {
 });
 
 const emailAllowed = computed(() => config.value.server_mail_configured && !currentUser.value?.isAnonymous);
+
+const completionNotifications = useJobCompletionNotifications();
+
+const emailTitle = computed(() =>
+    localize(completionNotifications.value ? "Notify me when complete" : "Email notification"),
+);
+
+const emailHelp = computed(() =>
+    localize(
+        completionNotifications.value
+            ? "Send a notification when the job completes. It reaches you in Galaxy and/or by email, as set in your notification preferences."
+            : "Send an email notification when the job completes.",
+    ),
+);
 
 const errorContentPretty = computed(() => JSON.stringify(errorContent.value, null, 4));
 
@@ -584,8 +599,8 @@ requestTool();
                     v-if="emailAllowed"
                     id="send_email_notification"
                     v-model="useEmail"
-                    :title="localize('Email notification')"
-                    :help="localize('Send an email notification when the job completes.')"
+                    :title="emailTitle"
+                    :help="emailHelp"
                     type="boolean" />
                 <FormElement
                     v-if="remapAllowed"

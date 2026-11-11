@@ -5,6 +5,7 @@ import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { NotificationCategory, NotificationChannel, UserNotificationPreferences } from "@/api/notifications";
+import { useJobCompletionNotifications } from "@/composables/completionNotifications";
 import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
 import {
@@ -41,10 +42,13 @@ const pushNotificationsGranted = ref(pushNotificationsEnabled());
 const notificationsPreferences = ref<UserNotificationPreferences>({});
 const supportedChannels = ref<NotificationChannel[]>([]);
 
+const jobCompletionNotifications = useJobCompletionNotifications();
+
 // tool_installation_request notifications are admin-targeted; users should not be able to opt out.
+// job_completion only applies when the server sends job completion notifications.
 const categories = computed<NotificationCategory[]>(() =>
     (Object.keys(notificationsPreferences.value) as NotificationCategory[]).filter(
-        (c) => c !== "tool_installation_request",
+        (c) => c !== "tool_installation_request" && (c !== "job_completion" || jobCompletionNotifications.value),
     ),
 );
 const showPreferences = computed(() => {

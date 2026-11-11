@@ -2,18 +2,18 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
-import type { UserNotificationPreferences } from "@/api/notifications";
+import type { NotificationCategory, UserNotificationPreferences } from "@/api/notifications";
 
 import NotificationsCategorySettings from "./NotificationsCategorySettings.vue";
 
 const localVue = getLocalVue();
 
-function mountSettings(enabled: boolean) {
+function mountSettings(enabled: boolean, category: NotificationCategory = "message") {
     const preferences = {
-        message: { enabled, channels: { email: false, push: true } },
+        [category]: { enabled, channels: { email: false, push: true } },
     } as unknown as UserNotificationPreferences;
     return mount(NotificationsCategorySettings as object, {
-        props: { preferences, category: "message", supportedChannels: ["email", "push"] },
+        props: { preferences, category, supportedChannels: ["email", "push"] },
         global: localVue,
     });
 }
@@ -43,5 +43,16 @@ describe("NotificationsCategorySettings", () => {
 
         expect(emailCheckbox!.element.disabled).toBe(true);
         expect(pushCheckbox!.element.disabled).toBe(true);
+    });
+
+    it("shows only the channel toggles for job_completion, which is opted into for each run", async () => {
+        const wrapper = mountSettings(true, "job_completion");
+        const checkboxes = wrapper.findAll<HTMLInputElement>("input[type='checkbox']");
+
+        expect(checkboxes.map((checkbox) => checkbox.attributes("role"))).not.toContain("switch");
+        expect(checkboxes).toHaveLength(2);
+        await checkboxes[0]!.setValue(true);
+
+        expect(wrapper.emitted("onChannelChange")).toEqual([["job_completion", "email", true]]);
     });
 });

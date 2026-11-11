@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
 import {
+    generateJobCompletionNotification,
     generateMessageNotification,
     generateNewSharedItemNotification,
     generateToolInstallationRequestNotification,
@@ -248,5 +249,31 @@ describe("Notifications categories", () => {
         const workflowLink = wrapper.findComponent(RouterLinkStub);
         expect(workflowLink.exists()).toBe(true);
         expect(workflowLink.props("to")).toBe(`/workflows/run?id=${notification.content.workflow_id}`);
+    });
+
+    it("job_completion notification summarizes the jobs and links their history", async () => {
+        const notification = generateJobCompletionNotification();
+
+        const wrapper = await mountComponent(NotificationCard, { notification });
+
+        expect(wrapper.find(`#g-card-title-${notification.id}`).text()).toBe("3 jobs completed in history 'Reads'");
+        const description = wrapper.find(`#g-card-description-${notification.id}`);
+        expect(description.text()).toContain("Outputs: trimmed reads");
+        expect(description.text()).toContain("Job states: 1 error, 2 ok");
+        const links = wrapper.findAllComponents(RouterLinkStub);
+        expect(links.map((link) => link.props("to"))).toEqual(["/histories/view?id=encoded-history-id"]);
+    });
+
+    it("job_completion notification of a workflow step also links the invocation", async () => {
+        const notification = generateJobCompletionNotification();
+        notification.content.invocation_id = "encoded-invocation-id";
+
+        const wrapper = await mountComponent(NotificationCard, { notification });
+
+        const links = wrapper.findAllComponents(RouterLinkStub);
+        expect(links.map((link) => link.props("to"))).toEqual([
+            "/histories/view?id=encoded-history-id",
+            "/workflows/invocations/encoded-invocation-id",
+        ]);
     });
 });

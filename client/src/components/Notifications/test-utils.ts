@@ -1,4 +1,5 @@
 import type {
+    JobCompletionNotification,
     MessageNotification,
     NewSharedItemNotificationContentItemType,
     NotificationVariants,
@@ -61,6 +62,30 @@ export function generateNewSharedItemNotification(): SharedItemNotification {
             slug: generateRandomString(),
         },
         seen_time: Math.random() > 0.5 ? new Date().toISOString() + 3 : undefined,
+        deleted: false,
+    };
+}
+
+export function generateJobCompletionNotification(): JobCompletionNotification {
+    return {
+        id: "notification-" + Math.floor(Math.random() * 1000000),
+        source: "galaxy",
+        category: "job_completion",
+        variant: "info",
+        create_time: new Date(Date.now() + 1).toISOString(),
+        update_time: new Date(Date.now() + 2).toISOString(),
+        publication_time: new Date(Date.now() + 3).toISOString(),
+        expiration_time: new Date(Date.now() + 86400000).toISOString(),
+        content: {
+            category: "job_completion",
+            history_id: "encoded-history-id",
+            history_name: "Reads",
+            outputs: ["trimmed reads"],
+            job_count: 3,
+            state_counts: { ok: 2, error: 1 },
+            invocation_id: null,
+        },
+        seen_time: undefined,
         deleted: false,
     };
 }

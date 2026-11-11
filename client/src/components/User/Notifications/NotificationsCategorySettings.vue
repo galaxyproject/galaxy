@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 
 import type { NotificationCategory, NotificationChannel, UserNotificationPreferences } from "@/api/notifications";
+import { COMPLETION_NOTIFICATION_CATEGORIES } from "@/composables/completionNotifications";
 import { snakeCaseToTitleCase } from "@/utils/strings";
 
 import NotificationsChannelSettings from "./NotificationsChannelSettings.vue";
@@ -14,6 +15,10 @@ const categoryDescriptionMap: Partial<Record<NotificationCategory, string>> = {
     `,
     new_shared_item:
         "You will receive these notifications when someone shares an item with you i.e. a history, workflow, visualization, etc.",
+    job_completion: `
+        You will receive these notifications when jobs complete for which you ticked "Notify me when complete"
+        on the tool form or in a workflow step. Choose here how they reach you.
+    `,
     storage_operation:
         "You will receive these notifications when a bulk storage operation completes (including failed outcomes).",
 };
@@ -34,6 +39,7 @@ const emit = defineEmits<{
 const isCategoryEnabled = ref(props.preferences[props.category]!.enabled);
 const checkBoxTitle = computed(() => (isCategoryEnabled.value ? "Disable notifications" : "Enable notifications"));
 const categoryDescription = computed(() => categoryDescriptionMap[props.category]);
+const hasCategorySwitch = computed(() => !COMPLETION_NOTIFICATION_CATEGORIES.includes(props.category));
 
 watch(
     () => isCategoryEnabled.value,
@@ -50,9 +56,15 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
 <template>
     <div>
         <div class="category-header">
-            <GCheckbox v-model="isCategoryEnabled" v-g-tooltip.hover :title="checkBoxTitle" switch>
+            <GCheckbox
+                v-if="hasCategorySwitch"
+                v-model="isCategoryEnabled"
+                v-g-tooltip.hover
+                :title="checkBoxTitle"
+                switch>
                 <span v-localize class="category-title">{{ snakeCaseToTitleCase(category) }}</span>
             </GCheckbox>
+            <span v-else v-localize class="category-title">{{ snakeCaseToTitleCase(category) }}</span>
         </div>
 
         <div v-if="categoryDescription" v-localize class="category-description">

@@ -4,9 +4,9 @@
             v-if="supportsJobBasedActions"
             :id="emailActionKey"
             :value="emailActionValue"
-            title="Email notification"
+            :title="emailActionTitle"
             type="boolean"
-            help="An email notification will be sent when the job has completed."
+            :help="emailActionHelp"
             @input="onInput" />
         <FormElement
             v-if="supportsJobBasedActions"
@@ -30,6 +30,8 @@
 </template>
 
 <script>
+import { useJobCompletionNotifications } from "@/composables/completionNotifications";
+
 import FormElement from "@/components/Form/FormElement.vue";
 import FormOutput from "@/components/Workflow/Editor/Forms/FormOutput.vue";
 
@@ -69,6 +71,9 @@ export default {
             default: true,
         },
     },
+    setup() {
+        return { completionNotifications: useJobCompletionNotifications() };
+    },
     data() {
         return {
             formData: {},
@@ -86,6 +91,14 @@ export default {
         },
         emailPayloadKey() {
             return `${this.emailActionKey}__host`;
+        },
+        emailActionTitle() {
+            return this.completionNotifications ? "Notify me when complete" : "Email notification";
+        },
+        emailActionHelp() {
+            return this.completionNotifications
+                ? "A notification will be sent when the job has completed. It reaches you in Galaxy and/or by email, as set in your notification preferences."
+                : "An email notification will be sent when the job has completed.";
         },
         emailActionValue() {
             return Boolean(this.formData[this.emailActionKey]);
