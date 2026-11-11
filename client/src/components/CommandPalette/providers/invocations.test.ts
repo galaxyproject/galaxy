@@ -2,7 +2,7 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { fetchInvocations as getInvocationsData } from "@/components/Grid/configs/invocationsIndex";
+import { fetchInvocations as getInvocationsData } from "@/components/Workflow/Invocation/invocationsIndex";
 import { useInvocationStore } from "@/stores/invocationStore";
 
 import { makeCtx } from "../test-utils";
@@ -11,7 +11,7 @@ import { invocationsProvider } from "./invocations";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
-vi.mock("@/components/Grid/configs/invocationsIndex", () => ({
+vi.mock("@/components/Workflow/Invocation/invocationsIndex", () => ({
     fetchInvocations: vi.fn(),
 }));
 

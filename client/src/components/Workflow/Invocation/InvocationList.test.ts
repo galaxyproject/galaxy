@@ -7,8 +7,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useRouter } from "vue-router";
 
 import type { StoredWorkflowDetailed } from "@/api/workflows";
-import type * as InvocationFilters from "@/components/Grid/configs/invocationFilters";
-import { fetchInvocations } from "@/components/Grid/configs/invocationsIndex";
+import type * as InvocationFilters from "@/components/Workflow/Invocation/invocationFilters";
+import { fetchInvocations } from "@/components/Workflow/Invocation/invocationsIndex";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
@@ -18,11 +18,11 @@ vi.useFakeTimers();
 
 vi.mock("vue-router");
 
-vi.mock("@/components/Grid/configs/invocationsIndex", () => ({
+vi.mock("@/components/Workflow/Invocation/invocationsIndex", () => ({
     fetchInvocations: vi.fn(),
 }));
 
-vi.mock("@/components/Grid/configs/invocationFilters", async (importOriginal) => {
+vi.mock("@/components/Workflow/Invocation/invocationFilters", async (importOriginal) => {
     const original = await importOriginal<typeof InvocationFilters>();
     const search = async () => [
         { id: "workflow-1", name: "Workflow one" },

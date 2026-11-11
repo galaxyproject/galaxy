@@ -7,7 +7,7 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import type { WorkflowInvocation } from "@/api/invocations";
-import { fetchInvocations } from "@/components/Grid/configs/invocationsIndex";
+import { fetchInvocations } from "@/components/Workflow/Invocation/invocationsIndex";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";

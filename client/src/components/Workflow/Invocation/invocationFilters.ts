@@ -2,12 +2,11 @@ import { uniqBy } from "lodash";
 
 import { type AnyHistoryEntry, getHistories } from "@/api/histories";
 import { loadWorkflows, type WorkflowSummary } from "@/api/workflows";
+import type { FieldFilter, FilterOption } from "@/components/Grid/configs/types";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
 import Filtering, { equals, isQuoted, type ValidFilter } from "@/utils/filtering";
 import { pluralize } from "@/utils/strings";
-
-import type { FieldFilter, FilterOption } from "./types";
 
 /** Maximum number of workflows or histories a name resolves to, per lookup. */
 export const NAME_MATCH_LIMIT = 50;

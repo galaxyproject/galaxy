@@ -9,15 +9,15 @@ import { isRegisteredUser } from "@/api";
 import type { WorkflowInvocation } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import type { TableField } from "@/components/Common/GTable.types";
+import { type ColumnFilterField, useColumnFilters } from "@/components/Grid/useColumnFilters";
 import {
     historyColumnFilter,
     invocationSearch,
     invocationsFiltering,
     MAX_COLUMN_FILTER_PICKS,
     workflowColumnFilter,
-} from "@/components/Grid/configs/invocationFilters";
-import { fetchInvocations, type InvocationsQuery } from "@/components/Grid/configs/invocationsIndex";
-import { type ColumnFilterField, useColumnFilters } from "@/components/Grid/useColumnFilters";
+} from "@/components/Workflow/Invocation/invocationFilters";
+import { fetchInvocations, type InvocationsQuery } from "@/components/Workflow/Invocation/invocationsIndex";
 import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
