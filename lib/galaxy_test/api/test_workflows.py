@@ -1323,6 +1323,7 @@ steps:
             assert not workflow["has_upgrade_messages"]
             assert workflow["steps"][1]["inputs"][0]["value"] == {"__class__": "ConnectedValue"}
 
+    @skip_without_tool("random_lines1")
     def test_missing_tool_state_values_are_filled_defaults(self):
         # Format 2 may leave out parameters that have defaults; those are filled, not upgrade problems
         workflow_id = self.workflow_populator.upload_yaml_workflow(
@@ -1345,10 +1346,15 @@ steps:
         with self.dataset_populator.test_history() as history_id:
             assert not self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
             hda = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\n", wait=True)
-            request = {"history_id": history_id, "inputs": json.dumps({"0": self._ds_entry(hda)})}
             # runs without allow_tool_state_corrections, which bioblend leaves off
-            self.workflow_populator.invoke_workflow_raw(workflow_id, request, assert_ok=True)
+            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(hda)}
+            )
+            self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+            # the job used the num_lines default of 1
+            assert len(self.dataset_populator.get_history_dataset_content(history_id).splitlines()) == 1
 
+    @skip_without_tool("multiple_versions_changes")
     def test_filled_defaults_after_a_tool_version_change_need_corrections(self):
         # 0.05 isn't installed, so 0.2 runs, and its new floattest parameter has no stored value
         workflow_id = self.workflow_populator.upload_yaml_workflow(
@@ -1391,6 +1397,7 @@ steps:
         assert "parameter" in editor["upgrade_messages"]["0"]
         assert "0" not in editor["filled_defaults"]
 
+    @skip_without_tool("random_lines1")
     def test_replaced_tool_state_values_are_upgrade_messages(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """
