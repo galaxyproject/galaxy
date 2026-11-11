@@ -535,6 +535,7 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         headers = iter_headers(file_prefix, sep="\t")
         count = 0
         names = [False, False]
+        all_ints = True
         for line in headers:
             if line[0].startswith("@"):
                 continue
