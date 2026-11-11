@@ -13,6 +13,7 @@ import {
 } from "@/api/curatedWorkflows";
 import { curatedHelpHtml, curatedWorkflowFilters } from "@/components/Workflow/List/curatedFilters";
 import { useConfig } from "@/composables/config";
+import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -68,13 +69,10 @@ let loadGeneration = 0;
 
 const workflowFilters = computed(() => curatedWorkflowFilters(isIwcCatalog.value));
 
-const rawFilters = computed(() =>
-    Object.fromEntries(workflowFilters.value.getFiltersForText(filterText.value, true, false)),
+const { invalidFilters, isSurroundedByQuotes, hasInvalidFilters, validatedFilterText } = useFilterTextValidation(
+    workflowFilters,
+    filterText,
 );
-const validFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).validFilters);
-const invalidFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
-const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
-const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
 
 // A `collection:` term or its `c:` alias, with a quoted or bare value.
 const COLLECTION_TERM = /(^|\s)(?:collection|c):(?:'[^']*'|"[^"]*"|\S+)/gi;
@@ -190,15 +188,6 @@ async function load(overlayLoading = false) {
  * rebuilding it from the parsed filters would drop any free text typed alongside them. */
 function searchText() {
     return isSurroundedByQuotes.value ? filterText.value.slice(1, -1) : filterText.value;
-}
-
-function validatedFilterText() {
-    if (isSurroundedByQuotes.value) {
-        return filterText.value.slice(1, -1);
-    } else if (Object.keys(rawFilters.value).length === 0) {
-        return filterText.value;
-    }
-    return workflowFilters.value.getFilterText(validFilters.value, true);
 }
 
 function updateFilterValue(filterKey: string, newValue: any) {
