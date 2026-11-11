@@ -276,7 +276,7 @@ class YamlTextParameter(_YamlParamBase):
     def to_internal(self) -> TextParameterModel:
         return TextParameterModel(
             type="text",
-            default_value=self.value,
+            value=self.value,
             area=self.area,
             validators=list(self.validators),
             **_common_internal_kwargs(self),

@@ -7,7 +7,8 @@ The existing ``test_validate_framework_test_tools`` in
 authoring schema in ``lib/galaxy/tool_util_models/yaml_parameters.py``.
 This file closes that gap so a stray XML-only field (e.g. ``truevalue``) or
 a deferred parameter type added to any fixture fails a cheap unit test
-instead of only an API integration.
+instead of only an API integration. It also checks the parser builds each
+fixture's parameter models as its authoring models' ``to_internal()`` does.
 """
 
 import os
@@ -16,6 +17,8 @@ import pytest
 import yaml
 from pydantic import TypeAdapter
 
+from galaxy.tool_util.parameters import input_models_for_tool_source
+from galaxy.tool_util.parser.yaml import YamlToolSource as YamlToolSourceParser
 from galaxy.tool_util.unittest_utils import functional_test_tool_directory
 from galaxy.tool_util_models import DynamicToolSources
 
@@ -53,9 +56,11 @@ def _collect_yaml_tool_fixtures() -> list[str]:
 _YAML_FIXTURES = _collect_yaml_tool_fixtures()
 
 
-@pytest.mark.parametrize(
-    "tool_path", _YAML_FIXTURES, ids=lambda p: os.path.relpath(p, functional_test_tool_directory())
-)
+def _fixture_id(tool_path: str) -> str:
+    return os.path.relpath(tool_path, functional_test_tool_directory())
+
+
+@pytest.mark.parametrize("tool_path", _YAML_FIXTURES, ids=_fixture_id)
 def test_yaml_fixture_validates_against_authoring_schema(tool_path: str):
     with open(tool_path) as fh:
         raw = yaml.safe_load(fh)
@@ -64,6 +69,29 @@ def test_yaml_fixture_validates_against_authoring_schema(tool_path: str):
     # Validates against the UserToolSource / YamlToolSource union,
     # discriminated on ``class``.
     _dynamic_tool_source_adapter.validate_python(raw)
+
+
+# Fixtures using fields only a GalaxyTool allows.
+_GALAXY_TOOL_ONLY_FIXTURES = {"implicit_conversion_shared_input_y.yml"}
+
+_FIXTURE_TOOL_CLASSES = [
+    pytest.param(tool_path, tool_class, id=f"{_fixture_id(tool_path)}-{tool_class}")
+    for tool_path in _YAML_FIXTURES
+    for tool_class in ("GalaxyUserTool", "GalaxyTool")
+    if not (tool_class == "GalaxyUserTool" and os.path.basename(tool_path) in _GALAXY_TOOL_ONLY_FIXTURES)
+]
+
+
+# The dumps user (full) and admin GalaxyTool (exclude_unset) tool storage use.
+@pytest.mark.parametrize("dump_kwargs", [{}, {"exclude_unset": True}], ids=["full", "exclude_unset"])
+@pytest.mark.parametrize("tool_path, tool_class", _FIXTURE_TOOL_CLASSES)
+def test_yaml_fixture_parameters_load_like_their_authoring_models(tool_path: str, tool_class: str, dump_kwargs):
+    with open(tool_path) as fh:
+        source = {**yaml.safe_load(fh), "class": tool_class}
+    tool_model = _dynamic_tool_source_adapter.validate_python(source)
+    dumped = tool_model.model_dump(by_alias=True, **dump_kwargs)
+    parsed = input_models_for_tool_source(YamlToolSourceParser(dumped)).parameters
+    assert parsed == [parameter.root.to_internal() for parameter in tool_model.inputs]
 
 
 def test_fixture_collection_is_non_empty():
