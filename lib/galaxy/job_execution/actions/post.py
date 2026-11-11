@@ -5,6 +5,7 @@ immediate_actions listed below.
 
 import datetime
 import re
+from dataclasses import dataclass
 
 from markupsafe import escape
 
@@ -14,6 +15,10 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     Job,
     PostJobActionAssociation,
+)
+from galaxy.schema.notifications import (
+    completion_notification_request,
+    JobCompletionNotificationContent,
 )
 from galaxy.util import send_mail
 from galaxy.util.custom_logging import get_logger
@@ -71,9 +76,36 @@ class DefaultJobAction:
             return f"{pja.action_type}"
 
 
+@dataclass
+class JobCompletionSummary:
+    """What completed: the outputs of the jobs and how many jobs ended in each state."""
+
+    outputs: list[str]
+    state_counts: dict[str, int]
+    # Whether the jobs were mapped over a collection; ``outputs`` are then the output collections.
+    mapped_over: bool
+
+    @property
+    def job_count(self) -> int:
+        return sum(self.state_counts.values())
+
+    def describe(self) -> str:
+        outputs = ",\n".join(self.outputs)
+        if not self.mapped_over:
+            return f"Your Galaxy job generating dataset(s):\n\n{outputs}\n\nis complete"
+        jobs, are = ("job", "is") if self.job_count == 1 else ("jobs", "are")
+        states = ", ".join(f"{count} {state}" for state, count in sorted(self.state_counts.items()))
+        return (
+            f"Your {self.job_count} Galaxy {jobs} generating collection(s):\n\n{outputs}\n\n{are} complete ({states})"
+        )
+
+
 class EmailAction(DefaultJobAction):
     """
-    This action sends an email to the galaxy user responsible for a job.
+    This action notifies the galaxy user responsible for a job when it completes.
+
+    The notification goes through the notification system when it can deliver by email,
+    and is sent as a plain email otherwise.
     """
 
     name = "EmailAction"
@@ -85,25 +117,31 @@ class EmailAction(DefaultJobAction):
         try:
             implicit_collection_jobs_association = job.implicit_collection_jobs_association
             if implicit_collection_jobs_association is None:
-                completed = cls._job_completed(job)
+                summary = cls._job_completed(job)
             else:
-                # A job mapped over a collection: send one email for the whole map-over, not one per job.
-                completed = cls._map_over_completed(job, implicit_collection_jobs_association.implicit_collection_jobs)
-            if completed:
-                cls._send(app, job, completed)
+                # A job mapped over a collection: notify once for the whole map-over, not once per job.
+                summary = cls._map_over_completed(job, implicit_collection_jobs_association.implicit_collection_jobs)
+            if summary:
+                if cls._can_notify(app):
+                    cls._notify(app, job, summary)
+                else:
+                    cls._send_email(app, job, summary)
         except Exception:
             log.exception("EmailAction PJA Failed")
 
     @staticmethod
-    def _job_completed(job) -> str | None:
+    def _job_completed(job) -> JobCompletionSummary | None:
         """What completed, for a job not mapped over; None while it waits for the user to resume it."""
         if job.state == job.states.PAUSED:
             return None
-        outdata = ",\n".join(ds.dataset.display_name() for ds in job.output_datasets)
-        return f"Your Galaxy job generating dataset(s):\n\n{outdata}\n\nis complete"
+        return JobCompletionSummary(
+            outputs=[ds.dataset.display_name() for ds in job.output_datasets],
+            state_counts={job.state: 1},
+            mapped_over=False,
+        )
 
     @staticmethod
-    def _map_over_completed(job, implicit_collection_jobs) -> str | None:
+    def _map_over_completed(job, implicit_collection_jobs) -> JobCompletionSummary | None:
         """What completed, for the map-over of ``job``; None while some of its jobs still have to run.
 
         Every job checks after its own settled state is committed, so the last one to commit
@@ -118,24 +156,45 @@ class EmailAction(DefaultJobAction):
             return None
         if implicit_collection_jobs.has_job_not_in_states(MAPPED_OVER_SETTLED_STATES):
             return None
-        state_counts = implicit_collection_jobs.job_state_counts()
-        job_count = sum(state_counts.values())
-        jobs, are = ("job", "is") if job_count == 1 else ("jobs", "are")
-        collections = ",\n".join(
-            assoc.dataset_collection_instance.name
-            for assoc in job.output_dataset_collection_instances
-            if assoc.dataset_collection_instance.name
+        return JobCompletionSummary(
+            outputs=[
+                assoc.dataset_collection_instance.name
+                for assoc in job.output_dataset_collection_instances
+                if assoc.dataset_collection_instance.name
+            ],
+            state_counts=implicit_collection_jobs.job_state_counts(),
+            mapped_over=True,
         )
-        states = ", ".join(f"{count} {state}" for state, count in sorted(state_counts.items()))
-        return f"Your {job_count} Galaxy {jobs} generating collection(s):\n\n{collections}\n\n{are} complete ({states})"
 
     @staticmethod
-    def _send(app, job, completed):
+    def _can_notify(app) -> bool:
+        # The notification system has an email channel only with Celery (NotificationManager.can_send_notifications_async);
+        # without it, users would lose the email they asked for.
+        return bool(app.config.enable_notification_system and app.config.enable_celery_tasks)
+
+    @staticmethod
+    def _notify(app, job, summary: JobCompletionSummary):
+        """Queue a job completion notification, delivered by the channels the user's preferences allow."""
+        # Mapped over jobs reach their invocation step through their implicit collection jobs.
+        invocation_step = job.effective_workflow_invocation_step
+        content = JobCompletionNotificationContent(
+            history_id=app.security.encode_id(job.history_id),
+            history_name=job.history.name or "Unnamed history",
+            outputs=summary.outputs,
+            job_count=summary.job_count,
+            state_counts=summary.state_counts,
+            invocation_id=app.security.encode_id(invocation_step.workflow_invocation_id) if invocation_step else None,
+        )
+        request = completion_notification_request(job.user_id, content, app.config.galaxy_infrastructure_url)
+        app.notification_manager.send_notification_internal(request)
+
+    @staticmethod
+    def _send_email(app, job, summary: JobCompletionSummary):
         history_id_encoded = app.security.encode_id(job.history_id)
         link = f"{app.config.galaxy_infrastructure_url}/histories/view?id={history_id_encoded}"
         subject = f"Galaxy job completion notification from history '{job.history.name}'"
         body = (
-            f"{completed} as of {datetime.datetime.now().strftime('%H:%M')}. "
+            f"{summary.describe()} as of {datetime.datetime.now().strftime('%H:%M')}. "
             f"Click the link below to access your data: \n{link}\n\n"
             "Please remember to cite Galaxy using our primary publication "
             '(<a href="https://gxy.io/p/latest-nar">https://gxy.io/p/latest-nar</a>) '

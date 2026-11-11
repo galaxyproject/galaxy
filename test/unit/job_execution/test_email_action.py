@@ -1,6 +1,6 @@
 """EmailAction sends one email for a whole map-over, once all its jobs have settled.
 
-The end-to-end emails are covered by ``test/integration/test_job_completion_emails.py``.
+The end-to-end emails are covered by ``test/integration/test_completion_notifications.py``.
 """
 
 import pytest
@@ -22,6 +22,7 @@ def app(email_dir) -> GalaxyDataTestApp:
         email_from="galaxy@example.org",
         galaxy_infrastructure_url="https://galaxy.example.org",
         smtp_server=f"mock_emails_to_path://{email_dir}",
+        enable_notification_system=False,
     )
 
 
