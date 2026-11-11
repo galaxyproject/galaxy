@@ -132,7 +132,10 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_keyed_dict
-from sqlalchemy.orm.session import Session
+from sqlalchemy.orm.session import (
+    Session,
+    SessionTransaction,
+)
 from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
     deprecated,
@@ -260,6 +263,22 @@ def required_object_session(obj) -> Session:
     if not session:
         raise Exception("Object not attached to a session")
     return session
+
+
+def refresh_unmodified(obj) -> None:
+    """Reload ``obj`` from the database, keeping attributes with pending changes in its session.
+
+    Unmodified columns are refreshed and unmodified relationships are expired, so they load
+    again on next access, following the refreshed foreign keys.
+    """
+    state = inspect(obj)
+    session = required_object_session(obj)
+    unmodified = [key for key, attr in state.attrs.items() if not attr.history.has_changes()]
+    # An empty attribute_names list refreshes or expires every attribute, so skip the call instead.
+    if columns := [key for key in unmodified if key in state.mapper.column_attrs]:
+        session.refresh(obj, attribute_names=columns)
+    if relationships := [key for key in unmodified if key in state.mapper.relationships]:
+        session.expire(obj, relationships)
 
 
 class ConfigurationTemplateEnvironmentSecret(TypedDict):
@@ -1861,6 +1880,17 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             requires_addition_to_history = False
             outputs_to_copy = job.io_dicts(exclude_implicit_outputs=True)
             self_io = self.io_dicts(exclude_implicit_outputs=True)
+            # HistoryDatasetAssociation.copy_from locks each output; take those locks in id order.
+            output_hda_ids = [
+                output.id for output in self_io.out_data.values() if isinstance(output, HistoryDatasetAssociation)
+            ]
+            if output_hda_ids:
+                required_object_session(self).execute(
+                    select(HistoryDatasetAssociation.id)
+                    .where(HistoryDatasetAssociation.id.in_(output_hda_ids))
+                    .order_by(HistoryDatasetAssociation.id)
+                    .with_for_update()
+                )
             for output_name, out_data in outputs_to_copy.out_data.items():
                 if output_name in self_io.out_data:
                     self_output = self_io.out_data[output_name]
@@ -4855,6 +4885,8 @@ class Dataset(Base, StorableObject, Serializable):
 
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
     ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
+    # States in which a late job cache hit can still replace the dataset (a paused job may be resumed).
+    swappable_states = (*non_ready_states, states.PAUSED)
     valid_input_states = tuple(
         set(states.__members__.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA}
     )
@@ -6200,6 +6232,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
     tags: Mapped[list["HistoryDatasetAssociationTagAssociation"]]
     copied_to_history_dataset_associations: Mapped[list["HistoryDatasetAssociation"]]
     history: Mapped[Optional["History"]]
+    _copy_lock_transaction: Optional[SessionTransaction] = None
 
     def __init__(
         self,
@@ -6271,6 +6304,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
         # This deletes the old dataset, so make sure to only call this on new things
         # in the history (e.g. during job finishing).
         old_dataset = self.dataset
+        copies = self._lock_and_load_copies()
         if include_metadata:
             self._metadata = other_hda._metadata
         self.metadata_deferred = other_hda.metadata_deferred
@@ -6287,18 +6321,61 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
             self.copy_tags_from(self.user, other_hda)
         self.dataset = new_dataset or other_hda.dataset
         self.copied_from_history_dataset_association_id = other_hda.id
-        for copied_hda in self.copied_to_history_dataset_associations:
+        for copied_hda in copies:
+            # A copy made by a database operation tool is usually a hidden collection element.
+            visible, deleted = copied_hda.visible, copied_hda.deleted
             copied_hda.copy_from(self, include_tags=include_tags, include_metadata=include_metadata)
+            copied_hda.visible, copied_hda.deleted = visible, deleted
 
         # A cached job's structured collection output reaches the same HDA as both a job output
         # and a collection element, so the second copy finds the dataset already in place.
         if old_dataset and old_dataset is not self.dataset:
             old_dataset.full_delete()
 
+    def _lock_and_load_copies(self) -> list["HistoryDatasetAssociation"]:
+        """Lock this HDA's row and return the copies that share its dataset.
+
+        ``copy()`` of an HDA in a swappable state holds a key share lock on the source row from reading
+        the dataset until its transaction ends. Once this lock is held, every such copy has either
+        committed and is returned here, or will read the dataset this transaction commits.
+        """
+        if self.id is not None:
+            session = required_object_session(self)
+            session.execute(
+                select(HistoryDatasetAssociation.id).where(HistoryDatasetAssociation.id == self.id).with_for_update()
+            )
+            # A collection loaded before this lock misses copies committed since.
+            session.expire(self, ["copied_to_history_dataset_associations"])
+        return list(self.copied_to_history_dataset_associations)
+
+    def _lock_source_of_copy(self) -> None:
+        """Pin the dataset a copy of this HDA will share against a concurrent ``copy_from``.
+
+        A late job cache hit swaps the dataset of a queued output and purges the old one. The key
+        share lock makes that swap wait for this transaction, so it finds the copy; if the swap
+        committed first, this HDA is reloaded so the copy shares the new dataset.
+        """
+        session = required_object_session(self)
+        # A held lock lasts until the transaction ends; Galaxy takes no savepoints that could release it.
+        transaction = session.get_transaction()
+        if transaction is not None and transaction is self._copy_lock_transaction:
+            return
+        with session.no_autoflush:
+            dataset_id = session.scalar(
+                select(HistoryDatasetAssociation.dataset_id)
+                .where(HistoryDatasetAssociation.id == self.id)
+                .with_for_update(read=True, key_share=True)
+            )
+            if dataset_id != self.dataset_id:
+                refresh_unmodified(self)
+        self._copy_lock_transaction = session.get_transaction()
+
     def copy(self, parent_id=None, copy_tags=None, flush=True, copy_hid=True, new_name=None):
         """
         Create a copy of this HDA.
         """
+        if self.id is not None and self.state in Dataset.swappable_states:
+            self._lock_source_of_copy()
         hid = None
         if copy_hid:
             hid = self.hid
