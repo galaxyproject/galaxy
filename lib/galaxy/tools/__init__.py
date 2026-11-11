@@ -2713,7 +2713,6 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         request_context = proxy_work_context_for_history(trans, workflow_building_mode=workflow_building_mode)
 
         def validate_inputs(input, value, error, parent, context, prefixed_name: str, prefixed_label, **kwargs):
-            missing = input.name not in parent
             if not error:
                 value, error = check_param(request_context, input, value, context)
             if error:
@@ -2728,6 +2727,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                                 else f"{error} Using default: {_describe_default(value)}."
                             )
                             # a required parameter that is still empty was not filled; it stays a problem
+                            missing = input.name not in parent
                             if missing and filled_defaults is not None and (value is not None or input.optional):
                                 filled_defaults[prefixed_name] = message
                             else:
