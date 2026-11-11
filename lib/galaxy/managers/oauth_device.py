@@ -32,6 +32,10 @@ KNOWN_APPS: dict[str, str] = {
 DEVICE_CODE_EXPIRES_IN = 900
 POLLING_INTERVAL = 5
 
+# Longest `scope` a login can ask for. Real scope lists are a few dozen characters; this keeps an
+# anonymous caller from storing arbitrarily large rows.
+MAX_SCOPE_LENGTH = 1024
+
 # The `grant_type` RFC 8628 §3.4 defines for device flow token requests. OAuth has a single token
 # endpoint for every kind of grant, so the app names which one it is using with this standard URN.
 DEVICE_CODE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code"
@@ -97,6 +101,8 @@ class OAuthDeviceManager:
     def start_authorization(self, client_id: str, scope: str | None, requesting_ip: str | None) -> StartedAuthorization:
         """Record a new pending device login for a known app."""
         self.get_app_name(client_id)
+        if scope and len(scope) > MAX_SCOPE_LENGTH:
+            raise OAuthError(OAuthErrorCode.INVALID_SCOPE, f"The scope is longer than {MAX_SCOPE_LENGTH} characters.")
         # TODO: Once scoped tokens exist, check each requested scope is a known one and raise
         #       `OAuthErrorCode.INVALID_SCOPE` if not.
         # A user code clash is very unlikely (20^8 codes), but codes must be unique. The unique

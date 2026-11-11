@@ -14,6 +14,7 @@ from galaxy.managers.oauth_device import (
     generate_user_code,
     hash_device_code,
     KNOWN_APPS,
+    MAX_SCOPE_LENGTH,
     normalize_user_code,
     OAuthDeviceManager,
     OAuthError,
@@ -53,6 +54,12 @@ class TestOAuthDeviceManager(BaseTestCase):
         with pytest.raises(OAuthError) as e:
             self.manager.start_authorization("evil-app", None, None)
         assert e.value.error == OAuthErrorCode.INVALID_CLIENT
+
+    def test_start_authorization_scope_too_long(self):
+        with pytest.raises(OAuthError) as e:
+            self.manager.start_authorization("galaxy-cli", "x" * (MAX_SCOPE_LENGTH + 1), None)
+        assert e.value.error == OAuthErrorCode.INVALID_SCOPE
+        self.manager.start_authorization("galaxy-cli", "x" * MAX_SCOPE_LENGTH, None)
 
     def test_approve(self):
         user_code = self._start()
