@@ -10,6 +10,17 @@ import StateUpgradeModal from "./StateUpgradeModal.vue";
 
 const MODAL_CONTENT_SELECTOR = '[data-description="workflow state upgrade modal content"]';
 
+function upgradeMessage(overrides: Partial<UpgradeMessage> = {}): UpgradeMessage {
+    return {
+        stepIndex: "2",
+        name: "step name",
+        details: ["my message 1", "my message 2"],
+        iconType: "",
+        label: "",
+        ...overrides,
+    };
+}
+
 describe("StateUpgradeModal.vue", () => {
     let wrapper: VueWrapper;
 
@@ -26,13 +37,14 @@ describe("StateUpgradeModal.vue", () => {
     const FILLED = '[data-description="workflow state upgrade filled defaults"]';
     const REVIEW = '[data-description="workflow state upgrade review"]';
     const filledDefaults = [
-        {
+        upgradeMessage({
             stepIndex: "1",
             name: "FastQC",
             details: ["No value found for 'Adapter list'.", "No value found for 'Kmers'."],
-        },
-        { stepIndex: "4", name: "MultiQC", details: ["No value found for 'Report title'."] },
-    ] as unknown as UpgradeMessage[];
+        }),
+        upgradeMessage({ stepIndex: "4", name: "MultiQC", details: ["No value found for 'Report title'."] }),
+    ];
+    const toReview = [upgradeMessage({ name: "step", details: ["Tool version changed"] })];
 
     it("should not render if there are no messages", async () => {
         const stateMessages: UpgradeMessage[] = [];
@@ -41,25 +53,13 @@ describe("StateUpgradeModal.vue", () => {
     });
 
     it("should render if there are messages", async () => {
-        const stateMessages = [
-            {
-                stepIndex: 2,
-                name: "step name",
-                details: ["my message 1", "my message 2"],
-            },
-        ] as unknown as UpgradeMessage[];
+        const stateMessages = [upgradeMessage()];
         await mountWith(stateMessages);
         expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBeTruthy();
     });
 
     async function mountSomeInitialMessagesAndDismiss() {
-        const stateMessages = [
-            {
-                stepIndex: 2,
-                name: "step name",
-                details: ["my message 1", "my message 2"],
-            },
-        ] as unknown as UpgradeMessage[];
+        const stateMessages = [upgradeMessage()];
         await mountWith(stateMessages);
 
         // Close the modal by dispatching a "close" event on the dialog element
@@ -72,13 +72,7 @@ describe("StateUpgradeModal.vue", () => {
 
     it("should re-render when passed new messages", async () => {
         await mountSomeInitialMessagesAndDismiss();
-        const stateMessagesNew = [
-            {
-                stepIndex: 3,
-                name: "step name",
-                details: ["my message 1", "my message 2"],
-            },
-        ] as unknown as UpgradeMessage[];
+        const stateMessagesNew = [upgradeMessage({ stepIndex: "3" })];
         await wrapper.setProps({
             stateMessages: stateMessagesNew,
         });
@@ -101,7 +95,7 @@ describe("StateUpgradeModal.vue", () => {
         vi.mocked(sanitizeHtml).mockImplementation((html) => `<span class="sanitized">${html}</span>`);
         const detail =
             'Tool version changed, see <a href="https://toolshed.g2.bx.psu.edu" target="_blank">the Tool Shed</a>';
-        await mountWith([{ stepIndex: 1, name: "step", details: [detail] }] as unknown as UpgradeMessage[]);
+        await mountWith([upgradeMessage({ stepIndex: "1", name: "step", details: [detail] })]);
 
         expect(sanitizeHtml).toHaveBeenCalledWith(detail, "links");
         expect(wrapper.find(".workflow-state-upgrade-step-details .sanitized a").exists()).toBe(true);
@@ -123,43 +117,23 @@ describe("StateUpgradeModal.vue", () => {
     });
 
     it("keeps problems to review separate from filled defaults", async () => {
-        await mountWith(
-            [{ stepIndex: 2, name: "step", details: ["Tool version changed"] }] as unknown as UpgradeMessage[],
-            filledDefaults,
-        );
+        await mountWith(toReview, filledDefaults);
         expect(wrapper.text()).toContain("Issues loading this workflow");
         expect(wrapper.find(REVIEW).text()).toContain("Tool version changed");
         expect(wrapper.find(REVIEW).text()).not.toContain("Adapter list");
         expect(wrapper.find(FILLED).exists()).toBe(true);
     });
 
-    it("closes and reports acceptance when filled defaults are accepted", async () => {
-        await mountWith([], filledDefaults);
+    it.each([
+        ["Accept", [], filledDefaults, 1],
+        ["Accept defaults", toReview, filledDefaults, 1],
+        ["OK", toReview, [], undefined],
+    ])("closes on %s and reports acceptance only for filled defaults", async (label, review, filled, accepted) => {
+        await mountWith(review, filled);
         const ok = wrapper.find('[data-description="workflow state upgrade modal ok"]');
-        expect(ok.text()).toBe("Accept");
+        expect(ok.text()).toBe(label);
         await ok.trigger("click");
         expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBe(false);
-        expect(wrapper.emitted("accept")).toHaveLength(1);
-    });
-
-    it("labels the button for the defaults when there are issues to review too", async () => {
-        await mountWith(
-            [{ stepIndex: 2, name: "step", details: ["Tool version changed"] }] as unknown as UpgradeMessage[],
-            filledDefaults,
-        );
-        const ok = wrapper.find('[data-description="workflow state upgrade modal ok"]');
-        expect(ok.text()).toBe("Accept defaults");
-        await ok.trigger("click");
-        expect(wrapper.emitted("accept")).toHaveLength(1);
-    });
-
-    it("only closes on OK when there are no filled defaults", async () => {
-        await mountWith([
-            { stepIndex: 2, name: "step", details: ["Tool version changed"] },
-        ] as unknown as UpgradeMessage[]);
-        const ok = wrapper.find('[data-description="workflow state upgrade modal ok"]');
-        expect(ok.text()).toBe("OK");
-        await ok.trigger("click");
-        expect(wrapper.emitted("accept")).toBeUndefined();
+        expect(wrapper.emitted("accept")?.length).toBe(accepted);
     });
 });
