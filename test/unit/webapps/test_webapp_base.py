@@ -157,13 +157,12 @@ def test_published_embeds_are_unrestricted(path):
     assert "Content-Security-Policy" not in headers
 
 
-@pytest.mark.parametrize("origins", [None, "https://a.example.org"])
 @pytest.mark.parametrize("path", ["/widgets/pages/1", "/widgets/workflows/1"])
 @pytest.mark.parametrize("url_prefix", ["/", "/galaxy"])
-def test_page_and_workflow_widgets_allow_any_origin(url_prefix, path, origins):
-    client, root_path = _frame_headers_client(url_prefix, widgets_allowed_origins=origins)
+def test_page_and_workflow_widgets_allow_only_galaxy_by_default(url_prefix, path):
+    client, root_path = _frame_headers_client(url_prefix)
     headers = client.get(f"{root_path}{path}").headers
-    assert headers["Content-Security-Policy"] == "frame-ancestors *"
+    assert headers["Content-Security-Policy"] == "frame-ancestors 'self'"
     assert "X-Frame-Options" not in headers
 
 
