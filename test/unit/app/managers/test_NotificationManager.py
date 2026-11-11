@@ -1,4 +1,5 @@
 import json
+import tempfile
 from datetime import (
     datetime,
     timedelta,
@@ -36,6 +37,7 @@ from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
     BroadcastNotificationContent,
     BroadcastNotificationCreateRequest,
+    completion_notification_request,
     InternalNotificationCreateData,
     JobCompletionNotificationContent,
     NotificationBroadcastUpdateRequest,
@@ -61,6 +63,7 @@ from galaxy.schema.storage_operations import (
     StorageOperationRunState,
 )
 from galaxy.util import now
+from galaxy.util.unittest_utils import read_mock_emails
 from .base import BaseTestCase
 
 
@@ -542,6 +545,28 @@ class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
             self.notification_manager.dispatch_pending_notifications_via_channels()
             mock_send_mail.assert_called_once()
             assert len(emails_sent) == 1
+
+    def test_dispatch_now_emails_on_creation_and_not_again_with_the_pending_notifications(self):
+        user = self._create_test_user()
+        email_dir = tempfile.mkdtemp()
+        self.app.config.smtp_server = f"mock_emails_to_path://{email_dir}"
+        content = JobCompletionNotificationContent(
+            history_id="f2db41e1fa331b3e",
+            history_name="Analysis",
+            outputs=["trimmed reads"],
+            job_count=1,
+            state_counts={"ok": 1},
+        )
+        request = completion_notification_request(user.id, content, "https://test.galaxy.url")
+
+        self.notification_manager.send_notification_to_recipients(request)
+        emails_on_creation = read_mock_emails(email_dir)
+        dispatched_later = self.notification_manager.dispatch_pending_notifications_via_channels()
+
+        assert [(email["to"], email["subject"]) for email in emails_on_creation] == [
+            (user.email, "[Galaxy] Job completion notification from history 'Analysis'")
+        ]
+        assert dispatched_later == 0
 
     def test_force_sync_creates_notification_without_dispatching_email_channel_when_async_is_enabled(self):
         user = self._create_test_user()

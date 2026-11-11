@@ -621,6 +621,15 @@ class NotificationCreateRequest(GenericNotificationCreate[int]):
         title="Galaxy URL",
         description="The URL of the Galaxy instance. Used to generate links in the notification content.",
     )
+    dispatch_now: bool = Field(
+        False,
+        title="Dispatch now",
+        description=(
+            "Whether to deliver the notification through the other channels (e.g. email) as soon as it is created,"
+            " instead of with the next run of the pending notifications dispatcher. Only for notifications published"
+            " right away and created outside a web request, e.g. in a Celery task."
+        ),
+    )
 
 
 NotificationRecipients = GenericNotificationRecipients[int]
@@ -642,6 +651,8 @@ def completion_notification_request(
             content=content,
         ),
         galaxy_url=galaxy_url,
+        # The user is waiting for this one; it is created in a Celery task, never in a web request.
+        dispatch_now=True,
     )
 
 

@@ -85,6 +85,7 @@ class TestJobCompletionEmails(integration_util.IntegrationTestCase):
 class TestCompletionNotifications(integration_util.IntegrationTestCase):
     """With the notification system and Celery on, completion goes through the notification system."""
 
+    email_dir: ClassVar[str]
     dataset_populator: DatasetPopulator
     dataset_collection_populator: DatasetCollectionPopulator
     workflow_populator: WorkflowPopulator
@@ -95,12 +96,19 @@ class TestCompletionNotifications(integration_util.IntegrationTestCase):
         config["enable_notification_system"] = True
         config["enable_celery_tasks"] = True
         config["job_config"] = SINGLE_WORKER_JOB_CONFIG
+        cls.email_dir = cls._test_driver.mkdtemp()
+        config["email_from"] = "galaxy-noreply@example.com"
+        config["smtp_server"] = f"mock_emails_to_path://{cls.email_dir}"
+        # Far beyond a test's duration: completion emails must not wait for the pending notifications dispatcher.
+        config["dispatch_notifications_interval"] = 3600
 
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+        for email in Path(self.email_dir).iterdir():
+            email.unlink()
 
     def test_job_sends_its_own_notification(self):
         with self.dataset_populator.test_history(name="Reads") as history_id:
@@ -118,6 +126,7 @@ class TestCompletionNotifications(integration_util.IntegrationTestCase):
                 "state_counts": {"ok": 1},
                 "invocation_id": None,
             }
+            assert self._wait_for_email_subjects() == ["[Galaxy] Job completion notification from history 'Reads'"]
 
     def test_map_over_sends_one_notification(self):
         with self.dataset_populator.test_history(name="Reads") as history_id:
@@ -141,6 +150,7 @@ class TestCompletionNotifications(integration_util.IntegrationTestCase):
                 "state_counts": {"ok": 3},
                 "invocation_id": None,
             }
+            assert self._wait_for_email_subjects() == ["[Galaxy] Job completion notification from history 'Reads'"]
 
     def test_workflow_invocation_sends_one_notification(self):
         with self.dataset_populator.test_history(name="Reads") as history_id:
@@ -153,17 +163,19 @@ class TestCompletionNotifications(integration_util.IntegrationTestCase):
             )
             self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id)
 
+            workflow_name = self._get(f"workflows/{summary.workflow_id}").json()["name"]
             [notification] = self._wait_for_notifications(history_id)
             assert notification["category"] == "workflow_completion"
             assert notification["content"] == {
                 "category": "workflow_completion",
                 "history_id": history_id,
                 "history_name": "Reads",
-                "workflow_name": self._get(f"workflows/{summary.workflow_id}").json()["name"],
+                "workflow_name": workflow_name,
                 "job_count": 1,
                 "state_counts": {"ok": 1},
                 "invocation_id": summary.invocation_id,
             }
+            assert self._wait_for_email_subjects() == [f"[Galaxy] Workflow '{workflow_name}' completed"]
 
     def _wait_for_notifications(self, history_id: str) -> list[dict]:
         """The notifications about jobs in the history; Celery tasks create them once the jobs complete."""
@@ -173,3 +185,9 @@ class TestCompletionNotifications(integration_util.IntegrationTestCase):
             return [n for n in notifications if n["content"].get("history_id") == history_id] or None
 
         return wait_on(history_notifications, "job completion notification")
+
+    def _wait_for_email_subjects(self) -> list[str]:
+        """The subjects of the emails sent; the Celery task sends them right after creating the notification."""
+        return wait_on(
+            lambda: [email["subject"] for email in read_mock_emails(self.email_dir)] or None, "completion email"
+        )

@@ -179,11 +179,14 @@ class NotificationManager:
         Creates a new notification and associates it with all the recipient users.
 
         It takes into account the user's notification preferences to decide if the notification should be sent to them.
-        No other notification channel is used here, only the internal database associations are created.
+        Only the internal database associations are created here; the other channels deliver the notification with the
+        next run of the pending notifications dispatcher, or right away if the request sets ``dispatch_now``.
         """
         self.ensure_notifications_enabled()
         recipient_users = self.recipient_resolver.resolve(request.recipients)
         notification = self._create_notification_model(request.notification, request.galaxy_url)
+        # Marked in the same commit that creates it, so the dispatcher never picks it up as well.
+        notification.dispatched = request.dispatch_now
         self.sa_session.add(notification)
         self.sa_session.commit()
 
@@ -193,6 +196,9 @@ class NotificationManager:
         # Push SSE events to connected users via control queue
         user_ids = [user.id for user in recipient_users]
         self._notify_users_via_sse(user_ids, notification)
+
+        if request.dispatch_now:
+            self._dispatch_notification_to_users(notification)
 
         return notification, notifications_sent
 
@@ -254,7 +260,8 @@ class NotificationManager:
 
         If `force_sync` is set to `True`, recipient association creation will be
         processed synchronously instead of in a background task. Other notification
-        channels are still dispatched by the regular background dispatcher.
+        channels are still dispatched by the regular background dispatcher, unless the
+        request sets ``dispatch_now``.
 
         Note: This function is meant for internal use from other callers that don't need to check sender permissions.
         """
