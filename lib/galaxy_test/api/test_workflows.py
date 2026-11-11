@@ -1389,6 +1389,9 @@ steps:
             client_convert=False,
             fill_defaults=False,
         )
+        editor = self._download_workflow(workflow_id, style="editor")
+        assert "floattest" in editor["upgrade_messages"]["0"]
+        assert "0" not in editor["filled_defaults"]
         with self.dataset_populator.test_history() as history_id:
             request: dict[str, Any] = {"history_id": history_id}
             response = self.workflow_populator.invoke_workflow_raw(workflow_id, request)
@@ -1436,6 +1439,14 @@ steps:
         editor = self._download_workflow(workflow_id, style="editor")
         assert "num_lines" in editor["upgrade_messages"]["1"]
         assert "num_lines" not in editor["filled_defaults"].get("1", {})
+        with self.dataset_populator.test_history() as history_id:
+            assert self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
+            hda = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\n", wait=True)
+            response = self.workflow_populator.invoke_workflow(
+                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(hda)}
+            )
+            self._assert_status_code_is(response, 400)
+            assert "upgrade messages" in response.json()["err_msg"]
 
     def test_refactor(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
