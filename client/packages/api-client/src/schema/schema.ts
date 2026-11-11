@@ -18864,6 +18864,46 @@ export interface components {
              */
             update_time: string;
         };
+        /** JobCompletionNotificationContent */
+        JobCompletionNotificationContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "job_completion";
+            /**
+             * History ID
+             * @description The encoded ID of the history the jobs ran in.
+             */
+            history_id: string;
+            /**
+             * History name
+             * @description The name of the history the jobs ran in.
+             */
+            history_name: string;
+            /**
+             * Invocation ID
+             * @description The encoded ID of the workflow invocation that ran the jobs, if any.
+             */
+            invocation_id?: string | null;
+            /**
+             * Job count
+             * @description The number of jobs that completed.
+             */
+            job_count: number;
+            /**
+             * Outputs
+             * @description The names of the outputs: the output datasets of a single job, or the output collections of jobs mapped over a collection.
+             */
+            outputs: string[];
+            /**
+             * State counts
+             * @description The number of jobs that ended in each job state.
+             */
+            state_counts: {
+                [key: string]: number;
+            };
+        };
         /** JobConsoleOutput */
         JobConsoleOutput: {
             /**
@@ -20901,6 +20941,7 @@ export interface components {
             content:
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["JobCompletionNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestCreateContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
@@ -20991,6 +21032,7 @@ export interface components {
             content:
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["JobCompletionNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
@@ -22226,7 +22268,12 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_installation_request";
+        PersonalNotificationCategory:
+            | "message"
+            | "new_shared_item"
+            | "job_completion"
+            | "storage_operation"
+            | "tool_installation_request";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -27245,6 +27292,13 @@ export interface components {
          * @description Contains the new notification preferences of a user.
          * @example {
          *       "preferences": {
+         *         "job_completion": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
          *         "message": {
          *           "channels": {
          *             "email": true,
@@ -27714,6 +27768,13 @@ export interface components {
          * @description Contains the full notification preferences of a user.
          * @example {
          *       "preferences": {
+         *         "job_completion": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
          *         "message": {
          *           "channels": {
          *             "email": true,
@@ -27771,6 +27832,7 @@ export interface components {
             content:
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["JobCompletionNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestNotificationContent"];
             /**

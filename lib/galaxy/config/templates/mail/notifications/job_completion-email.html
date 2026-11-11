@@ -1,0 +1,66 @@
+Use this template to customize the HTML email your users will receive
+when a new notification of category "job_completion" is sent to them.
+Copy the file to {{ templates_dir }}/mail/notifications/job_completion-email.html and modify as required.
+
+If you are adding URLs, remember that only absolute URLs (with
+a domain name) make sense in email! They can be served from any stable
+location, including your Galaxy server or GitHub.
+
+The following variables are available for inserting into the HTML with Jinja2
+syntax, like {{ variable_name }}. They will be rendered into the text before
+the email is sent:
+
+- name                      The user's name
+- user_email                The user's email
+- date                      Date and time of the notification
+- hostname                  Your galaxy's hostname (i.e. usegalaxy.* or the value in `server_name` from the galaxy config file)
+- contact_email             Your galaxy's contact email
+- notification_settings_url The URL to the user's notification settings to manage their subscriptions
+- variant                   The notification variant indicates the level of importance of the notification (i.e. info, warning, urgent)
+- content                   The job_completion payload
+  - history_id              The encoded ID of the history the jobs ran in
+  - history_name            The name of the history the jobs ran in
+  - outputs                 The names of the outputs (datasets of a single job, or collections of jobs mapped over a collection)
+  - job_count               The number of jobs that completed
+  - state_counts            The number of jobs that ended in each job state (e.g. ok, error)
+  - invocation_id           The encoded ID of the workflow invocation that ran the jobs, if any
+- galaxy_url                The URL to the Galaxy instance (i.e. https://usegalaxy.*)
+
+Template begins here >>>>>>
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>[Galaxy] Job completion notification from history '{{ content['history_name'] }}'</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  </head>
+  <body style="font-family: 'Roboto', sans-serif;">
+
+    <p style="font-size: 12pt;">
+      Hello {{ name }},<br><br>
+
+      {% if content['job_count'] == 1 %}Your Galaxy job{% else %}Your {{ content['job_count'] }} Galaxy jobs{% endif %}
+      in history <b>{{ content['history_name'] }}</b> completed on <b>{{ date }}</b>.
+    </p>
+
+    {% if content['outputs'] %}
+    <p style="font-size: 12pt;">Outputs:</p>
+    <ul style="font-size: 12pt;">
+      {% for output in content['outputs'] %}
+      <li>{{ output }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% include "mail/notifications/_completion_summary.html" %}
+
+    <img
+      style="width: 130px; height: auto; margin: 15px 0;"
+      src="https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo_square.png"
+      alt="Galaxy project logo"
+    >
+
+    <br>
+
+  </body>
+</html>

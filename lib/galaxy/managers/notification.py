@@ -57,6 +57,7 @@ from galaxy.schema.notifications import (
     BroadcastNotificationCreateRequest,
     BroadcastNotificationResponse,
     InternalNotificationCreateData,
+    JobCompletionNotificationContent,
     MandatoryNotificationCategory,
     MessageNotificationContent,
     NewSharedItemNotificationContent,
@@ -900,6 +901,33 @@ class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBui
         return f"[Galaxy] New {content.item_type} shared with you: {content.item_name}"
 
 
+CompletionNotificationContent = JobCompletionNotificationContent
+
+
+class CompletionEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+    """Emails about jobs the user asked to be notified about."""
+
+    # History and output names are raw user-supplied strings; escape them in HTML.
+    autoescape_html = True
+    content_model: type[CompletionNotificationContent]
+
+    def get_content(self, template_format: TemplateFormats) -> CompletionNotificationContent:
+        return self.content_model.model_validate(self.notification.content)
+
+    @staticmethod
+    def _header_text(text: str) -> str:
+        """``text`` on a single line, as a mail header needs."""
+        return " ".join(text.split())
+
+
+class JobCompletionEmailNotificationTemplateBuilder(CompletionEmailNotificationTemplateBuilder):
+    content_model = JobCompletionNotificationContent
+
+    def get_subject(self) -> str:
+        history_name = self._header_text(self.get_content(TemplateFormats.TXT).history_name)
+        return f"[Galaxy] Job completion notification from history '{history_name}'"
+
+
 class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
     # content['message'] is pre-rendered to HTML via to_html(); autoescape would
     # double-escape it, so this template must opt out.
@@ -981,6 +1009,7 @@ class EmailNotificationChannelPlugin(NotificationChannelPlugin):
     email_templates_by_category: dict[PersonalNotificationCategory, type[EmailNotificationTemplateBuilder]] = {
         PersonalNotificationCategory.message: MessageEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.new_shared_item: NewSharedItemEmailNotificationTemplateBuilder,
+        PersonalNotificationCategory.job_completion: JobCompletionEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.storage_operation: StorageOperationEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.tool_installation_request: ToolInstallationRequestEmailNotificationTemplateBuilder,
     }

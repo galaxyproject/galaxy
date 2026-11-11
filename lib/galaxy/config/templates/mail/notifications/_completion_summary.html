@@ -1,0 +1,45 @@
+{#- Shared end of the completion email bodies: job states, links, citation and footer.
+   Included by job_completion-email.html and workflow_completion-email.html. Pure partial
+   body (no >>>>>> doc header). Variables: the notification context; content needs
+   history_id, state_counts and invocation_id. -#}
+    <p style="font-size: 12pt;">Job states:</p>
+    <ul style="font-size: 12pt;">
+      {% for state, count in content['state_counts'] | dictsort %}
+      <li>{{ state }}: {{ count }}</li>
+      {% endfor %}
+    </ul>
+
+    <p style="font-size: 12pt;">
+      <a href="{{ galaxy_url }}/histories/view?id={{ content['history_id'] }}">Open your history</a>
+      {% if content['invocation_id'] %}
+      <br>
+      <a href="{{ galaxy_url }}/workflows/invocations/report?id={{ content['invocation_id'] }}">Open the workflow invocation report</a>
+      {% endif %}
+    </p>
+
+    <p style="font-size: 12pt;">
+      Please remember to cite Galaxy using our primary publication
+      (<a href="https://gxy.io/p/latest-nar">https://gxy.io/p/latest-nar</a>) in any publication based on your analysis.
+    </p>
+
+    <p style="font-size: 12pt;">
+      Thank you for using Galaxy!
+    </p>
+
+    <p style="font-size: 12pt;">
+      Regards,<br>
+      Your Galaxy Team at <a href="{{ galaxy_url }}">{{ hostname }}</a>
+    </p>
+
+    <p style="font-size: 10pt;">
+      You received this email because you asked to be notified when these jobs complete.
+      {% if notification_settings_url %}
+      You can choose how these notifications reach you <a href="{{ notification_settings_url }}">here</a>.
+      {% endif %}
+
+      <br>
+
+      {% if contact_email %}
+      This is an automated email. If you have any questions or concerns, please do not reply to this email, instead, contact us at <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.
+      {% endif %}
+    </p>

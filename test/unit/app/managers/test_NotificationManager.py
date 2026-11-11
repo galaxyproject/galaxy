@@ -17,6 +17,7 @@ from pydantic import ValidationError
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.notification import (
     DefaultStrategy,
+    JobCompletionEmailNotificationTemplateBuilder,
     MessageEmailNotificationTemplateBuilder,
     NotificationManager,
     NotificationRecipientResolver,
@@ -34,6 +35,7 @@ from galaxy.schema.notifications import (
     BroadcastNotificationContent,
     BroadcastNotificationCreateRequest,
     InternalNotificationCreateData,
+    JobCompletionNotificationContent,
     NotificationBroadcastUpdateRequest,
     NotificationCategorySettings,
     NotificationChannelSettings,
@@ -759,6 +761,44 @@ class TestMessageEmailBuilder(NotificationManagerBaseTestCase):
         html = builder.get_body(TemplateFormats.HTML)
         assert "<strong>Downtime</strong>" in html
         assert "&lt;i&gt;Maintenance&lt;/i&gt;" in html
+
+
+class TestCompletionEmailBuilders(NotificationManagerBaseTestCase):
+    def _send_job_completion(self, user: User, history_name: str = "Analysis"):
+        content = JobCompletionNotificationContent(
+            history_id="f2db41e1fa331b3e",
+            history_name=history_name,
+            outputs=["trimmed reads"],
+            job_count=3,
+            state_counts={"ok": 2, "error": 1},
+            invocation_id="5969b1f7201f12ae",
+        )
+        notification, _ = self._send_message_notification_to_users(
+            [user],
+            notification={"category": content.category, "content": content.model_dump()},
+        )
+        return notification
+
+    def test_text_email_lists_outputs_states_and_links(self):
+        user = self._create_test_user()
+        notification = self._send_job_completion(user)
+        builder = JobCompletionEmailNotificationTemplateBuilder(self.app.config, notification, user)
+        text = builder.get_body(TemplateFormats.TXT)
+        assert "Your 3 Galaxy jobs in history 'Analysis' completed on " in text
+        assert "Outputs:\n- trimmed reads\n" in text
+        assert "Job states:\n- error: 1\n- ok: 2\n" in text
+        assert "https://test.galaxy.url/histories/view?id=f2db41e1fa331b3e" in text
+        assert "https://test.galaxy.url/workflows/invocations/report?id=5969b1f7201f12ae" in text
+        assert builder.get_subject() == "[Galaxy] Job completion notification from history 'Analysis'"
+
+    def test_history_name_is_escaped_in_html_and_kept_on_one_line_in_the_subject(self):
+        user = self._create_test_user()
+        notification = self._send_job_completion(user, history_name="<b>Reads</b>\nrun 2")
+        builder = JobCompletionEmailNotificationTemplateBuilder(self.app.config, notification, user)
+        html = builder.get_body(TemplateFormats.HTML)
+        assert "&lt;b&gt;Reads&lt;/b&gt;" in html
+        assert "<b>Reads</b>" not in html
+        assert builder.get_subject() == "[Galaxy] Job completion notification from history '<b>Reads</b> run 2'"
 
 
 class TestToolInstallationRequestEmailBuilder(NotificationManagerBaseTestCase):

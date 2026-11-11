@@ -1,0 +1,30 @@
+{#- Shared end of the completion email bodies: job states, links, citation and footer.
+   Included by job_completion-email.txt and workflow_completion-email.txt. Pure partial
+   body (no >>>>>> doc header). Variables: the notification context; content needs
+   history_id, state_counts and invocation_id. -#}
+Job states:
+{% for state, count in content['state_counts'] | dictsort %}- {{ state }}: {{ count }}
+{% endfor %}
+To access your data, open your history:
+{{ galaxy_url }}/histories/view?id={{ content['history_id'] }}
+{% if content['invocation_id'] %}
+Workflow invocation report:
+{{ galaxy_url }}/workflows/invocations/report?id={{ content['invocation_id'] }}
+{% endif %}
+Please remember to cite Galaxy using our primary publication (https://gxy.io/p/latest-nar) in any publication based on your analysis.
+
+Thank you for using Galaxy!
+
+Regards,
+Your Galaxy Team at {{ hostname }}
+
+---
+
+You received this email because you asked to be notified when these jobs complete.
+{% if notification_settings_url %}
+To choose how these notifications reach you, please visit {{ notification_settings_url }}.
+{% endif %}
+
+{% if contact_email %}
+This is an automated email. If you have any questions or concerns, please do not reply to this email, instead, contact us at {{ contact_email }}.
+{% endif %}

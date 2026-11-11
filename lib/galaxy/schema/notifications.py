@@ -65,6 +65,7 @@ class PersonalNotificationCategory(str, Enum):
 
     message = "message"
     new_shared_item = "new_shared_item"
+    job_completion = "job_completion"
     storage_operation = "storage_operation"
     tool_installation_request = "tool_installation_request"
     # TODO: enable this and create content model when we have a hook for completed workflows
@@ -143,6 +144,33 @@ class StorageOperationNotificationContent(MessageNotificationContentBase):
     succeeded_count: int = Field(default=0, title="Succeeded Count", description="Succeeded datasets count.")
     failed_count: int = Field(default=0, title="Failed Count", description="Failed datasets count.")
     skipped_count: int = Field(default=0, title="Skipped Count", description="Skipped datasets count.")
+
+
+class CompletionNotificationContentBase(Model):
+    """What completed in a history: the jobs of a tool run."""
+
+    # Plain strings rather than EncodedDatabaseIdField: the content is validated again when the
+    # Celery task is decoded and on every read, and that field would encode the encoded ID again.
+    history_id: str = Field(..., title="History ID", description="The encoded ID of the history the jobs ran in.")
+    history_name: str = Field(..., title="History name", description="The name of the history the jobs ran in.")
+    job_count: int = Field(..., title="Job count", description="The number of jobs that completed.")
+    state_counts: dict[str, int] = Field(
+        ..., title="State counts", description="The number of jobs that ended in each job state."
+    )
+    invocation_id: str | None = Field(
+        None,
+        title="Invocation ID",
+        description="The encoded ID of the workflow invocation that ran the jobs, if any.",
+    )
+
+
+class JobCompletionNotificationContent(CompletionNotificationContentBase):
+    category: Literal[PersonalNotificationCategory.job_completion] = PersonalNotificationCategory.job_completion
+    outputs: list[str] = Field(
+        ...,
+        title="Outputs",
+        description="The names of the outputs: the output datasets of a single job, or the output collections of jobs mapped over a collection.",
+    )
 
 
 # Tool-request fields are raw user input that ends up in emails (including the
@@ -344,7 +372,10 @@ NotificationContentField = Field(
 # Content models shared verbatim between the response and create unions; the
 # two unions below differ only in the tool-installation-request entry.
 _CommonUserNotificationContent = (
-    MessageNotificationContent | NewSharedItemNotificationContent | StorageOperationNotificationContent
+    MessageNotificationContent
+    | NewSharedItemNotificationContent
+    | JobCompletionNotificationContent
+    | StorageOperationNotificationContent
 )
 
 AnyUserNotificationContent = Annotated[
@@ -585,6 +616,25 @@ class NotificationCreateRequest(GenericNotificationCreate[int]):
 
 
 NotificationRecipients = GenericNotificationRecipients[int]
+
+
+def completion_notification_request(
+    user_id: int,
+    content: JobCompletionNotificationContent,
+    galaxy_url: str | None,
+) -> NotificationCreateRequest:
+    """The request that notifies a user that jobs they asked to hear about have completed."""
+    variant = NotificationVariant.warning if content.state_counts.get("error") else NotificationVariant.info
+    return NotificationCreateRequest(
+        recipients=NotificationRecipients(user_ids=[user_id]),
+        notification=InternalNotificationCreateData(
+            source="galaxy",
+            category=content.category,
+            variant=variant,
+            content=content,
+        ),
+        galaxy_url=galaxy_url,
+    )
 
 
 NotificationCreateRequestBody = GenericNotificationCreate[DecodedDatabaseIdField]
