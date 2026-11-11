@@ -1,3 +1,4 @@
+import json
 from datetime import (
     datetime,
     timedelta,
@@ -401,6 +402,19 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         assert message_preferences
         assert message_preferences.enabled is False
         assert message_preferences.channels.push is False
+
+    def test_stored_preferences_include_categories_added_after_they_were_saved(self):
+        user = self._create_test_user()
+        stored = {"preferences": {"message": {"enabled": False, "channels": {"push": False, "email": True}}}}
+        user.preferences["notifications"] = json.dumps(stored)
+
+        preferences = self.notification_manager.get_user_notification_preferences(user)
+
+        expected = UserNotificationPreferences.default()
+        expected.preferences[PersonalNotificationCategory.message] = NotificationCategorySettings(
+            enabled=False, channels=NotificationChannelSettings(push=False, email=True)
+        )
+        assert preferences == expected
 
     def test_cleanup_expired_notifications(self):
         user = self._create_test_user()

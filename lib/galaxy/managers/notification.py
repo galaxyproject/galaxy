@@ -535,7 +535,11 @@ class NotificationManager:
         current_notification_preferences = user.preferences.get(NOTIFICATION_PREFERENCES_SECTION_NAME)
         if current_notification_preferences:
             try:
-                return UserNotificationPreferences.model_validate_json(current_notification_preferences)
+                stored_preferences = UserNotificationPreferences.model_validate_json(current_notification_preferences)
+                # Categories added after the user saved their preferences get the default settings.
+                preferences = UserNotificationPreferences.default()
+                preferences.update(stored_preferences)
+                return preferences
             except ValidationError:
                 pass
         # Gracefully return default preferences is they don't exist or get corrupted
