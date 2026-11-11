@@ -2965,6 +2965,24 @@ class ImplicitCollectionJobs(Base, Serializable):
     def __init__(self, populated_state=None):
         self.populated_state = populated_state or ImplicitCollectionJobs.populated_states.NEW
 
+    def _job_states_stmt(self):
+        return (
+            select(Job.state)
+            .select_from(Job)
+            .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+            .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
+        )
+
+    def has_job_not_in_states(self, states: Iterable[str]) -> bool:
+        """Whether any of these jobs is in a state not in ``states``."""
+        stmt = select(self._job_states_stmt().where(Job.state.not_in(states)).exists())
+        return bool(required_object_session(self).scalar(stmt))
+
+    def job_state_counts(self) -> dict[str, int]:
+        """Number of these jobs in each state."""
+        stmt = self._job_states_stmt().add_columns(func.count()).group_by(Job.state)
+        return dict(required_object_session(self).execute(stmt).tuples().all())
+
     @property
     def job_list(self):
         return (

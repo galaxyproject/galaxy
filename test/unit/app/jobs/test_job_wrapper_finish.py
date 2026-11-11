@@ -17,10 +17,12 @@ from galaxy import (
     model,
 )
 from galaxy.app_unittest_utils.tools_support import UsesTools
+from galaxy.job_execution.actions import post
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.model import store
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.unittest import TestCase
+from galaxy.util.unittest_utils import read_mock_emails
 
 OLD_UPDATE_TIME = datetime(2020, 1, 1)
 
@@ -55,6 +57,7 @@ class TestJobWrapperFinish(TestCase, UsesTools):
         self.config = cast(Any, self.app.config)
         self.config.retry_job_output_collection = 0
         self.config.calculate_dataset_hash = "never"
+        self.config.galaxy_infrastructure_url = "https://galaxy.example.org"
         self.app.job_metrics = job_metrics.JobMetrics()
         self.job = job
         self.dataset = dataset
@@ -158,6 +161,60 @@ class TestJobWrapperFinish(TestCase, UsesTools):
         assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
         for job_state, dataset_state, _ in committed:
             assert (job_state == model.Job.states.OK) == (dataset_state == model.Dataset.states.OK)
+
+    def test_email_is_sent_after_final_job_state_is_committed(self):
+        self.job.add_post_job_action(model.PostJobAction("EmailAction"))
+        self.app.model.context.commit()
+        committed_when_sent = []
+        with patch.object(post, "send_mail") as send_mail:
+            send_mail.side_effect = lambda *args, **kwargs: committed_when_sent.append(list(self.committed))
+            self._finish_and_record_commits()
+
+        assert len(committed_when_sent) == 1
+        assert committed_when_sent[0][-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
+
+    def test_failed_job_completes_map_over_of_the_dependent_job_it_pauses(self):
+        session = self.app.model.context
+        map_over = model.ImplicitCollectionJobs(populated_state="ok")
+        hdca = model.HistoryDatasetCollectionAssociation(name="trimmed reads", hid=1, history=self.job.history)
+        hdca.implicit_collection_jobs = map_over
+        finished_job, dependent_job = (
+            self._add_mapped_over_job(map_over, hdca, order_index, state)
+            for order_index, state in enumerate([model.Job.states.OK, model.Job.states.NEW])
+        )
+        dependent_job.add_input_dataset("input1", self.job.output_datasets[0].dataset)
+        session.commit()
+
+        email_dir = self._mock_emails_dir()
+        # Error reports need a real toolbox and are unrelated to the email.
+        with patch.object(MinimalJobWrapper, "_report_error"):
+            MinimalJobWrapper(self.job, self.app, tool=self.tool).fail("tool error")
+
+        assert dependent_job.state == model.Job.states.PAUSED
+        [email] = read_mock_emails(email_dir)
+        assert email["body"].startswith(
+            "Your 2 Galaxy jobs generating collection(s):\n\ntrimmed reads\n\nare complete (1 ok, 1 paused) as of "
+        )
+
+    def _mock_emails_dir(self):
+        email_dir = os.path.join(self.test_directory, "emails")
+        os.makedirs(email_dir)
+        self.config.smtp_server = f"mock_emails_to_path://{email_dir}"
+        return email_dir
+
+    def _add_mapped_over_job(self, map_over, hdca, order_index, state):
+        job = model.Job()
+        job.user = self.job.user
+        job.history = self.job.history
+        job.state = state
+        job.add_post_job_action(model.PostJobAction("EmailAction"))
+        job.add_output_dataset_collection("output", hdca)
+        job_assoc = model.ImplicitCollectionJobsJobAssociation()
+        job_assoc.order_index = order_index
+        job_assoc.implicit_collection_jobs = map_over
+        job_assoc.job = job
+        self.app.model.context.add(job_assoc)
+        return job
 
     def _add_output_collection(self):
         session = self.app.model.context
