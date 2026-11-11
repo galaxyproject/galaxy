@@ -1366,7 +1366,7 @@ steps:
             fill_defaults=False,
         )
         with self.dataset_populator.test_history() as history_id:
-            request = {"history_id": history_id}
+            request: dict[str, Any] = {"history_id": history_id}
             response = self.workflow_populator.invoke_workflow_raw(workflow_id, request)
             self._assert_status_code_is(response, 400)
             assert "upgrade messages" in response.json()["err_msg"]
