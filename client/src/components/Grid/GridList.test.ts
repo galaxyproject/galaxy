@@ -325,8 +325,7 @@ describe("GridList", () => {
         });
         await flushPromises();
 
-        const pageLinks = wrapper.findAll(".page-link");
-        await pageLinks[4]!.trigger("click");
+        await wrapper.find("[data-description='grid pager'] button[data-page='3']").trigger("click");
         await flushPromises();
         expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("id-5");
         expect(wrapper.find("[data-description='grid cell 1-0']").text()).toBe("id-6");
