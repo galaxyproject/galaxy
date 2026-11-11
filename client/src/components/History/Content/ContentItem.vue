@@ -359,8 +359,7 @@ function unexpandedClick(event: Event) {
                         icon-only
                         class="p-0"
                         title="Inputs/Outputs highlighted for this item"
-                        @click.stop="toggleHighlights"
-                        @keypress="toggleHighlights">
+                        @click.stop="toggleHighlights">
                         <FontAwesomeIcon :icon="faCheckCircle" />
                     </GButton>
                     <GButton

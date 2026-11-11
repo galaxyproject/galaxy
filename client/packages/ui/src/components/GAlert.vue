@@ -9,6 +9,11 @@ import { computed, onBeforeUnmount, provide, ref, useAttrs, watch } from "vue";
 
 import { liveRegionKey } from "./liveRegionContext";
 
+defineOptions({
+    // Under @vue/compat: let undeclared listeners (@pointerdown, @dblclick) fall through to the alert, as in Vue 3
+    compatConfig: { INSTANCE_LISTENERS: false },
+});
+
 type AlertVariant = "info" | "warning" | "danger" | "success" | "primary" | "secondary" | "light" | "dark";
 // `string & {}` keeps IDE autocomplete for the recommended variants while still accepting arbitrary
 // strings (and null) -- mirrors BAlert's permissive prop typing so existing call sites don't have
