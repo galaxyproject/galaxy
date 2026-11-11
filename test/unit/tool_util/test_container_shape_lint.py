@@ -50,6 +50,9 @@ def _doc(**overrides):
         "busybox",
         "ubuntu:latest",
         "library/python:3.11-slim",
+        "python@sha256:" + "a" * 64,
+        "ghcr.io/org/img@sha256:" + "a" * 64,
+        "localhost:5000/x:1",
     ],
 )
 def test_valid_container_shapes_pass_lint(container):
@@ -59,7 +62,10 @@ def test_valid_container_shapes_pass_lint(container):
     assert container_warns == []
 
 
-@pytest.mark.parametrize("bad_container", ["definitely not a container", "foo bar baz"])
+@pytest.mark.parametrize(
+    "bad_container",
+    ["definitely not a container", "foo bar baz", "docker://not an image", "quay.io/biocontainers/coreutils:9.5 "],
+)
 def test_invalid_container_shapes_warn(bad_container):
     tool_source = YamlToolSource(_doc(container=bad_container))
     ctx = get_lint_context_for_tool_source(tool_source)

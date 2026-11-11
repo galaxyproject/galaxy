@@ -165,6 +165,7 @@ class MockTool:
         self.dependencies = []
         self.requires_galaxy_python_environment = False
         self.id = "mock_id"
+        self.tool_type = "default"
         self.home_target = None
         self.tmp_target = None
         self.tool_source = Bunch(to_string=lambda: "")

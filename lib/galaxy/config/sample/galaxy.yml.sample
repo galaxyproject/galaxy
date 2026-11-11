@@ -3631,6 +3631,40 @@ galaxy:
   # ``true``. Runs in a Celery task.
   #failed_jobs_working_directory_cleanup_interval: 86400
 
+  # Container images that user defined tools may run in. User defined
+  # tools run an arbitrary command in the image they name, so only list
+  # images you trust. An entry ending in ``/*`` allows any image below
+  # that registry or path, at any depth, with any tag or digest
+  # (``quay.io/biocontainers/*``). An image without a tag or digest
+  # allows any tag or digest of it (``docker.io/library/python``),
+  # ``<image>:<tag>`` only that tag, and ``<image>@<digest>`` only that
+  # digest. A lone ``*`` allows any image; it is meant for testing and
+  # is not recommended in production, because users can then run any
+  # image from any registry, and denied entries can't block copies of an
+  # image on other registries. An empty list allows none, so no user
+  # defined tool can be created or run. References are canonicalized
+  # before they are compared, so ``python`` and
+  # ``docker.io/library/python`` are the same image. Tools are checked
+  # when they are created and again when their jobs run. Malformed
+  # entries prevent Galaxy from starting. See the user defined tools
+  # admin documentation for details.
+  #user_defined_tool_allowed_containers:
+  #- quay.io/biocontainers/*
+
+  # Container images that user defined tools may not run in, even if
+  # ``user_defined_tool_allowed_containers`` allows them. An entry
+  # ending in ``/*`` denies any image below that registry or path, at
+  # any depth, and an image name denies every tag and digest of that
+  # image. Entries with a tag or digest are not accepted, because the
+  # same image can be named by another tag or digest. When this list is
+  # not empty, references that cannot be parsed are refused even if
+  # ``user_defined_tool_allowed_containers`` is ``*``. Entries match
+  # image names, so a copy of an image published under another name or
+  # on another registry is not denied. Malformed entries prevent Galaxy
+  # from starting. See the user defined tools admin documentation for
+  # details.
+  #user_defined_tool_denied_containers: []
+
   # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
   # for user defined tools.
   #enable_beta_tool_formats: false

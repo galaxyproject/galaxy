@@ -271,6 +271,8 @@ def setup_galaxy_config(
         use_tasked_jobs=True,
         use_heartbeat=False,
         user_library_import_dir=user_library_import_dir,
+        # Test user defined tools use images from anywhere (busybox, python, ...).
+        user_defined_tool_allowed_containers=["*"],
         webhooks_dir=webhooks_dir,
         logging=logging,
         monitor_thread_join_timeout=5,
