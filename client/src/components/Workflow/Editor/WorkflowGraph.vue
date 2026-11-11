@@ -13,6 +13,7 @@ import type { Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 import type { Vector } from "@/utils/geometry";
 
+import { AutoLayoutAction } from "./Actions/stepActions";
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
 import type { OutputTerminals } from "./modules/terminals";
 import { maxZoom, minZoom } from "./modules/zoomLevels";
@@ -57,7 +58,7 @@ const props = defineProps({
     detailedView: { type: Boolean, default: false },
 });
 
-const { stateStore, stepStore, connectionStore } = useWorkflowStores();
+const { stateStore, stepStore, connectionStore, workflowId } = useWorkflowStores();
 const { scale, activeNodeId, draggingPosition, draggingTerminal, pendingHighlight } = storeToRefs(stateStore);
 
 const { focusedNodeIds } = useFocusedNodes(activeNodeId, {
@@ -107,7 +108,11 @@ const { viewportBoundingBox, updateViewportBaseBoundingBox } = useViewportBoundi
 );
 const { getWorkflowBoundingBox } = useWorkflowBoundingBox();
 
+// the view's own fit settings, reused when a first layout changes what there is to fit (views that never fit stay put)
+let lastFit: [number, number, number] | null = null;
+
 function fitWorkflow(minimumFitZoom = 0.5, maximumFitZoom = 1.0, padding = 50.0) {
+    lastFit = [minimumFitZoom, maximumFitZoom, padding];
     if (!Object.keys(props.steps).length) {
         // If there are no steps, we cannot fit the workflow.
         return;
@@ -123,6 +128,43 @@ function fitWorkflow(minimumFitZoom = 0.5, maximumFitZoom = 1.0, padding = 50.0)
     zoomTo(clampedScale);
     moveTo({ x: aabb.x, y: aabb.y }, [0, 0]);
 }
+
+// Read-only views pass their own copies of the steps; draw them where the store's first layout put them.
+const drawnSteps = computed(() => {
+    const drawn: { [index: string]: Step } = {};
+    for (const [key, step] of Object.entries(props.steps)) {
+        const stored = stepStore.steps[step.id]?.position;
+        drawn[key] = stored && stored !== step.position ? { ...step, position: stored } : step;
+    }
+    return drawn;
+});
+
+// A workflow that arrived without positions gets Auto Layout once, as soon as every node has a measured size.
+// It is part of loading the workflow, as if it had been stored laid out: no undo entry, and the editor doesn't
+// count it as a change. The positions are saved with the next save.
+const nodesMeasured = computed(() =>
+    Object.values(props.steps).every((step) => (stateStore.stepPosition[step.id]?.height ?? 0) > 0),
+);
+let layingOut = false;
+watch(
+    () => stateStore.needsInitialLayout && nodesMeasured.value,
+    async (ready) => {
+        if (!ready || layingOut) {
+            return;
+        }
+        layingOut = true;
+        try {
+            await new AutoLayoutAction(workflowId, { keepFrameMembership: true }).run();
+            if (lastFit) {
+                fitWorkflow(...lastFit);
+            }
+        } finally {
+            layingOut = false;
+            stateStore.needsInitialLayout = false;
+        }
+    },
+    { immediate: true },
+);
 
 const isDragging = ref(false);
 provide("isDragging", isDragging);
@@ -293,7 +335,7 @@ defineExpose({
                     :dragging-connection="draggingPosition"
                     :focused-node-ids="focusedNodeIds" />
                 <WorkflowNode
-                    v-for="(step, key) in steps"
+                    v-for="(step, key) in drawnSteps"
                     :id="step.id"
                     :key="key"
                     :name="step.name"
@@ -334,7 +376,7 @@ defineExpose({
         </div>
         <WorkflowMinimap
             v-if="elementBounding && props.showMinimap"
-            :steps="steps"
+            :steps="drawnSteps"
             :comments="comments"
             :viewport-bounds="elementBounding"
             :viewport-bounding-box="viewportBoundingBox"

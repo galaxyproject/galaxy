@@ -97,6 +97,10 @@ class WorkflowRefactorExecutor:
     def _apply_update_step_position(self, action: UpdateStepPositionAction, execution: RefactorActionExecution):
         step = self._find_step_for_action(action)
         position_update = action.position_shift.to_dict()
+        if not step.get("position"):
+            if not self._any_step_placed():
+                return  # a shift means nothing before the first layout, which places every step
+            step["position"] = {"left": 0, "top": 0}
         step["position"]["left"] = step["position"].get("left", 0) + position_update["left"]
         step["position"]["top"] = step["position"].get("top", 0) + position_update["top"]
 
@@ -123,12 +127,19 @@ class WorkflowRefactorExecutor:
     def _apply_update_report(self, action: UpdateReportAction, execution: RefactorActionExecution):
         self._as_dict["report"] = {"markdown": action.report.markdown}
 
+    def _any_step_placed(self) -> bool:
+        """False for a workflow not laid out yet, which the editor lays out the first time it draws it."""
+        return any(step.get("position") for step in self._as_dict["steps"].values())
+
     def _get_next_input_position(self):
         """
         Calculate a non-overlapping position for a new input step.
         Places inputs to the left of all existing non-input workflow steps,
         and stacks them vertically to avoid overlapping with existing inputs.
+        Returns None for a workflow not laid out yet, so the editor lays the new input out with the rest.
         """
+        if not self._any_step_placed():
+            return None
         # Find the minimum left position of all existing non-input workflow steps
         min_left_non_input = None
         # Find all existing input step positions to avoid overlaps

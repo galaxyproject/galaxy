@@ -310,6 +310,12 @@ def expand_pretty_datetime_format(value):
 OptStr = TypeVar("OptStr", None, str)
 
 
+def container_entries(value) -> list:
+    """Split a comma-separated string into stripped entries, dropping blank ones."""
+    entries = (entry.strip() if isinstance(entry, str) else entry for entry in listify(value))
+    return [entry for entry in entries if entry != ""]
+
+
 class BaseAppConfiguration(HasDynamicProperties):
     # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
@@ -959,6 +965,12 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         self.has_user_tool_filters = bool(
             self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters
         )
+        # An option left empty in galaxy.yml means the default, not "no image"; a value set
+        # through the environment is a comma-separated string.
+        if self.user_defined_tool_allowed_containers is None:
+            self.user_defined_tool_allowed_containers = self.schema.defaults["user_defined_tool_allowed_containers"]
+        self.user_defined_tool_allowed_containers = container_entries(self.user_defined_tool_allowed_containers)
+        self.user_defined_tool_denied_containers = container_entries(self.user_defined_tool_denied_containers)
 
         self.password_expiration_period = timedelta(days=int(cast(SupportsInt, self.password_expiration_period)))
 

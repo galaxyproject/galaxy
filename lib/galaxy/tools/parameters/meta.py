@@ -46,6 +46,10 @@ from galaxy.util.permutations import (
     state_set_value,
 )
 from galaxy.work.context import WorkRequestContext
+from galaxy.workflow.scheduling_dependencies import (
+    ToolInputsNotReadyWithDependencies,
+    unpopulated_collection_dependencies,
+)
 from . import visit_input_values
 from .workflow_utils import (
     runtime_to_json,
@@ -486,7 +490,9 @@ def _batch_collection(
     decoded_id = trans.app.security.decode_id(incoming_val["id"])
     item, collection = _load_batch_collection(trans.sa_session, incoming_val["src"], decoded_id)
     if not collection.populated_optimized:
-        raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
+        raise ToolInputsNotReadyWithDependencies(
+            "An input collection is not populated.", dependencies=unpopulated_collection_dependencies(collection)
+        )
     return item, collection, incoming_val.get("map_over_type")
 
 

@@ -54,6 +54,7 @@ from galaxy import (
 )
 from galaxy.datatypes import sniff
 from galaxy.exceptions import (
+    InsufficientPermissionsException,
     MessageException,
     ObjectInvalid,
     ObjectNotFound,
@@ -1436,6 +1437,14 @@ class MinimalJobWrapper(HasResourceParameters):
             # The owner's execution role is checked when the job is created and again
             # here, so revoking it also fails jobs that are already queued.
             self.app.dynamic_tool_manager.ensure_can_use_unprivileged_tool(job.user)
+        assert self.tool
+        if self.tool.tool_type == "user_defined":
+            # Check the containers the tool declares, not the resolved container: container
+            # resolvers may map an allowed image to e.g. a cached Singularity image path.
+            allowlist = self.app.dynamic_tool_manager.container_allowlist
+            for container_description in self.tool.containers:
+                if rejection := allowlist.rejection(container_description.identifier):
+                    raise InsufficientPermissionsException(rejection)
 
         def get_special():
             stmt = select(model.JobExportHistoryArchive).filter_by(job=job).limit(1)

@@ -6,6 +6,7 @@ import { computed } from "vue";
 
 import type { RowClickEvent, RowSelectEvent, TableField } from "@/components/Common/GTable.types";
 import { SELECTION_STATES, type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import localize from "@/utils/localization";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTable from "@/components/Common/GTable.vue";
@@ -102,6 +103,10 @@ function onRowSelect(event: RowSelectEvent<SelectionItem>) {
     emit("click", event.item);
 }
 
+function selectCheckboxTitle(item: SelectionItem) {
+    return `${localize("Select")} ${item.label}`;
+}
+
 function onSortChanged(sortBy: string, sortDesc: boolean) {
     emit("sort-changed", sortBy, sortDesc);
 }
@@ -145,7 +150,7 @@ function formatTime(date?: Date) {
                 :indeterminate-items="indeterminateItems"
                 :per-page="localPaging ? perPage : undefined"
                 :selectable="selectable"
-                :select-checkbox-title="(item) => `Select ${item.label}`"
+                :select-checkbox-title="selectCheckboxTitle"
                 :selected-items="selectedItems"
                 :show-select-all="selectable"
                 :sort-by="sortBy"

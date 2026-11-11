@@ -1752,9 +1752,11 @@ class TestToolsApi(ApiTestCase, TestsTools):
             hdca = self.dataset_populator.get_history_collection_details(
                 history_id, content_id=outputs_four["output_collections"][0]["id"]
             )
-            assert self.dataset_populator.get_history_dataset_content(
-                history_id, content_id=hdca["elements"][0]["object"]["id"]
-            )
+            element_id = hdca["elements"][0]["object"]["id"]
+            assert self.dataset_populator.get_history_dataset_content(history_id, content_id=element_id)
+            element = self.dataset_populator.get_history_dataset_details(history_id, content_id=element_id)
+            assert element["state"] == "ok"
+            assert element["visible"] is False
 
     @skip_without_tool("cat_list")
     @skip_without_tool("__SORTLIST__")

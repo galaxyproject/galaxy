@@ -14,7 +14,7 @@ from . import ActiveWorkflowSchedulingPlugin
 
 if TYPE_CHECKING:
     from galaxy.model import WorkflowInvocation
-    from galaxy.workflow.modules import SchedulingDependencies
+    from galaxy.workflow.scheduling_dependencies import SchedulingDependencies
 
 
 log = logging.getLogger(__name__)

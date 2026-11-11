@@ -186,14 +186,14 @@ instead.
 
 ## Container
 
-Set `container` to a reasonable image for your command (a `quay.io/biocontainers`
-image when the command is a bioinformatics tool, otherwise any sensible base
-image). Pick an image you are confident exists rather than inventing a tag. Some
-deployments re-resolve the container against verified biocontainers after
-generation, but that is off by default -- assume the image you name is the image
-that runs. `container` is required, so if you are unsure of the exact tag prefer a
-widely used image you do know (a plain `python:3.12` or `r-base` base image) over a
-guessed biocontainers tag.
+Set `container` to a `quay.io/biocontainers` image that provides every program the
+command uses, for example `quay.io/biocontainers/python:3.13` for a Python script.
+Galaxy servers restrict which images user-defined tools may use, and by default only
+`quay.io/biocontainers` images are allowed, so do not use Docker Hub base images such
+as `python` or `r-base`. Pick an image and tag you are confident exists rather than
+inventing a tag. Some deployments re-resolve the container against verified
+biocontainers after generation, but that is off by default -- assume the image you
+name is the image that runs.
 
 ## Resource requirements
 
@@ -227,8 +227,8 @@ it, so don't assume the two are equal.
 - Outputs are captured via `from_work_dir` or `discover_datasets` in output definitions.
   `$(outputs.param_name.path)` is not valid syntax.
 - Only use container images you are certain exist (e.g., verified biocontainers)
-- If you don't know the exact biocontainers tag for a tool, fall back to a base image you
-  do know rather than inventing one
+- If you don't know the exact biocontainers tag for a tool, use a biocontainers image and
+  tag you do know (such as `quay.io/biocontainers/python:3.13`) rather than inventing one
 - Never fabricate command-line arguments or tool capabilities
 - If the user's request is unclear or you're uncertain how to implement it, ask for clarification
 - It's better to generate a simpler, correct tool than a complex, incorrect one

@@ -1011,8 +1011,11 @@ def get_mcp_app(gx_app: StructuredApp):
                 - id: tool identifier (lowercase, no spaces, 3-255 chars)
                 - version: version string (e.g. "0.1.0")
                 - name: display name shown in Galaxy tool menu
-                - container: container image as a STRING (e.g. "python:3.12-slim"),
-                  NOT a dict -- this is a common mistake
+                - container: container image as a STRING
+                  (e.g. "quay.io/biocontainers/python:3.13"), NOT a dict -- this
+                  is a common mistake. The server only allows the images in its
+                  user_defined_tool_allowed_containers setting (by default
+                  quay.io/biocontainers/*); use recommend_biocontainer to find one
                 - shell_command: the command to execute, with $(inputs.name.path)
                   for data inputs and $(inputs.name) for parameter inputs
                 - inputs: list of input dicts, each with "name" and "type"
@@ -1030,7 +1033,7 @@ def get_mcp_app(gx_app: StructuredApp):
                 "id": "my_filter",
                 "version": "0.1.0",
                 "name": "My Filter",
-                "container": "python:3.12-slim",
+                "container": "quay.io/biocontainers/python:3.13",
                 "shell_command": "python3 -c 'import sys; ...'",
                 "inputs": [{"name": "input1", "type": "data", "format": "tabular"}],
                 "outputs": [

@@ -2047,18 +2047,9 @@ class CachedToolBox(ToolBox):
     ) -> bool:
         """Check if tool exists, using index for fast lookup.
 
-        Honors ``tool_version`` + ``exact`` the same way the eager
-        ``AbstractToolBox.has_tool`` does — without that, the workflow
-        missing-tools check (``services/workflows.py``: ``has_tool(...,
-        exact=require_exact_tool_versions)``) silently passes any tool
-        whose id is in the index regardless of which version was
-        requested. ``test_run_workflow_with_missing_tool`` exercises
-        that surface by installing ``compose_text_param 0.1.0`` from
-        the toolshed and then asking the workflow runner to invoke a
-        workflow pinned to ``compose_text_param 0.0.1``: with the
-        version-blind lookup, ``has_tool`` answers ``True`` for 0.0.1,
-        the tool drops out of the missing-tools list, and the assertion
-        on the error message under-reports.
+        Honors ``tool_version`` + ``exact``: an exact request for a version
+        the index doesn't configure for ``tool_id`` answers ``False``
+        instead of walking lineage to another version.
         """
         if tool_id and self._tool_index:
             entries = self._tool_index.entries_by_version.get(tool_id)

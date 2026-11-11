@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { FrameWorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
@@ -212,6 +213,63 @@ describe("layout.ts", () => {
             expect(warnSpy).not.toHaveBeenCalled();
 
             // Valid edge was used in layout
+            expectStepToRightOf(result, step1.id, step0.id);
+        });
+    });
+    describe("autoLayout with frame comments", () => {
+        function connectedPair(workflowId: string) {
+            const stepStore = useWorkflowStepStore(workflowId);
+            const stateStore = useWorkflowStateStore(workflowId);
+            const step0 = stepStore.addStep(createTestStep(0));
+            const step1 = stepStore.addStep(
+                createTestStep(1, {
+                    inputs: [
+                        {
+                            name: "input_file",
+                            label: "Input",
+                            multiple: false,
+                            optional: false,
+                            extensions: ["txt"],
+                            input_type: "dataset",
+                        },
+                    ],
+                    inputConnections: { input_file: { output_name: "output", id: 0 } },
+                }),
+            );
+            stateStore.stepPosition[step0.id] = createMockStepPosition(180, 50);
+            stateStore.stepPosition[step1.id] = createMockStepPosition(180, 50);
+            return { step0, step1, steps: { [step0.id]: step0, [step1.id]: step1 } };
+        }
+
+        function frame(childSteps: number[]): FrameWorkflowComment {
+            return {
+                id: 0,
+                type: "frame",
+                color: "none",
+                position: [0, 0],
+                size: [400, 300],
+                data: { title: "Frame" },
+                child_steps: childSteps,
+            };
+        }
+
+        it("keeps edges between steps inside a frame", async () => {
+            const { step0, step1, steps } = connectedPair("test-workflow-frame-inner");
+            const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+            const result = await autoLayout("test-workflow-frame-inner", steps, [frame([step0.id, step1.id])]);
+
+            expect(warnSpy).not.toHaveBeenCalled();
+            expectStepToRightOf(result, step1.id, step0.id);
+        });
+
+        it("keeps edges from a root step into a frame", async () => {
+            const { step0, step1, steps } = connectedPair("test-workflow-frame-cross");
+            const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+            const result = await autoLayout("test-workflow-frame-cross", steps, [frame([step1.id])]);
+
+            expect(warnSpy).not.toHaveBeenCalled();
             expectStepToRightOf(result, step1.id, step0.id);
         });
     });

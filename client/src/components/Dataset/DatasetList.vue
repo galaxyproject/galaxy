@@ -281,6 +281,10 @@ async function onBulkCopy(targetHistory: HistorySummary) {
     }
 }
 
+function selectCheckboxTitle(item: HistoryItemSummary) {
+    return `${localize("Select")} ${item.name}`;
+}
+
 function getDatasetStatusIcon(item: HistoryItemSummary): RowIcon | undefined {
     if (!isHDA(item)) {
         return undefined;
@@ -358,7 +362,7 @@ onMounted(() => {
                 :sort-desc="sortDesc"
                 :overlay-loading="overlay"
                 :selected-items="selectedIndices"
-                :select-checkbox-title="(item) => `Select ${item.name}`"
+                :select-checkbox-title="selectCheckboxTitle"
                 :actions="datasetTableActions"
                 :status-icon="getDatasetStatusIcon"
                 @sort-changed="onSort"

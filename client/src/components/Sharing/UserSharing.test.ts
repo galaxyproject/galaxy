@@ -49,7 +49,7 @@ function makeItem(overrides: Partial<ShareableHistoryWithStatus> = {}): Shareabl
     };
 }
 
-async function mountComponent(item: ShareableHistoryWithStatus) {
+async function mountComponent(item: ShareableHistoryWithStatus, options: { attachTo?: HTMLElement } = {}) {
     const pinia = createPinia();
 
     const wrapper = mount(UserSharing as object, {
@@ -59,6 +59,7 @@ async function mountComponent(item: ShareableHistoryWithStatus) {
             item,
             modelClass: "History",
         },
+        ...options,
     });
 
     const userStore = useUserStore();
@@ -172,18 +173,47 @@ describe("UserSharing.vue", () => {
         expect(wrapper.emitted("share")?.[0]).toEqual([["existing@test.com", "new@test.com"]]);
     });
 
-    it("names the remove control of a shared-with email and removes it from the keyboard", async () => {
+    it("renders the remove control of a shared-with email as a named native button", async () => {
         const item = makeItem({ users_shared_with: [{ email: "existing@test.com", id: "existing_id" }] });
         const wrapper = await mountComponent(item);
 
         const remove = wrapper.find('.remove_sharing_with[data-email="existing@test.com"] .multiselect__tag-icon');
-        expect(remove.attributes("role")).toBe("button");
+        expect(remove.element.tagName).toBe("BUTTON");
+        expect(remove.attributes("type")).toBe("button");
         expect(remove.attributes("aria-label")).toBe("Remove existing@test.com");
-        expect(remove.attributes("aria-hidden")).toBeUndefined();
 
-        await remove.trigger("keyup.enter");
+        // A native button turns Enter and Space into a click.
+        await remove.trigger("click");
 
         expect(wrapper.find('.remove_sharing_with[data-email="existing@test.com"]').exists()).toBe(false);
+    });
+
+    it("keeps keyboard focus in the control after removing the last shared-with email", async () => {
+        const item = makeItem({
+            users_shared_with: [
+                { email: "first@test.com", id: "first_id" },
+                { email: "last@test.com", id: "last_id" },
+            ],
+        });
+        const wrapper = await mountComponent(item, { attachTo: document.body });
+
+        const remove = wrapper.find('.remove_sharing_with[data-email="last@test.com"] .multiselect__tag-icon');
+        (remove.element as HTMLElement).focus();
+        await remove.trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find('.remove_sharing_with[data-email="last@test.com"]').exists()).toBe(false);
+        expect(document.activeElement?.getAttribute("aria-label")).toBe("Remove first@test.com");
+
+        const removeFirst = wrapper.find('.remove_sharing_with[data-email="first@test.com"] .multiselect__tag-icon');
+        (removeFirst.element as HTMLElement).focus();
+        await removeFirst.trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find(".remove_sharing_with").exists()).toBe(false);
+        expect(document.activeElement).toBe(wrapper.find("input.multiselect__input").element);
+
+        wrapper.unmount();
     });
 
     it("resets candidates to the current shared list and emits cancel when Cancel is clicked", async () => {
