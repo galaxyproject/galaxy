@@ -8614,6 +8614,48 @@ export interface components {
              */
             type: "baseurl";
         };
+        /**
+         * BasedOnWork
+         * @description An upstream work (https://schema.org/isBasedOn) a workflow was derived from, e.g. an nf-core pipeline.
+         */
+        BasedOnWork: {
+            /** Alternate Name */
+            alternateName?: string | null;
+            /**
+             * Class
+             * @description The schema.org class of the upstream work, e.g. SoftwareSourceCode or ComputationalWorkflow.
+             * @default SoftwareSourceCode
+             */
+            class: string;
+            /**
+             * Creator
+             * @description The creators of the upstream work.
+             */
+            creator?: (components["schemas"]["Person"] | components["schemas"]["CreatorOrganization"])[] | null;
+            /** Description */
+            description?: string | null;
+            /** Identifier */
+            identifier?: string | null;
+            /** Image URL */
+            image?: string | null;
+            /**
+             * License
+             * @description SPDX Identifier of the license of the upstream work.
+             */
+            license?: string | null;
+            /**
+             * Name
+             * @description The name of the thing.
+             */
+            name?: string | null;
+            /** URL */
+            url?: string | null;
+            /**
+             * Version
+             * @description The version of the upstream work.
+             */
+            version?: string | null;
+        };
         /** BasicRoleModel */
         BasicRoleModel: {
             /**
@@ -24902,6 +24944,11 @@ export interface components {
             inputs: {
                 [key: string]: components["schemas"]["WorkflowInput"];
             };
+            /**
+             * Is Based On
+             * @description Upstream works (e.g. a pipeline in another workflow language) this workflow was derived from.
+             */
+            is_based_on?: components["schemas"]["BasedOnWork"][] | null;
             /**
              * Latest workflow UUID
              * @description TODO

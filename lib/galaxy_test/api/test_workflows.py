@@ -167,6 +167,22 @@ steps:
 """
 
 
+IS_BASED_ON = [
+    {
+        "class": "SoftwareSourceCode",
+        "name": "nf-core/demo",
+        "url": "https://github.com/nf-core/demo",
+        "version": "1.0.2",
+        "identifier": "https://doi.org/10.5281/zenodo.12192442",
+        "license": "MIT",
+        "creator": [
+            {"class": "Person", "name": "Christopher Hakkaart"},
+            {"class": "Organization", "name": "nf-core", "url": "https://nf-co.re"},
+        ],
+    }
+]
+
+
 class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
     # TODO: Find a new file for this class.
     dataset_populator: DatasetPopulator
@@ -1904,6 +1920,7 @@ steps:
         base_workflow_json["logo_url"] = logo_url
         base_workflow_json["help"] = help
         base_workflow_json["doi"] = doi
+        base_workflow_json["is_based_on"] = IS_BASED_ON
         workflow_with_metadata_str = json.dumps(base_workflow_json)
         base64_url = "base64://" + base64.b64encode(workflow_with_metadata_str.encode("utf-8")).decode("utf-8")
         response = self._post("workflows", data={"archive_source": base64_url})
@@ -1915,6 +1932,20 @@ steps:
         assert workflow["help"] == help
         assert workflow["logo_url"] == logo_url
         assert workflow["doi"] == doi
+        assert workflow["is_based_on"] == IS_BASED_ON
+        assert "creator" not in workflow
+        workflow_show = self._get(f"workflows/{workflow_id}").json()
+        assert workflow_show["is_based_on"][0]["name"] == "nf-core/demo"
+        assert workflow_show["is_based_on"][0]["creator"][0]["name"] == "Christopher Hakkaart"
+
+    def test_is_based_on_invalid(self):
+        base_workflow_json = json.loads(workflow_str)
+        base_workflow_json["is_based_on"] = [{"name": "nf-core/demo", "creator": "not a list"}]
+        workflow_with_metadata_str = json.dumps(base_workflow_json)
+        base64_url = "base64://" + base64.b64encode(workflow_with_metadata_str.encode("utf-8")).decode("utf-8")
+        response = self._post("workflows", data={"archive_source": base64_url})
+        self._assert_status_code_is(response, 400)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
 
     def test_readme_too_large(self):
         big_but_valid_readme = "READ_" * 3999
@@ -2343,6 +2374,7 @@ steps:
         workflow_object["help"] = help
         workflow_object["logo_url"] = logo_url
         workflow_object["doi"] = doi
+        workflow_object["is_based_on"] = IS_BASED_ON
         workflow_id = self.workflow_populator.create_workflow(workflow_object, publish=True)
 
         with self._different_user():
@@ -2355,6 +2387,7 @@ steps:
             assert imported_workflow["help"] == help
             assert imported_workflow["logo_url"] == logo_url
             assert imported_workflow["doi"] == doi
+            assert imported_workflow["is_based_on"] == IS_BASED_ON
 
     def test_export(self):
         uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export")

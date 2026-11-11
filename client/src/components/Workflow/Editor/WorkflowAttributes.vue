@@ -87,6 +87,15 @@
             </GPopover>
         </div>
 
+        <div id="workflow-based-on-area" class="mt-2">
+            <b>Based On</b>
+            <BasedOnEditor id="based-on-editor" :works="isBasedOn || []" @onBasedOn="onBasedOn" />
+            <div class="form-text text-muted">
+                Upstream works, such as an nf-core pipeline, that this workflow was adapted from. Their authors are
+                credited here rather than as creators of this workflow.
+            </div>
+        </div>
+
         <div id="workflow-doi-area" class="mt-2">
             <b>Digital Object Identifier (DOI)</b>
             <ItemListEditor
@@ -174,6 +183,7 @@ import GPopover from "@/components/BaseComponents/GPopover.vue";
 import ItemListEditor from "@/components/Common/ItemListEditor.vue";
 import LicenseSelector from "@/components/License/LicenseSelector.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+import BasedOnEditor from "@/components/SchemaOrg/BasedOnEditor.vue";
 import CreatorEditor from "@/components/SchemaOrg/CreatorEditor.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -190,6 +200,7 @@ export default {
         StatelessTags,
         LicenseSelector,
         CreatorEditor,
+        BasedOnEditor,
         ItemListEditor,
         ActivityPanel,
         GButton,
@@ -223,6 +234,10 @@ export default {
             default: "",
         },
         creator: {
+            type: Array,
+            default: null,
+        },
+        isBasedOn: {
             type: Array,
             default: null,
         },
@@ -374,6 +389,9 @@ Acceptable format:
         },
         onCreator(creator) {
             this.$emit("creator", creator);
+        },
+        onBasedOn(works) {
+            this.$emit("is-based-on", works);
         },
         onDoi(doiItems) {
             this.$emit("doi", doiItems);

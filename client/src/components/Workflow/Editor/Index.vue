@@ -21,7 +21,7 @@ import { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { generateAIReport as generateAIReportFetch } from "@/api/chat";
-import type { Creator, RefactorRequestAction } from "@/api/workflows";
+import type { BasedOnWork, Creator, RefactorRequestAction } from "@/api/workflows";
 import { InsertStepAction, useStepActions } from "@/components/Workflow/Editor/Actions/stepActions";
 import { CopyIntoWorkflowAction, SetValueActionHandler } from "@/components/Workflow/Editor/Actions/workflowActions";
 import { defaultPosition } from "@/components/Workflow/Editor/composables/useDefaultStepPosition";
@@ -221,6 +221,19 @@ function setCreator(newCreator?: Creator[] | null) {
     setCreatorHandler.set(creator.value, newCreator);
 }
 
+const isBasedOn = ref<BasedOnWork[] | null>(null);
+const setIsBasedOnHandler = new SetValueActionHandler(
+    undoRedoStore,
+    (value) => (isBasedOn.value = value as BasedOnWork[] | null),
+    showAttributes,
+    "set based on",
+    "based on",
+);
+/** user set upstream works. queues an undo/redo action */
+function setIsBasedOn(newIsBasedOn: BasedOnWork[] | null) {
+    setIsBasedOnHandler.set(isBasedOn.value, newIsBasedOn);
+}
+
 const doi = ref<string[] | null>(null);
 const setDoiHandler = new SetValueActionHandler(
     undoRedoStore,
@@ -416,6 +429,7 @@ const workflowData = computed<Workflow>(() => ({
     readme: readme.value,
     help: help.value,
     doi: doi.value || undefined,
+    is_based_on: isBasedOn.value,
 }));
 
 /** Is true when we are on a fresh workflow editor with no ID yet (uncreated workflow) */
@@ -1205,6 +1219,7 @@ async function loadEditorData(data: any) {
     tags.value = data.tags;
     license.value = data.license;
     creator.value = data.creator;
+    isBasedOn.value = data.is_based_on;
     doi.value = data.doi;
 
     // The attribute watchers just marked these loaded values as changes; undo that now,
@@ -1294,6 +1309,13 @@ function onCreator(cr: Creator[]) {
     if (!isEqual(creator.value, cr)) {
         hasChanges.value = true;
         setCreator(cr);
+    }
+}
+
+function onIsBasedOn(works: BasedOnWork[]) {
+    if (!isEqual(isBasedOn.value, works)) {
+        hasChanges.value = true;
+        setIsBasedOn(works);
     }
 }
 
@@ -1421,6 +1443,7 @@ initializeWorkflowEditor();
                     :versions="versions"
                     :license="license"
                     :creator="creator || undefined"
+                    :is-based-on="isBasedOn || undefined"
                     :doi="doi || undefined"
                     :logo-url="logoUrl"
                     :help="help"
@@ -1428,6 +1451,7 @@ initializeWorkflowEditor();
                     @tags="setTags"
                     @license="onLicense"
                     @creator="onCreator"
+                    @is-based-on="onIsBasedOn"
                     @doi="onDoi"
                     @update:nameCurrent="setName"
                     @update:annotationCurrent="setAnnotation"
