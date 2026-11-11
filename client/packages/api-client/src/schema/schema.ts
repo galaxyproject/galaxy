@@ -9901,6 +9901,7 @@ export interface components {
                 | components["schemas"]["GroupTagParameterModel"]
                 | components["schemas"]["BaseUrlParameterModel"]
                 | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ReferenceDataParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -21751,6 +21752,7 @@ export interface components {
                 | components["schemas"]["GroupTagParameterModel"]
                 | components["schemas"]["BaseUrlParameterModel"]
                 | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ReferenceDataParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -22567,6 +22569,71 @@ export interface components {
             /** Workflow */
             workflow: unknown;
         };
+        /**
+         * ReferenceDataParameterModel
+         * @description A tool data table entry, requested by the value of its `value` column.
+         *
+         *     Tool expressions receive the entry as a ReferenceDataInternalJson, or a list of them when `multiple` is set.
+         */
+        ReferenceDataParameterModel: {
+            /**
+             * Argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
+            argument?: string | null;
+            /**
+             * Help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /**
+             * Label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
+            label?: string | null;
+            /**
+             * Multiple
+             * @default false
+             */
+            multiple: boolean;
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
+            name: string;
+            /**
+             * Optional
+             * @description If `false`, parameter must have a value.
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_reference_data
+             * @constant
+             */
+            parameter_type: "gx_reference_data";
+            /**
+             * Table
+             * @description Name of the tool data table offering the entries.
+             */
+            table: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "reference_data";
+        };
         /** RegexJobMessage */
         RegexJobMessage: {
             /** Code Desc */
@@ -22804,6 +22871,7 @@ export interface components {
                 | components["schemas"]["GroupTagParameterModel"]
                 | components["schemas"]["BaseUrlParameterModel"]
                 | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ReferenceDataParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -23476,6 +23544,7 @@ export interface components {
                 | components["schemas"]["GroupTagParameterModel"]
                 | components["schemas"]["BaseUrlParameterModel"]
                 | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ReferenceDataParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -29888,6 +29957,7 @@ export interface components {
             | components["schemas"]["YamlColorParameter"]
             | components["schemas"]["YamlDataParameter"]
             | components["schemas"]["YamlDataCollectionParameter"]
+            | components["schemas"]["YamlReferenceDataParameter"]
             | components["schemas"]["YamlConditionalParameter-Input"]
             | components["schemas"]["YamlRepeatParameter-Input"]
             | components["schemas"]["YamlSectionParameter-Input"];
@@ -29901,6 +29971,7 @@ export interface components {
             | components["schemas"]["YamlColorParameter"]
             | components["schemas"]["YamlDataParameter"]
             | components["schemas"]["YamlDataCollectionParameter"]
+            | components["schemas"]["YamlReferenceDataParameter"]
             | components["schemas"]["YamlConditionalParameter-Output"]
             | components["schemas"]["YamlRepeatParameter-Output"]
             | components["schemas"]["YamlSectionParameter-Output"];
@@ -29979,6 +30050,55 @@ export interface components {
             selected: boolean;
             /** Value */
             value: string;
+        };
+        /**
+         * YamlReferenceDataParameter
+         * @description A built-in reference, such as a genome, that an administrator installed in a tool data table.
+         * @example {
+         *       "label": "Reference genome",
+         *       "name": "reference",
+         *       "table": "fasta_indexes",
+         *       "type": "reference_data"
+         *     }
+         */
+        YamlReferenceDataParameter: {
+            /**
+             * Help
+             * @description Additional guidance shown on the tool form to help users choose a value.
+             */
+            help?: string | null;
+            /**
+             * Label
+             * @description Label shown for the input on the tool form.
+             */
+            label?: string | null;
+            /**
+             * Multiple
+             * @description Set true to let the user select several table entries, supplied as a list.
+             * @default false
+             */
+            multiple: boolean;
+            /**
+             * Name
+             * @description Identifier used to read this input from `shell_command` and other expressions.
+             */
+            name: string;
+            /**
+             * Optional
+             * @description Set true when the command can run without the user supplying this input.
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Table
+             * @description Name of the tool data table. A user-defined tool can only use tables an admin allows.
+             */
+            table: string;
+            /**
+             * @description Lets the user pick a tool data table entry and exposes it to expressions like a dataset. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "reference_data";
         };
         /**
          * YamlRepeatParameter
@@ -52088,6 +52208,7 @@ export interface operations {
                         | components["schemas"]["GroupTagParameterModel"]
                         | components["schemas"]["BaseUrlParameterModel"]
                         | components["schemas"]["GenomeBuildParameterModel"]
+                        | components["schemas"]["ReferenceDataParameterModel"]
                         | components["schemas"]["ColorParameterModel"]
                         | components["schemas"]["ConditionalParameterModel"]
                         | components["schemas"]["RepeatParameterModel"]

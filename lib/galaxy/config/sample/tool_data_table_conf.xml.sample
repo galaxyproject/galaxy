@@ -1,4 +1,5 @@
 <!-- Paths are relative to the value of `tool_data_path` in galaxy.ini -->
+<!-- Add user_accessible="true" to a table to let user-defined tools read it through a reference_data input. -->
 <tables>
     <!-- Locations of all fasta files under genome directory -->
     <table name="all_fasta" comment_char="#" allow_duplicate_entries="False">

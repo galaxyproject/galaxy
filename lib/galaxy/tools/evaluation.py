@@ -61,6 +61,7 @@ from galaxy.tools.parameters import (
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
+    ReferenceDataToolParameter,
     SelectToolParameter,
 )
 from galaxy.tools.parameters.grouping import (
@@ -68,6 +69,7 @@ from galaxy.tools.parameters.grouping import (
     Repeat,
     Section,
 )
+from galaxy.tools.runtime import setup_for_reference_data
 from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
     DatasetFilenameWrapper,
@@ -1151,6 +1153,7 @@ class UserToolEvaluator(ToolEvaluator):
         shell_quotable = not self.tool.base_command and bool(self.tool.shell_command)
         # Map-over hands each job an HDA; its element identifier is only kept in the job parameters.
         element_identifiers = ElementIdentifierMapper(input_datasets).identifiers_by_dataset(incoming)
+        adapt_reference_data = setup_for_reference_data(self.app, compute_environment, self.tool.tool_source.trusted)
         hda_references: list[model.HistoryDatasetAssociation]
         if validated_tool_state is not None:
             from galaxy.tool_util.parameters.convert import runtimeify
@@ -1181,6 +1184,7 @@ class UserToolEvaluator(ToolEvaluator):
                 adapt_datasets,
                 adapt_collections,
                 yaml_origin=self.tool.yaml_origin,
+                adapt_reference_data=adapt_reference_data,
             )
             cwl_style_inputs = job_runtime_state.input_state
         else:
@@ -1190,6 +1194,16 @@ class UserToolEvaluator(ToolEvaluator):
                 "Building CWL style inputs using deprecated to_cwl function - tool may work differently in the future."
             )
             hda_references = []
+
+            def resolve_reference_data(input, value, **kwargs):
+                if not isinstance(input, ReferenceDataToolParameter) or not value:
+                    return None
+                if input.multiple and isinstance(value, list):
+                    return [adapt_reference_data(input.table_name, v).model_dump(by_alias=True) for v in value]
+                return adapt_reference_data(input.table_name, value).model_dump(by_alias=True)
+
+            if self.tool.has_data_table:
+                visit_input_values(self.tool.inputs, incoming, resolve_reference_data)
             cwl_style_inputs = to_cwl(
                 remap(incoming, visit=_is_not_group_state_key),
                 hda_references=hda_references,

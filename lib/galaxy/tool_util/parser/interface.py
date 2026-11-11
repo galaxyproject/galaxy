@@ -171,6 +171,11 @@ class ToolSource(metaclass=ABCMeta):
         """Return whether this source may enable tool-provided metadata."""
         return False
 
+    @property
+    def trusted(self) -> bool:
+        """False for a source any user may write, which can only read what an admin opened to user tools."""
+        return True
+
     def is_yaml_origin(self) -> bool:
         """Return whether this is a GalaxyTool/GalaxyUserTool source, following the canonical parameter contract."""
         return False
@@ -531,6 +536,7 @@ class DrillDownDynamicOptions(metaclass=ABCMeta):
 
 class InputSource(metaclass=ABCMeta):
     default_optional = False
+    trusted: bool = True
 
     @property
     def input_class(self) -> INPUT_CLASS_T:

@@ -1325,6 +1325,75 @@ gx_color:
     - parameter: 5
     - parameter: {__class__: 'ConnectedValue2'}
 
+gx_reference_data_multiple_user:
+  request_valid:
+   - reference: [hg19_value, mm10_value]
+   - {}
+  workflow_step_linked_valid:
+   - reference: [hg19_value, {__class__: ConnectedValue}]
+   - reference: {__class__: ConnectedValue}
+  workflow_step_linked_invalid:
+   - reference: hg19_value
+  request_invalid:
+   - reference: [5]
+   - reference: [{src: hda, id: abcdabcd}]
+  job_internal_valid:
+   - reference: [hg19_value, mm10_value]
+  job_internal_invalid:
+   - {}
+  job_runtime_valid:
+   - reference:
+     - class: ReferenceData
+       path: /refs/hg19.fa
+       source: {table: test_fasta_indexes, value: hg19_value}
+       metadata: {dbkey: hg19}
+   - reference: null
+  job_runtime_invalid:
+   - reference: [hg19_value]
+   - reference:
+       class: ReferenceData
+       path: /refs/hg19.fa
+       source: {table: test_fasta_indexes, value: hg19_value}
+       metadata: {dbkey: hg19}
+
+gx_reference_data_user:
+  request_valid:
+   - reference: hg19_value
+  request_invalid:
+   - reference: 5
+   - reference: {src: hda, id: abcdabcd}
+  test_case_json_valid:
+   - reference: hg19_value
+  test_case_json_invalid:
+   - reference: [hg19_value]
+  workflow_step_valid:
+   - reference: hg19_value
+   - {}
+  workflow_step_invalid:
+   - reference: [hg19_value]
+  workflow_step_linked_valid:
+   - reference: hg19_value
+   - reference: {__class__: ConnectedValue}
+  workflow_step_linked_invalid:
+   - reference: 5
+  job_internal_valid:
+   - reference: hg19_value
+  job_internal_invalid:
+   - {}
+  job_runtime_valid:
+   - reference:
+       class: ReferenceData
+       path: /refs/hg19.fa
+       source: {table: test_fasta_indexes, value: hg19_value}
+       metadata: {dbkey: hg19}
+  job_runtime_invalid:
+   - reference: hg19_value
+   - reference:
+       class: File
+       path: /refs/hg19.fa
+       source: {table: test_fasta_indexes, value: hg19_value}
+       metadata: {dbkey: hg19}
+
 gx_data:
   request_valid:
    - parameter: {src: hda, id: abcdabcd}

@@ -26,6 +26,7 @@ from galaxy.tool_util_models.parameters import (
     DataJobInternalT,
     DataRequestInternalHda,
     DatasetCollectionElementReference,
+    ReferenceDataInternalJson,
 )
 
 if TYPE_CHECKING:
@@ -119,6 +120,36 @@ def is_list_like(collection_type: str) -> bool:
     """
     first_segment = collection_type.split(":")[0]
     return first_segment in ("list", "sample_sheet")
+
+
+def setup_for_reference_data(
+    app: "MinimalToolApp",
+    compute_environment: Optional["ComputeEnvironment"],
+    trusted: bool,
+) -> Callable[[str, str], ReferenceDataInternalJson]:
+    """Set up a callback turning a selected tool data table entry into its dataset-like runtime form."""
+
+    def adapt_reference_data(table_name: str, value: str) -> ReferenceDataInternalJson:
+        table = app.tool_data_tables.get(table_name)
+        if table is None:
+            raise ValueError(f"Data table {table_name} is not configured")
+        if not trusted and not table.user_accessible:
+            raise ValueError(f"Data table {table_name} is not available to user-defined tools")
+        entry = next((row for row in table.get_named_fields_list() if row.get("value") == value), None)
+        if entry is None:
+            raise ValueError(f"Data table {table_name} has no entry with value {value}")
+        path = entry.get("path")
+        properties: dict[str, Any] = {
+            "class": "ReferenceData",
+            "source": {"table": table_name, "value": value},
+            "metadata": {k: v for k, v in entry.items() if isinstance(k, str) and k not in ("value", "path")},
+        }
+        if path is not None:
+            properties["path"] = (compute_environment and compute_environment.unstructured_path_rewrite(path)) or path
+            set_basename_and_derived_properties(properties, os.path.basename(path.rstrip(os.sep)))
+        return ReferenceDataInternalJson(**properties)
+
+    return adapt_reference_data
 
 
 def setup_for_runtimeify(

@@ -13,6 +13,21 @@ from galaxy_test.base.populators import (
 )
 from ._framework import ApiTestCase
 
+TOOL_WITH_REFERENCE_DATA = {
+    "class": "GalaxyUserTool",
+    "id": "reference_data_tool",
+    "version": "1.0.0",
+    "name": "reference_data_tool",
+    "container": "busybox",
+    "shell_command": (
+        "echo '$(inputs.reference.class) $(inputs.reference.path) "
+        "$(inputs.reference.source.table) $(inputs.reference.source.value) $(inputs.reference.metadata.dbkey) "
+        "$(inputs.reference.metadata.name)' > output.txt"
+    ),
+    "inputs": [{"name": "reference", "type": "reference_data", "table": "test_fasta_indexes"}],
+    "outputs": [{"name": "output", "type": "data", "format": "txt", "from_work_dir": "output.txt"}],
+}
+
 
 class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
     def setUp(self):
@@ -131,6 +146,32 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             output_content = self.dataset_populator.get_history_dataset_content(history_id)
             assert output_content == "abc\n"
+
+    def test_run_with_reference_data(self):
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_REFERENCE_DATA))
+            self._run(history_id=history_id, tool_uuid=dynamic_tool["uuid"], inputs={"reference": "hg19_value"})
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            output_content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert output_content == "ReferenceData hg19_path test_fasta_indexes hg19_value hg19 hg19_name\n"
+
+    def test_reference_data_needs_a_table_admins_opened_to_user_tools(self):
+        representation = {
+            **TOOL_WITH_REFERENCE_DATA,
+            "inputs": [{"name": "reference", "type": "reference_data", "table": "testalpha"}],
+        }
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**representation))
+            response = self.dataset_populator.run_tool_raw(
+                None, {"reference": "data1"}, history_id, tool_uuid=dynamic_tool["uuid"]
+            )
+            self._assert_status_code_is(response, 400)
 
     def test_queued_job_fails_when_execute_role_is_revoked(self):
         with self.dataset_populator.test_history() as history_id:

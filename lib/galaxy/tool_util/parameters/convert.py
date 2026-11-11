@@ -40,6 +40,8 @@ from galaxy.tool_util_models.parameters import (
     HiddenParameterModel,
     IntegerParameterModel,
     iter_parameter_models,
+    ReferenceDataInternalJson,
+    ReferenceDataParameterModel,
     RepeatParameterModel,
     SectionParameterModel,
     SelectParameterModel,
@@ -462,7 +464,7 @@ def encode_test(
                 assert isinstance(value, dict), str(value)
                 test_collection = cast(JsonTestCollectionDefDict, value)
                 return adapt_collections(test_collection).model_dump()
-        elif isinstance(parameter, SelectParameterModel):
+        elif isinstance(parameter, (SelectParameterModel, ReferenceDataParameterModel)):
             if parameter.multiple and value is not None and isinstance(value, (str,)):
                 return [v.strip() for v in value.split(",")]
             else:
@@ -779,6 +781,8 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
 # Both adapters receive the extensions the consuming parameter accepts.
 DatasetToRuntimeJson = Callable[[DataJobInternalT, list[str]], DataInternalJson]
 CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, str | None, list[str]], Any]
+# Receives the table name and the value of the selected entry.
+ReferenceDataToRuntimeJson = Callable[[str, str], ReferenceDataInternalJson]
 
 
 # Parameter models the narrow YAML authoring layer is allowed to produce.
@@ -793,6 +797,7 @@ YAML_V1_SUPPORTED_PARAMETER_MODELS: frozenset = frozenset(
         FloatParameterModel,
         TextParameterModel,
         SelectParameterModel,
+        ReferenceDataParameterModel,
         DataParameterModel,
         DataCollectionParameterModel,
         ConditionalParameterModel,
@@ -825,6 +830,7 @@ def runtimeify(
     adapt_dataset: DatasetToRuntimeJson,
     adapt_collection: CollectionToRuntimeJson,
     yaml_origin: bool = False,
+    adapt_reference_data: ReferenceDataToRuntimeJson | None = None,
 ) -> JobRuntimeToolState:
     if yaml_origin:
         assert_yaml_v1_parameters(list(input_models.parameters))
@@ -855,6 +861,14 @@ def runtimeify(
             collection_request = DataCollectionRequestInternal(**value)
             result = adapt_collection(collection_request, parameter.collection_type, parameter.extensions)
             return result.model_dump(by_alias=True)
+        elif isinstance(parameter, ReferenceDataParameterModel):
+            if value is None:
+                return VISITOR_NO_REPLACEMENT
+            if adapt_reference_data is None:
+                raise ValueError(f"Cannot resolve reference data for parameter {parameter.name}")
+            if parameter.multiple and isinstance(value, list):
+                return [adapt_reference_data(parameter.table, v).model_dump(by_alias=True) for v in value]
+            return adapt_reference_data(parameter.table, value).model_dump(by_alias=True)
         else:
             return VISITOR_NO_REPLACEMENT
 

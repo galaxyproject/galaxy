@@ -32,6 +32,14 @@ data2	data2name	${__HERE__}/data2/entry.txt
 data3	data3name	${__HERE__}/data3/entry.txt
 """
 
+USER_ACCESSIBLE_TABLE_CONF_XML = """<tables>
+  <table name="shared" {attributes}>
+    <columns>value, name, path</columns>
+    <file path="{loc_path}" />
+  </table>
+</tables>
+"""
+
 COLUMN_DIVERGENT_TABLE_CONF_XML = """<tables>
   <table name="testalpha" comment_char="#">
     <columns>value, name, path, extra</columns>
@@ -404,3 +412,41 @@ def test_config_sources_append_unlisted_managed_file(tmp_path, managed_optional)
         ToolDataTableConfigSource(str(tmp_path / "local.xml")),
         ToolDataTableConfigSource(managed, optional=managed_optional),
     ]
+
+
+def _shared_table_conf(tmp_path, name: str, attributes: str) -> str:
+    loc_path = tmp_path / f"{name}.loc"
+    loc_path.write_text("a\tA\t/a\n")
+    conf = tmp_path / f"{name}.xml"
+    conf.write_text(USER_ACCESSIBLE_TABLE_CONF_XML.format(attributes=attributes, loc_path=loc_path))
+    return str(conf)
+
+
+@pytest.mark.parametrize(
+    "attributes,expected",
+    [("", False), ('user_accessible="false"', False), ('user_accessible="true"', True)],
+)
+def test_tables_are_closed_to_user_tools_unless_opened(tmp_path, attributes, expected):
+    conf = _shared_table_conf(tmp_path, "table", attributes)
+    assert ToolDataTableManager(str(tmp_path), conf)["shared"].user_accessible is expected
+
+
+@pytest.mark.parametrize("first,second", [('user_accessible="true"', ""), ("", 'user_accessible="true"')])
+def test_opening_a_table_in_one_config_survives_merging_in_either_order(tmp_path, first, second):
+    configs = [_shared_table_conf(tmp_path, "one", first), _shared_table_conf(tmp_path, "two", second)]
+    manager = ToolDataTableManager(str(tmp_path), config_sources=[ToolDataTableConfigSource(c) for c in configs])
+    assert manager["shared"].user_accessible is True
+    manager.reload_tables()
+    assert manager["shared"].user_accessible is True
+
+
+def test_tool_shed_repository_cannot_open_a_table(tmp_path):
+    repository_conf = _shared_table_conf(tmp_path, "repository", 'user_accessible="true"')
+    persisted_conf = tmp_path / "shed_tool_data_table_conf.xml"
+    manager = ToolDataTableManager(str(tmp_path))
+
+    manager.add_new_entries_from_config_file(repository_conf, str(tmp_path), str(persisted_conf), persist=True)
+
+    assert manager["shared"].user_accessible is False
+    # The persisted shed config is later loaded like an admin's own.
+    assert ToolDataTableManager(str(tmp_path), str(persisted_conf))["shared"].user_accessible is False

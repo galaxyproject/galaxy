@@ -35,6 +35,7 @@ from galaxy.tool_util_models.parameters import (
     GroupTagParameterModel,
     IntegerParameterModel,
     iter_parameter_models,
+    ReferenceDataParameterModel,
     RepeatParameterModel,
     SectionParameterModel,
     SelectParameterModel,
@@ -160,7 +161,7 @@ def legacy_from_string(parameter: ToolParameterT, value: Any | None, warnings: l
         elif isinstance(parameter, (GroupTagParameterModel,)):
             if parameter.multiple:
                 result_value = multiple_select_value_split(value)
-        elif isinstance(parameter, (GenomeBuildParameterModel,)):
+        elif isinstance(parameter, (GenomeBuildParameterModel, ReferenceDataParameterModel)):
             if parameter.multiple:
                 result_value = multiple_select_value_split(value)
         elif isinstance(parameter, SelectParameterModel):
