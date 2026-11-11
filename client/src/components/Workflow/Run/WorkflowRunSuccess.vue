@@ -5,7 +5,7 @@ import type { WorkflowInvocation } from "@/api/invocations";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import Webhook from "@/components/Common/Webhook.vue";
-import GridInvocation from "@/components/Grid/GridInvocation.vue";
+import InvocationList from "@/components/Workflow/Invocation/InvocationList.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 
 const props = defineProps<{
@@ -39,7 +39,7 @@ const targetHistories = computed(() =>
                 <router-link to="/histories/view_multiple">history multi-view</router-link>.
             </span>
         </div>
-        <GridInvocation v-if="props.invocations.length > 1" :invocations-list="props.invocations" />
+        <InvocationList v-if="props.invocations.length > 1" :invocations="props.invocations" />
         <WorkflowInvocationState
             v-else-if="props.invocations.length === 1 && props.invocations[0]"
             :invocation-id="props.invocations[0].id"
