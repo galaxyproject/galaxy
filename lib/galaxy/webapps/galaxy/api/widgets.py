@@ -5,6 +5,7 @@ from galaxy import exceptions
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.pages import PageManager
 from galaxy.managers.sharable import SharableModelManager
+from galaxy.managers.visualizations import VisualizationManager
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.schema.widgets import (
     HistoryGraphParameters,
@@ -48,7 +49,11 @@ WIDGETS = [
     ),
 ]
 
-PUBLIC_WIDGET_MANAGERS: dict[str, type[SharableModelManager[Any]]] = {"page": PageManager, "workflow": WorkflowsManager}
+PUBLIC_WIDGET_MANAGERS: dict[str, type[SharableModelManager[Any]]] = {
+    "page": PageManager,
+    "workflow": WorkflowsManager,
+    "visualization": VisualizationManager,
+}
 
 PUBLIC_WIDGETS = [
     (re.compile("/widgets/" + re.sub(r"\{\w+\}", "([0-9a-f]+)", widget.path) + "/?"), PUBLIC_WIDGET_MANAGERS[widget.id])

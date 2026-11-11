@@ -42,7 +42,7 @@ class TestWidgetsApi(ApiTestCase):
         self._assert_frame_ancestors(path, frame_ancestors)
 
     @requires_new_published_objects
-    @pytest.mark.parametrize("widget", ["pages", "workflows"])
+    @pytest.mark.parametrize("widget", ["pages", "workflows", "visualizations"])
     def test_any_origin_frames_only_link_accessible_widgets(self, widget):
         item_id = self._create(widget)
         path = f"widgets/{widget}/{item_id}"
@@ -55,7 +55,7 @@ class TestWidgetsApi(ApiTestCase):
         self._assert_frame_ancestors(f"{path}/", ANY_ORIGIN)
         self._set_sharing(widget, item_id, "publish")
         self._assert_frame_ancestors(path, ANY_ORIGIN)
-        self._assert_status_code_is_ok(self._delete(f"{widget}/{item_id}"))
+        self._delete_item(widget, item_id)
         self._assert_frame_ancestors(path, ONLY_GALAXY)
 
     @requires_new_published_objects
@@ -77,9 +77,21 @@ class TestWidgetsApi(ApiTestCase):
     def _create(self, widget: str) -> str:
         if widget == "pages":
             item_id = self.dataset_populator.new_page(slug=f"widget-{uuid4()}")["id"]
-        else:
+        elif widget == "workflows":
             item_id = self.workflow_populator.simple_workflow("widget")
+        else:
+            payload = {"title": "widget", "slug": f"widget-{uuid4()}", "type": "example", "config": {}}
+            response = self._post("visualizations", data=payload, json=True)
+            self._assert_status_code_is_ok(response)
+            item_id = response.json()["id"]
         return item_id
+
+    def _delete_item(self, widget: str, item_id: str):
+        if widget == "visualizations":
+            response = self._put(f"{widget}/{item_id}", data={"deleted": True}, json=True)
+        else:
+            response = self._delete(f"{widget}/{item_id}")
+        self._assert_status_code_is_ok(response)
 
     def _set_sharing(self, widget: str, item_id: str, action: str, payload: dict | None = None):
         response = self._put(f"{widget}/{item_id}/{action}", data=payload, json=True)
