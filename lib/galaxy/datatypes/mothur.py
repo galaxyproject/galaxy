@@ -17,7 +17,10 @@ from galaxy.datatypes.sniff import (
     get_headers,
     iter_headers,
 )
-from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.tabular import (
+    MAX_DATA_LINES,
+    Tabular,
+)
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
@@ -836,6 +839,21 @@ class CountTable(Tabular):
         U68600  1       1       0
         U68591  1       1       0
         U68647  1       0       1
+
+        Empty count tables (e.g. written by ``chimera.uchime``) have no header line at all
+        and must not fail metadata detection:
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> from galaxy.util.bunch import Bunch
+        >>> dataset = Bunch()
+        >>> dataset.metadata = Bunch()
+        >>> dataset.get_file_name = lambda: get_test_fname( 'empty.txt' )
+        >>> dataset.has_data = lambda: True
+        >>> CountTable().set_meta(dataset)
+        >>> dataset.metadata.columns
+        0
+        >>> dataset.metadata.column_types
+        []
         """
         super().__init__(**kwd)
         self.column_names = ["name", "total"]
@@ -845,22 +863,23 @@ class CountTable(Tabular):
         dataset: DatasetProtocol,
         overwrite: bool = True,
         skip: int | None = 1,
-        max_data_lines: int | None = None,
+        max_data_lines: int | None = MAX_DATA_LINES,
         **kwd,
     ) -> None:
-        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, skip=skip, max_data_lines=max_data_lines, **kwd)
 
-        headers = get_headers(dataset.get_file_name(), sep="\t", count=1)
+        # The first line of a count table is a header line containing the group names.
+        # Empty count tables (e.g. the count table produced by uchime) have no header at all,
+        # so there is nothing to infer here and the defaults must be kept.
+        headers = get_headers(dataset.get_file_name(), sep="\t", count=1) if dataset.has_data() else []
+        if not headers or not headers[0] or not headers[0][0]:
+            return
+
         colnames = headers[0]
-        dataset.metadata.column_types = ["str"] + (["int"] * (len(headers[0]) - 1))
+        dataset.metadata.column_types = ["str"] + (["int"] * (len(colnames) - 1))
         if len(colnames) > 1:
             dataset.metadata.columns = len(colnames)
-        if len(colnames) > 2:
-            dataset.metadata.groups = colnames[2:]
-
-        dataset.metadata.comment_lines = 1
-        if isinstance(dataset.metadata.data_lines, int):
-            dataset.metadata.data_lines -= 1
+        dataset.metadata.groups = colnames[2:] if len(colnames) > 2 else []
 
 
 @build_sniff_from_prefix
