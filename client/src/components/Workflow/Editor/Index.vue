@@ -1342,7 +1342,8 @@ initializeWorkflowEditor();
             :state-messages="insertedStateMessages"
             :filled-defaults="insertedFilledDefaults"
             title="Subworkflow embedded with changes"
-            message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save." />
+            message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save."
+            @accept="hasChanges = true" />
 
         <RefactorConfirmationModal
             v-model:loading="loadingWorkflow"

@@ -144,6 +144,17 @@ describe("StateUpgradeModal.vue", () => {
         expect(wrapper.emitted("accept")).toHaveLength(1);
     });
 
+    it("labels the button for the defaults when there are issues to review too", async () => {
+        await mountWith(
+            [{ stepIndex: 2, name: "step", details: ["Tool version changed"] }] as unknown as UpgradeMessage[],
+            filledDefaults,
+        );
+        const ok = wrapper.find('[data-description="workflow state upgrade modal ok"]');
+        expect(ok.text()).toBe("Accept defaults");
+        await ok.trigger("click");
+        expect(wrapper.emitted("accept")).toHaveLength(1);
+    });
+
     it("only closes on OK when there are no filled defaults", async () => {
         await mountWith([
             { stepIndex: 2, name: "step", details: ["Tool version changed"] },

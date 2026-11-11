@@ -76,6 +76,14 @@ const filledDefaultsSummary = computed(() => {
 });
 const modalTitle = computed(() => (props.stateMessages.length > 0 ? props.title : "Default values filled in"));
 
+// with issues listed too, "Accept" alone would read as accepting those as well
+const okLabel = computed(() => {
+    if (props.filledDefaults.length === 0) {
+        return "OK";
+    }
+    return props.stateMessages.length > 0 ? "Accept defaults" : "Accept";
+});
+
 function onOk() {
     if (props.filledDefaults.length > 0) {
         emit("accept");
@@ -147,7 +155,7 @@ function onOk() {
         </div>
         <template v-slot:footer>
             <GButton color="blue" data-description="workflow state upgrade modal ok" @click="onOk">
-                {{ filledDefaults.length > 0 ? "Accept" : "OK" }}
+                {{ okLabel }}
             </GButton>
         </template>
     </GModal>
