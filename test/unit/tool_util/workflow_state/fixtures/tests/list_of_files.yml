@@ -1,0 +1,9 @@
+- doc: List of File inputs
+  job:
+    inputs:
+      - class: File
+        path: test-data/a.fq
+      - class: File
+        path: test-data/b.fq
+  outputs:
+    out: expected.fq

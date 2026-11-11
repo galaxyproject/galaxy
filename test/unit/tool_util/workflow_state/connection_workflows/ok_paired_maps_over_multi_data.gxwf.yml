@@ -1,0 +1,10 @@
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: paired
+steps:
+  step1:
+    tool_id: multi_data_param
+    in:
+      f1: input_collection

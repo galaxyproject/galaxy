@@ -1,0 +1,34 @@
+{
+    "a_galaxy_workflow": "true",
+    "format-version": "0.1",
+    "name": "Synthetic Cat1 With Step Errors and UUID",
+    "steps": {
+        "0": {
+            "type": "data_input",
+            "tool_id": null,
+            "label": "input_dataset",
+            "tool_state": {
+                "name": "input_dataset"
+            }
+        },
+        "1": {
+            "type": "tool",
+            "tool_id": "cat1",
+            "tool_version": "1.0.0",
+            "label": "concat",
+            "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "errors": "Tool not found",
+            "tool_state": {
+                "input1": {"__class__": "RuntimeValue"},
+                "queries": [],
+                "chromInfo": "?"
+            },
+            "input_connections": {
+                "input1": {"id": 0, "output_name": "output"}
+            },
+            "workflow_outputs": [
+                {"label": "concatenated", "output_name": "out_file1"}
+            ]
+        }
+    }
+}

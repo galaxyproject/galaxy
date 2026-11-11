@@ -1,0 +1,67 @@
+# Declarative tests for --strict-structure, --strict-encoding, --strict-state.
+
+# --- strict-structure ---
+
+strict_structure_extra_keys:
+  fixture: synthetic-cat1-extra-keys.ga
+  operation: strict_structure
+  expect_error: true
+
+strict_structure_clean:
+  fixture: synthetic-cat1-clean.ga
+  operation: strict_structure
+  assertions:
+    - path: [steps, "1", tool_id]
+      value: cat1
+
+strict_structure_format2_clean:
+  fixture: synthetic-cat1.gxwf.yml
+  operation: strict_structure
+  assertions:
+    - path: [steps, concat, tool_id]
+      value: cat1
+
+# --- strict-encoding ---
+
+strict_encoding_json_string_tool_state:
+  fixture: synthetic-cat1-json-string-state.ga
+  operation: strict_encoding
+  expect_error: true
+
+strict_encoding_tool_state_in_format2:
+  fixture: synthetic-cat1-format2-tool-state.gxwf.yml
+  operation: strict_encoding
+  expect_error: true
+
+strict_encoding_clean_native:
+  fixture: synthetic-cat1-clean.ga
+  operation: strict_encoding
+  assertions:
+    - path: [steps, "1", tool_state]
+      value_type: dict
+
+strict_encoding_clean_format2:
+  fixture: synthetic-cat1.gxwf.yml
+  operation: strict_encoding
+  assertions:
+    - path: [steps, concat, tool_id]
+      value: cat1
+
+# --- strict-state ---
+
+strict_state_missing_tool:
+  fixture: synthetic-missing-tool.ga
+  operation: strict_state_validate
+  expect_error: true
+
+strict_state_legacy_encoding:
+  fixture: test_workflow_1.ga
+  operation: strict_state_validate
+  expect_error: true
+
+strict_state_clean_passes:
+  fixture: synthetic-cat1-clean.ga
+  operation: strict_state_validate
+  assertions:
+    - path: [steps, "1", tool_id]
+      value: cat1

@@ -1,0 +1,27 @@
+{#-
+  Tree-level report for ``gxwf-to-format2-stateful``.
+
+  Pure port of ``export_format2._format_tree_markdown``. Content improvements
+  (category grouping, per-tool fallback aggregation, skipped appendix) are
+  deferred to follow-up commits — per the plan, per-tool fallback aggregation
+  needs step-level ``tool_id`` plumbing that is out of scope here.
+
+  Context:
+    report — ExportTreeReport as json-dumped dict (``results`` → ``workflows``)
+    meta   — ignored here; kept for uniform signature
+-#}
+# Export Report: {{ report.root }}
+
+{% for r in report.workflows %}
+{% if r.error %}
+- **{{ r.path }}**: ERROR ({{ r.error }})
+{% elif r.skipped_reason %}
+- **{{ r.path }}**: SKIPPED ({{ r.skipped_reason }})
+{% elif r.ok %}
+- **{{ r.path }}**: OK ({{ r.steps_converted }} steps)
+{% else %}
+- **{{ r.path }}**: PARTIAL ({{ r.steps_fallback }} fallbacks)
+{% endif %}
+{% endfor %}
+
+**Summary**: {{ report.summary.ok }} OK, {{ report.summary.fail }} errors, {{ report.summary.skipped }} skipped

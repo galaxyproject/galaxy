@@ -1,0 +1,4 @@
+- target: [step_results, 1, map_over]
+  value: "paired"
+- target: [step_results, 1, connections, 0, mapping]
+  value: "paired"

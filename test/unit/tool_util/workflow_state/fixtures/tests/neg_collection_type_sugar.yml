@@ -1,0 +1,18 @@
+- doc: Inner Collection using legacy `type:` sugar instead of collection_type — not modeled, should error
+  job:
+    input:
+      class: Collection
+      collection_type: list:paired
+      elements:
+        - class: Collection
+          identifier: sample1
+          type: paired
+          elements:
+            - class: File
+              identifier: forward
+              path: test-data/s1_f.fq
+            - class: File
+              identifier: reverse
+              path: test-data/s1_r.fq
+  outputs:
+    out: expected.fq

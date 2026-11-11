@@ -1,0 +1,7 @@
+- doc: File with class but no path, location, contents, or composite_data
+  job:
+    input:
+      class: File
+      filetype: fastq
+  outputs:
+    out: expected.fq

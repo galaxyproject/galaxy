@@ -1,0 +1,15 @@
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list:paired
+steps:
+  passthrough:
+    tool_id: collection_type_source
+    in:
+      input_collect: input_collection
+  consumer:
+    tool_id: collection_paired_test
+    in:
+      f1:
+        source: passthrough/list_output

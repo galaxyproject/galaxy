@@ -1,0 +1,11 @@
+- doc: List of scalar inputs
+  job:
+    values:
+      - 1
+      - 2
+      - 3
+    names:
+      - a
+      - b
+  outputs:
+    out: expected.txt

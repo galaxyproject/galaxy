@@ -1,0 +1,31 @@
+{
+    "a_galaxy_workflow": "true",
+    "format-version": "0.1",
+    "name": "Synthetic Cat1 Clean",
+    "steps": {
+        "0": {
+            "type": "data_input",
+            "tool_id": null,
+            "label": "input_dataset",
+            "tool_state": {
+                "name": "input_dataset"
+            }
+        },
+        "1": {
+            "type": "tool",
+            "tool_id": "cat1",
+            "tool_version": "1.0.0",
+            "label": "concat",
+            "tool_state": {
+                "input1": {"__class__": "RuntimeValue"},
+                "queries": []
+            },
+            "input_connections": {
+                "input1": {"id": 0, "output_name": "output"}
+            },
+            "workflow_outputs": [
+                {"label": "concatenated", "output_name": "out_file1"}
+            ]
+        }
+    }
+}

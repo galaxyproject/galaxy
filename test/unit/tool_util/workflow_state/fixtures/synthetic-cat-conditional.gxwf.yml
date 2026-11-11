@@ -1,0 +1,22 @@
+class: GalaxyWorkflow
+label: Synthetic Cat Conditional Format2
+inputs:
+  input_dataset:
+    type: data
+  run_it:
+    type: boolean
+steps:
+  concat:
+    tool_id: cat
+    tool_version: "1.0.0"
+    when: $(inputs.should_run)
+    in:
+      input1:
+        source: input_dataset
+      should_run:
+        source: run_it
+    state:
+      queries: []
+outputs:
+  concatenated:
+    outputSource: concat/out_file1
