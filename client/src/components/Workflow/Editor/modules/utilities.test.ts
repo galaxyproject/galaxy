@@ -12,6 +12,7 @@ describe("getStateUpgradeMessages", () => {
                     "Step 2": { inttest: "Parameter 'inttest': an integer or workflow parameter is required" },
                 },
             },
+            filled_defaults: {},
         });
 
         expect(message!.details).toEqual([
@@ -24,6 +25,7 @@ describe("getStateUpgradeMessages", () => {
         const [message] = getStateUpgradeMessages({
             steps: { "0": { name: "Tool", type: "tool", label: "", errors: "Tool is not installed" } },
             upgrade_messages: { "0": { param: "Value changed" } },
+            filled_defaults: {},
         });
 
         expect(message!.details).toEqual(["Tool is not installed", "Value changed"]);
@@ -33,6 +35,7 @@ describe("getStateUpgradeMessages", () => {
         const messages = getStateUpgradeMessages({
             steps: { "0": { name: "Tool", type: "tool", label: "" } },
             upgrade_messages: {},
+            filled_defaults: {},
         });
 
         expect(messages).toEqual([]);
@@ -48,11 +51,5 @@ describe("getFilledDefaults", () => {
         };
         expect(getFilledDefaults(data)[0]?.details).toEqual(["No value found for 'Kmers'. Using default: '7'."]);
         expect(getStateUpgradeMessages(data)[0]?.details).toEqual(["Tool is not installed"]);
-    });
-
-    it("is empty for workflows from servers that don't send filled defaults", () => {
-        expect(
-            getFilledDefaults({ steps: { "0": { name: "Tool", type: "tool", label: "" } }, upgrade_messages: {} }),
-        ).toEqual([]);
     });
 });

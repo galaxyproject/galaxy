@@ -31,7 +31,7 @@ interface StepMessagesData {
         };
     };
     upgrade_messages: { [step_id: string]: unknown };
-    filled_defaults?: { [step_id: string]: unknown };
+    filled_defaults: { [step_id: string]: unknown };
 }
 
 /** Problems that need review: step errors, tool version changes and stored values that had to be replaced. */
@@ -41,7 +41,7 @@ export function getStateUpgradeMessages(data: StepMessagesData): UpgradeMessage[
 
 /** Parameters the workflow gives no value for, which Galaxy fills with the tool's default. */
 export function getFilledDefaults(data: StepMessagesData): UpgradeMessage[] {
-    return collectStepMessages(data, data.filled_defaults ?? {}, false);
+    return collectStepMessages(data, data.filled_defaults, false);
 }
 
 function collectStepMessages(
