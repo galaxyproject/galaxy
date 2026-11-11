@@ -50,11 +50,9 @@ class BoolOperand:
 
     The value is determined by a custom TokenEvaluator."""
 
-    evaluator: TokenEvaluator
-
-    def __init__(self, token):
+    def __init__(self, token, evaluator: TokenEvaluator):
         self.label = token[0]
-        self.value = self.evaluator.evaluate(token[0])
+        self.value = evaluator.evaluate(token[0])
 
     def __bool__(self):
         return self.value
@@ -132,10 +130,8 @@ class BooleanExpressionEvaluator:
                              The default value (None) will use DEFAULT_TOKEN_FORMAT which means the allowed characters are ``[A-Za-z0-9_-@.]``.
         :type token_format:  Optional[str]
         """
-        action = BoolOperand
-        action.evaluator = evaluator
         boolOperand = TRUE | FALSE | QUOTED_STRING | Word(token_format or DEFAULT_TOKEN_FORMAT)
-        boolOperand.set_parse_action(action)
+        boolOperand.set_parse_action(lambda token: BoolOperand(token, evaluator))
         self.boolExpr: ParserElement = infix_notation(
             boolOperand,
             [
