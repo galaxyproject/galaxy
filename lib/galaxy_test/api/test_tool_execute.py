@@ -785,6 +785,30 @@ def test_job_cache_not_used_for_datasets_with_different_extra_files(
     assert not job.final_details["copied_from_job_id"]
 
 
+@requires_tool_id("composite_user_defined")
+def test_user_defined_tool_reads_composite_input_extra_files(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+) -> None:
+    velvet_hda = target_history._dataset_populator.fetch_hda(
+        target_history.id,
+        {
+            "src": "composite",
+            "ext": "velvet",
+            "composite": {
+                "items": [
+                    {"src": "pasted", "paste_content": "sequences content"},
+                    {"src": "pasted", "paste_content": "roadmaps content"},
+                    {"src": "pasted", "paste_content": "log content"},
+                ]
+            },
+        },
+        wait=True,
+    )
+    inputs = tool_input_format.when.any({"input1": {"src": "hda", "id": velvet_hda["id"]}})
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_single_job.with_single_output.with_contents_stripped("roadmaps content")
+
+
 @requires_tool_id("gx_repeat_boolean_min")
 def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, required_tool: RequiredTool):
     # we have a tool test for this but I wanted to verify it wasn't just the

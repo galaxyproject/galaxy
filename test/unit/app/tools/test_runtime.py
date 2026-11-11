@@ -279,13 +279,16 @@ class DatatypesApp:
         self.datatypes_registry = datatypes_registry
 
 
-def _adapt_input(extension, deferred_uri=None, metadata=None, deferred=False, shell_quotable=False):
+def _adapt_input(
+    extension, deferred_uri=None, metadata=None, deferred=False, shell_quotable=False, extra_files_path=None
+):
     registry = example_datatype_registry_for_sample()
     set_datatypes_registry(registry)
     hda = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension=extension)
     hda.id = 1
     assert hda.dataset is not None
     hda.dataset.file_size = Decimal(4)
+    hda.dataset.external_extra_files_path = extra_files_path or "/nonexistent/dataset_1_files"
     for name, value in (metadata or {}).items():
         setattr(hda.metadata, name, value)
     if deferred or deferred_uri:
@@ -305,6 +308,15 @@ def test_adapt_dataset_file():
     result = _adapt_input("txt")
     assert result.class_ == "File"
     assert result.path == "/job/inputs/dataset_1.dat"
+    assert result.extra_files_path is None
+
+
+@pytest.mark.parametrize("extension", ["pbed", "blastdbn"])
+def test_adapt_dataset_with_extra_files(extension, tmp_path):
+    result = _adapt_input(extension, extra_files_path=str(tmp_path))
+    assert result.class_ == "File"
+    assert result.path == "/job/inputs/dataset_1.dat"
+    assert result.extra_files_path == "/job/inputs/dataset_1_files"
 
 
 @pytest.mark.parametrize("extension", ["directory", "zarr", "ome_zarr"])
@@ -316,10 +328,11 @@ def test_adapt_dataset_directory_datatypes(extension):
 
 
 @pytest.mark.parametrize("extension", ["zarr", "ome_zarr"])
-def test_adapt_dataset_zarr_store_in_a_recorded_wrapper_folder(extension):
+def test_adapt_dataset_zarr_store_in_a_recorded_wrapper_folder(extension, tmp_path):
     # Datasets created before stores were moved to the root are left as they are.
-    result = _adapt_input(extension, metadata={"store_root": "wrapped.zarr"})
+    result = _adapt_input(extension, metadata={"store_root": "wrapped.zarr"}, extra_files_path=str(tmp_path))
     assert result.path == "/job/inputs/dataset_1_files/wrapped.zarr"
+    assert result.extra_files_path == "/job/inputs/dataset_1_files"
 
 
 @pytest.mark.parametrize(
@@ -382,6 +395,7 @@ def test_adapt_dataset_deferred_input_has_location_and_no_path():
     assert result.class_ == "Directory"
     assert result.location == "https://example.org/data/folder"
     assert result.path is None
+    assert result.extra_files_path is None
 
 
 def test_adapt_dataset_deferred_input_without_a_source_is_rejected():
@@ -423,6 +437,7 @@ def test_to_cwl_deferred_dataset_has_location_and_no_path():
 
     assert properties["location"] == "https://example.org/data/store.zarr"
     assert "path" not in properties
+    assert "extra_files_path" not in properties
 
 
 def test_to_cwl_store_root_with_a_quote():
@@ -488,6 +503,19 @@ def test_to_cwl_file():
 
     assert properties["class"] == "File"
     assert properties["path"] == "/job/inputs/dataset_1.dat"
+    assert properties["extra_files_path"] is None
+
+
+def test_to_cwl_with_extra_files(tmp_path):
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, "pbed")
+    assert hda.dataset is not None
+    hda.dataset.external_extra_files_path = str(tmp_path)
+
+    properties = to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
+
+    assert properties["path"] == "/job/inputs/dataset_1.dat"
+    assert properties["extra_files_path"] == "/job/inputs/dataset_1_files"
 
 
 def _hda(id: int, extension: str) -> HistoryDatasetAssociation:
@@ -495,6 +523,7 @@ def _hda(id: int, extension: str) -> HistoryDatasetAssociation:
     hda.id = id
     assert hda.dataset is not None
     hda.dataset.file_size = Decimal(4)
+    hda.dataset.external_extra_files_path = f"/nonexistent/dataset_{id}_files"
     return hda
 
 

@@ -855,6 +855,16 @@ class DataInternalJson(StrictModel):
             )
         ),
     ] = None
+    extra_files_path: Annotated[
+        str | None,
+        Field(
+            description=(
+                "The absolute path to the folder holding the dataset's extra files, such as the files of a composite "
+                "dataset. Unset if the dataset has no extra files, or for a deferred dataset passed as a URI "
+                "(see ``location``)."
+            )
+        ),
+    ] = None
     listing: list[str] | None = None  # Should be recursive
     nameroot: Annotated[str | None, Field(description="The basename root such that nameroot + nameext == basename")]
     nameext: Annotated[str | None, Field(description="The basename extension such that nameroot + nameext == basename")]
