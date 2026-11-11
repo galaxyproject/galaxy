@@ -368,7 +368,21 @@ class WorkflowsService(ServiceBase):
             )
         self._check_workflow_tools(trans, workflow, bool(payload.require_exact_tool_versions))
         self._check_on_complete(payload.on_complete)
-        run_configs = build_workflow_run_configs(trans, workflow, payload.model_dump(exclude_unset=True))
+        rerun_of_invocation = None
+        if payload.rerun_of_invocation_id is not None:
+            rerun_of_invocation = self._workflows_manager.get_invocation(
+                trans,
+                trans.security.decode_id(payload.rerun_of_invocation_id),
+                check_ownership=False,
+                check_accessible=True,
+            )
+            if rerun_of_invocation.workflow.top_level_stored_workflow.id != stored_workflow.id:
+                raise exceptions.RequestParameterInvalidException(
+                    "A rerun must run the same workflow as the invocation it reruns."
+                )
+        run_configs = build_workflow_run_configs(
+            trans, workflow, payload.model_dump(exclude_unset=True), rerun_of_invocation=rerun_of_invocation
+        )
         is_batch = payload.batch
         if not is_batch and len(run_configs) != 1:
             raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")

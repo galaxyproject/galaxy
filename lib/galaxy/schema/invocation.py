@@ -555,6 +555,7 @@ InvocationWorkflowIdField = Field(
 
 
 class WorkflowInvocationCollectionView(Model, WithModelClass):
+    is_rerun: bool = Field(False, description="Whether this invocation reruns a previous invocation.")
     id: EncodedDatabaseIdField = InvocationIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -591,6 +592,12 @@ class WorkflowInvocationCollectionView(Model, WithModelClass):
 
 
 class WorkflowInvocationElementView(WorkflowInvocationCollectionView):
+    rerun_of_invocation_id: EncodedDatabaseIdField | None = Field(
+        None, description="The invocation being rerun, if it is still accessible to the current user."
+    )
+    latest_rerun_invocation_id: EncodedDatabaseIdField | None = Field(
+        None, description="The latest accessible direct rerun of this invocation."
+    )
     steps: list[InvocationStep] = Field(default=..., title="Steps", description="Steps of the workflow invocation.")
     inputs: dict[str, InvocationInput] = Field(
         default=..., title="Inputs", description="Input datasets/dataset collections of the workflow invocation."

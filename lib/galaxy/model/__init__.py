@@ -10249,6 +10249,12 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     uuid: Mapped[UUID | None] = mapped_column(UUIDType())
     history_id: Mapped[int | None] = mapped_column(ForeignKey("history.id"), index=True)
     on_complete: Mapped[list | None] = mapped_column(JSON)
+    rerun_of_invocation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("workflow_invocation.id", ondelete="SET NULL"), index=True
+    )
+    rerun_of_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(
+        "WorkflowInvocation", remote_side=lambda: WorkflowInvocation.id
+    )
 
     history = relationship("History", back_populates="workflow_invocations")
     input_parameters = relationship("WorkflowRequestInputParameter", back_populates="workflow_invocation")
@@ -10301,6 +10307,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         "history_id",
         "uuid",
         "state",
+        "is_rerun",
     ]
     dict_element_visible_keys = [
         "id",
@@ -10310,6 +10317,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         "history_id",
         "uuid",
         "state",
+        "is_rerun",
     ]
 
     states = InvocationState
@@ -10318,6 +10326,10 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     def __strict_check_before_flush__(self):
         if self.state is None:
             raise Exception("Workflow invocation without state, this should not happen")
+
+    @property
+    def is_rerun(self) -> bool:
+        return self.rerun_of_invocation_id is not None
 
     def get_last_workflow_invocation_step_update_time(self) -> datetime | None:
         session = required_object_session(self)

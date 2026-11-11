@@ -115,6 +115,7 @@ class WorkflowRunConfig:
         preferred_intermediate_object_store_id: str | None = None,
         effective_outputs: list[EffectiveOutput] | None = None,
         on_complete: list[dict[str, Any]] | None = None,
+        rerun_of_invocation: WorkflowInvocation | None = None,
     ) -> None:
         self.target_history = target_history
         self.replacement_dict = replacement_dict or {}
@@ -130,6 +131,7 @@ class WorkflowRunConfig:
         self.preferred_intermediate_object_store_id = preferred_intermediate_object_store_id
         self.effective_outputs = effective_outputs
         self.on_complete = on_complete
+        self.rerun_of_invocation = rerun_of_invocation
 
 
 def _normalize_inputs(
@@ -357,7 +359,10 @@ def _validate_subworkflow_input_connections(workflow: "Workflow", step_path: tup
 
 
 def build_workflow_run_configs(
-    trans: "ProvidesHistoryContext", workflow: "Workflow", payload: dict[str, Any]
+    trans: "ProvidesHistoryContext",
+    workflow: "Workflow",
+    payload: dict[str, Any],
+    rerun_of_invocation: WorkflowInvocation | None = None,
 ) -> list[WorkflowRunConfig]:
     app = trans.app
     allow_tool_state_corrections = payload.get("allow_tool_state_corrections", False)
@@ -597,6 +602,7 @@ def build_workflow_run_configs(
                 preferred_outputs_object_store_id=preferred_outputs_object_store_id,
                 preferred_intermediate_object_store_id=preferred_intermediate_object_store_id,
                 on_complete=payload.get("on_complete"),
+                rerun_of_invocation=rerun_of_invocation,
             )
         )
 
@@ -613,6 +619,7 @@ def workflow_run_config_to_request(
     workflow_invocation.history = run_config.target_history
     workflow_invocation.state = WorkflowInvocation.states.NEW
     workflow_invocation.on_complete = run_config.on_complete
+    workflow_invocation.rerun_of_invocation = run_config.rerun_of_invocation
     ensure_object_added_to_session(workflow_invocation, object_in_session=run_config.target_history)
 
     def add_parameter(name: str, value: str, type: WorkflowRequestInputParameter.types) -> None:

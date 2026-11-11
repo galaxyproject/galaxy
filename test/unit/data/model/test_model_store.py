@@ -513,6 +513,15 @@ def test_import_export_library(tmp_path):
 def test_import_export_invocation():
     app = _mock_app()
     workflow_invocation = _setup_invocation(app)
+    source_invocation = model.WorkflowInvocation(
+        workflow=workflow_invocation.workflow,
+        history=workflow_invocation.history,
+        state=model.WorkflowInvocation.states.SCHEDULED,
+    )
+    app.add_and_commit(source_invocation)
+    workflow_invocation.rerun_of_invocation = source_invocation
+    app.commit()
+    assert workflow_invocation.is_rerun
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
@@ -525,7 +534,21 @@ def test_import_export_invocation():
     import_model_store = store.get_import_model_store_for_directory(
         temp_directory, app=app, user=workflow_invocation.user, import_options=store.ImportOptions()
     )
+    # Stores from another version/server may contain local lineage identifiers;
+    # never resolve those identifiers against the destination database.
+    invocation_attrs_path = pathlib.Path(temp_directory) / store.ATTRS_FILENAME_INVOCATIONS
+    invocation_attrs = json.loads(invocation_attrs_path.read_text())
+    assert "rerun_of_invocation_id" not in invocation_attrs[0]
+    invocation_attrs[0]["rerun_of_invocation_id"] = source_invocation.id
+    invocation_attrs_path.write_text(json.dumps(invocation_attrs))
     import_model_store.perform_import(history=h2)
+    imported_invocation = sa_session.scalars(
+        select(model.WorkflowInvocation).where(model.WorkflowInvocation.history_id == h2.id)
+    ).one()
+    # Database lineage is local provenance and cannot be reconstructed by importing
+    # a model store into another history or server.
+    assert imported_invocation.rerun_of_invocation_id is None
+    assert imported_invocation.is_rerun is False
 
 
 def validate_crate_metadata(as_dict):

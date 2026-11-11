@@ -32,6 +32,7 @@ import TabsDisabledAlert from "./TabsDisabledAlert.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
 import WorkflowInvocationFeedback from "./WorkflowInvocationFeedback.vue";
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
+import WorkflowInvocationLineage from "./WorkflowInvocationLineage.vue";
 import WorkflowInvocationMetrics from "./WorkflowInvocationMetrics.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
 import WorkflowInvocationSearch from "./WorkflowInvocationSearch.vue";
@@ -393,6 +394,8 @@ async function onCancel() {
                 </WorkflowAnnotation>
             </template>
         </WorkflowNavigationTitle>
+
+        <WorkflowInvocationLineage :invocation="invocation" :compact="!props.isFullPage" />
 
         <BNav v-if="props.isFullPage" pills class="mb-2 mt-2 p-2 bg-light border-bottom">
             <BNavItem title="Overview" :active="onOverviewTab" :to="`/workflows/invocations/${props.invocationId}`">
