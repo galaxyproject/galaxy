@@ -1289,6 +1289,22 @@ class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
     def __init__(self, re_match, collector: CollectorT | None, filename, path=None):
         super().__init__(re_match.groupdict(), collector, filename, path=path)
 
+    @property
+    def has_element_identifier(self) -> bool:
+        """Whether this match resolved a usable element identifier.
+
+        A pattern must always resolve an element identifier for a file -
+        either via the ``identifier_0``, ``identifier_1``, etc. groups or via
+        a ``designation``/``name`` group. Named groups that did not
+        participate in the regex match (e.g. optional groups) show up in
+        ``groupdict()`` with a value of ``None`` and make the identifier
+        unusable.
+        """
+        element_identifiers = self.raw_element_identifiers
+        if element_identifiers:
+            return all(identifier is not None for identifier in element_identifiers)
+        return self.as_dict.get("designation") is not None or self.as_dict.get("name") is not None
+
 
 class DiscoveredFileError(NamedTuple):
     error_message: str

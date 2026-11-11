@@ -137,6 +137,40 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     assert collection.dataset_instances[0].dataset.file_size == 1
 
 
+def test_collection_element_pattern_without_identifier_is_skipped():
+    # The pattern must always capture an element identifier (a designation or
+    # name group). Files matching the pattern but for which the identifier
+    # group does not participate in the match (e.g. because the group is
+    # optional) are skipped instead of crashing ``populate_collection_elements``
+    # when the (None) element identifiers are joined for the association name.
+    job_working_directory = tempfile.mkdtemp()
+    with open(os.path.join(job_working_directory, ".txt"), "w") as out:
+        out.write("no designation")
+    with open(os.path.join(job_working_directory, "kept.txt"), "w") as out:
+        out.write("kept")
+    _app, sa_session, job_context, collection = job_context_for_directory(job_working_directory)
+    pattern = r"^(?P<designation>\w+)?\.(?P<ext>\w+)$"
+    collection_description = FilePatternDatasetCollectionDescription(pattern=pattern)
+    collection_builder = builder.BoundCollectionBuilder(collection)
+    dataset_collectors = [dataset_collector(collection_description)]
+    output_name = "output"
+    filenames = job_context.find_files(output_name, collection, dataset_collectors)
+    # ".txt" matches the pattern but captures no designation -> skipped
+    assert [os.path.basename(discovered_file.path) for discovered_file in filenames] == ["kept.txt"]
+    job_context.populate_collection_elements(
+        collection,
+        collection_builder,
+        filenames,
+        name=output_name,
+        metadata_source_name="",
+        final_job_state=job_context.final_job_state,
+    )
+    collection_builder.populate()
+    sa_session.commit()
+    assert len(collection.dataset_instances) == 1
+    assert collection.dataset_instances[0].designation == "kept"
+
+
 def test_collection_rejects_tool_provided_extra_files_outside_working_directory():
     with tempfile.TemporaryDirectory() as job_working_directory:
         dataset_path = os.path.join(job_working_directory, "dataset.txt")
