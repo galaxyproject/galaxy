@@ -2,7 +2,7 @@
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
-import { BCard, BPagination } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
@@ -25,6 +25,7 @@ import GridText from "./GridElements/GridText.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
+import GPagination from "@/components/BaseComponents/GPagination.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import SharingIndicators from "@/components/Indices/SharingIndicators.vue";
@@ -559,18 +560,12 @@ watch(operationMessage, () => {
                         </GButton>
                     </div>
                 </div>
-                <BPagination
+                <GPagination
                     v-model="currentPage"
                     :total-rows="totalRows"
                     :per-page="limit"
-                    class="m-0"
-                    size="sm"
-                    data-description="grid pager"
-                    next-class="gx-grid-pager-next"
-                    prev-class="gx-grid-pager-prev"
-                    first-class="gx-grid-pager-first"
-                    last-class="gx-grid-pager-last"
-                    page-class="gx-grid-pager-page" />
+                    size="small"
+                    data-description="grid pager" />
             </div>
         </div>
     </div>
