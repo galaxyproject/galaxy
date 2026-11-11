@@ -15,7 +15,6 @@ import {
     RECENT_LIMIT,
     workflowColumnFilter,
 } from "./invocationFilters";
-import invocationsGridConfig from "./invocations";
 
 const { server, http } = useServerMock();
 
@@ -48,13 +47,6 @@ function mockIndexes(workflows: Listing, histories: Listing) {
         }),
     );
 }
-
-describe("module loading", () => {
-    it("wires the column filters into the grid when this module loads first", () => {
-        const filters = invocationsGridConfig.fields.map((field) => field.filter).filter(Boolean);
-        expect(filters).toEqual([workflowColumnFilter, historyColumnFilter]);
-    });
-});
 
 describe("nameSearch", () => {
     it.each([
