@@ -361,15 +361,20 @@ class DistanceMatrix(Text):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, skip: int | None = 0, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
+        if not dataset.has_data():
+            return
+
         headers = iter_headers(dataset.get_file_name(), sep="\t")
         for line in headers:
-            if not line[0].startswith("@"):
-                try:
-                    dataset.metadata.sequence_count = int("".join(line))  # seq count sometimes preceded by tab
-                    break
-                except Exception as e:
-                    if not isinstance(self, PairwiseDistanceMatrix):
-                        log.warning(f"DistanceMatrix set_meta {e}")
+            if not "".join(line).strip() or line[0].startswith("@"):
+                # skip blank lines and comments (the sequence count is sometimes preceded by a tab)
+                continue
+            try:
+                dataset.metadata.sequence_count = int("".join(line))  # seq count sometimes preceded by tab
+                break
+            except Exception as e:
+                if not isinstance(self, PairwiseDistanceMatrix):
+                    log.warning(f"DistanceMatrix set_meta {e}")
 
 
 @build_sniff_from_prefix
