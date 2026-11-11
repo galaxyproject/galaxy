@@ -25,6 +25,30 @@ from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
+# The first column of an otu/list/sabund/rabund file is a mothur label: either the
+# literal 'unique' or a distance cutoff such as 0.03. It is never a plain integer, which
+# is what distinguishes these formats from a generic table of numbers at sniff time.
+MOTHUR_LABEL_RE = re.compile(r"^(?:unique|\d*\.\d+)$")
+
+
+def is_mothur_label(value: str) -> bool:
+    """Return True if value can be a mothur label, i.e. 'unique' or a distance cutoff.
+
+    >>> is_mothur_label( 'unique' )
+    True
+    >>> is_mothur_label( '0.03' )
+    True
+    >>> is_mothur_label( '1.00' )
+    True
+    >>> is_mothur_label( '1' )
+    False
+    >>> is_mothur_label( 'Otu01' )
+    False
+    """
+    if not MOTHUR_LABEL_RE.match(value):
+        return False
+    return value == "unique" or float(value) <= 1
+
 
 @build_sniff_from_prefix
 class Otu(Text):
@@ -96,25 +120,32 @@ class Otu(Text):
         >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.otu' )
         >>> Otu().sniff( fname )
         False
+        >>> fname = get_test_fname( 'mothur_datatypetest_false2.mothur.otu' )
+        >>> Otu().sniff( fname )
+        False
         """
         headers = iter_headers(file_prefix, sep="\t")
         count = 0
+        labels: set[str] = set()
         for line in headers:
-            if not line[0].startswith("@"):
-                if len(line) < 2:
-                    return False
-                if count >= 1:
-                    try:
-                        check = int(line[1])
-                        if check + 2 != len(line):
-                            return False
-                    except ValueError:
-                        return False
+            if line[0].startswith("@"):
+                continue
+            if len(line) < 2:
+                return False
+            if count == 0 and line[0] == "label":
+                # column heading line as written by mothur: label<TAB>numOtus<TAB>Otu01<TAB>...
                 count += 1
-        if count > 2:
-            return True
-
-        return False
+                continue
+            if not is_mothur_label(line[0]) or line[0] in labels:
+                return False
+            labels.add(line[0])
+            try:
+                if int(line[1]) + 2 != len(line):
+                    return False
+            except ValueError:
+                return False
+            count += 1
+        return count > 2
 
 
 class Sabund(Otu):
@@ -141,26 +172,35 @@ class Sabund(Otu):
         >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.sabund' )
         >>> Sabund().sniff( fname )
         False
+        >>> fname = get_test_fname( 'mothur_datatypetest_false2.mothur.sabund' )
+        >>> Sabund().sniff( fname )
+        False
         """
         headers = iter_headers(file_prefix, sep="\t")
-        count = 0
+        data_lines = 0
+        labels: set[str] = set()
         for line in headers:
-            if not line[0].startswith("@"):
-                if len(line) < 2:
+            if line[0].startswith("@"):
+                continue
+            if data_lines == 0 and line[0] == "label":
+                # column heading line as written by mothur: label<TAB>numOtus<TAB>Otu01<TAB>...
+                continue
+            if len(line) < 3:
+                return False
+            if not is_mothur_label(line[0]) or line[0] in labels:
+                return False
+            labels.add(line[0])
+            try:
+                check = int(line[1])
+                if check < 1 or check + 2 != len(line):
                     return False
-                try:
-                    check = int(line[1])
-                    if check + 2 != len(line):
+                for i in range(2, len(line)):
+                    if int(line[i]) < 0:
                         return False
-                    for i in range(2, len(line)):
-                        int(line[i])
-                except ValueError:
-                    return False
-                count += 1
-        if count > 0:
-            return True
-
-        return False
+            except ValueError:
+                return False
+            data_lines += 1
+        return data_lines > 0
 
 
 class GroupAbund(Otu):
