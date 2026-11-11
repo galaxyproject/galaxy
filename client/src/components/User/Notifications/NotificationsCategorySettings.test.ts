@@ -45,14 +45,17 @@ describe("NotificationsCategorySettings", () => {
         expect(pushCheckbox!.element.disabled).toBe(true);
     });
 
-    it("shows only the channel toggles for job_completion, which is opted into for each run", async () => {
-        const wrapper = mountSettings(true, "job_completion");
-        const checkboxes = wrapper.findAll<HTMLInputElement>("input[type='checkbox']");
+    it.each(["job_completion", "workflow_completion"] as const)(
+        "shows only the channel toggles for %s, which is opted into for each run",
+        async (category) => {
+            const wrapper = mountSettings(true, category);
+            const checkboxes = wrapper.findAll<HTMLInputElement>("input[type='checkbox']");
 
-        expect(checkboxes.map((checkbox) => checkbox.attributes("role"))).not.toContain("switch");
-        expect(checkboxes).toHaveLength(2);
-        await checkboxes[0]!.setValue(true);
+            expect(checkboxes.map((checkbox) => checkbox.attributes("role"))).not.toContain("switch");
+            expect(checkboxes).toHaveLength(2);
+            await checkboxes[0]!.setValue(true);
 
-        expect(wrapper.emitted("onChannelChange")).toEqual([["job_completion", "email", true]]);
-    });
+            expect(wrapper.emitted("onChannelChange")).toEqual([[category, "email", true]]);
+        },
+    );
 });

@@ -52,7 +52,7 @@ Template begins here >>>>>>
     </ul>
     {% endif %}
 
-    {% include "mail/notifications/_completion_summary.html" %}
+    {% with notified_when="this job completes" if content['job_count'] == 1 else "these jobs complete" %}{% include "mail/notifications/_completion_summary.html" %}{% endwith %}
 
     <img
       style="width: 130px; height: auto; margin: 15px 0;"

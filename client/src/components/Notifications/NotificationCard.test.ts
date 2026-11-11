@@ -11,6 +11,7 @@ import {
     generateMessageNotification,
     generateNewSharedItemNotification,
     generateToolInstallationRequestNotification,
+    generateWorkflowCompletionNotification,
 } from "@/components/Notifications/test-utils";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { useNotificationsStore } from "@/stores/notificationsStore";
@@ -270,6 +271,24 @@ describe("Notifications categories", () => {
 
         const wrapper = await mountComponent(NotificationCard, { notification });
 
+        const links = wrapper.findAllComponents(RouterLinkStub);
+        expect(links.map((link) => link.props("to"))).toEqual([
+            "/histories/view?id=encoded-history-id",
+            "/workflows/invocations/encoded-invocation-id",
+        ]);
+    });
+
+    it("workflow_completion notification names the workflow and links its invocation", async () => {
+        const notification = generateWorkflowCompletionNotification();
+
+        const wrapper = await mountComponent(NotificationCard, { notification });
+
+        expect(wrapper.find(`#g-card-title-${notification.id}`).text()).toBe(
+            "Workflow 'Mapping' completed in history 'Reads'",
+        );
+        const description = wrapper.find(`#g-card-description-${notification.id}`);
+        expect(description.text()).toContain("Job states: 2 ok");
+        expect(description.text()).not.toContain("Outputs:");
         const links = wrapper.findAllComponents(RouterLinkStub);
         expect(links.map((link) => link.props("to"))).toEqual([
             "/histories/view?id=encoded-history-id",

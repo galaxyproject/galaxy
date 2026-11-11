@@ -11,12 +11,8 @@ __all__ = ("SendNotificationHook",)
 from typing import TYPE_CHECKING
 
 from galaxy.schema.notifications import (
-    InternalNotificationCreateData,
-    MessageNotificationContent,
-    NotificationCreateRequest,
-    NotificationRecipients,
-    NotificationVariant,
-    PersonalNotificationCategory,
+    completion_notification_request,
+    WorkflowCompletionNotificationContent,
 )
 from galaxy.workflow.completion_hooks.base import WorkflowCompletionHook
 
@@ -55,33 +51,16 @@ class SendNotificationHook(WorkflowCompletionHook):
             )
             return
 
-        # Get workflow name
-        workflow_name = self._get_workflow_name(invocation)
-
-        # Build notification content
-        subject = f"Workflow '{workflow_name}' completed"
-        message = self._build_message(completion, workflow_name)
-
-        variant = NotificationVariant.info
-
-        # Create the notification request
-        notification_data = InternalNotificationCreateData(
-            source="galaxy",
-            category=PersonalNotificationCategory.message,
-            variant=variant,
-            content=MessageNotificationContent(
-                subject=subject,
-                message=message,
-            ),
+        state_counts = completion.job_state_summary or {}
+        content = WorkflowCompletionNotificationContent(
+            history_id=self.app.security.encode_id(history.id),
+            history_name=history.name or "Unnamed history",
+            workflow_name=self._get_workflow_name(invocation),
+            job_count=sum(state_counts.values()),
+            state_counts=state_counts,
+            invocation_id=self.app.security.encode_id(invocation.id),
         )
-
-        recipients = NotificationRecipients(user_ids=[user.id])
-
-        request = NotificationCreateRequest(
-            recipients=recipients,
-            notification=notification_data,
-            galaxy_url=self.app.config.galaxy_infrastructure_url,
-        )
+        request = completion_notification_request(user.id, content, self.app.config.galaxy_infrastructure_url)
 
         # Send the notification
         try:
@@ -120,41 +99,6 @@ class SendNotificationHook(WorkflowCompletionHook):
             return invocation.workflow.stored_workflow.name
         except AttributeError:
             return "Unknown Workflow"
-
-    def _build_message(self, completion: "WorkflowInvocationCompletion", workflow_name: str) -> str:
-        """
-        Build the notification message.
-
-        Args:
-            completion: The completion record.
-            workflow_name: The name of the workflow.
-
-        Returns:
-            The formatted message string with Markdown.
-        """
-        invocation = completion.workflow_invocation
-
-        lines = [
-            f"Your workflow **{workflow_name}** has completed.",
-        ]
-
-        if summary := completion.job_state_summary or {}:
-            lines.extend(["", "**Job Summary:**", ""])
-            for state, count in sorted(summary.items()):
-                lines.append(f"- {state}: {count}")
-
-        # Add link to invocation if possible
-        try:
-            encoded_id = self.app.security.encode_id(invocation.id)
-            infrastructure_url = self.app.config.galaxy_infrastructure_url
-            if infrastructure_url:
-                invocation_url = f"{infrastructure_url}/workflows/invocations/{encoded_id}"
-                lines.extend(["", f"[View Invocation Details]({invocation_url})"])
-        except Exception:
-            # Don't fail if we can't generate the link
-            pass
-
-        return "\n".join(lines)
 
     def is_applicable(self, completion: "WorkflowInvocationCompletion") -> bool:
         """

@@ -6,6 +6,7 @@ import type {
     SharedItemNotification,
     ToolInstallationRequestNotification,
     UserNotification,
+    WorkflowCompletionNotification,
 } from "@/api/notifications";
 
 export function generateRandomItemType() {
@@ -84,6 +85,30 @@ export function generateJobCompletionNotification(): JobCompletionNotification {
             job_count: 3,
             state_counts: { ok: 2, error: 1 },
             invocation_id: null,
+        },
+        seen_time: undefined,
+        deleted: false,
+    };
+}
+
+export function generateWorkflowCompletionNotification(): WorkflowCompletionNotification {
+    return {
+        id: "notification-" + Math.floor(Math.random() * 1000000),
+        source: "galaxy",
+        category: "workflow_completion",
+        variant: "info",
+        create_time: new Date(Date.now() + 1).toISOString(),
+        update_time: new Date(Date.now() + 2).toISOString(),
+        publication_time: new Date(Date.now() + 3).toISOString(),
+        expiration_time: new Date(Date.now() + 86400000).toISOString(),
+        content: {
+            category: "workflow_completion",
+            history_id: "encoded-history-id",
+            history_name: "Reads",
+            workflow_name: "Mapping",
+            job_count: 2,
+            state_counts: { ok: 2 },
+            invocation_id: "encoded-invocation-id",
         },
         seen_time: undefined,
         deleted: false,

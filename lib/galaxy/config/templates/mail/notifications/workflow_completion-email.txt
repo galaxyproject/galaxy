@@ -1,0 +1,34 @@
+Use this template to customize the text email your users will receive
+when a new notification of category "workflow_completion" is sent to them.
+Copy the file to {{ templates_dir }}/mail/notifications/workflow_completion-email.txt and modify as required.
+
+If you are adding URLs, remember that only absolute URLs (with
+a domain name) make sense in email! They can be served from any stable
+location, including your Galaxy server or GitHub.
+
+The following variables are available for inserting into the text like
+{{ variable_name }}. They will be rendered into the text before the email is
+sent:
+
+- name                      The user's name
+- user_email                The user's email
+- date                      Date and time of the notification
+- hostname                  Your galaxy's hostname (i.e. usegalaxy.* or the value in `server_name` from the galaxy config file)
+- contact_email             Your galaxy's contact email
+- notification_settings_url The URL to the user's notification settings to manage their subscriptions
+- variant                   The notification variant indicates the level of importance of the notification (i.e. info, warning, urgent)
+- content                   The workflow_completion payload
+  - history_id              The encoded ID of the history the jobs ran in
+  - history_name            The name of the history the jobs ran in
+  - workflow_name           The name of the workflow
+  - job_count               The number of jobs that completed
+  - state_counts            The number of jobs that ended in each job state (e.g. ok, error)
+  - invocation_id           The encoded ID of the workflow invocation
+- galaxy_url                The URL to the Galaxy instance (i.e. https://usegalaxy.*)
+
+Template begins here>>>>>>
+Hello {{ name }},
+
+Your workflow '{{ content['workflow_name'] }}' in history '{{ content['history_name'] }}' completed on {{ date }}.
+
+{% with notified_when="this workflow completes" %}{% include "mail/notifications/_completion_summary.txt" %}{% endwith %}

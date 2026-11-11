@@ -8,7 +8,9 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     wait_on,
+    WorkflowPopulator,
 )
+from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
 from galaxy_test.driver import integration_util
 
 # One worker finishes the jobs of a map-over one after the other, so the last job always sees the
@@ -85,6 +87,7 @@ class TestCompletionNotifications(integration_util.IntegrationTestCase):
 
     dataset_populator: DatasetPopulator
     dataset_collection_populator: DatasetCollectionPopulator
+    workflow_populator: WorkflowPopulator
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -97,6 +100,7 @@ class TestCompletionNotifications(integration_util.IntegrationTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
     def test_job_sends_its_own_notification(self):
         with self.dataset_populator.test_history(name="Reads") as history_id:
@@ -136,6 +140,29 @@ class TestCompletionNotifications(integration_util.IntegrationTestCase):
                 "job_count": 3,
                 "state_counts": {"ok": 3},
                 "invocation_id": None,
+            }
+
+    def test_workflow_invocation_sends_one_notification(self):
+        with self.dataset_populator.test_history(name="Reads") as history_id:
+            summary = self.workflow_populator.run_workflow(
+                WORKFLOW_SIMPLE_CAT_TWICE,
+                test_data={"input1": "hello world"},
+                history_id=history_id,
+                assert_ok=True,
+                extra_invocation_kwds={"on_complete": [{"send_notification": {}}]},
+            )
+            self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id)
+
+            [notification] = self._wait_for_notifications(history_id)
+            assert notification["category"] == "workflow_completion"
+            assert notification["content"] == {
+                "category": "workflow_completion",
+                "history_id": history_id,
+                "history_name": "Reads",
+                "workflow_name": self._get(f"workflows/{summary.workflow_id}").json()["name"],
+                "job_count": 1,
+                "state_counts": {"ok": 1},
+                "invocation_id": summary.invocation_id,
             }
 
     def _wait_for_notifications(self, history_id: str) -> list[dict]:

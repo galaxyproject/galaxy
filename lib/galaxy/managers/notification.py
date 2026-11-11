@@ -77,6 +77,7 @@ from galaxy.schema.notifications import (
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
+    WorkflowCompletionNotificationContent,
 )
 from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.schema.storage_operations import (
@@ -905,13 +906,13 @@ class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBui
         return f"[Galaxy] New {content.item_type} shared with you: {content.item_name}"
 
 
-CompletionNotificationContent = JobCompletionNotificationContent
+CompletionNotificationContent = JobCompletionNotificationContent | WorkflowCompletionNotificationContent
 
 
 class CompletionEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
-    """Emails about jobs the user asked to be notified about."""
+    """Emails about jobs the user asked to be notified about, run by a tool or by a workflow."""
 
-    # History and output names are raw user-supplied strings; escape them in HTML.
+    # History, output and workflow names are raw user-supplied strings; escape them in HTML.
     autoescape_html = True
     content_model: type[CompletionNotificationContent]
 
@@ -930,6 +931,14 @@ class JobCompletionEmailNotificationTemplateBuilder(CompletionEmailNotificationT
     def get_subject(self) -> str:
         history_name = self._header_text(self.get_content(TemplateFormats.TXT).history_name)
         return f"[Galaxy] Job completion notification from history '{history_name}'"
+
+
+class WorkflowCompletionEmailNotificationTemplateBuilder(CompletionEmailNotificationTemplateBuilder):
+    content_model = WorkflowCompletionNotificationContent
+
+    def get_subject(self) -> str:
+        content = cast(WorkflowCompletionNotificationContent, self.get_content(TemplateFormats.TXT))
+        return f"[Galaxy] Workflow '{self._header_text(content.workflow_name)}' completed"
 
 
 class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
@@ -1016,6 +1025,7 @@ class EmailNotificationChannelPlugin(NotificationChannelPlugin):
         PersonalNotificationCategory.job_completion: JobCompletionEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.storage_operation: StorageOperationEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.tool_installation_request: ToolInstallationRequestEmailNotificationTemplateBuilder,
+        PersonalNotificationCategory.workflow_completion: WorkflowCompletionEmailNotificationTemplateBuilder,
     }
 
     def send(self, notification: Notification, user: User):

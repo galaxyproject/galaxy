@@ -106,6 +106,9 @@ const title = computed(() => {
         const { job_count, history_name } = props.notification.content;
         const jobs = job_count === 1 ? "Job" : `${job_count} jobs`;
         return `${jobs} completed in history '${history_name}'`;
+    } else if (props.notification.category === "workflow_completion") {
+        const { workflow_name, history_name } = props.notification.content;
+        return `Workflow '${workflow_name}' completed in history '${history_name}'`;
     } else if (props.notification.category === "storage_operation") {
         return props.notification.content.subject;
     } else if (props.notification.category === "tool_installation_request") {
@@ -122,6 +125,7 @@ const titleIcon = computed<TitleIcon>(() => {
     const iconMap: Record<string, IconDefinition> = {
         new_shared_item: faRetweet,
         job_completion: faCheckCircle,
+        workflow_completion: faCheckCircle,
         storage_operation: faHourglassHalf,
         tool_installation_request: faWrench,
     };
@@ -140,9 +144,11 @@ const singleRequestedTool = computed(() =>
 
 const singleToolDetailRows = computed(() => toolDetailRows(singleRequestedTool.value));
 
-/** The content of a job completion notification. */
+/** The content of a job or workflow completion notification. */
 const completionContent = computed(() =>
-    props.notification.category === "job_completion" ? props.notification.content : undefined,
+    props.notification.category === "job_completion" || props.notification.category === "workflow_completion"
+        ? props.notification.content
+        : undefined,
 );
 
 /** How many jobs ended in each state, e.g. "1 error, 2 ok". */
@@ -334,7 +340,11 @@ function markNotificationAsSeen() {
                         </template>
                     </dl>
                 </template>
-                <template v-else-if="props.notification.category === 'job_completion'">
+                <template
+                    v-else-if="
+                        props.notification.category === 'job_completion' ||
+                        props.notification.category === 'workflow_completion'
+                    ">
                     <p v-if="jobCompletionOutputs" class="mb-1"><strong>Outputs:</strong> {{ jobCompletionOutputs }}</p>
                     <p class="mb-1"><strong>Job states:</strong> {{ completionStates }}</p>
                     <GLink :to="completionHistoryLink" @click="markNotificationAsSeen">Open history</GLink>

@@ -24,6 +24,7 @@ from galaxy.managers.notification import (
     NotificationRecipientResolver,
     TemplateFormats,
     ToolInstallationRequestEmailNotificationTemplateBuilder,
+    WorkflowCompletionEmailNotificationTemplateBuilder,
 )
 from galaxy.model import (
     DatasetStorageOperationRun,
@@ -53,6 +54,7 @@ from galaxy.schema.notifications import (
     UserNotificationPreferences,
     UserNotificationResponse,
     UserNotificationUpdateRequest,
+    WorkflowCompletionNotificationContent,
 )
 from galaxy.schema.storage_operations import (
     StorageOperationExecutionResult,
@@ -778,6 +780,15 @@ class TestMessageEmailBuilder(NotificationManagerBaseTestCase):
 
 
 class TestCompletionEmailBuilders(NotificationManagerBaseTestCase):
+    def _send_completion(
+        self, user: User, content: JobCompletionNotificationContent | WorkflowCompletionNotificationContent
+    ):
+        notification, _ = self._send_message_notification_to_users(
+            [user],
+            notification={"category": content.category, "content": content.model_dump()},
+        )
+        return notification
+
     def _send_job_completion(self, user: User, history_name: str = "Analysis"):
         content = JobCompletionNotificationContent(
             history_id="f2db41e1fa331b3e",
@@ -787,11 +798,7 @@ class TestCompletionEmailBuilders(NotificationManagerBaseTestCase):
             state_counts={"ok": 2, "error": 1},
             invocation_id="5969b1f7201f12ae",
         )
-        notification, _ = self._send_message_notification_to_users(
-            [user],
-            notification={"category": content.category, "content": content.model_dump()},
-        )
-        return notification
+        return self._send_completion(user, content)
 
     def test_text_email_lists_outputs_states_and_links(self):
         user = self._create_test_user()
@@ -803,6 +810,7 @@ class TestCompletionEmailBuilders(NotificationManagerBaseTestCase):
         assert "Job states:\n- error: 1\n- ok: 2\n" in text
         assert "https://test.galaxy.url/histories/view?id=f2db41e1fa331b3e" in text
         assert "https://test.galaxy.url/workflows/invocations/report?id=5969b1f7201f12ae" in text
+        assert "you asked to be notified when these jobs complete." in text
         assert builder.get_subject() == "[Galaxy] Job completion notification from history 'Analysis'"
 
     def test_history_name_is_escaped_in_html_and_kept_on_one_line_in_the_subject(self):
@@ -813,6 +821,28 @@ class TestCompletionEmailBuilders(NotificationManagerBaseTestCase):
         assert "&lt;b&gt;Reads&lt;/b&gt;" in html
         assert "<b>Reads</b>" not in html
         assert builder.get_subject() == "[Galaxy] Job completion notification from history '<b>Reads</b> run 2'"
+
+    def test_workflow_email_names_the_workflow_and_links_the_invocation(self):
+        user = self._create_test_user()
+        content = WorkflowCompletionNotificationContent(
+            history_id="f2db41e1fa331b3e",
+            history_name="Analysis",
+            workflow_name="<i>Mapping</i>\npipeline",
+            job_count=2,
+            state_counts={"ok": 2},
+            invocation_id="5969b1f7201f12ae",
+        )
+        notification = self._send_completion(user, content)
+        builder = WorkflowCompletionEmailNotificationTemplateBuilder(self.app.config, notification, user)
+        text = builder.get_body(TemplateFormats.TXT)
+        assert "Your workflow '<i>Mapping</i>\npipeline' in history 'Analysis' completed on " in text
+        assert "Job states:\n- ok: 2\n" in text
+        assert "https://test.galaxy.url/workflows/invocations/report?id=5969b1f7201f12ae" in text
+        assert "you asked to be notified when this workflow completes." in text
+        html = builder.get_body(TemplateFormats.HTML)
+        assert "&lt;i&gt;Mapping&lt;/i&gt;" in html
+        assert "you asked to be notified when this workflow completes." in html
+        assert builder.get_subject() == "[Galaxy] Workflow '<i>Mapping</i> pipeline' completed"
 
 
 class TestToolInstallationRequestEmailBuilder(NotificationManagerBaseTestCase):

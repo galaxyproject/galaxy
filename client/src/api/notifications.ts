@@ -22,6 +22,11 @@ export interface JobCompletionNotification extends BaseUserNotification {
     content: components["schemas"]["JobCompletionNotificationContent"];
 }
 
+export interface WorkflowCompletionNotification extends BaseUserNotification {
+    category: "workflow_completion";
+    content: components["schemas"]["WorkflowCompletionNotificationContent"];
+}
+
 export interface StorageOperationNotification extends BaseUserNotification {
     category: "storage_operation";
     content: components["schemas"]["StorageOperationNotificationContent"];
@@ -67,7 +72,8 @@ export type UserNotification =
     | SharedItemNotification
     | JobCompletionNotification
     | StorageOperationNotification
-    | ToolInstallationRequestNotification;
+    | ToolInstallationRequestNotification
+    | WorkflowCompletionNotification;
 
 export type NotificationChanges = components["schemas"]["UserNotificationUpdateRequest"];
 

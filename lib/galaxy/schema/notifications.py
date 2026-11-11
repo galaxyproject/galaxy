@@ -68,8 +68,7 @@ class PersonalNotificationCategory(str, Enum):
     job_completion = "job_completion"
     storage_operation = "storage_operation"
     tool_installation_request = "tool_installation_request"
-    # TODO: enable this and create content model when we have a hook for completed workflows
-    # workflow_execution_completed = "workflow_execution_completed"
+    workflow_completion = "workflow_completion"
 
 
 NotificationCategory = MandatoryNotificationCategory | PersonalNotificationCategory
@@ -147,7 +146,7 @@ class StorageOperationNotificationContent(MessageNotificationContentBase):
 
 
 class CompletionNotificationContentBase(Model):
-    """What completed in a history: the jobs of a tool run."""
+    """What completed in a history: the jobs of a tool run or of a workflow invocation."""
 
     # Plain strings rather than EncodedDatabaseIdField: the content is validated again when the
     # Celery task is decoded and on every read, and that field would encode the encoded ID again.
@@ -171,6 +170,14 @@ class JobCompletionNotificationContent(CompletionNotificationContentBase):
         title="Outputs",
         description="The names of the outputs: the output datasets of a single job, or the output collections of jobs mapped over a collection.",
     )
+
+
+class WorkflowCompletionNotificationContent(CompletionNotificationContentBase):
+    category: Literal[PersonalNotificationCategory.workflow_completion] = (
+        PersonalNotificationCategory.workflow_completion
+    )
+    workflow_name: str = Field(..., title="Workflow name", description="The name of the workflow that completed.")
+    invocation_id: str = Field(..., title="Invocation ID", description="The encoded ID of the workflow invocation.")
 
 
 # Tool-request fields are raw user input that ends up in emails (including the
@@ -376,6 +383,7 @@ _CommonUserNotificationContent = (
     | NewSharedItemNotificationContent
     | JobCompletionNotificationContent
     | StorageOperationNotificationContent
+    | WorkflowCompletionNotificationContent
 )
 
 AnyUserNotificationContent = Annotated[
@@ -620,7 +628,7 @@ NotificationRecipients = GenericNotificationRecipients[int]
 
 def completion_notification_request(
     user_id: int,
-    content: JobCompletionNotificationContent,
+    content: JobCompletionNotificationContent | WorkflowCompletionNotificationContent,
     galaxy_url: str | None,
 ) -> NotificationCreateRequest:
     """The request that notifies a user that jobs they asked to hear about have completed."""

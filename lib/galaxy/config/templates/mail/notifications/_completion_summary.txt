@@ -1,6 +1,7 @@
 {#- Shared end of the completion email bodies: job states, links, citation and footer.
    Included by job_completion-email.txt and workflow_completion-email.txt. Pure partial
-   body (no >>>>>> doc header). Variables: the notification context; content needs
+   body (no >>>>>> doc header). Variables: the notification context; notified_when ends the
+   sentence "you asked to be notified when ..."; content needs
    history_id, state_counts and invocation_id. -#}
 Job states:
 {% for state, count in content['state_counts'] | dictsort %}- {{ state }}: {{ count }}
@@ -20,7 +21,7 @@ Your Galaxy Team at {{ hostname }}
 
 ---
 
-You received this email because you asked to be notified when these jobs complete.
+You received this email because you asked to be notified when {{ notified_when }}.
 {% if notification_settings_url %}
 To choose how these notifications reach you, please visit {{ notification_settings_url }}.
 {% endif %}

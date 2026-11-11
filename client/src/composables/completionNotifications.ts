@@ -4,7 +4,10 @@ import type { NotificationCategory } from "@/api/notifications";
 import { useConfig } from "@/composables/config";
 
 /** Categories the user opts into for each run, so they have no on/off switch in the preferences. */
-export const COMPLETION_NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = ["job_completion"];
+export const COMPLETION_NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
+    "job_completion",
+    "workflow_completion",
+];
 
 /**
  * Whether completed jobs are notified through the notification system, following the user's preferences.

@@ -1,6 +1,7 @@
 {#- Shared end of the completion email bodies: job states, links, citation and footer.
    Included by job_completion-email.html and workflow_completion-email.html. Pure partial
-   body (no >>>>>> doc header). Variables: the notification context; content needs
+   body (no >>>>>> doc header). Variables: the notification context; notified_when ends the
+   sentence "you asked to be notified when ..."; content needs
    history_id, state_counts and invocation_id. -#}
     <p style="font-size: 12pt;">Job states:</p>
     <ul style="font-size: 12pt;">
@@ -32,7 +33,7 @@
     </p>
 
     <p style="font-size: 10pt;">
-      You received this email because you asked to be notified when these jobs complete.
+      You received this email because you asked to be notified when {{ notified_when }}.
       {% if notification_settings_url %}
       You can choose how these notifications reach you <a href="{{ notification_settings_url }}">here</a>.
       {% endif %}

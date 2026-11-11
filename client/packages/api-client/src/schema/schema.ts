@@ -20943,6 +20943,7 @@ export interface components {
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["JobCompletionNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestCreateContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
@@ -21034,6 +21035,7 @@ export interface components {
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["JobCompletionNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
@@ -22273,7 +22275,8 @@ export interface components {
             | "new_shared_item"
             | "job_completion"
             | "storage_operation"
-            | "tool_installation_request";
+            | "tool_installation_request"
+            | "workflow_completion";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -27326,6 +27329,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "workflow_completion": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -27802,6 +27812,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "workflow_completion": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -27834,6 +27851,7 @@ export interface components {
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["JobCompletionNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestNotificationContent"];
             /**
              * Create time
@@ -28808,6 +28826,46 @@ export interface components {
              * @description Path template relative to `<galaxy root>/widgets/`, with path parameters in braces.
              */
             path: string;
+        };
+        /** WorkflowCompletionNotificationContent */
+        WorkflowCompletionNotificationContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "workflow_completion";
+            /**
+             * History ID
+             * @description The encoded ID of the history the jobs ran in.
+             */
+            history_id: string;
+            /**
+             * History name
+             * @description The name of the history the jobs ran in.
+             */
+            history_name: string;
+            /**
+             * Invocation ID
+             * @description The encoded ID of the workflow invocation.
+             */
+            invocation_id: string;
+            /**
+             * Job count
+             * @description The number of jobs that completed.
+             */
+            job_count: number;
+            /**
+             * State counts
+             * @description The number of jobs that ended in each job state.
+             */
+            state_counts: {
+                [key: string]: number;
+            };
+            /**
+             * Workflow name
+             * @description The name of the workflow that completed.
+             */
+            workflow_name: string;
         };
         /** WorkflowEngineVersion */
         WorkflowEngineVersion: {

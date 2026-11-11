@@ -21,6 +21,10 @@ const categoryDescriptionMap: Partial<Record<NotificationCategory, string>> = {
     `,
     storage_operation:
         "You will receive these notifications when a bulk storage operation completes (including failed outcomes).",
+    workflow_completion: `
+        You will receive these notifications when workflows complete for which you ticked "Send notification"
+        when running them. Choose here how they reach you.
+    `,
 };
 
 interface NotificationsCategorySettingsProps {
