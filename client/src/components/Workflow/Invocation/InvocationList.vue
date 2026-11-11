@@ -11,11 +11,12 @@ import type { StoredWorkflowDetailed } from "@/api/workflows";
 import type { TableField } from "@/components/Common/GTable.types";
 import {
     historyColumnFilter,
+    invocationSearch,
     invocationsFiltering,
     MAX_COLUMN_FILTER_PICKS,
     workflowColumnFilter,
 } from "@/components/Grid/configs/invocationFilters";
-import { getData } from "@/components/Grid/configs/invocations";
+import { fetchInvocations, type InvocationsQuery } from "@/components/Grid/configs/invocationsIndex";
 import { type ColumnFilterField, useColumnFilters } from "@/components/Grid/useColumnFilters";
 import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import { useUserStore } from "@/stores/userStore";
@@ -103,14 +104,18 @@ async function load() {
         return;
     }
     try {
-        const [data, total] = await getData(
-            LIMIT * (currentPage.value - 1),
-            LIMIT,
-            validatedFilterText(),
-            sortBy.value,
-            sortDesc.value,
-            isRegisteredUser(currentUser.value) ? { user_id: currentUser.value.id } : {},
-        );
+        const query: InvocationsQuery = {
+            limit: LIMIT,
+            offset: LIMIT * (currentPage.value - 1),
+            sort_by: sortBy.value as InvocationsQuery["sort_by"],
+            sort_desc: sortDesc.value,
+            include_nested_invocations: false,
+            search: invocationSearch(validatedFilterText()),
+        };
+        if (isRegisteredUser(currentUser.value)) {
+            query.user_id = currentUser.value.id;
+        }
+        const [data, total] = await fetchInvocations(query);
         if (requestId === latestRequest) {
             collapseAll();
             invocations.value = data;

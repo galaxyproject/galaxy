@@ -7,7 +7,7 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import type { WorkflowInvocation } from "@/api/invocations";
-import { getData } from "@/components/Grid/configs/invocations";
+import { fetchInvocations } from "@/components/Grid/configs/invocationsIndex";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
@@ -45,8 +45,14 @@ async function loadInvocations(offset: number, limit: number) {
     if (!currentUser.value || currentUser.value.isAnonymous) {
         return { items: [], total: 0 };
     }
-    const extraProps = { user_id: currentUser.value.id };
-    const [data, totalMatches] = await getData(offset, limit, "", "create_time", true, extraProps);
+    const [data, totalMatches] = await fetchInvocations({
+        limit,
+        offset,
+        sort_by: "create_time",
+        sort_desc: true,
+        include_nested_invocations: false,
+        user_id: currentUser.value.id,
+    });
 
     for (const item of data) {
         invocationStore.updateInvocation(item.id, item);
