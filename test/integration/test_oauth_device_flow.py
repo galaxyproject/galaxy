@@ -40,6 +40,7 @@ class TestOAuthDeviceFlow(integration_util.IntegrationTestCase):
     def test_start_login(self):
         response = self._start_device_authorization(scope="histories:read tools:run")
         self._assert_status_code_is(response, 200)
+        assert response.headers["Cache-Control"] == "no-store"
         body = response.json()
         self._assert_has_keys(body, "device_code", "user_code", "verification_uri", "expires_in", "interval")
         assert "verification_uri_complete" not in body
@@ -199,6 +200,7 @@ class TestOAuthDeviceFlow(integration_util.IntegrationTestCase):
     def _assert_oauth_error(self, response, error):
         self._assert_status_code_is(response, 400)
         assert response.json()["error"] == error
+        assert response.headers["Cache-Control"] == "no-store"
 
 
 class TestOAuthDeviceFlowDisabled(integration_util.IntegrationTestCase):

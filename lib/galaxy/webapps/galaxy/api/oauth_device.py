@@ -50,6 +50,9 @@ UserCodePathParam: str = Path(..., description="The code shown in the app's term
 
 OAUTH_ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {400: {"model": OAuthErrorResponse}}
 
+# OAuth responses carry secrets (device codes, tokens) or answers about them, so they're never cached (RFC 6749 §5.1).
+NO_STORE_HEADERS = {"Cache-Control": "no-store"}
+
 
 def oauth_error_response(error: OAuthError) -> JSONResponse:
     return JSONResponse(
@@ -57,6 +60,7 @@ def oauth_error_response(error: OAuthError) -> JSONResponse:
         content=OAuthErrorResponse(error=error.error, error_description=error.description).model_dump(
             exclude_none=True
         ),
+        headers=NO_STORE_HEADERS,
     )
 
 
@@ -97,6 +101,7 @@ def authorization_server_metadata(trans: SessionRequestContext = DependsOnTrans)
 )
 def device_authorization(
     request: Request,
+    response: Response,
     trans: SessionRequestContext = DependsOnTrans,
     # Optional here so a missing value gets an OAuth `invalid_request`, not Galaxy's validation error.
     client_id: str | None = Form(None, description="Required. ID of the app asking for access, e.g. `galaxy-cli`."),
@@ -119,6 +124,7 @@ def device_authorization(
         )
     except OAuthError as e:
         return oauth_error_response(e)
+    response.headers.update(NO_STORE_HEADERS)
     return DeviceAuthorizationResponse(
         device_code=started.device_code,
         user_code=started.authorization.user_code,
@@ -209,6 +215,5 @@ def token(
         issued = manager.respond_to_poll(client_id, device_code)
     except OAuthError as e:
         return oauth_error_response(e)
-    # Token responses must never be cached (RFC 6749 §5.1).
-    response.headers["Cache-Control"] = "no-store"
+    response.headers.update(NO_STORE_HEADERS)
     return DeviceTokenResponse(access_token=issued.access_token, expires_in=issued.expires_in, scope=issued.scope)
