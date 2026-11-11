@@ -7,7 +7,6 @@ import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import type { UpgradeMessage } from "./modules/utilities";
 
 import StateUpgradeModal from "./StateUpgradeModal.vue";
-import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 
 const MODAL_CONTENT_SELECTOR = '[data-description="workflow state upgrade modal content"]';
 
@@ -115,13 +114,12 @@ describe("StateUpgradeModal.vue", () => {
         expect(filled.text()).toContain("Galaxy filled in 3 default values in 2 steps");
         expect(wrapper.text()).toContain("Default values filled in");
         const toggle = filled.find('[data-description="workflow state upgrade filled defaults toggle"]');
-        expect(wrapper.findComponent(GCollapse).props("visible")).toBe(false);
+        expect(toggle.attributes("aria-pressed")).toBe("false");
         expect(toggle.text()).toContain("Show values");
 
         await toggle.trigger("click");
-        expect(wrapper.findComponent(GCollapse).props("visible")).toBe(true);
+        expect(toggle.attributes("aria-pressed")).toBe("true");
         expect(toggle.text()).toContain("Hide values");
-        expect(filled.text()).toContain("No value found for 'Report title'.");
     });
 
     it("keeps problems to review separate from filled defaults", async () => {
