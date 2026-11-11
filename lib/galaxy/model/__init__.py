@@ -1772,6 +1772,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     terminal_states = [states.OK, states.ERROR, states.DELETED]
     # deleting state should not turn back into any of the non-ready states
     finished_states = terminal_states + [states.DELETING]
+    # States a job won't leave without outside action, such as the user resuming a paused job.
+    settled_states = (states.OK, states.ERROR, states.DELETED, states.SKIPPED, states.PAUSED, states.STOPPED)
     #: job states where the job hasn't finished and the model may still change
     non_ready_states = [
         states.NEW,
@@ -1805,14 +1807,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         Terminal states are those where the job will not change further without
         external intervention. This includes ok, error, deleted, skipped, paused, and stopped.
         """
-        return self.state in (
-            self.states.OK,
-            self.states.ERROR,
-            self.states.DELETED,
-            self.states.SKIPPED,
-            self.states.PAUSED,
-            self.states.STOPPED,
-        )
+        return self.state in self.settled_states
 
     def copy_from_job(self, job: "Job", copy_outputs: bool = False):
         self.copied_from_job_id = job.id
