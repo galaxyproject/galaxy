@@ -183,25 +183,28 @@ class GroupAbund(Otu):
             data_lines = 0
             comment_lines = 0
             ncols = 0
+            has_header = False
 
             headers = iter_headers(dataset.get_file_name(), sep="\t", count=-1)
             for line in headers:
+                # blank lines are not part of the shared format
+                if len(line) < 2 or not line[0]:
+                    continue
                 if line[0] == "label" and line[1] == "Group":
-                    skip = 1
+                    has_header = True
                     comment_lines += 1
-                else:
-                    skip = 0
-                    data_lines += 1
-                    ncols = max(ncols, len(line))
-                    label_names.add(line[0])
-                    group_names.add(line[1])
+                    continue
+                data_lines += 1
+                ncols = max(ncols, len(line))
+                label_names.add(line[0])
+                group_names.add(line[1])
 
             # Set the discovered metadata values for the dataset
             dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = ncols
             dataset.metadata.labels = sorted(label_names)
             dataset.metadata.groups = sorted(group_names)
-            dataset.metadata.skip = skip
+            dataset.metadata.skip = 1 if has_header else 0
 
     def sniff_prefix(self, file_prefix: FilePrefix, vals_are_int=False) -> bool:
         """
