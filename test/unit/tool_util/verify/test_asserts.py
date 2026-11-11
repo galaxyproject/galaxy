@@ -714,7 +714,7 @@ def test_element_text_is_sucess_with_more_specific_path():
 def test_element_text_is_failure():
     """test element_text_is .. negative test testing that prefix is not accepted"""
     a = run_assertions(XML_ELEMENT_TEXT_IS.format(path="./elem/more", text="BA"), VALID_XML)
-    assert "Text of element with path './elem/more': Expected text matching expression 'BA$' in output ('BAR')" in a
+    assert "Text of element with path './elem/more': Expected text matching expression '^BA$' in output ('BAR')" in a
     assert len(a) == 1
 
 
@@ -1337,3 +1337,11 @@ def run_assertions(assertion_xml: str, data, decompress=False) -> tuple:
     else:
         assert_list = ()
     return assert_list
+
+
+def test_element_text_is_failure_due_to_suffix_only_match():
+    """test element_text_is .. negative test ensuring a text that is only a suffix of
+    the element's text is rejected (element_text_is must require an exact match, not
+    just that the element's text ends with the given text)"""
+    a = run_assertions(XML_ELEMENT_TEXT_IS.format(path="./elem/more", text="AR"), VALID_XML)
+    assert len(a) == 1
