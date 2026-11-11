@@ -65,6 +65,18 @@ CHIPSEQ_COLUMNS = [
 ]
 
 
+WORKFLOW_WITH_MISSING_DEFAULTS = """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  lines:
+    tool_id: random_lines1
+    in:
+      input: input1
+"""
+
+
 class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions):
     ensure_registered = True
 
@@ -1888,6 +1900,41 @@ steps:
         self.assert_modal_has_text("Using default: '1'")
         self.screenshot("workflow_editor_invalid_state")
         self.workflow_editor_dismiss_state_upgrade_modal()
+
+    @selenium_test
+    def test_editor_filled_defaults_note(self):
+        self._open_workflow_with_missing_defaults()
+        editor = self.components.workflow_editor
+        self.assert_modal_has_text("Galaxy filled in")
+        editor.state_upgrade_filled_defaults_toggle.wait_for_and_click()
+        self.assert_modal_has_text("Default for 'Randomly select': '1'.")
+        self.screenshot("workflow_editor_filled_defaults")
+        editor.state_upgrade_modal_ok.wait_for_and_click()
+        editor.state_upgrade_modal.wait_for_absent_or_hidden()
+        self.assert_workflow_has_changes_and_save()
+        # the saved workflow stores the defaults, so reopening it shows no note
+        self.workflow_index_open()
+        self.components.workflows.edit_button.wait_for_and_click()
+        editor.canvas_body.wait_for_visible()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.state_upgrade_modal.assert_absent_or_hidden()
+
+    @selenium_test
+    def test_editor_filled_defaults_dismissed_are_not_changes(self):
+        self._open_workflow_with_missing_defaults()
+        editor = self.components.workflow_editor
+        self.assert_modal_has_text("Galaxy filled in")
+        editor.state_upgrade_modal_close.wait_for_and_click()
+        editor.state_upgrade_modal.wait_for_absent_or_hidden()
+        editor.save_button.wait_for_visible()
+        assert editor.save_button.has_class("g-disabled")
+
+    def _open_workflow_with_missing_defaults(self):
+        self.workflow_populator.upload_yaml_workflow(
+            WORKFLOW_WITH_MISSING_DEFAULTS, client_convert=False, fill_defaults=False
+        )
+        self.workflow_index_open()
+        self.components.workflows.edit_button.wait_for_and_click()
 
     @selenium_test
     def test_missing_tools(self):
