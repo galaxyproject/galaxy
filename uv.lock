@@ -3171,7 +3171,7 @@ requires-dist = [
     { name = "galaxy-util", extras = ["image-util", "jstree"], editable = "packages/util" },
     { name = "galaxy-web-framework", editable = "packages/web_framework" },
     { name = "galaxy-web-stack", editable = "packages/web_stack" },
-    { name = "gxformat2", specifier = ">=0.28.0" },
+    { name = "gxformat2", specifier = ">=0.29.2" },
     { name = "kombu", specifier = ">=5.3" },
     { name = "lagom" },
     { name = "lxml", specifier = "!=4.2.2", index = "https://pypi.org/simple" },
@@ -3680,7 +3680,7 @@ requires-dist = [
     { name = "cwltest", specifier = ">=2.5.20240906231108" },
     { name = "galaxy-tool-util", editable = "packages/tool_util" },
     { name = "galaxy-util", editable = "packages/util" },
-    { name = "gxformat2", specifier = ">=0.28.0" },
+    { name = "gxformat2", specifier = ">=0.29.2" },
     { name = "jsonschema" },
     { name = "pytest" },
     { name = "pytest", marker = "extra == 'test'" },
@@ -3757,7 +3757,7 @@ requires-dist = [
     { name = "galaxy-test-driver", marker = "extra == 'driver'", editable = "packages/test_driver" },
     { name = "galaxy-tool-util", editable = "packages/tool_util" },
     { name = "galaxy-util", editable = "packages/util" },
-    { name = "gxformat2", specifier = ">=0.28.0" },
+    { name = "gxformat2", specifier = ">=0.29.2" },
     { name = "pytest" },
     { name = "pytest", marker = "extra == 'test'" },
     { name = "pyyaml" },
@@ -4136,7 +4136,7 @@ requires-dist = [
     { name = "galaxy-web-framework", editable = "packages/web_framework" },
     { name = "galaxy-web-stack", editable = "packages/web_stack" },
     { name = "gunicorn", specifier = "!=25.1.0" },
-    { name = "gxformat2", specifier = ">=0.28.0" },
+    { name = "gxformat2", specifier = ">=0.29.2" },
     { name = "httpx" },
     { name = "httpx", marker = "extra == 'test'" },
     { name = "mako" },
@@ -4515,7 +4515,7 @@ requires-dist = [
     { name = "future", specifier = ">=1.0.0" },
     { name = "gravity", specifier = ">=1.2.3" },
     { name = "gunicorn", specifier = "!=25.1.0" },
-    { name = "gxformat2", specifier = ">=0.28.0" },
+    { name = "gxformat2", specifier = ">=0.29.2" },
     { name = "h5grove", specifier = ">=1.2.1" },
     { name = "h5py", specifier = ">=3.12" },
     { name = "httpx" },
@@ -5185,7 +5185,7 @@ wheels = [
 
 [[package]]
 name = "gxformat2"
-version = "0.28.0"
+version = "0.29.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
@@ -5195,9 +5195,9 @@ dependencies = [
     { name = "schema-salad" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/db/e3/62227c80ffdae958ca3f3a15341e238d6c45a8475bcf6220141001f885c8/gxformat2-0.28.0.tar.gz", hash = "sha256:4a9b0121430aabcc4ce2e726d629ca351f733a3067e15c16b9985847ee0093e3", size = 384581, upload-time = "2026-10-17T09:54:51.788Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/75/8d/97dba714dd67b6e7c30405e9288897174dcecb107ca769ccd30b00b9c201/gxformat2-0.29.2.tar.gz", hash = "sha256:c9abcf31c020ee4b93402c38960d380d92a36b15ac7dd5669755cc22033516b6", size = 413579, upload-time = "2026-11-10T17:38:21.071Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2d/2e/1185352275e43a8e260125d6a798aad2fde50ffb0f0b72040361e286d7c7/gxformat2-0.28.0-py3-none-any.whl", hash = "sha256:a1312bb21146b6d06ff0f3c6e6b35167d83a29a4524047e080cb72559d6df89a", size = 426074, upload-time = "2026-10-17T09:54:49.932Z" },
+    { url = "https://files.pythonhosted.org/packages/71/bf/b893ebe228ca48c5e1614bfe6377513ccdd43c55ce85d1622c460944f9c0/gxformat2-0.29.2-py3-none-any.whl", hash = "sha256:eb8f0ce40579399263c701374e2cf62907c9cb9dc5dbe43665cd0292abf167df", size = 448993, upload-time = "2026-11-10T17:38:19.137Z" },
 ]
 
 [[package]]

@@ -9669,7 +9669,6 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         "data_collection_input": "dataset_collection",
         "parameter_input": "parameter",
     }
-    DEFAULT_POSITION = {"left": 0, "top": 0}
 
     def __init__(self):
         self.uuid = uuid4()

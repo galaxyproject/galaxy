@@ -1259,6 +1259,14 @@ async function loadCurrent(workflowId: string, workflowVersion?: number | null, 
                 // If we are not fitting the graph, adjust for coordinate shifts so the nodes appear in the same position
                 adjustForCoordinateShift(transformBefore, boundsBefore);
             }
+
+            // the graph's first layout of a workflow without positions is part of loading it, not an edit
+            if (stateStore.needsInitialLayout) {
+                const loadedChanges = hasChanges.value;
+                await until(() => stateStore.needsInitialLayout).toBe(false, { timeout: 30000 });
+                await nextTick();
+                hasChanges.value = loadedChanges;
+            }
         } finally {
             loadingWorkflow.value = false;
         }

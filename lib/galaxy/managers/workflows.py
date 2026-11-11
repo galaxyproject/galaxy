@@ -846,6 +846,8 @@ class WorkflowContentsManager(UsesAnnotations):
         galaxy_interface = None
         import_options = ImportOptions()
         import_options.deduplicate_subworkflows = True
+        # leave steps written without a position unplaced, so the editor lays them out
+        import_options.default_positions = False
         as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None, import_options=import_options)
         raw_description = RawWorkflowDescription(as_dict)
         created_workflow = self.build_workflow_from_raw_description(trans, raw_description, WorkflowCreateOptions())
@@ -876,6 +878,8 @@ class WorkflowContentsManager(UsesAnnotations):
             galaxy_interface = None
             import_options = ImportOptions()
             import_options.deduplicate_subworkflows = True
+            # leave steps written without a position unplaced, so the editor lays them out
+            import_options.default_positions = False
             try:
                 as_dict = python_to_workflow(
                     as_dict, galaxy_interface, workflow_directory=workflow_directory, import_options=import_options
@@ -2044,8 +2048,9 @@ class WorkflowContentsManager(UsesAnnotations):
                 else:
                     back_compat_input_conn_dict[input_name] = input_conn_list
             step_dict["input_connections"] = back_compat_input_conn_dict
-            # Position
-            step_dict["position"] = step.position
+            # Position; a step never laid out has none, and older Galaxy reads a missing key but not null
+            if step.position:
+                step_dict["position"] = step.position
             # Add to return value
             steps[step.order_index] = step_dict
         return data
@@ -2229,7 +2234,7 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.ObjectAttributeMissingException("Workflow step is missing required 'id' attribute.")
         dry_run = kwds.get("dry_run", False)
         step = model.WorkflowStep()
-        step.position = step_dict.get("position", model.WorkflowStep.DEFAULT_POSITION)
+        step.position = step_dict.get("position")
         if step_dict.get("uuid", None) and step_dict["uuid"] != "None":
             step.uuid = step_dict["uuid"]
         if "label" in step_dict:

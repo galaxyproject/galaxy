@@ -17,8 +17,13 @@ class BaseComment(BaseModel):
         default="none",
         description="Color this comment is displayed as. Missing or null colors are displayed as none",
     )
-    position: tuple[float, float] = Field(..., description="[x, y] position of this comment in the Workflow")
-    size: tuple[float, float] = Field(..., description="[width, height] size of this comment")
+    position: tuple[float, float] | None = Field(
+        default=None,
+        description="[x, y] position of this comment in the Workflow. Absent until the workflow is laid out",
+    )
+    size: tuple[float, float] | None = Field(
+        default=None, description="[width, height] size of this comment. Absent until the workflow is laid out"
+    )
 
 
 class TextCommentData(BaseModel):

@@ -137,9 +137,13 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
     // Defensive: filter edges targeting non-existent ports
     // This handles orphaned connections that may exist in imported workflows
     const allPortIds = new Set<string>();
-    newGraph.children?.forEach((node) => {
-        node.ports?.forEach((port) => allPortIds.add(port.id));
-    });
+    // steps inside frames are nested children, so walk the whole hierarchy
+    const collectPortIds = (nodes: ElkNode[] | undefined) =>
+        nodes?.forEach((node) => {
+            node.ports?.forEach((port) => allPortIds.add(port.id));
+            collectPortIds(node.children);
+        });
+    collectPortIds(newGraph.children);
 
     const validDataEdges = dataEdges.filter((edge) => {
         const sourcePortId = edge.sources[0];
