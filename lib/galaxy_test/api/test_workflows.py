@@ -1355,6 +1355,42 @@ steps:
             assert len(self.dataset_populator.get_history_dataset_content(history_id).splitlines()) == 1
 
     @skip_without_tool("random_lines1")
+    def test_missing_tool_state_values_in_a_subworkflow_are_filled_defaults(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  nested:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      steps:
+        lines:
+          tool_id: random_lines1
+          in:
+            input: inner_input
+    in:
+      inner_input: input1
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        assert not any(editor["upgrade_messages"].values())
+        assert "num_lines" in editor["filled_defaults"]["1"]["Step 2"]
+        with self.dataset_populator.test_history() as history_id:
+            assert not self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
+            hda = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\n", wait=True)
+            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(hda)}
+            )
+            self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+            assert len(self.dataset_populator.get_history_dataset_content(history_id).splitlines()) == 1
+
+    @skip_without_tool("random_lines1")
     def test_filled_default_messages_name_the_default(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """
