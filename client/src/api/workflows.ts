@@ -4,6 +4,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 import { GalaxyApi } from "./client";
 
 export type Creator = components["schemas"]["Person"] | components["schemas"]["CreatorOrganization"];
+export type BasedOnWork = components["schemas"]["BasedOnWork"];
 export type RefactorRequestAction = components["schemas"]["RefactorRequest"]["actions"][number];
 export type RefactorResponse = components["schemas"]["RefactorResponse"];
 export type RefactorResponseActionExecution = RefactorResponse["action_executions"][number];
