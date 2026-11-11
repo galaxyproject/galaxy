@@ -19,7 +19,7 @@ i=0
 echo "Testing for correct startup:"
 $SCRIPT --daemon && \
     while [ "$i" -le $TRIES ]; do
-        curl --max-time 1 "$URL" && EXIT_CODE=0 && break
+        curl --fail --max-time 1 "$URL" && EXIT_CODE=0 && break
         sleep 1
         i=$((i + 1))
     done
