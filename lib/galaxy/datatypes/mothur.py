@@ -1107,7 +1107,13 @@ class SffFlow(Tabular):
     ) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=1, max_data_lines=max_data_lines, **kwd)
 
+        if not dataset.has_data():
+            return
+
         headers = get_headers(dataset.get_file_name(), sep="\t", count=1)
+        if not headers or not headers[0] or not headers[0][0]:
+            return
+
         try:
             flow_values = int(headers[0][0])
             dataset.metadata.flow_values = flow_values
