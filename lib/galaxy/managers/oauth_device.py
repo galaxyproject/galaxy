@@ -37,6 +37,9 @@ KNOWN_APPS: dict[str, str] = {
 # Seconds a device login stays valid, and the minimum seconds between token requests.
 DEVICE_CODE_EXPIRES_IN = 900
 POLLING_INTERVAL = 5
+# Seconds a poll may come early before it gets `slow_down`, which makes the app slow down for good
+# (RFC 8628 §3.5), so network jitter on an app polling on time doesn't trigger it.
+POLLING_TOLERANCE = 1
 
 # Longest `scope` a login can ask for. Real scope lists are a few dozen characters; this keeps an
 # anonymous caller from storing arbitrarily large rows.
@@ -192,7 +195,7 @@ class OAuthDeviceManager:
         # however fast an app polls. The wait counts from the last accepted poll.
         polled_at = now()
         last_polled_at = authorization.last_polled_at
-        if last_polled_at and polled_at - last_polled_at < timedelta(seconds=POLLING_INTERVAL):
+        if last_polled_at and polled_at - last_polled_at < timedelta(seconds=POLLING_INTERVAL - POLLING_TOLERANCE):
             raise OAuthError(OAuthErrorCode.SLOW_DOWN, f"Wait at least {POLLING_INTERVAL} seconds between requests.")
         authorization.last_polled_at = polled_at
         self.sa_session.commit()

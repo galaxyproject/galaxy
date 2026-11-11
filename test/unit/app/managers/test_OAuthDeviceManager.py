@@ -19,6 +19,7 @@ from galaxy.managers.oauth_device import (
     OAuthDeviceManager,
     OAuthError,
     POLLING_INTERVAL,
+    POLLING_TOLERANCE,
     USER_CODE_ALPHABET,
 )
 from galaxy.model import OAuthDeviceAuthorization
@@ -159,6 +160,18 @@ class TestOAuthDeviceManager(BaseTestCase):
         self._assert_poll_error(started.device_code, OAuthErrorCode.SLOW_DOWN)
         # A too-fast poll writes nothing, so the wait still counts from the accepted poll
         assert started.authorization.last_polled_at == accepted_at
+
+    def test_poll_slightly_early_is_accepted(self):
+        started = self._start_authorization()
+        self._assert_poll_error(started.device_code, OAuthErrorCode.AUTHORIZATION_PENDING)
+        # Within the tolerance: still pending, not `slow_down`
+        started.authorization.last_polled_at = now() - timedelta(seconds=POLLING_INTERVAL - POLLING_TOLERANCE / 2)
+        self.trans.sa_session.commit()
+        self._assert_poll_error(started.device_code, OAuthErrorCode.AUTHORIZATION_PENDING)
+        # Earlier than that: `slow_down`
+        started.authorization.last_polled_at = now() - timedelta(seconds=POLLING_INTERVAL - POLLING_TOLERANCE * 2)
+        self.trans.sa_session.commit()
+        self._assert_poll_error(started.device_code, OAuthErrorCode.SLOW_DOWN)
 
     def test_poll_pending_after_waiting(self):
         started = self._start_authorization()
