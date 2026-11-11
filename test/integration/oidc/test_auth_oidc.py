@@ -1,6 +1,7 @@
 """Integration tests for OIDC login and account confirmation using Keycloak."""
 
 import html
+import json
 import os
 import re
 import subprocess
@@ -52,22 +53,81 @@ OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
 DEBUG_AUTH_PIPELINE_EXTRA = ("galaxy.authnz.util.debug_access_token_data",)
 
 
-def wait_till_app_ready(url, timeout=60):
+KEYCLOAK_IMAGE = "keycloak/keycloak:26.2"
+KEYCLOAK_TEST_IMAGE = "galaxy-test-keycloak:26.2"
+KEYCLOAK_DATA_DIR = "/opt/keycloak/data/import"
+# Build the server and import the realm once, into an image. A plain ``start --import-realm`` does
+# both in every container and also creates the database schema, which takes minutes on a busy runner.
+KEYCLOAK_DOCKERFILE = f"""FROM {KEYCLOAK_IMAGE}
+COPY galaxy-realm-export.json keycloak-server.crt.pem keycloak-server.key.pem {KEYCLOAK_DATA_DIR}/
+RUN /opt/keycloak/bin/kc.sh build --db=dev-file \\
+    && KC_BOOTSTRAP_ADMIN_USERNAME={KEYCLOAK_ADMIN_USERNAME} KC_BOOTSTRAP_ADMIN_PASSWORD={KEYCLOAK_ADMIN_PASSWORD} \\
+    /opt/keycloak/bin/kc.sh import --optimized --file {KEYCLOAK_DATA_DIR}/galaxy-realm-export.json
+"""
+
+
+def build_keycloak_image():
+    # Docker's build cache makes this a no-op once the image exists.
+    subprocess.run(
+        ["docker", "build", "--quiet", "--tag", KEYCLOAK_TEST_IMAGE, "--file", "-", os.path.dirname(__file__)],
+        input=KEYCLOAK_DOCKERFILE,
+        text=True,
+        check=True,
+        stdout=subprocess.DEVNULL,
+    )
+
+
+def keycloak_container_state(container_name):
+    result = subprocess.run(
+        ["docker", "inspect", "--format", "{{json .State}}", container_name], capture_output=True, text=True
+    )
+    if result.returncode:
+        return {"Status": "missing", "Error": result.stderr.strip()}
+    return json.loads(result.stdout)
+
+
+def keycloak_not_ready_error(container_name, message, last_response, state):
+    logs = subprocess.run(
+        ["docker", "logs", "--timestamps", "--tail", "50", container_name],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    ).stdout
+    return RuntimeError(
+        f"Keycloak {message}\nLast response: {last_response}\nContainer state: {json.dumps(state)}\n"
+        f"Last container log lines:\n{logs}"
+    )
+
+
+def wait_till_keycloak_ready(container_name, url, timeout):
     start = time.time()
+    last_response = "none"
     while time.time() - start < timeout:
         try:
             response = requests.get(url, verify=False, timeout=(1, 5))
             if response.status_code in (200, 302):  # allow redirect to login etc.
-                return True
-        except requests.exceptions.RequestException:
-            pass
+                return
+            last_response = f"HTTP {response.status_code}"
+        except requests.exceptions.RequestException as e:
+            last_response = repr(e)
+        state = keycloak_container_state(container_name)
+        if state["Status"] != "running":
+            raise keycloak_not_ready_error(
+                container_name, "container stopped before it was ready", last_response, state
+            )
         time.sleep(1)
-    raise RuntimeError(f"Keycloak did not become ready in {timeout} seconds")
+    raise keycloak_not_ready_error(
+        container_name,
+        f"did not become ready in {timeout} seconds",
+        last_response,
+        keycloak_container_state(container_name),
+    )
 
 
-def start_keycloak_docker(container_name, image="keycloak/keycloak:26.2"):
-    keycloak_realm_data = os.path.dirname(__file__)
-    START_SLURM_DOCKER = [
+def start_keycloak_docker(container_name):
+    build_keycloak_image()
+    # No --rm, so a container that exits early keeps its logs; stop_keycloak_docker removes it.
+    START_KEYCLOAK_DOCKER = [
         "docker",
         "run",
         "-p",
@@ -75,22 +135,15 @@ def start_keycloak_docker(container_name, image="keycloak/keycloak:26.2"):
         "-d",
         "--name",
         container_name,
-        "--rm",
-        "-v",
-        f"{keycloak_realm_data}:/opt/keycloak/data/import",
-        "-e",
-        f"KC_BOOTSTRAP_ADMIN_USERNAME={KEYCLOAK_ADMIN_USERNAME}",
-        "-e",
-        f"KC_BOOTSTRAP_ADMIN_PASSWORD={KEYCLOAK_ADMIN_PASSWORD}",
         "-e",
         "KC_HOSTNAME_STRICT=false",
-        image,
+        KEYCLOAK_TEST_IMAGE,
         "start",
-        "--import-realm",
-        "--https-certificate-file=/opt/keycloak/data/import/keycloak-server.crt.pem",
-        "--https-certificate-key-file=/opt/keycloak/data/import/keycloak-server.key.pem",
+        "--optimized",
+        f"--https-certificate-file={KEYCLOAK_DATA_DIR}/keycloak-server.crt.pem",
+        f"--https-certificate-key-file={KEYCLOAK_DATA_DIR}/keycloak-server.key.pem",
     ]
-    subprocess.check_call(START_SLURM_DOCKER)
+    subprocess.check_call(START_KEYCLOAK_DOCKER)
 
 
 def stop_keycloak_docker(container_name):
@@ -124,11 +177,12 @@ class AbstractTestCases:
                 cls.disableOauthlibHttps()
                 cleanup.callback(cls.restoreOauthlibHttps)
                 cls.container_name = f"{cls.__name__}_container"
-                start_keycloak_docker(container_name=cls.container_name)
+                # Registered first because docker run can fail after creating the container.
                 cleanup.callback(stop_keycloak_docker, cls.container_name)
-                # A non-optimized Keycloak start rebuilds the server first, which can take over a
-                # minute on a busy runner.
-                wait_till_app_ready(f"{KEYCLOAK_URL}/.well-known/openid-configuration", timeout=180)
+                start_keycloak_docker(container_name=cls.container_name)
+                wait_till_keycloak_ready(
+                    cls.container_name, f"{KEYCLOAK_URL}/.well-known/openid-configuration", timeout=180
+                )
 
                 super().setUpClass()
                 # Restart the test driver to parse the OIDC config file
