@@ -19,8 +19,11 @@ from pydantic import (
 )
 
 from galaxy.tool_util.lint import lint_user_tool_source
+from galaxy.tool_util.parameters import input_models_for_tool_source
 from galaxy.tool_util.parameters.convert import assert_yaml_v1_parameters
+from galaxy.tool_util.parser.yaml import YamlToolSource as YamlToolSourceParser
 from galaxy.tool_util_models import (
+    DynamicToolSources,
     UserToolSource,
     UserToolSourceAuthoringView,
 )
@@ -116,6 +119,34 @@ def test_reference_data_maps_to_its_own_type_carrying_the_table(multiple):
     assert isinstance(internal, ReferenceDataParameterModel)
     assert internal.table == "fasta_indexes"
     assert internal.multiple is multiple
+
+
+@pytest.mark.parametrize(
+    "dump_kwargs", [{}, {"exclude_unset": True}, {"exclude_none": True}], ids=["full", "exclude_unset", "exclude_none"]
+)
+@pytest.mark.parametrize("tool_class", ["GalaxyUserTool", "GalaxyTool"])
+@pytest.mark.parametrize(
+    "reference_input",
+    [
+        {"name": "reference", "type": "reference_data", "table": "t", "label": "Genome"},
+        {"name": "reference", "type": "reference_data", "table": "t", "multiple": True, "optional": True},
+    ],
+    ids=["single", "multiple_optional"],
+)
+def test_reference_data_loads_like_its_authoring_model(reference_input, tool_class, dump_kwargs):
+    source = {
+        "class": tool_class,
+        "id": "reference_tool",
+        "version": "1.0",
+        "name": "reference_tool",
+        "container": "busybox",
+        "shell_command": "echo",
+        "inputs": [reference_input],
+        "outputs": [],
+    }
+    dumped = TypeAdapter(DynamicToolSources).validate_python(source).model_dump(by_alias=True, **dump_kwargs)
+    parsed = input_models_for_tool_source(YamlToolSourceParser(dumped)).parameters[0]
+    assert parsed == _validate(reference_input).to_internal()
 
 
 @pytest.mark.parametrize(
