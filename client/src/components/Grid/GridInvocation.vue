@@ -4,86 +4,23 @@ import { computed } from "vue";
 
 import type { WorkflowInvocation } from "@/api/invocations";
 import invocationsBatchConfig from "@/components/Grid/configs/invocationsBatch";
-import invocationsHistoryGridConfig from "@/components/Grid/configs/invocationsHistory";
-import invocationsWorkflowGridConfig from "@/components/Grid/configs/invocationsWorkflow";
 import { useUserStore } from "@/stores/userStore";
 
-import type { GridConfig } from "./configs/types";
-
-import Heading from "../Common/Heading.vue";
 import UtcDate from "../UtcDate.vue";
 import WorkflowInvocationState from "../WorkflowInvocationState/WorkflowInvocationState.vue";
 import GridList from "@/components/Grid/GridList.vue";
 
 interface Props {
-    noInvocationsMessage?: string;
-    filteredFor?: { type: "History" | "StoredWorkflow"; id: string; name: string };
-    invocationsList?: WorkflowInvocation[];
-    hideHeading?: boolean;
+    invocationsList: WorkflowInvocation[];
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    noInvocationsMessage: "No Workflow Invocations to display",
-    filteredFor: undefined,
-    invocationsList: undefined,
-    hideHeading: false,
-});
+const props = defineProps<Props>();
 
 const { currentUser } = storeToRefs(useUserStore());
 
-const forStoredWorkflow = computed(() => props.filteredFor?.type === "StoredWorkflow");
-const forHistory = computed(() => props.filteredFor?.type === "History");
-const forBatch = computed(() => !!props.invocationsList?.length);
-
-const effectiveNoInvocationsMessage = computed(() => {
-    let message = props.noInvocationsMessage;
-    if (props.filteredFor) {
-        message += ` for ${props.filteredFor?.name}`;
-    }
-    return message;
-});
-
-const effectiveTitle = computed(() => {
-    let retVal = `Workflow Invocations`;
-    const type = props.filteredFor?.type === "StoredWorkflow" ? "Workflow" : "History";
-    if (props.filteredFor && props.filteredFor?.name) {
-        retVal += ` for ${type} "${props.filteredFor.name}"`;
-    }
-    return retVal;
-});
-
-const extraProps = computed(() => {
-    if (forBatch.value) {
-        return Object.fromEntries(
-            // invocationsList is possibly undefined
-            (props.invocationsList ?? []).map((invocation) => [invocation.id, invocation]),
-        );
-    }
-    const params: {
-        workflow_id?: string;
-        history_id?: string;
-        user_id?: string;
-    } = {};
-    if (forStoredWorkflow.value) {
-        params.workflow_id = props.filteredFor?.id;
-    }
-    if (forHistory.value) {
-        params.history_id = props.filteredFor?.id;
-    }
-    if (currentUser.value && !currentUser.value?.isAnonymous) {
-        params.user_id = currentUser.value?.id;
-    }
-    return params;
-});
-
-let gridConfig: GridConfig;
-if (forBatch.value) {
-    gridConfig = invocationsBatchConfig;
-} else if (forStoredWorkflow.value) {
-    gridConfig = invocationsWorkflowGridConfig;
-} else {
-    gridConfig = invocationsHistoryGridConfig;
-}
+const extraProps = computed(() =>
+    Object.fromEntries(props.invocationsList.map((invocation) => [invocation.id, invocation])),
+);
 
 function refreshTable() {
     // TODO: Implement
@@ -92,16 +29,13 @@ function refreshTable() {
 
 <template>
     <div class="d-flex flex-column">
-        <div v-if="!hideHeading && (forStoredWorkflow || forHistory)" class="d-flex">
-            <Heading h1 separator inline truncate size="lg" class="flex-grow-1 mb-2">{{ effectiveTitle }}</Heading>
-        </div>
         <GridList
             v-if="!currentUser?.isAnonymous && currentUser?.id"
             class="grid-invocation"
-            :grid-config="gridConfig"
-            :no-data-message="effectiveNoInvocationsMessage"
+            :grid-config="invocationsBatchConfig"
+            no-data-message="No Workflow Invocations to display"
             :extra-props="extraProps"
-            :embedded="forStoredWorkflow || forHistory || forBatch">
+            embedded>
             <template v-slot:expanded="{ rowData }">
                 <span class="mb-2" :data-invocation-id="rowData.id">
                     <small>
