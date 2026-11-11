@@ -16,7 +16,9 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.unittest_utils import GalaxyDataTestApp
+from galaxy.tool_util.parameters import input_models_for_tool_source
 from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util_models.parameters import ReferenceDataParameterModel
 from galaxy.tools import create_tool_from_source
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.evaluation import UserToolEvaluator
@@ -255,3 +257,45 @@ def test_resolving_a_path_enforces_the_allowlist_and_the_entry(app, table, value
     adapt = setup_for_reference_data(app, None, trusted=False)
     with pytest.raises(ValueError, match=message):
         adapt(table, value)
+
+
+NESTED_REFERENCE = {"name": "reference", "type": "reference_data", "table": "open_refs"}
+
+
+@pytest.mark.parametrize(
+    "wrapper, path",
+    [
+        ({"name": "outer", "type": "section", "parameters": [NESTED_REFERENCE]}, ("parameters",)),
+        (
+            {
+                "name": "outer",
+                "type": "conditional",
+                "test_parameter": {"name": "flag", "type": "boolean", "value": True},
+                "whens": [
+                    {"discriminator": True, "parameters": [NESTED_REFERENCE]},
+                    {"discriminator": False, "parameters": []},
+                ],
+            },
+            ("whens", 0, "parameters"),
+        ),
+    ],
+    ids=["section", "conditional_when"],
+)
+def test_nested_reference_data_loads_through_its_authoring_model(app, wrapper, path):
+    source = {
+        "class": "GalaxyUserTool",
+        "id": "nested_reference_tool",
+        "version": "1.0",
+        "name": "nested_reference_tool",
+        "container": "busybox",
+        "shell_command": "echo",
+        "inputs": [wrapper],
+        "outputs": [],
+    }
+    tool_source = get_tool_source(tool_source_class="YamlToolSource", raw_tool_source=json.dumps(source))
+    create_tool_from_source(app, tool_source=tool_source)
+    nested: Any = input_models_for_tool_source(tool_source).parameters[0]
+    for step in path:
+        nested = nested[step] if isinstance(step, int) else getattr(nested, step)
+    assert isinstance(nested[0], ReferenceDataParameterModel)
+    assert nested[0].table == "open_refs"
