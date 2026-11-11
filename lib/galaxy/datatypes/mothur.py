@@ -17,10 +17,37 @@ from galaxy.datatypes.sniff import (
     get_headers,
     iter_headers,
 )
-from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.tabular import (
+    MAX_DATA_LINES,
+    Tabular,
+)
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
+
+# The first column of an otu/list/sabund/rabund file is a mothur label: either the
+# literal 'unique' or a distance cutoff such as 0.03. It is never a plain integer, which
+# is what distinguishes these formats from a generic table of numbers at sniff time.
+MOTHUR_LABEL_RE = re.compile(r"^(?:unique|\d*\.\d+)$")
+
+
+def is_mothur_label(value: str) -> bool:
+    """Return True if value can be a mothur label, i.e. 'unique' or a distance cutoff.
+
+    >>> is_mothur_label( 'unique' )
+    True
+    >>> is_mothur_label( '0.03' )
+    True
+    >>> is_mothur_label( '1.00' )
+    True
+    >>> is_mothur_label( '1' )
+    False
+    >>> is_mothur_label( 'Otu01' )
+    False
+    """
+    if not MOTHUR_LABEL_RE.match(value):
+        return False
+    return value == "unique" or float(value) <= 1
 
 
 @build_sniff_from_prefix
@@ -93,25 +120,32 @@ class Otu(Text):
         >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.otu' )
         >>> Otu().sniff( fname )
         False
+        >>> fname = get_test_fname( 'mothur_datatypetest_false2.mothur.otu' )
+        >>> Otu().sniff( fname )
+        False
         """
         headers = iter_headers(file_prefix, sep="\t")
         count = 0
+        labels: set[str] = set()
         for line in headers:
-            if not line[0].startswith("@"):
-                if len(line) < 2:
-                    return False
-                if count >= 1:
-                    try:
-                        check = int(line[1])
-                        if check + 2 != len(line):
-                            return False
-                    except ValueError:
-                        return False
+            if line[0].startswith("@"):
+                continue
+            if len(line) < 2:
+                return False
+            if count == 0 and line[0] == "label":
+                # column heading line as written by mothur: label<TAB>numOtus<TAB>Otu01<TAB>...
                 count += 1
-        if count > 2:
-            return True
-
-        return False
+                continue
+            if not is_mothur_label(line[0]) or line[0] in labels:
+                return False
+            labels.add(line[0])
+            try:
+                if int(line[1]) + 2 != len(line):
+                    return False
+            except ValueError:
+                return False
+            count += 1
+        return count > 2
 
 
 class Sabund(Otu):
@@ -138,26 +172,35 @@ class Sabund(Otu):
         >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.sabund' )
         >>> Sabund().sniff( fname )
         False
+        >>> fname = get_test_fname( 'mothur_datatypetest_false2.mothur.sabund' )
+        >>> Sabund().sniff( fname )
+        False
         """
         headers = iter_headers(file_prefix, sep="\t")
-        count = 0
+        data_lines = 0
+        labels: set[str] = set()
         for line in headers:
-            if not line[0].startswith("@"):
-                if len(line) < 2:
+            if line[0].startswith("@"):
+                continue
+            if data_lines == 0 and line[0] == "label":
+                # column heading line as written by mothur: label<TAB>numOtus<TAB>Otu01<TAB>...
+                continue
+            if len(line) < 3:
+                return False
+            if not is_mothur_label(line[0]) or line[0] in labels:
+                return False
+            labels.add(line[0])
+            try:
+                check = int(line[1])
+                if check < 1 or check + 2 != len(line):
                     return False
-                try:
-                    check = int(line[1])
-                    if check + 2 != len(line):
+                for i in range(2, len(line)):
+                    if int(line[i]) < 0:
                         return False
-                    for i in range(2, len(line)):
-                        int(line[i])
-                except ValueError:
-                    return False
-                count += 1
-        if count > 0:
-            return True
-
-        return False
+            except ValueError:
+                return False
+            data_lines += 1
+        return data_lines > 0
 
 
 class GroupAbund(Otu):
@@ -180,25 +223,28 @@ class GroupAbund(Otu):
             data_lines = 0
             comment_lines = 0
             ncols = 0
+            has_header = False
 
             headers = iter_headers(dataset.get_file_name(), sep="\t", count=-1)
             for line in headers:
+                # blank lines are not part of the shared format
+                if len(line) < 2 or not line[0]:
+                    continue
                 if line[0] == "label" and line[1] == "Group":
-                    skip = 1
+                    has_header = True
                     comment_lines += 1
-                else:
-                    skip = 0
-                    data_lines += 1
-                    ncols = max(ncols, len(line))
-                    label_names.add(line[0])
-                    group_names.add(line[1])
+                    continue
+                data_lines += 1
+                ncols = max(ncols, len(line))
+                label_names.add(line[0])
+                group_names.add(line[1])
 
             # Set the discovered metadata values for the dataset
             dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = ncols
             dataset.metadata.labels = sorted(label_names)
             dataset.metadata.groups = sorted(group_names)
-            dataset.metadata.skip = skip
+            dataset.metadata.skip = 1 if has_header else 0
 
     def sniff_prefix(self, file_prefix: FilePrefix, vals_are_int=False) -> bool:
         """
@@ -299,9 +345,10 @@ class AlignCheck(Tabular):
 
         dataset.metadata.column_names = self.column_names
         dataset.metadata.column_types = self.column_types
-        dataset.metadata.comment_lines = self.comment_lines
-        if isinstance(dataset.metadata.data_lines, int):
-            dataset.metadata.data_lines -= self.comment_lines
+        if dataset.has_data():
+            dataset.metadata.comment_lines = self.comment_lines
+            if isinstance(dataset.metadata.data_lines, int):
+                dataset.metadata.data_lines = max(0, dataset.metadata.data_lines - self.comment_lines)
 
 
 class AlignReport(Tabular):
@@ -354,15 +401,20 @@ class DistanceMatrix(Text):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, skip: int | None = 0, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
+        if not dataset.has_data():
+            return
+
         headers = iter_headers(dataset.get_file_name(), sep="\t")
         for line in headers:
-            if not line[0].startswith("@"):
-                try:
-                    dataset.metadata.sequence_count = int("".join(line))  # seq count sometimes preceded by tab
-                    break
-                except Exception as e:
-                    if not isinstance(self, PairwiseDistanceMatrix):
-                        log.warning(f"DistanceMatrix set_meta {e}")
+            if not "".join(line).strip() or line[0].startswith("@"):
+                # skip blank lines and comments (the sequence count is sometimes preceded by a tab)
+                continue
+            try:
+                dataset.metadata.sequence_count = int("".join(line))  # seq count sometimes preceded by tab
+                break
+            except Exception as e:
+                if not isinstance(self, PairwiseDistanceMatrix):
+                    log.warning(f"DistanceMatrix set_meta {e}")
 
 
 @build_sniff_from_prefix
@@ -396,22 +448,27 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
         >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.lower.dist' )
         >>> LowerTriangleDistanceMatrix().sniff( fname )
         False
+        >>> fname = get_test_fname( 'empty.txt' )
+        >>> LowerTriangleDistanceMatrix().sniff( fname )
+        False
         """
         numlines = 300
         headers = iter_headers(file_prefix, sep="\t", count=numlines)
         line_num = 0
+        sequence_count = 0
         for line in headers:
             if not line[0].startswith("@"):
                 # first line should contain the number of sequences in the file
                 if line_num == 0:
                     if len(line) > 2:
                         return False
-                    else:
-                        try:
-                            sequence_count = int("".join(line))
-                            assert sequence_count > 0
-                        except ValueError:
-                            return False
+                    try:
+                        sequence_count = int("".join(line))
+                    except ValueError:
+                        return False
+                    # exceptions raised by a sniffer are treated as "no match", so this
+                    # assertion is equivalent to returning False (see datatypes/sniff.py)
+                    assert sequence_count > 0
                 else:
                     # number of fields should equal the line number
                     if len(line) != (line_num):
@@ -423,6 +480,9 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
                     except ValueError:
                         return False
                 line_num += 1
+
+        if line_num == 0:
+            return False
 
         # check if the number of lines in the file was as expected
         if line_num == sequence_count + 1 or line_num == numlines + 1:
@@ -460,21 +520,26 @@ class SquareDistanceMatrix(DistanceMatrix):
         >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.square.dist' )
         >>> SquareDistanceMatrix().sniff( fname )
         False
+        >>> fname = get_test_fname( 'empty.txt' )
+        >>> SquareDistanceMatrix().sniff( fname )
+        False
         """
         numlines = 300
         headers = iter_headers(file_prefix, sep="\t", count=numlines)
         line_num = 0
+        sequence_count = 0
         for line in headers:
             if not line[0].startswith("@"):
                 if line_num == 0:
                     if len(line) > 2:
                         return False
-                    else:
-                        try:
-                            sequence_count = int("".join(line))
-                            assert sequence_count > 0
-                        except ValueError:
-                            return False
+                    try:
+                        sequence_count = int("".join(line))
+                    except ValueError:
+                        return False
+                    # exceptions raised by a sniffer are treated as "no match", so this
+                    # assertion is equivalent to returning False (see datatypes/sniff.py)
+                    assert sequence_count > 0
                 else:
                     # number of fields should equal the number of sequences
                     if len(line) != sequence_count + 1:
@@ -486,6 +551,9 @@ class SquareDistanceMatrix(DistanceMatrix):
                     except ValueError:
                         return False
                 line_num += 1
+
+        if line_num == 0:
+            return False
 
         # check if the number of lines in the file was as expected
         if line_num == sequence_count + 1 or line_num == numlines + 1:
@@ -523,6 +591,7 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         headers = iter_headers(file_prefix, sep="\t")
         count = 0
         names = [False, False]
+        all_ints = True
         for line in headers:
             if line[0].startswith("@"):
                 continue
@@ -836,6 +905,21 @@ class CountTable(Tabular):
         U68600  1       1       0
         U68591  1       1       0
         U68647  1       0       1
+
+        Empty count tables (e.g. written by ``chimera.uchime``) have no header line at all
+        and must not fail metadata detection:
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> from galaxy.util.bunch import Bunch
+        >>> dataset = Bunch()
+        >>> dataset.metadata = Bunch()
+        >>> dataset.get_file_name = lambda: get_test_fname( 'empty.txt' )
+        >>> dataset.has_data = lambda: True
+        >>> CountTable().set_meta(dataset)
+        >>> dataset.metadata.columns
+        0
+        >>> dataset.metadata.column_types
+        []
         """
         super().__init__(**kwd)
         self.column_names = ["name", "total"]
@@ -845,22 +929,23 @@ class CountTable(Tabular):
         dataset: DatasetProtocol,
         overwrite: bool = True,
         skip: int | None = 1,
-        max_data_lines: int | None = None,
+        max_data_lines: int | None = MAX_DATA_LINES,
         **kwd,
     ) -> None:
-        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, skip=skip, max_data_lines=max_data_lines, **kwd)
 
-        headers = get_headers(dataset.get_file_name(), sep="\t", count=1)
+        # The first line of a count table is a header line containing the group names.
+        # Empty count tables (e.g. the count table produced by uchime) have no header at all,
+        # so there is nothing to infer here and the defaults must be kept.
+        headers = get_headers(dataset.get_file_name(), sep="\t", count=1) if dataset.has_data() else []
+        if not headers or not headers[0] or not headers[0][0]:
+            return
+
         colnames = headers[0]
-        dataset.metadata.column_types = ["str"] + (["int"] * (len(headers[0]) - 1))
+        dataset.metadata.column_types = ["str"] + (["int"] * (len(colnames) - 1))
         if len(colnames) > 1:
             dataset.metadata.columns = len(colnames)
-        if len(colnames) > 2:
-            dataset.metadata.groups = colnames[2:]
-
-        dataset.metadata.comment_lines = 1
-        if isinstance(dataset.metadata.data_lines, int):
-            dataset.metadata.data_lines -= 1
+        dataset.metadata.groups = colnames[2:] if len(colnames) > 2 else []
 
 
 @build_sniff_from_prefix
@@ -1062,7 +1147,13 @@ class SffFlow(Tabular):
     ) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=1, max_data_lines=max_data_lines, **kwd)
 
+        if not dataset.has_data():
+            return
+
         headers = get_headers(dataset.get_file_name(), sep="\t", count=1)
+        if not headers or not headers[0] or not headers[0][0]:
+            return
+
         try:
             flow_values = int(headers[0][0])
             dataset.metadata.flow_values = flow_values
