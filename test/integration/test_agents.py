@@ -436,6 +436,7 @@ class TestMCPServerSmoke(IntegrationTestCase):
             "upload_file_from_url",
             "invoke_workflow",
             "get_job_status",
+            "get_invocation_step_jobs_summary",
             "list_user_tools",
             "create_user_tool",
             "delete_user_tool",
@@ -452,6 +453,75 @@ class TestMCPServerSmoke(IntegrationTestCase):
             "revert_page_revision",
         }
         assert expected.issubset(tool_names), f"Missing tools: {expected - tool_names}"
+
+    def test_mcp_invocation_step_jobs_summary(self):
+        """MCP returns job states for a collection-mapped workflow."""
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+
+        dataset_populator = DatasetPopulator(self._get_interactor(api_key=api_key))
+        workflow_populator = WorkflowPopulator(self._get_interactor(api_key=api_key))
+        history_id = dataset_populator.new_history()
+
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input_c: collection
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: input_c
+"""
+        test_data = """
+input_c:
+  collection_type: list
+  elements:
+    - identifier: first
+      content: A
+    - identifier: second
+      content: B
+"""
+        run = workflow_populator.run_workflow(
+            workflow,
+            test_data=test_data,
+            history_id=history_id,
+            wait=True,
+            assert_ok=True,
+        )
+
+        async def _get_summary():
+            async with Client(mcp_server) as client:
+                return await client.call_tool(
+                    "get_invocation_step_jobs_summary",
+                    {"api_key": api_key, "invocation_id": run.invocation_id},
+                )
+
+        result = self._run_async(_get_summary())
+
+        assert not result.is_error, result
+        assert result.data["invocation_id"] == run.invocation_id
+
+        summaries = result.data["step_jobs_summary"]
+        assert any(
+            item["model"] == "ImplicitCollectionJobs" and item["states"].get("ok") == 2 for item in summaries
+        ), summaries
+
+        # A different user must not access this workflow's job summary.
+        _, other_api_key = self._setup_user_get_key("mcp_summary_other_user@test.com")
+
+        async def _get_other_user_summary():
+            async with Client(mcp_server) as client:
+                return await client.call_tool(
+                    "get_invocation_step_jobs_summary",
+                    {
+                        "api_key": other_api_key,
+                        "invocation_id": run.invocation_id,
+                    },
+                )
+
+        with pytest.raises(ToolError, match="History is not accessible to the current user"):
+            self._run_async(_get_other_user_summary())
 
     def test_mcp_connect_with_valid_key(self):
         """connect() succeeds with a valid API key and returns user + server info."""
