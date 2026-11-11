@@ -1709,7 +1709,7 @@ steps:
         upgrade_result = refactor_result["action_executions"][0]
         assert upgrade_result["action"]["action_type"] == "upgrade_all_steps"
         message_one, message_two = upgrade_result["messages"]
-        assert message_one["message"] == "No value found for 'floattest'. Using default: '1.0'."
+        assert message_one["message"] == "Default for 'floattest': '1.0'."
         assert message_one["input_name"] == "floattest"
         assert message_two["message"] == "The selected case is unavailable/invalid. Using default: 'b'."
         assert message_two["input_name"] == "cond|bool_to_select"
@@ -1745,8 +1745,8 @@ steps:
         assert upgrade_result["action"]["action_type"] == "upgrade_all_steps"
         message_one, message_two, message_three = upgrade_result["messages"]
         assert message_one["input_name"] == "inttest"
-        assert message_one["message"] == "No value found for 'inttest'. Using default: '1'."
-        assert message_two["message"] == "No value found for 'floattest'. Using default: '1.0'."
+        assert message_one["message"] == "Default for 'inttest': '1'."
+        assert message_two["message"] == "Default for 'floattest': '1.0'."
         assert message_two["input_name"] == "floattest"
         assert message_three["message"] == "The selected case is unavailable/invalid. Using default: 'b'."
         assert message_three["input_name"] == "cond|bool_to_select"

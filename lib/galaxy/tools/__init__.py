@@ -2729,7 +2729,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                             # a required parameter whose default lookup gave None was not filled; it stays a problem
                             missing = input.name not in parent
                             if missing and filled_defaults is not None and (value is not None or input.optional):
-                                filled_defaults[prefixed_name] = message
+                                default = "no value" if value is None else _describe_default(value)
+                                filled_defaults[prefixed_name] = f"Default for '{prefixed_label}': {default}."
                             else:
                                 messages[prefixed_name] = message
                         parent[input.name] = value
