@@ -1208,8 +1208,7 @@ async function loadEditorData(data: any) {
     hideErrorModal();
 
     stateMessages.value = getStateUpgradeMessages(data);
-    // defaults filled for parameters without a value are shown, but aren't changes to save
-    filledDefaults.value = getFilledDefaults(data);
+    filledDefaults.value = [];
     const hasStateMessages = stateMessages.value.length > 0;
     tags.value = data.tags;
     license.value = data.license;
@@ -1229,6 +1228,8 @@ async function loadEditorData(data: any) {
         await nextTick();
         hasChanges.value = hasStateMessages;
     }
+    // filled defaults aren't changes to save; show them only now, so accepting them isn't reset above
+    filledDefaults.value = getFilledDefaults(data);
 }
 
 /**
