@@ -176,11 +176,14 @@ class OAuthDeviceManager:
         if authorization.expires_at <= now():
             raise OAuthError(OAuthErrorCode.EXPIRED_TOKEN, "The device_code has expired.")
 
+        # A too-fast poll is answered without a write, so each login writes at most once per interval
+        # however fast an app polls. The wait counts from the last accepted poll.
+        polled_at = now()
         last_polled_at = authorization.last_polled_at
-        authorization.last_polled_at = now()
-        self.sa_session.commit()
-        if last_polled_at and authorization.last_polled_at - last_polled_at < timedelta(seconds=POLLING_INTERVAL):
+        if last_polled_at and polled_at - last_polled_at < timedelta(seconds=POLLING_INTERVAL):
             raise OAuthError(OAuthErrorCode.SLOW_DOWN, f"Wait at least {POLLING_INTERVAL} seconds between requests.")
+        authorization.last_polled_at = polled_at
+        self.sa_session.commit()
         if authorization.status == statuses.PENDING:
             raise OAuthError(OAuthErrorCode.AUTHORIZATION_PENDING, "The user has not approved the login yet.")
         if authorization.status == statuses.DENIED:

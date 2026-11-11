@@ -133,7 +133,10 @@ class TestOAuthDeviceManager(BaseTestCase):
     def test_poll_slow_down(self):
         started = self._start_authorization()
         self._assert_poll_error(started.device_code, OAuthErrorCode.AUTHORIZATION_PENDING)
+        accepted_at = started.authorization.last_polled_at
         self._assert_poll_error(started.device_code, OAuthErrorCode.SLOW_DOWN)
+        # A too-fast poll writes nothing, so the wait still counts from the accepted poll
+        assert started.authorization.last_polled_at == accepted_at
 
     def test_poll_pending_after_waiting(self):
         started = self._start_authorization()
