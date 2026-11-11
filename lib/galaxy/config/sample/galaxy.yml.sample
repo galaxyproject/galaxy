@@ -3541,6 +3541,12 @@ galaxy:
   # This feature is experimental and disabled by default.
   #enable_oauth_device_flow: false
 
+  # The interval in seconds between attempts to delete OAuth device flow
+  # logins that expired without being approved (every 24 hours by
+  # default). Approved logins are kept as a record of who approved which
+  # app. Runs in a Celery task when `enable_oauth_device_flow` is on.
+  #oauth_device_flow_cleanup_interval: 86400
+
   # The interval in seconds between attempts to delete all expired
   # notifications from the database (every 24 hours by default). Runs in
   # a Celery task.

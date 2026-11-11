@@ -4,11 +4,17 @@ import hashlib
 import secrets
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import (
+    Any,
+    cast,
+)
 
 from sqlalchemy import (
+    delete,
     select,
     update,
 )
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import IntegrityError
 
 from galaxy import model
@@ -210,6 +216,23 @@ class OAuthDeviceManager:
             raise OAuthError(OAuthErrorCode.INVALID_GRANT, "Unknown or already used device_code.")
         assert authorization.user, "An approved device login always has a user."
         return self.issue_token(authorization.user, client_id, authorization.scope)
+
+    def cleanup_expired_unapproved(self) -> int:
+        """Delete logins that expired without being approved, returning how many were deleted.
+
+        Anyone can start a login, so these would otherwise pile up. Approved logins are kept as a
+        record of who approved which app.
+        """
+        statuses = OAuthDeviceAuthorization.statuses
+        stmt = delete(OAuthDeviceAuthorization).where(
+            OAuthDeviceAuthorization.expires_at <= now(),
+            OAuthDeviceAuthorization.status.in_([statuses.PENDING, statuses.DENIED]),
+        )
+        result = cast(
+            "CursorResult[Any]", self.sa_session.execute(stmt, execution_options={"synchronize_session": False})
+        )
+        self.sa_session.commit()
+        return result.rowcount
 
     def issue_token(self, user: model.User, client_id: str, scope: str | None) -> IssuedToken:
         """Issue a token for a user who approved a device flow login.

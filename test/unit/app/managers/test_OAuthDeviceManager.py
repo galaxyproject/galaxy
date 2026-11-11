@@ -107,6 +107,21 @@ class TestOAuthDeviceManager(BaseTestCase):
         assert started.authorization.user_code == "BBBB-BBBB"
         assert self._get(taken).status == statuses.PENDING
 
+    def test_cleanup_expired_unapproved(self):
+        expired_pending, expired_denied, expired_approved, live_pending = (self._start() for _ in range(4))
+        self.manager.decide(expired_denied, self.admin_user, approve=False)
+        self.manager.decide(expired_approved, self.admin_user, approve=True)
+        for user_code in (expired_pending, expired_denied, expired_approved):
+            self._get(user_code).expires_at = now() - timedelta(seconds=1)
+        self.trans.sa_session.commit()
+
+        assert self.manager.cleanup_expired_unapproved() >= 2
+
+        remaining = set(self.trans.sa_session.scalars(select(OAuthDeviceAuthorization.user_code)))
+        assert expired_pending not in remaining
+        assert expired_denied not in remaining
+        assert {expired_approved, live_pending} <= remaining
+
     def test_decide_does_not_overwrite_a_concurrent_decision(self):
         user_code = self._start()
         checked = self.manager.get_pending(user_code)

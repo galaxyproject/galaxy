@@ -4840,6 +4840,15 @@ mapping:
 
           This feature is experimental and disabled by default.
 
+      oauth_device_flow_cleanup_interval:
+        type: int
+        required: false
+        default: 86400
+        desc: |
+          The interval in seconds between attempts to delete OAuth device flow logins that expired
+          without being approved (every 24 hours by default). Approved logins are kept as a record
+          of who approved which app. Runs in a Celery task when `enable_oauth_device_flow` is on.
+
       expired_notifications_cleanup_interval:
         type: int
         required: false
