@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import type * as InvocationFilters from "@/components/Grid/configs/invocationFilters";
-import { getData } from "@/components/Grid/configs/invocations";
+import { fetchInvocations } from "@/components/Grid/configs/invocationsIndex";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
@@ -17,8 +17,8 @@ vi.useFakeTimers();
 
 vi.mock("vue-router");
 
-vi.mock("@/components/Grid/configs/invocations", () => ({
-    getData: vi.fn(),
+vi.mock("@/components/Grid/configs/invocationsIndex", () => ({
+    fetchInvocations: vi.fn(),
 }));
 
 vi.mock("@/components/Grid/configs/invocationFilters", async (importOriginal) => {
@@ -36,7 +36,7 @@ vi.mock("@/components/Grid/configs/invocationFilters", async (importOriginal) =>
 
 const USER = getFakeRegisteredUser();
 
-type InvocationsPage = Awaited<ReturnType<typeof getData>>;
+type InvocationsPage = Awaited<ReturnType<typeof fetchInvocations>>;
 
 const INVOCATIONS = [
     {
@@ -78,22 +78,30 @@ function mountTarget() {
     });
 }
 
-const lastQuery = () => vi.mocked(getData).mock.calls.at(-1)!.slice(0, 6);
+const lastQuery = () => vi.mocked(fetchInvocations).mock.calls.at(-1)![0];
 const filterInput = (wrapper: ReturnType<typeof mountTarget>) =>
     wrapper.find("[data-description='filter text input']").element as HTMLInputElement;
 const rows = (wrapper: ReturnType<typeof mountTarget>) => wrapper.findAll("tbody tr[id^='g-table-row-']");
 
 describe("InvocationList", () => {
     beforeEach(() => {
-        vi.mocked(getData).mockReset();
-        vi.mocked(getData).mockResolvedValue([INVOCATIONS, 2] as unknown as InvocationsPage);
+        vi.mocked(fetchInvocations).mockReset();
+        vi.mocked(fetchInvocations).mockResolvedValue([INVOCATIONS, 2] as unknown as InvocationsPage);
     });
 
     it("lists the user's invocations, newest first", async () => {
         const wrapper = mountTarget();
         await flushPromises();
 
-        expect(lastQuery()).toEqual([0, 25, "", "create_time", true, { user_id: USER.id }]);
+        expect(lastQuery()).toEqual({
+            limit: 25,
+            offset: 0,
+            sort_by: "create_time",
+            sort_desc: true,
+            include_nested_invocations: false,
+            search: undefined,
+            user_id: USER.id,
+        });
         expect(rows(wrapper)).toHaveLength(2);
         expect(wrapper.text()).toContain("Name of instance-1");
     });
@@ -106,7 +114,7 @@ describe("InvocationList", () => {
         vi.runAllTimers();
         await flushPromises();
 
-        expect(lastQuery()[2]).toBe("workflow:rna");
+        expect(lastQuery().search).toBe("workflow:rna");
     });
 
     it("sorts by invocation time when the Invoked header is clicked", async () => {
@@ -116,7 +124,7 @@ describe("InvocationList", () => {
         await wrapper.find("th.g-table-sortable").trigger("click");
         await flushPromises();
 
-        expect(lastQuery().slice(3, 5)).toEqual(["create_time", false]);
+        expect(lastQuery()).toMatchObject({ sort_by: "create_time", sort_desc: false });
     });
 
     it("picks workflows from the column filter and removes them with their chips", async () => {
@@ -129,7 +137,7 @@ describe("InvocationList", () => {
         await flushPromises();
 
         expect(filterInput(wrapper).value).toBe("workflow_id:workflow-2");
-        expect(lastQuery()[2]).toBe("workflow_id:workflow-2");
+        expect(lastQuery().search).toBe("workflow_id:workflow-2");
         const chips = wrapper.findAll("[data-description='grid active column filter workflow_id']");
         expect(chips.map((chip) => chip.text())).toEqual(["Workflow: Workflow two"]);
 
@@ -141,7 +149,7 @@ describe("InvocationList", () => {
     it("keeps the column filters available when the filters match nothing", async () => {
         const wrapper = mountTarget();
         await flushPromises();
-        vi.mocked(getData).mockResolvedValue([[], 0] as InvocationsPage);
+        vi.mocked(fetchInvocations).mockResolvedValue([[], 0] as InvocationsPage);
 
         await wrapper.find("[data-description='filter text input']").setValue("workflow:no-such-workflow");
         vi.runAllTimers();

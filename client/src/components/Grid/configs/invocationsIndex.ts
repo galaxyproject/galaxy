@@ -1,13 +1,16 @@
-import { GalaxyApi } from "@/api";
+import { GalaxyApi, type GalaxyApiPaths } from "@/api";
 import type { WorkflowInvocation } from "@/api/invocations";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
+/** Query parameters of `GET /api/invocations` */
+export type InvocationsQuery = NonNullable<GalaxyApiPaths["/api/invocations"]["get"]["parameters"]["query"]>;
+
 /**
  * Request invocations from the server and cache the names needed to display them
  */
-export async function fetchInvocations(query: Record<string, unknown>) {
+export async function fetchInvocations(query: InvocationsQuery) {
     const { response, data, error } = await GalaxyApi().GET("/api/invocations", { params: { query } });
     if (error) {
         rethrowSimple(error);

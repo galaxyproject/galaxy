@@ -13,15 +13,10 @@ import {
     MAX_COLUMN_FILTER_PICKS,
     workflowColumnFilter,
 } from "./invocationFilters";
-import { fetchInvocations } from "./invocationsIndex";
+import { fetchInvocations, type InvocationsQuery } from "./invocationsIndex";
 import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
-
-/**
- * Local types
- */
-type SortKeyLiteral = "create_time" | "update_time" | "None" | null | undefined;
 
 /**
  * Request and return invocations from server
@@ -34,20 +29,20 @@ export async function getData(
     sort_desc: boolean,
     extraProps?: Record<string, unknown>,
 ) {
-    const params = {
+    const params: InvocationsQuery = {
         limit,
         offset,
-        sort_by: sort_by as SortKeyLiteral,
+        sort_by: sort_by as InvocationsQuery["sort_by"],
         sort_desc,
         include_nested_invocations: false,
         search: invocationSearch(search),
-    } as Record<string, unknown>;
+    };
 
     if (extraProps && "include_terminal" in extraProps) {
-        params["include_terminal"] = extraProps["include_terminal"];
+        params.include_terminal = extraProps.include_terminal as boolean;
     }
     if (extraProps && "user_id" in extraProps) {
-        params["user_id"] = extraProps["user_id"];
+        params.user_id = extraProps.user_id as string;
     }
 
     return fetchInvocations(params);
