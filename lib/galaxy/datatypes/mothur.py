@@ -408,22 +408,27 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
         >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.lower.dist' )
         >>> LowerTriangleDistanceMatrix().sniff( fname )
         False
+        >>> fname = get_test_fname( 'empty.txt' )
+        >>> LowerTriangleDistanceMatrix().sniff( fname )
+        False
         """
         numlines = 300
         headers = iter_headers(file_prefix, sep="\t", count=numlines)
         line_num = 0
+        sequence_count = 0
         for line in headers:
             if not line[0].startswith("@"):
                 # first line should contain the number of sequences in the file
                 if line_num == 0:
                     if len(line) > 2:
                         return False
-                    else:
-                        try:
-                            sequence_count = int("".join(line))
-                            assert sequence_count > 0
-                        except ValueError:
-                            return False
+                    try:
+                        sequence_count = int("".join(line))
+                    except ValueError:
+                        return False
+                    # exceptions raised by a sniffer are treated as "no match", so this
+                    # assertion is equivalent to returning False (see datatypes/sniff.py)
+                    assert sequence_count > 0
                 else:
                     # number of fields should equal the line number
                     if len(line) != (line_num):
@@ -435,6 +440,9 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
                     except ValueError:
                         return False
                 line_num += 1
+
+        if line_num == 0:
+            return False
 
         # check if the number of lines in the file was as expected
         if line_num == sequence_count + 1 or line_num == numlines + 1:
