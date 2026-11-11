@@ -326,6 +326,8 @@ history_panel:
       info_button: '${_} .info-btn'
       highlight_button: '${_} .highlight-btn'
       alltags: '${_} .stateless-tags .tag'
+      tag_area_button: '${_} .stateless-tags .toggle-button'
+      tag_area_input: '${_} .stateless-tags .headless-multiselect input'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
       dataset_operations: '${_} .dataset-actions'
@@ -503,6 +505,8 @@ edit_dataset_attributes:
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
     attribute_field: '[aria-labelledby="dataset-attributes-heading"] .ui-form-field[data-name]'
+    # a text metadata field on the Attributes tab, e.g. comment_lines
+    metadata_input: '[aria-labelledby="dataset-attributes-heading"] input#${name}'
     datatypes_tab: '.dataset-edit-datatype-tab'
     permissions_tab: '.dataset-edit-permissions-tab'
     # permission: DATASET_MANAGE_PERMISSIONS or DATASET_ACCESS
@@ -511,6 +515,7 @@ edit_dataset_attributes:
     datatype_dropdown: '#datatype-container .multiselect'
     dbkey_dropdown: '#dbkey-container .multiselect'
     save_button: '#dataset-attributes-default-save'
+    auto_detect_metadata_button: '#dataset-attributes-autodetect-metadata'
     auto_detect_datatype_button: '#dataset-attributes-autodetect-datatype'
     alert: '.dataset-attributes-alert'
 

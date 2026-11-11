@@ -2606,12 +2606,14 @@ class MinimalJobWrapper(HasResourceParameters):
         self._set_unknown_output_extensions_to_data(job)
         self._fix_output_permissions()
 
-        # Outputs, metrics and the final job state are committed together, so
-        # readers never see finished outputs on a job that is still running, or
-        # a finished job without its metrics.
+        # Outputs, metrics, the output collections' update_time and the final
+        # job state are committed together, so readers never see finished
+        # outputs on a job that is still running, or a finished job without its
+        # metrics or with a history update_time that is about to change.
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
+        job.touch_collections_update_time()
         job.set_state(final_job_state)
         self.sa_session.commit()
 
@@ -2625,17 +2627,17 @@ class MinimalJobWrapper(HasResourceParameters):
                 except Exception:
                     log.exception("Error queuing hash calculation for dataset %d", request.dataset_id)
 
-        # The update_time bumps wake the workflow scheduler. Every job of a
-        # mapped-over step bumps the same workflow_invocation_step row, so they
-        # run in their own short transaction after the outputs are visible,
-        # not in the one that holds the user's disk usage row. A failure here
-        # leaves the committed job state alone; the scheduler also checks job
-        # states directly.
+        # The invocation step update_time bump wakes the workflow scheduler.
+        # Every job of a mapped-over step bumps the same workflow_invocation_step
+        # row, so it runs in its own short transaction after the outputs are
+        # visible, not in the one that holds the user's disk usage row. A
+        # failure here leaves the committed job state alone; the scheduler also
+        # checks job states directly.
         try:
-            job.touch_dependent_update_times()
+            job.touch_invocation_steps_update_time()
             self.sa_session.commit()
         except Exception:
-            log.exception(f"Updating update_time of collections and invocation steps failed for job {self.job_id}")
+            log.exception(f"Updating update_time of invocation steps failed for job {self.job_id}")
             self.sa_session.rollback()
         if job.state == job.states.ERROR:
             self._report_error()

@@ -124,6 +124,8 @@ interface Roothistory_panelcontent_item extends Component {
     download_button: SelectorTemplate;
     info_button: SelectorTemplate;
     alltags: SelectorTemplate;
+    tag_area_button: SelectorTemplate;
+    tag_area_input: SelectorTemplate;
     metadata_file_download: SelectorTemplate;
     dataset_operations_dropdown: SelectorTemplate;
 }

@@ -210,10 +210,11 @@ interface Props {
     selectable?: boolean;
 
     /**
-     * Title for the selection checkboxes (for accessibility and tooltips)
+     * Title for the selection checkboxes (for accessibility and tooltips).
+     * A function gets the row item, so each row's checkbox can carry its own name.
      * @default "Select for bulk actions"
      */
-    selectCheckboxTitle?: string;
+    selectCheckboxTitle?: string | ((item: T) => string);
 
     /**
      * Array of selected item indices
@@ -675,6 +676,11 @@ function isRowIndeterminate(index: number) {
     return props.indeterminateItems.includes(index);
 }
 
+function getSelectCheckboxTitle(item: T) {
+    const title = props.selectCheckboxTitle;
+    return typeof title === "function" ? title(item) : title;
+}
+
 /**
  * Get status icon for a row
  */
@@ -848,8 +854,8 @@ defineExpose({
                                             v-g-tooltip.hover
                                             :model-value="isRowSelected(getGlobalIndex(paginatedIndex))"
                                             :indeterminate="isRowIndeterminate(getGlobalIndex(paginatedIndex))"
-                                            :title="props.selectCheckboxTitle"
-                                            :aria-label="props.selectCheckboxTitle"
+                                            :title="getSelectCheckboxTitle(item)"
+                                            :aria-label="getSelectCheckboxTitle(item)"
                                             @update:model-value="onRowSelect(item, getGlobalIndex(paginatedIndex))" />
                                     </span>
                                 </td>

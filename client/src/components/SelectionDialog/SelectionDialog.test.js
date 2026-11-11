@@ -69,6 +69,20 @@ describe("SelectionDialog.vue", () => {
         expect(wrapper.emitted("onCancel")).toBeTruthy();
     });
 
+    it("names each row's selection checkbox after the row's label", async () => {
+        await wrapper.setProps({
+            optionsShow: true,
+            selectable: true,
+            items: [
+                { id: "1", label: "file1", isLeaf: true },
+                { id: "2", label: "file2", isLeaf: true },
+            ],
+        });
+
+        const names = wrapper.findAll("tbody input[type='checkbox']").map((box) => box.attributes("aria-label"));
+        expect(names).toEqual(["Select file1", "Select file2"]);
+    });
+
     it("syncs row selection state from incoming items", async () => {
         await wrapper.setProps({
             optionsShow: true,

@@ -22,6 +22,7 @@ from galaxy import (
     exceptions as glx_exceptions,
     model,
 )
+from galaxy.actions.library import validate_path_upload
 from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import (
     import_model_store,
@@ -281,7 +282,12 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             archive_source = payload.archive_source
             archive_file = payload.archive_file
             if archive_source:
-                archive_type = payload.archive_type
+                archive_type = payload.archive_type or HistoryImportArchiveSourceType.url
+                if archive_type == HistoryImportArchiveSourceType.url:
+                    validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
+                else:
+                    # A source named by path is read from the server, same rules as a fetch with src=path.
+                    validate_path_upload(trans)
             elif archive_file is not None and hasattr(archive_file, "file"):
                 archive_source = archive_file.file.name
                 archive_type = HistoryImportArchiveSourceType.file
@@ -289,9 +295,6 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                     archive_source = self._save_upload_file_tmp(archive_file)
             else:
                 raise glx_exceptions.MessageException("Please provide a url or file.")
-            if archive_type == HistoryImportArchiveSourceType.url:
-                assert archive_source
-                validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
             target_history = None
             if payload.name:
                 # A name for a new history was supplied, so we will create a new history and do the import

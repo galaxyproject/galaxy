@@ -2,7 +2,10 @@ import os
 from datetime import datetime
 from unittest.mock import patch
 
-from sqlalchemy import event
+from sqlalchemy import (
+    event,
+    select,
+)
 from sqlalchemy.exc import OperationalError
 
 from galaxy import (
@@ -15,6 +18,8 @@ from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFilePathError
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.unittest import TestCase
+
+OLD_UPDATE_TIME = datetime(2020, 1, 1)
 
 
 class FixedJobMetrics(job_metrics.JobMetrics):
@@ -91,23 +96,38 @@ class TestJobWrapperFinish(TestCase, UsesTools):
         assert self.job.state == model.Job.states.OK
 
     def test_collection_update_time_is_bumped(self):
-        session = self.app.model.context
-        old_update_time = datetime(2020, 1, 1)
-        hdca = model.HistoryDatasetCollectionAssociation(
-            history=self.job.history, collection=model.DatasetCollection(collection_type="list"), job=self.job
-        )
-        session.add(hdca)
-        session.commit()
-        hdca.update_time = old_update_time
-        session.commit()
+        hdca = self._add_output_collection()
 
         self._finish_and_record_commits()
 
-        session.refresh(hdca)
-        assert hdca.update_time > old_update_time
+        self.app.model.context.refresh(hdca)
+        assert hdca.update_time > OLD_UPDATE_TIME
+
+    def test_collection_update_time_is_committed_with_final_job_state(self):
+        # The history's update_time follows its collections, so a client that sees the finished
+        # job must also see the history's final update_time.
+        hdca = self._add_output_collection()
+        session = self.app.model.context()
+        hdca_table = model.HistoryDatasetCollectionAssociation.table
+        hdca_update_times = []
+
+        def record(_session):
+            if self.job.state == model.Job.states.OK:
+                update_time = session.scalar(select(hdca_table.c.update_time).where(hdca_table.c.id == hdca.id))
+                hdca_update_times.append(update_time)
+
+        event.listen(session, "before_commit", record)
+        try:
+            self._finish_and_record_commits()
+        finally:
+            event.remove(session, "before_commit", record)
+
+        assert hdca_update_times[0] > OLD_UPDATE_TIME
 
     def test_update_time_failure_keeps_committed_job_state(self):
-        with patch.object(model.Job, "touch_dependent_update_times", side_effect=OperationalError("", {}, Exception())):
+        with patch.object(
+            model.Job, "touch_invocation_steps_update_time", side_effect=OperationalError("", {}, Exception())
+        ):
             committed = self._finish_and_record_commits()
 
         assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
@@ -145,6 +165,17 @@ class TestJobWrapperFinish(TestCase, UsesTools):
         assert committed[-1][:2] == (model.Job.states.OK, model.Dataset.states.OK)
         for job_state, dataset_state, _ in committed:
             assert (job_state == model.Job.states.OK) == (dataset_state == model.Dataset.states.OK)
+
+    def _add_output_collection(self):
+        session = self.app.model.context
+        hdca = model.HistoryDatasetCollectionAssociation(
+            history=self.job.history, collection=model.DatasetCollection(collection_type="list"), job=self.job
+        )
+        session.add(hdca)
+        session.commit()
+        hdca.update_time = OLD_UPDATE_TIME
+        session.commit()
+        return hdca
 
     def _finish_and_record_commits(self, wrapper=None):
         wrapper = wrapper or MinimalJobWrapper(self.job, self.app, tool=self.tool)

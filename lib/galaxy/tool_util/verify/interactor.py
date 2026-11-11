@@ -1655,6 +1655,24 @@ def verify_hid(
     )
 
 
+def verify_collection_population(collection, collection_name):
+    # A failed dynamic collection can be empty even though its job succeeded.
+    # Only the top-level collection carries populated_state; nested collection
+    # objects carry the recursive populated flag instead.
+    populated_state = collection.get("populated_state")
+    if populated_state is not None and populated_state != "ok":
+        message = f"Output collection '{collection_name}': populated state is '{populated_state}', expected 'ok'."
+        if populated_state_message := collection.get("populated_state_message"):
+            message += f" {populated_state_message}"
+        raise AssertionError(message)
+    for element in collection["elements"]:
+        if element["element_type"] == "dataset_collection":
+            verify_collection_population(element["object"], f"{collection_name}/{element['element_identifier']}")
+    # Checked after the children so the deepest unpopulated collection is reported.
+    if collection.get("populated") is False:
+        raise AssertionError(f"Output collection '{collection_name}': collection is not populated.")
+
+
 def verify_collection(output_collection_def, data_collection, verify_dataset):
     name = output_collection_def.name
 
@@ -1664,6 +1682,8 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             "use 'asserts' instead of 'element_tests'."
         )
         raise AssertionError(message)
+
+    verify_collection_population(data_collection, name)
 
     if expected_collection_type := output_collection_def.collection_type:
         collection_type = data_collection["collection_type"]

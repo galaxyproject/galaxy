@@ -274,7 +274,6 @@ social-auth-core==5.2.0
 sortedcontainers==2.4.0
 spython==0.3.14
 sqlalchemy==2.0.55
-sqlparse==0.6.0
 sse-starlette==3.5.1 ; python_full_version < '3.11'
 sse-starlette==3.6.0 ; python_full_version >= '3.11'
 starlette==1.7.0 ; python_full_version < '3.11'

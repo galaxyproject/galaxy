@@ -191,18 +191,58 @@ LoadInfoT = tuple[tuple[Element, StrPath | None], dict[str, Any]]
 class DataTableColumnMismatch(Exception):
     """Two data tables share a name but declare different columns."""
 
-    def __init__(self, table_name: str, existing_columns: dict[str, int], incoming_columns: dict[str, int]):
+    def __init__(
+        self,
+        table_name: str,
+        existing_columns: dict[str, int],
+        incoming_columns: dict[str, int],
+        config_filename: StrPath | None = None,
+        repository_info: dict[str, str | None] | None = None,
+        existing_config_filenames: list[StrPath] | None = None,
+    ):
         self.table_name = table_name
+        self.existing_config_filenames = existing_config_filenames or []
         self.existing_columns = existing_columns
         self.incoming_columns = incoming_columns
+        self.config_filename = config_filename
+        self.repository_info = repository_info
+        source = ""
+        if config_filename is not None:
+            source = f" from file '{config_filename}'"
+        if repository_info is not None:
+            source += (
+                f" (installed by repository {repository_info['owner']}/{repository_info['name']} "
+                f"revision {repository_info['installed_changeset_revision']} from {repository_info['tool_shed']})"
+            )
         super().__init__(
             f"Data table {table_name!r} is already registered with columns {existing_columns}, "
-            f"refusing to register conflicting columns {incoming_columns}."
+            f"refusing to register conflicting columns {incoming_columns}{source}."
         )
+
+
+def _parse_tool_shed_repository(table_elem: Element) -> dict[str, str | None] | None:
+    repo_elem = table_elem.find("tool_shed_repository")
+    if repo_elem is None:
+        return None
+    tool_shed_elem = repo_elem.find("tool_shed")
+    assert tool_shed_elem is not None
+    repository_name_elem = repo_elem.find("repository_name")
+    assert repository_name_elem is not None
+    repository_owner_elem = repo_elem.find("repository_owner")
+    assert repository_owner_elem is not None
+    installed_changeset_revision_elem = repo_elem.find("installed_changeset_revision")
+    assert installed_changeset_revision_elem is not None
+    return dict(
+        tool_shed=tool_shed_elem.text,
+        name=repository_name_elem.text,
+        owner=repository_owner_elem.text,
+        installed_changeset_revision=installed_changeset_revision_elem.text,
+    )
 
 
 class ToolDataTable(Dictifiable):
     type_key: str
+    columns: dict[str, int]
     data: list[list[str]]
     empty_field_value: str
     empty_field_values: dict[str | None, str]
@@ -254,6 +294,11 @@ class ToolDataTable(Dictifiable):
             },
         )
         self._merged_load_info: list[tuple[type[ToolDataTable], tuple[tuple[Element, StrPath], dict[str, Any]]]] = []
+
+    def config_filenames(self) -> list[StrPath]:
+        """Config files this table and its merged definitions were loaded from."""
+        load_infos = [self._load_info] + [load_info for _, load_info in self._merged_load_info]
+        return [load_info[1]["filename"] for load_info in load_infos if load_info[1]["filename"]]
 
     def _update_version(self, version: int | None = None) -> int:
         if version is not None:
@@ -418,23 +463,7 @@ class TabularToolDataTable(ToolDataTable):
         self.parse_column_spec(config_element)
 
         # store repo info if available:
-        if (repo_elem := config_element.find("tool_shed_repository")) is not None:
-            tool_shed_elem = repo_elem.find("tool_shed")
-            assert tool_shed_elem is not None
-            repository_name_elem = repo_elem.find("repository_name")
-            assert repository_name_elem is not None
-            repository_owner_elem = repo_elem.find("repository_owner")
-            assert repository_owner_elem is not None
-            installed_changeset_revision_elem = repo_elem.find("installed_changeset_revision")
-            assert installed_changeset_revision_elem is not None
-            repo_info = dict(
-                tool_shed=tool_shed_elem.text,
-                name=repository_name_elem.text,
-                owner=repository_owner_elem.text,
-                installed_changeset_revision=installed_changeset_revision_elem.text,
-            )
-        else:
-            repo_info = None
+        repo_info = _parse_tool_shed_repository(config_element)
         # Read every file
         for file_element in config_element.findall("file"):
             tmp_file = None
@@ -534,9 +563,8 @@ class TabularToolDataTable(ToolDataTable):
                 tmp_file.close()
 
     def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, **kwd):
-        assert (
-            self.columns == other_table.columns
-        ), f"Merging tabular data tables with non matching columns is not allowed: {self.name}:{self.columns} != {other_table.name}:{other_table.columns}"
+        if self.columns != other_table.columns:
+            raise DataTableColumnMismatch(self.name, self.columns, other_table.columns)
         # merge filename info
         for filename, info in other_table.filenames.items():
             if filename not in self.filenames:
@@ -1180,12 +1208,20 @@ class ToolDataTableManager(Dictifiable):
         self,
         candidate_name: str,
         candidate_columns: dict[str, int],
+        config_filename: StrPath | None = None,
+        repository_info: dict[str, str | None] | None = None,
     ) -> None:
         """Raise if ``candidate_name`` is already registered with different columns."""
-        if (existing := self.data_tables.get(candidate_name)) is not None:
-            existing_columns = getattr(existing, "columns", None)
-            if existing_columns is not None and existing_columns != candidate_columns:
-                raise DataTableColumnMismatch(candidate_name, existing_columns, candidate_columns)
+        existing = self.data_tables.get(candidate_name)
+        if existing is not None and existing.columns != candidate_columns:
+            raise DataTableColumnMismatch(
+                candidate_name,
+                existing.columns,
+                candidate_columns,
+                config_filename=config_filename,
+                repository_info=repository_info,
+                existing_config_filenames=existing.config_filenames(),
+            )
 
     def to_dict(
         self, view: str = "collection", value_mapper: dict[str, Callable] | None = None
@@ -1207,6 +1243,9 @@ class ToolDataTableManager(Dictifiable):
         table_names: list[str] | None = None,
     ) -> list[Element]:
         """
+        A table whose columns conflict with an already registered table of the same name raises
+        ``DataTableColumnMismatch`` naming the file and, for shed tables, the installing repository.
+
         This method is called under 3 conditions:
 
         1. When the ToolDataTableManager is initialized (see __init__ above).
@@ -1242,6 +1281,12 @@ class ToolDataTableManager(Dictifiable):
                     filename=config_filename,
                     tool_data_path_files=self.tool_data_path_files,
                     other_config_dict=self.other_config_dict,
+                )
+                self.assert_data_table_consistency(
+                    table.name,
+                    table.columns,
+                    config_filename=config_filename,
+                    repository_info=_parse_tool_shed_repository(table_elem),
                 )
                 table_elems.append(table_elem)
                 if table.name not in self.data_tables:
