@@ -404,7 +404,8 @@ steps:
             )
         self._assert_status_code_is(response, 400)
         assert response.json()["err_msg"] == (
-            "Workflow was not invoked; the following required tools are not installed: multiple_versions (version 0.3)"
+            "Workflow was not invoked; the following required tools are not installed: "
+            "multiple_versions (version 0.3, installed: 0.1, 0.1+galaxy6, 0.2)"
         )
 
     # --- Default-panel response shape ---------------------------------------

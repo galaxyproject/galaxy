@@ -101,6 +101,7 @@ from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
     get_safe_version,
+    get_safe_version_tool,
     Tool,
 )
 from galaxy.tools._types import (
@@ -2716,19 +2717,22 @@ class ToolModule(WorkflowModule):
                 tool_like = trans.app.toolbox.get_tool(
                     tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
                 )
+                if exact_tools and self.tool_version and not tool_uuid:
+                    # A different version stays only for the workflow-safe update check
+                    # below, which swaps it or drops it.
+                    named_tool = trans.app.toolbox.get_tool_at_version(tool_id, self.tool_version)
+                    if named_tool or (tool_like and str(tool_like.version) == self.tool_version):
+                        tool_like = named_tool
             if tool_like:
                 self.tool = trans.app.toolbox.materialize_tool(tool_like, reason="validation")
         if self.tool:
             current_tool_version = str(self.tool.version)
-            if exact_tools and self.tool_version and self.tool_version != current_tool_version:
-                safe_version = get_safe_version(self.tool, self.tool_version)
-                if safe_version:
-                    tool_like = trans.app.toolbox.get_tool(
-                        tool_id, tool_version=safe_version, exact=True, tool_uuid=tool_uuid
-                    )
-                    assert tool_like is not None
-                    self.tool = trans.app.toolbox.materialize_tool(tool_like, reason="validation")
-                else:
+            if self.tool_version and self.tool_version != current_tool_version:
+                # Prefer the workflow-safe update over the newest version, exact or not.
+                safe_tool = get_safe_version_tool(trans.app.toolbox, self.tool, self.tool_version)
+                if safe_tool:
+                    self.tool = trans.app.toolbox.materialize_tool(safe_tool, reason="validation")
+                elif exact_tools:
                     log.info(
                         f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}]."
                     )
@@ -3194,7 +3198,7 @@ class ToolModule(WorkflowModule):
         step = invocation_step.workflow_step
         tool_id = step.effective_tool_id
         tool = trans.app.toolbox.get_tool(
-            tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
+            tool_id, tool_version=self.get_version(), tool_uuid=step.tool_uuid, user=trans.user
         )
         if tool is None:
             raise ToolMissingException(f"Tool {tool_id} missing. Cannot execute workflow step.", tool_id=tool_id)
