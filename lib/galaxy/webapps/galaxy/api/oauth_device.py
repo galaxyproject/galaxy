@@ -21,6 +21,7 @@ from galaxy.managers._config_templates import galaxy_url_for_path
 from galaxy.managers.oauth_device import (
     DEVICE_CODE_EXPIRES_IN,
     DEVICE_CODE_GRANT_TYPE,
+    KNOWN_APPS,
     OAuthDeviceManager,
     OAuthError,
     POLLING_INTERVAL,
@@ -147,7 +148,7 @@ def get_device_authorization(
     return DeviceAuthorizationDetails(
         user_code=authorization.user_code,
         client_id=authorization.client_id,
-        app_name=manager.get_app_name(authorization.client_id),
+        app_name=KNOWN_APPS.get(authorization.client_id, authorization.client_id),
         scopes=authorization.scope.split() if authorization.scope else [],
         requesting_ip=authorization.requesting_ip,
         create_time=authorization.create_time,

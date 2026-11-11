@@ -1,11 +1,15 @@
 """Integration tests for the OAuth 2.0 device flow endpoints (RFC 8628)."""
 
 import time
+from unittest.mock import patch
 from urllib.parse import urljoin
 
 from authlib.oauth2.rfc8414 import AuthorizationServerMetadata
 
-from galaxy.managers.oauth_device import POLLING_INTERVAL
+from galaxy.managers.oauth_device import (
+    KNOWN_APPS,
+    POLLING_INTERVAL,
+)
 from galaxy_test.driver import integration_util
 
 # Written out, not imported, so the tests check the exact value RFC 8628 §3.4 requires.
@@ -61,6 +65,13 @@ class TestOAuthDeviceFlow(integration_util.IntegrationTestCase):
         assert details["app_name"] == "Galaxy CLI"
         assert details["scopes"] == ["histories:read", "tools:run"]
         self._assert_has_keys(details, "requesting_ip", "create_time", "expires_at")
+
+    def test_get_for_an_app_no_longer_known(self):
+        user_code = self._start_device_authorization().json()["user_code"]
+        with patch.dict(KNOWN_APPS, clear=True):
+            response = self._get(f"oauth/device_authorization/{user_code}")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["app_name"] == "galaxy-cli"
 
     def test_get_without_scope(self):
         user_code = self._start_device_authorization().json()["user_code"]
