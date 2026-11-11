@@ -81,6 +81,33 @@ class TestScriptsPgCleanupIntegration(BaseScriptsIntegrationTestCase):
             with open(log_path) as f:
                 return f.read()
 
+    def _metadata_file_state(self, metadata_file_id: int, path: str) -> dict[str, bool]:
+        """Return the cleanup flags of a metadata file and whether its file is on disk."""
+        sa_session = self._app.model.session
+        sa_session.rollback()
+        metadata_file = sa_session.get(model.MetadataFile, metadata_file_id)
+        assert metadata_file is not None
+        return {
+            "deleted": bool(metadata_file.deleted),
+            "purged": bool(metadata_file.purged),
+            "exists": os.path.exists(path),
+        }
+
+    def _add_metadata_file(self, dataset_instance: Any) -> tuple[int, str]:
+        """Attach a metadata file to a dataset instance, both in the database and on disk."""
+        sa_session = self._app.model.session
+        metadata_file = model.MetadataFile(dataset=dataset_instance, name="bai")
+        sa_session.add(metadata_file)
+        sa_session.commit()
+        metadata_file_id = metadata_file.id
+        with tempfile.NamedTemporaryFile() as source:
+            source.write(b"BAI\x01")
+            source.flush()
+            metadata_file.update_from_file(source.name)
+        path = metadata_file.get_file_name()
+        sa_session.commit()
+        return metadata_file_id, path
+
     def test_help(self):
         self._skip_unless_postgres()
         self._scripts_check_argparse_help(SCRIPT)
@@ -263,10 +290,17 @@ class TestScriptsPgCleanupIntegration(BaseScriptsIntegrationTestCase):
         self._skip_unless_postgres()
 
         _, library_dataset = self.library_populator.new_library_dataset_in_private_library("pgcleanup_library_dataset")
+        ldda = self._db_get(model.LibraryDatasetDatasetAssociation, library_dataset["ldda_id"])
+        metadata_file_id, metadata_file_path = self._add_metadata_file(ldda)
 
         # a library dataset that was never deleted is not touched
         self._pgcleanup_check_output(["--older-than", "0", "delete_library_datasets"])
         assert self._library_dataset_state(library_dataset)["version_deleted"] is False
+        assert self._metadata_file_state(metadata_file_id, metadata_file_path) == {
+            "deleted": False,
+            "purged": False,
+            "exists": True,
+        }
 
         # deleting a library dataset through the API only flags the library dataset, its versions
         # (and therefore the dataset they reference) are left alone - which is why datasets that
@@ -284,7 +318,8 @@ class TestScriptsPgCleanupIntegration(BaseScriptsIntegrationTestCase):
         self._pgcleanup_check_output(["--older-than", "1", "delete_library_datasets"])
         assert self._library_dataset_state(library_dataset)["version_deleted"] is False
 
-        # with no retention window the version is marked deleted and the library dataset purged
+        # with no retention window the version is marked deleted, the library dataset purged, and
+        # the metadata files of the version are marked deleted and removed from the object store
         self._pgcleanup_check_output(["--older-than", "0", "delete_library_datasets"])
         assert self._library_dataset_state(library_dataset) == {
             "library_dataset_deleted": True,
@@ -306,6 +341,11 @@ class TestScriptsPgCleanupIntegration(BaseScriptsIntegrationTestCase):
         ).all()
         assert len(ld_events) == 1
         assert ldda_events == ld_events
+        assert self._metadata_file_state(metadata_file_id, metadata_file_path) == {
+            "deleted": True,
+            "purged": True,
+            "exists": False,
+        }
 
         # chaining the pre-existing actions now reaches the dataset itself
         self._pgcleanup_check_output(
@@ -433,6 +473,76 @@ class TestScriptsPgCleanupIntegration(BaseScriptsIntegrationTestCase):
         state = self._library_dataset_state(library_dataset)
         assert state["version_deleted"] is True
         assert state["library_dataset_purged"] is True
+
+    def test_delete_library_datasets_force_retry_metadata_files(self):
+        self._skip_unless_postgres()
+
+        # a library dataset purged before metadata files were cleaned up: the metadata file is left
+        # behind in the database and in the object store
+        _, library_dataset = self.library_populator.new_library_dataset_in_private_library(
+            "pgcleanup_library_dataset_metadata_files"
+        )
+        metadata_file_id, metadata_file_path = self._add_metadata_file(
+            self._db_get(model.LibraryDatasetDatasetAssociation, library_dataset["ldda_id"])
+        )
+        self._assert_status_code_is_ok(self._delete(f"libraries/datasets/{library_dataset['id']}"))
+        self._pgcleanup_check_output(["--older-than", "0", "delete_library_datasets"])
+        assert self._metadata_file_state(metadata_file_id, metadata_file_path) == {
+            "deleted": True,
+            "purged": True,
+            "exists": False,
+        }
+
+        # reset the metadata file to the state the old cleanup left it in
+        sa_session = self._app.model.session
+        sa_session.rollback()
+        metadata_file = sa_session.get(model.MetadataFile, metadata_file_id)
+        assert metadata_file is not None
+        metadata_file.deleted = False
+        metadata_file.purged = False
+        with tempfile.NamedTemporaryFile() as source:
+            source.write(b"BAI\x01")
+            source.flush()
+            metadata_file.update_from_file(source.name)
+        sa_session.commit()
+        assert self._metadata_file_state(metadata_file_id, metadata_file_path) == {
+            "deleted": False,
+            "purged": False,
+            "exists": True,
+        }
+
+        # the library dataset is purged now, so it is skipped without --force-retry
+        self._pgcleanup_check_output(["--older-than", "0", "delete_library_datasets"])
+        assert self._metadata_file_state(metadata_file_id, metadata_file_path) == {
+            "deleted": False,
+            "purged": False,
+            "exists": True,
+        }
+
+        self._pgcleanup_check_output(["--older-than", "0", "--force-retry", "delete_library_datasets"])
+        assert self._metadata_file_state(metadata_file_id, metadata_file_path) == {
+            "deleted": True,
+            "purged": True,
+            "exists": False,
+        }
+
+    def test_purge_old_hdas_metadata_files(self):
+        self._skip_unless_postgres()
+
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+        metadata_file_id, metadata_file_path = self._add_metadata_file(
+            self._db_get(model.HistoryDatasetAssociation, hda["id"])
+        )
+
+        self._pgcleanup_check_output(["--older-than", "0", "purge_old_hdas"])
+
+        assert self.is_purged(history_id, hda)
+        assert self._metadata_file_state(metadata_file_id, metadata_file_path) == {
+            "deleted": True,
+            "purged": True,
+            "exists": False,
+        }
 
     def test_purge_historyless_hdas(self):
         # same as above - this is just a negative test for things being broken

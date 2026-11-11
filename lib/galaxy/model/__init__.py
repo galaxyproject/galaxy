@@ -5361,6 +5361,7 @@ class Dataset(Base, StorableObject, Serializable):
 
     def full_delete(self, user=None):
         """Remove the file and extra files, marks deleted and purged"""
+        self._delete_metadata_files(user=user)
         try:
             self.object_store.delete(self, auth=ObjectStoreAuth(user=user) if user else None)
         except galaxy.exceptions.ObjectNotFound:
@@ -5371,9 +5372,38 @@ class Dataset(Base, StorableObject, Serializable):
                     self.object_store.delete(self, entire_dir=True, extra_dir=rel_path, dir_only=True)
                 except galaxy.exceptions.ObjectNotFound:
                     pass
-        # TODO: purge metadata files
         self.deleted = True
         self.purged = True
+
+    def _delete_metadata_files(self, user=None):
+        """Remove the metadata files of all associations of this dataset from the object store."""
+        session = object_session(self)
+        if session is None:
+            return
+        auth = ObjectStoreAuth(user=user) if user else None
+        # same naming as MetadataFile.get_file_name, which is what created the file
+        store_by = self.object_store.get_store_by(self) or "id"
+        metadata_files = session.scalars(
+            select(MetadataFile).where(
+                or_(
+                    MetadataFile.hda_id.in_([hda.id for hda in self.history_associations]),
+                    MetadataFile.lda_id.in_([ldda.id for ldda in self.library_associations]),
+                )
+            )
+        )
+        for metadata_file in metadata_files:
+            try:
+                self.object_store.delete(
+                    metadata_file,
+                    extra_dir="_metadata_files",
+                    extra_dir_at_root=True,
+                    alt_name=f"metadata_{getattr(metadata_file, store_by)}.dat",
+                    auth=auth,
+                )
+            except galaxy.exceptions.ObjectNotFound:
+                pass
+            metadata_file.deleted = True
+            metadata_file.purged = True
 
     def get_access_roles(self, security_agent):
         return self._roles_for_action(security_agent.permitted_actions.DATASET_ACCESS.action)

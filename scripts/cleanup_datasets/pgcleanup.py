@@ -340,7 +340,7 @@ class PurgesHDAs:
 
     _purge_hda_dependencies_sql = """deleted_metadata_file_ids
           AS (     UPDATE metadata_file
-                      SET deleted = true{update_time_sql}
+                      SET deleted = true, purged = true{update_time_sql}
                      FROM purged_hda_ids
                     WHERE purged_hda_ids.id = metadata_file.hda_id
                 RETURNING metadata_file.hda_id AS hda_id,
@@ -1161,11 +1161,12 @@ class DeleteExportedHistories(Action):
     """
 
 
-class DeleteLibraryDatasets(Action):
+class DeleteLibraryDatasets(RemovesMetadataFiles, Action):
     """
     - Mark deleted all versions (LibraryDatasetDatasetAssociations) of LibraryDatasets that are marked
       deleted and are older than the specified number of days.
     - Mark those LibraryDatasets purged: a purged LibraryDataset can no longer be undeleted.
+    - Mark the MetadataFiles of those versions deleted and remove them from the object store.
     - This is the library half of the legacy cleanup_datasets.py "delete_datasets" action, which
       pgcleanup.py did not port; it is what allows the datasets referenced only by library
       associations to be marked deleted by the "delete_datasets" action below.
@@ -1195,6 +1196,23 @@ class DeleteLibraryDatasets(Action):
                           (create_time, cleanup_event_id, ldda_id)
                    SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM deleted_ldda_ids),
+             deleted_metadata_file_ids
+          AS (     UPDATE metadata_file
+                      SET deleted = true, purged = true{update_time_sql}
+                     FROM target_lds t,
+                          library_dataset_dataset_association ldda
+                    WHERE ldda.library_dataset_id = t.id
+                          AND metadata_file.lda_id = ldda.id
+                          AND metadata_file.purged IS NOT TRUE
+                RETURNING ldda.library_dataset_id AS library_dataset_id,
+                          metadata_file.id AS deleted_metadata_file_id,
+                          metadata_file.uuid AS deleted_metadata_file_uuid,
+                          metadata_file.object_store_id AS object_store_id),
+             metadata_file_events
+          AS (INSERT INTO cleanup_event_metadata_file_association
+                          (create_time, cleanup_event_id, metadata_file_id)
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, deleted_metadata_file_id
+                     FROM deleted_metadata_file_ids),
              purged_lds
           AS (     UPDATE library_dataset ld
                       SET purged = true{update_time_sql}
@@ -1209,15 +1227,25 @@ class DeleteLibraryDatasets(Action):
                      FROM purged_lds)
       SELECT t.id AS library_dataset_id,
              deleted_ldda_ids.id AS deleted_ldda_id,
-             purged_lds.id AS purged_library_dataset_id
+             purged_lds.id AS purged_library_dataset_id,
+             deleted_metadata_file_ids.deleted_metadata_file_id,
+             deleted_metadata_file_ids.deleted_metadata_file_uuid,
+             deleted_metadata_file_ids.object_store_id
         FROM target_lds t
              LEFT OUTER JOIN deleted_ldda_ids ON t.id = deleted_ldda_ids.library_dataset_id
              LEFT OUTER JOIN purged_lds ON t.id = purged_lds.id
-       WHERE deleted_ldda_ids.id IS NOT NULL OR purged_lds.id IS NOT NULL
+             LEFT OUTER JOIN deleted_metadata_file_ids ON t.id = deleted_metadata_file_ids.library_dataset_id
+       WHERE deleted_ldda_ids.id IS NOT NULL
+          OR purged_lds.id IS NOT NULL
+          OR deleted_metadata_file_ids.deleted_metadata_file_id IS NOT NULL
     ORDER BY t.id
     """
 
-    causals = (("library_dataset_id", "deleted_ldda_id"), ("library_dataset_id", "purged_library_dataset_id"))
+    causals = (
+        ("library_dataset_id", "deleted_ldda_id"),
+        ("library_dataset_id", "purged_library_dataset_id"),
+        ("library_dataset_id", "deleted_metadata_file_id"),
+    )
 
 
 class DeleteDatasets(Action):
