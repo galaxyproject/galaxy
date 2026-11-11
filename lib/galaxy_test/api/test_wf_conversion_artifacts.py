@@ -84,7 +84,8 @@ class TestWfConversionArtifacts(BaseWorkflowsApiTestCase):
         gxformat2 omitted it (all values were None/default). Galaxy should treat
         the absent section as defaults.
         """
-        history_id = self._invoke_conversion_workflow("allnone_section")
+        # missing values only get defaults, which don't need allow_tool_state_corrections
+        history_id = self._invoke_conversion_workflow("allnone_section", allow_tool_state_corrections=False)
         content = self._history_content(history_id, hid=1)
         # Default boolean is false -> "myfalse"
         assert "myfalse" in content
