@@ -22,6 +22,7 @@ import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
+import { withPrefix } from "@/utils/redirect";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -56,6 +57,8 @@ interface Props {
     historyId?: string;
     /** List only the user's invocations of this stored workflow */
     workflowId?: string;
+    /** List exactly these invocations, as a batch run returns them, without paging or sorting */
+    invocations?: WorkflowInvocation[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -64,6 +67,7 @@ const props = withDefaults(defineProps<Props>(), {
     noDataMessage: "No Workflow Invocations to display",
     historyId: undefined,
     workflowId: undefined,
+    invocations: undefined,
 });
 
 const router = useRouter();
@@ -72,10 +76,20 @@ const { currentUser } = storeToRefs(useUserStore());
 
 /** Scoped to one history or workflow: no heading, search or column filters, and Run in place of Rerun */
 const scoped = !!(props.historyId || props.workflowId);
+/** A batch run's invocations: no heading, filters, paging, sorting, Workflow or Run column */
+const batch = !!props.invocations;
 // the admin list covers every user, but the filter lookups only cover the admin's own workflows and histories
-const filterable = !props.admin && !scoped;
+const filterable = !props.admin && !scoped && !batch;
 
-const columns: (ColumnFilterField & { sortable?: boolean })[] = [
+const batchColumns: (ColumnFilterField & { sortable?: boolean })[] = [
+    { key: "expand", title: null },
+    { key: "view", title: "View" },
+    { key: "history_id", title: "History" },
+    { key: "create_time", title: "Invoked" },
+    { key: "state", title: "State" },
+];
+
+const listColumns: (ColumnFilterField & { sortable?: boolean })[] = [
     { key: "expand", title: null },
     props.workflowId
         ? { key: "view", title: "View" }
@@ -87,9 +101,10 @@ const columns: (ColumnFilterField & { sortable?: boolean })[] = [
     { key: "state", title: "State" },
     { key: "execute", title: scoped ? "Run" : "Rerun" },
 ];
+const columns = batch ? batchColumns : listColumns;
 const fields: TableField[] = columns.map(({ key, title, sortable }) => ({ key, label: title ?? "", sortable }));
 
-const invocations = ref<WorkflowInvocation[]>([]);
+const listedInvocations = ref<WorkflowInvocation[]>([]);
 const totalRows = ref(0);
 const currentPage = ref(1);
 const sortBy = ref("create_time");
@@ -128,6 +143,12 @@ const showTable = computed(
 let latestRequest = 0;
 
 async function load() {
+    if (props.invocations) {
+        listedInvocations.value = props.invocations;
+        totalRows.value = props.invocations.length;
+        initDataLoading.value = false;
+        return;
+    }
     const requestId = ++latestRequest;
     resultsLoading.value = true;
     if (hasInvalidFilters.value) {
@@ -159,7 +180,7 @@ async function load() {
         });
         if (requestId === latestRequest) {
             collapseAll();
-            invocations.value = data;
+            listedInvocations.value = data;
             totalRows.value = total;
             errorMessage.value = "";
         }
@@ -206,6 +227,15 @@ function canRunAgain(invocation: WorkflowInvocation) {
     return !workflow?.deleted;
 }
 
+/** Opens the invocation; a batch list opens it in a new tab, to keep the run's results page */
+function viewInvocation(invocation: WorkflowInvocation) {
+    if (batch) {
+        window.open(withPrefix(`/workflows/invocations/${invocation.id}`), "_blank");
+    } else {
+        router.push(`/workflows/invocations/${invocation.id}`);
+    }
+}
+
 /** Runs the invocation's workflow afresh; a workflow's list already knows its stored workflow */
 function runWorkflow(invocation: WorkflowInvocation) {
     const storedWorkflowId = props.workflowId ?? workflowStore.getStoredWorkflowIdByInstanceId(invocation.workflow_id);
@@ -223,7 +253,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
         <GAlert v-if="props.headerMessage" variant="success" fade :show="HEADER_MESSAGE_SECONDS">
             {{ props.headerMessage }}
         </GAlert>
-        <div v-if="!scoped" class="flex-shrink-0 mb-2">
+        <div v-if="!scoped && !batch" class="flex-shrink-0 mb-2">
             <BreadcrumbHeading :items="[{ title: TITLE }]">
                 <GButton
                     size="small"
@@ -286,7 +316,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 v-if="!initDataLoading && showTable"
                 id="invocations-table"
                 :fields="fields"
-                :items="invocations"
+                :items="listedInvocations"
                 :sort-by="sortBy"
                 :sort-desc="sortDesc"
                 :local-sorting="false"
@@ -317,10 +347,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                         @show-details="onShowDetails(item, toggleDetails)" />
                 </template>
                 <template v-slot:cell(view)="{ item }">
-                    <GButton
-                        color="blue"
-                        :title="localize('View')"
-                        @click="router.push(`/workflows/invocations/${item.id}`)">
+                    <GButton color="blue" :title="localize('View')" @click="viewInvocation(item)">
                         <FontAwesomeIcon :icon="faEye" />
                     </GButton>
                 </template>
@@ -368,7 +395,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
         </div>
 
         <div class="flex-shrink-0">
-            <div v-if="isAvailable" class="d-flex justify-content-end pt-3">
+            <div v-if="isAvailable && !batch" class="d-flex justify-content-end pt-3">
                 <GPagination
                     v-model="currentPage"
                     :total-rows="totalRows"

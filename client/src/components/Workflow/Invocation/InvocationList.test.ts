@@ -282,4 +282,38 @@ describe("InvocationList", () => {
             expect(push).toHaveBeenLastCalledWith("/workflows/run?id=stored-9");
         });
     });
+
+    describe("a batch run's invocations", () => {
+        const headers = (wrapper: ReturnType<typeof mountTarget>) => wrapper.findAll("thead th").map((th) => th.text());
+
+        it("lists the given invocations without requesting any", async () => {
+            const wrapper = mountTarget({ invocations: INVOCATIONS });
+            await flushPromises();
+
+            expect(fetchInvocations).not.toHaveBeenCalled();
+            expect(rows(wrapper)).toHaveLength(2);
+            expect(headers(wrapper)).toEqual(["", "View", "History", "Invoked", "State"]);
+        });
+
+        it("offers no heading, search, sorting or pager", async () => {
+            const wrapper = mountTarget({ invocations: INVOCATIONS });
+            await flushPromises();
+
+            expect(wrapper.find("[data-description='grid action import invocation']").exists()).toBe(false);
+            expect(wrapper.find("[data-description='filter text input']").exists()).toBe(false);
+            expect(wrapper.find("th.g-table-sortable").exists()).toBe(false);
+            expect(wrapper.find("[data-description='invocation list pager']").exists()).toBe(false);
+        });
+
+        it("opens an invocation in a new tab, keeping the run's results page", async () => {
+            const open = vi.spyOn(window, "open").mockImplementation(() => null);
+            const wrapper = mountTarget({ invocations: INVOCATIONS });
+            await flushPromises();
+
+            await wrapper.find("tbody tr[id^='g-table-row-'] button[title='View']").trigger("click");
+
+            expect(open).toHaveBeenCalledWith(expect.stringMatching(/\/workflows\/invocations\/inv-1$/), "_blank");
+            open.mockRestore();
+        });
+    });
 });
