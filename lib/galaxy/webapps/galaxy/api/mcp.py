@@ -782,6 +782,23 @@ def get_mcp_app(gx_app: StructuredApp):
             return ops_manager.get_invocation_details(invocation_id)
 
     @mcp.tool()
+    def get_invocation_step_jobs_summary(invocation_id: str, ctx: MCPContext, api_key: ApiKey = None) -> dict[str, Any]:
+        """Retrieve per-step job-state summaries for a workflow invocation.
+
+        Useful for identifying failed jobs in workflows, including
+        steps that run multiple jobs over dataset collections.
+
+        Args:
+            invocation_id: Galaxy workflow invocation ID.
+
+        Returns:
+            Job-state summaries associated with the workflow invocation.
+        """
+        with _mcp_error_handler("get_invocation_step_jobs_summary"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.get_invocation_step_jobs_summary(invocation_id)
+
+    @mcp.tool()
     def cancel_workflow_invocation(invocation_id: str, ctx: MCPContext, api_key: ApiKey = None) -> dict[str, Any]:
         """Cancel a running workflow invocation.
 
