@@ -305,9 +305,10 @@ class AlignCheck(Tabular):
 
         dataset.metadata.column_names = self.column_names
         dataset.metadata.column_types = self.column_types
-        dataset.metadata.comment_lines = self.comment_lines
-        if isinstance(dataset.metadata.data_lines, int):
-            dataset.metadata.data_lines -= self.comment_lines
+        if dataset.has_data():
+            dataset.metadata.comment_lines = self.comment_lines
+            if isinstance(dataset.metadata.data_lines, int):
+                dataset.metadata.data_lines = max(0, dataset.metadata.data_lines - self.comment_lines)
 
 
 class AlignReport(Tabular):
