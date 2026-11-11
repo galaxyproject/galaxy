@@ -223,7 +223,6 @@ from galaxy.tools.parameters.meta import (
 from galaxy.tools.parameters.pagination import OptionsPaginationT
 from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import (
-    ConnectedValue,
     RuntimeValue,
     workflow_building_modes,
 )
@@ -493,8 +492,6 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
 
 def _describe_default(value: Any) -> str:
     """How a parameter's default reads in an upgrade message; runtime markers have no useful repr."""
-    if isinstance(value, ConnectedValue):
-        return "a connected value"
     if isinstance(value, RuntimeValue):
         return "a value set at runtime"
     return f"'{value}'"
