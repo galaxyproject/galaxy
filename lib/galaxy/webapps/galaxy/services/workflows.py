@@ -61,6 +61,7 @@ from galaxy.tool_util.toolbox.base import (
     AbstractToolBox,
     ToolLike,
 )
+from galaxy.tools import get_safe_version_tool
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.util.tool_version import remove_version_from_guid
@@ -230,6 +231,14 @@ def _installed_tool_versions(toolbox: AbstractToolBox, tool_reference: dict[str,
     )
 
 
+def _workflow_safe_update(toolbox: AbstractToolBox, tool_id: str, tool_version: str) -> ToolLike | None:
+    """The installed workflow-safe update of ``tool_id`` at ``tool_version``, the one ``ToolModule`` runs."""
+    tool_like = toolbox.get_tool(tool_id, exact=True)
+    if tool_like is None:
+        return None
+    return get_safe_version_tool(toolbox, toolbox.materialize_tool(tool_like, reason="validation"), tool_version)
+
+
 def _find_workflow_tool(
     toolbox: AbstractToolBox, tool_reference: dict[str, Any], require_exact_tool_versions: bool, user: User | None
 ) -> ToolLike | None:
@@ -237,7 +246,9 @@ def _find_workflow_tool(
     tool_version = tool_reference["tool_version"]
     tool_uuid = tool_reference["tool_uuid"]
     if require_exact_tool_versions and tool_version and not tool_uuid:
-        return toolbox.get_tool_at_version(tool_id, tool_version)
+        return toolbox.get_tool_at_version(tool_id, tool_version) or _workflow_safe_update(
+            toolbox, tool_id, tool_version
+        )
     # Availability comes from has_tool: for exact requests the cached
     # toolbox's get_tool can resolve a different version of the tool.
     if toolbox.has_tool(

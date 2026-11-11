@@ -325,6 +325,37 @@ steps:
             workflow = self.workflow_populator.download_workflow(summary.workflow_id)
             assert workflow["steps"]["1"]["tool_version"] == "1.1.0"
 
+    def test_run_stored_workflow_with_workflow_safe_tool_version_update(self):
+        # A step still stored at __BUILD_LIST__ 1.0.0, as if saved before 1.1.0 was installed.
+        with self.dataset_populator.test_history() as history_id:
+            workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  build_list:
+    tool_id: __BUILD_LIST__
+    tool_version: "1.0.0"
+    in:
+      datasets_0|input: input1
+""")
+            stored_workflow = self.sa_session.get(StoredWorkflow, self._app.security.decode_id(workflow_id))
+            assert stored_workflow
+            (step,) = (step for step in stored_workflow.latest_workflow.steps if step.type == "tool")
+            step.tool_version = "1.0.0"
+            self.sa_session.commit()
+            hda = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
+            self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id,
+                history_id=history_id,
+                inputs={"0": self.dataset_populator.ds_entry(hda)},
+                request={"require_exact_tool_versions": True},
+            )
+            (job,) = self.dataset_populator.history_jobs_for_tool(history_id, "__BUILD_LIST__")
+            job_model = self.sa_session.get(Job, self._app.security.decode_id(job["id"]))
+            assert job_model
+            assert job_model.tool_version == "1.1.0"
+
     def test_run_workflow_with_unversioned_shed_tool_id_exact_version(self):
         self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
         with self.dataset_populator.test_history() as history_id:

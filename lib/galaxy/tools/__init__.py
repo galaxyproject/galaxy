@@ -131,7 +131,10 @@ from galaxy.tool_util.toolbox import (
     ToolLoadError,
     ToolSection,
 )
-from galaxy.tool_util.toolbox.base import ToolConfRepository
+from galaxy.tool_util.toolbox.base import (
+    ToolConfRepository,
+    ToolLike,
+)
 from galaxy.tool_util.toolbox.entry import (
     ToolPanelEntry,
     ToolShedRepositoryInfo,
@@ -497,6 +500,12 @@ def get_safe_version(tool: "Tool", requested_tool_version: str) -> str | None:
                 if safe_version.current_version >= parse_version(lineage_version) >= safe_version.min_version:
                     return lineage_version
     return None
+
+
+def get_safe_version_tool(toolbox: AbstractToolBox, tool: "Tool", requested_tool_version: str) -> ToolLike | None:
+    """The installed workflow-safe update of ``tool`` for ``requested_tool_version``, if any."""
+    safe_version = get_safe_version(tool, requested_tool_version)
+    return toolbox.get_tool(tool.id, tool_version=safe_version, exact=True) if safe_version else None
 
 
 class ToolNotFoundException(Exception):
