@@ -11,7 +11,7 @@ import {
     type WorkflowInvocationRequest,
     type WorkflowJobMetric,
 } from "@/api/invocations";
-import { fetchInvocations } from "@/components/Grid/configs/invocationsIndex";
+import { fetchInvocations } from "@/components/Workflow/Invocation/invocationsIndex";
 import { numTerminal } from "@/components/WorkflowInvocationState/util";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
