@@ -1354,6 +1354,24 @@ steps:
             # the job used the num_lines default of 1
             assert len(self.dataset_populator.get_history_dataset_content(history_id).splitlines()) == 1
 
+    @skip_without_tool("random_lines1")
+    def test_filled_default_messages_name_the_default(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  lines:
+    tool_id: random_lines1
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        filled = self._download_workflow(workflow_id, style="editor")["filled_defaults"]["0"]
+        assert filled["num_lines"] == "Default for 'Randomly select': '1'."
+        # an unconnected data input is left for the user to set at runtime
+        assert filled["input"] == "Default for 'from': a value set at runtime."
+
     @skip_without_tool("multiple_versions_changes")
     def test_filled_defaults_after_a_tool_version_change_need_corrections(self):
         # 0.05 isn't installed, so 0.2 runs, and its new floattest parameter has no stored value
