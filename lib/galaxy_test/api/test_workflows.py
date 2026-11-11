@@ -1373,6 +1373,24 @@ steps:
             request["allow_tool_state_corrections"] = True
             self.workflow_populator.invoke_workflow_raw(workflow_id, request, assert_ok=True)
 
+    @skip_without_tool("gx_select_dynamic_empty")
+    def test_missing_required_value_without_default_stays_upgrade_message(self):
+        # a required select with no options has no default to fill in
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  empty_select:
+    tool_id: gx_select_dynamic_empty
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        assert "parameter" in editor["upgrade_messages"]["0"]
+        assert "0" not in editor["filled_defaults"]
+
     def test_replaced_tool_state_values_are_upgrade_messages(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """

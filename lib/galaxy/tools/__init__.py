@@ -2726,7 +2726,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                                 if previous_value == value
                                 else f"{error} Using default: {_describe_default(value)}."
                             )
-                            # a required parameter that is still empty was not filled; it stays a problem
+                            # a required parameter whose default lookup gave None was not filled; it stays a problem
                             missing = input.name not in parent
                             if missing and filled_defaults is not None and (value is not None or input.optional):
                                 filled_defaults[prefixed_name] = message
