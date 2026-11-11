@@ -57,7 +57,7 @@ const INVOCATIONS = [
     },
 ];
 
-function mountTarget() {
+function mountTarget(props: Record<string, unknown> = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     useUserStore(pinia).currentUser = USER;
     useWorkflowStore(pinia).workflowsByInstanceId = {
@@ -65,6 +65,7 @@ function mountTarget() {
         "instance-2": { name: "Name of instance-2" } as StoredWorkflowDetailed,
     };
     return mount(InvocationList as object, {
+        props,
         global: {
             ...getLocalVue(),
             plugins: [pinia],
@@ -185,5 +186,44 @@ describe("InvocationList", () => {
         await flushPromises();
 
         expect(wrapper.find("[data-description='grid expanded row']").exists()).toBe(false);
+    });
+
+    describe("admin mode", () => {
+        const ADMIN_PROPS = {
+            admin: true,
+            headerMessage: "Invocations still being scheduled",
+            noDataMessage: "Nothing is being scheduled",
+        };
+
+        it("lists every user's invocations that are still being scheduled", async () => {
+            mountTarget(ADMIN_PROPS);
+            await flushPromises();
+
+            expect(lastQuery()).toMatchObject({ include_terminal: false });
+            expect(lastQuery().user_id).toBeUndefined();
+        });
+
+        it("offers no search or column filters, whose lookups only cover the admin's own items", async () => {
+            const wrapper = mountTarget(ADMIN_PROPS);
+            await flushPromises();
+
+            expect(rows(wrapper)).toHaveLength(2);
+            expect(wrapper.find("[data-description='filter text input']").exists()).toBe(false);
+            expect(wrapper.find("[data-description='grid column filter workflow_id']").exists()).toBe(false);
+            expect(wrapper.find("[data-description='grid column filter history_id']").exists()).toBe(false);
+        });
+
+        it("shows the header message for a while, and its own message when nothing is listed", async () => {
+            vi.mocked(fetchInvocations).mockResolvedValue([[], 0] as InvocationsPage);
+            const wrapper = mountTarget(ADMIN_PROPS);
+            await flushPromises();
+
+            expect(wrapper.text()).toContain("Invocations still being scheduled");
+            expect(wrapper.text()).toContain("Nothing is being scheduled");
+
+            // the alert counts down a second at a time
+            await vi.runAllTimersAsync();
+            expect(wrapper.text()).not.toContain("Invocations still being scheduled");
+        });
     });
 });

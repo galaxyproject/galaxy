@@ -3,7 +3,6 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import type { WorkflowInvocation } from "@/api/invocations";
-import invocationsGridConfig, { adminInvocationsGridConfig } from "@/components/Grid/configs/invocations";
 import invocationsBatchConfig from "@/components/Grid/configs/invocationsBatch";
 import invocationsHistoryGridConfig from "@/components/Grid/configs/invocationsHistory";
 import invocationsWorkflowGridConfig from "@/components/Grid/configs/invocationsWorkflow";
@@ -18,8 +17,6 @@ import GridList from "@/components/Grid/GridList.vue";
 
 interface Props {
     noInvocationsMessage?: string;
-    headerMessage?: string;
-    ownerGrid?: boolean;
     filteredFor?: { type: "History" | "StoredWorkflow"; id: string; name: string };
     invocationsList?: WorkflowInvocation[];
     hideHeading?: boolean;
@@ -27,8 +24,6 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     noInvocationsMessage: "No Workflow Invocations to display",
-    headerMessage: "",
-    ownerGrid: true,
     filteredFor: undefined,
     invocationsList: undefined,
     hideHeading: false,
@@ -67,7 +62,6 @@ const extraProps = computed(() => {
     const params: {
         workflow_id?: string;
         history_id?: string;
-        include_terminal?: boolean;
         user_id?: string;
     } = {};
     if (forStoredWorkflow.value) {
@@ -76,9 +70,7 @@ const extraProps = computed(() => {
     if (forHistory.value) {
         params.history_id = props.filteredFor?.id;
     }
-    if (!props.ownerGrid) {
-        params.include_terminal = false;
-    } else if (currentUser.value && !currentUser.value?.isAnonymous) {
+    if (currentUser.value && !currentUser.value?.isAnonymous) {
         params.user_id = currentUser.value?.id;
     }
     return params;
@@ -89,12 +81,8 @@ if (forBatch.value) {
     gridConfig = invocationsBatchConfig;
 } else if (forStoredWorkflow.value) {
     gridConfig = invocationsWorkflowGridConfig;
-} else if (forHistory.value) {
-    gridConfig = invocationsHistoryGridConfig;
-} else if (!props.ownerGrid) {
-    gridConfig = adminInvocationsGridConfig;
 } else {
-    gridConfig = invocationsGridConfig;
+    gridConfig = invocationsHistoryGridConfig;
 }
 
 function refreshTable() {
@@ -111,7 +99,6 @@ function refreshTable() {
             v-if="!currentUser?.isAnonymous && currentUser?.id"
             class="grid-invocation"
             :grid-config="gridConfig"
-            :grid-message="props.headerMessage"
             :no-data-message="effectiveNoInvocationsMessage"
             :extra-props="extraProps"
             :embedded="forStoredWorkflow || forHistory || forBatch">

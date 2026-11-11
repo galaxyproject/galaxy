@@ -42,6 +42,23 @@ import WorkflowInvocationState from "@/components/WorkflowInvocationState/Workfl
 
 const LIMIT = 25;
 const TITLE = "Workflow Invocations";
+/** Seconds the header message stays up */
+const HEADER_MESSAGE_SECONDS = 5;
+
+interface Props {
+    /** List every user's invocations that are still being scheduled, without search or column filters */
+    admin?: boolean;
+    /** Shown above the list when it opens, then hidden */
+    headerMessage?: string;
+    /** Shown when there are no invocations and no filters */
+    noDataMessage?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    admin: false,
+    headerMessage: "",
+    noDataMessage: "No Workflow Invocations to display",
+});
 
 const router = useRouter();
 const workflowStore = useWorkflowStore();
@@ -49,8 +66,9 @@ const { currentUser } = storeToRefs(useUserStore());
 
 const columns: (ColumnFilterField & { sortable?: boolean })[] = [
     { key: "expand", title: null },
-    { key: "workflow_id", title: "Workflow", filter: workflowColumnFilter },
-    { key: "history_id", title: "History", filter: historyColumnFilter },
+    // the admin list covers every user, but these lookups only cover the admin's own workflows and histories
+    { key: "workflow_id", title: "Workflow", filter: props.admin ? undefined : workflowColumnFilter },
+    { key: "history_id", title: "History", filter: props.admin ? undefined : historyColumnFilter },
     { key: "create_time", title: "Invoked", sortable: true },
     { key: "state", title: "State" },
     { key: "execute", title: "Rerun" },
@@ -112,7 +130,9 @@ async function load() {
             include_nested_invocations: false,
             search: invocationSearch(validatedFilterText()),
         };
-        if (isRegisteredUser(currentUser.value)) {
+        if (props.admin) {
+            query.include_terminal = false;
+        } else if (isRegisteredUser(currentUser.value)) {
             query.user_id = currentUser.value.id;
         }
         const [data, total] = await fetchInvocations(query);
@@ -173,6 +193,9 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
 <template>
     <div v-if="isRegisteredUser(currentUser)" id="invocations-grid" class="d-flex flex-column h-100">
         <GAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
+        <GAlert v-if="props.headerMessage" variant="success" fade :show="HEADER_MESSAGE_SECONDS">
+            {{ props.headerMessage }}
+        </GAlert>
         <div class="flex-shrink-0 mb-2">
             <BreadcrumbHeading :items="[{ title: TITLE }]">
                 <GButton
@@ -186,6 +209,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 </GButton>
             </BreadcrumbHeading>
             <FilterMenu
+                v-if="!props.admin"
                 v-model:filter-text="filterText"
                 v-model:show-advanced="showAdvanced"
                 :name="TITLE"
@@ -193,7 +217,10 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 :filter-class="invocationsFiltering"
                 :loading="initDataLoading || resultsLoading"
                 view="compact" />
-            <GridColumnFilterChips :chips="activeColumnFilters" @remove="removeColumnFilterOption" />
+            <GridColumnFilterChips
+                v-if="!props.admin"
+                :chips="activeColumnFilters"
+                @remove="removeColumnFilterOption" />
         </div>
 
         <div class="invocation-list-content flex-grow-1 overflow-auto">
@@ -206,7 +233,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                         <span v-localize>Nothing found with:</span>
                         <b>{{ filterText }}</b>
                     </span>
-                    <span v-else v-localize>No Workflow Invocations to display</span>
+                    <span v-else v-localize>{{ props.noDataMessage }}</span>
                 </GAlert>
                 <GAlert v-else-if="invalidFilters" variant="danger" show>
                     <Heading h4 inline size="sm" class="flex-grow-1 mb-2">Invalid filters in query:</Heading>
@@ -241,7 +268,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 :local-sorting="false"
                 :overlay-loading="resultsLoading"
                 @sort-changed="onSort">
-                <template v-slot:head(workflow_id)="{ field }">
+                <template v-if="!props.admin" v-slot:head(workflow_id)="{ field }">
                     <span>{{ field.label }}</span>
                     <GridColumnFilter
                         :filter="workflowColumnFilter"
@@ -250,7 +277,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                         :reached-limit="reachedColumnFilterLimit"
                         @update:selected="onColumnFilter(workflowColumnFilter, $event)" />
                 </template>
-                <template v-slot:head(history_id)="{ field }">
+                <template v-if="!props.admin" v-slot:head(history_id)="{ field }">
                     <span>{{ field.label }}</span>
                     <GridColumnFilter
                         :filter="historyColumnFilter"

@@ -31,10 +31,10 @@ import RoleForm from "@/components/admin/RoleForm.vue";
 import SanitizeAllow from "@/components/admin/SanitizeAllow.vue";
 import UserRolesGroupsForm from "@/components/admin/UserRolesGroupsForm.vue";
 import FormGeneric from "@/components/Form/FormGeneric.vue";
-import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridList from "@/components/Grid/GridList.vue";
 import RegisterForm from "@/components/Register/RegisterForm.vue";
 import Toolshed from "@/components/Toolshed/Index.vue";
+import InvocationList from "@/components/Workflow/Invocation/InvocationList.vue";
 import Admin from "@/entry/analysis/modules/Admin.vue";
 
 const adminRoutes: RouteRecordRaw[] = [
@@ -58,13 +58,13 @@ const adminRoutes: RouteRecordRaw[] = [
             },
             {
                 path: "invocations",
-                component: GridInvocation,
+                component: InvocationList,
                 props: () => {
                     return {
+                        admin: true,
                         headerMessage:
                             "Workflow invocations that are still being scheduled are displayed on this page.",
-                        noInvocationsMessage: "There are no scheduling workflow invocations to show currently.",
-                        ownerGrid: false,
+                        noDataMessage: "There are no scheduling workflow invocations to show currently.",
                     };
                 },
             },
