@@ -6,7 +6,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import Alert from "@/components/Alert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
-import GridInvocation from "@/components/Grid/GridInvocation.vue";
+import InvocationList from "@/components/Workflow/Invocation/InvocationList.vue";
 
 interface HistoryInvocationProps {
     historyId: string;
@@ -47,13 +47,13 @@ const breadcrumbItems = computed(() => [
 </script>
 
 <template>
-    <div>
+    <div class="d-flex flex-column h-100">
         <BreadcrumbHeading :items="breadcrumbItems" />
 
         <Alert v-if="loadError" :message="loadError" variant="error" />
-        <GridInvocation
+        <InvocationList
             v-else
-            hide-heading
-            :filtered-for="{ type: 'History', id: props.historyId, name: historyName }" />
+            :history-id="props.historyId"
+            :no-data-message="`No Workflow Invocations to display for ${historyName}`" />
     </div>
 </template>

@@ -4,6 +4,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useRouter } from "vue-router";
 
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import type * as InvocationFilters from "@/components/Grid/configs/invocationFilters";
@@ -61,8 +62,8 @@ function mountTarget(props: Record<string, unknown> = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     useUserStore(pinia).currentUser = USER;
     useWorkflowStore(pinia).workflowsByInstanceId = {
-        "instance-1": { name: "Name of instance-1" } as StoredWorkflowDetailed,
-        "instance-2": { name: "Name of instance-2" } as StoredWorkflowDetailed,
+        "instance-1": { id: "stored-1", name: "Name of instance-1" } as StoredWorkflowDetailed,
+        "instance-2": { id: "stored-2", name: "Name of instance-2" } as StoredWorkflowDetailed,
     };
     return mount(InvocationList as object, {
         props,
@@ -224,6 +225,61 @@ describe("InvocationList", () => {
             // the alert counts down a second at a time
             await vi.runAllTimersAsync();
             expect(wrapper.text()).not.toContain("Invocations still being scheduled");
+        });
+    });
+
+    describe("scoped to one history or workflow", () => {
+        const push = vi.fn();
+        const headers = (wrapper: ReturnType<typeof mountTarget>) => wrapper.findAll("thead th").map((th) => th.text());
+
+        beforeEach(() => {
+            push.mockReset();
+            vi.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
+        });
+
+        it("lists the user's invocations in a history, loading only workflow names", async () => {
+            const wrapper = mountTarget({ historyId: "history-1" });
+            await flushPromises();
+
+            expect(lastQuery()).toMatchObject({
+                history_id: "history-1",
+                user_id: USER.id,
+                include_nested_invocations: false,
+            });
+            expect(vi.mocked(fetchInvocations).mock.calls.at(-1)![1]).toEqual({ histories: false, workflows: true });
+            expect(headers(wrapper)).toEqual(["", "Workflow", "Invoked", "State", "Run"]);
+        });
+
+        it("lists the user's invocations of a workflow, loading only history names", async () => {
+            const wrapper = mountTarget({ workflowId: "stored-9" });
+            await flushPromises();
+
+            expect(lastQuery()).toMatchObject({ workflow_id: "stored-9", user_id: USER.id });
+            expect(lastQuery().include_nested_invocations).toBeUndefined();
+            expect(vi.mocked(fetchInvocations).mock.calls.at(-1)![1]).toEqual({ histories: true, workflows: false });
+            expect(headers(wrapper)).toEqual(["", "View", "History", "Invoked", "State", "Run"]);
+        });
+
+        it("offers no heading, search or column filters", async () => {
+            const wrapper = mountTarget({ historyId: "history-1" });
+            await flushPromises();
+
+            expect(wrapper.find("[data-description='grid action import invocation']").exists()).toBe(false);
+            expect(wrapper.find("[data-description='filter text input']").exists()).toBe(false);
+            expect(wrapper.find("[data-description='grid column filter workflow_id']").exists()).toBe(false);
+            expect(lastQuery().search).toBeUndefined();
+        });
+
+        it("runs the invocation's workflow afresh", async () => {
+            const historyList = mountTarget({ historyId: "history-1" });
+            await flushPromises();
+            await historyList.find("tbody tr[id^='g-table-row-'] button[title='Run']").trigger("click");
+            expect(push).toHaveBeenLastCalledWith("/workflows/run?id=stored-1");
+
+            const workflowList = mountTarget({ workflowId: "stored-9" });
+            await flushPromises();
+            await workflowList.find("tbody tr[id^='g-table-row-'] button[title='Run']").trigger("click");
+            expect(push).toHaveBeenLastCalledWith("/workflows/run?id=stored-9");
         });
     });
 });

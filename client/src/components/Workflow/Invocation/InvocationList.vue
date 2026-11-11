@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faPlus, faRedo, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
+import { faEye, faPlay, faPlus, faRedo, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
@@ -52,26 +52,40 @@ interface Props {
     headerMessage?: string;
     /** Shown when there are no invocations and no filters */
     noDataMessage?: string;
+    /** List only the user's invocations in this history */
+    historyId?: string;
+    /** List only the user's invocations of this stored workflow */
+    workflowId?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     admin: false,
     headerMessage: "",
     noDataMessage: "No Workflow Invocations to display",
+    historyId: undefined,
+    workflowId: undefined,
 });
 
 const router = useRouter();
 const workflowStore = useWorkflowStore();
 const { currentUser } = storeToRefs(useUserStore());
 
+/** Scoped to one history or workflow: no heading, search or column filters, and Run in place of Rerun */
+const scoped = !!(props.historyId || props.workflowId);
+// the admin list covers every user, but the filter lookups only cover the admin's own workflows and histories
+const filterable = !props.admin && !scoped;
+
 const columns: (ColumnFilterField & { sortable?: boolean })[] = [
     { key: "expand", title: null },
-    // the admin list covers every user, but these lookups only cover the admin's own workflows and histories
-    { key: "workflow_id", title: "Workflow", filter: props.admin ? undefined : workflowColumnFilter },
-    { key: "history_id", title: "History", filter: props.admin ? undefined : historyColumnFilter },
+    props.workflowId
+        ? { key: "view", title: "View" }
+        : { key: "workflow_id", title: "Workflow", filter: filterable ? workflowColumnFilter : undefined },
+    ...(props.historyId
+        ? []
+        : [{ key: "history_id", title: "History", filter: filterable ? historyColumnFilter : undefined }]),
     { key: "create_time", title: "Invoked", sortable: true },
     { key: "state", title: "State" },
-    { key: "execute", title: "Rerun" },
+    { key: "execute", title: scoped ? "Run" : "Rerun" },
 ];
 const fields: TableField[] = columns.map(({ key, title, sortable }) => ({ key, label: title ?? "", sortable }));
 
@@ -127,15 +141,22 @@ async function load() {
             offset: LIMIT * (currentPage.value - 1),
             sort_by: sortBy.value as InvocationsQuery["sort_by"],
             sort_desc: sortDesc.value,
-            include_nested_invocations: false,
-            search: invocationSearch(validatedFilterText()),
+            // a workflow's list has always included its subworkflow invocations
+            include_nested_invocations: props.workflowId ? undefined : false,
+            search: filterable ? invocationSearch(validatedFilterText()) : undefined,
+            history_id: props.historyId,
+            workflow_id: props.workflowId,
         };
         if (props.admin) {
             query.include_terminal = false;
         } else if (isRegisteredUser(currentUser.value)) {
             query.user_id = currentUser.value.id;
         }
-        const [data, total] = await fetchInvocations(query);
+        // a scoped list already knows its history or workflow
+        const [data, total] = await fetchInvocations(query, {
+            histories: !props.historyId,
+            workflows: !props.workflowId,
+        });
         if (requestId === latestRequest) {
             collapseAll();
             invocations.value = data;
@@ -178,11 +199,17 @@ function collapseAll() {
     expandedIds.value = new Set();
 }
 
-function canRerun(invocation: WorkflowInvocation) {
+function canRunAgain(invocation: WorkflowInvocation) {
     const workflow = workflowStore.getStoredWorkflowByInstanceId(
         invocation.workflow_id,
     ) as unknown as StoredWorkflowDetailed;
     return !workflow?.deleted;
+}
+
+/** Runs the invocation's workflow afresh; a workflow's list already knows its stored workflow */
+function runWorkflow(invocation: WorkflowInvocation) {
+    const storedWorkflowId = props.workflowId ?? workflowStore.getStoredWorkflowIdByInstanceId(invocation.workflow_id);
+    router.push(`/workflows/run?id=${storedWorkflowId}`);
 }
 
 onMounted(load);
@@ -196,7 +223,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
         <GAlert v-if="props.headerMessage" variant="success" fade :show="HEADER_MESSAGE_SECONDS">
             {{ props.headerMessage }}
         </GAlert>
-        <div class="flex-shrink-0 mb-2">
+        <div v-if="!scoped" class="flex-shrink-0 mb-2">
             <BreadcrumbHeading :items="[{ title: TITLE }]">
                 <GButton
                     size="small"
@@ -209,7 +236,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 </GButton>
             </BreadcrumbHeading>
             <FilterMenu
-                v-if="!props.admin"
+                v-if="filterable"
                 v-model:filter-text="filterText"
                 v-model:show-advanced="showAdvanced"
                 :name="TITLE"
@@ -217,10 +244,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 :filter-class="invocationsFiltering"
                 :loading="initDataLoading || resultsLoading"
                 view="compact" />
-            <GridColumnFilterChips
-                v-if="!props.admin"
-                :chips="activeColumnFilters"
-                @remove="removeColumnFilterOption" />
+            <GridColumnFilterChips v-if="filterable" :chips="activeColumnFilters" @remove="removeColumnFilterOption" />
         </div>
 
         <div class="invocation-list-content flex-grow-1 overflow-auto">
@@ -268,7 +292,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 :local-sorting="false"
                 :overlay-loading="resultsLoading"
                 @sort-changed="onSort">
-                <template v-if="!props.admin" v-slot:head(workflow_id)="{ field }">
+                <template v-if="filterable" v-slot:head(workflow_id)="{ field }">
                     <span>{{ field.label }}</span>
                     <GridColumnFilter
                         :filter="workflowColumnFilter"
@@ -277,7 +301,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                         :reached-limit="reachedColumnFilterLimit"
                         @update:selected="onColumnFilter(workflowColumnFilter, $event)" />
                 </template>
-                <template v-if="!props.admin" v-slot:head(history_id)="{ field }">
+                <template v-if="filterable" v-slot:head(history_id)="{ field }">
                     <span>{{ field.label }}</span>
                     <GridColumnFilter
                         :filter="historyColumnFilter"
@@ -291,6 +315,14 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                     <GridExpand
                         :details-showing="expandedIds.has(item.id)"
                         @show-details="onShowDetails(item, toggleDetails)" />
+                </template>
+                <template v-slot:cell(view)="{ item }">
+                    <GButton
+                        color="blue"
+                        :title="localize('View')"
+                        @click="router.push(`/workflows/invocations/${item.id}`)">
+                        <FontAwesomeIcon :icon="faEye" />
+                    </GButton>
                 </template>
                 <template v-slot:cell(workflow_id)="{ item }">
                     <GridLink
@@ -308,14 +340,17 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                     <HelpText :uri="`galaxy.invocations.states.${item.state}`" :text="item.state" />
                 </template>
                 <template v-slot:cell(execute)="{ item }">
+                    <FontAwesomeIcon v-if="!canRunAgain(item)" :icon="faShieldAlt" />
+                    <GButton v-else-if="scoped" color="blue" :title="localize('Run')" @click="runWorkflow(item)">
+                        <FontAwesomeIcon :icon="faPlay" />
+                    </GButton>
                     <GButton
-                        v-if="canRerun(item)"
+                        v-else
                         color="blue"
                         :title="localize('Rerun')"
                         @click="router.push(`/workflows/rerun?invocation_id=${item.id}`)">
                         <FontAwesomeIcon :icon="faRedo" />
                     </GButton>
-                    <FontAwesomeIcon v-else :icon="faShieldAlt" />
                 </template>
 
                 <template v-slot:row-details="{ item }">
