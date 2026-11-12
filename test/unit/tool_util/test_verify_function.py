@@ -143,3 +143,10 @@ def test_corrupt_compressed_output_is_an_assertion_error():
     truncated = gzip.compress(GZ_CONTENT)[:-8]
     with pytest.raises(AssertionError, match="could not be decompressed"):
         verify("out", truncated, attributes={"checksum": "md5$" + "0" * 32, "decompress": True})
+
+
+def test_corrupt_compressed_output_with_assertions_is_an_assertion_error():
+    truncated = gzip.compress(GZ_CONTENT)[:-8]
+    assert_list = [{"tag": "has_text", "attributes": {"text": "ACGT"}, "children": []}]
+    with pytest.raises(AssertionError, match="out could not be decompressed"):
+        verify("out", truncated, attributes={"assert_list": assert_list, "decompress": True})

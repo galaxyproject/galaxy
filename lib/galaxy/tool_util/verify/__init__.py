@@ -98,15 +98,7 @@ def verify(
                 f.write(file_content)
             return local_name
 
-    # Check assertions...
     assertions = attributes.get("assert_list", None)
-    if assertions is not None:
-        try:
-            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress", False))
-        except AssertionError as err:
-            errmsg = f"{item_label} different than expected\n"
-            errmsg += unicodify(err)
-            raise AssertionError(errmsg)
 
     # Verify checksum attributes...
     # works with older Galaxy style md5=<expected_sum> or cwltest
@@ -123,15 +115,27 @@ def verify(
         )  # redundant with the test in the elif, but cannot use := until we drop support for Python 3.7
         expected_checksum_type, expected_checksum = checksum_value.split("$", 1)
 
-    if expected_checksum_type:
-        # decompress applies to checksums too, like it does to assertions and compare
-        decompress = attributes.get("decompress", False)
+    # decompress applies to assertions, checksums and compare
+    decompress = attributes.get("decompress", False)
+    content = output_content
+    if decompress and (assertions is not None or expected_checksum_type):
         try:
-            checksum_content = decompress_bytes(output_content) if decompress else output_content
+            content = decompress_bytes(output_content)
         except Exception as err:
-            raise AssertionError(f"{item_label} could not be decompressed to check its checksum: {unicodify(err)}")
+            raise AssertionError(f"{item_label} could not be decompressed: {unicodify(err)}")
+
+    # Check assertions...
+    if assertions is not None:
         try:
-            _verify_checksum(checksum_content, expected_checksum_type, expected_checksum)
+            verify_assertions(content, assertions)
+        except AssertionError as err:
+            errmsg = f"{item_label} different than expected\n"
+            errmsg += unicodify(err)
+            raise AssertionError(errmsg)
+
+    if expected_checksum_type:
+        try:
+            _verify_checksum(content, expected_checksum_type, expected_checksum)
         except AssertionError as err:
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)
