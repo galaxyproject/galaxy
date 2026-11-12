@@ -49,10 +49,11 @@ function isToolRelativePath(src) {
 }
 
 function decodePath(src) {
+    const path = src.split(/[?#]/)[0];
     try {
-        return decodeURIComponent(src);
+        return decodeURIComponent(path);
     } catch {
-        return src;
+        return path;
     }
 }
 

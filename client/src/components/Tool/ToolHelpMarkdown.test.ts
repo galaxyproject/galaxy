@@ -51,7 +51,7 @@ describe("ToolHelpMarkdown", () => {
             propsData: {
                 content: [
                     "![a](static/images/a.png)",
-                    "![b](b%20c.png)",
+                    "![b](b%20c.png?raw=true#top)",
                     "![c](https://example.org/c.png)",
                     "![d](/static/d.png)",
                     "![e](gxstatic://images/e.png)",

@@ -1049,9 +1049,9 @@ tag | details
 
 Images shipped with the tool are referenced by paths relative to the tool's directory, in either help format,
 e.g. ``.. image:: static/images/my_figure.png`` or ``![My figure](static/images/my_figure.png)``.
-A bare file name such as ``my_figure.png`` is looked up in ``static/images/`` first. PNG, JPEG, GIF and other
-raster images are served; SVG images are not. Galaxy releases before 27.0 only display such images for RST help
-of tools installed from the Tool Shed.
+A bare file name such as ``my_figure.png`` is looked up in ``static/images/`` first. Use PNG, JPEG, GIF or another
+raster format; SVG images are only displayed in RST help of tools installed from the Tool Shed. Galaxy releases
+before 27.0 only display such images for RST help of tools installed from the Tool Shed.
 
 ### Examples
 

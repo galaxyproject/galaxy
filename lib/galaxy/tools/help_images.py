@@ -25,6 +25,8 @@ def find_tool_file(base_dir: StrPath, file_path: str) -> str | None:
 
 def find_tool_asset(base_dir: str, asset_path: str) -> str | None:
     """Find ``asset_path`` under ``base_dir``, trying ``static/images/`` first as Tool Shed help does."""
+    # safe_contains resolves symlinks in the candidate, so compare against the resolved base.
+    base_dir = os.path.realpath(base_dir)
     candidates = []
     if STATIC_IMAGES not in asset_path:
         candidates.append(os.path.join(base_dir, STATIC_IMAGES, asset_path))

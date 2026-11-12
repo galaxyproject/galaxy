@@ -631,14 +631,13 @@ class ToolsService(ServiceBase):
         self, trans: ProvidesUserContext, tool_id: str, image_path: str, tool_version: str | None = None
     ) -> tuple[str, str]:
         """Return the file and media type of an image the tool's help references by a relative path."""
-        tool = self._get_tool(trans, tool_id, tool_version, user=trans.user)
         media_type = help_image_media_type(image_path)
         if media_type:
-            materialized_tool = trans.app.toolbox.materialize_tool(tool, reason="detail")
-            # A Tool Shed tool's images may sit at the root of its repository rather than beside the tool.
-            base_dirs = dict.fromkeys(
-                os.path.abspath(d) for d in (materialized_tool.tool_dir, materialized_tool._repository_dir) if d
+            tool = self._get_materialized_tool(
+                trans, tool_id, tool_version, user=trans.user, materialization_reason="detail"
             )
+            # A Tool Shed tool's images may sit at the root of its repository rather than beside the tool.
+            base_dirs = dict.fromkeys(os.path.realpath(d) for d in (tool.tool_dir, tool._repository_dir) if d)
             for base_dir in base_dirs:
                 if found_path := find_tool_asset(base_dir, image_path):
                     return found_path, media_type
