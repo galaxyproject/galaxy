@@ -199,6 +199,12 @@ interface Props {
     primaryKey?: string;
 
     /**
+     * Shows a row's details when it returns true, instead of the table tracking them by row index.
+     * With this set, `toggleDetails` has no effect: expand or collapse a row by changing the state this function checks.
+     */
+    rowDetailsShown?: (item: T) => boolean;
+
+    /**
      * Whether to show striped rows
      * @default true
      */
@@ -309,6 +315,7 @@ const props = withDefaults(defineProps<Props>(), {
     overlayLoading: false,
     perPage: undefined,
     primaryKey: "",
+    rowDetailsShown: undefined,
     selectable: false,
     selectCheckboxTitle: "Select for bulk actions",
     selectedItems: () => [],
@@ -616,8 +623,8 @@ function onRowSelect(item: T, index: number) {
 /**
  * Check if row details are expanded
  */
-function isRowExpanded(index: number) {
-    return expandedRows.value.has(index);
+function isRowExpanded(item: T, index: number) {
+    return props.rowDetailsShown ? props.rowDetailsShown(item) : expandedRows.value.has(index);
 }
 
 /**
@@ -953,7 +960,7 @@ defineExpose({
 
                             <!-- Row details expansion -->
                             <tr
-                                v-if="isRowExpanded(getGlobalIndex(paginatedIndex))"
+                                v-if="isRowExpanded(item, getGlobalIndex(paginatedIndex))"
                                 :key="`details-${getGlobalIndex(paginatedIndex)}`"
                                 class="g-table-details-row">
                                 <td :colspan="props.fields.length + (selectable ? 1 : 0) + (props.actions ? 1 : 0)">
