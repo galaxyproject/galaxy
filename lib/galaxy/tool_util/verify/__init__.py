@@ -47,15 +47,15 @@ from galaxy.tool_util.parser.util import (
 )
 from galaxy.tool_util.parser.yaml import to_test_assert_list
 from galaxy.util import unicodify
-from galaxy.util.compression_utils import get_fileobj
+from galaxy.util.compression_utils import (
+    decompress_bytes,
+    get_fileobj,
+)
 from ._types import (
     ExpandedToolInputsJsonified,
     ToolTestDescriptionDict,
 )
-from .asserts import (
-    decompress_bytes,
-    verify_assertions,
-)
+from .asserts import verify_assertions
 from .test_data import TestDataResolver
 
 if TYPE_CHECKING:
@@ -124,13 +124,19 @@ def verify(
         expected_checksum_type, expected_checksum = checksum_value.split("$", 1)
 
     if expected_checksum_type:
+        # decompress applies to checksums too, like it does to assertions and compare
+        decompress = attributes.get("decompress", False)
         try:
-            # decompress applies to checksums too, like it does to assertions and compare
-            checksum_content = decompress_bytes(output_content) if attributes.get("decompress") else output_content
+            checksum_content = decompress_bytes(output_content) if decompress else output_content
+        except Exception as err:
+            raise AssertionError(f"{item_label} could not be decompressed to check its checksum: {unicodify(err)}")
+        try:
             _verify_checksum(checksum_content, expected_checksum_type, expected_checksum)
         except AssertionError as err:
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)
+            if decompress:
+                errmsg += " (checksum of the decompressed content, because decompress is set)"
             raise AssertionError(errmsg)
 
     # expected object might be None, so don't pull unless available

@@ -128,3 +128,27 @@ def test_checksum_with_decompress_on_uncompressed_output():
 
     attributes = {"checksum": f"md5${hashlib.md5(GZ_CONTENT).hexdigest()}", "decompress": True}
     verify("out", GZ_CONTENT, attributes=attributes)
+
+
+def test_md5_honors_decompress():
+    import gzip
+    import hashlib
+
+    compressed = gzip.compress(GZ_CONTENT)
+    verify("out", compressed, attributes={"md5": hashlib.md5(GZ_CONTENT).hexdigest(), "decompress": True})
+
+
+def test_checksum_mismatch_says_it_is_over_decompressed_content():
+    import gzip
+
+    compressed = gzip.compress(GZ_CONTENT)
+    with pytest.raises(AssertionError, match="decompressed content"):
+        verify("out", compressed, attributes={"checksum": "md5$" + "0" * 32, "decompress": True})
+
+
+def test_corrupt_compressed_output_is_an_assertion_error():
+    import gzip
+
+    truncated = gzip.compress(GZ_CONTENT)[:-8]
+    with pytest.raises(AssertionError, match="could not be decompressed"):
+        verify("out", truncated, attributes={"checksum": "md5$" + "0" * 32, "decompress": True})

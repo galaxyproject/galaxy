@@ -24262,7 +24262,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
              */
             decompress?: boolean | null;
             /**
@@ -24340,7 +24340,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
              */
             decompress?: boolean | null;
             /**
@@ -24474,7 +24474,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
              */
             decompress?: boolean | null;
             /**
@@ -24552,7 +24552,7 @@ export interface components {
             compare?: components["schemas"]["OutputCompareType"] | null;
             /**
              * Decompress
-             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents`, to `md5` and `checksum`, and to `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
              */
             decompress?: boolean | null;
             /**

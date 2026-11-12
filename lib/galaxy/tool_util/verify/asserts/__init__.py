@@ -4,7 +4,6 @@ from inspect import (
     getfullargspec,
     getmembers,
 )
-from tempfile import NamedTemporaryFile
 from typing import (
     Callable,
     Dict,
@@ -12,7 +11,7 @@ from typing import (
 )
 
 from galaxy.util import unicodify
-from galaxy.util.compression_utils import get_fileobj
+from galaxy.util.compression_utils import decompress_bytes
 
 log = logging.getLogger(__name__)
 
@@ -39,15 +38,6 @@ for assertion_module_name in assertion_module_names:
 # source file "test/base/asserts/<MODULE_NAME>.py" and add
 # <MODULE_NAME> to the list of assertion module names defined above.
 assertion_functions: Dict[str, Callable] = {k: v[1] for (k, v) in assertion_module_and_functions.items()}
-
-
-def decompress_bytes(data: bytes) -> bytes:
-    """Return ``data`` decompressed if it is in a compressed format Galaxy recognizes, else unchanged."""
-    with NamedTemporaryFile() as tmpfh:
-        tmpfh.write(data)
-        tmpfh.flush()
-        with get_fileobj(tmpfh.name, mode="rb", compressed_formats=None) as fh:
-            return fh.read()
 
 
 def verify_assertions(data: bytes, assertion_description_list: list, decompress: bool = False):

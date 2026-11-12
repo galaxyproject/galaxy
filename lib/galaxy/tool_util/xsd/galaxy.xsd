@@ -2068,8 +2068,8 @@ it may be inconvenient to upload the entire file and this can be used instead.
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 If this attribute is true then try to decompress files if needed. This applies to
-test assertions expressed with ``assert_contents`` or ``compare`` set to anything
-but ``sim_size``.
+test assertions expressed with ``assert_contents``, to ``md5`` and ``checksum``, and to
+``compare`` set to anything but ``sim_size``.
 This flag is useful for testing compressed outputs that are non-deterministic
 despite having deterministic decompressed contents. By default, only files compressed
 with bz2, gzip and zip will be automatically decompressed.
