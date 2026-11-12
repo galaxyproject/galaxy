@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
-import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
+import type { NewUploadItem, UploadItem } from "@/composables/upload/uploadItemTypes";
 
 import { COULD_NOT_CHECK_IMPORT, INTERRUPTED_IMPORT, useUploadTaskMonitorStore } from "./uploadTaskMonitorStore";
 
@@ -37,6 +37,19 @@ function tasksEndIn(state: string, reason = "") {
         ),
     );
     return checked;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** An item as an earlier page stored it, created before this page loaded. */
+function storedItem(overrides: Record<string, unknown>): UploadItem {
+    return {
+        ...linkItem(),
+        datasetIds: [],
+        createdAt: Date.now() - 60 * 1000,
+        progress: 100,
+        ...overrides,
+    } as UploadItem;
 }
 
 let uploadState: ReturnType<typeof useUploadState>;
@@ -107,15 +120,17 @@ describe("useUploadTaskMonitorStore", () => {
         expect(itemOf(id).error).toBe(COULD_NOT_CHECK_IMPORT);
     });
 
-    it("fails an import that a previous page left without a task", () => {
-        const id = uploadState.addUploadItem(linkItem());
-        const other = uploadState.addUploadItem({
-            ...linkItem(),
-            uploadMode: "paste-content",
-            content: "x",
-        } as NewUploadItem);
+    it("fails an import that a previous page left without a task, once the user's upload state has loaded", async () => {
         useUploadTaskMonitorStore();
-        expect(itemOf(id)).toMatchObject({ status: "error", error: INTERRUPTED_IMPORT });
-        expect(itemOf(other).status).toBe("queued");
+        const startingNow = uploadState.addUploadItem(linkItem());
+        // The user's stored uploads arrive after the store exists, when the hashed user id is known.
+        uploadState.activeItems.value = [
+            ...uploadState.activeItems.value,
+            storedItem({ id: "left", status: "queued", progress: 100 }),
+            storedItem({ id: "pasted", uploadMode: "paste-content", content: "x", status: "queued" }),
+        ];
+        await vi.waitFor(() => expect(itemOf("left")).toMatchObject({ status: "error", error: INTERRUPTED_IMPORT }));
+        expect(itemOf("pasted").status).toBe("queued");
+        expect(itemOf(startingNow).status).toBe("queued");
     });
 });

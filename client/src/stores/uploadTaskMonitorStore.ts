@@ -8,6 +8,8 @@ import type { GalaxyLinkUploadItem, UploadItem } from "@/composables/upload/uplo
 const POLL_DELAY = 3000;
 // A short network problem should not fail an import that keeps running on the server.
 const MAX_STATUS_FAILURES = 3;
+// Imports this page starts are created after this, so only an earlier page's can be left without a task.
+const PAGE_LOADED_AT = Date.now();
 
 export const COULD_NOT_IMPORT =
     "The link could not be imported. It may have expired, or the other Galaxy may not have finished preparing it.";
@@ -28,12 +30,12 @@ export const useUploadTaskMonitorStore = defineStore("uploadTaskMonitor", () => 
     const uploadState = useUploadState();
     const followed = new Map<string, EffectScope>();
 
-    // Items still waiting for their start request now were started by a page that is gone.
-    for (const item of uploadState.activeItems.value) {
-        if (isTaskImport(item) && item.status === "queued" && !item.taskId) {
-            uploadState.setError(item.id, INTERRUPTED_IMPORT);
-        }
-    }
+    // Waiting for a start request that an earlier page sent; the user's uploads may load from storage after this store.
+    const interrupted = computed(() =>
+        uploadState.activeItems.value.filter(
+            (item) => isTaskImport(item) && item.status === "queued" && !item.taskId && item.createdAt < PAGE_LOADED_AT,
+        ),
+    );
 
     const running = computed(() =>
         uploadState.activeItems.value.flatMap((item) =>
@@ -63,6 +65,16 @@ export const useUploadTaskMonitorStore = defineStore("uploadTaskMonitor", () => 
         });
         followed.set(uploadId, scope);
     }
+
+    watch(
+        interrupted,
+        (items) => {
+            for (const item of items) {
+                uploadState.setError(item.id, INTERRUPTED_IMPORT);
+            }
+        },
+        { immediate: true },
+    );
 
     watch(
         running,
