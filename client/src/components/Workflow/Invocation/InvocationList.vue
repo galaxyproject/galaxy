@@ -12,7 +12,7 @@ import type { TableField } from "@/components/Common/GTable.types";
 import { type ColumnFilterField, useColumnFilters } from "@/components/Grid/useColumnFilters";
 import {
     historyColumnFilter,
-    invocationSearch,
+    invocationFilterParams,
     invocationsFiltering,
     MAX_COLUMN_FILTER_PICKS,
     workflowColumnFilter,
@@ -164,7 +164,7 @@ async function load() {
             sort_desc: sortDesc.value,
             // a workflow's list has always included its subworkflow invocations
             include_nested_invocations: props.workflowId ? undefined : false,
-            search: filterable ? invocationSearch(validatedFilterText()) : undefined,
+            ...(filterable ? invocationFilterParams(validatedFilterText()) : {}),
             history_id: props.historyId,
             workflow_id: props.workflowId,
         };
@@ -273,7 +273,33 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 :placeholder="`search ${TITLE.toLowerCase()}`"
                 :filter-class="invocationsFiltering"
                 :loading="initDataLoading || resultsLoading"
-                view="compact" />
+                has-help
+                view="compact">
+                <template v-slot:menu-help-text>
+                    <p>Text without a key matches workflow names. These filters can also be used:</p>
+                    <dl>
+                        <dt><code>workflow:____</code>, <code>history:____</code></dt>
+                        <dd>
+                            Workflow or history names containing the text. Quote it for an exact name, e.g.
+                            <code>workflow:'RNA-seq'</code>.
+                        </dd>
+                        <dt><code>state:____</code></dt>
+                        <dd>
+                            Invocations in one state, e.g. <code>state:failed</code> or <code>state:scheduled</code>.
+                        </dd>
+                        <dt><code>create_time&gt;____</code>, <code>create_time&lt;____</code></dt>
+                        <dd>
+                            Invocations invoked after or before a date, e.g. <code>create_time&gt;2026-01-31</code>.
+                        </dd>
+                    </dl>
+                    <GAlert variant="warning">
+                        <strong>Note:</strong>
+                        A <code>scheduled</code> invocation can still have jobs running, so it is listed as active.
+                        Invocations run before Galaxy 26.0 may show as <code>scheduled</code> even if all their jobs
+                        have finished.
+                    </GAlert>
+                </template>
+            </FilterMenu>
             <GridColumnFilterChips v-if="filterable" :chips="activeColumnFilters" @remove="removeColumnFilterOption" />
         </div>
 
