@@ -82,6 +82,7 @@ def test_help_image_prefers_tool_dir(tool_dir, repo_dir):
     [
         ("a.JPG", "image/jpeg"),
         ("a.gif", "image/gif"),
+        ("a.svg", "image/svg+xml"),
         ("script.py", None),
         ("noextension", None),
     ],

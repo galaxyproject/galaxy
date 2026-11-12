@@ -120,6 +120,11 @@ ICON_CACHE_MAX_AGE = 86400  # 1 day
 ICON_CACHE_CONTROL = f"public, max-age={ICON_CACHE_MAX_AGE}"
 # Private: the tool may be access controlled.
 HELP_IMAGE_CACHE_CONTROL = "private, max-age=3600"
+# SVG can carry script; keep it from running if a help image is opened directly.
+HELP_IMAGE_SECURITY_HEADERS = {
+    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+    "X-Content-Type-Options": "nosniff",
+}
 
 
 class FormDataApiRoute(APIContentTypeRoute):
@@ -287,7 +292,9 @@ class FetchTools:
     ):
         """Return an image shipped with a tool that its help references by a relative path."""
         image_path, media_type = self.service.get_tool_help_image(trans, tool_id, path, tool_version)
-        return cached_file_response(request, image_path, media_type, HELP_IMAGE_CACHE_CONTROL)
+        response = cached_file_response(request, image_path, media_type, HELP_IMAGE_CACHE_CONTROL)
+        response.headers.update(HELP_IMAGE_SECURITY_HEADERS)
+        return response
 
     @router.post("/api/file_landings", public=True, allow_cors=True)
     def create_file_landing(

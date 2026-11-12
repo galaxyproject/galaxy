@@ -295,7 +295,13 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert response.headers["Content-Type"] == "image/png"
             with open(expected_file, "rb") as fh:
                 assert response.content == fh.read()
-        for path in ["missing.png", "help_image.svg", "help_images_markdown.xml", "../../../../test-data/im3_a.png"]:
+            assert "sandbox" in response.headers["Content-Security-Policy"]
+            assert response.headers["X-Content-Type-Options"] == "nosniff"
+        response = self._get_tool_help_image("help_images_markdown", "help_image.svg", tool_version="1.0.0")
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Content-Type"].startswith("image/svg+xml")
+        assert "sandbox" in response.headers["Content-Security-Policy"]
+        for path in ["missing.png", "help_images_markdown.xml", "../../../../test-data/im3_a.png"]:
             response = self._get_tool_help_image("help_images_markdown", path)
             self._assert_status_code_is(response, 404)
         response = self._get_tool_help_image("not_a_tool", "help_image.png")

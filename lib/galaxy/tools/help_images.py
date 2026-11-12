@@ -10,8 +10,6 @@ from galaxy.util.path import (
 )
 
 STATIC_IMAGES = "static/images"
-# SVG can carry script, which would run on Galaxy's origin if the image were opened directly.
-UNSERVED_IMAGE_TYPES = {"image/svg+xml"}
 
 
 def find_tool_file(base_dir: StrPath, file_path: str) -> str | None:
@@ -47,6 +45,6 @@ def find_help_image(base_dirs: Iterable[StrPath | None], image_path: str) -> str
 def help_image_media_type(path: str) -> str | None:
     """Media type to serve ``path`` as a help image, or ``None`` if it isn't a servable image."""
     media_type, _ = mimetypes.guess_type(path)
-    if media_type and media_type.startswith("image/") and media_type not in UNSERVED_IMAGE_TYPES:
+    if media_type and media_type.startswith("image/"):
         return media_type
     return None
