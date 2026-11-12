@@ -9,6 +9,7 @@ import localize from "@/utils/localization";
 import type { FieldFilter, FilterOption } from "./configs/types";
 import type { ColumnFilterChip } from "./useColumnFilters";
 
+import GBadge from "@/components/BaseComponents/GBadge.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
@@ -72,20 +73,21 @@ onMounted(fit);
         :class="{ 'column-filter-chips-inline': inline }"
         data-description="grid active column filters">
         <div ref="line" class="column-filter-chips-line d-flex align-items-center">
-            <GButton
+            <GBadge
                 v-for="chip in shownChips"
                 :key="chipKey(chip)"
                 class="column-filter-chip"
-                size="small"
-                outline
-                color="blue"
+                button
+                pill
+                variant="info"
                 :title="`${localize('Remove this filter')}: ${chipLabel(chip)}`"
                 :data-description="`grid active column filter ${chip.filter.key}`"
                 :data-option-id="chip.option.id"
                 @click="emit('remove', chip.filter, chip.option)">
-                <span class="column-filter-chip-name">{{ chipLabel(chip) }}</span>
-                <FontAwesomeIcon :icon="faTimes" class="ml-1" />
-            </GButton>
+                <span class="column-filter-chip-key">{{ `${chip.title}: ` }}</span>
+                <span class="column-filter-chip-name">{{ chip.option.name }}</span>
+                <FontAwesomeIcon :icon="faTimes" class="column-filter-chip-remove" />
+            </GBadge>
         </div>
         <GDropdown
             v-if="hiddenChips.length > 0"
@@ -127,6 +129,35 @@ onMounted(fit);
     gap: 0.25rem;
 }
 
+.column-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    max-width: 16rem;
+    padding: 0.35em 0.6em 0.35em 0.75em;
+
+    &.g-badge:hover {
+        text-decoration: none;
+    }
+
+    .column-filter-chip-key {
+        flex: none;
+        font-weight: normal;
+        opacity: 0.8;
+    }
+
+    .column-filter-chip-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
+
+    .column-filter-chip-remove {
+        flex: none;
+        font-size: 0.85em;
+    }
+}
+
 .column-filter-chips-inline {
     gap: 0.25rem;
     min-width: 0;
@@ -141,20 +172,12 @@ onMounted(fit);
 
     .column-filter-chip {
         flex: none;
-        max-width: 16rem;
 
         // a lone chip shrinks rather than overflowing
         &:only-child {
             flex: 0 1 auto;
             min-width: 0;
         }
-    }
-
-    .column-filter-chip-name {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        min-width: 0;
     }
 }
 
