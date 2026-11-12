@@ -394,6 +394,44 @@ describe("useUploadState", () => {
         });
     });
 
+    describe("markTaskStarted", () => {
+        function makeLinkItem(): NewUploadItem {
+            return {
+                uploadMode: "galaxy-link",
+                name: "reads.bed",
+                sourceHost: "usegalaxy.eu",
+                size: 0,
+                targetHistoryId: "hist_1",
+                dbkey: "?",
+                extension: "auto",
+                spaceToTab: false,
+                toPosixLines: false,
+                autoDecompress: false,
+                deferred: false,
+            };
+        }
+
+        it("keeps the task id and counts the item as active and no longer cancellable", () => {
+            const id = state.addUploadItem(makeLinkItem());
+            state.markTaskStarted(id, "task1");
+
+            const item = state.activeItems.value.find((i) => i.id === id)!;
+            expect(item).toMatchObject({ status: "processing", progress: 100, taskId: "task1" });
+            expect(state.isUploading.value).toBe(true);
+            expect(state.isCancellable(id)).toBe(false);
+        });
+
+        it("does not revive a cancelled item", () => {
+            const id = state.addUploadItem(makeLinkItem());
+            state.cancelUpload(id);
+            state.markTaskStarted(id, "task1");
+
+            const item = state.activeItems.value.find((i) => i.id === id)!;
+            expect(item.status).toBe("cancelled");
+            expect(item).not.toHaveProperty("taskId");
+        });
+    });
+
     describe("clearAll", () => {
         it("empties all items, batches, and resets computed flags", () => {
             state.addUploadItem(makePastedItem());
