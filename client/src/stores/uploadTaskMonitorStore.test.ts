@@ -5,7 +5,12 @@ import { useServerMock } from "@/api/client/__mocks__";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import type { NewUploadItem, UploadItem } from "@/composables/upload/uploadItemTypes";
 
-import { COULD_NOT_CHECK_IMPORT, INTERRUPTED_IMPORT, useUploadTaskMonitorStore } from "./uploadTaskMonitorStore";
+import {
+    COULD_NOT_CHECK_IMPORT,
+    INTERRUPTED_IMPORT,
+    redactExportLinks,
+    useUploadTaskMonitorStore,
+} from "./uploadTaskMonitorStore";
 
 const { server, http } = useServerMock();
 
@@ -162,5 +167,29 @@ describe("useUploadTaskMonitorStore", () => {
         await vi.waitFor(() =>
             expect(itemOf("late")).toMatchObject({ status: "error", error: COULD_NOT_CHECK_IMPORT }),
         );
+    });
+
+    it("does not keep an export link that the task's failure reason repeats", async () => {
+        const link = "https://usegalaxy.eu/galaxy/api/short_term_storage/0f8fad5b-d9cb-469f-a165-70867728950e";
+        tasksEndIn("FAILURE", `404 Client Error: Not Found for url: ${link}`);
+        useUploadTaskMonitorStore();
+        const id = uploadState.addUploadItem(linkItem());
+        uploadState.markTaskStarted(id, "task1");
+        await vi.waitFor(() => expect(itemOf(id).status).toBe("error"));
+        expect(itemOf(id).error).toContain("404 Client Error: Not Found for url: [export link]");
+        expect(JSON.stringify(uploadState.activeItems.value)).not.toContain("0f8fad5b");
+    });
+});
+
+describe("redactExportLinks", () => {
+    it.each([
+        [
+            "Could not verify url 'https://a.example/api/short_term_storage/abc-1'.",
+            "Could not verify url '[export link]'.",
+        ],
+        ["at http://localhost:8080/galaxy/api/short_term_storage/x?y=1 failed", "at [export link] failed"],
+        ["nothing to hide here", "nothing to hide here"],
+    ])("hides the links in %j", (text, expected) => {
+        expect(redactExportLinks(text)).toBe(expected);
     });
 });
