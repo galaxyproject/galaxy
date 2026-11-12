@@ -5,6 +5,10 @@ import json
 import os
 import shutil
 import time
+from datetime import (
+    date,
+    timedelta,
+)
 from json import dumps
 from tempfile import mkdtemp
 from typing import (
@@ -12041,6 +12045,54 @@ steps: []
         response = self._get("invocations", data={"search": f"workflow:'{rna_name}'"})
         self._assert_status_code_is(response, 200)
         assert response.json() == []
+
+    def test_invocation_filtering_by_create_time_range(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
+"""
+        with self._different_user_history(email=f"{uuid4()}@test.com"):
+            history_id = self.dataset_populator.new_history()
+            first = self._run_workflow(workflow, history_id=history_id, wait=False)
+            second = self._run_workflow(workflow, history_id=history_id, wait=False)
+
+            def created(invocation_id):
+                response = self._get(f"invocations/{invocation_id}")
+                self._assert_status_code_is(response, 200)
+                return response.json()["create_time"]
+
+            first_created, second_created = created(first.invocation_id), created(second.invocation_id)
+            assert first_created < second_created
+            # create times are UTC, so compare against the UTC day they were created on
+            created_day = date.fromisoformat(first_created[:10])
+
+            def invocation_ids(route="invocations", **query):
+                response = self._get(route, data=query)
+                self._assert_status_code_is(response, 200)
+                matches = {invocation["id"] for invocation in response.json()}
+                assert response.headers["total_matches"] == str(len(matches))
+                return matches
+
+            both = {first.invocation_id, second.invocation_id}
+            assert invocation_ids(date_range_min=first_created) == both
+            assert invocation_ids(date_range_min=second_created) == {second.invocation_id}
+            assert invocation_ids(date_range_max=first_created) == {first.invocation_id}
+            assert invocation_ids(date_range_min=first_created, date_range_max=first_created) == {first.invocation_id}
+            # a date without a time compares as that day's midnight
+            assert invocation_ids(date_range_min=str(created_day)) == both
+            assert invocation_ids(date_range_min=str(created_day + timedelta(days=2))) == set()
+            assert invocation_ids(date_range_max=str(created_day)) == set()
+            # the workflow's own invocations route takes the same range
+            workflow_route = f"workflows/{second.workflow_id}/invocations"
+            assert invocation_ids(workflow_route, date_range_min=second_created) == {second.invocation_id}
+            assert invocation_ids(workflow_route, date_range_max=first_created) == set()
+
+            response = self._get("invocations", data={"date_range_min": "not-a-date"})
+            self._assert_status_code_is(response, 400)
 
     def test_invocation_filtering_by_histories_in_any_state(self):
         workflow = """

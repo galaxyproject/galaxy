@@ -4,6 +4,10 @@ import logging
 import os
 import uuid
 from collections.abc import Collection
+from datetime import (
+    date,
+    datetime,
+)
 from typing import (
     Annotated,
     Any,
@@ -754,6 +758,8 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         include_nested_invocations=True,
         check_ownership=True,
         search: str | None = None,
+        date_range_min: datetime | date | None = None,
+        date_range_max: datetime | date | None = None,
     ) -> tuple[list, int]:
         """Get invocations owned by the current user."""
 
@@ -779,6 +785,10 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             stmt = stmt.where(WorkflowInvocation.history_id == history_id)
         if job_id is not None:
             stmt = stmt.join(WorkflowInvocationStep).where(WorkflowInvocationStep.job_id == job_id)
+        if date_range_min is not None:
+            stmt = stmt.where(WorkflowInvocation.create_time >= date_range_min)
+        if date_range_max is not None:
+            stmt = stmt.where(WorkflowInvocation.create_time <= date_range_max)
         if not include_terminal:
             stmt = stmt.where(WorkflowInvocation.state.in_(WorkflowInvocation.non_terminal_states))
         if not include_nested_invocations:
