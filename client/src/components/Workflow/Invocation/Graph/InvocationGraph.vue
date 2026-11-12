@@ -48,6 +48,8 @@ interface Props {
     initialY?: number;
     /** Fit the graph and step details to the page height instead of scrolling */
     fitToPage?: boolean;
+    /** Open a clicked step in a modal, instead of in a card below the graph */
+    stepModal?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -58,6 +60,7 @@ const props = withDefaults(defineProps<Props>(), {
     initialY: -40,
     visible: true,
     fitToPage: false,
+    stepModal: false,
 });
 
 const loadingGraph = ref(true);
@@ -116,13 +119,22 @@ watch(
 const stateStore = useWorkflowStateStore(storeId.value);
 const { activeNodeId } = storeToRefs(stateStore);
 
-// Close the expanded-step modal when the active step changes
+// A newly active step opens in the modal with `stepModal`, and otherwise closes it
 watch(
     () => activeNodeId.value,
     () => {
-        stepExpanded.value = false;
+        stepExpanded.value = props.stepModal && activeNodeId.value !== null;
     },
 );
+
+/** With `stepModal` the modal is the step's only view, so closing it deselects the step */
+function closeStepModal() {
+    if (props.stepModal) {
+        activeNodeId.value = null;
+    } else {
+        stepExpanded.value = false;
+    }
+}
 
 watch(
     () => props.zoom,
@@ -254,81 +266,84 @@ function toggleDetailedView() {
                     </GButton>
                 </div>
             </div>
-            <BCard v-if="activeNodeId !== null && activeStep" ref="stepCard" class="invocation-step-card mt-2" no-body>
-                <BCardHeader class="invocation-step-header" :class="steps[activeNodeId]?.headerClass">
-                    <WorkflowInvocationStepHeader
-                        class="mr-2"
-                        :workflow-step="activeStep"
-                        :graph-step="steps[activeNodeId]"
-                        :invocation-step="props.invocation.steps[activeNodeId]" />
-                    <div class="d-flex flex-gapx-1">
-                        <GButton
-                            v-if="!props.fitToPage"
-                            title="Scroll to Step"
-                            size="small"
-                            transparent
-                            @click="scrollStepToView()">
-                            <FontAwesomeIcon :icon="faArrowDown" />
-                        </GButton>
-                        <GButton
-                            v-if="activeStep.type === 'tool'"
-                            title="Expand Step"
-                            data-description="invocation graph expand step button"
-                            size="small"
-                            transparent
-                            @click="stepExpanded = true">
-                            <FontAwesomeIcon :icon="faExpand" />
-                        </GButton>
-                        <GButtonGroup>
-                            <GButton
-                                title="Previous Step"
-                                data-description="invocation graph previous step button"
-                                :disabled="activeNodeId === 0"
-                                disabled-title="No Previous Step"
-                                transparent
-                                @click="navigateStep('previous')">
-                                <FontAwesomeIcon :icon="faArrowCircleLeft" />
-                                Prev
-                            </GButton>
-                            <GButton
-                                title="Next Step"
-                                data-description="invocation graph next step button"
-                                :disabled="activeNodeId === Object.keys(props.workflow.steps).length - 1"
-                                disabled-title="No More Steps"
-                                transparent
-                                @click="navigateStep('next')">
-                                <FontAwesomeIcon :icon="faArrowCircleRight" />
-                                Next
-                            </GButton>
-                        </GButtonGroup>
-                        <GButton
-                            title="Hide Step"
-                            data-description="invocation graph hide step button"
-                            size="small"
-                            transparent
-                            @click="activeNodeId = null">
-                            <FontAwesomeIcon :icon="faTimes" />
-                        </GButton>
-                    </div>
-                </BCardHeader>
-                <BCardBody body-class="p-2">
-                    <Teleport :to="`#${stepModalTargetId}`" :disabled="!stepExpanded" defer>
-                        <WorkflowInvocationStep
-                            :key="activeNodeId"
-                            :invocation="props.invocation"
+            <template v-if="activeNodeId !== null && activeStep">
+                <!-- hidden with `stepModal`, where its step details always show in the modal below -->
+                <BCard v-show="!props.stepModal" ref="stepCard" class="invocation-step-card mt-2" no-body>
+                    <BCardHeader class="invocation-step-header" :class="steps[activeNodeId]?.headerClass">
+                        <WorkflowInvocationStepHeader
+                            class="mr-2"
                             :workflow-step="activeStep"
-                            in-graph-view
                             :graph-step="steps[activeNodeId]"
-                            expanded />
-                    </Teleport>
-                    <GAlert v-if="stepExpanded"> The step details are currently being shown in a modal. </GAlert>
-                </BCardBody>
+                            :invocation-step="props.invocation.steps[activeNodeId]" />
+                        <div class="d-flex flex-gapx-1">
+                            <GButton
+                                v-if="!props.fitToPage"
+                                title="Scroll to Step"
+                                size="small"
+                                transparent
+                                @click="scrollStepToView()">
+                                <FontAwesomeIcon :icon="faArrowDown" />
+                            </GButton>
+                            <GButton
+                                v-if="activeStep.type === 'tool'"
+                                title="Expand Step"
+                                data-description="invocation graph expand step button"
+                                size="small"
+                                transparent
+                                @click="stepExpanded = true">
+                                <FontAwesomeIcon :icon="faExpand" />
+                            </GButton>
+                            <GButtonGroup>
+                                <GButton
+                                    title="Previous Step"
+                                    data-description="invocation graph previous step button"
+                                    :disabled="activeNodeId === 0"
+                                    disabled-title="No Previous Step"
+                                    transparent
+                                    @click="navigateStep('previous')">
+                                    <FontAwesomeIcon :icon="faArrowCircleLeft" />
+                                    Prev
+                                </GButton>
+                                <GButton
+                                    title="Next Step"
+                                    data-description="invocation graph next step button"
+                                    :disabled="activeNodeId === Object.keys(props.workflow.steps).length - 1"
+                                    disabled-title="No More Steps"
+                                    transparent
+                                    @click="navigateStep('next')">
+                                    <FontAwesomeIcon :icon="faArrowCircleRight" />
+                                    Next
+                                </GButton>
+                            </GButtonGroup>
+                            <GButton
+                                title="Hide Step"
+                                data-description="invocation graph hide step button"
+                                size="small"
+                                transparent
+                                @click="activeNodeId = null">
+                                <FontAwesomeIcon :icon="faTimes" />
+                            </GButton>
+                        </div>
+                    </BCardHeader>
+                    <BCardBody body-class="p-2">
+                        <Teleport :to="`#${stepModalTargetId}`" :disabled="!stepExpanded" defer>
+                            <WorkflowInvocationStep
+                                :key="activeNodeId"
+                                :invocation="props.invocation"
+                                :workflow-step="activeStep"
+                                in-graph-view
+                                :graph-step="steps[activeNodeId]"
+                                expanded />
+                        </Teleport>
+                        <GAlert v-if="stepExpanded"> The step details are currently being shown in a modal. </GAlert>
+                    </BCardBody>
+                </BCard>
                 <GModal
                     :show="stepExpanded"
                     fixed-height
                     size="medium"
                     data-description="invocation graph expanded step modal"
-                    @close="stepExpanded = false">
+                    @close="closeStepModal">
                     <template v-slot:header>
                         <WorkflowInvocationStepHeader
                             class="mr-2"
@@ -338,7 +353,7 @@ function toggleDetailedView() {
                     </template>
                     <div :id="stepModalTargetId" />
                 </GModal>
-            </BCard>
+            </template>
             <GAlert v-else class="mt-2" show>Click on a step in the workflow graph above to view its details.</GAlert>
         </div>
     </div>
