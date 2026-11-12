@@ -6,6 +6,8 @@ import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import ToolHelpRst from "./ToolHelpRst.vue";
 
+vi.mock("@/onload/loadConfig", () => ({ getAppRoot: () => "/galaxy/" }));
+
 const localVue = getLocalVue();
 
 const inputHelpText = `
@@ -56,5 +58,18 @@ describe("ToolHelp RST", () => {
         const wrapper = mount(ToolHelpRst, { propsData: { content }, localVue });
         const srcs = wrapper.findAll("img").map((img) => img.attributes("src"));
         expect(srcs).toEqual(["images/a.png", shedImage]);
+    });
+
+    it("points relative image sources at the tool's help images", () => {
+        const shedImage = "shed_tool_static/shed/owner/repo/tool/1.0/b.png";
+        const content = `<img src="images/a.png"><img src="${shedImage}"><img src="/static/images/c.png">`;
+        const propsData = { content, toolId: "help_images_rst", toolVersion: "1.0.0" };
+        const wrapper = mount(ToolHelpRst, { propsData, localVue });
+        const srcs = wrapper.findAll("img").map((img) => img.attributes("src"));
+        expect(srcs).toEqual([
+            "/galaxy/api/tools/help_images_rst/help_image?path=images%2Fa.png&tool_version=1.0.0",
+            shedImage,
+            "/static/images/c.png",
+        ]);
     });
 });

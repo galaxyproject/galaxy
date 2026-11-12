@@ -43,4 +43,34 @@ describe("ToolHelpMarkdown", () => {
         const srcs = wrapper.findAll("img").map((img) => img.attributes("src"));
         expect(srcs).toEqual(["static/images/a.png", "https://example.org/b.png", "/galaxy/static/images/c.png"]);
     });
+
+    it("points relative image sources at the tool's help images", async () => {
+        const wrapper = mount(ToolHelpMarkdown as object, {
+            localVue: getLocalVue(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+            propsData: {
+                content: [
+                    "![a](static/images/a.png)",
+                    "![b](b%20c.png)",
+                    "![c](https://example.org/c.png)",
+                    "![d](/static/d.png)",
+                    "![e](gxstatic://images/e.png)",
+                ].join(" "),
+                toolId: "toolshed.g2.bx.psu.edu/repos/iuc/bedtools/slop/2.31+galaxy1",
+                toolVersion: "2.31+galaxy1",
+            },
+            stubs: { MarkdownHelpPopovers: true },
+        });
+        await flushPromises();
+
+        const srcs = wrapper.findAll("img").map((img) => img.attributes("src"));
+        const helpImages = "/galaxy/api/tools/toolshed.g2.bx.psu.edu%2Frepos%2Fiuc%2Fbedtools%2Fslop%2F2.31%2Bgalaxy1";
+        expect(srcs).toEqual([
+            `${helpImages}/help_image?path=static%2Fimages%2Fa.png&tool_version=2.31%2Bgalaxy1`,
+            `${helpImages}/help_image?path=b+c.png&tool_version=2.31%2Bgalaxy1`,
+            "https://example.org/c.png",
+            "/static/d.png",
+            "/galaxy/static/images/e.png",
+        ]);
+    });
 });

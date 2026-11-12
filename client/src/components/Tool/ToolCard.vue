@@ -267,7 +267,11 @@ onBeforeMount(() => {
             </div>
             <div v-if="props.options.help" class="mt-2 mb-4">
                 <Heading v-localize h2 separator bold size="sm">Help</Heading>
-                <ToolHelp :content="props.options.help" :format="props.options.help_format" />
+                <ToolHelp
+                    :content="props.options.help"
+                    :format="props.options.help_format"
+                    :tool-id="props.id"
+                    :tool-version="props.version" />
             </div>
 
             <ToolTutorialRecommendations

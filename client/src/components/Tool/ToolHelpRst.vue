@@ -6,9 +6,17 @@ const props = defineProps({
         type: String,
         required: true,
     },
+    toolId: {
+        type: String,
+        default: undefined,
+    },
+    toolVersion: {
+        type: String,
+        default: undefined,
+    },
 });
 
-const { formattedContent } = useFormattedToolHelp(props.content);
+const { formattedContent } = useFormattedToolHelp(props.content, 2, { id: props.toolId, version: props.toolVersion });
 </script>
 
 <template>
