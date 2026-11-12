@@ -1332,6 +1332,33 @@ steps:
         workflow_dict = self.workflow_populator.download_workflow(workflow_id)
         assert workflow_dict["steps"]["0"]["label"] == "new_label"
 
+    def test_refactor_keeps_unlaid_workflow_unplaced(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  test_input: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: test_input
+""",
+            client_convert=False,
+        )
+        actions = [
+            {"action_type": "add_input", "type": "data", "label": "new_input"},
+            {
+                "action_type": "update_step_position",
+                "step": {"order_index": 1},
+                "position_shift": {"left": 50, "top": 0},
+            },
+        ]
+        self.workflow_populator.refactor_workflow(workflow_id, actions).raise_for_status()
+        editor = self.workflow_populator.download_workflow(workflow_id, style="editor")
+        # one placed step would stop the editor's first layout, stacking the rest at the origin
+        assert [step["position"] for step in editor["steps"].values()] == [None] * 3
+
     def test_refactor_specific_version(self):
         """Test that refactoring can target a specific workflow version."""
         # Create initial workflow (version 0) with label "input1"

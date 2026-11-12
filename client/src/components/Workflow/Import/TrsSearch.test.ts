@@ -97,4 +97,19 @@ describe("TrsSearch", () => {
         expect(wrapper.find("table").exists()).toBe(false);
         expect(wrapper.text()).toContain("Enter search query to begin search.");
     });
+
+    it("encodes the query and server in the search URL", async () => {
+        axiosGet.mockResolvedValue({ data: [] });
+        const wrapper = await mountTrsSearch();
+        await wrapper.get("input#trs-search-query").setValue("rna-seq & qc #1 + more");
+        await flushPromises();
+
+        expect(axiosGet).toHaveBeenCalledOnce();
+        const url = new URL(axiosGet.mock.calls[0]![0] as string, "http://localhost");
+        expect(url.pathname).toBe("/api/trs_search");
+        expect(Object.fromEntries(url.searchParams)).toEqual({
+            query: "rna-seq & qc #1 + more",
+            trs_server: "dockstore",
+        });
+    });
 });

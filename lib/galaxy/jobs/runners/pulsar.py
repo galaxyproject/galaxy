@@ -600,13 +600,6 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             assert job_wrapper.tool is not None
             tool = job_wrapper.tool
             remote_job_config = client.setup(tool.id, tool.version, tool.requires_galaxy_python_environment)
-            remote_container_handling = PulsarJobRunner.__remote_container_handling(client)
-            if remote_container_handling:
-                # Handle this remotely and don't pass it to build_command
-                remote_container = self._find_container(
-                    job_wrapper,
-                )
-
             needed_features = self.__needed_features(client)
             PulsarJobRunner.check_job_config(remote_job_config, check_features=needed_features)
             rewrite_parameters = PulsarJobRunner.__rewrite_parameters(client)
@@ -617,9 +610,14 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
 
             try:
                 job_prepare_ret = job_wrapper.prepare(**prepare_kwds)
+            except InsufficientPermissionsException as e:
+                # The job may not run anywhere, so fail it without fail_job's resubmission rules.
+                log.info("job %d rejected while preparing: %s", job_wrapper.job_id, unicodify(e))
+                job_wrapper.fail(unicodify(e), exception=False)
+                job_prepare_ret = False
             except Exception as e:
-                if isinstance(e, (ParameterValueError, InsufficientPermissionsException)):
-                    log.info("job %d rejected while preparing: %s", job_wrapper.job_id, unicodify(e))
+                if isinstance(e, ParameterValueError):
+                    log.info("parameter validation error preparing job %d: %s", job_wrapper.job_id, unicodify(e))
                 else:
                     log.exception("failure preparing job %d", job_wrapper.job_id)
                 job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
@@ -634,6 +632,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                     compute_environment,
                     remote_container,
                     dependencies_description,
+                )
+
+            if PulsarJobRunner.__remote_container_handling(client):
+                # Handle this remotely and don't pass it to build_command
+                remote_container = self._find_container(
+                    job_wrapper,
                 )
 
             self.__prepare_input_files_locally(job_wrapper)
