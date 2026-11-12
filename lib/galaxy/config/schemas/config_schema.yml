@@ -2195,6 +2195,16 @@ mapping:
           to protect your users.  Uncomment and leave empty to not set the
           `X-Frame-Options` header.
 
+      widgets_allowed_origins:
+        type: str
+        required: false
+        desc: |
+          Comma-separated origins, besides Galaxy itself, allowed to embed
+          Galaxy Widgets such as the history graph.
+
+          Widgets that support public embedding can be embedded from any
+          origin while their resource is published or accessible via link.
+
       nginx_upload_store:
         type: str
         required: false

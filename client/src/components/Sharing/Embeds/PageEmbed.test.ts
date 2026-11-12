@@ -57,7 +57,7 @@ describe("PageEmbed", () => {
         expect(embedInput.classes()).toContain("g-form-input");
         expect(embedInput.attributes("readonly")).toBeDefined();
         const embedCode = (embedInput.element as HTMLInputElement).value;
-        expect(embedCode).toMatch(/^<iframe .*published\/page\?id=page-id&embed=true.*<\/iframe>$/);
+        expect(embedCode).toMatch(/^<iframe .*widgets\/pages\/page-id\?heading=true.*<\/iframe>$/);
 
         await wrapper.get("#embed-code button").trigger("click");
         expect(copy).toHaveBeenCalledWith(embedCode);

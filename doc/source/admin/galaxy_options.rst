@@ -2922,6 +2922,19 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``widgets_allowed_origins``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Comma-separated origins, besides Galaxy itself, allowed to embed
+    Galaxy Widgets such as the history graph.
+    Widgets that support public embedding can be embedded from any
+    origin while their resource is published or accessible via link.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``nginx_upload_store``
 ~~~~~~~~~~~~~~~~~~~~~~

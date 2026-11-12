@@ -20,6 +20,7 @@ from .authnz import (
     LOGIN_NEXT_COOKIE_NAME,
 )
 from ..api import depends
+from ..api.widgets import is_public_widget
 
 log = logging.getLogger(__name__)
 
@@ -44,6 +45,8 @@ class RootController(controller.BaseUIController, UsesAnnotations):
         :type       app_name: str or None
         :param      app_name: javascript application bundle name
         """
+        if app_name == "widgets" and is_public_widget(trans, trans.request.path_info):
+            trans.response.headers["Content-Security-Policy"] = "frame-ancestors *"
         return trans.fill_template("/js-app.mako", js_app_name=app_name)
 
     @web.expose
