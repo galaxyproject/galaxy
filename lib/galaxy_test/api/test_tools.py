@@ -258,6 +258,11 @@ class TestToolsApi(ApiTestCase, TestsTools):
         revalidated = self._get("tools/help_images_markdown/icon", headers={"If-None-Match": response.headers["ETag"]})
         self._assert_status_code_is(revalidated, 304)
 
+    @skip_without_tool("icon_outside_tool_dir")
+    def test_tool_icon_outside_tool_dir_not_found(self):
+        response = self._get("tools/icon_outside_tool_dir/icon")
+        self._assert_status_code_is(response, 404)
+
     def test_tool_icon_endpoint_with_toolshed_id(self):
         # Test complex toolshed tool ID with slashes
         toolshed_tool_id = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0"

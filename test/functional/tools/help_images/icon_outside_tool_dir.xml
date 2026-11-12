@@ -1,0 +1,12 @@
+<tool id="icon_outside_tool_dir" name="icon_outside_tool_dir" version="1.0.0">
+    <icon src="../../../../test-data/im3_a.png" />
+    <command>
+        cp '$input' '$output'
+    </command>
+    <inputs>
+        <param name="input" type="data" format="txt" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+</tool>

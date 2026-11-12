@@ -260,9 +260,6 @@ class FetchTools:
         client-side caching. The icon image is expected to be in PNG format.
         """
         tool_icon_path = self.service.get_tool_icon_path(trans=trans, tool_id=tool_id)
-        if tool_icon_path is None:
-            raise exceptions.ObjectNotFound(f"Tool icon file not found or not provided by the tool: {tool_id}")
-
         return cached_file_response(request, tool_icon_path, PNGIconResponse.media_type, ICON_CACHE_CONTROL)
 
     @router.post("/api/file_landings", public=True, allow_cors=True)

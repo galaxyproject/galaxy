@@ -1,10 +1,23 @@
-"""Locate files that tool help references by paths relative to the tool."""
+"""Locate files shipped with a tool, such as its icon and help images."""
 
 import os
 
-from galaxy.util.path import safe_contains
+from galaxy.util.path import (
+    safe_contains,
+    StrPath,
+)
 
 STATIC_IMAGES = "static/images"
+
+
+def find_tool_file(base_dir: StrPath, file_path: str) -> str | None:
+    """Absolute path of the file at ``file_path`` under ``base_dir``, or ``None`` if missing or outside it."""
+    # safe_contains resolves symlinks in the candidate, so compare against the resolved base.
+    base_dir = os.path.realpath(base_dir)
+    candidate = os.path.abspath(os.path.join(base_dir, file_path))
+    if safe_contains(base_dir, candidate) and os.path.isfile(candidate):
+        return candidate
+    return None
 
 
 def find_tool_asset(base_dir: str, asset_path: str) -> str | None:

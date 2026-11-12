@@ -2,7 +2,10 @@ import os
 
 import pytest
 
-from galaxy.tools.help_images import find_tool_asset
+from galaxy.tools.help_images import (
+    find_tool_asset,
+    find_tool_file,
+)
 
 
 @pytest.fixture
@@ -43,3 +46,12 @@ def test_missing_and_escaping_paths_not_found(tool_dir):
 def test_symlink_out_of_tool_dir_not_found(tool_dir):
     os.symlink(os.path.join(os.path.dirname(tool_dir), "outside.png"), os.path.join(tool_dir, "link.png"))
     assert find_tool_asset(tool_dir, "link.png") is None
+
+
+def test_tool_file_exact_path_only(tool_dir, tmp_path_factory):
+    assert find_tool_file(tool_dir, "both.png") == os.path.join(tool_dir, "both.png")
+    assert find_tool_file(tool_dir, "missing.png") is None
+    assert find_tool_file(tool_dir, "../outside.png") is None
+    linked_dir = os.path.join(tmp_path_factory.mktemp("links"), "tool")
+    os.symlink(tool_dir, linked_dir)
+    assert find_tool_file(linked_dir, "both.png") == os.path.join(tool_dir, "both.png")
