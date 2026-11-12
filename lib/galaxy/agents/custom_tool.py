@@ -46,6 +46,7 @@ from galaxy.tool_util_models import (
     format_validation_errors,
     UserToolSource,
     UserToolSourceAuthoringView,
+    user_tool_security_diagnostics,
 )
 from .base import (
     ActionSuggestion,
@@ -474,7 +475,11 @@ class CustomToolAgent(BaseGalaxyAgent):
                 # is actually materialized by a configfile (a common producer miss the
                 # canonical validators don't catch -- e.g. `Rscript boxplot.R` with no
                 # configfile, which would fail at runtime).
-                issues = lint_user_tool_source(tool) + self._unmaterialized_scripts(tool)
+                security_issues = [
+                    f"{diagnostic['path']} [{diagnostic['code']}]: {diagnostic['message']}"
+                    for diagnostic in user_tool_security_diagnostics(tool)
+                ]
+                issues = lint_user_tool_source(tool) + self._unmaterialized_scripts(tool) + security_issues
                 if issues:
                     log.debug("CustomToolAgent lint/script failure: %s", issues)
                     # The tool validated, so we have its rendered YAML -- carry it so a

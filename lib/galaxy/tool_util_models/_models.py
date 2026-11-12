@@ -71,6 +71,7 @@ from .tool_source import (
 from .yaml_parameters import (
     YamlGalaxyParameterT,
     YamlGalaxyToolParameter,
+    YamlTextParameter,
 )
 
 UserToolInputs = Annotated[
@@ -128,6 +129,14 @@ TOOL_ID_PATTERN = r"^[a-z][a-z0-9_-]*$"
 # catching obvious typos cheaply, not modelling ecmascript scope.
 _TEMPLATE_BLOCK_RE = re.compile(r"\$\((.*?)\)", re.DOTALL)
 _INPUTS_REF_RE = re.compile(r"\binputs\.([A-Za-z_][A-Za-z0-9_]*)")
+_DIRECT_INPUT_EXPR_RE = re.compile(r"^\s*inputs\.([A-Za-z_][A-Za-z0-9_]*)\s*$")
+_SCRIPT_SUFFIXES = (".bash", ".cjs", ".js", ".mjs", ".pl", ".py", ".r", ".rb", ".sh")
+
+
+class UserToolSecurityDiagnostic(TypedDict):
+    path: str
+    code: str
+    message: str
 
 
 def _command_input_refs(text: str | None) -> set[str]:
@@ -138,6 +147,39 @@ def _command_input_refs(text: str | None) -> set[str]:
         for match in _INPUTS_REF_RE.findall(block):
             refs.add(match)
     return refs
+
+
+def _direct_input_refs(text: str | None) -> set[str]:
+    refs: set[str] = set()
+    if not text:
+        return refs
+    for block in _TEMPLATE_BLOCK_RE.findall(text):
+        if match := _DIRECT_INPUT_EXPR_RE.fullmatch(block):
+            refs.add(match.group(1))
+    return refs
+
+
+def user_tool_security_diagnostics(tool: "UserToolSource") -> list[UserToolSecurityDiagnostic]:
+    text_inputs = {param.root.name for param in tool.inputs if isinstance(param.root, YamlTextParameter)}
+    diagnostics: list[UserToolSecurityDiagnostic] = []
+    surfaces = [("shell_command", tool.shell_command)] + [
+        (f"configfiles.{index}.content", configfile.content)
+        for index, configfile in enumerate(tool.configfiles or [])
+        if configfile.filename.lower().endswith(_SCRIPT_SUFFIXES)
+    ]
+    for path, text in surfaces:
+        for name in sorted(_direct_input_refs(text) & text_inputs):
+            diagnostics.append(
+                {
+                    "path": path,
+                    "code": "dynamic_tool.unsafe_text_interpolation",
+                    "message": (
+                        f"free-text input 'inputs.{name}' is substituted as executable text; "
+                        "serialize it into a config file with JSON.stringify and read it as data"
+                    ),
+                }
+            )
+    return diagnostics
 
 
 def format_validation_errors(exc: ValidationError) -> list[str]:
@@ -212,8 +254,10 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
             description=(
                 "A string that contains the command to be executed. Reference inputs inside `$()` as "
                 "`$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files; `${ ... }` evaluates a "
-                "JavaScript function body that must return a value. Substituted values are not shell-quoted, "
-                "so quote them yourself. Because `$(` and `${` are consumed by the expression evaluator, shell "
+                "JavaScript function body that must return a value. Substituted values are not shell-quoted. "
+                "Quote Galaxy-generated paths, but never interpolate free-text inputs into executable text; "
+                "serialize them into a JSON configfile with `JSON.stringify` and read them as data. Because `$(` "
+                "and `${` are consumed by the expression evaluator, shell "
                 "command substitution and braced parameter expansion do not reach the shell: escape them as "
                 "`\\$(` and `\\${`, and prefer unbraced variables such as `$GALAXY_SLOTS`."
             ),
