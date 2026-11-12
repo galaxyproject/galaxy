@@ -788,7 +788,7 @@ class WorkflowContentsManager(UsesAnnotations):
             isinstance(workflow_create_options, WorkflowCreateOptions) and workflow_create_options.publish
         )
         stored.hidden = hidden
-        if data["annotation"]:
+        if data.get("annotation"):
             annotation = sanitize_html(data["annotation"])
             self.add_item_annotation(trans.sa_session, stored.user, stored, annotation)
         workflow_tags = data.get("tags", [])

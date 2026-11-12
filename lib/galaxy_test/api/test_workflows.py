@@ -2363,6 +2363,11 @@ steps:
         self._assert_status_code_is(response, 400)
         assert "parameter_type" in response.json()["err_msg"]
 
+    def test_import_without_annotation(self):
+        workflow = {"a_galaxy_workflow": "true", "format-version": "0.1", "name": "no annotation", "steps": {}}
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        assert self._download_workflow(workflow_id)["annotation"] == ""
+
     @skip_without_tool("collection_type_source")
     def test_export_editor_collection_type_source(self):
         workflow_id = self._upload_yaml_workflow(WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE)
