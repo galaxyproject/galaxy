@@ -1351,9 +1351,9 @@ initializeWorkflowEditor();
             :version="version ?? undefined"
             :versions="versions"
             :refactor-actions="refactorActions"
-            @on-workflow-error="onWorkflowError"
-            @on-refactor="onRefactor"
-            @on-show="hideErrorModal" />
+            @onWorkflowError="onWorkflowError"
+            @onRefactor="onRefactor"
+            @onShow="hideErrorModal" />
 
         <GModal
             data-description="workflow editor error modal"
@@ -1407,30 +1407,30 @@ initializeWorkflowEditor();
             :hide-panel="reportActive || initialLoading"
             :header-icon="faSitemap"
             header-title="Editor"
-            @activity-clicked="onActivityClicked">
+            @activityClicked="onActivityClicked">
             <template v-slot:side-panel="{ isActiveSideBar: isActive }">
-                <ToolPanel v-if="isActive('workflow-editor-tools')" workflow @on-insert-tool="onInsertTool" />
+                <ToolPanel v-if="isActive('workflow-editor-tools')" workflow @onInsertTool="onInsertTool" />
                 <SearchPanel v-else-if="isActive('workflow-editor-search')" @result-clicked="onHighlightRegion" />
                 <InputPanel
                     v-else-if="isActive('workflow-editor-inputs')"
                     :inputs="inputs"
-                    @insert-module="onInsertModule" />
+                    @insertModule="onInsertModule" />
                 <WorkflowLint
                     v-else-if="isActive('workflow-best-practices')"
                     :lint-data="lintData"
                     :steps="steps"
                     :has-changes="hasChanges"
                     :on-save="onSave"
-                    @on-attributes="showAttributes"
-                    @on-refactor="onAttemptRefactor"
-                    @on-scroll-to="onScrollTo" />
+                    @onAttributes="showAttributes"
+                    @onRefactor="onAttemptRefactor"
+                    @onScrollTo="onScrollTo" />
                 <UndoRedoStack v-else-if="isActive('workflow-undo-redo')" :store-id="id" />
                 <WorkflowPanel
                     v-else-if="isActive('workflow-editor-workflows')"
                     :current-workflow-id="id"
-                    @insert-workflow="onInsertWorkflow"
-                    @insert-workflow-steps="onInsertWorkflowSteps"
-                    @create-workflow="createNewWorkflow" />
+                    @insertWorkflow="onInsertWorkflow"
+                    @insertWorkflowSteps="onInsertWorkflowSteps"
+                    @createWorkflow="createNewWorkflow" />
                 <WorkflowAttributes
                     v-else-if="isActive('workflow-editor-attributes')"
                     :id="id"
@@ -1452,15 +1452,15 @@ initializeWorkflowEditor();
                     @license="onLicense"
                     @creator="onCreator"
                     @doi="onDoi"
-                    @update:name-current="setName"
-                    @update:annotation-current="setAnnotation"
-                    @update:logo-url-current="setLogoUrl"
-                    @update:help-current="setHelp" />
+                    @update:nameCurrent="setName"
+                    @update:annotationCurrent="setAnnotation"
+                    @update:logoUrlCurrent="setLogoUrl"
+                    @update:helpCurrent="setHelp" />
                 <UserToolPanel
                     v-if="isActive('workflow-editor-user-defined-tools')"
                     :in-workflow-editor="true"
                     in-panel
-                    @on-insert-tool="onInsertTool" />
+                    @onInsertTool="onInsertTool" />
             </template>
         </ActivityBar>
 
@@ -1591,7 +1591,7 @@ initializeWorkflowEditor();
                     :name="name"
                     :logo-url="logoUrl"
                     @exit="readmeActive = false"
-                    @update:readme-current="setReadme" />
+                    @update:readmeCurrent="setReadme" />
 
                 <WorkflowGraph
                     v-if="!datatypesMapperLoading && datatypesMapper"
@@ -1603,25 +1603,25 @@ initializeWorkflowEditor();
                     :scroll-to-id="scrollToId"
                     :initial-position="{ x: 50, y: 50 }"
                     :loading="loadingWorkflow || initialLoading"
-                    @scroll-to="scrollToId = null"
+                    @scrollTo="scrollToId = null"
                     @transform="(value: ZoomTransform) => (transform = value)"
                     @graph-offset="(value: typeof graphOffset) => (graphOffset = value)"
-                    @on-clone="onClone"
-                    @on-create="onInsertTool"
-                    @on-change="hasChanges = true"
-                    @on-remove="onRemove"
-                    @on-update-step-position="onUpdateStepPosition">
+                    @onClone="onClone"
+                    @onCreate="onInsertTool"
+                    @onChange="hasChanges = true"
+                    @onRemove="onRemove"
+                    @onUpdateStepPosition="onUpdateStepPosition">
                     <NodeInspector
                         v-if="activeStep"
                         :step="activeStep"
                         :datatypes="datatypes"
-                        @post-job-actions-changed="onChangePostJobActions"
-                        @annotation-changed="onAnnotation"
-                        @label-changed="onLabel"
-                        @data-changed="onSetData"
-                        @step-updated="updateStep"
-                        @edit-subworkflow="onEditSubWorkflow"
-                        @attempt-refactor="onAttemptRefactor"
+                        @postJobActionsChanged="onChangePostJobActions"
+                        @annotationChanged="onAnnotation"
+                        @labelChanged="onLabel"
+                        @dataChanged="onSetData"
+                        @stepUpdated="updateStep"
+                        @editSubworkflow="onEditSubWorkflow"
+                        @attemptRefactor="onAttemptRefactor"
                         @close="activeNodeId = null" />
                 </WorkflowGraph>
             </div>
