@@ -67,6 +67,9 @@ jobs:
       - name: Run job handler ready window tests
         run: ./run_tests.sh -unit test/unit/app/jobs/test_handler.py
         working-directory: 'galaxy root'
+      - name: Run concurrent HDA copy_from tests
+        run: ./run_tests.sh -unit test/unit/data/test_hda_copy_from.py
+        working-directory: 'galaxy root'
       - name: Run OIDC flow-state tests with PostgreSQL
         env:
           GALAXY_TEST_OIDC_DATABASE_URL: ${{ env.GALAXY_TEST_DBURI }}
