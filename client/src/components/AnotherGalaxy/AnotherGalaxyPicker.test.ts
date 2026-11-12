@@ -348,11 +348,12 @@ describe("AnotherGalaxyPicker", () => {
         expect(wrapper.find('[data-description="picker select dataset:new"]').exists()).toBe(true);
     });
 
-    it("says so when this Galaxy cannot export", async () => {
+    it("says so when this Galaxy cannot export, without listing its items", async () => {
         setMockConfig({ enable_celery_tasks: false });
         serveItems([row("d1")]);
         const wrapper = await mountPicker();
         expect(wrapper.find('[data-description="picker cannot export"]').exists()).toBe(true);
         expect(wrapper.find('[data-description="picker send"]').exists()).toBe(false);
+        expect(datasetQueries).toHaveLength(0);
     });
 });
