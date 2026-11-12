@@ -155,7 +155,11 @@ class GenericInvocationFailureDatasetFailed(InvocationFailureMessageBase[Databas
     hda_id: DatabaseIdT = Field(
         ..., title="HistoryDatasetAssociation ID", description="HistoryDatasetAssociation ID that relates to failure."
     )
-    dependent_workflow_step_id: Optional[int] = Field(None, description="Workflow step id of step that caused failure.")
+    dependent_workflow_step_id: Optional[int] = Field(
+        None,
+        description="Workflow step id of step that caused failure.",
+        validation_alias="dependent_workflow_step_index",
+    )
 
 
 class GenericInvocationFailureCollectionFailed(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
