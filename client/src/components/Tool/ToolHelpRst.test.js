@@ -49,4 +49,12 @@ describe("ToolHelp RST", () => {
             "links",
         );
     });
+
+    it("leaves relative and shed-rewritten image sources alone", () => {
+        const shedImage = "shed_tool_static/shed/owner/repo/tool/1.0/b.png";
+        const content = `<img src="images/a.png"><img src="${shedImage}">`;
+        const wrapper = mount(ToolHelpRst, { propsData: { content }, localVue });
+        const srcs = wrapper.findAll("img").map((img) => img.attributes("src"));
+        expect(srcs).toEqual(["images/a.png", shedImage]);
+    });
 });

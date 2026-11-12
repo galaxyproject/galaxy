@@ -158,6 +158,13 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert tool["help_format"] == "markdown"
         assert "**This is bold text**" in tool["help"]
 
+    @skip_without_tool("help_images_rst")
+    def test_build_tool_help_rst_relative_image_srcs_unchanged(self, history_id):
+        tool = self.dataset_populator.build_tool_state("help_images_rst", history_id)
+        assert tool["help_format"] == "restructuredtext"
+        assert 'src="help_image.png"' in tool["help"]
+        assert 'src="static/images/help_image.png"' in tool["help"]
+
     @skip_without_tool("test_sam_to_bam_conversions")
     def test_requirements(self):
         requirements_response = self._get("tools/test_sam_to_bam_conversions/requirements", admin=True)

@@ -16,6 +16,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from cachetools import LRUCache
+from sqlalchemy import event
 
 import galaxy.queue_worker as queue_worker_mod
 import galaxy.tools.cached_toolbox as mod
@@ -813,6 +814,19 @@ def test_materialized_shed_tool_without_install_row_rewrites_help_images(tmp_pat
         ".. image:: shed_tool_static/toolshed.g2.bx.psu.edu/iuc/bedtools/bedtools_mergebed/2.31.1%2Bgalaxy2/merge-glyph.png"
         in help_text
     )
+
+
+def test_materializing_shed_tool_without_help_images_skips_install_database(tmp_path):
+    box = _materializing_box(with_repository_cache=False)
+    queries: list[str] = []
+    event.listen(box.app.install_model.engine, "before_cursor_execute", lambda *args: queries.append(args[2]))
+    stored = _shed_image_stored(str(tmp_path))
+    stored.raw_source = SHED_IMAGE_TOOL_XML.replace(".. image:: $PATH_TO_IMAGES/merge-glyph.png", "No images.")
+
+    tool = box._create_tool_from_stored_source(stored, entry=_shed_image_entry())
+
+    assert "No images." in tool.raw_help.content
+    assert queries == []
 
 
 def test_materializing_shed_tools_leaves_repository_cache_untouched(tmp_path):

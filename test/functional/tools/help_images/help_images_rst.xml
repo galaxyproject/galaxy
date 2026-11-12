@@ -1,0 +1,20 @@
+<tool id="help_images_rst" name="help_images_rst" version="1.0.0">
+    <command>
+        cp '$input' '$output'
+    </command>
+    <inputs>
+        <param name="input" type="data" format="txt" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <help><![CDATA[
+Bare name found in static/images:
+
+.. image:: help_image.png
+
+Image relative to the tool:
+
+.. image:: static/images/help_image.png
+]]></help>
+</tool>
