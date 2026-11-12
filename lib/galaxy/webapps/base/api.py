@@ -238,11 +238,11 @@ class GalaxyFileResponse(FileResponse):
             await self.background()
 
 
-def cached_file_response(request: Request, path: str, media_type: str, cache_control: str) -> Response:
-    """Serve a small static file with a content ETag, or a 304 if the client's copy is current."""
+def cached_file_response(request: Request, path: str, media_type: str, headers: Mapping[str, str]) -> Response:
+    """Serve a small static file with ``headers`` and a content ETag, or a 304 if the client's copy is current."""
     last_modified = formatdate(os.stat(path).st_mtime, usegmt=True)
     file_hash = memory_bound_hexdigest(hash_func_name=HashFunctionNameEnum.md5, path=path)
-    headers = {"Cache-Control": cache_control, "ETag": f'"{file_hash}"', "Last-Modified": last_modified}
+    headers = {**headers, "ETag": f'"{file_hash}"', "Last-Modified": last_modified}
 
     # If-Modified-Since is ignored when If-None-Match is sent (RFC 9110 13.1.3).
     if_none_match = request.headers.get("If-None-Match")
