@@ -165,6 +165,22 @@ describe("AnotherGalaxyPicker", () => {
         expect(wrapper.find('[data-description="picker send"]').attributes("aria-disabled")).toBe("true");
     });
 
+    it("says so on items whose history could not be loaded, instead of loading forever", async () => {
+        serveItems([row("d1", { history_id: "h9" })]);
+        server.use(
+            http.get("/api/histories/{history_id}", ({ response }) =>
+                response("4XX").json({ err_msg: "History not found", err_code: 404001 }, { status: 404 }),
+            ),
+        );
+        vi.spyOn(console, "warn").mockImplementation(() => {});
+        const wrapper = await mountPicker();
+        const checkbox = wrapper.find('[data-description="picker select dataset:d1"]');
+        await vi.waitFor(() =>
+            expect(checkbox.element.closest("label")?.getAttribute("title")).toBe("Its history could not be loaded"),
+        );
+        expect(checkbox.attributes("disabled")).toBeDefined();
+    });
+
     it("names the target and the number of items before anything is sent", async () => {
         serveItems([row("d1"), row("d2")]);
         const wrapper = await mountPicker();

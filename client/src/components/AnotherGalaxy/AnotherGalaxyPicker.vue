@@ -138,7 +138,9 @@ function pickBlockReason(item: HistoryItemSummary): string | undefined {
     }
     const history = historyStore.getHistoryById(item.history_id);
     if (!history) {
-        return "Loading its history";
+        return historyStore.getHistoryLoadError(item.history_id)
+            ? "Its history could not be loaded"
+            : "Loading its history";
     }
     if (history.deleted) {
         return "In a deleted history";
