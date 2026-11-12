@@ -1,6 +1,6 @@
 import { suppressDebugConsole } from "@tests/vitest/helpers";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useTaskMonitor } from "@/composables/taskMonitor";
@@ -100,6 +100,46 @@ describe("useTaskMonitor", () => {
         expect(isRunning.value).toBe(false);
         expect(isCompleted.value).toBe(false);
         expect(taskStatus.value).toBe("Request failed");
+    });
+
+    describe("with maxRequestFailures", () => {
+        function failStateRequests(times: number) {
+            let calls = 0;
+            server.use(
+                http.get("/api/tasks/{task_id}/state", ({ response }) => {
+                    calls++;
+                    if (calls <= times) {
+                        return response("5XX").json({ err_msg: "Bad Gateway", err_code: 502 }, { status: 502 });
+                    }
+                    return response(200).json("SUCCESS");
+                }),
+            );
+            return () => calls;
+        }
+
+        it("keeps polling through fewer failed requests in a row than allowed", async () => {
+            const calls = failStateRequests(2);
+            const { waitForTask, requestHasFailed, isRunning, isCompleted } = useTaskMonitor({ maxRequestFailures: 3 });
+
+            waitForTask("some-task", 1);
+            await flushPromises();
+            expect(requestHasFailed.value).toBe(false);
+            expect(isRunning.value).toBe(true);
+            await vi.waitFor(() => expect(isCompleted.value).toBe(true));
+            expect(requestHasFailed.value).toBe(false);
+            expect(calls()).toBe(3);
+        });
+
+        it("reports the failed request once that many requests in a row failed", async () => {
+            suppressDebugConsole();
+            const calls = failStateRequests(3);
+            const { waitForTask, requestHasFailed, isRunning } = useTaskMonitor({ maxRequestFailures: 3 });
+
+            waitForTask("some-task", 1);
+            await vi.waitFor(() => expect(requestHasFailed.value).toBe(true));
+            expect(isRunning.value).toBe(false);
+            expect(calls()).toBe(3);
+        });
     });
 
     it("should load the status from the stored monitoring data", async () => {

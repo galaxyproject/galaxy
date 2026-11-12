@@ -133,11 +133,17 @@ export function useGenericMonitor(options: {
      * Requests to check the task status after this time should be avoided.
      */
     expirationTime?: number;
+
+    /** How many status requests in a row may fail before `requestHasFailed` is set and polling stops.
+     * By default, the first failed request does.
+     */
+    maxRequestFailures?: number;
 }): TaskMonitor {
     let timeout: NodeJS.Timeout | null = null;
     let pollGeneration = 0;
     let disposed = false;
     let pollDelay = options.defaultPollDelay ?? DEFAULT_POLL_DELAY;
+    let requestFailuresInARow = 0;
 
     const isRunning = ref(false);
     const taskStatus = ref<string>();
@@ -175,6 +181,7 @@ export function useGenericMonitor(options: {
             if (generation !== pollGeneration) {
                 return;
             }
+            requestFailuresInARow = 0;
             taskStatus.value = result;
             if (isCompleted.value || hasFailed.value) {
                 isRunning.value = false;
@@ -186,7 +193,13 @@ export function useGenericMonitor(options: {
                 pollAfterDelay(taskId);
             }
         } catch (err) {
-            if (generation === pollGeneration) {
+            if (generation !== pollGeneration) {
+                return;
+            }
+            requestFailuresInARow++;
+            if (fetchOptions.keepPolling && requestFailuresInARow < (options.maxRequestFailures ?? 1)) {
+                pollAfterDelay(taskId);
+            } else {
                 handleError(errorMessageAsString(err));
             }
         }
@@ -227,6 +240,7 @@ export function useGenericMonitor(options: {
 
     function resetState() {
         resetTimeout();
+        requestFailuresInARow = 0;
         taskStatus.value = undefined;
         requestHasFailed.value = false;
         isRunning.value = false;
