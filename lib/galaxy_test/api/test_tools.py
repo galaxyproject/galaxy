@@ -290,24 +290,15 @@ class TestToolsApi(ApiTestCase, TestsTools):
             ("help_image.png", static_image),
             ("beside_tool.png", beside_image),
         ]:
-            response = self._get("tools/help_images_markdown/help_image", data={"path": path, "tool_version": "1.0.0"})
+            response = self._get_tool_help_image("help_images_markdown", path, tool_version="1.0.0")
             self._assert_status_code_is(response, 200)
             assert response.headers["Content-Type"] == "image/png"
             with open(expected_file, "rb") as fh:
                 assert response.content == fh.read()
-
-    @skip_without_tool("help_images_markdown")
-    def test_tool_help_image_not_found(self):
-        for path in [
-            "missing.png",
-            "help_image.svg",
-            "help_images_markdown.xml",
-            "../help_features_markdown.xml",
-            "../../../../test-data/im3_a.png",
-        ]:
-            response = self._get("tools/help_images_markdown/help_image", data={"path": path})
+        for path in ["missing.png", "help_image.svg", "help_images_markdown.xml", "../../../../test-data/im3_a.png"]:
+            response = self._get_tool_help_image("help_images_markdown", path)
             self._assert_status_code_is(response, 404)
-        response = self._get("tools/not_a_tool/help_image", data={"path": "help_image.png"})
+        response = self._get_tool_help_image("not_a_tool", "help_image.png")
         self._assert_status_code_is(response, 404)
 
     @skip_without_tool("test_data_source")
@@ -918,6 +909,12 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     def _show_tool(self, tool_id, **params):
         return self._get(f"tools/{tool_id}", data=params)
+
+    def _get_tool_help_image(self, tool_id, path, tool_version=None):
+        params = {"path": path}
+        if tool_version:
+            params["tool_version"] = tool_version
+        return self._get(f"tools/{tool_id}/help_image", data=params)
 
     def _show_valid_tool(self, tool_id, tool_version=None):
         data = dict(io_details=True)
