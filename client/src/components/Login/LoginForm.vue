@@ -77,6 +77,9 @@ const isNarrow = computed(() => loginFormWidth.value > 0 && loginFormWidth.value
 /** Stack login options vertically beside the welcome page or on narrow screens. */
 const loginColumnDisplay = computed(() => showWelcome.value || isNarrow.value);
 
+/** Narrow card with external login options stacked; also used when only external login is available. */
+const stackExternalLogin = computed(() => loginColumnDisplay.value || props.disableLocalAccounts);
+
 async function submitLogin() {
     let redirect: string | null;
     passwordState.value = null;
@@ -170,10 +173,7 @@ function goToResetPassword() {
                     </GAlert>
 
                     <div>
-                        <BCard
-                            no-body
-                            style="width: fit-content"
-                            :class="{ 'login-card-narrow': disableLocalAccounts || loginColumnDisplay }">
+                        <BCard no-body style="width: fit-content" :class="{ 'login-card-narrow': stackExternalLogin }">
                             <BCardHeader v-if="!connectExternalProvider">
                                 <span>{{ localize("Welcome to Galaxy, please log in") }}</span>
                             </BCardHeader>
@@ -245,12 +245,12 @@ function goToResetPassword() {
 
                                     <hr v-else-if="!disableLocalAccounts" class="w-100" />
 
-                                    <div class="m-1" :class="{ 'w-100': loginColumnDisplay || disableLocalAccounts }">
+                                    <div class="m-1" :class="{ 'w-100': stackExternalLogin }">
                                         <!-- OIDC login-->
                                         <ExternalLogin
                                             login-page
                                             :exclude-idps="excludeIdps"
-                                            :column-display="loginColumnDisplay || disableLocalAccounts"
+                                            :column-display="stackExternalLogin"
                                             :disable-local-accounts="disableLocalAccounts" />
                                     </div>
                                 </template>
