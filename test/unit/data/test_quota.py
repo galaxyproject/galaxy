@@ -673,6 +673,27 @@ class TestQuota(BaseModelTestCase):
 
         self._assert_user_quota_is(u, 52, label1)
 
+    def test_replacing_quota_associations_announces_to_old_and_new_users(self):
+        old_user, old_member, new_user, new_member = (self._new_user() for _ in range(4))
+        quota = model.Quota(name=f"replaced associations {uuid.uuid4()}", amount=10)
+        self._add_user_quota(old_user, quota)
+        self._add_group_quota(old_member, quota)
+        new_group = model.Group(name=f"new group {uuid.uuid4()}")
+        self.persist(new_group, model.UserGroupAssociation(new_member, new_group))
+        sent: list[UserQuotaUpdates] = []
+        remove = send_user_quota_updates_on_commit(self.model.session, sent.append)
+        try:
+            self.quota_agent.set_entity_quota_associations(quotas=[quota], users=[new_user], groups=[new_group])
+        finally:
+            remove()
+
+        assert sent == [UserQuotaUpdates(user_ids={old_user.id, old_member.id, new_user.id, new_member.id})]
+
+    def _new_user(self):
+        user = model.User(email=random_email(), password="password")
+        self.persist(user)
+        return user
+
     def _add_group_quota(self, user, quota):
         group = model.Group()
         uga = model.UserGroupAssociation(user, group)

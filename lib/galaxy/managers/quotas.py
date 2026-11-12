@@ -153,11 +153,6 @@ class QuotaManager:
             ]
             if None in in_groups:
                 raise ActionInputError("One or more invalid group id has been provided.")
-            # Before replacing the associations, so the users the quota no longer applies to are told too
-            queue_quota_change(self.sa_session, quota)
-            queue_quota_change_for_users_and_groups(
-                self.sa_session, [user.id for user in in_users], [group.id for group in in_groups]
-            )
             self.quota_agent.set_entity_quota_associations(quotas=[quota], users=in_users, groups=in_groups)
             self.sa_session.refresh(quota)
             if len(quota.users) != len(in_users) and len(quota.groups) != len(in_groups):
