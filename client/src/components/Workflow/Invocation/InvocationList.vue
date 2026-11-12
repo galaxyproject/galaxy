@@ -3,10 +3,7 @@ import {
     faCheckCircle,
     faExclamationTriangle,
     faEye,
-    faPlay,
     faPlus,
-    faRedo,
-    faShieldAlt,
     faSpinner,
     faStopCircle,
 } from "@fortawesome/free-solid-svg-icons";
@@ -18,7 +15,6 @@ import { useRouter } from "vue-router";
 
 import { isRegisteredUser } from "@/api";
 import type { WorkflowInvocation } from "@/api/invocations";
-import type { StoredWorkflowDetailed } from "@/api/workflows";
 import type { TableField } from "@/components/Common/GTable.types";
 import {
     type AppliedTimeRange,
@@ -36,6 +32,7 @@ import {
     workflowColumnFilter,
 } from "@/components/Workflow/Invocation/invocationFilters";
 import { fetchInvocations, type InvocationsQuery } from "@/components/Workflow/Invocation/invocationsIndex";
+import { useInvocationListItemActions } from "@/components/Workflow/Invocation/useInvocationListItemActions";
 import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -46,6 +43,7 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GBadge from "@/components/BaseComponents/GBadge.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import GPagination from "@/components/BaseComponents/GPagination.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
@@ -60,6 +58,8 @@ import GridExpand from "@/components/Grid/GridElements/GridExpand.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 import UtcDate from "@/components/UtcDate.vue";
+import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
+import WorkflowPublishedButtons from "@/components/Workflow/Published/WorkflowPublishedButtons.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 
 const LIMIT = 25;
@@ -114,9 +114,9 @@ const router = useRouter();
 const workflowStore = useWorkflowStore();
 const { currentUser } = storeToRefs(useUserStore());
 
-/** Scoped to one history or workflow: no heading, search or column filters, and Run in place of Rerun */
+/** Scoped to one history or workflow: no heading, search or column filters */
 const scoped = !!(props.historyId || props.workflowId);
-/** A batch run's invocations: no heading, filters, paging, sorting, Workflow or Run column */
+/** A batch run's invocations: no heading, filters, paging, sorting or Workflow column */
 const batch = !!props.invocations;
 // the admin list covers every user, but the filter lookups only cover the admin's own workflows and histories
 const filterable = !props.admin && !scoped && !batch;
@@ -139,7 +139,6 @@ const listColumns: (ColumnFilterField & { sortable?: boolean })[] = [
         : [{ key: "history_id", title: "History", filter: filterable ? historyColumnFilter : undefined }]),
     { key: "create_time", title: "Invoked", sortable: true },
     { key: "state", title: "State" },
-    { key: "execute", title: scoped ? "Run" : "Rerun" },
 ];
 const columns = batch ? batchColumns : listColumns;
 const fields: TableField[] = columns.map(({ key, title, sortable }) => ({ key, label: title ?? "", sortable }));
@@ -262,11 +261,7 @@ async function load() {
         } else if (isRegisteredUser(currentUser.value)) {
             query.user_id = currentUser.value.id;
         }
-        // a scoped list already knows its history or workflow
-        const [data, total] = await fetchInvocations(query, {
-            histories: !props.historyId,
-            workflows: !props.workflowId,
-        });
+        const [data, total] = await fetchInvocations(query);
         if (requestId === latestRequest) {
             collapseAll();
             listedInvocations.value = data;
@@ -311,17 +306,8 @@ function collapseAll() {
 
 /** The invocation's workflow version as the editor numbers it (from 1), once its workflow has loaded */
 function workflowVersion(invocation: WorkflowInvocation) {
-    const workflow = workflowStore.getStoredWorkflowByInstanceId(invocation.workflow_id) as
-        | StoredWorkflowDetailed
-        | undefined;
+    const workflow = storedWorkflow(invocation);
     return typeof workflow?.version === "number" ? workflow.version + 1 : undefined;
-}
-
-function canRunAgain(invocation: WorkflowInvocation) {
-    const workflow = workflowStore.getStoredWorkflowByInstanceId(
-        invocation.workflow_id,
-    ) as unknown as StoredWorkflowDetailed;
-    return !workflow?.deleted;
 }
 
 /** Opens the invocation; a batch list opens it in a new tab, to keep the run's results page */
@@ -333,11 +319,12 @@ function viewInvocation(invocation: WorkflowInvocation) {
     }
 }
 
-/** Runs the invocation's workflow afresh; a workflow's list already knows its stored workflow */
-function runWorkflow(invocation: WorkflowInvocation) {
-    const storedWorkflowId = props.workflowId ?? workflowStore.getStoredWorkflowIdByInstanceId(invocation.workflow_id);
-    router.push(`/workflows/run?id=${storedWorkflowId}`);
-}
+const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
+
+const { invocationListItemActions, storedWorkflow, workflowPreview } = useInvocationListItemActions({
+    viewInvocation,
+    refreshList: load,
+});
 
 onMounted(load);
 
@@ -474,6 +461,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 :sort-desc="sortDesc"
                 :local-sorting="false"
                 :overlay-loading="resultsLoading"
+                :actions="invocationListItemActions"
                 @sort-changed="onSort">
                 <template v-if="filterable" v-slot:head(workflow_id)="{ field }">
                     <span>{{ field.label }}</span>
@@ -534,19 +522,6 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 <template v-slot:cell(state)="{ item }">
                     <HelpText :uri="`galaxy.invocations.states.${item.state}`" :text="item.state" />
                 </template>
-                <template v-slot:cell(execute)="{ item }">
-                    <FontAwesomeIcon v-if="!canRunAgain(item)" :icon="faShieldAlt" />
-                    <GButton v-else-if="scoped" color="blue" :title="localize('Run')" @click="runWorkflow(item)">
-                        <FontAwesomeIcon :icon="faPlay" />
-                    </GButton>
-                    <GButton
-                        v-else
-                        color="blue"
-                        :title="localize('Rerun')"
-                        @click="router.push(`/workflows/rerun?invocation_id=${item.id}`)">
-                        <FontAwesomeIcon :icon="faRedo" />
-                    </GButton>
-                </template>
 
                 <template v-slot:row-details="{ item }">
                     <div class="card p-2" data-description="grid expanded row">
@@ -572,6 +547,29 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                     data-description="invocation list pager" />
             </div>
         </div>
+
+        <GModal
+            :show="!!workflowPreview"
+            size="large"
+            title="Workflow Preview"
+            fixed-height
+            class="invocation-workflow-preview-modal"
+            @close="workflowPreview = null">
+            <template v-slot:header>
+                <WorkflowPublishedButtons
+                    v-if="workflowPreview && workflowPublished?.workflowInfo"
+                    :id="workflowPreview.id"
+                    :workflow-info="workflowPublished.workflowInfo" />
+            </template>
+            <WorkflowPublished
+                v-if="workflowPreview"
+                :id="workflowPreview.id"
+                ref="workflowPublished"
+                :version="workflowPreview.version"
+                :show-heading="false"
+                :show-buttons="false"
+                quick-view />
+        </GModal>
     </div>
 </template>
 
@@ -600,6 +598,11 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
     overflow: hidden;
     overflow-wrap: anywhere;
     text-align: left;
+}
+
+// as wide as the workflow list's preview modal
+.invocation-workflow-preview-modal {
+    max-width: min(1400px, calc(100% - 200px));
 }
 
 // status buttons, then the column filter chips filling the space up to the time range
