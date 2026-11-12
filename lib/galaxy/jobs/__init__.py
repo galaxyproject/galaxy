@@ -1401,7 +1401,8 @@ class MinimalJobWrapper(HasResourceParameters):
             return self.sa_session.scalars(stmt).first()
 
         # TODO: The upload tool actions that create the paramfile can probably be turned in to a configfile to remove this special casing
-        if job.tool_id == "upload1":
+        # A user defined tool picks its own id, so the id alone does not make it the upload tool.
+        if job.tool_id == "upload1" and dynamic_tool is None:
             self.__prepare_upload_paramfile(job)
 
         tool_evaluator = self._get_tool_evaluator(job)
