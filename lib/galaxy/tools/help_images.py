@@ -24,7 +24,7 @@ def find_tool_file(base_dir: StrPath, file_path: str) -> str | None:
     return None
 
 
-def find_tool_asset(base_dir: str, asset_path: str) -> str | None:
+def find_tool_asset(base_dir: StrPath, asset_path: str) -> str | None:
     """Find ``asset_path`` under ``base_dir``, trying ``static/images/`` first as Tool Shed help does."""
     # safe_contains resolves symlinks in the candidate, so compare against the resolved base.
     base_dir = os.path.realpath(base_dir)
@@ -39,7 +39,7 @@ def find_tool_asset(base_dir: str, asset_path: str) -> str | None:
     return None
 
 
-def find_help_image(base_dirs: Iterable[str | None], image_path: str) -> str | None:
+def find_help_image(base_dirs: Iterable[StrPath | None], image_path: str) -> str | None:
     """Find ``image_path`` under the first of ``base_dirs`` that has it, skipping unset ones."""
     for base_dir in base_dirs:
         if base_dir and (found_path := find_tool_asset(base_dir, image_path)):
