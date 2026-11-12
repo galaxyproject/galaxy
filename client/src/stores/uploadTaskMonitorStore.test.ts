@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
+import type { useTaskMonitor } from "@/composables/taskMonitor";
 import type { NewUploadItem, UploadItem } from "@/composables/upload/uploadItemTypes";
 
 import {
@@ -11,6 +12,18 @@ import {
     redactExportLinks,
     useUploadTaskMonitorStore,
 } from "./uploadTaskMonitorStore";
+
+const monitorOptions = vi.hoisted(() => ({ withoutExpiration: false }));
+
+vi.mock("@/composables/taskMonitor", async (importOriginal) => {
+    const actual = await importOriginal<{ useTaskMonitor: typeof useTaskMonitor }>();
+    return {
+        useTaskMonitor: (options?: Parameters<typeof useTaskMonitor>[0]) => {
+            const monitor = actual.useTaskMonitor(options);
+            return monitorOptions.withoutExpiration ? { ...monitor, expirationTime: undefined } : monitor;
+        },
+    };
+});
 
 const { server, http } = useServerMock();
 
@@ -73,6 +86,7 @@ afterEach(() => {
     uploadState.clearAll();
     useUploadTaskMonitorStore().$dispose();
     vi.useRealTimers();
+    monitorOptions.withoutExpiration = false;
 });
 
 describe("useUploadTaskMonitorStore", () => {
@@ -147,6 +161,19 @@ describe("useUploadTaskMonitorStore", () => {
         useUploadTaskMonitorStore();
         await vi.waitFor(() => expect(itemOf("old")).toMatchObject({ status: "error", error: COULD_NOT_CHECK_IMPORT }));
         expect(checked).toEqual([]);
+    });
+
+    it("keeps following an old import when the monitor has no expiration time", async () => {
+        monitorOptions.withoutExpiration = true;
+        const checked = tasksEndIn("PENDING");
+        uploadState.activeItems.value = [
+            storedItem({ id: "old", status: "processing", taskId: "task-old", createdAt: Date.now() - 2 * DAY_MS }),
+        ];
+        useUploadTaskMonitorStore();
+        await vi.waitFor(() => expect(checked).toEqual(["task-old"]));
+        // A timer for an unknown expiration would fire at once, as browsers clamp an Infinity delay to 0.
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(itemOf("old").status).toBe("processing");
     });
 
     it("gives up on a task that is still pending when it expires", async () => {

@@ -62,13 +62,15 @@ export const useUploadTaskMonitorStore = defineStore("uploadTaskMonitor", () => 
         scope.run(() => {
             const monitor = useTaskMonitor({ maxRequestFailures: MAX_STATUS_FAILURES });
             // Past this, Galaxy may have forgotten the task and report it as pending for good.
-            const expiresIn = createdAt + (monitor.expirationTime ?? Infinity) - Date.now();
-            if (expiresIn <= 0) {
-                uploadState.setError(uploadId, COULD_NOT_CHECK_IMPORT);
-                return;
+            if (monitor.expirationTime !== undefined) {
+                const expiresIn = createdAt + monitor.expirationTime - Date.now();
+                if (expiresIn <= 0) {
+                    uploadState.setError(uploadId, COULD_NOT_CHECK_IMPORT);
+                    return;
+                }
+                const expiry = setTimeout(() => uploadState.setError(uploadId, COULD_NOT_CHECK_IMPORT), expiresIn);
+                onScopeDispose(() => clearTimeout(expiry));
             }
-            const expiry = setTimeout(() => uploadState.setError(uploadId, COULD_NOT_CHECK_IMPORT), expiresIn);
-            onScopeDispose(() => clearTimeout(expiry));
             watch(
                 [monitor.isCompleted, monitor.hasFailed, monitor.failureReason, monitor.requestHasFailed],
                 ([completed, failed, failureReason, requestFailed]) => {
