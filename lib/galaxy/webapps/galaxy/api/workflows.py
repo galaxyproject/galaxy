@@ -86,6 +86,7 @@ from galaxy.schema.schema import (
     WorkflowLandingRequest,
     WorkflowSortByEnum,
 )
+from galaxy.schema.states import InvocationState
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.schema.workflows import (
     InvokeWorkflowPayload,
@@ -1372,6 +1373,14 @@ InvocationsSearchQueryParam = Annotated[
     ),
 ]
 
+InvocationsStateQueryParam = Annotated[
+    list[InvocationState] | None,
+    Query(
+        title="States",
+        description="Return only invocations in one of these states. Repeat the parameter for several states.",
+    ),
+]
+
 InvocationsDateRangeMinQueryParam = Annotated[
     OffsetNaiveDatetime | date | None,
     Query(
@@ -1505,6 +1514,7 @@ class FastAPIInvocations:
         search: InvocationsSearchQueryParam = None,
         date_range_min: InvocationsDateRangeMinQueryParam = None,
         date_range_max: InvocationsDateRangeMaxQueryParam = None,
+        state: InvocationsStateQueryParam = None,
         trans: SessionRequestContext = DependsOnTrans,
     ) -> list[WorkflowInvocationResponse]:
         if not trans.user:
@@ -1519,6 +1529,7 @@ class FastAPIInvocations:
             user_id=user_id,
             date_range_min=date_range_min,
             date_range_max=date_range_max,
+            state=state,
             sort_by=sort_by,
             sort_desc=sort_desc,
             include_terminal=include_terminal,
@@ -1563,6 +1574,7 @@ class FastAPIInvocations:
         step_details: StepDetailQueryParam = False,
         date_range_min: InvocationsDateRangeMinQueryParam = None,
         date_range_max: InvocationsDateRangeMaxQueryParam = None,
+        state: InvocationsStateQueryParam = None,
         trans: SessionRequestContext = DependsOnTrans,
     ) -> list[WorkflowInvocationResponse]:
         invocations = self.index_invocations(
@@ -1581,6 +1593,7 @@ class FastAPIInvocations:
             step_details=step_details,
             date_range_min=date_range_min,
             date_range_max=date_range_max,
+            state=state,
             trans=trans,
         )
         return invocations
