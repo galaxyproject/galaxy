@@ -13,6 +13,8 @@ import { absPath, withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 const POLL_DELAY = 3000;
+// A short network problem should not fail an export that keeps running on the server.
+const MAX_STATUS_FAILURES = 3;
 const MAX_REUSE_MS = 60 * 60 * 1000;
 
 export type ExportForAnotherGalaxyStatus = "starting" | "running" | "ready" | "failed";
@@ -124,7 +126,7 @@ const useExports = defineStore("exportsForAnotherGalaxy", () => {
             isFinal: false,
         };
         trackDownloadRequestWithData(tracked);
-        const monitor = useTaskMonitor();
+        const monitor = useTaskMonitor({ maxRequestFailures: MAX_STATUS_FAILURES });
         recordOutcome(monitor, tracked);
         exports.set(key, {
             storageRequestId: data.storage_request_id,
