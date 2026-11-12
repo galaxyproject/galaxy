@@ -1102,12 +1102,22 @@ class SelectToolParameter(ToolParameter):
                     self.name,
                     is_dynamic=self.is_dynamic,
                 )
-            if set(value).issubset(legal_values):
+            try:
+                value_set = set(value)
+            except TypeError:
+                # dicts or lists inside the list are unhashable and can never be legal options
+                raise ParameterValueError(
+                    f"invalid options ({value!r}) were selected (valid options: {','.join(iter_to_string(legal_values))})",
+                    self.name,
+                    value,
+                    is_dynamic=self.is_dynamic,
+                ) from None
+            if value_set.issubset(legal_values):
                 return value
-            elif set(value).issubset(set(fallback_values.keys())):
+            elif value_set.issubset(set(fallback_values.keys())):
                 return [fallback_values[v] for v in value]
             else:
-                invalid_options = iter_to_string(set(value) - set(legal_values))
+                invalid_options = iter_to_string(value_set - set(legal_values))
                 raise ParameterValueError(
                     f"invalid options ({','.join(invalid_options)!r}) were selected (valid options: {','.join(iter_to_string(legal_values))})",
                     self.name,

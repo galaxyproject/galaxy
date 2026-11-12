@@ -2321,6 +2321,28 @@ steps:
         assert outputs[0]["name"] == "out_1"
         assert outputs[1]["name"] == "out_2"
 
+    @skip_without_tool("simple_constructs")
+    def test_export_editor_unhashable_multiple_select_value(self):
+        # a list holding a dict (e.g. a conditional-shaped value) can never match a select option
+        workflow = {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "unhashable select value",
+            "annotation": "",
+            "steps": {
+                "0": {
+                    "id": 0,
+                    "type": "tool",
+                    "tool_id": "simple_constructs",
+                    "tool_state": json.dumps({"check_select": [{"value": "x"}]}),
+                    "input_connections": {},
+                }
+            },
+        }
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        assert "invalid options" in downloaded_workflow["upgrade_messages"]["0"]["check_select"]
+
     @skip_without_tool("collection_type_source")
     def test_export_editor_collection_type_source(self):
         workflow_id = self._upload_yaml_workflow(WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE)
