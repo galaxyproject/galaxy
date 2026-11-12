@@ -10,6 +10,7 @@ import type { StoredWorkflowDetailed } from "@/api/workflows";
 import type * as InvocationFilters from "@/components/Workflow/Invocation/invocationFilters";
 import { fetchInvocations } from "@/components/Workflow/Invocation/invocationsIndex";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
@@ -20,6 +21,9 @@ vi.useFakeTimers();
 // the list's links and navigation go through a real test router
 const router = createTestRouter();
 const push = vi.spyOn(router, "push").mockResolvedValue(undefined);
+
+const { confirm } = vi.hoisted(() => ({ confirm: vi.fn() }));
+vi.mock("@/composables/confirmDialog", () => ({ useConfirmDialog: () => ({ confirm }) }));
 
 vi.mock("@/components/Workflow/Invocation/invocationsIndex", () => ({
     fetchInvocations: vi.fn(),
@@ -256,6 +260,23 @@ describe("InvocationList", () => {
         expect(filterInput(wrapper).value).toBe("");
     });
 
+    it("cancels the selected invocations that are still active, after confirming", async () => {
+        const wrapper = mountTarget();
+        await flushPromises();
+        const cancel = vi.spyOn(useInvocationStore(), "cancelWorkflowScheduling").mockResolvedValue(undefined as never);
+        confirm.mockResolvedValue(true);
+
+        await wrapper.find("thead input[type='checkbox']").setValue(true);
+        const bulkCancel = wrapper.find("#invocation-list-footer-bulk-cancel-button");
+        // only inv-1 is still active
+        expect(bulkCancel.text()).toContain("Cancel Selected (1)");
+
+        await bulkCancel.trigger("click");
+        await flushPromises();
+        expect(confirm).toHaveBeenCalledOnce();
+        expect(cancel.mock.calls.map(([id]) => id)).toEqual(["inv-1"]);
+    });
+
     it("keeps the column filters available when the filters match nothing", async () => {
         const wrapper = mountTarget();
         await flushPromises();
@@ -352,7 +373,7 @@ describe("InvocationList", () => {
                 user_id: USER.id,
                 include_nested_invocations: false,
             });
-            expect(headers(wrapper)).toEqual(["", "Workflow", "Invoked", "State", "Actions"]);
+            expect(headers(wrapper)).toEqual(["", "", "Workflow", "Invoked", "State", "Actions"]);
         });
 
         it("lists the user's invocations of a workflow", async () => {
@@ -361,7 +382,7 @@ describe("InvocationList", () => {
 
             expect(lastQuery()).toMatchObject({ workflow_id: "stored-9", user_id: USER.id });
             expect(lastQuery().include_nested_invocations).toBeUndefined();
-            expect(headers(wrapper)).toEqual(["", "View", "History", "Invoked", "State", "Actions"]);
+            expect(headers(wrapper)).toEqual(["", "", "View", "History", "Invoked", "State", "Actions"]);
         });
 
         it("offers no heading, search or column filters", async () => {
@@ -396,7 +417,7 @@ describe("InvocationList", () => {
 
             expect(fetchInvocations).not.toHaveBeenCalled();
             expect(rows(wrapper)).toHaveLength(2);
-            expect(headers(wrapper)).toEqual(["", "View", "History", "Invoked", "State", "Actions"]);
+            expect(headers(wrapper)).toEqual(["", "", "View", "History", "Invoked", "State", "Actions"]);
         });
 
         it("offers no heading, search, sorting or pager", async () => {
