@@ -133,4 +133,34 @@ describe("useUploadTaskMonitorStore", () => {
         expect(itemOf("pasted").status).toBe("queued");
         expect(itemOf(startingNow).status).toBe("queued");
     });
+
+    it("stops following an import whose task is older than tasks are kept", async () => {
+        const checked = tasksEndIn("PENDING");
+        uploadState.activeItems.value = [
+            storedItem({ id: "old", status: "processing", taskId: "task-old", createdAt: Date.now() - DAY_MS - 1000 }),
+        ];
+        useUploadTaskMonitorStore();
+        await vi.waitFor(() => expect(itemOf("old")).toMatchObject({ status: "error", error: COULD_NOT_CHECK_IMPORT }));
+        expect(checked).toEqual([]);
+    });
+
+    it("gives up on a task that is still pending when it expires", async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        const checked = tasksEndIn("PENDING");
+        uploadState.activeItems.value = [
+            storedItem({
+                id: "late",
+                status: "processing",
+                taskId: "task-late",
+                createdAt: Date.now() - DAY_MS + 5000,
+            }),
+        ];
+        useUploadTaskMonitorStore();
+        await vi.waitFor(() => expect(checked).toContain("task-late"));
+        expect(itemOf("late").status).toBe("processing");
+        await vi.advanceTimersByTimeAsync(6000);
+        await vi.waitFor(() =>
+            expect(itemOf("late")).toMatchObject({ status: "error", error: COULD_NOT_CHECK_IMPORT }),
+        );
+    });
 });
