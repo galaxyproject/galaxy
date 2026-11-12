@@ -5,10 +5,11 @@ import { GalaxyApi } from "@/api";
 import { useDownloadTracker } from "@/composables/downloadTracker";
 import type { TaskMonitor } from "@/composables/genericTaskMonitor";
 import type { MonitoringData } from "@/composables/persistentProgressMonitor";
+import { useShortTermStorage } from "@/composables/shortTermStorage";
 import { READY_STATE } from "@/composables/shortTermStorageMonitor";
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import type { ExportableItem } from "@/stores/exportToAnotherGalaxyStore";
-import { absPath, withPrefix } from "@/utils/redirect";
+import { absPath } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 const POLL_DELAY = 3000;
@@ -63,6 +64,7 @@ const useExports = defineStore("exportsForAnotherGalaxy", () => {
     const startErrors = shallowReactive(new Map<string, string>());
 
     const { trackDownloadRequestWithData } = useDownloadTracker();
+    const { getDownloadObjectUrl } = useShortTermStorage();
 
     // Recent Exports only learns from the storage, which a failed export also marks ready, so tell it the outcome.
     function recordOutcome(monitor: TaskMonitor, tracked: MonitoringData) {
@@ -159,7 +161,7 @@ const useExports = defineStore("exportsForAnotherGalaxy", () => {
         }
         // The export task's own state, not the storage's: a failed export still marks its storage ready.
         if (monitor.isCompleted.value) {
-            return { status: "ready", link: absPath(withPrefix(`/api/short_term_storage/${entry.storageRequestId}`)) };
+            return { status: "ready", link: absPath(getDownloadObjectUrl(entry.storageRequestId)) };
         }
         return { status: "running" };
     }
