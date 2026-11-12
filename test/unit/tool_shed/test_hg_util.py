@@ -115,6 +115,16 @@ def test_get_file_data_from_manifest(tmp_path):
     # Files larger than max_size are not read.
     assert get_file_data_from_manifest("images/logo.png", repo, first, max_size=9) == b"images v1"
     assert get_file_data_from_manifest("images/logo.png", repo, first, max_size=8) is None
+    # Exact-path lookup returns the file from the requested changeset.
+    assert get_file_data_from_manifest("images/logo.png", repo, first, exact_path=True) == b"images v1"
+    assert get_file_data_from_manifest("docs/logo.png", repo, second, exact_path=True) == b"docs"
+
+    # Do not fall back to another file with the same name.
+    assert get_file_data_from_manifest("logo.png", repo, second, exact_path=True) is None
+    assert get_file_data_from_manifest("other/logo.png", repo, second, exact_path=True) is None
+
+    # A deleted file must not be replaced by a different file.
+    assert get_file_data_from_manifest("docs/logo.png", repo, third, exact_path=True) is None
 
 
 def test_get_changectx_for_changeset_matches_only_exact_short_hash(tmp_path):
