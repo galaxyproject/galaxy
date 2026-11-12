@@ -44685,6 +44685,8 @@ export interface operations {
                 date_range_min?: string | null;
                 /** @description Return only invocations created before this date (e.g. '2014-01-01') */
                 date_range_max?: string | null;
+                /** @description Return only invocations in one of these states. Repeat the parameter for several states. */
+                state?: components["schemas"]["InvocationState"][] | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -56323,6 +56325,8 @@ export interface operations {
                 date_range_min?: string | null;
                 /** @description Return only invocations created before this date (e.g. '2014-01-01') */
                 date_range_max?: string | null;
+                /** @description Return only invocations in one of these states. Repeat the parameter for several states. */
+                state?: components["schemas"]["InvocationState"][] | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -57431,6 +57435,8 @@ export interface operations {
                 date_range_min?: string | null;
                 /** @description Return only invocations created before this date (e.g. '2014-01-01') */
                 date_range_max?: string | null;
+                /** @description Return only invocations in one of these states. Repeat the parameter for several states. */
+                state?: components["schemas"]["InvocationState"][] | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */

@@ -105,6 +105,7 @@ from galaxy.schema.schema import (
     CuratedWorkflowsQueryPayload,
     WorkflowIndexQueryPayload,
 )
+from galaxy.schema.states import InvocationState
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
 from galaxy.tools.parameters import (
@@ -760,6 +761,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         search: str | None = None,
         date_range_min: datetime | date | None = None,
         date_range_max: datetime | date | None = None,
+        states: list[InvocationState] | None = None,
     ) -> tuple[list, int]:
         """Get invocations owned by the current user."""
 
@@ -789,6 +791,8 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             stmt = stmt.where(WorkflowInvocation.create_time >= date_range_min)
         if date_range_max is not None:
             stmt = stmt.where(WorkflowInvocation.create_time <= date_range_max)
+        if states:
+            stmt = stmt.where(WorkflowInvocation.state.in_(states))
         if not include_terminal:
             stmt = stmt.where(WorkflowInvocation.state.in_(WorkflowInvocation.non_terminal_states))
         if not include_nested_invocations:

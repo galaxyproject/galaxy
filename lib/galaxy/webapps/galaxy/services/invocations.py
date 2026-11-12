@@ -131,6 +131,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             user_id=user_id,
             date_range_min=invocation_payload.date_range_min,
             date_range_max=invocation_payload.date_range_max,
+            states=invocation_payload.state,
             include_terminal=invocation_payload.include_terminal,
             limit=invocation_payload.limit,
             offset=invocation_payload.offset,

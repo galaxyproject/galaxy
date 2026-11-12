@@ -12094,6 +12094,44 @@ steps: []
             response = self._get("invocations", data={"date_range_min": "not-a-date"})
             self._assert_status_code_is(response, 400)
 
+    def test_invocation_filtering_by_state(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
+"""
+        with self._different_user_history(email=f"{uuid4()}@test.com"):
+            history_id = self.dataset_populator.new_history()
+            scheduled = self._run_workflow(workflow, history_id=history_id, wait=True)
+            cancelled = self._run_workflow(workflow, history_id=history_id, wait=False)
+            self.workflow_populator.cancel_invocation(cancelled.invocation_id)
+
+            def invocation_ids(route="invocations", **query):
+                response = self._get(route, data=query)
+                self._assert_status_code_is(response, 200)
+                matches = {invocation["id"] for invocation in response.json()}
+                assert response.headers["total_matches"] == str(len(matches))
+                return matches
+
+            # the background scheduler may still move each invocation on, so match both of its possible states
+            done_states = ["scheduled", "completed"]
+            cancel_states = ["cancelling", "cancelled"]
+            both = {scheduled.invocation_id, cancelled.invocation_id}
+            assert invocation_ids() == both
+            assert invocation_ids(state=done_states) == {scheduled.invocation_id}
+            assert invocation_ids(state=cancel_states) == {cancelled.invocation_id}
+            assert invocation_ids(state=done_states + cancel_states) == both
+            assert invocation_ids(state=["failed"]) == set()
+            # the workflow's own invocations route takes the same filter
+            workflow_route = f"workflows/{cancelled.workflow_id}/invocations"
+            assert invocation_ids(workflow_route, state=cancel_states) == {cancelled.invocation_id}
+
+            response = self._get("invocations", data={"state": "not-a-state"})
+            self._assert_status_code_is(response, 400)
+
     def test_invocation_filtering_by_histories_in_any_state(self):
         workflow = """
 class: GalaxyWorkflow
