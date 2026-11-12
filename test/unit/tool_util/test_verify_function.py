@@ -1,3 +1,6 @@
+import gzip
+import hashlib
+
 import pytest
 
 from galaxy.tool_util.unittest_utils import t_data_downloader_for
@@ -110,9 +113,6 @@ GZ_CONTENT = b"@read1\nACGT\n+\nIIII\n"
     ],
 )
 def test_checksum_honors_decompress(checksum_of, decompress, expect_pass):
-    import gzip
-    import hashlib
-
     compressed = gzip.compress(GZ_CONTENT)
     hashed = GZ_CONTENT if checksum_of == "decompressed" else compressed
     attributes = {"checksum": f"md5${hashlib.md5(hashed).hexdigest()}", "decompress": decompress}
@@ -124,31 +124,22 @@ def test_checksum_honors_decompress(checksum_of, decompress, expect_pass):
 
 
 def test_checksum_with_decompress_on_uncompressed_output():
-    import hashlib
-
     attributes = {"checksum": f"md5${hashlib.md5(GZ_CONTENT).hexdigest()}", "decompress": True}
     verify("out", GZ_CONTENT, attributes=attributes)
 
 
 def test_md5_honors_decompress():
-    import gzip
-    import hashlib
-
     compressed = gzip.compress(GZ_CONTENT)
     verify("out", compressed, attributes={"md5": hashlib.md5(GZ_CONTENT).hexdigest(), "decompress": True})
 
 
 def test_checksum_mismatch_says_it_is_over_decompressed_content():
-    import gzip
-
     compressed = gzip.compress(GZ_CONTENT)
     with pytest.raises(AssertionError, match="decompressed content"):
         verify("out", compressed, attributes={"checksum": "md5$" + "0" * 32, "decompress": True})
 
 
 def test_corrupt_compressed_output_is_an_assertion_error():
-    import gzip
-
     truncated = gzip.compress(GZ_CONTENT)[:-8]
     with pytest.raises(AssertionError, match="could not be decompressed"):
         verify("out", truncated, attributes={"checksum": "md5$" + "0" * 32, "decompress": True})
