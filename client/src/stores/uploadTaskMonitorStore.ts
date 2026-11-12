@@ -18,7 +18,8 @@ export const COULD_NOT_CHECK_IMPORT =
 export const INTERRUPTED_IMPORT =
     "The page was left before Galaxy started the import. Look at the history first, then try again.";
 
-const EXPORT_LINK = /\b[a-z][a-z0-9+.-]*:\/\/[^\s'"<>]*short_term_storage\/[^\s'"<>]*/gi;
+// The scheme is optional: requests errors name only the path ("Max retries exceeded with url: /api/...").
+const EXPORT_LINK = /(?:\b[a-z][a-z0-9+.-]*:\/\/)?[^\s'"<>]*short_term_storage\/[^\s'"<>]*/gi;
 
 /**
  * Hides export links in a message before it is kept in upload state, which is stored in the browser:

@@ -188,6 +188,10 @@ describe("redactExportLinks", () => {
             "Could not verify url '[export link]'.",
         ],
         ["at http://localhost:8080/galaxy/api/short_term_storage/x?y=1 failed", "at [export link] failed"],
+        [
+            "HTTPSConnectionPool(host='usegalaxy.eu', port=443): Max retries exceeded with url: /api/short_term_storage/0f8fad5b-d9cb-469f-a165-70867728950e (Caused by NewConnectionError('timed out'))",
+            "HTTPSConnectionPool(host='usegalaxy.eu', port=443): Max retries exceeded with url: [export link] (Caused by NewConnectionError('timed out'))",
+        ],
         ["nothing to hide here", "nothing to hide here"],
     ])("hides the links in %j", (text, expected) => {
         expect(redactExportLinks(text)).toBe(expected);
