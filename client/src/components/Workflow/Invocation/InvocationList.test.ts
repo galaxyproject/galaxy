@@ -5,9 +5,11 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { AnyHistory } from "@/api";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import type * as InvocationFilters from "@/components/Workflow/Invocation/invocationFilters";
 import { fetchInvocations } from "@/components/Workflow/Invocation/invocationsIndex";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
@@ -62,6 +64,10 @@ const INVOCATIONS = [
 function mountTarget(props: Record<string, unknown> = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     useUserStore(pinia).currentUser = USER;
+    // the user's own history, which a rerun switches to
+    useHistoryStore(pinia).storedHistories = {
+        "history-1": { id: "history-1", name: "History one", user_id: USER.id } as AnyHistory,
+    };
     useWorkflowStore(pinia).workflowsByInstanceId = {
         "instance-1": { id: "stored-1", name: "Name of instance-1", version: 2 } as StoredWorkflowDetailed,
         "instance-2": { id: "stored-2", name: "Name of instance-2" } as StoredWorkflowDetailed,
@@ -85,6 +91,13 @@ const lastQuery = () => vi.mocked(fetchInvocations).mock.calls.at(-1)![0];
 const filterInput = (wrapper: ReturnType<typeof mountTarget>) =>
     wrapper.find("[data-description='filter text input']").element as HTMLInputElement;
 const rows = (wrapper: ReturnType<typeof mountTarget>) => wrapper.findAll("tbody tr[id^='g-table-row-']");
+
+/** Picks an action from the first row's options menu */
+async function clickRowAction(wrapper: ReturnType<typeof mountTarget>, actionId: string) {
+    const cell = wrapper.find("tbody .g-table-actions-column");
+    await cell.find("button").trigger("click");
+    await cell.find(`#${actionId}`).trigger("click");
+}
 
 describe("InvocationList", () => {
     beforeEach(() => {
@@ -330,7 +343,7 @@ describe("InvocationList", () => {
             push.mockClear();
         });
 
-        it("lists the user's invocations in a history, loading only workflow names", async () => {
+        it("lists the user's invocations in a history", async () => {
             const wrapper = mountTarget({ historyId: "history-1" });
             await flushPromises();
 
@@ -339,18 +352,16 @@ describe("InvocationList", () => {
                 user_id: USER.id,
                 include_nested_invocations: false,
             });
-            expect(vi.mocked(fetchInvocations).mock.calls.at(-1)![1]).toEqual({ histories: false, workflows: true });
-            expect(headers(wrapper)).toEqual(["", "Workflow", "Invoked", "State", "Run"]);
+            expect(headers(wrapper)).toEqual(["", "Workflow", "Invoked", "State", "Actions"]);
         });
 
-        it("lists the user's invocations of a workflow, loading only history names", async () => {
+        it("lists the user's invocations of a workflow", async () => {
             const wrapper = mountTarget({ workflowId: "stored-9" });
             await flushPromises();
 
             expect(lastQuery()).toMatchObject({ workflow_id: "stored-9", user_id: USER.id });
             expect(lastQuery().include_nested_invocations).toBeUndefined();
-            expect(vi.mocked(fetchInvocations).mock.calls.at(-1)![1]).toEqual({ histories: true, workflows: false });
-            expect(headers(wrapper)).toEqual(["", "View", "History", "Invoked", "State", "Run"]);
+            expect(headers(wrapper)).toEqual(["", "View", "History", "Invoked", "State", "Actions"]);
         });
 
         it("offers no heading, search or column filters", async () => {
@@ -363,16 +374,16 @@ describe("InvocationList", () => {
             expect(lastQuery().search).toBeUndefined();
         });
 
-        it("runs the invocation's workflow afresh", async () => {
+        it("reruns an invocation with its inputs, as the other lists do", async () => {
             const historyList = mountTarget({ historyId: "history-1" });
             await flushPromises();
-            await historyList.find("tbody tr[id^='g-table-row-'] button[title='Run']").trigger("click");
-            expect(push).toHaveBeenLastCalledWith("/workflows/run?id=stored-1");
+            await clickRowAction(historyList, "rerun-invocation");
+            expect(push).toHaveBeenLastCalledWith("/workflows/rerun?invocation_id=inv-1");
 
             const workflowList = mountTarget({ workflowId: "stored-9" });
             await flushPromises();
-            await workflowList.find("tbody tr[id^='g-table-row-'] button[title='Run']").trigger("click");
-            expect(push).toHaveBeenLastCalledWith("/workflows/run?id=stored-9");
+            await clickRowAction(workflowList, "rerun-invocation");
+            expect(push).toHaveBeenLastCalledWith("/workflows/rerun?invocation_id=inv-1");
         });
     });
 
@@ -385,7 +396,7 @@ describe("InvocationList", () => {
 
             expect(fetchInvocations).not.toHaveBeenCalled();
             expect(rows(wrapper)).toHaveLength(2);
-            expect(headers(wrapper)).toEqual(["", "View", "History", "Invoked", "State"]);
+            expect(headers(wrapper)).toEqual(["", "View", "History", "Invoked", "State", "Actions"]);
         });
 
         it("offers no heading, search, sorting or pager", async () => {
