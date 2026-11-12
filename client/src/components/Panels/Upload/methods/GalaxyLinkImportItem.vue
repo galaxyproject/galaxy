@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { onUnmounted, watch } from "vue";
-
-import { useTaskMonitor } from "@/composables/taskMonitor";
+import type { UploadStatus } from "@/composables/upload/uploadItemTypes";
+import { COULD_NOT_CHECK_IMPORT } from "@/stores/uploadTaskMonitorStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -11,51 +10,31 @@ interface Props {
      */
     name: string;
     /**
-     * Why the import could not be started
-     * @default undefined
+     * Status of the item's import in upload state
      */
-    startError?: string;
+    status: UploadStatus;
     /**
-     * Galaxy task that imports the item, once it has started
+     * Why the import failed
      * @default undefined
      */
-    taskId?: string;
+    error?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    startError: undefined,
-    taskId: undefined,
+    error: undefined,
 });
-
-const { waitForTask, stopWaitingForTask, isRunning, isCompleted, hasFailed, failureReason, requestHasFailed } =
-    useTaskMonitor();
-
-// The parent starts the import, so showing the row again only follows the task.
-watch(
-    () => props.taskId,
-    (taskId) => {
-        if (taskId) {
-            waitForTask(taskId, 3000);
-        }
-    },
-    { immediate: true },
-);
-
-onUnmounted(stopWaitingForTask);
 </script>
 
 <template>
     <li class="galaxy-link-import-item mb-2" data-description="galaxy picker import item">
         <b>{{ props.name || "Unnamed item" }}</b>
-        <span v-if="props.startError" class="text-danger">{{ props.startError }}</span>
-        <LoadingSpan v-else-if="!props.taskId || isRunning" message="Importing" />
-        <span v-else-if="hasFailed" class="text-danger">
-            Could not be imported. The link may have expired.
-            <span v-if="failureReason">{{ failureReason }}</span>
+        <span v-if="props.status === 'completed'" class="text-success">Imported</span>
+        <span v-else-if="props.status === 'cancelled'" class="text-muted">Cancelled</span>
+        <span
+            v-else-if="props.status === 'error'"
+            :class="props.error === COULD_NOT_CHECK_IMPORT ? 'text-warning' : 'text-danger'">
+            {{ props.error }}
         </span>
-        <span v-else-if="requestHasFailed" class="text-warning">
-            Galaxy could not check how the import is going. It may still finish, so look at the history.
-        </span>
-        <span v-else-if="isCompleted" class="text-success">Imported</span>
+        <LoadingSpan v-else message="Importing" />
     </li>
 </template>

@@ -6,8 +6,10 @@ import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { setMockConfig } from "@/composables/__mocks__/config";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUploadTaskMonitorStore } from "@/stores/uploadTaskMonitorStore";
 
 import GalaxyLinkImport from "./GalaxyLinkImport.vue";
 
@@ -58,6 +60,18 @@ async function importLink(link: string) {
     return wrapper;
 }
 
+// Upload state is shared by every test, and imports left in it would keep being followed.
+beforeEach(() => {
+    useUploadState().clearAll();
+});
+
+afterEach(() => {
+    // Each test has its own pinia, so its import monitor would otherwise follow the next test's imports too.
+    useUploadTaskMonitorStore().$dispose();
+    useUploadState().clearAll();
+    vi.useRealTimers();
+});
+
 describe("GalaxyLinkImport, pasting a link", () => {
     afterEach(() => {
         mountedLinks.forEach((wrapper) => wrapper.unmount());
@@ -88,15 +102,33 @@ describe("GalaxyLinkImport, pasting a link", () => {
     });
 
     it("does not call the import failed when Galaxy only could not report its progress", async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
         importEndsIn("SUCCESS");
+        let checks = 0;
         server.use(
-            http.get("/api/tasks/{task_id}/state", ({ response }) =>
-                response("5XX").json({ err_msg: "Bad Gateway", err_code: 502 }, { status: 502 }),
-            ),
+            http.get("/api/tasks/{task_id}/state", ({ response }) => {
+                checks++;
+                return response("5XX").json({ err_msg: "Bad Gateway", err_code: 502 }, { status: 502 });
+            }),
         );
         const wrapper = await importLink("https://usegalaxy.org/api/short_term_storage/abc");
+        await vi.waitFor(() => expect(checks).toBe(1));
+        await vi.advanceTimersByTimeAsync(3000);
+        await vi.waitFor(() => expect(checks).toBe(2));
+        await vi.advanceTimersByTimeAsync(3000);
         await vi.waitFor(() => expect(wrapper.text()).toContain("could not check how the import is going"));
         expect(wrapper.text()).not.toContain("may have expired");
+        expect(wrapper.find(".alert-warning").exists()).toBe(true);
+    });
+
+    it("keeps the import in upload state without its link", async () => {
+        importEndsIn("SUCCESS");
+        await importLink("https://usegalaxy.org/api/short_term_storage/abc");
+        const items = useUploadState().activeItems.value;
+        await vi.waitFor(() => expect(items[0]?.status).toBe("completed"));
+        expect(items).toHaveLength(1);
+        expect(items[0]).toMatchObject({ uploadMode: "galaxy-link", sourceHost: "usegalaxy.org", taskId: "task1" });
+        expect(JSON.stringify(items[0])).not.toContain("short_term_storage");
     });
 
     it.each([

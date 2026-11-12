@@ -11,9 +11,10 @@ import {
     parseSourceUrl,
     type SourceGalaxy,
 } from "@/components/AnotherGalaxy/pickerProtocol";
+import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { useConfig } from "@/composables/config";
 import { useTargetHistoryUploadState } from "@/composables/history/useTargetHistoryUploadState";
-import { useTaskMonitor } from "@/composables/taskMonitor";
+import { COULD_NOT_CHECK_IMPORT, useUploadTaskMonitorStore } from "@/stores/uploadTaskMonitorStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
@@ -30,8 +31,6 @@ const props = defineProps<{
     targetHistoryId: string;
 }>();
 
-const COULD_NOT_IMPORT =
-    "The link could not be imported. It may have expired, or the other Galaxy may not have finished preparing it.";
 const OTHER_SERVER = "other";
 const RECENT_SERVERS_KEY = "galaxy-link-import-recent-servers";
 const MAX_RECENT_SERVERS = 3;
@@ -50,13 +49,6 @@ interface PickerSession {
     root?: string;
 }
 
-interface ImportRow {
-    id: number;
-    name: string;
-    taskId?: string;
-    startError?: string;
-}
-
 const modeOptions = [
     { text: "Choose from another Galaxy", value: "choose" as Mode },
     { text: "Paste a link", value: "paste" as Mode },
@@ -64,17 +56,15 @@ const modeOptions = [
 
 const { config } = useConfig();
 
-const { waitForTask, stopWaitingForTask, isRunning, isCompleted, hasFailed, failureReason, requestHasFailed } =
-    useTaskMonitor();
+const uploadState = useUploadState();
+// Imports live in upload state, so they keep going and show in Upload Progress when this page is left.
+useUploadTaskMonitorStore();
 
 const { uploadBlockReason } = useTargetHistoryUploadState(computed(() => props.targetHistoryId));
 
 const mode = ref<Mode>("choose");
 const link = ref("");
-// The history the last import went to, which stays the same if the target is changed afterwards.
-const importedHistoryId = ref<string>();
-const isStarting = ref(false);
-const startError = ref<string>();
+const pastedUploadId = ref<string>();
 const recentServers = ref<string[]>(readRecentServers());
 const selectedServer = ref<string>();
 const customUrl = ref("");
@@ -82,8 +72,7 @@ const session = shallowRef<PickerSession | null>(null);
 const notice = ref<Notice>();
 const noticeHost = ref("");
 const failedCount = ref(0);
-const importRows = ref<ImportRow[]>([]);
-let nextRowId = 0;
+const pickedUploadIds = ref<string[]>([]);
 let helloTimer: ReturnType<typeof setTimeout> | undefined;
 let popupTimer: ReturnType<typeof setInterval> | undefined;
 
@@ -91,7 +80,17 @@ const trimmedLink = computed(() => link.value.trim());
 
 const isWebLink = computed(() => /^https?:\/\//.test(trimmedLink.value));
 
-const isImporting = computed(() => isStarting.value || isRunning.value);
+const pastedImport = computed(() => (pastedUploadId.value ? findUpload(pastedUploadId.value) : undefined));
+
+const isImporting = computed(() => ["queued", "uploading", "processing"].includes(pastedImport.value?.status ?? ""));
+
+// Items cleared from Upload Progress are left out here too.
+const pickedImports = computed(() =>
+    pickedUploadIds.value.flatMap((id) => {
+        const item = findUpload(id);
+        return item ? [item] : [];
+    }),
+);
 
 const configuredServers = computed(() => {
     const entries: unknown = config.value?.another_galaxy_servers;
@@ -132,11 +131,14 @@ const showCustomUrlError = computed(() => isOtherServer.value && customUrl.value
 const isWaiting = computed(() => Boolean(session.value));
 
 // Clearing the link keeps a second click from importing the same items again.
-watch(isCompleted, (completed) => {
-    if (completed) {
-        link.value = "";
-    }
-});
+watch(
+    () => pastedImport.value?.status,
+    (status) => {
+        if (status === "completed") {
+            link.value = "";
+        }
+    },
+);
 
 watch(
     serverOptions,
@@ -172,49 +174,60 @@ function rememberServer(root: string) {
     }
 }
 
-async function onImport() {
-    isStarting.value = true;
-    startError.value = undefined;
-    const historyId = props.targetHistoryId;
+function findUpload(id: string) {
+    return uploadState.activeItems.value.find((item) => item.id === id);
+}
+
+async function requestImport(uploadId: string, storeUri: string, historyId: string) {
     try {
         const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents_from_store_async", {
             params: { path: { history_id: historyId } },
-            body: { store_content_uri: trimmedLink.value, model_store_format: "tar.gz", discarded_data: "forbid" },
+            body: { store_content_uri: storeUri, model_store_format: "tar.gz", discarded_data: "forbid" },
         });
         if (error) {
-            startError.value = errorMessageAsString(error);
+            uploadState.setError(uploadId, errorMessageAsString(error));
             return;
         }
-        importedHistoryId.value = historyId;
-        waitForTask(data.id, 3000);
+        uploadState.markTaskStarted(uploadId, data.id);
     } catch (e) {
-        startError.value = errorMessageAsString(e, COULD_NOT_IMPORT);
-    } finally {
-        isStarting.value = false;
+        uploadState.setError(uploadId, errorMessageAsString(e, "The import could not be started."));
     }
 }
 
-// Started here rather than in the row, so showing the rows again does not import the items again.
-async function startRowImport(rowId: number, link: string, historyId: string) {
-    const update = (patch: Partial<ImportRow>) => {
-        const row = importRows.value.find((candidate) => candidate.id === rowId);
-        if (row) {
-            Object.assign(row, patch);
-        }
-    };
+/** Adds the import to upload state and asks Galaxy to start it; the upload task monitor follows it from there. */
+function startLinkImport(name: string, storeUri: string, historyId: string, sourceHost: string) {
+    const uploadId = uploadState.addUploadItem({
+        uploadMode: "galaxy-link",
+        name,
+        sourceHost,
+        size: 0,
+        targetHistoryId: historyId,
+        dbkey: "?",
+        extension: "auto",
+        spaceToTab: false,
+        toPosixLines: false,
+        autoDecompress: false,
+        deferred: false,
+    });
+    // Nothing to cancel: there is no transfer from this page, and Galaxy runs the task once asked.
+    uploadState.updateProgress(uploadId, 100);
+    requestImport(uploadId, storeUri, historyId);
+    return uploadId;
+}
+
+function onImport() {
+    let host = "";
     try {
-        const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents_from_store_async", {
-            params: { path: { history_id: historyId } },
-            body: { store_content_uri: link, model_store_format: "tar.gz", discarded_data: "forbid" },
-        });
-        if (error) {
-            update({ startError: errorMessageAsString(error) });
-            return;
-        }
-        update({ taskId: data.id });
-    } catch (e) {
-        update({ startError: errorMessageAsString(e, "The import could not be started.") });
+        host = new URL(trimmedLink.value).host;
+    } catch {
+        // The server reports a link it cannot read.
     }
+    pastedUploadId.value = startLinkImport(
+        host ? `Link from ${host}` : "Pasted link",
+        trimmedLink.value,
+        props.targetHistoryId,
+        host || "another Galaxy",
+    );
 }
 
 function endSession() {
@@ -301,10 +314,9 @@ function onMessage(event: MessageEvent) {
             showNotice("bad-links", host);
             return;
         }
+        // Started here rather than in the rows, so showing the rows again does not import the items again.
         for (const item of data.items) {
-            const id = nextRowId++;
-            importRows.value.push({ id, name: item.name });
-            startRowImport(id, item.link, current.historyId);
+            pickedUploadIds.value.push(startLinkImport(item.name, item.link, current.historyId, host));
         }
         if (data.failed > 0) {
             failedCount.value = data.failed;
@@ -317,10 +329,7 @@ function onMessage(event: MessageEvent) {
     }
 }
 
-onUnmounted(() => {
-    stopWaitingForTask();
-    endSession();
-});
+onUnmounted(endSession);
 </script>
 
 <template>
@@ -426,13 +435,13 @@ onUnmounted(() => {
                 Nothing was chosen on {{ noticeHost }}.
             </GAlert>
 
-            <ul v-if="importRows.length > 0" class="list-unstyled mt-3" data-description="galaxy picker imports">
+            <ul v-if="pickedImports.length > 0" class="list-unstyled mt-3" data-description="galaxy picker imports">
                 <GalaxyLinkImportItem
-                    v-for="row in importRows"
-                    :key="row.id"
-                    :name="row.name"
-                    :start-error="row.startError"
-                    :task-id="row.taskId" />
+                    v-for="item in pickedImports"
+                    :key="item.id"
+                    :error="item.error"
+                    :name="item.name"
+                    :status="item.status" />
             </ul>
         </template>
         <template v-else>
@@ -460,19 +469,22 @@ onUnmounted(() => {
             <GAlert v-if="isImporting" variant="info" class="mt-3" show>
                 <LoadingSpan message="Importing into this history, this may take a while" />
             </GAlert>
-            <GAlert v-else-if="startError" variant="danger" class="mt-3" show>{{ startError }}</GAlert>
-            <GAlert v-else-if="hasFailed" variant="danger" class="mt-3" show>
-                {{ COULD_NOT_IMPORT }}
-                <div v-if="failureReason" class="mt-1 small">{{ failureReason }}</div>
+            <GAlert
+                v-else-if="pastedImport?.status === 'error'"
+                :variant="pastedImport.error === COULD_NOT_CHECK_IMPORT ? 'warning' : 'danger'"
+                class="mt-3"
+                show>
+                {{ pastedImport.error }}
             </GAlert>
-            <GAlert v-else-if="requestHasFailed" variant="warning" class="mt-3" show>
-                Galaxy could not check how the import is going. It may still finish, so look at the history before
-                trying again.
-            </GAlert>
-            <GAlert v-else-if="isCompleted && importedHistoryId" variant="success" class="mt-3" show>
+            <GAlert v-else-if="pastedImport?.status === 'completed'" variant="success" class="mt-3" show>
                 Done! The items were imported into
-                <SwitchToHistoryLink :history-id="importedHistoryId" :inline="true" :thin="false" />
+                <SwitchToHistoryLink :history-id="pastedImport.targetHistoryId" :inline="true" :thin="false" />
             </GAlert>
         </template>
+
+        <p v-if="pastedImport || pickedImports.length > 0" class="small text-muted mt-3 mb-0">
+            Imports also show in <RouterLink to="/upload/progress">Upload Progress</RouterLink>, where they can be
+            followed after leaving this page.
+        </p>
     </div>
 </template>
