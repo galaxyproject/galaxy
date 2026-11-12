@@ -532,6 +532,23 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/api/repositories/{repository_id}/revisions/{changeset_revision}/tool_source/{tool_file}": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Return raw tool XML from a specific repository revision. */
+        get: operations["repositories__raw_tool_source_at_revision"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/api/tools": {
         parameters: {
             query?: never
@@ -5791,6 +5808,48 @@ export interface operations {
                 }
                 content: {
                     "application/json": components["schemas"]["RepositoryRevisionReadmes"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    repositories__raw_tool_source_at_revision: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                repository_id: string
+                changeset_revision: string
+                tool_file: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/xml": string
                 }
             }
             /** @description Request Error */
