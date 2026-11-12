@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useElementSize } from "@vueuse/core";
 import axios from "axios";
 import {
     BCard,
@@ -15,7 +16,6 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { SKIP_PENDING_REQUESTS_HEADER } from "@/api/pendingRequests";
-import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize";
 import { discardActiveConnectionsBeforeAuthNavigation } from "@/composables/useAuthNavigation";
 import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
@@ -71,7 +71,7 @@ const excludeIdps = computed(() => (connectExternalProvider.value ? [connectExte
 
 const showWelcome = computed(() => Boolean(props.showWelcomeWithLogin && props.welcomeUrl));
 const loginFormRoot = ref<HTMLElement | null>(null);
-const { width: loginFormWidth } = useAnimationFrameSize(loginFormRoot);
+const { width: loginFormWidth } = useElementSize(loginFormRoot);
 const isNarrow = computed(() => loginFormWidth.value > 0 && loginFormWidth.value < 800);
 
 /** Stack login options vertically beside the welcome page or on narrow screens. */
