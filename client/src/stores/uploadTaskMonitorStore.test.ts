@@ -54,7 +54,7 @@ function storedItem(overrides: Record<string, unknown>): UploadItem {
         createdAt: Date.now() - 60 * 1000,
         progress: 100,
         ...overrides,
-    } as UploadItem;
+    } as unknown as UploadItem;
 }
 
 let uploadState: ReturnType<typeof useUploadState>;
