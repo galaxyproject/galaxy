@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { getHistoryListFilters } from "@/components/History/historyList";
-import Filtering, { contains, equals } from "@/utils/filtering";
+import Filtering, { compare, contains, equals } from "@/utils/filtering";
 
 const filterTexts = [
     "name:'name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state:success extension:ext tag:first deleted:False visible:'TRUE'",
@@ -515,6 +515,56 @@ describe("plain text next to a MultiTags filter (history list advanced search)",
         expect(Object.fromEntries(filters.getFiltersForText(text, true, false))).toEqual({
             name: "abc",
             tag: ["mytag"],
+        });
+    });
+});
+
+describe("range filters without string quoting", () => {
+    const filters = new Filtering(
+        {
+            name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+            create_time: {
+                placeholder: "create time",
+                type: Date,
+                handler: compare("create_time", "le"),
+                isRangeInput: true,
+                menuItem: true,
+            },
+        },
+        undefined,
+        false,
+    );
+
+    test("parses the `key>value` and `key<value` forms that range inputs write", () => {
+        expect(Object.fromEntries(filters.getFiltersForText("create_time>2026-11-01 create_time<2026-11-02"))).toEqual({
+            create_time_gt: "2026-11-01",
+            create_time_lt: "2026-11-02",
+        });
+    });
+
+    test("ends a multi-word value where a range filter starts", () => {
+        expect(Object.fromEntries(filters.getFiltersForText("name:x y create_time>2026-11-01"))).toEqual({
+            name: "x y",
+            create_time_gt: "2026-11-01",
+        });
+    });
+
+    test("keeps a `>` or `<` that doesn't follow a range filter's key in the value", () => {
+        expect(Object.fromEntries(filters.getFiltersForText("name:rna seq>v2 <b"))).toEqual({ name: "rna seq>v2 <b" });
+    });
+
+    test("keeps a timestamp's colons in a range value", () => {
+        expect(Object.fromEntries(filters.getFiltersForText("create_time>2026-11-01T10:30:00 name:x"))).toEqual({
+            create_time_gt: "2026-11-01T10:30:00",
+            name: "x",
+        });
+    });
+
+    test("reads back the range text it writes", () => {
+        const text = filters.applyFiltersToText({ create_time_gt: "2026-11-01", create_time_lt: "2026-11-02" }, "");
+        expect(Object.fromEntries(filters.getFiltersForText(text))).toEqual({
+            create_time_gt: "2026-11-01",
+            create_time_lt: "2026-11-02",
         });
     });
 });

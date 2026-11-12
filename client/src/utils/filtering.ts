@@ -9,7 +9,7 @@
  * Comparison aliases are allowed converting e.g. '>' to '-gt' and '<' to '-lt'.
  */
 
-import { isEqual, omit } from "lodash";
+import { escapeRegExp, isEqual, omit } from "lodash";
 import type { DefineComponent } from "vue";
 
 export type Converter<T> = (value: T) => T;
@@ -382,6 +382,16 @@ export default class Filtering<T> {
         );
     }
 
+    /** Where a non-quoting pair starts: `key:`, or `key>` / `key<` for a range filter's key only,
+     * so other text with a `>` or `<` stays part of a value.
+     */
+    private pairStartPattern(): string {
+        const rangeKeys = Object.entries(this.validFilters)
+            .filter(([, filter]) => filter.isRangeInput)
+            .map(([key]) => escapeRegExp(key).replace(/_/g, "[-_]"));
+        return rangeKeys.length ? `(?:\\S+:|(?:${rangeKeys.join("|")})[><])` : "\\S+:";
+    }
+
     /** Splits a whitespace-trimmed `filterText` into its `key:value` (and raw-text) chunks.
      * The two `quoteStrings` modes tokenize incompatibly: `true` groups spaces with quotes and
      * allows bare raw text; `false` lets a value run unquoted up to the next `key:` token.
@@ -392,9 +402,10 @@ export default class Filtering<T> {
             const re = /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g;
             return { pairs: filterText.match(re) || [] };
         }
-        const re = /(\S+):(?:'[^']*'(?=\s|$)|"[^"]*"(?=\s|$)|.*?)(?=\s+\S+:|$)/g;
+        const start = this.pairStartPattern();
+        const re = new RegExp(`${start}(?:'[^']*'(?=\\s|$)|"[^"]*"(?=\\s|$)|.*?)(?=\\s+${start}|$)`, "g");
         const pairs = filterText.match(re) || [];
-        // this regex only matches from the first `key:` onward, so any leading text is separate
+        // this regex only matches from the first pair onward, so any leading text is separate
         const firstMatchStart = pairs.length ? filterText.indexOf(pairs[0]!) : filterText.length;
         const leadingText = filterText.slice(0, firstMatchStart).trim();
         return { pairs, leadingText: leadingText || undefined };
