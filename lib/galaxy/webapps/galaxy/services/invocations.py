@@ -129,6 +129,8 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             search=invocation_payload.search,
             job_id=invocation_payload.job_id,
             user_id=user_id,
+            date_range_min=invocation_payload.date_range_min,
+            date_range_max=invocation_payload.date_range_max,
             include_terminal=invocation_payload.include_terminal,
             limit=invocation_payload.limit,
             offset=invocation_payload.offset,
