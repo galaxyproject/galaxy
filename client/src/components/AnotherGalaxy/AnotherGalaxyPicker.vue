@@ -2,7 +2,7 @@
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchDebounced } from "@vueuse/core";
-import { computed, type ComputedRef, onMounted, ref, shallowRef, watch } from "vue";
+import { computed, type ComputedRef, ref, shallowRef, watch } from "vue";
 
 import { GalaxyApi, type HistoryItemSummary } from "@/api";
 import { getContentItemState } from "@/components/History/Content/model/states";
@@ -297,11 +297,16 @@ watchDebounced(
     { debounce: SEARCH_DELAY },
 );
 
-onMounted(() => {
-    if (canSend.value) {
-        load();
-    }
-});
+// Waits for the config, so a Galaxy that cannot export does not list items it only refuses to send.
+watch(
+    () => canSend.value && canExport.value,
+    (ready) => {
+        if (ready) {
+            load();
+        }
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
