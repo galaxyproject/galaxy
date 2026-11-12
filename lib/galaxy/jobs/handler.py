@@ -432,6 +432,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         # Pull all new jobs from the queue at once
         jobs_to_check: list[model.Job] = []
         resubmit_jobs = []
+        # Jobs settled in this pass whose after-commit post job actions run once it is committed.
+        settled_jobs: list[model.Job] = []
         if self.track_jobs_in_database:
             # Clear the session so we get fresh states for job and all datasets
             self.sa_session.expunge_all()
@@ -497,7 +499,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                     .all()
                 )
             # Filter jobs with invalid input states
-            jobs_to_check = self.__filter_jobs_with_invalid_input_states(jobs_to_check)
+            jobs_to_check = self.__filter_jobs_with_invalid_input_states(jobs_to_check, settled_jobs)
             # Fetch all "resubmit" jobs
             resubmit_jobs = (
                 self.sa_session.query(model.Job)
@@ -559,8 +561,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                     # that were registered during workflow step execution but are
                     # normally only run at job completion via the runner finish path.
                     for pjaa in job.post_job_actions:
-                        if pjaa.post_job_action.action_type not in ActionBox.immediate_actions:
+                        if pjaa.post_job_action.action_type not in ActionBox.deferred_actions:
                             ActionBox.execute(self.app, self.sa_session, pjaa.post_job_action, job)
+                    if ActionBox.has_after_commit_actions(job):
+                        settled_jobs.append(job)
                     continue
                 job_state = self.__check_job_state(job)
                 if job_state == JOB_WAIT:
@@ -584,6 +588,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                         dataset_assoc.dataset.info = "Execution of this dataset's job is paused because you were over your total job runtime at the time it was ready to run"
                         self.sa_session.add(dataset_assoc.dataset.dataset)
                     self.sa_session.add(job)
+                    if ActionBox.has_after_commit_actions(job):
+                        settled_jobs.append(job)
                 elif job_state == JOB_ERROR:
                     # A more informative message is shown wherever the job state is set to error
                     pass
@@ -600,11 +606,16 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             del self.job_wrappers[id]
         # Commit updated state
         self.sa_session.commit()
+        if settled_jobs:
+            ActionBox.execute_after_commit(self.app, self.sa_session, settled_jobs)
+            # Ends the read transaction the actions started.
+            self.sa_session.commit()
 
-    def __filter_jobs_with_invalid_input_states(self, jobs):
+    def __filter_jobs_with_invalid_input_states(self, jobs, paused_jobs):
         """
         Takes  list of jobs and filters out jobs whose input datasets are in invalid state and
-        set these jobs and their dependent jobs to paused.
+        set these jobs and their dependent jobs to paused. Paused jobs with after-commit post job
+        actions are added to ``paused_jobs``.
         """
         job_ids_to_check = [j.id for j in jobs]
         queries = []
@@ -667,7 +678,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             pause_message = f"{pause_message}. To resume this job fix the input dataset(s)."
             job, job_wrapper = self.job_pair_for_id(job_id)
             try:
-                job_wrapper.pause(job=job, message=pause_message)
+                if job_wrapper.pause(job=job, message=pause_message) and ActionBox.has_after_commit_actions(job):
+                    paused_jobs.append(job)
             except Exception:
                 log.exception("(%s) Caught exception while attempting to pause job.", job_id)
         for job_id in sorted(jobs_to_fail):
