@@ -814,16 +814,19 @@ def test_materialized_shed_tool_without_install_row_rewrites_help_images(tmp_pat
     assert ".. image:: merge-glyph.png" in help_text
 
 
-def test_materializing_shed_tool_without_help_images_skips_install_database(tmp_path):
+@pytest.mark.parametrize(
+    "help_text", ["No images.", ".. image:: https://example.org/a.png"], ids=["no_images", "remote_image"]
+)
+def test_materializing_shed_tool_without_local_help_images_skips_install_database(tmp_path, help_text):
     box = _materializing_box(with_repository_cache=False)
     queries: list[str] = []
     event.listen(box.app.install_model.engine, "before_cursor_execute", lambda *args: queries.append(args[2]))
     stored = _shed_image_stored(str(tmp_path))
-    stored.raw_source = SHED_IMAGE_TOOL_XML.replace(".. image:: $PATH_TO_IMAGES/merge-glyph.png", "No images.")
+    stored.raw_source = SHED_IMAGE_TOOL_XML.replace(".. image:: $PATH_TO_IMAGES/merge-glyph.png", help_text)
 
     tool = box._create_tool_from_stored_source(stored, entry=_shed_image_entry())
 
-    assert "No images." in tool.raw_help.content
+    assert help_text in tool.raw_help.content
     assert queries == []
 
 

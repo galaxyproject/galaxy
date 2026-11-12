@@ -147,6 +147,11 @@ def _strip_legacy_image_prefixes(text: str) -> str:
     return text.replace("$PATH_TO_IMAGES", "").replace("${static_path}", "")
 
 
+def has_local_image_paths(text: str) -> bool:
+    """Whether ``make_image_paths_relative`` has any ``.. image::``/``.. figure::`` targets to rewrite."""
+    return LOCAL_IMAGE_OR_FIGURE_DIRECTIVE.search(text) is not None
+
+
 def make_image_paths_relative(text: str) -> str:
     """Rewrite Tool Shed help ``.. image::``/``.. figure::`` targets to paths relative to the tool."""
     return LOCAL_IMAGE_OR_FIGURE_DIRECTIVE.sub(r".. \1:: \2", _strip_legacy_image_prefixes(text))
@@ -200,6 +205,7 @@ __all__ = (
     "get_next_prior_import_or_install_required_dict_entry",
     "get_tool_panel_config_tool_path_install_dir",
     "get_user",
+    "has_local_image_paths",
     "have_shed_tool_conf_for_install",
     "make_image_paths_relative",
     "set_image_paths",

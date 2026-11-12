@@ -79,6 +79,7 @@ from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import (
+    has_local_image_paths,
     make_image_paths_relative,
     set_image_paths,
 )
@@ -2171,7 +2172,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 if self.repository_id:
                     if help_text.find(".. image:: ") >= 0:
                         help_text = set_image_paths(self.app, help_text, encoded_repository_id=self.repository_id)
-                elif (".. image:: " in help_text or ".. figure:: " in help_text) and self.tool_shed_repository:
+                elif has_local_image_paths(help_text) and self.tool_shed_repository:
                     # Text check first: after startup tool_shed_repository may query the install database.
                     help_text = make_image_paths_relative(help_text)
             except Exception:
