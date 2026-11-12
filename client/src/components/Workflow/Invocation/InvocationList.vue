@@ -11,6 +11,7 @@ import {
     faStopCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useElementSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
@@ -64,6 +65,8 @@ const LIMIT = 25;
 const TITLE = "Workflow Invocations";
 /** Seconds the header message stays up */
 const HEADER_MESSAGE_SECONDS = 5;
+/** Narrower than this, the column filter chips get their own row under the filter bar */
+const INLINE_CHIPS_MIN_WIDTH = 768;
 
 /** The status buttons, one per `INVOCATION_STATE_GROUPS` key, in display order */
 const STATUS_GROUPS = [
@@ -155,6 +158,11 @@ const expandedToggles = new Map<string, () => void>();
 
 const filterText = ref("");
 const showAdvanced = ref(false);
+
+const filterBar = ref<HTMLElement>();
+const { width: filterBarWidth } = useElementSize(filterBar);
+// the list's own width, since its panel can be narrow in a wide window
+const narrowFilterBar = computed(() => filterBarWidth.value > 0 && filterBarWidth.value < INLINE_CHIPS_MIN_WIDTH);
 const { rawFilters, invalidFilters, hasInvalidFilters, validatedFilterText } = useFilterTextValidation(
     invocationsFiltering,
     filterText,
@@ -167,6 +175,7 @@ const {
     reachedColumnFilterLimit,
     onColumnFilter,
     removeColumnFilterOption,
+    clearColumnFilters,
 } = useColumnFilters(columns, invocationsFiltering, filterText, rawFilters, MAX_COLUMN_FILTER_PICKS);
 
 /** The active `status` quick-filter value, or `undefined` if none is toggled on. */
@@ -379,7 +388,10 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                     </GAlert>
                 </template>
             </FilterMenu>
-            <div v-if="filterable && !showAdvanced" class="d-flex align-items-center mt-2">
+            <div
+                v-if="filterable && !showAdvanced"
+                ref="filterBar"
+                class="invocation-filter-bar d-flex align-items-center mt-2">
                 <div>
                     <StatusGroupFilter
                         :groups="STATUS_GROUPS"
@@ -388,6 +400,13 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                         :active-group="activeStatusFilter"
                         @update:active-group="setActiveStatusFilter" />
                 </div>
+                <GridColumnFilterChips
+                    v-if="!narrowFilterBar"
+                    class="invocation-filter-chips"
+                    inline
+                    :chips="activeColumnFilters"
+                    @remove="removeColumnFilterOption"
+                    @clear="clearColumnFilters" />
                 <TimeRangeFilter
                     class="ml-auto"
                     :ranges="TIME_RANGES"
@@ -395,7 +414,11 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                     :active-range="activeTimeRange"
                     @update:active-range="setActiveTimeRange" />
             </div>
-            <GridColumnFilterChips v-if="filterable" :chips="activeColumnFilters" @remove="removeColumnFilterOption" />
+            <GridColumnFilterChips
+                v-if="filterable && (showAdvanced || narrowFilterBar)"
+                class="mt-2"
+                :chips="activeColumnFilters"
+                @remove="removeColumnFilterOption" />
         </div>
 
         <div class="invocation-list-content flex-grow-1 overflow-auto">
@@ -532,5 +555,16 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
 // only the list scrolls; the header and pager stay put
 .invocation-list-content {
     min-height: 0;
+}
+
+// status buttons, then the column filter chips filling the space up to the time range
+.invocation-filter-bar {
+    gap: 0.5rem;
+
+    .invocation-filter-chips {
+        flex: 1 1 0;
+        padding-left: 0.5rem;
+        border-left: 1px solid var(--color-grey-300);
+    }
 }
 </style>

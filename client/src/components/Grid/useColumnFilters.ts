@@ -106,6 +106,17 @@ export function useColumnFilters<T>(
         );
     }
 
+    /**
+     * Remove every column filter's picks, keeping the rest of the filter text
+     */
+    function clearColumnFilters() {
+        setFilters(
+            Object.fromEntries(
+                toValue(fields).flatMap((field) => (field.filter ? [[field.filter.key, undefined]] : [])),
+            ),
+        );
+    }
+
     return {
         hasColumnFilters,
         columnFilterSelection,
@@ -113,5 +124,6 @@ export function useColumnFilters<T>(
         reachedColumnFilterLimit,
         onColumnFilter,
         removeColumnFilterOption,
+        clearColumnFilters,
     };
 }
