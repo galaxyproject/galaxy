@@ -53,7 +53,7 @@ const PAGINATION_LIMIT = 10;
  * instead of returning before its result reached the cache.
  */
 const historyPromises = new Map<string, Promise<Error | undefined>>();
-const CONTENT_STATS_KEYS = ["size", "contents_active", "update_time"] as const;
+const CONTENT_STATS_KEYS = ["size", "contents_active", "paused_jobs_count", "update_time"] as const;
 
 /** Default number of entries requested per history listing fetch. */
 const HISTORY_LIST_LIMIT = 25;

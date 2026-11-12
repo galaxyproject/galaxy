@@ -1754,6 +1754,11 @@ class CustomHistoryView(HistoryDetailed):
         title="Nice Size",
         description="The total size of the contents of this history in a human-readable format.",
     )
+    paused_jobs_count: int | None = Field(
+        default=None,
+        title="Paused Jobs Count",
+        description="The number of paused jobs in this history, including those with only hidden outputs.",
+    )
 
 
 AnyHistoryView = Annotated[

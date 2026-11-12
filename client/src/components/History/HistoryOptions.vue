@@ -17,18 +17,17 @@ import {
     faUsersCog,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import axios from "axios";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
 import { canMutateHistory, type HistorySummary, userOwnsHistory } from "@/api";
+import { resumePausedJobs } from "@/api/histories";
 import { useToast } from "@/composables/toast";
-import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
-import { rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
@@ -94,13 +93,12 @@ function userTitle(title: string) {
     }
 }
 
-async function resumePausedJobs() {
-    const url = `${getAppRoot()}history/resume_paused_jobs?current=True`;
+async function onResumePausedJobs() {
     try {
-        const response = await axios.get(url);
-        toast.success(response.data.message);
+        await resumePausedJobs(props.history.id);
+        toast.success(localize("Paused jobs resumed."));
     } catch (e) {
-        rethrowSimple(e);
+        toast.error(errorMessageAsString(e));
     }
 }
 
@@ -168,7 +166,7 @@ watch(
                 data-description="resume paused jobs"
                 :disabled="!canEditHistory"
                 :title="localize('Resume all Paused Jobs in this History')"
-                @click="resumePausedJobs()">
+                @click="onResumePausedJobs">
                 <FontAwesomeIcon fixed-width :icon="faPlay" />
                 <span v-localize>Resume Paused Jobs</span>
             </GDropdownItem>
