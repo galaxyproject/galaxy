@@ -83,7 +83,8 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
                 :workflow="workflow"
                 :fit-to-page="props.fitToPage"
                 :show-minimap="isFullPage"
-                :step-modal="!isFullPage" />
+                :step-modal="!isFullPage"
+                :graph-height="isFullPage ? undefined : '16rem'" />
         </div>
         <GAlert v-else-if="!workflow" variant="info" show> No workflow found for this invocation. </GAlert>
     </div>

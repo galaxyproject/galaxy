@@ -21,6 +21,7 @@ import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GBadge from "@/components/BaseComponents/GBadge.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
@@ -50,6 +51,8 @@ interface Props {
     fitToPage?: boolean;
     /** Open a clicked step in a modal, instead of in a card below the graph */
     stepModal?: boolean;
+    /** A fixed height for the graph (a CSS length, e.g. "16rem"), instead of a share of the window's height */
+    graphHeight?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -61,6 +64,7 @@ const props = withDefaults(defineProps<Props>(), {
     visible: true,
     fitToPage: false,
     stepModal: false,
+    graphHeight: undefined,
 });
 
 const loadingGraph = ref(true);
@@ -223,7 +227,7 @@ function toggleDetailedView() {
                     class="position-relative w-100 graph-wrapper"
                     @mouseover="showSideOverlay = true"
                     @mouseleave="showSideOverlay = false">
-                    <BCard no-body>
+                    <BCard no-body :style="props.graphHeight ? { height: props.graphHeight } : undefined">
                         <div
                             v-if="activeNodeId !== null && showSideOverlay"
                             class="graph-scroll-overlay overlay-left" />
@@ -237,7 +241,7 @@ function toggleDetailedView() {
                             :show-minimap="props.showMinimap"
                             :show-zoom-controls="props.showZoomControls"
                             :detailed-view="detailedViewEnabled"
-                            :fixed-height="props.fitToPage ? undefined : 60"
+                            :fixed-height="props.fitToPage || props.graphHeight ? undefined : 60"
                             is-invocation
                             readonly
                             @stepClicked="stepClicked" />
@@ -246,6 +250,10 @@ function toggleDetailedView() {
                             class="graph-scroll-overlay overlay-right" />
                     </BCard>
 
+                    <!-- with `stepModal`, a small hint in place of the alert below the graph -->
+                    <GBadge v-if="props.stepModal && activeNodeId === null" class="graph-step-hint" variant="info">
+                        Click a step to view its details
+                    </GBadge>
                     <GButton
                         v-if="activeNodeId !== null"
                         class="detailed-view-button"
@@ -354,7 +362,9 @@ function toggleDetailedView() {
                     <div :id="stepModalTargetId" />
                 </GModal>
             </template>
-            <GAlert v-else class="mt-2" show>Click on a step in the workflow graph above to view its details.</GAlert>
+            <GAlert v-else-if="!props.stepModal" class="mt-2" show>
+                Click on a step in the workflow graph above to view its details.
+            </GAlert>
         </div>
     </div>
 </template>
@@ -430,6 +440,14 @@ function toggleDetailedView() {
             overflow-x: hidden;
         }
     }
+}
+
+.graph-step-hint {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.75rem;
+    z-index: 150;
+    pointer-events: none;
 }
 
 .detailed-view-button {
