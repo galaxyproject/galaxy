@@ -67,6 +67,8 @@ export interface FilterOption {
 export interface FieldFilter {
     key: string;
     clears?: string[];
+    /** Shown on the filter's chips in place of the column title */
+    icon?: IconDefinition;
     /** Name of the items, used in the dropdown's labels (e.g. "workflows") */
     plural: string;
     /** Items matching the search text; an empty query lists the most recent items */
