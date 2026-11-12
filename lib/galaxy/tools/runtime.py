@@ -231,6 +231,11 @@ def setup_for_runtimeify(
     return hda_references, adapt_dataset, adapt_collection
 
 
+def _tag_strings(tags: list) -> list[str]:
+    """The text of each propagated tag, as ``make_tag_string_list`` gives it for an item's own tags."""
+    return [tag.user_tname if tag.value is None else f"{tag.user_tname}:{tag.user_value}" for tag in tags]
+
+
 def _adapt_from_hdca(
     hdca: HistoryDatasetCollectionAssociation,
     adapt_dataset: DatasetToRuntimeJson,
@@ -240,7 +245,7 @@ def _adapt_from_hdca(
     return collection_to_runtime(
         hdca.collection,
         name=hdca.name,
-        tags=[str(t) for t in hdca.tags],
+        tags=hdca.make_tag_string_list(),
         adapt_dataset=adapt_dataset,
         compute_environment=compute_environment,
     )
@@ -260,7 +265,7 @@ def _adapt_from_dce(
     return collection_to_runtime(
         dce.child_collection,
         name=dce.element_identifier,
-        tags=[str(t) for t in dce.auto_propagated_tags],
+        tags=_tag_strings(dce.auto_propagated_tags),
         adapt_dataset=adapt_dataset,
         compute_environment=compute_environment,
         columns=dce.columns,  # pass columns for sample_sheet:* types
@@ -358,7 +363,7 @@ def _element_to_runtime(
         return _build_collection_runtime_dict(
             element.child_collection,
             name=element.element_identifier,
-            tags=list(element.auto_propagated_tags) if element.auto_propagated_tags else [],
+            tags=_tag_strings(element.auto_propagated_tags),
             adapt_dataset=adapt_dataset,
             compute_environment=compute_environment,
             columns=element.columns,  # pass columns for sample_sheet:* types
