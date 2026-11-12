@@ -750,6 +750,9 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         if offset is not None:
             stmt = stmt.offset(offset)
 
+        # Load the page's histories in one query, since `check_security` reads each row's history.
+        stmt = stmt.options(selectinload(WorkflowInvocation.history))
+
         invocations = [
             inv
             for inv in trans.sa_session.scalars(stmt)
