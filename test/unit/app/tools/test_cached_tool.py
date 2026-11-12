@@ -810,10 +810,8 @@ def test_materialized_shed_tool_without_install_row_rewrites_help_images(tmp_pat
     assert repository.installed_changeset_revision == "d57471728f7b"
     help_text = tool.raw_help.content
     assert "$PATH_TO_IMAGES" not in help_text
-    assert (
-        ".. image:: shed_tool_static/toolshed.g2.bx.psu.edu/iuc/bedtools/bedtools_mergebed/2.31.1%2Bgalaxy2/merge-glyph.png"
-        in help_text
-    )
+    assert "shed_tool_static" not in help_text
+    assert ".. image:: merge-glyph.png" in help_text
 
 
 def test_materializing_shed_tool_without_help_images_skips_install_database(tmp_path):

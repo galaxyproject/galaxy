@@ -78,7 +78,10 @@ from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_shed.util.repository_util import get_installed_repository
-from galaxy.tool_shed.util.shed_util_common import set_image_paths
+from galaxy.tool_shed.util.shed_util_common import (
+    make_image_paths_relative,
+    set_image_paths,
+)
 from galaxy.tool_util.abstract_tool import AbstractTool
 from galaxy.tool_util.deps import (
     build_dependency_manager,
@@ -2165,15 +2168,12 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         if help_content and help_content.format == "restructuredtext":
             help_text = help_content.content or ""
             try:
-                if help_text.find(".. image:: ") >= 0 and (self.tool_shed_repository or self.repository_id):
-                    help_text = set_image_paths(
-                        self.app,
-                        help_text,
-                        encoded_repository_id=self.repository_id,
-                        tool_shed_repository=self.tool_shed_repository,
-                        tool_id=self.old_id,
-                        tool_version=self.version,
-                    )
+                if help_text.find(".. image:: ") >= 0:
+                    if self.repository_id:
+                        help_text = set_image_paths(self.app, help_text, encoded_repository_id=self.repository_id)
+                    elif self.tool_shed_repository:
+                        # The client serves relative image paths from the tool's help_image endpoint.
+                        help_text = make_image_paths_relative(help_text)
             except Exception:
                 log.exception(
                     "Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id

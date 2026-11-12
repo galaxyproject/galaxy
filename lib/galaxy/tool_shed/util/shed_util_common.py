@@ -142,6 +142,19 @@ def have_shed_tool_conf_for_install(app):
     return bool(app.toolbox.dynamic_confs(include_migrated_tool_conf=False))
 
 
+LOCAL_IMAGE_DIRECTIVE = re.compile(r"\.\. image:: (?!https?://)/?(.+)")
+
+
+def _strip_legacy_image_prefixes(text: str) -> str:
+    # Shed help used to require $PATH_TO_IMAGES and ${static_path}; they are now ignored.
+    return text.replace("$PATH_TO_IMAGES", "").replace("${static_path}", "")
+
+
+def make_image_paths_relative(text: str) -> str:
+    """Rewrite Tool Shed help ``.. image::`` targets to paths relative to the tool."""
+    return LOCAL_IMAGE_DIRECTIVE.sub(r".. image:: \1", _strip_legacy_image_prefixes(text))
+
+
 def set_image_paths(
     app: "RequiredAppT",
     text: str,
@@ -174,10 +187,7 @@ def set_image_paths(
             raise Exception(
                 "encoded_repository_id or tool_shed_repository and tool_id and tool_version must be provided"
             )
-        # We used to require $PATH_TO_IMAGES and ${static_path}, but
-        # we now eliminate it if it's used.
-        text = text.replace("$PATH_TO_IMAGES", "")
-        text = text.replace("${static_path}", "")
+        text = _strip_legacy_image_prefixes(text)
         # Use regex to instantiate routes into the defined image paths, but replace
         # paths that start with neither http:// nor https://, which will allow for
         # settings like .. images:: http_files/images/help.png
@@ -191,7 +201,7 @@ def set_image_paths(
                 image_path = f"{image_path}{separator}changeset_revision={changeset_revision}"
             return f".. image:: {route_to_images}/{image_path}"
 
-        text = re.sub(r"\.\. image:: (?!https?://)/?(.+)", route_image, text)
+        text = LOCAL_IMAGE_DIRECTIVE.sub(route_image, text)
     return text
 
 
@@ -205,5 +215,6 @@ __all__ = (
     "get_tool_panel_config_tool_path_install_dir",
     "get_user",
     "have_shed_tool_conf_for_install",
+    "make_image_paths_relative",
     "set_image_paths",
 )
