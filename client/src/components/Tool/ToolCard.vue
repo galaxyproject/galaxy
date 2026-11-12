@@ -265,7 +265,7 @@ onBeforeMount(() => {
             <div class="mt-2 mb-4">
                 <slot name="buttons" />
             </div>
-            <div v-if="props.options.help" class="mt-2 mb-4">
+            <div v-if="props.options.help" class="mt-2 mb-4" data-description="tool form help">
                 <Heading v-localize h2 separator bold size="sm">Help</Heading>
                 <ToolHelp
                     :content="props.options.help"

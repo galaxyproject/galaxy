@@ -518,6 +518,30 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         assert "EuroScienceGateway" in grant_text
         assert "101057388" in grant_text
 
+    @selenium_test
+    def test_tool_help_markdown_relative_images(self):
+        self._assert_tool_help_images_load("help_images_markdown", 3)
+
+    @selenium_test
+    def test_tool_help_rst_relative_images(self):
+        self._assert_tool_help_images_load("help_images_rst", 2)
+
+    def _assert_tool_help_images_load(self, tool_id, image_count):
+        self.home()
+        self.tool_open(tool_id)
+        help_image = self.components.tool_form.help_image
+        help_image.wait_for_present()
+
+        @retry_assertion_during_transitions
+        def assert_images_loaded():
+            images = help_image.all()
+            assert len(images) == image_count
+            for image in images:
+                loaded = self.execute_script("return arguments[0].complete && arguments[0].naturalWidth > 0;", image)
+                assert loaded, image.get_attribute("src")
+
+        assert_images_loaded()
+
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
         tds = self._get_dataset_tool_parameters(hid)
         assert tds
