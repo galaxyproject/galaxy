@@ -1,4 +1,4 @@
-"""Locate files shipped with a tool, such as its icon and help images."""
+"""Locate files that tool help references by paths relative to the tool."""
 
 import mimetypes
 import os
@@ -26,16 +26,13 @@ def find_tool_file(base_dir: StrPath, file_path: str) -> str | None:
 
 def find_tool_asset(base_dir: StrPath, asset_path: str) -> str | None:
     """Find ``asset_path`` under ``base_dir``, trying ``static/images/`` first as Tool Shed help does."""
-    # safe_contains resolves symlinks in the candidate, so compare against the resolved base.
-    base_dir = os.path.realpath(base_dir)
     candidates = []
     if STATIC_IMAGES not in asset_path:
-        candidates.append(os.path.join(base_dir, STATIC_IMAGES, asset_path))
-    candidates.append(os.path.join(base_dir, asset_path))
+        candidates.append(os.path.join(STATIC_IMAGES, asset_path))
+    candidates.append(asset_path)
     for candidate in candidates:
-        candidate = os.path.abspath(candidate)
-        if safe_contains(base_dir, candidate) and os.path.isfile(candidate):
-            return candidate
+        if found_path := find_tool_file(base_dir, candidate):
+            return found_path
     return None
 
 
