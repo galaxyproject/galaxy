@@ -119,6 +119,24 @@ describe("InvocationList", () => {
         expect(lastQuery().search).toBe("workflow:rna");
     });
 
+    it("sends the state, status and invoked time filters as their own parameters", async () => {
+        const wrapper = mountTarget();
+        await flushPromises();
+
+        await wrapper
+            .find("[data-description='filter text input']")
+            .setValue("rna status:problem create_time_gt:2026-11-01 create_time_lt:2026-11-02");
+        vi.runAllTimers();
+        await flushPromises();
+
+        expect(lastQuery()).toMatchObject({
+            search: "workflow:rna",
+            state: ["failed"],
+            date_range_min: "2026-11-01",
+            date_range_max: "2026-11-02",
+        });
+    });
+
     it("sorts by invocation time when the Invoked header is clicked", async () => {
         const wrapper = mountTarget();
         await flushPromises();
