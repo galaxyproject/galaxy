@@ -104,22 +104,22 @@ GZ_CONTENT = b"@read1\nACGT\n+\nIIII\n"
 
 
 @pytest.mark.parametrize(
-    "checksum_of, decompress, expect_pass",
+    "checksum_of, decompress, error_match",
     [
-        ("decompressed", True, True),
-        ("compressed", True, False),
-        ("compressed", False, True),
-        ("decompressed", False, False),
+        ("decompressed", True, None),
+        ("compressed", True, "checksum of the decompressed content"),
+        ("compressed", False, None),
+        ("decompressed", False, "checksum"),
     ],
 )
-def test_checksum_honors_decompress(checksum_of, decompress, expect_pass):
+def test_checksum_honors_decompress(checksum_of, decompress, error_match):
     compressed = gzip.compress(GZ_CONTENT)
     hashed = GZ_CONTENT if checksum_of == "decompressed" else compressed
     attributes = {"checksum": f"md5${hashlib.md5(hashed).hexdigest()}", "decompress": decompress}
-    if expect_pass:
+    if error_match is None:
         verify("out", compressed, attributes=attributes)
     else:
-        with pytest.raises(AssertionError, match="checksum"):
+        with pytest.raises(AssertionError, match=error_match):
             verify("out", compressed, attributes=attributes)
 
 
@@ -131,12 +131,6 @@ def test_checksum_with_decompress_on_uncompressed_output():
 def test_md5_honors_decompress():
     compressed = gzip.compress(GZ_CONTENT)
     verify("out", compressed, attributes={"md5": hashlib.md5(GZ_CONTENT).hexdigest(), "decompress": True})
-
-
-def test_checksum_mismatch_says_it_is_over_decompressed_content():
-    compressed = gzip.compress(GZ_CONTENT)
-    with pytest.raises(AssertionError, match="decompressed content"):
-        verify("out", compressed, attributes={"checksum": "md5$" + "0" * 32, "decompress": True})
 
 
 def test_corrupt_compressed_output_is_an_assertion_error():
