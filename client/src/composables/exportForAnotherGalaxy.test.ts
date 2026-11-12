@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -32,6 +33,7 @@ beforeEach(() => {
 afterEach(() => {
     exporter.stopAll();
     vi.restoreAllMocks();
+    vi.useRealTimers();
 });
 
 function dataset(contentId: string): ExportableItem {
@@ -198,20 +200,51 @@ describe("useExportForAnotherGalaxy", () => {
         await vi.waitFor(() => expect(state.value).toEqual({ status: "failed", error: "The export failed." }));
     });
 
-    it("reports a task state it cannot fetch, and asks again on the next start without a new export", async () => {
+    it("keeps an export running through a failed status check", async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
         exportsEndIn("SUCCESS");
+        let checks = 0;
         server.use(
-            http.get("/api/tasks/{task_id}/state", ({ response }) =>
-                response("5XX").json({ err_msg: "Server unavailable", err_code: 500001 }, { status: 500 }),
-            ),
+            http.get("/api/tasks/{task_id}/state", ({ response }) => {
+                checks++;
+                return checks === 1
+                    ? response("5XX").json({ err_msg: "Bad Gateway", err_code: 502 }, { status: 502 })
+                    : response(200).json("SUCCESS" as never);
+            }),
         );
         const state = exporter.start(dataset("d1"));
+        await vi.waitFor(() => expect(checks).toBe(1));
+        await flushPromises();
+        expect(state.value.status).toBe("running");
+        await vi.advanceTimersByTimeAsync(3000);
+        await vi.waitFor(() => expect(state.value.status).toBe("ready"));
+        expect(prepareUrls).toHaveLength(1);
+    });
+
+    it("reports a task state it cannot fetch, and asks again on the next start without a new export", async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        exportsEndIn("SUCCESS");
+        let checks = 0;
+        server.use(
+            http.get("/api/tasks/{task_id}/state", ({ response }) => {
+                checks++;
+                return response("5XX").json({ err_msg: "Server unavailable", err_code: 500001 }, { status: 500 });
+            }),
+        );
+        const state = exporter.start(dataset("d1"));
+        await vi.waitFor(() => expect(checks).toBe(1));
+        await vi.advanceTimersByTimeAsync(3000);
+        await vi.waitFor(() => expect(checks).toBe(2));
+        await flushPromises();
+        expect(state.value.status).toBe("running");
+        await vi.advanceTimersByTimeAsync(3000);
         await vi.waitFor(() =>
             expect(state.value).toEqual({
                 status: "failed",
                 error: "Galaxy could not say how the export is going. Please try again later.",
             }),
         );
+        expect(checks).toBe(3);
         exportsEndIn("SUCCESS");
         exporter.start(dataset("d1"));
         await vi.waitFor(() => expect(state.value.status).toBe("ready"));
