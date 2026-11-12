@@ -14,7 +14,7 @@ import {
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { useConfig } from "@/composables/config";
 import { useTargetHistoryUploadState } from "@/composables/history/useTargetHistoryUploadState";
-import { COULD_NOT_CHECK_IMPORT, useUploadTaskMonitorStore } from "@/stores/uploadTaskMonitorStore";
+import { COULD_NOT_CHECK_IMPORT, redactExportLinks, useUploadTaskMonitorStore } from "@/stores/uploadTaskMonitorStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
@@ -185,12 +185,15 @@ async function requestImport(uploadId: string, storeUri: string, historyId: stri
             body: { store_content_uri: storeUri, model_store_format: "tar.gz", discarded_data: "forbid" },
         });
         if (error) {
-            uploadState.setError(uploadId, errorMessageAsString(error));
+            uploadState.setError(uploadId, redactExportLinks(errorMessageAsString(error), storeUri));
             return;
         }
         uploadState.markTaskStarted(uploadId, data.id);
     } catch (e) {
-        uploadState.setError(uploadId, errorMessageAsString(e, "The import could not be started."));
+        uploadState.setError(
+            uploadId,
+            redactExportLinks(errorMessageAsString(e, "The import could not be started."), storeUri),
+        );
     }
 }
 

@@ -360,6 +360,23 @@ describe("GalaxyLinkImport, choosing from another Galaxy", () => {
         expect(wrapper.find(ITEM).find('[data-description="loading message"]').exists()).toBe(false);
     });
 
+    it("does not keep the link when Galaxy's refusal repeats it", async () => {
+        const link = `${SOURCE}/api/short_term_storage/${UUID_1}`;
+        server.use(
+            http.post(IMPORT, ({ response }) =>
+                response("4XX").json({ err_msg: `Could not verify url '${link}'.`, err_code: 400008 }, { status: 400 }),
+            ),
+        );
+        const opened = mockPopup();
+        const wrapper = await mountChooser();
+        await wrapper.find('[data-description="galaxy picker open"]').trigger("click");
+        const nonce = nonceOf(opened);
+        send(hello(nonce));
+        send(result(nonce, [link]));
+        await vi.waitFor(() => expect(wrapper.find(ITEM).text()).toContain("Could not verify url '[export link]'."));
+        expect(JSON.stringify(useUploadState().activeItems.value)).not.toContain(UUID_1);
+    });
+
     it.each([
         ["another origin", { origin: "https://evil.example" }],
         ["another window", { source: new MessageChannel().port1 }],

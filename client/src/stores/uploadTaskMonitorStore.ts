@@ -18,6 +18,17 @@ export const COULD_NOT_CHECK_IMPORT =
 export const INTERRUPTED_IMPORT =
     "The page was left before Galaxy started the import. Look at the history first, then try again.";
 
+const EXPORT_LINK = /\b[a-z][a-z0-9+.-]*:\/\/[^\s'"<>]*short_term_storage\/[^\s'"<>]*/gi;
+
+/**
+ * Hides export links in a message before it is kept in upload state, which is stored in the browser:
+ * anyone with such a link can download the item until it expires, and Galaxy errors may repeat the link.
+ */
+export function redactExportLinks(message: string, link?: string) {
+    const withoutLink = link ? message.split(link).join("[export link]") : message;
+    return withoutLink.replace(EXPORT_LINK, "[export link]");
+}
+
 function isTaskImport(item: UploadItem): item is GalaxyLinkUploadItem & UploadItem {
     return item.uploadMode === "galaxy-link";
 }
@@ -63,7 +74,10 @@ export const useUploadTaskMonitorStore = defineStore("uploadTaskMonitor", () => 
                     if (completed) {
                         uploadState.markDatasetsResolved(uploadId);
                     } else if (failed && failureReason !== undefined) {
-                        uploadState.setError(uploadId, [COULD_NOT_IMPORT, failureReason].filter(Boolean).join(" "));
+                        uploadState.setError(
+                            uploadId,
+                            redactExportLinks([COULD_NOT_IMPORT, failureReason].filter(Boolean).join(" ")),
+                        );
                     } else if (requestFailed) {
                         uploadState.setError(uploadId, COULD_NOT_CHECK_IMPORT);
                     }
