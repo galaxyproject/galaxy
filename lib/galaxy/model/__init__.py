@@ -9679,7 +9679,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         self.module: WorkflowModule | None
         self.state: DefaultToolState | None
         self.upgrade_messages: dict | None
-        self.filled_defaults: dict | None
+        self.filled_defaults: dict
 
     @reconstructor
     def init_on_load(self):

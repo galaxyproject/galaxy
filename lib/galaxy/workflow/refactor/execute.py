@@ -555,8 +555,8 @@ class WorkflowRefactorExecutor:
             self.module_injector.inject(step, allow_tool_state_corrections=True)
         self.module_injector.compute_runtime_state(step)
         # a refactor reports every state adjustment: filled defaults, then values that had to be replaced
-        for adjustments in (getattr(step, "filled_defaults", None), getattr(step, "upgrade_messages", None)):
-            for key, value in (adjustments or {}).items():
+        for adjustments in (step.filled_defaults, step.upgrade_messages or {}):
+            for key, value in adjustments.items():
                 if isinstance(value, dict):
                     for input_name, message in value.items():
                         execution.messages.append(
