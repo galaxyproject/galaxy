@@ -265,6 +265,7 @@ async function load() {
         if (requestId === latestRequest) {
             collapseAll();
             listedInvocations.value = data;
+            selectedIds.value = [];
             totalRows.value = total;
             errorMessage.value = "";
         }
@@ -321,10 +322,40 @@ function viewInvocation(invocation: WorkflowInvocation) {
 
 const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 
-const { invocationListItemActions, storedWorkflow, workflowPreview } = useInvocationListItemActions({
-    viewInvocation,
-    refreshList: load,
-});
+const { invocationListItemActions, storedWorkflow, workflowPreview, isActiveInvocation, cancelInvocations } =
+    useInvocationListItemActions({
+        viewInvocation,
+        refreshList: load,
+    });
+
+/** Ids of the selected invocations; cleared whenever the list's rows change */
+const selectedIds = ref<string[]>([]);
+const selectedIndices = computed(() =>
+    listedInvocations.value.flatMap((invocation, index) => (selectedIds.value.includes(invocation.id) ? [index] : [])),
+);
+const selectedActive = computed(() =>
+    listedInvocations.value.filter(
+        (invocation) => selectedIds.value.includes(invocation.id) && isActiveInvocation(invocation),
+    ),
+);
+const bulkCancelling = ref(false);
+
+function onRowSelect({ item, selected }: { item: WorkflowInvocation; selected: boolean }) {
+    selectedIds.value = selected ? [...selectedIds.value, item.id] : selectedIds.value.filter((id) => id !== item.id);
+}
+
+function onSelectAll(selected: boolean) {
+    selectedIds.value = selected ? listedInvocations.value.map((invocation) => invocation.id) : [];
+}
+
+async function onBulkCancel() {
+    bulkCancelling.value = true;
+    try {
+        await cancelInvocations(selectedActive.value);
+    } finally {
+        bulkCancelling.value = false;
+    }
+}
 
 onMounted(load);
 
@@ -462,6 +493,12 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 :local-sorting="false"
                 :overlay-loading="resultsLoading"
                 :actions="invocationListItemActions"
+                selectable
+                show-select-all
+                :selected-items="selectedIndices"
+                select-checkbox-title="Select this invocation"
+                @row-select="onRowSelect"
+                @select-all="onSelectAll"
                 @sort-changed="onSort">
                 <template v-if="filterable" v-slot:head(workflow_id)="{ field }">
                     <span>{{ field.label }}</span>
@@ -538,9 +575,27 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
         </div>
 
         <div class="flex-shrink-0">
-            <div v-if="isAvailable && !batch" class="d-flex justify-content-end pt-3">
+            <div v-if="(isAvailable && !batch) || selectedIds.length" class="d-flex align-items-center pt-3">
+                <GButton
+                    v-if="selectedIds.length"
+                    id="invocation-list-footer-bulk-cancel-button"
+                    tooltip
+                    size="small"
+                    color="blue"
+                    :disabled="!selectedActive.length || bulkCancelling"
+                    :title="
+                        selectedActive.length
+                            ? 'Cancel the selected invocations that are still active'
+                            : 'None of the selected invocations are still active'
+                    "
+                    @click="onBulkCancel">
+                    <FontAwesomeIcon :icon="faStopCircle" />
+                    {{ localize("Cancel Selected") }} ({{ selectedActive.length }})
+                </GButton>
                 <GPagination
+                    v-if="isAvailable && !batch"
                     v-model="currentPage"
+                    class="ml-auto"
                     :total-rows="totalRows"
                     :per-page="LIMIT"
                     size="small"

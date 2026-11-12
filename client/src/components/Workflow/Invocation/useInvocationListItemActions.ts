@@ -8,6 +8,7 @@ import type { WorkflowInvocation } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getFullAppUrl } from "@/app/utils";
 import type { TableAction } from "@/components/Common/GTable.types";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useInvocationStore } from "@/stores/invocationStore";
@@ -15,7 +16,9 @@ import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { copy } from "@/utils/clipboard";
 import localize from "@/utils/localization";
+import { describeFailures, settleEach } from "@/utils/settleEach";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { pluralize } from "@/utils/strings";
 
 import { INVOCATION_STATE_GROUPS } from "./invocationFilters";
 
@@ -32,6 +35,7 @@ interface Options {
  */
 export function useInvocationListItemActions({ viewInvocation, refreshList }: Options) {
     const router = useRouter();
+    const { confirm } = useConfirmDialog();
     const workflowStore = useWorkflowStore();
     const historyStore = useHistoryStore();
     const userStore = useUserStore();
@@ -75,6 +79,49 @@ export function useInvocationListItemActions({ viewInvocation, refreshList }: Op
     function viewWorkflow(invocation: WorkflowInvocation) {
         const workflow = storedWorkflow(invocation)!;
         workflowPreview.value = { id: workflow.id, version: workflow.version ?? undefined };
+    }
+
+    /** Whether the invocation can still be cancelled */
+    function isActiveInvocation(invocation: WorkflowInvocation) {
+        return (INVOCATION_STATE_GROUPS.active as readonly string[]).includes(invocation.state);
+    }
+
+    /**
+     * Cancels the given invocations that are still active, after confirming, then reloads the list.
+     * Cancels them one by one, so one failure doesn't stop the rest.
+     */
+    async function cancelInvocations(invocations: WorkflowInvocation[]) {
+        const active = invocations.filter(isActiveInvocation);
+        const count = active.length;
+        const confirmed = await confirm(
+            `Cancel ${count} ${pluralize(count, "invocation")}? Their jobs that haven't finished are stopped too.`,
+            {
+                title: "Cancel invocations",
+                okText: "Cancel invocations",
+                okColor: "red",
+                okIcon: faStopCircle,
+            },
+        );
+        if (!confirmed) {
+            return;
+        }
+        const invocationStore = useInvocationStore();
+        const failures = await settleEach(active, (invocation) =>
+            invocationStore.cancelWorkflowScheduling(invocation.id),
+        );
+        const cancelled = count - failures.length;
+        if (cancelled > 0) {
+            Toast.success(`Cancelling ${cancelled} ${pluralize(cancelled, "invocation")}.`);
+        }
+        if (failures.length) {
+            Toast.error(
+                describeFailures(failures, (invocation) =>
+                    workflowStore.getStoredWorkflowNameByInstanceId(invocation.workflow_id),
+                ),
+                localize(`Failed to cancel ${failures.length} ${pluralize(failures.length, "invocation")}`),
+            );
+        }
+        await refreshList();
     }
 
     /** Cancels an invocation that is still active, then reloads the list to show its new state */
@@ -140,11 +187,10 @@ export function useInvocationListItemActions({ viewInvocation, refreshList }: Op
             label: "Cancel",
             title: "Cancel this invocation",
             icon: faStopCircle,
-            visible: (invocation: WorkflowInvocation) =>
-                (INVOCATION_STATE_GROUPS.active as readonly string[]).includes(invocation.state),
+            visible: isActiveInvocation,
             handler: cancelInvocation,
         },
     ];
 
-    return { invocationListItemActions, storedWorkflow, workflowPreview };
+    return { invocationListItemActions, storedWorkflow, workflowPreview, isActiveInvocation, cancelInvocations };
 }
