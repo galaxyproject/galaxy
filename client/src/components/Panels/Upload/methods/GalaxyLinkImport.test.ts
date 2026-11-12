@@ -348,7 +348,8 @@ describe("GalaxyLinkImport, choosing from another Galaxy", () => {
     it.each([
         [1, "1 item could not be exported"],
         [2, "2 items could not be exported"],
-    ])("says when %i chosen items did not arrive", async (failed, text) => {
+    ])("says when %i chosen items did not arrive and leaves the reasons open in the popup", async (failed, text) => {
+        importEndsIn("SUCCESS");
         const opened = mockPopup();
         const wrapper = await mountChooser();
         await wrapper.find('[data-description="galaxy picker open"]').trigger("click");
@@ -359,7 +360,9 @@ describe("GalaxyLinkImport, choosing from another Galaxy", () => {
         expect(wrapper.findAll('[data-description="galaxy picker import item"]')).toHaveLength(1);
         const notice = wrapper.find('[data-description="galaxy picker some failed"]');
         expect(notice.text()).toContain(text);
-        expect(notice.text()).toContain("usegalaxy.eu");
+        expect(notice.text()).toContain("The usegalaxy.eu window lists why");
+        expect(popupClose).not.toHaveBeenCalled();
+        expect(wrapper.find('[data-description="galaxy picker waiting"]').exists()).toBe(false);
     });
 
     it("says the items failed, not that nothing was chosen, when none of them arrived", async () => {
@@ -375,6 +378,7 @@ describe("GalaxyLinkImport, choosing from another Galaxy", () => {
             "2 items could not be exported",
         );
         expect(wrapper.find('[data-description="galaxy picker cancelled"]').exists()).toBe(false);
+        expect(popupClose).not.toHaveBeenCalled();
     });
 
     it("ignores a result with another nonce, or before the picker said hello", async () => {
