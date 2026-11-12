@@ -257,7 +257,6 @@ function getIdpPreference() {
                         class="d-block oidc-button"
                         :disabled="loading"
                         @click="clickOIDCLogin(idp)">
-                        <i :class="oIDCIdps[idp]" />
                         Sign in with {{ iDPInfo["custom_button_text"] }}
                     </GButton>
                     <GButton
@@ -267,7 +266,6 @@ function getIdpPreference() {
                         class="d-block oidc-button"
                         :disabled="loading"
                         @click="clickOIDCLogin(idp)">
-                        <i :class="oIDCIdps[idp]" />
                         Sign in with
                         <span v-if="iDPInfo['label']">
                             {{ iDPInfo["label"].charAt(0).toUpperCase() + iDPInfo["label"].slice(1) }}
