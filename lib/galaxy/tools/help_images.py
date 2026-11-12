@@ -2,6 +2,7 @@
 
 import mimetypes
 import os
+from collections.abc import Iterable
 
 from galaxy.util.path import (
     safe_contains,
@@ -35,6 +36,14 @@ def find_tool_asset(base_dir: str, asset_path: str) -> str | None:
         candidate = os.path.abspath(candidate)
         if safe_contains(base_dir, candidate) and os.path.isfile(candidate):
             return candidate
+    return None
+
+
+def find_help_image(base_dirs: Iterable[str | None], image_path: str) -> str | None:
+    """Find ``image_path`` under the first of ``base_dirs`` that has it, skipping unset ones."""
+    for base_dir in base_dirs:
+        if base_dir and (found_path := find_tool_asset(base_dir, image_path)):
+            return found_path
     return None
 
 
