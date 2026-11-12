@@ -39,13 +39,13 @@ function increaseHeadingLevel(node, level, increaseBy) {
     });
 }
 
-// Prefixes of image paths the server already routed for Tool Shed RST help.
-const SHED_IMAGE_ROUTES = ["admin_toolshed/", "shed_tool_static/"];
+// Scheme, path-absolute, query or fragment: not relative to the tool.
+const NOT_TOOL_RELATIVE = /^([a-z][a-z0-9+.-]*:|[/#?])/i;
+// Prefix of image paths the server already routed for installed Tool Shed RST help.
+const SHED_TOOL_STATIC_ROUTE = "shed_tool_static/";
 
 function isToolRelativePath(src) {
-    return (
-        !!src && !/^([a-z][a-z0-9+.-]*:|[/#?])/i.test(src) && !SHED_IMAGE_ROUTES.some((route) => src.startsWith(route))
-    );
+    return !!src && !NOT_TOOL_RELATIVE.test(src) && !src.startsWith(SHED_TOOL_STATIC_ROUTE);
 }
 
 function decodePath(src) {
@@ -67,10 +67,10 @@ function toolHelpImageUrl(tool, src) {
 
 /**
  * @param helpContent help HTML
- * @param headingLevelIncrease how many levels to demote headings
- * @param {import("vue").MaybeRef<{ id?: string, version?: string }>} [tool] images with relative paths are served from this tool's directory
+ * @param {{ tool?: import("vue").MaybeRef<{ id?: string, version?: string }>, headingLevelIncrease?: number }} [options]
+ *     `tool` serves images with relative paths from that tool's directory
  */
-export function useFormattedToolHelp(helpContent, headingLevelIncrease = 2, tool) {
+export function useFormattedToolHelp(helpContent, { tool, headingLevelIncrease = 2 } = {}) {
     const formattedContent = computed(() => {
         // DOMParser gives an inert document, so nothing in the help loads before it is sanitized
         const node = new DOMParser().parseFromString(unref(helpContent), "text/html").body;

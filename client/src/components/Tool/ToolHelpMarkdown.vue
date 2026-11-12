@@ -16,7 +16,7 @@ const markdownHtml = computed(() => markup(props.content ?? "", false, props.syn
 const tool = computed(() => ({ id: props.toolId, version: props.toolVersion }));
 // correct links and header information... this should work the same between rst and
 // markdown entirely I think.
-const { formattedContent } = useFormattedToolHelp(markdownHtml, 2, tool);
+const { formattedContent } = useFormattedToolHelp(markdownHtml, { tool });
 
 const helpHtml = ref<HTMLDivElement>();
 

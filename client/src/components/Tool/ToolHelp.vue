@@ -5,7 +5,7 @@ import ToolHelpRst from "./ToolHelpRst.vue";
 defineProps<{
     format: string;
     content: string;
-    toolId?: string;
+    toolId: string;
     toolVersion?: string;
 }>();
 </script>

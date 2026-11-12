@@ -19,7 +19,7 @@ const props = defineProps({
 });
 
 const tool = computed(() => ({ id: props.toolId, version: props.toolVersion }));
-const { formattedContent } = useFormattedToolHelp(toRef(props, "content"), 2, tool);
+const { formattedContent } = useFormattedToolHelp(toRef(props, "content"), { tool });
 </script>
 
 <template>
