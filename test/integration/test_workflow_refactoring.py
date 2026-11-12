@@ -1348,6 +1348,7 @@ steps:
         assert stream_url_to_str.call_args.args[0] == raw_url
         self._app.model.session.expire_all()
         imported = self._subworkflow(stored_workflow.latest_workflow, "nested_workflow")
+        assert imported.source_metadata
         assert imported.source_metadata["url"] == raw_url
         assert imported.stored_workflow.hidden
 
