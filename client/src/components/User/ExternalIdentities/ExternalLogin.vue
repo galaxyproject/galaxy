@@ -183,7 +183,7 @@ function getIdpPreference() {
 
 <template>
     <div class="h-100" :class="{ 'd-flex flex-column': !props.columnDisplay }">
-        <GAlert v-if="messageText" class="text-nowrap" show :variant="messageVariant">
+        <GAlert v-if="messageText" show :variant="messageVariant">
             {{ messageText }}
         </GAlert>
 
