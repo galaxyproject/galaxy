@@ -43,7 +43,9 @@ import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GBadge from "@/components/BaseComponents/GBadge.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import GPagination from "@/components/BaseComponents/GPagination.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
@@ -55,7 +57,6 @@ import TimeRangeFilter from "@/components/Common/TimeRangeFilter.vue";
 import GridColumnFilter from "@/components/Grid/GridColumnFilter.vue";
 import GridColumnFilterChips from "@/components/Grid/GridColumnFilterChips.vue";
 import GridExpand from "@/components/Grid/GridElements/GridExpand.vue";
-import GridLink from "@/components/Grid/GridElements/GridLink.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -308,6 +309,14 @@ function collapseAll() {
     expandedIds.value = new Set();
 }
 
+/** The invocation's workflow version as the editor numbers it (from 1), once its workflow has loaded */
+function workflowVersion(invocation: WorkflowInvocation) {
+    const workflow = workflowStore.getStoredWorkflowByInstanceId(invocation.workflow_id) as
+        | StoredWorkflowDetailed
+        | undefined;
+    return typeof workflow?.version === "number" ? workflow.version + 1 : undefined;
+}
+
 function canRunAgain(invocation: WorkflowInvocation) {
     const workflow = workflowStore.getStoredWorkflowByInstanceId(
         invocation.workflow_id,
@@ -496,9 +505,22 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                     </GButton>
                 </template>
                 <template v-slot:cell(workflow_id)="{ item }">
-                    <GridLink
-                        :text="workflowStore.getStoredWorkflowNameByInstanceId(item.workflow_id)"
-                        @click="router.push(`/workflows/invocations/${item.id}`)" />
+                    <div class="invocation-workflow">
+                        <GLink
+                            class="invocation-workflow-name"
+                            :to="`/workflows/invocations/${item.id}`"
+                            :title="localize('View this invocation')">
+                            {{ workflowStore.getStoredWorkflowNameByInstanceId(item.workflow_id) }}
+                        </GLink>
+                        <GBadge
+                            v-if="workflowVersion(item) !== undefined"
+                            class="invocation-workflow-version"
+                            variant="light"
+                            pill
+                            :title="localize('Workflow version')">
+                            v{{ workflowVersion(item) }}
+                        </GBadge>
+                    </div>
                 </template>
                 <template v-slot:cell(history_id)="{ item }">
                     <span v-if="!item.history_id" v-localize> No history found </span>
@@ -555,6 +577,17 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
 // only the list scrolls; the header and pager stay put
 .invocation-list-content {
     min-height: 0;
+}
+
+.invocation-workflow {
+    text-align: left;
+    overflow-wrap: anywhere;
+
+    .invocation-workflow-version {
+        margin-left: 0.4rem;
+        vertical-align: baseline;
+        font-variant-numeric: tabular-nums;
+    }
 }
 
 // status buttons, then the column filter chips filling the space up to the time range

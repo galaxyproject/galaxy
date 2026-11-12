@@ -1,10 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useRouter } from "vue-router";
 
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import type * as InvocationFilters from "@/components/Workflow/Invocation/invocationFilters";
@@ -16,7 +15,9 @@ import InvocationList from "./InvocationList.vue";
 
 vi.useFakeTimers();
 
-vi.mock("vue-router");
+// the list's links and navigation go through a real test router
+const router = createTestRouter();
+const push = vi.spyOn(router, "push").mockResolvedValue(undefined);
 
 vi.mock("@/components/Workflow/Invocation/invocationsIndex", () => ({
     fetchInvocations: vi.fn(),
@@ -62,14 +63,14 @@ function mountTarget(props: Record<string, unknown> = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     useUserStore(pinia).currentUser = USER;
     useWorkflowStore(pinia).workflowsByInstanceId = {
-        "instance-1": { id: "stored-1", name: "Name of instance-1" } as StoredWorkflowDetailed,
+        "instance-1": { id: "stored-1", name: "Name of instance-1", version: 2 } as StoredWorkflowDetailed,
         "instance-2": { id: "stored-2", name: "Name of instance-2" } as StoredWorkflowDetailed,
     };
     return mount(InvocationList as object, {
         props,
         global: {
             ...getLocalVue(),
-            plugins: [pinia],
+            plugins: [pinia, router],
             stubs: {
                 WorkflowInvocationState: { template: "<div data-description='invocation state stub' />" },
                 SwitchToHistoryLink: true,
@@ -106,6 +107,17 @@ describe("InvocationList", () => {
         });
         expect(rows(wrapper)).toHaveLength(2);
         expect(wrapper.text()).toContain("Name of instance-1");
+    });
+
+    it("links each workflow name to its invocation, with the workflow version numbered from 1", async () => {
+        const wrapper = mountTarget();
+        await flushPromises();
+
+        const [first, second] = wrapper.findAll(".invocation-workflow");
+        expect(first!.find("a").attributes("href")).toBe("/workflows/invocations/inv-1");
+        expect(first!.find(".invocation-workflow-version").text()).toBe("v3");
+        // a workflow whose version isn't known yet shows no tag
+        expect(second!.find(".invocation-workflow-version").exists()).toBe(false);
     });
 
     it("sends the filter text as the search", async () => {
@@ -312,12 +324,10 @@ describe("InvocationList", () => {
     });
 
     describe("scoped to one history or workflow", () => {
-        const push = vi.fn();
         const headers = (wrapper: ReturnType<typeof mountTarget>) => wrapper.findAll("thead th").map((th) => th.text());
 
         beforeEach(() => {
-            push.mockReset();
-            vi.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
+            push.mockClear();
         });
 
         it("lists the user's invocations in a history, loading only workflow names", async () => {
