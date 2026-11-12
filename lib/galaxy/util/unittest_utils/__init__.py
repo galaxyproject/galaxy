@@ -81,7 +81,9 @@ def skip_if_site_down(
 
 
 def skip_on_network_error(method: Callable[P, T]) -> Callable[P, T]:
-    """Skip the test if it fails because a remote site could not be reached or timed out."""
+    """Skip the test if it fails because a remote site could not be reached, timed out,
+    rate limited the request (HTTP 429) or answered with a server error (HTTP 5xx, which
+    includes Cloudflare's 52x errors)."""
 
     @wraps(method)
     def wrapped_method(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -89,6 +91,10 @@ def skip_on_network_error(method: Callable[P, T]) -> Callable[P, T]:
             return method(*args, **kwargs)
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             raise SkipTest(f"Test depends on a remote site that could not be reached: {e}") from e
+        except requests.exceptions.HTTPError as e:
+            if e.response is not None and (e.response.status_code >= 500 or e.response.status_code == 429):
+                raise SkipTest(f"Test depends on a remote site that is unavailable: {e}") from e
+            raise
 
     return wrapped_method
 
