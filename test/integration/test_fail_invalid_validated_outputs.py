@@ -13,7 +13,6 @@ from galaxy_test.driver import integration_util
 
 class TestFailInvalidValidatedOutputs(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
-    framework_tool_and_types = True
 
     def setUp(self):
         super().setUp()
