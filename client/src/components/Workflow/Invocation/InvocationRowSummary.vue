@@ -5,6 +5,7 @@ import { isWorkflowInvocationElementView, type WorkflowInvocation } from "@/api/
 import { useInvocationProgress } from "@/components/WorkflowInvocationState/useInvocationProgress";
 import { useInvocationStore } from "@/stores/invocationStore";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import ProgressBar from "@/components/ProgressBar.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -35,6 +36,25 @@ const stepsText = computed(() =>
         ? `Scheduling ${invocationState.value}`
         : `${stepStates.value.scheduled || 0} of ${stepCount.value} scheduled`,
 );
+
+/** Input and output counts, linking to the invocation's Inputs / Outputs tabs */
+const dataLinks = computed(() => {
+    const details = invocationDetails.value;
+    if (!details) {
+        return [];
+    }
+    const inputs = Object.keys(details.inputs).length + Object.keys(details.input_step_parameters).length;
+    const outputs = Object.keys(details.outputs).length + Object.keys(details.output_collections).length;
+    return [
+        { tab: "inputs", count: inputs, noun: inputs === 1 ? "input" : "inputs" },
+        {
+            tab: "outputs",
+            count: outputs,
+            noun: outputs === 1 ? "output" : "outputs",
+            title: outputs ? undefined : "Only step outputs checked as workflow outputs in the editor appear here",
+        },
+    ];
+});
 
 /** The job counts worth showing, in the order the full page's jobs bar uses */
 const jobCounts = computed(() => {
@@ -67,12 +87,19 @@ const jobCounts = computed(() => {
                     </td>
                 </tr>
                 <tr>
-                    <td>Invoked</td>
-                    <td><UtcDate :date="props.invocation.create_time" mode="pretty" /></td>
-                </tr>
-                <tr>
                     <td>Last updated</td>
                     <td><UtcDate :date="props.invocation.update_time" mode="elapsed" /></td>
+                </tr>
+                <tr v-if="dataLinks.length">
+                    <td>Data</td>
+                    <td>
+                        <template v-for="({ tab, count, noun, title }, index) in dataLinks" :key="tab">
+                            <span v-if="index"> · </span>
+                            <GLink :to="`/workflows/invocations/${props.invocation.id}/${tab}`" :title="title" tooltip>
+                                {{ count }} {{ noun }}
+                            </GLink>
+                        </template>
+                    </td>
                 </tr>
                 <tr v-if="stepCount">
                     <td>Steps</td>
