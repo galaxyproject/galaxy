@@ -137,6 +137,39 @@ describe("InvocationList", () => {
         });
     });
 
+    it("sets and clears a status group with the status buttons", async () => {
+        const wrapper = mountTarget();
+        await flushPromises();
+
+        await wrapper.find("[data-status-group='problem']").trigger("click");
+        vi.runAllTimers();
+        await flushPromises();
+        expect(lastQuery().state).toEqual(["failed"]);
+        expect(wrapper.find("[data-status-group='problem']").attributes("aria-pressed")).toBe("true");
+
+        // clicking the active group again turns it off
+        await wrapper.find("[data-status-group='problem']").trigger("click");
+        vi.runAllTimers();
+        await flushPromises();
+        expect(lastQuery().state).toBeUndefined();
+    });
+
+    it("removes a typed state when a status group is picked", async () => {
+        const wrapper = mountTarget();
+        await flushPromises();
+        const input = wrapper.find("[data-description='filter text input']");
+        await input.setValue("rna state:completed");
+        vi.runAllTimers();
+        await flushPromises();
+
+        await wrapper.find("[data-status-group='active']").trigger("click");
+        vi.runAllTimers();
+        await flushPromises();
+
+        expect((input.element as HTMLInputElement).value).toBe("rna status:active");
+        expect(lastQuery().state).toEqual(["new", "requires_materialization", "ready", "scheduled"]);
+    });
+
     it("sorts by invocation time when the Invoked header is clicked", async () => {
         const wrapper = mountTarget();
         await flushPromises();

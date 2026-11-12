@@ -1,5 +1,15 @@
 <script setup lang="ts">
-import { faEye, faPlay, faPlus, faRedo, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCheckCircle,
+    faExclamationTriangle,
+    faEye,
+    faPlay,
+    faPlus,
+    faRedo,
+    faShieldAlt,
+    faSpinner,
+    faStopCircle,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
@@ -12,6 +22,7 @@ import type { TableField } from "@/components/Common/GTable.types";
 import { type ColumnFilterField, useColumnFilters } from "@/components/Grid/useColumnFilters";
 import {
     historyColumnFilter,
+    type INVOCATION_STATE_GROUPS,
     invocationFilterParams,
     invocationsFiltering,
     MAX_COLUMN_FILTER_PICKS,
@@ -32,6 +43,7 @@ import FilterMenu from "@/components/Common/FilterMenu.vue";
 import GTable from "@/components/Common/GTable.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
+import StatusGroupFilter, { type StatusGroup } from "@/components/Common/StatusGroupFilter.vue";
 import GridColumnFilter from "@/components/Grid/GridColumnFilter.vue";
 import GridColumnFilterChips from "@/components/Grid/GridColumnFilterChips.vue";
 import GridExpand from "@/components/Grid/GridElements/GridExpand.vue";
@@ -45,6 +57,14 @@ const LIMIT = 25;
 const TITLE = "Workflow Invocations";
 /** Seconds the header message stays up */
 const HEADER_MESSAGE_SECONDS = 5;
+
+/** The status buttons, one per `INVOCATION_STATE_GROUPS` key, in display order */
+const STATUS_GROUPS = [
+    { key: "active", label: "Active", icon: faSpinner, color: "yellow" },
+    { key: "finished", label: "Finished", icon: faCheckCircle, color: "green" },
+    { key: "problem", label: "Problem", icon: faExclamationTriangle, color: "red" },
+    { key: "inactive", label: "Inactive", icon: faStopCircle, color: "grey" },
+] as const satisfies (StatusGroup & { key: keyof typeof INVOCATION_STATE_GROUPS })[];
 
 interface Props {
     /** List every user's invocations that are still being scheduled, without search or column filters */
@@ -132,6 +152,24 @@ const {
     onColumnFilter,
     removeColumnFilterOption,
 } = useColumnFilters(columns, invocationsFiltering, filterText, rawFilters, MAX_COLUMN_FILTER_PICKS);
+
+/** The active `status` quick-filter value, or `undefined` if none is toggled on. */
+const activeStatusFilter = computed(() => invocationsFiltering.getFilterValue(filterText.value, "status") || undefined);
+
+/**
+ * Toggles a `StatusGroupFilter` quick-filter button.
+ *
+ * Setting a `status` filter also clears any manually-picked `state`, since `disablesFilters` can't do
+ * this for `status` the other way around (it's not a `FilterMenu` field, so no dropdown-change event
+ * exists to trigger it from that side).
+ */
+function setActiveStatusFilter(group: string | undefined) {
+    let newText = invocationsFiltering.applyFiltersToText({ state: "" }, filterText.value, true);
+    newText = group
+        ? invocationsFiltering.applyFiltersToText({ status: group }, newText)
+        : invocationsFiltering.applyFiltersToText({ status: "" }, newText, true);
+    filterText.value = newText;
+}
 
 const isAvailable = computed(() => !initDataLoading.value && totalRows.value > 0);
 // column filters stay reachable when the current filters match nothing
@@ -300,6 +338,16 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                     </GAlert>
                 </template>
             </FilterMenu>
+            <div v-if="filterable && !showAdvanced" class="d-flex align-items-center mt-2">
+                <div>
+                    <StatusGroupFilter
+                        :groups="STATUS_GROUPS"
+                        noun="invocations"
+                        show-labels
+                        :active-group="activeStatusFilter"
+                        @update:active-group="setActiveStatusFilter" />
+                </div>
+            </div>
             <GridColumnFilterChips v-if="filterable" :chips="activeColumnFilters" @remove="removeColumnFilterOption" />
         </div>
 
