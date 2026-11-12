@@ -769,6 +769,7 @@ interface Rootrule_builder extends Component {
     menu_item_rule_type: SelectorTemplate;
     rule_editor: SelectorTemplate;
     rule_editor_ok: SelectorTemplate;
+    rule_editor_column_selector: SelectorTemplate;
     add_mapping_menu: SelectorTemplate;
     add_mapping_button: SelectorTemplate;
     mapping_edit: SelectorTemplate;
