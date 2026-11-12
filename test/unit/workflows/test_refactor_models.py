@@ -183,7 +183,9 @@ def test_upgrade_subworkflow_recursive_needs_a_target_that_can_change(target):
 
 def test_upgrade_subworkflow_rejects_unknown_target():
     with pytest.raises(ValidationError):
-        UpgradeSubworkflowAction(action_type="upgrade_subworkflow", step={"label": "nested"}, trs_url="https://a.org")
+        UpgradeSubworkflowAction.model_validate(
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested"}, "trs_url": "https://a.org"}
+        )
 
 
 def test_upgrade_subworkflow_version_is_not_negative():
