@@ -1,3 +1,4 @@
+import { faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { uniqBy } from "lodash";
 
 import { type AnyHistoryEntry, getHistories } from "@/api/histories";
@@ -222,6 +223,7 @@ function historyOption(history: AnyHistoryEntry): FilterOption {
 export const workflowColumnFilter: FieldFilter = {
     key: "workflow_id",
     clears: ["workflow"],
+    icon: faSitemap,
     plural: "workflows",
     async search(query) {
         if (query) {
@@ -235,6 +237,7 @@ export const workflowColumnFilter: FieldFilter = {
 export const historyColumnFilter: FieldFilter = {
     key: "history_id",
     clears: ["history"],
+    icon: faHdd,
     plural: "histories",
     async search(query) {
         if (query) {

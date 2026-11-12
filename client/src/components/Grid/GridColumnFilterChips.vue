@@ -84,7 +84,11 @@ onMounted(fit);
                 :data-description="`grid active column filter ${chip.filter.key}`"
                 :data-option-id="chip.option.id"
                 @click="emit('remove', chip.filter, chip.option)">
-                <span class="column-filter-chip-key">{{ `${chip.title}: ` }}</span>
+                <template v-if="chip.filter.icon">
+                    <FontAwesomeIcon :icon="chip.filter.icon" class="column-filter-chip-icon" />
+                    <span class="sr-only">{{ `${chip.title}: ` }}</span>
+                </template>
+                <span v-else class="column-filter-chip-key">{{ `${chip.title}: ` }}</span>
                 <span class="column-filter-chip-name">{{ chip.option.name }}</span>
                 <FontAwesomeIcon :icon="faTimes" class="column-filter-chip-remove" />
             </GBadge>
@@ -105,7 +109,14 @@ onMounted(fit);
                 :data-description="`grid hidden column filter ${chip.filter.key}`"
                 :data-option-id="chip.option.id"
                 @click="emit('remove', chip.filter, chip.option)">
-                {{ chipLabel(chip) }}
+                <span>
+                    <template v-if="chip.filter.icon">
+                        <FontAwesomeIcon :icon="chip.filter.icon" class="mr-1" />
+                        <span class="sr-only">{{ chip.title }}: </span>
+                    </template>
+                    <span v-else class="column-filter-chip-key">{{ chip.title }}: </span>
+                    <span class="column-filter-chip-name">{{ chip.option.name }}</span>
+                </span>
                 <FontAwesomeIcon :icon="faTimes" class="ml-1" />
             </GDropdownItem>
         </GDropdown>
@@ -140,6 +151,7 @@ onMounted(fit);
         text-decoration: none;
     }
 
+    .column-filter-chip-icon,
     .column-filter-chip-key {
         flex: none;
         font-weight: normal;
@@ -186,6 +198,7 @@ onMounted(fit);
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 0.5rem;
     }
 }
 </style>
