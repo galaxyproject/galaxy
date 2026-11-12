@@ -318,7 +318,7 @@ function goToResetPassword() {
 }
 .login-column {
     flex-shrink: 0;
-    max-width: 24rem;
+    max-width: min(24rem, 100vw - 4rem);
 }
 /* Footer wraps to the body's width instead of widening the card. */
 .login-footer {
@@ -326,6 +326,6 @@ function goToResetPassword() {
     min-width: 100%;
 }
 .login-card-narrow {
-    max-width: 22rem;
+    max-width: min(22rem, 100vw - 2rem);
 }
 </style>
