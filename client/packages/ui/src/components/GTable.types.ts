@@ -94,18 +94,20 @@ export interface RowSelectEvent<T> {
 export interface TableAction {
     /** Unique identifier for the action */
     id: string;
+    /** Actions with different groups are separated by a divider in the row's menu; without groups the menu is one list */
+    groupId?: string;
     /** Display label for the action */
     label: string;
-    /** Tooltip text */
-    title: string;
+    /** Tooltip text, for every row or per row (e.g. why the action is disabled) */
+    title: string | ((item: any) => string);
     /** FontAwesome icon */
     icon?: IconDefinition;
     /** Bootstrap variant */
     variant?: BootstrapVariant;
-    /** Whether the action is disabled */
-    disabled?: boolean;
-    /** Whether the action is visible */
-    visible?: boolean;
+    /** Whether the action is disabled, for every row or per row */
+    disabled?: boolean | ((item: any) => boolean);
+    /** Whether the action is visible, for every row or per row */
+    visible?: boolean | ((item: any) => boolean);
     /** Bootstrap component size */
     size?: BootstrapSize;
     /** Vue Router route to navigate to */
