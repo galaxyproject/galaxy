@@ -671,8 +671,8 @@ class TestGalaxyInstallApis(ShedApiTestCase):
             assert response.content == expected_xml
             assert "application/xml" in response.headers["content-type"]
 
-        revision = revisions[-1].changeset_revision
-        base_url = f"{self.url}/api/repositories/{repository.id}/revisions/{revision}/tool_source"
+        revision_hash = revisions[-1].changeset_revision
+        base_url = f"{self.url}/api/repositories/{repository.id}/revisions/{revision_hash}/tool_source"
 
         # Missing or incorrect paths must return 404.
         for file_path in (
