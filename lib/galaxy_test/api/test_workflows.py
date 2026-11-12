@@ -56,6 +56,7 @@ from galaxy_test.base.workflow_fixtures import (
     DEFAULT_FILE_DATASET_INPUT_LOCATION,
     NESTED_WORKFLOW_WITH_CONDITIONAL_SUBWORKFLOW_AND_DISCONNECTED_MAP_OVER_SOURCE,
     parameter_input_workflow,
+    TRUNCATED_LAV,
     WORKFLOW_FLAT_CROSS_PRODUCT,
     WORKFLOW_INPUTS_AS_OUTPUTS,
     WORKFLOW_KEEP_SUCCESSFUL_DATASETS,
@@ -77,6 +78,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
     WORKFLOW_SIMPLE,
     WORKFLOW_SIMPLE_CAT_TWICE,
+    WORKFLOW_VALIDATE_THEN_CAT,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
     WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
@@ -11020,6 +11022,21 @@ steps:
             )
             hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
             assert hda2["validated_state"] == "invalid"
+
+    @skip_without_tool("cat1")
+    def test_validated_post_job_action_invalid_output_stays_ok_by_default(self):
+        # Without fail_invalid_validated_outputs an invalid output stays ok and its dependents run.
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(
+                WORKFLOW_VALIDATE_THEN_CAT,
+                test_data={"input1": {"type": "File", "file_type": "lav", "content": TRUNCATED_LAV}},
+                history_id=history_id,
+            )
+            hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
+            assert hda2["validated_state"] == "invalid", hda2
+            assert hda2["state"] == "ok", hda2
+            hda3 = self.dataset_populator.get_history_dataset_details(history_id, hid=3)
+            assert hda3["state"] == "ok", hda3
 
     @skip_without_tool("dbkey_filter_input")
     def test_value_restriction_with_data_meta_filter(self):

@@ -16,6 +16,27 @@ steps:
       input1: input1
 """
 
+# A LAV file cut off before its closing ``#:eof`` line, so the lav validator reports it invalid.
+TRUNCATED_LAV = '#:lav\nd {\n  "lastz"\n}\n'
+
+WORKFLOW_VALIDATE_THEN_CAT = """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+    post_job_actions:
+      ValidateOutputsAction:
+        action_type: ValidateOutputsAction
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: first_cat/out_file1
+"""
+
 WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES = """
 class: GalaxyWorkflow
 doc: |

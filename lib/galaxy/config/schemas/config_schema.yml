@@ -4023,6 +4023,18 @@ mapping:
           also want to try the -noac mount option (Linux) or -actimeo=0 (Solaris), or a
           low -actimeo to shrink the staleness window without disabling caching.
 
+      fail_invalid_validated_outputs:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          When a tool or workflow step requests output validation ("Validate Tool
+          Outputs") and a datatype's validator reports an output as invalid, put that
+          output in the error state with the validator's message, so jobs that depend
+          on it are paused as they would be for any errored dataset.  When false, the
+          result is only recorded in the dataset's ``validated_state`` and the output
+          stays ok.
+
       tool_evaluation_strategy:
         type: str
         default: local
