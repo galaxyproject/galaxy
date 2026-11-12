@@ -107,6 +107,8 @@ describe("InvocationList", () => {
     beforeEach(() => {
         vi.mocked(fetchInvocations).mockReset();
         vi.mocked(fetchInvocations).mockResolvedValue([INVOCATIONS, 2] as unknown as InvocationsPage);
+        // expanded rows are remembered in local storage
+        localStorage.clear();
     });
 
     it("lists the user's invocations, newest first", async () => {
@@ -304,7 +306,7 @@ describe("InvocationList", () => {
         expect(details.find("[data-description='invocation state stub']").exists()).toBe(true);
     });
 
-    it("collapses expanded rows when new rows load", async () => {
+    it("keeps an invocation expanded when new rows load", async () => {
         const wrapper = mountTarget();
         await flushPromises();
         await wrapper.findAll("[data-description='toggle row details']")[0]!.trigger("click");
@@ -315,7 +317,7 @@ describe("InvocationList", () => {
         vi.runAllTimers();
         await flushPromises();
 
-        expect(wrapper.find("[data-description='grid expanded row']").exists()).toBe(false);
+        expect(wrapper.find("[data-description='grid expanded row']").exists()).toBe(true);
     });
 
     describe("admin mode", () => {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
     faCheckCircle,
+    faCompress,
     faExclamationTriangle,
     faEye,
     faPlus,
@@ -35,6 +36,7 @@ import {
 import { fetchInvocations, type InvocationsQuery } from "@/components/Workflow/Invocation/invocationsIndex";
 import { useInvocationListItemActions } from "@/components/Workflow/Invocation/useInvocationListItemActions";
 import { useFilterTextValidation } from "@/composables/filterTextValidation";
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
@@ -70,6 +72,8 @@ const TITLE = "Workflow Invocations";
 const HEADER_MESSAGE_SECONDS = 5;
 /** Narrower than this, the column filter chips get their own row under the filter bar */
 const INLINE_CHIPS_MIN_WIDTH = 768;
+/** How many expanded invocations are remembered, keeping the most recent */
+const MAX_SAVED_EXPANDED = 20;
 
 /** The status buttons, one per `INVOCATION_STATE_GROUPS` key, in display order */
 const STATUS_GROUPS = [
@@ -154,9 +158,8 @@ const errorMessage = ref("");
 const initDataLoading = ref(true);
 const resultsLoading = ref(false);
 
-// GTable tracks expanded rows by index, so expanded rows are collapsed before new rows load
-const expandedIds = ref(new Set<string>());
-const expandedToggles = new Map<string, () => void>();
+/** Invocations the user left expanded, expanded again whenever they're listed */
+const expandedIds = useUserLocalStorage<string[]>("invocation-list-expanded-ids", []);
 
 const filterText = ref("");
 const showAdvanced = ref(false);
@@ -265,7 +268,6 @@ async function load() {
         }
         const [data, total] = await fetchInvocations(query);
         if (requestId === latestRequest) {
-            collapseAll();
             listedInvocations.value = data;
             selectedIds.value = [];
             totalRows.value = total;
@@ -288,23 +290,16 @@ function onSort(newSortBy: string, newSortDesc: boolean) {
     sortDesc.value = newSortDesc;
 }
 
-function onShowDetails(invocation: WorkflowInvocation, toggleDetails: () => void) {
-    const ids = new Set(expandedIds.value);
-    if (ids.has(invocation.id)) {
-        ids.delete(invocation.id);
-        expandedToggles.delete(invocation.id);
-    } else {
-        ids.add(invocation.id);
-        expandedToggles.set(invocation.id, toggleDetails);
-    }
-    expandedIds.value = ids;
-    toggleDetails();
-}
+/** Whether any listed invocation is expanded */
+const anyListedExpanded = computed(() =>
+    listedInvocations.value.some((invocation) => expandedIds.value.includes(invocation.id)),
+);
 
-function collapseAll() {
-    expandedToggles.forEach((toggleDetails) => toggleDetails());
-    expandedToggles.clear();
-    expandedIds.value = new Set();
+/** Expands or collapses the invocation's row */
+function onShowDetails(invocation: WorkflowInvocation) {
+    const others = expandedIds.value.filter((id) => id !== invocation.id);
+    expandedIds.value =
+        others.length === expandedIds.value.length ? [...others, invocation.id].slice(-MAX_SAVED_EXPANDED) : others;
 }
 
 /** The invocation's workflow version as the editor numbers it (from 1), once its workflow has loaded */
@@ -502,6 +497,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 :local-sorting="false"
                 :overlay-loading="resultsLoading"
                 :actions="invocationListItemActions"
+                :row-details-shown="(item) => expandedIds.includes(item.id)"
                 selectable
                 no-select-on-click
                 show-select-all
@@ -529,10 +525,18 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                         @update:selected="onColumnFilter(historyColumnFilter, $event)" />
                 </template>
 
-                <template v-slot:cell(expand)="{ item, toggleDetails }">
-                    <GridExpand
-                        :details-showing="expandedIds.has(item.id)"
-                        @show-details="onShowDetails(item, toggleDetails)" />
+                <template v-slot:head(expand)>
+                    <GLink
+                        v-if="anyListedExpanded"
+                        tooltip
+                        title="Collapse all invocations"
+                        data-description="collapse all invocations"
+                        @click="expandedIds = []">
+                        <FontAwesomeIcon :icon="faCompress" />
+                    </GLink>
+                </template>
+                <template v-slot:cell(expand)="{ item }">
+                    <GridExpand :details-showing="expandedIds.includes(item.id)" @show-details="onShowDetails(item)" />
                 </template>
                 <template v-slot:cell(view)="{ item }">
                     <GButton color="blue" :title="localize('View')" @click="viewInvocation(item)">
