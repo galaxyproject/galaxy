@@ -416,7 +416,7 @@ def test_rejected_job_fails_without_resubmission():
         job_id=1,
         tool=SimpleNamespace(id="cat", version="1.0", requires_galaxy_python_environment=False),
         prepare=reject,
-        get_job=lambda: None,
+        get_job=lambda: SimpleNamespace(resubmission_count=0),
         fail=lambda message, **kwargs: failures.append(message),
     )
 
