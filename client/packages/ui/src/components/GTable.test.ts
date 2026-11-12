@@ -194,3 +194,83 @@ describe("GTable sorting", () => {
         expect(wrapper.get("thead th").attributes("aria-sort")).toBe(ariaSort);
     });
 });
+
+describe("GTable row actions", () => {
+    type Row = (typeof items)[number];
+
+    it("decides each action's visibility, disabled state and title per row", async () => {
+        const wrapper = mount(GTable as object, {
+            props: {
+                items,
+                fields: [{ key: "name" }],
+                actions: [
+                    { id: "always", label: "Always", title: "Always" },
+                    {
+                        id: "first-only",
+                        label: "First only",
+                        title: "First only",
+                        visible: (item: Row) => item.id === 1,
+                    },
+                    {
+                        id: "off-for-second",
+                        label: "Off",
+                        title: (item: Row) => (item.id === 2 ? "Not for the second row" : "Off"),
+                        disabled: (item: Row) => item.id === 2,
+                    },
+                ],
+            },
+            attachTo: document.body,
+        });
+        const menuOf = async (row: number) => {
+            const cell = wrapper.findAll("tbody .g-table-actions-column")[row]!;
+            await cell.find("button").trigger("click");
+            const ids = ["always", "first-only", "off-for-second"].filter((id) => cell.find(`#${id}`).exists());
+            const off = cell.find("#off-for-second");
+            return {
+                ids,
+                disabled: off.attributes("aria-disabled") === "true" || off.attributes("disabled") !== undefined,
+                title: off.attributes("title") ?? off.find("[title]").attributes("title"),
+            };
+        };
+
+        expect(await menuOf(0)).toEqual({
+            ids: ["always", "first-only", "off-for-second"],
+            disabled: false,
+            title: "Off",
+        });
+        expect(await menuOf(1)).toEqual({
+            ids: ["always", "off-for-second"],
+            disabled: true,
+            title: "Not for the second row",
+        });
+    });
+
+    it("separates action groups with dividers, skipping groups with nothing shown in the row", async () => {
+        const menuOf = async (actions: object[]) => {
+            const wrapper = mount(GTable as object, {
+                props: { items: [items[0]!], fields: [{ key: "name" }], actions },
+                attachTo: document.body,
+            });
+            const cell = wrapper.find("tbody .g-table-actions-column");
+            await cell.find("button").trigger("click");
+            return cell
+                .findAll(".dropdown-divider, [id]")
+                .map((element) => (element.classes("dropdown-divider") ? "|" : element.attributes("id")))
+                .filter((id) => id === "|" || ["a", "b", "c"].includes(id!));
+        };
+
+        expect(
+            await menuOf([
+                { id: "a", label: "A", title: "A" },
+                { id: "b", label: "B", title: "B" },
+            ]),
+        ).toEqual(["a", "b"]);
+        expect(
+            await menuOf([
+                { id: "a", label: "A", title: "A", groupId: "open" },
+                { id: "b", label: "B", title: "B", groupId: "stop", visible: false },
+                { id: "c", label: "C", title: "C", groupId: "danger" },
+            ]),
+        ).toEqual(["a", "|", "c"]);
+    });
+});

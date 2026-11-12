@@ -20,6 +20,7 @@ import type {
 import GAlert from "./GAlert.vue";
 import GCheckbox from "./GCheckbox.vue";
 import GDropdown from "./GDropdown.vue";
+import GDropdownDivider from "./GDropdownDivider.vue";
 import GDropdownItem from "./GDropdownItem.vue";
 import GOverlay from "./GOverlay.vue";
 
@@ -503,6 +504,20 @@ const allSelected = computed(() => {
     return props.selectable && localItems.value.length > 0 && props.selectedItems.length === localItems.value.length;
 });
 
+/** An action's `title`, `visible` or `disabled` for one row, which may be set per row */
+function actionValue<T>(value: T | ((item: any) => T) | undefined, item: any, fallback: T): T {
+    return typeof value === "function" ? (value as (item: any) => T)(item) : (value ?? fallback);
+}
+
+/** The actions shown in a row's menu, each marking whether a divider goes before it (a new group) */
+function rowActions(item: any): { action: TableAction; divided: boolean }[] {
+    const visible = (props.actions ?? []).filter((action) => actionValue(action.visible, item, true));
+    return visible.map((action, index) => ({
+        action,
+        divided: index > 0 && action.groupId !== visible[index - 1]!.groupId,
+    }));
+}
+
 /**
  * Get the global index for a paginated item
  */
@@ -913,16 +928,15 @@ defineExpose({
                                                 <FontAwesomeIcon :icon="faEllipsisV" fixed-width />
                                             </template>
 
-                                            <template v-for="ac in props.actions">
+                                            <template v-for="{ action: ac, divided } in rowActions(item)" :key="ac.id">
+                                                <GDropdownDivider v-if="divided" />
                                                 <GDropdownItem
-                                                    v-if="ac.visible ?? true"
                                                     :id="ac.id"
-                                                    :key="ac.id"
-                                                    :disabled="ac.disabled"
+                                                    :disabled="actionValue(ac.disabled, item, false)"
                                                     :size="ac.size || 'sm'"
                                                     :variant="ac.variant || 'link'"
                                                     :to="ac.to"
-                                                    :title="ac.title"
+                                                    :title="actionValue(ac.title, item, '')"
                                                     :href="ac.href"
                                                     :target="ac.externalLink ? '_blank' : undefined"
                                                     @click.stop="
