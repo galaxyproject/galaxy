@@ -52340,6 +52340,13 @@ export interface operations {
                     "image/*": unknown;
                 };
             };
+            /** @description The image has not been modified since the last request */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description The tool or the image wasn't found, or the file isn't a servable image */
             404: {
                 headers: {

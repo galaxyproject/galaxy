@@ -118,6 +118,8 @@ SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 ICON_CACHE_MAX_AGE = 86400  # 1 day
 # The icon URL is not versioned, so the icon may change under the same URL.
 ICON_CACHE_CONTROL = f"public, max-age={ICON_CACHE_MAX_AGE}"
+# Private: the tool may be access controlled.
+HELP_IMAGE_CACHE_CONTROL = "private, max-age=3600"
 
 
 class FormDataApiRoute(APIContentTypeRoute):
@@ -268,11 +270,13 @@ class FetchTools:
         response_class=FileResponse,
         responses={
             200: {"content": {"image/*": {}}, "description": "The image file"},
+            304: {"description": "The image has not been modified since the last request"},
             404: {"description": "The tool or the image wasn't found, or the file isn't a servable image"},
         },
     )
     def get_help_image(
         self,
+        request: Request,
         tool_id: str,
         path: str = Query(
             ...,
@@ -283,7 +287,7 @@ class FetchTools:
     ):
         """Return an image shipped with a tool that its help references by a relative path."""
         image_path, media_type = self.service.get_tool_help_image(trans, tool_id, path, tool_version)
-        return FileResponse(image_path, media_type=media_type)
+        return cached_file_response(request, image_path, media_type, HELP_IMAGE_CACHE_CONTROL)
 
     @router.post("/api/file_landings", public=True, allow_cors=True)
     def create_file_landing(

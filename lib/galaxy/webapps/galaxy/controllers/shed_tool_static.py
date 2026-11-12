@@ -32,8 +32,7 @@ class ShedToolStatic(BaseUIController):
         if tool is None:
             raise ObjectNotFound(f"Could not find tool with guid '{guid}'.")
         tool = trans.app.toolbox.materialize_tool(tool, reason="packaging")
-        repo_path = os.path.abspath(tool._repository_dir)
-        found_path = find_tool_asset(repo_path, image_file)
+        found_path = find_tool_asset(tool._repository_dir, image_file)
         if found_path:
             ext = os.path.splitext(image_file)[-1].lstrip(".")
             if ext:

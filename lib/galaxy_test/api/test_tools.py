@@ -301,6 +301,32 @@ class TestToolsApi(ApiTestCase, TestsTools):
         response = self._get_tool_help_image("not_a_tool", "help_image.png")
         self._assert_status_code_is(response, 404)
 
+    @skip_without_tool("help_images_markdown")
+    def test_tool_help_image_caching(self):
+        response = self._get_tool_help_image("help_images_markdown", "help_image.png", tool_version="1.0.0")
+        self._assert_status_code_is(response, 200)
+        cache_control = [d.strip() for d in response.headers["Cache-Control"].split(",")]
+        assert "private" in cache_control
+        assert "public" not in cache_control
+        assert "immutable" not in cache_control
+        assert any(d.startswith("max-age=") for d in cache_control)
+        for headers in [
+            {"If-None-Match": response.headers["ETag"]},
+            {"If-Modified-Since": response.headers["Last-Modified"]},
+        ]:
+            revalidated = self._get_tool_help_image(
+                "help_images_markdown", "help_image.png", tool_version="1.0.0", headers=headers
+            )
+            self._assert_status_code_is(revalidated, 304)
+            assert not revalidated.content
+        # If-None-Match takes precedence over If-Modified-Since.
+        stale = {"If-None-Match": '"stale"', "If-Modified-Since": response.headers["Last-Modified"]}
+        refetched = self._get_tool_help_image(
+            "help_images_markdown", "help_image.png", tool_version="1.0.0", headers=stale
+        )
+        self._assert_status_code_is(refetched, 200)
+        assert refetched.content == response.content
+
     @skip_without_tool("test_data_source")
     def test_data_source_build_request(self):
         with self.dataset_populator.test_history() as history_id:
@@ -910,11 +936,11 @@ class TestToolsApi(ApiTestCase, TestsTools):
     def _show_tool(self, tool_id, **params):
         return self._get(f"tools/{tool_id}", data=params)
 
-    def _get_tool_help_image(self, tool_id, path, tool_version=None):
+    def _get_tool_help_image(self, tool_id, path, tool_version=None, headers=None):
         params = {"path": path}
         if tool_version:
             params["tool_version"] = tool_version
-        return self._get(f"tools/{tool_id}/help_image", data=params)
+        return self._get(f"tools/{tool_id}/help_image", data=params, headers=headers)
 
     def _show_valid_tool(self, tool_id, tool_version=None):
         data = dict(io_details=True)
