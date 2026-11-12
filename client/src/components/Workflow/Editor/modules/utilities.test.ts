@@ -47,9 +47,9 @@ describe("getFilledDefaults", () => {
         const data = {
             steps: { "0": { name: "Tool", type: "tool", label: "qc", errors: "Tool is not installed" } },
             upgrade_messages: {},
-            filled_defaults: { "0": { kmers: "No value found for 'Kmers'. Using default: '7'." } },
+            filled_defaults: { "0": { kmers: "Default for 'Kmers': '7'." } },
         };
-        expect(getFilledDefaults(data)[0]?.details).toEqual(["No value found for 'Kmers'. Using default: '7'."]);
+        expect(getFilledDefaults(data)[0]?.details).toEqual(["Default for 'Kmers': '7'."]);
         expect(getStateUpgradeMessages(data)[0]?.details).toEqual(["Tool is not installed"]);
     });
 });

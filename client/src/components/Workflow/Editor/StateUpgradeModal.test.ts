@@ -40,9 +40,9 @@ describe("StateUpgradeModal.vue", () => {
         upgradeMessage({
             stepIndex: "1",
             name: "FastQC",
-            details: ["No value found for 'Adapter list'.", "No value found for 'Kmers'."],
+            details: ["Default for 'Adapter list': no value.", "Default for 'Kmers': '7'."],
         }),
-        upgradeMessage({ stepIndex: "4", name: "MultiQC", details: ["No value found for 'Report title'."] }),
+        upgradeMessage({ stepIndex: "4", name: "MultiQC", details: ["Default for 'Report title': no value."] }),
     ];
     const toReview = [upgradeMessage({ name: "step", details: ["Tool version changed"] })];
 
@@ -135,5 +135,13 @@ describe("StateUpgradeModal.vue", () => {
         await ok.trigger("click");
         expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBe(false);
         expect(wrapper.emitted("accept")?.length).toBe(accepted);
+    });
+
+    it("does not report acceptance when closed without Accept", async () => {
+        await mountWith([], filledDefaults);
+        wrapper.find("dialog").element.dispatchEvent(new Event("close"));
+        await nextTick();
+        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBe(false);
+        expect(wrapper.emitted("accept")).toBeUndefined();
     });
 });

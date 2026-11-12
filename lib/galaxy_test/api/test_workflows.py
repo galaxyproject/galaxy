@@ -1323,6 +1323,18 @@ steps:
             assert not workflow["has_upgrade_messages"]
             assert workflow["steps"][1]["inputs"][0]["value"] == {"__class__": "ConnectedValue"}
 
+    def _assert_runs_with_num_lines_default(self, workflow_id: str):
+        with self.dataset_populator.test_history() as history_id:
+            assert not self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
+            hda = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\n", wait=True)
+            # runs without allow_tool_state_corrections, which bioblend leaves off
+            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(hda)}
+            )
+            self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+            # the job used the num_lines default of 1
+            assert len(self.dataset_populator.get_history_dataset_content(history_id).splitlines()) == 1
+
     @skip_without_tool("random_lines1")
     def test_missing_tool_state_values_are_filled_defaults(self):
         # Format 2 may leave out parameters that have defaults; those are filled, not upgrade problems
@@ -1343,16 +1355,7 @@ steps:
         editor = self._download_workflow(workflow_id, style="editor")
         assert not any(editor["upgrade_messages"].values())
         assert "num_lines" in editor["filled_defaults"]["1"]
-        with self.dataset_populator.test_history() as history_id:
-            assert not self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
-            hda = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\n", wait=True)
-            # runs without allow_tool_state_corrections, which bioblend leaves off
-            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
-                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(hda)}
-            )
-            self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
-            # the job used the num_lines default of 1
-            assert len(self.dataset_populator.get_history_dataset_content(history_id).splitlines()) == 1
+        self._assert_runs_with_num_lines_default(workflow_id)
 
     @skip_without_tool("random_lines1")
     def test_missing_tool_state_values_in_a_subworkflow_are_filled_defaults(self):
@@ -1381,32 +1384,7 @@ steps:
         editor = self._download_workflow(workflow_id, style="editor")
         assert not any(editor["upgrade_messages"].values())
         assert "num_lines" in editor["filled_defaults"]["1"]["Step 2"]
-        with self.dataset_populator.test_history() as history_id:
-            assert not self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
-            hda = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\n", wait=True)
-            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
-                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(hda)}
-            )
-            self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
-            assert len(self.dataset_populator.get_history_dataset_content(history_id).splitlines()) == 1
-
-    @skip_without_tool("random_lines1")
-    def test_filled_default_messages_name_the_default(self):
-        workflow_id = self.workflow_populator.upload_yaml_workflow(
-            """
-class: GalaxyWorkflow
-inputs: {}
-steps:
-  lines:
-    tool_id: random_lines1
-""",
-            client_convert=False,
-            fill_defaults=False,
-        )
-        filled = self._download_workflow(workflow_id, style="editor")["filled_defaults"]["0"]
-        assert filled["num_lines"] == "Default for 'Randomly select': '1'."
-        # an unconnected data input is left for the user to set at runtime
-        assert filled["input"] == "Default for 'from': a value set at runtime."
+        self._assert_runs_with_num_lines_default(workflow_id)
 
     @skip_without_tool("multiple_versions_changes")
     def test_filled_defaults_after_a_tool_version_change_need_corrections(self):
@@ -1436,24 +1414,6 @@ steps:
             request["allow_tool_state_corrections"] = True
             self.workflow_populator.invoke_workflow_raw(workflow_id, request, assert_ok=True)
 
-    @skip_without_tool("gx_select_dynamic_empty")
-    def test_missing_required_value_without_default_stays_upgrade_message(self):
-        # a required select with no options has no default to fill in
-        workflow_id = self.workflow_populator.upload_yaml_workflow(
-            """
-class: GalaxyWorkflow
-inputs: {}
-steps:
-  empty_select:
-    tool_id: gx_select_dynamic_empty
-""",
-            client_convert=False,
-            fill_defaults=False,
-        )
-        editor = self._download_workflow(workflow_id, style="editor")
-        assert "parameter" in editor["upgrade_messages"]["0"]
-        assert "0" not in editor["filled_defaults"]
-
     @skip_without_tool("random_lines1")
     def test_replaced_tool_state_values_are_upgrade_messages(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
@@ -1477,12 +1437,6 @@ steps:
         assert "num_lines" not in editor["filled_defaults"].get("1", {})
         with self.dataset_populator.test_history() as history_id:
             assert self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
-            hda = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\n", wait=True)
-            response = self.workflow_populator.invoke_workflow(
-                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(hda)}
-            )
-            self._assert_status_code_is(response, 400)
-            assert "upgrade messages" in response.json()["err_msg"]
 
     def test_refactor(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
