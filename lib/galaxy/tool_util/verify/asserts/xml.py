@@ -135,7 +135,6 @@ def assert_element_text_is(output: Output, path: Path, text: ElementText, negate
     With ``negate`` the result of the assertion (on the equality) can be inverted (the
     implicit assertion on the existence of the path is not affected).
     """
-    # ponytail: anchor at both ends so this is an exact match, not just a suffix match
     assert_element_text_matches(output, path, "^" + re.escape(text) + "$", negate=negate)
 
 
@@ -179,7 +178,6 @@ def assert_attribute_is(
     With ``negate`` the result of the assertion (on the equality) can be inverted (the
     implicit assertion on the existence of the path is not affected).
     """
-    # ponytail: anchor at both ends so this is an exact match, not just a suffix match
     assert_attribute_matches(output, path, attribute, "^" + re.escape(text) + "$", negate=negate)
 
 
