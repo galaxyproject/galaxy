@@ -524,7 +524,9 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 </template>
                 <template v-slot:cell(history_id)="{ item }">
                     <span v-if="!item.history_id" v-localize> No history found </span>
-                    <SwitchToHistoryLink v-else :history-id="item.history_id" />
+                    <div v-else class="invocation-history">
+                        <SwitchToHistoryLink :history-id="item.history_id" inline />
+                    </div>
                 </template>
                 <template v-slot:cell(create_time)="{ item }">
                     <UtcDate :date="item.create_time" mode="elapsed" />
@@ -588,6 +590,16 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
         vertical-align: baseline;
         font-variant-numeric: tabular-nums;
     }
+}
+
+.invocation-history :deep(.history-link-click) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    text-align: left;
 }
 
 // status buttons, then the column filter chips filling the space up to the time range
