@@ -215,7 +215,7 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
                 const [canvasX, canvasY] = center(arguments[1]);
                 return [nodeX - canvasX, nodeY - canvasY];
                 """,
-                self.components.workflow_editor.node.by_id(id=1).wait_for_visible(),
+                self.components.workflow_editor.node._(id=1).wait_for_visible(),
                 invocations.graph_canvas.wait_for_visible(),
             )
             assert all(abs(delta) < 5 for delta in offset), offset
@@ -263,7 +263,7 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
         # The selected step is centered at 100%; zoom to 50% so its input clears the side overlay.
         for _ in range(5):
             invocations.graph_zoom_out.wait_for_and_click()
-        self.components.workflow_editor.node.by_id(id=0).wait_for_and_click()
+        self.components.workflow_editor.node._(id=0).wait_for_and_click()
 
         @retry_assertion_during_transitions
         def assert_other_node_selected():
