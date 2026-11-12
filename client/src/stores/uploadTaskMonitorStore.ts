@@ -40,15 +40,23 @@ export const useUploadTaskMonitorStore = defineStore("uploadTaskMonitor", () => 
     const running = computed(() =>
         uploadState.activeItems.value.flatMap((item) =>
             isTaskImport(item) && item.status === "processing" && item.taskId
-                ? [{ uploadId: item.id, taskId: item.taskId }]
+                ? [{ uploadId: item.id, taskId: item.taskId, createdAt: item.createdAt }]
                 : [],
         ),
     );
 
-    function follow(uploadId: string, taskId: string) {
+    function follow(uploadId: string, taskId: string, createdAt: number) {
         const scope = effectScope(true);
         scope.run(() => {
             const monitor = useTaskMonitor({ maxRequestFailures: MAX_STATUS_FAILURES });
+            // Past this, Galaxy may have forgotten the task and report it as pending for good.
+            const expiresIn = createdAt + (monitor.expirationTime ?? Infinity) - Date.now();
+            if (expiresIn <= 0) {
+                uploadState.setError(uploadId, COULD_NOT_CHECK_IMPORT);
+                return;
+            }
+            const expiry = setTimeout(() => uploadState.setError(uploadId, COULD_NOT_CHECK_IMPORT), expiresIn);
+            onScopeDispose(() => clearTimeout(expiry));
             watch(
                 [monitor.isCompleted, monitor.hasFailed, monitor.failureReason, monitor.requestHasFailed],
                 ([completed, failed, failureReason, requestFailed]) => {
@@ -86,9 +94,9 @@ export const useUploadTaskMonitorStore = defineStore("uploadTaskMonitor", () => 
                     followed.delete(uploadId);
                 }
             });
-            for (const { uploadId, taskId } of entries) {
+            for (const { uploadId, taskId, createdAt } of entries) {
                 if (!followed.has(uploadId)) {
-                    follow(uploadId, taskId);
+                    follow(uploadId, taskId, createdAt);
                 }
             }
         },
