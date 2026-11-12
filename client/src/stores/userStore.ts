@@ -1,4 +1,4 @@
-import { useDocumentVisibility, useThrottleFn } from "@vueuse/core";
+import { until, useDocumentVisibility, useThrottleFn } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, effectScope, ref, watch } from "vue";
 
@@ -6,7 +6,9 @@ import { type AnyUser, isAdminUser, isAnonymousUser, isRegisteredUser, type Regi
 import { getGalaxyInstance } from "@/app";
 import { useHashedUserId } from "@/composables/hashedUserId";
 import { useKeyedCache } from "@/composables/keyedCache";
+import { useSSE } from "@/composables/useNotificationSSE";
 import { useUserLocalStorageFromHashId } from "@/composables/userLocalStorageFromHashedId";
+import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import {
@@ -50,6 +52,20 @@ const RECENT_TOOLS_LIMIT = 10;
 const STORAGE_REFRESH_THROTTLE_MS = 5000;
 /** Minimum time between storage usage refreshes when the user returns to the tab. */
 const FOCUS_REFRESH_THROTTLE_MS = 60_000;
+/** Upper bound of the random delay before refreshing after an event sent to every user. */
+const BROADCAST_REFRESH_MAX_DELAY_MS = 30_000;
+/** Upper bound of the random delay before catching up after live updates reconnect, e.g. when Galaxy restarts. */
+const RECONNECT_REFRESH_MAX_DELAY_MS = 10_000;
+/** How long to wait for live updates to reconnect when the user returns to the tab, before refreshing anyway. */
+const WAKE_RECONNECT_TIMEOUT_MS = 10_000;
+
+function isBroadcastEvent(event: MessageEvent): boolean {
+    try {
+        return JSON.parse(event.data)?.broadcast === true;
+    } catch {
+        return false;
+    }
+}
 
 export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<AnyUser>(null);
@@ -136,7 +152,7 @@ export const useUserStore = defineStore("userStore", () => {
 
     /**
      * Reloads the user, which reports the usage and quota of the default storage, and the usage of
-     * every storage source if anything asked for it. Call it after anything that changes the storage usage.
+     * every storage source if anything asked for it.
      */
     async function refreshStorageUsage() {
         const quotaUsageStore = useQuotaUsageStore();
@@ -151,47 +167,151 @@ export const useUserStore = defineStore("userStore", () => {
     const throttledRefresh = useThrottleFn(refreshStorageUsageInBackground, STORAGE_REFRESH_THROTTLE_MS, true, true);
     const refreshOnFocus = useThrottleFn(refreshStorageUsageInBackground, FOCUS_REFRESH_THROTTLE_MS, false, true);
 
+    let delayedRefreshPending = false;
+
+    function refreshAfterDelay() {
+        delayedRefreshPending = false;
+        refreshStorageUsageThrottled();
+    }
+
+    /**
+     * Refreshes after a random delay, for changes that reach many browsers at once, so that their
+     * refetches are spread out. A refresh already scheduled runs after this change too.
+     */
+    function refreshAfterRandomDelay(maxDelayMs: number) {
+        if (!delayedRefreshPending) {
+            delayedRefreshPending = true;
+            setTimeout(refreshAfterDelay, Math.random() * maxDelayMs);
+        }
+    }
+
+    function onQuotaEvent(event: MessageEvent) {
+        if (isBroadcastEvent(event)) {
+            // A default quota changed for every user
+            refreshAfterRandomDelay(BROADCAST_REFRESH_MAX_DELAY_MS);
+        } else {
+            refreshStorageUsageThrottled();
+        }
+    }
+
+    const { connect: connectQuotaEvents, connected: sseConnected } = useSSE(onQuotaEvent, ["user_quota_update"]);
     const documentVisibility = useDocumentVisibility();
     let watchingStorageUsage = false;
+    let liveUpdatesEnabled = false;
     let refreshSkippedWhileHidden = false;
+    let catchUpOnWakeReconnect = false;
+
+    /**
+     * Catches up without live updates if they haven't reconnected since the user returned, e.g. when
+     * a proxy blocks them.
+     */
+    function catchUpIfNotReconnected() {
+        if (catchUpOnWakeReconnect) {
+            catchUpOnWakeReconnect = false;
+            refreshStorageUsageThrottled();
+        }
+    }
+
+    /** Whether a refresh should wait until the user returns to the tab. */
+    function isWatchingHiddenTab() {
+        return watchingStorageUsage && documentVisibility.value === "hidden";
+    }
+
+    /** Whether the server announces this user's usage changes. Anonymous users get no usage events. */
+    function receivesUsageEvents() {
+        return liveUpdatesEnabled && sseConnected.value && isRegisteredUser(currentUser.value);
+    }
+
+    /** Whether live updates should be connected but aren't, e.g. after the tab was hidden. */
+    function liveUpdatesDisconnected() {
+        return liveUpdatesEnabled && !sseConnected.value;
+    }
 
     /**
      * Like ``refreshStorageUsageInBackground``, at most once per window: a workflow finishing many
-     * jobs changes the usage for each. While the tab is hidden, it refreshes once the user returns.
+     * jobs changes the usage, and sends an event, for each. While the tab is hidden, it refreshes
+     * once the user returns.
      */
     function refreshStorageUsageThrottled() {
-        if (watchingStorageUsage && documentVisibility.value === "hidden") {
+        if (isWatchingHiddenTab()) {
             refreshSkippedWhileHidden = true;
             return;
         }
         void throttledRefresh();
     }
-    // Owned by the store rather than by the component that starts the watching
+
+    /**
+     * Call it after anything that changes the storage usage, e.g. a purge or a history growing.
+     * It does nothing when the server announces the change itself.
+     */
+    function refreshStorageUsageUnlessLive() {
+        if (!receivesUsageEvents()) {
+            refreshStorageUsageThrottled();
+        }
+    }
+
+    /**
+     * Refreshes when the user returns, since quota events miss changes made outside Galaxy's code,
+     * e.g. by cleanup scripts.
+     */
+    function onVisibilityChange(visibility: DocumentVisibilityState) {
+        if (visibility !== "visible") {
+            return;
+        }
+        if (liveUpdatesDisconnected()) {
+            // Live updates reconnect when the user returns, and catch up then
+            catchUpOnWakeReconnect = true;
+            refreshSkippedWhileHidden = false;
+            setTimeout(catchUpIfNotReconnected, WAKE_RECONNECT_TIMEOUT_MS);
+        } else if (refreshSkippedWhileHidden) {
+            // A change is known to be missing: don't wait for the next focus refresh
+            refreshSkippedWhileHidden = false;
+            void throttledRefresh();
+        } else {
+            void refreshOnFocus();
+        }
+    }
+
+    let connectedBefore = false;
+
+    /** Catches up on the events lost while disconnected. The first connection has nothing to catch up on. */
+    function onLiveUpdatesConnectionChange(isConnected: boolean) {
+        if (!isConnected) {
+            return;
+        }
+        const isReconnect = connectedBefore;
+        connectedBefore = true;
+        if (catchUpOnWakeReconnect) {
+            catchUpOnWakeReconnect = false;
+            refreshStorageUsageThrottled();
+        } else if (isReconnect) {
+            // Every open tab reconnects at once when Galaxy restarts
+            refreshAfterRandomDelay(RECONNECT_REFRESH_MAX_DELAY_MS);
+        }
+    }
+
+    // Watchers created after an ``await`` belong to no scope; this one ends with the store
     const storageUsageScope = effectScope();
 
     /**
-     * Keeps the storage usage current when it changes outside this tab, e.g. in another tab or
-     * by background jobs: refresh when the user returns to the tab.
+     * Keeps the storage usage current: refresh when the user returns to the tab and, with live
+     * updates, on the server's ``user_quota_update`` events.
      */
-    function startWatchingStorageUsage() {
+    async function startWatchingStorageUsage() {
         if (watchingStorageUsage) {
             return;
         }
         watchingStorageUsage = true;
-        storageUsageScope.run(() => {
-            watch(documentVisibility, (visibility) => {
-                if (visibility !== "visible") {
-                    return;
-                }
-                if (refreshSkippedWhileHidden) {
-                    // A change is known to be missing: don't wait for the next focus refresh
-                    refreshSkippedWhileHidden = false;
-                    void throttledRefresh();
-                } else {
-                    void refreshOnFocus();
-                }
-            });
-        });
+        storageUsageScope.run(() => watch(documentVisibility, onVisibilityChange));
+        const configStore = useConfigStore();
+        await until(() => configStore.isLoaded).toBe(true);
+        if (!configStore.config?.enable_sse_updates) {
+            return;
+        }
+        liveUpdatesEnabled = true;
+        connectQuotaEvents();
+        connectedBefore = sseConnected.value;
+        storageUsageScope.run(() => watch(sseConnected, onLiveUpdatesConnectionChange));
     }
 
     function loadUser(includeHistories = true) {
@@ -430,8 +550,7 @@ export const useUserStore = defineStore("userStore", () => {
         loadUser,
         refreshUser,
         refreshStorageUsage,
-        refreshStorageUsageInBackground,
-        refreshStorageUsageThrottled,
+        refreshStorageUsageUnlessLive,
         startWatchingStorageUsage,
         matchesCurrentUsername,
         matchesCurrentUserId,

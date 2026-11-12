@@ -44,7 +44,7 @@ watch(
     (newValue, oldValue) => {
         // Make sure we reload the user and the quota usages when the recalculation is done
         if (oldValue && !newValue) {
-            userStore.refreshStorageUsageInBackground();
+            userStore.refreshStorageUsageUnlessLive();
         }
     },
 );

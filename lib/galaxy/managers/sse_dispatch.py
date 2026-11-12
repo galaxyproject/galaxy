@@ -189,6 +189,23 @@ class SSEEventDispatcher:
             kwargs["session_id"] = session_id
         self._send("unsubscribe_history_viewer", kwargs)
 
+    def user_quota_update(
+        self, user_ids: list[int] | None = None, broadcast: bool = False, event_id: str | None = None
+    ) -> None:
+        """Fan out a wake-up ``user_quota_update`` event: the users' storage usage or quota changed.
+
+        ``broadcast`` also reaches every connected client, for changes to a default quota.
+        Like ``entry_point_update``, the client refetches, so the event carries no usage data.
+        """
+        self._send(
+            "user_quota_update",
+            {
+                "user_ids": user_ids or [],
+                "broadcast": broadcast,
+                "event_id": event_id or make_event_id(),
+            },
+        )
+
     def entry_point_update(self, user_id: int, event_id: str | None = None) -> None:
         """Fan out a wake-up ``entry_point_update`` event for one user.
 

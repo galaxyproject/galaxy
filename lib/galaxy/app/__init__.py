@@ -117,6 +117,11 @@ from galaxy.model.tool_shed_install import (
     HasToolBox,
     mapping as install_mapping,
 )
+from galaxy.model.user_quota_updates import (
+    send_user_quota_updates_on_commit,
+    UserQuotaUpdateBatcher,
+    UserQuotaUpdates,
+)
 from galaxy.objectstore import (
     BaseObjectStore,
     build_object_store_from_config,
@@ -844,7 +849,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
         # SSE dispatcher must be registered before NotificationManager so Lagom
         # can auto-inject the Optional[SSEEventDispatcher] constructor arg.
-        self._register_singleton(
+        sse_dispatcher = self._register_singleton(
             SSEEventDispatcher,
             SSEEventDispatcher(
                 queue_worker=getattr(self, "queue_worker", None),
@@ -852,6 +857,14 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
                 statsd_client=self.execution_timer_factory.galaxy_statsd_client,
             ),
         )
+
+        def send_user_quota_updates(updates: UserQuotaUpdates) -> None:
+            sse_dispatcher.user_quota_update(sorted(updates.user_ids), broadcast=updates.broadcast)
+
+        self.user_quota_update_batcher = UserQuotaUpdateBatcher(send_user_quota_updates)
+        if self.config.enable_sse_updates:
+            send_user_quota_updates_on_commit(self.model.session, self.user_quota_update_batcher.add)
+        self.haltables.insert(0, ("user quota updates", self.user_quota_update_batcher.flush))
         self.notification_manager = self._register_singleton(NotificationManager)
         self.interactivetool_manager = InteractiveToolManager(self)
 
@@ -1028,6 +1041,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         startup_timer = ExecutionTimer()
         super().__init__(fsmon=True, **kwargs)
         self.haltables = [
+            # Before the queue worker, which sends them
+            ("user quota updates", self.user_quota_update_batcher.flush),
             ("queue worker", self._shutdown_queue_worker),
             ("file watcher", self._shutdown_watcher),
             ("database heartbeat", self._shutdown_database_heartbeat),

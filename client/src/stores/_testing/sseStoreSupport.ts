@@ -24,6 +24,9 @@ export interface SSEMockState {
     hasEverConnected?: Ref<boolean>;
 }
 
+/** Key of a handler subscribed to every event type. */
+const ALL_EVENTS = "*";
+
 /** Build the factory used with ``vi.mock("@/composables/useNotificationSSE", ...)``. */
 export function sseMockFactory(state: SSEMockState) {
     // Lazily initialize the connection refs so existing callers that don't
@@ -34,9 +37,19 @@ export function sseMockFactory(state: SSEMockState) {
     if (!state.hasEverConnected) {
         state.hasEverConnected = ref(false);
     }
+    const handlers = new Map<string, (event: MessageEvent) => void>();
     return {
-        useSSE: vi.fn((onEvent: (event: MessageEvent) => void) => {
-            state.onEvent = onEvent;
+        useSSE: vi.fn((onEvent: (event: MessageEvent) => void, eventTypes?: readonly string[]) => {
+            // Several stores subscribe at once, each to its own event types; ``state.onEvent`` routes an
+            // event to the store subscribed to its type. Unlike the real composable, a type has one handler,
+            // the latest store's, as each test creates its stores anew. Resetting ``state.onEvent`` drops them all.
+            if (!state.onEvent) {
+                handlers.clear();
+                state.onEvent = (event) => (handlers.get(event.type) ?? handlers.get(ALL_EVENTS))?.(event);
+            }
+            for (const eventType of eventTypes ?? [ALL_EVENTS]) {
+                handlers.set(eventType, onEvent);
+            }
             return { connect: state.connect, disconnect: state.disconnect, connected: state.connected };
         }),
         useSSEConnectionStatus: vi.fn(() => ({
