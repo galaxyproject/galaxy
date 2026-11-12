@@ -41,11 +41,9 @@ function increaseHeadingLevel(node, level, increaseBy) {
 
 // Scheme, path-absolute, query or fragment: not relative to the tool.
 const NOT_TOOL_RELATIVE = /^([a-z][a-z0-9+.-]*:|[/#?])/i;
-// Prefix of image paths the server already routed for installed Tool Shed RST help.
-const SHED_TOOL_STATIC_ROUTE = "shed_tool_static/";
 
 function isToolRelativePath(src) {
-    return !!src && !NOT_TOOL_RELATIVE.test(src) && !src.startsWith(SHED_TOOL_STATIC_ROUTE);
+    return !!src && !NOT_TOOL_RELATIVE.test(src);
 }
 
 function decodePath(src) {
