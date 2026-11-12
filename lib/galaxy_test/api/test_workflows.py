@@ -6721,6 +6721,35 @@ steps:
         assert message["reason"] == "dataset_failed"
         assert message["workflow_step_id"] == 1
 
+    @skip_without_tool("job_properties")
+    @skip_without_tool("gx_text")
+    def test_workflow_failed_parameter_input_not_ok(self, history_id):
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+steps:
+  job_props:
+    tool_id: job_properties
+    state:
+      thebool: true
+      failbool: true
+  consume_param:
+    tool_id: gx_text
+    in:
+      parameter: job_props/out_file1
+""",
+            history_id=history_id,
+            assert_ok=False,
+            wait=True,
+        )
+        invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+        assert invocation["state"] == "failed"
+        assert len(invocation["messages"]) == 1
+        message = invocation["messages"][0]
+        assert message["reason"] == "dataset_failed"
+        assert message["workflow_step_id"] == 1
+        assert message["dependent_workflow_step_id"] == 0
+
     @skip_without_tool("__RELABEL_FROM_FILE__")
     def test_workflow_failed_with_message_exception(self, history_id):
         summary = self._run_workflow(
