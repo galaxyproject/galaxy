@@ -19,6 +19,12 @@ import { isRegisteredUser } from "@/api";
 import type { WorkflowInvocation } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import type { TableField } from "@/components/Common/GTable.types";
+import {
+    type AppliedTimeRange,
+    getActiveTimeRange,
+    setActiveTimeRange as applyTimeRangeFilter,
+    type TimeRange,
+} from "@/components/Common/timeRanges";
 import { type ColumnFilterField, useColumnFilters } from "@/components/Grid/useColumnFilters";
 import {
     historyColumnFilter,
@@ -44,6 +50,7 @@ import GTable from "@/components/Common/GTable.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
 import StatusGroupFilter, { type StatusGroup } from "@/components/Common/StatusGroupFilter.vue";
+import TimeRangeFilter from "@/components/Common/TimeRangeFilter.vue";
 import GridColumnFilter from "@/components/Grid/GridColumnFilter.vue";
 import GridColumnFilterChips from "@/components/Grid/GridColumnFilterChips.vue";
 import GridExpand from "@/components/Grid/GridElements/GridExpand.vue";
@@ -65,6 +72,15 @@ const STATUS_GROUPS = [
     { key: "problem", label: "Problem", icon: faExclamationTriangle, color: "red" },
     { key: "inactive", label: "Inactive", icon: faStopCircle, color: "grey" },
 ] as const satisfies (StatusGroup & { key: keyof typeof INVOCATION_STATE_GROUPS })[];
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** The time range picks, as the Invoked time's `create_time` range */
+const TIME_RANGES: TimeRange[] = [
+    { key: "24h", label: "Last 24 hours", durationMs: DAY_MS },
+    { key: "7d", label: "Last week", durationMs: 7 * DAY_MS },
+    { key: "30d", label: "Last 30 days", durationMs: 30 * DAY_MS },
+    { key: "90d", label: "Last 90 days", durationMs: 90 * DAY_MS },
+];
 
 interface Props {
     /** List every user's invocations that are still being scheduled, without search or column filters */
@@ -169,6 +185,31 @@ function setActiveStatusFilter(group: string | undefined) {
         ? invocationsFiltering.applyFiltersToText({ status: group }, newText)
         : invocationsFiltering.applyFiltersToText({ status: "" }, newText, true);
     filterText.value = newText;
+}
+
+/**
+ * The range `setActiveTimeRange` itself last applied, so `activeTimeRange` can tell a quick-pick
+ * range apart from a manually-entered `create_time` filter ("custom").
+ */
+let lastAppliedTimeRange: AppliedTimeRange | undefined;
+
+/**
+ * The active quick-pick time range, "custom" for a manually-entered `create_time` filter, or
+ * `undefined` for "Anytime".
+ */
+const activeTimeRange = computed(() =>
+    getActiveTimeRange(invocationsFiltering, "create_time", filterText.value, lastAppliedTimeRange),
+);
+
+/**
+ * Sets or clears the `TimeRangeFilter` quick-pick, overloading the existing `create_time_gt`
+ * filter instead of introducing a new one.
+ */
+function setActiveTimeRange(range: string | undefined) {
+    const timeRange = TIME_RANGES.find(({ key }) => key === range);
+    const result = applyTimeRangeFilter(invocationsFiltering, "create_time", filterText.value, timeRange);
+    filterText.value = result.filterText;
+    lastAppliedTimeRange = result.appliedRange;
 }
 
 const isAvailable = computed(() => !initDataLoading.value && totalRows.value > 0);
@@ -347,6 +388,12 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                         :active-group="activeStatusFilter"
                         @update:active-group="setActiveStatusFilter" />
                 </div>
+                <TimeRangeFilter
+                    class="ml-auto"
+                    :ranges="TIME_RANGES"
+                    noun="invocations"
+                    :active-range="activeTimeRange"
+                    @update:active-range="setActiveTimeRange" />
             </div>
             <GridColumnFilterChips v-if="filterable" :chips="activeColumnFilters" @remove="removeColumnFilterOption" />
         </div>
