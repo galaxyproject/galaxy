@@ -14,6 +14,7 @@ import GalaxyLinkImport from "./GalaxyLinkImport.vue";
 vi.mock("@/composables/config");
 
 const IMPORT = "/api/histories/{history_id}/contents_from_store_async";
+const ITEM = '[data-description="galaxy picker import item"]';
 
 const { server, http } = useServerMock();
 
@@ -279,6 +280,52 @@ describe("GalaxyLinkImport, choosing from another Galaxy", () => {
             expect.stringContaining("item 2"),
         ]);
         await vi.waitFor(() => expect(wrapper.text()).toContain("Imported"));
+    });
+
+    it("does not import the items again when the user switches to Paste a link and back", async () => {
+        const bodies = importEndsIn("SUCCESS");
+        const opened = mockPopup();
+        const wrapper = await mountChooser();
+        await wrapper.find('[data-description="galaxy picker open"]').trigger("click");
+        const nonce = nonceOf(opened);
+        send(hello(nonce));
+        send(
+            result(nonce, [`${SOURCE}/api/short_term_storage/${UUID_1}`, `${SOURCE}/api/short_term_storage/${UUID_2}`]),
+        );
+        await vi.waitFor(() =>
+            expect(wrapper.findAll(ITEM).map((row) => row.text())).toEqual([
+                expect.stringContaining("Imported"),
+                expect.stringContaining("Imported"),
+            ]),
+        );
+        const mode = '[data-description="galaxy link import mode"]';
+        await wrapper.find(`${mode} input[value="paste"]`).setValue(true);
+        await wrapper.find(`${mode} input[value="choose"]`).setValue(true);
+        await wrapper.find(`${mode} input[value="paste"]`).setValue(true);
+        await wrapper.find(`${mode} input[value="choose"]`).setValue(true);
+        await vi.waitFor(() =>
+            expect(wrapper.findAll(ITEM).map((row) => row.text())).toEqual([
+                expect.stringContaining("Imported"),
+                expect.stringContaining("Imported"),
+            ]),
+        );
+        expect(bodies).toHaveLength(2);
+    });
+
+    it("shows on its row why an import could not be started", async () => {
+        server.use(
+            http.post(IMPORT, ({ response }) =>
+                response("4XX").json({ err_msg: "History is not writable", err_code: 403002 }, { status: 403 }),
+            ),
+        );
+        const opened = mockPopup();
+        const wrapper = await mountChooser();
+        await wrapper.find('[data-description="galaxy picker open"]').trigger("click");
+        const nonce = nonceOf(opened);
+        send(hello(nonce));
+        send(result(nonce, [`${SOURCE}/api/short_term_storage/${UUID_1}`]));
+        await vi.waitFor(() => expect(wrapper.find(ITEM).text()).toContain("History is not writable"));
+        expect(wrapper.find(ITEM).find('[data-description="loading message"]').exists()).toBe(false);
     });
 
     it.each([

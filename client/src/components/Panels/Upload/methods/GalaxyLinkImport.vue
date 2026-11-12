@@ -53,8 +53,8 @@ interface PickerSession {
 interface ImportRow {
     id: number;
     name: string;
-    link: string;
-    historyId: string;
+    taskId?: string;
+    startError?: string;
 }
 
 const modeOptions = [
@@ -194,6 +194,29 @@ async function onImport() {
     }
 }
 
+// Started here rather than in the row, so showing the rows again does not import the items again.
+async function startRowImport(rowId: number, link: string, historyId: string) {
+    const update = (patch: Partial<ImportRow>) => {
+        const row = importRows.value.find((candidate) => candidate.id === rowId);
+        if (row) {
+            Object.assign(row, patch);
+        }
+    };
+    try {
+        const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents_from_store_async", {
+            params: { path: { history_id: historyId } },
+            body: { store_content_uri: link, model_store_format: "tar.gz", discarded_data: "forbid" },
+        });
+        if (error) {
+            update({ startError: errorMessageAsString(error) });
+            return;
+        }
+        update({ taskId: data.id });
+    } catch (e) {
+        update({ startError: errorMessageAsString(e, "The import could not be started.") });
+    }
+}
+
 function endSession() {
     window.removeEventListener("message", onMessage);
     clearTimeout(helloTimer);
@@ -276,15 +299,11 @@ function onMessage(event: MessageEvent) {
             showNotice("bad-links", host);
             return;
         }
-        importRows.value = [
-            ...importRows.value,
-            ...data.items.map((item) => ({
-                id: nextRowId++,
-                name: item.name,
-                link: item.link,
-                historyId: current.historyId,
-            })),
-        ];
+        for (const item of data.items) {
+            const id = nextRowId++;
+            importRows.value.push({ id, name: item.name });
+            startRowImport(id, item.link, current.historyId);
+        }
         if (data.failed > 0) {
             failedCount.value = data.failed;
             showNotice("some-failed", host);
@@ -409,9 +428,9 @@ onUnmounted(() => {
                 <GalaxyLinkImportItem
                     v-for="row in importRows"
                     :key="row.id"
-                    :history-id="row.historyId"
-                    :link="row.link"
-                    :name="row.name" />
+                    :name="row.name"
+                    :start-error="row.startError"
+                    :task-id="row.taskId" />
             </ul>
         </template>
         <template v-else>
