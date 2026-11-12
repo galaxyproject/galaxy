@@ -109,7 +109,11 @@ def get_ctx_file_path_from_manifest(filename: str, repo: "IRepo", changeset_revi
 
 
 def get_file_data_from_manifest(
-    filename: str, repo: "IRepo", changeset_revision: str, max_size: int | None = None
+    filename: str,
+    repo: "IRepo",
+    changeset_revision: str,
+    max_size: int | None = None,
+    exact_path: bool = False,
 ) -> bytes | None:
     """
     Return the contents of filename in the repository manifest as of changeset_revision, or None
@@ -121,6 +125,8 @@ def get_file_data_from_manifest(
         return None
     path: bytes | None = smart_str(filename)
     if path not in ctx:
+        if exact_path:
+            return None
         stripped_filename = basic_util.strip_path(filename)
         matches = (f for f in ctx.manifest() if basic_util.strip_path(unicodify(f)) == stripped_filename)
         path = next(matches, None)
