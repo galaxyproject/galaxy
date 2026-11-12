@@ -249,33 +249,33 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert output["inherit_format"] is True
 
     def test_tool_icon_endpoint_with_simple_id(self):
-        response = self._get("tools/simple_tool_id/icon")
+        response = self._get_tool_icon("simple_tool_id")
         self._assert_status_code_is(response, 404)
 
     @skip_without_tool("help_images_markdown")
     def test_tool_icon_revalidated_by_etag(self):
-        response = self._get("tools/help_images_markdown/icon")
+        response = self._get_tool_icon("help_images_markdown")
         self._assert_status_code_is(response, 200)
         assert response.headers["Content-Type"] == "image/png"
-        revalidated = self._get("tools/help_images_markdown/icon", headers={"If-None-Match": response.headers["ETag"]})
+        revalidated = self._get_tool_icon("help_images_markdown", headers={"If-None-Match": response.headers["ETag"]})
         self._assert_status_code_is(revalidated, 304)
 
     @skip_without_tool("icon_outside_tool_dir")
     def test_tool_icon_outside_tool_dir_not_found(self):
-        response = self._get("tools/icon_outside_tool_dir/icon")
+        response = self._get_tool_icon("icon_outside_tool_dir")
         self._assert_status_code_is(response, 404)
 
     @skip_without_tool("help_images_require_login")
     def test_tool_icon_require_login(self):
-        response = self._get("tools/help_images_require_login/icon")
+        response = self._get_tool_icon("help_images_require_login")
         self._assert_status_code_is(response, 200)
         assert response.headers["Content-Type"] == "image/png"
-        self._assert_status_code_is(self._get("tools/help_images_require_login/icon", anon=True), 401)
+        self._assert_status_code_is(self._get_tool_icon("help_images_require_login", anon=True), 401)
 
     def test_tool_icon_endpoint_with_toolshed_id(self):
         # Test complex toolshed tool ID with slashes
         toolshed_tool_id = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0"
-        response = self._get(f"tools/{toolshed_tool_id}/icon")
+        response = self._get_tool_icon(toolshed_tool_id)
         # We expect either 200 (if tool is installed and has icon) or 404 (if
         # not found), but this tests the routing either way.
         assert response.status_code in [200, 404]
@@ -297,12 +297,12 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert response.headers["Content-Type"] == "image/png"
             with open(expected_file, "rb") as fh:
                 assert response.content == fh.read()
-            assert response.headers["Content-Security-Policy"] == HELP_IMAGE_CSP
-            assert response.headers["X-Content-Type-Options"] == "nosniff"
+            assert response.headers.get("Content-Security-Policy") == HELP_IMAGE_CSP
+            assert response.headers.get("X-Content-Type-Options") == "nosniff"
         response = self._get_tool_help_image("help_images_markdown", "help_image.svg", tool_version="1.0.0")
         self._assert_status_code_is(response, 200)
         assert response.headers["Content-Type"].startswith("image/svg+xml")
-        assert response.headers["Content-Security-Policy"] == HELP_IMAGE_CSP
+        assert response.headers.get("Content-Security-Policy") == HELP_IMAGE_CSP
         for path in ["missing.png", "help_images_markdown.xml", "../../../../test-data/im3_a.png"]:
             response = self._get_tool_help_image("help_images_markdown", path)
             self._assert_status_code_is(response, 404)
@@ -327,9 +327,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
             )
             self._assert_status_code_is(revalidated, 304)
             assert not revalidated.content
-            assert revalidated.headers["ETag"] == response.headers["ETag"]
-            assert revalidated.headers["Cache-Control"] == response.headers["Cache-Control"]
-            assert revalidated.headers["Content-Security-Policy"] == HELP_IMAGE_CSP
+            assert revalidated.headers.get("ETag") == response.headers["ETag"]
+            assert revalidated.headers.get("Cache-Control") == response.headers["Cache-Control"]
+            assert revalidated.headers.get("Content-Security-Policy") == HELP_IMAGE_CSP
         # If-None-Match takes precedence over If-Modified-Since.
         stale = {"If-None-Match": '"stale"', "If-Modified-Since": response.headers["Last-Modified"]}
         refetched = self._get_tool_help_image(
@@ -946,6 +946,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     def _show_tool(self, tool_id, **params):
         return self._get(f"tools/{tool_id}", data=params)
+
+    def _get_tool_icon(self, tool_id, headers=None, anon=False):
+        return self._get(f"tools/{tool_id}/icon", headers=headers, anon=anon)
 
     def _get_tool_help_image(self, tool_id, path, tool_version=None, headers=None):
         params = {"path": path}
