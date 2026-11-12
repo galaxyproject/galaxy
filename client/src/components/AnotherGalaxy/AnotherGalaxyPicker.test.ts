@@ -305,6 +305,33 @@ describe("AnotherGalaxyPicker", () => {
         expect(closeSpy).toHaveBeenCalled();
     });
 
+    it("shows the results of the latest search when an earlier one comes back last", async () => {
+        serveItems([]);
+        let releaseFirst: () => void = () => {};
+        const firstHeld = new Promise<void>((resolve) => (releaseFirst = resolve));
+        server.use(
+            http.get("/api/datasets", async ({ request, response }) => {
+                const term = new URL(request.url).searchParams.getAll("qv")[2];
+                datasetQueries.push(new URL(request.url).searchParams);
+                if (!term) {
+                    await firstHeld;
+                }
+                const items = [row(term ? "new" : "old")];
+                return response(200).json(items as never, { headers: { total_matches: "1" } });
+            }),
+        );
+        const wrapper = await mountPicker();
+        await wrapper.find('[data-description="picker search"]').setValue("reads");
+        await vi.waitFor(() =>
+            expect(wrapper.find('[data-description="picker select dataset:new"]').exists()).toBe(true),
+        );
+        releaseFirst();
+        await vi.waitFor(() => expect(datasetQueries).toHaveLength(2));
+        await flushPromises();
+        expect(wrapper.find('[data-description="picker select dataset:old"]').exists()).toBe(false);
+        expect(wrapper.find('[data-description="picker select dataset:new"]').exists()).toBe(true);
+    });
+
     it("says so when this Galaxy cannot export", async () => {
         setMockConfig({ enable_celery_tasks: false });
         serveItems([row("d1")]);
