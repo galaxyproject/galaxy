@@ -224,7 +224,7 @@ function endSession() {
     session.value = null;
 }
 
-// The popup holds a reference to this window, so it is closed once it has answered.
+// The popup holds a reference to this window, so it is closed once it has answered, unless it lists failures to read.
 function closePopup(popup: Window) {
     if (!popup.closed) {
         popup.close();
@@ -293,9 +293,12 @@ function onMessage(event: MessageEvent) {
     } else if (isPickerResult(data) && data.nonce === current.nonce && current.root) {
         const root = current.root;
         endSession();
-        closePopup(current.popup);
         // One foreign link means the picker is not behaving, so none of its links are used.
-        if (!data.items.every((item) => isLinkFromSource(item.link, root))) {
+        const allFromSource = data.items.every((item) => isLinkFromSource(item.link, root));
+        if (!allFromSource || data.failed === 0) {
+            closePopup(current.popup);
+        }
+        if (!allFromSource) {
             showNotice("bad-links", host);
             return;
         }
@@ -412,8 +415,8 @@ onUnmounted(() => {
                 class="mt-3"
                 show
                 data-description="galaxy picker some failed">
-                {{ failedCount === 1 ? "1 item" : `${failedCount} items` }} could not be exported on {{ noticeHost }}
-                and did not arrive here.
+                {{ failedCount === 1 ? "1 item" : `${failedCount} items` }} could not be exported on
+                {{ noticeHost }} and did not arrive here. The {{ noticeHost }} window lists why.
             </GAlert>
             <GAlert
                 v-else-if="notice === 'cancelled'"
