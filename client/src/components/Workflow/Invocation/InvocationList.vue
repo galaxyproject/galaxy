@@ -4,6 +4,7 @@ import {
     faExclamationTriangle,
     faEye,
     faPlus,
+    faRedo,
     faSpinner,
     faStopCircle,
 } from "@fortawesome/free-solid-svg-icons";
@@ -58,6 +59,7 @@ import GridExpand from "@/components/Grid/GridElements/GridExpand.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 import UtcDate from "@/components/UtcDate.vue";
+import InvocationRowSummary from "@/components/Workflow/Invocation/InvocationRowSummary.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 import WorkflowPublishedButtons from "@/components/Workflow/Published/WorkflowPublishedButtons.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
@@ -322,11 +324,18 @@ function viewInvocation(invocation: WorkflowInvocation) {
 
 const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 
-const { invocationListItemActions, storedWorkflow, workflowPreview, isActiveInvocation, cancelInvocations } =
-    useInvocationListItemActions({
-        viewInvocation,
-        refreshList: load,
-    });
+const {
+    invocationListItemActions,
+    storedWorkflow,
+    workflowPreview,
+    isActiveInvocation,
+    cancelInvocations,
+    rerunBlockedReason,
+    rerunInvocation,
+} = useInvocationListItemActions({
+    viewInvocation,
+    refreshList: load,
+});
 
 /** Ids of the selected invocations; cleared whenever the list's rows change */
 const selectedIds = ref<string[]>([]);
@@ -562,14 +571,29 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 </template>
 
                 <template v-slot:row-details="{ item }">
-                    <div class="card p-2" data-description="grid expanded row">
-                        <span class="mb-2" :data-invocation-id="item.id">
-                            <small>
-                                <b>Last updated: <UtcDate :date="item.update_time" mode="elapsed" />; Invocation ID:</b>
-                            </small>
-                            <code>{{ item.id }}</code>
-                        </span>
-                        <WorkflowInvocationState :invocation-id="item.id" />
+                    <div class="card p-2 invocation-row-details" data-description="grid expanded row">
+                        <div class="invocation-row-layout">
+                            <InvocationRowSummary :invocation="item">
+                                <template v-slot:actions>
+                                    <GButton size="small" color="blue" @click="viewInvocation(item)">
+                                        <FontAwesomeIcon :icon="faEye" />
+                                        {{ localize("View invocation") }}
+                                    </GButton>
+                                    <GButton
+                                        size="small"
+                                        color="blue"
+                                        outline
+                                        :disabled="!!rerunBlockedReason(item)"
+                                        :disabled-title="rerunBlockedReason(item)"
+                                        title="Rerun this workflow with the same inputs"
+                                        @click="rerunInvocation(item)">
+                                        <FontAwesomeIcon :icon="faRedo" />
+                                        {{ localize("Rerun") }}
+                                    </GButton>
+                                </template>
+                            </InvocationRowSummary>
+                            <WorkflowInvocationState class="invocation-row-graph" :invocation-id="item.id" />
+                        </div>
                     </div>
                 </template>
             </GTable>
@@ -654,6 +678,33 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
     overflow: hidden;
     overflow-wrap: anywhere;
     text-align: left;
+}
+
+.invocation-row-details {
+    container-type: inline-size;
+}
+
+// summary beside the graph when the row is wide enough, above it otherwise
+.invocation-row-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+@container (min-width: 48rem) {
+    .invocation-row-layout {
+        flex-direction: row;
+        align-items: stretch;
+
+        .invocation-row-summary {
+            flex: 0 0 20rem;
+        }
+
+        .invocation-row-graph {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+    }
 }
 
 // as wide as the workflow list's preview modal

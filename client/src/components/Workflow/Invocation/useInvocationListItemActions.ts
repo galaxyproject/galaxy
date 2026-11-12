@@ -144,7 +144,7 @@ export function useInvocationListItemActions({ viewInvocation, refreshList }: Op
                 rerunBlockedReason(invocation) ?? "Rerun this workflow with the same inputs",
             icon: faRedo,
             disabled: (invocation: WorkflowInvocation) => !!rerunBlockedReason(invocation),
-            handler: (invocation: WorkflowInvocation) => router.push(`/workflows/rerun?invocation_id=${invocation.id}`),
+            handler: rerunInvocation,
         },
         {
             id: "view-invocation",
@@ -192,5 +192,18 @@ export function useInvocationListItemActions({ viewInvocation, refreshList }: Op
         },
     ];
 
-    return { invocationListItemActions, storedWorkflow, workflowPreview, isActiveInvocation, cancelInvocations };
+    /** Opens the rerun form with the invocation's inputs */
+    function rerunInvocation(invocation: WorkflowInvocation) {
+        router.push(`/workflows/rerun?invocation_id=${invocation.id}`);
+    }
+
+    return {
+        invocationListItemActions,
+        storedWorkflow,
+        workflowPreview,
+        isActiveInvocation,
+        cancelInvocations,
+        rerunBlockedReason,
+        rerunInvocation,
+    };
 }

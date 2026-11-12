@@ -477,7 +477,10 @@ async function onCancel() {
             </li>
         </BNav>
 
-        <div ref="tabContent" class="mt-1 d-flex flex-column overflow-auto tab-content-container">
+        <div
+            ref="tabContent"
+            class="d-flex flex-column overflow-auto tab-content-container"
+            :class="{ 'mt-1': props.isFullPage }">
             <div v-if="onOverviewTab" :class="{ 'overview-tab-content': fitOverviewToTab }">
                 <WorkflowInvocationOverview
                     class="invocation-overview"
