@@ -1,3 +1,5 @@
+import pytest
+
 from galaxy.tool_util.unittest_utils import t_data_downloader_for
 from galaxy.tool_util.verify import verify
 
@@ -93,3 +95,36 @@ def test_sim_size_failure_still_updates(tmp_path):
     assert assertion_error
     assert (tmp_path / filename).exists()
     assert (tmp_path / filename).open("rb").read() == b"expected"
+
+
+GZ_CONTENT = b"@read1\nACGT\n+\nIIII\n"
+
+
+@pytest.mark.parametrize(
+    "checksum_of, decompress, expect_pass",
+    [
+        ("decompressed", True, True),
+        ("compressed", True, False),
+        ("compressed", False, True),
+        ("decompressed", False, False),
+    ],
+)
+def test_checksum_honors_decompress(checksum_of, decompress, expect_pass):
+    import gzip
+    import hashlib
+
+    compressed = gzip.compress(GZ_CONTENT)
+    hashed = GZ_CONTENT if checksum_of == "decompressed" else compressed
+    attributes = {"checksum": f"md5${hashlib.md5(hashed).hexdigest()}", "decompress": decompress}
+    if expect_pass:
+        verify("out", compressed, attributes=attributes)
+    else:
+        with pytest.raises(AssertionError, match="checksum"):
+            verify("out", compressed, attributes=attributes)
+
+
+def test_checksum_with_decompress_on_uncompressed_output():
+    import hashlib
+
+    attributes = {"checksum": f"md5${hashlib.md5(GZ_CONTENT).hexdigest()}", "decompress": True}
+    verify("out", GZ_CONTENT, attributes=attributes)

@@ -41,15 +41,20 @@ for assertion_module_name in assertion_module_names:
 assertion_functions: Dict[str, Callable] = {k: v[1] for (k, v) in assertion_module_and_functions.items()}
 
 
+def decompress_bytes(data: bytes) -> bytes:
+    """Return ``data`` decompressed if it is in a compressed format Galaxy recognizes, else unchanged."""
+    with NamedTemporaryFile() as tmpfh:
+        tmpfh.write(data)
+        tmpfh.flush()
+        with get_fileobj(tmpfh.name, mode="rb", compressed_formats=None) as fh:
+            return fh.read()
+
+
 def verify_assertions(data: bytes, assertion_description_list: list, decompress: bool = False):
     """This function takes a list of assertions and a string to check
     these assertions against."""
     if decompress:
-        with NamedTemporaryFile() as tmpfh:
-            tmpfh.write(data)
-            tmpfh.flush()
-            with get_fileobj(tmpfh.name, mode="rb", compressed_formats=None) as fh:
-                data = fh.read()
+        data = decompress_bytes(data)
     for assertion_description in assertion_description_list:
         verify_assertion(data, assertion_description)
 

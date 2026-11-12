@@ -52,7 +52,10 @@ from ._types import (
     ExpandedToolInputsJsonified,
     ToolTestDescriptionDict,
 )
-from .asserts import verify_assertions
+from .asserts import (
+    decompress_bytes,
+    verify_assertions,
+)
 from .test_data import TestDataResolver
 
 if TYPE_CHECKING:
@@ -122,7 +125,9 @@ def verify(
 
     if expected_checksum_type:
         try:
-            _verify_checksum(output_content, expected_checksum_type, expected_checksum)
+            # decompress applies to checksums too, like it does to assertions and compare
+            checksum_content = decompress_bytes(output_content) if attributes.get("decompress") else output_content
+            _verify_checksum(checksum_content, expected_checksum_type, expected_checksum)
         except AssertionError as err:
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)
