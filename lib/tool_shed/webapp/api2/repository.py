@@ -237,6 +237,8 @@ class FastAPILegacyInstall:
         operation_id="repositories__raw_tool_source_at_revision",
         summary="Return raw tool XML from a specific repository revision.",
         openapi_extra={"security": []},
+        response_class=Response,
+        responses={200: {"content": {"application/xml": {"schema": {"type": "string"}}}}},
     )
     def raw_tool_source_at_revision(
         self,
