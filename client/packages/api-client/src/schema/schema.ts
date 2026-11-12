@@ -52315,7 +52315,7 @@ export interface operations {
     get_help_image_api_tools__tool_id__help_image_get: {
         parameters: {
             query: {
-                /** @description Path relative to the tool's directory. A bare file name is also looked up in `static/images/`. */
+                /** @description Path relative to the tool's directory. A path outside `static/images/` is looked up there first. */
                 path: string;
                 /** @description The tool version. */
                 tool_version?: string | null;

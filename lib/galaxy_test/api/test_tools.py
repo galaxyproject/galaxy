@@ -337,6 +337,10 @@ class TestToolsApi(ApiTestCase, TestsTools):
         )
         self._assert_status_code_is(refetched, 200)
         assert refetched.content == response.content
+        wildcard = self._get_tool_help_image(
+            "help_images_markdown", "help_image.png", tool_version="1.0.0", headers={"If-None-Match": "*"}
+        )
+        self._assert_status_code_is(wildcard, 304)
 
     @skip_without_tool("test_data_source")
     def test_data_source_build_request(self):

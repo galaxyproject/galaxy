@@ -1049,7 +1049,7 @@ tag | details
 
 Images shipped with the tool are referenced by paths relative to the tool's directory, in either help format,
 e.g. ``.. image:: static/images/my_figure.png`` or ``![My figure](static/images/my_figure.png)``.
-A bare file name such as ``my_figure.png`` is looked up in ``static/images/`` first, and for a tool installed from
+A path outside ``static/images/``, such as ``my_figure.png``, is looked up in ``static/images/`` first, and for a tool installed from
 the Tool Shed the repository root is searched after the tool's own directory. Before Galaxy 27.0, relative image
 paths only work in RST help of tools installed from the Tool Shed.
 

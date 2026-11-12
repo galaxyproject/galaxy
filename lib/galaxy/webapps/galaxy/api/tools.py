@@ -285,7 +285,7 @@ class FetchTools:
         tool_id: str,
         path: str = Query(
             ...,
-            description="Path relative to the tool's directory. A bare file name is also looked up in `static/images/`.",
+            description="Path relative to the tool's directory. A path outside `static/images/` is looked up there first.",
         ),
         tool_version: str | None = Query(default=None, description="The tool version."),
         trans: ProvidesHistoryContext = DependsOnTrans,
