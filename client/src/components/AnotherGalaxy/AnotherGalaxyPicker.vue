@@ -167,7 +167,11 @@ function toggle(item: HistoryItemSummary, checked: boolean) {
     selected.value = next;
 }
 
+// Only the latest request may fill the table, so an older search that answers last is ignored.
+let latestLoad = 0;
+
 async function load() {
+    const request = ++latestLoad;
     loading.value = true;
     loadError.value = undefined;
     const term = search.value.trim();
@@ -184,15 +188,22 @@ async function load() {
                 },
             },
         });
+        if (request !== latestLoad) {
+            return;
+        }
         if (error) {
             rethrowSimple(error);
         }
         rows.value = data as unknown as HistoryItemSummary[];
         total.value = parseInt(response.headers.get("total_matches") ?? "0", 10) || 0;
     } catch (e) {
-        loadError.value = errorMessageAsString(e, "Your datasets and collections could not be loaded.");
+        if (request === latestLoad) {
+            loadError.value = errorMessageAsString(e, "Your datasets and collections could not be loaded.");
+        }
     } finally {
-        loading.value = false;
+        if (request === latestLoad) {
+            loading.value = false;
+        }
     }
 }
 
