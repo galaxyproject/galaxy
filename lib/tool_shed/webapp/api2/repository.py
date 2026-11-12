@@ -236,6 +236,7 @@ class FastAPILegacyInstall:
         "/api/repositories/{repository_id}/revisions/{changeset_revision}/tool_source/{tool_file:path}",
         operation_id="repositories__raw_tool_source_at_revision",
         summary="Return raw tool XML from a specific repository revision.",
+        openapi_extra={"security": []},
     )
     def raw_tool_source_at_revision(
         self,
