@@ -494,6 +494,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 :overlay-loading="resultsLoading"
                 :actions="invocationListItemActions"
                 selectable
+                no-select-on-click
                 show-select-all
                 :selected-items="selectedIndices"
                 select-checkbox-title="Select this invocation"
