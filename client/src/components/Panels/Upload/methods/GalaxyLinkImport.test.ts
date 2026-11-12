@@ -472,4 +472,22 @@ describe("GalaxyLinkImport, choosing from another Galaxy", () => {
         expect(popupClose).toHaveBeenCalled();
         expect(wrapper.find('[data-description="galaxy picker waiting"]').exists()).toBe(false);
     });
+
+    it("says nothing was chosen when the user closes the popup after it answered", async () => {
+        vi.useFakeTimers();
+        const opened = mockPopup();
+        const closed = vi.spyOn(window, "closed", "get").mockReturnValue(false);
+        const wrapper = await mountChooser();
+        await wrapper.find('[data-description="galaxy picker open"]').trigger("click");
+        send(hello(nonceOf(opened)));
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(wrapper.find('[data-description="galaxy picker waiting"]').exists()).toBe(true);
+        closed.mockReturnValue(true);
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(wrapper.find('[data-description="galaxy picker waiting"]').exists()).toBe(false);
+        expect(wrapper.find('[data-description="galaxy picker cancelled"]').text()).toContain(
+            "Nothing was chosen on usegalaxy.eu",
+        );
+        expect(wrapper.find('[data-description="galaxy picker no answer"]').exists()).toBe(false);
+    });
 });

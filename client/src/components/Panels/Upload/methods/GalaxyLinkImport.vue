@@ -264,9 +264,8 @@ function onChoose() {
     helloTimer = setTimeout(() => showNotice("no-answer", host), HELLO_NOTICE_DELAY);
     popupTimer = setInterval(() => {
         if (popup.closed) {
-            if (!session.value?.root) {
-                showNotice("no-answer", host);
-            }
+            // After a hello the picker worked, so closing its window is the same as Cancel.
+            showNotice(session.value?.root ? "cancelled" : "no-answer", host);
             endSession();
         }
     }, POPUP_CHECK_INTERVAL);
