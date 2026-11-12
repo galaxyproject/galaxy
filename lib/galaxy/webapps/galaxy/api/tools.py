@@ -262,6 +262,29 @@ class FetchTools:
         tool_icon_path = self.service.get_tool_icon_path(trans=trans, tool_id=tool_id)
         return cached_file_response(request, tool_icon_path, PNGIconResponse.media_type, ICON_CACHE_CONTROL)
 
+    @router.get(
+        "/api/tools/{tool_id:path}/help_image",
+        summary="Get an image referenced by a tool's help",
+        response_class=FileResponse,
+        responses={
+            200: {"content": {"image/*": {}}, "description": "The image file"},
+            404: {"description": "The tool or the image wasn't found, or the file isn't a servable image"},
+        },
+    )
+    def get_help_image(
+        self,
+        tool_id: str,
+        path: str = Query(
+            ...,
+            description="Path relative to the tool's directory. A bare file name is also looked up in `static/images/`.",
+        ),
+        tool_version: str | None = Query(default=None, description="The tool version."),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ):
+        """Return an image shipped with a tool that its help references by a relative path."""
+        image_path, media_type = self.service.get_tool_help_image(trans, tool_id, path, tool_version)
+        return FileResponse(image_path, media_type=media_type)
+
     @router.post("/api/file_landings", public=True, allow_cors=True)
     def create_file_landing(
         self,

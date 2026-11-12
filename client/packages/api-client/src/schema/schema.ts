@@ -5814,6 +5814,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/{tool_id}/help_image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an image referenced by a tool's help
+         * @description Return an image shipped with a tool that its help references by a relative path.
+         */
+        get: operations["get_help_image_api_tools__tool_id__help_image_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tools/{tool_id}/icon": {
         parameters: {
             query?: never;
@@ -52271,6 +52291,61 @@ export interface operations {
                         | components["schemas"]["ParsedFetchWorkbookForDatasets"]
                         | components["schemas"]["ParsedFetchWorkbookForCollections"];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_help_image_api_tools__tool_id__help_image_get: {
+        parameters: {
+            query: {
+                /** @description Path relative to the tool's directory. A bare file name is also looked up in `static/images/`. */
+                path: string;
+                /** @description The tool version. */
+                tool_version?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/*": unknown;
+                };
+            };
+            /** @description The tool or the image wasn't found, or the file isn't a servable image */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {

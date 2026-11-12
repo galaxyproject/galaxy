@@ -280,6 +280,36 @@ class TestToolsApi(ApiTestCase, TestsTools):
         if response.status_code == 200:
             assert response.headers["Content-Type"] == "image/png"
 
+    @skip_without_tool("help_images_markdown")
+    def test_tool_help_image(self):
+        help_images_dir = os.path.join(galaxy_root_path, "test", "functional", "tools", "help_images")
+        static_image = os.path.join(help_images_dir, "static", "images", "help_image.png")
+        beside_image = os.path.join(help_images_dir, "beside_tool.png")
+        for path, expected_file in [
+            ("static/images/help_image.png", static_image),
+            ("help_image.png", static_image),
+            ("beside_tool.png", beside_image),
+        ]:
+            response = self._get("tools/help_images_markdown/help_image", data={"path": path, "tool_version": "1.0.0"})
+            self._assert_status_code_is(response, 200)
+            assert response.headers["Content-Type"] == "image/png"
+            with open(expected_file, "rb") as fh:
+                assert response.content == fh.read()
+
+    @skip_without_tool("help_images_markdown")
+    def test_tool_help_image_not_found(self):
+        for path in [
+            "missing.png",
+            "help_image.svg",
+            "help_images_markdown.xml",
+            "../help_features_markdown.xml",
+            "../../../../test-data/im3_a.png",
+        ]:
+            response = self._get("tools/help_images_markdown/help_image", data={"path": path})
+            self._assert_status_code_is(response, 404)
+        response = self._get("tools/not_a_tool/help_image", data={"path": "help_image.png"})
+        self._assert_status_code_is(response, 404)
+
     @skip_without_tool("test_data_source")
     def test_data_source_build_request(self):
         with self.dataset_populator.test_history() as history_id:

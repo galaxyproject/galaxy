@@ -5,6 +5,7 @@ import pytest
 from galaxy.tools.help_images import (
     find_tool_asset,
     find_tool_file,
+    help_image_media_type,
 )
 
 
@@ -55,3 +56,19 @@ def test_tool_file_exact_path_only(tool_dir, tmp_path_factory):
     linked_dir = os.path.join(tmp_path_factory.mktemp("links"), "tool")
     os.symlink(tool_dir, linked_dir)
     assert find_tool_file(linked_dir, "both.png") == os.path.join(tool_dir, "both.png")
+
+
+@pytest.mark.parametrize(
+    "path,expected",
+    [
+        ("a.png", "image/png"),
+        ("a.JPG", "image/jpeg"),
+        ("a.gif", "image/gif"),
+        ("a.svg", None),
+        ("tool.xml", None),
+        ("script.py", None),
+        ("noextension", None),
+    ],
+)
+def test_help_image_media_type(path, expected):
+    assert help_image_media_type(path) == expected
