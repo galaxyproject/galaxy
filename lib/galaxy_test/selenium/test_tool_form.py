@@ -520,7 +520,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
 
     @selenium_test
     def test_tool_help_markdown_relative_images(self):
-        self._assert_tool_help_images_load("help_images_markdown", 3)
+        self._assert_tool_help_images_load("help_images_markdown", 4)
 
     @selenium_test
     def test_tool_help_rst_relative_images(self):

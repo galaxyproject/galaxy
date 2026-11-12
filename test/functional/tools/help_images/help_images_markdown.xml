@@ -21,5 +21,9 @@ Bare name found in static/images, as in Tool Shed help:
 Image beside the tool:
 
 ![beside image](beside_tool.png)
+
+SVG image:
+
+![svg image](help_image.svg)
 ]]></help>
 </tool>
