@@ -5362,6 +5362,21 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``fail_invalid_validated_outputs``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When a tool or workflow step requests output validation ("Validate
+    Tool Outputs") and a datatype's validator reports an output as
+    invalid, put that output in the error state with the validator's
+    message, so jobs that depend on it are paused as they would be for
+    any errored dataset.  When false, the result is only recorded in
+    the dataset's ``validated_state`` and the output stays ok.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_evaluation_strategy``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

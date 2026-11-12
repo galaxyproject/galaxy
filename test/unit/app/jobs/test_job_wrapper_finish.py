@@ -166,6 +166,60 @@ class TestJobWrapperFinish(TestCase, UsesTools):
         for job_state, dataset_state, _ in committed:
             assert (job_state == model.Job.states.OK) == (dataset_state == model.Dataset.states.OK)
 
+    def test_invalid_validated_output_is_errored_and_pauses_dependents(self):
+        self.app.config.fail_invalid_validated_outputs = True
+        dependent_job = self._add_dependent_job()
+
+        self._finish_with_validated_state(model.DatasetInstance.validated_states.INVALID, "File is truncated.")
+
+        hda = self.job.output_datasets[0].dataset
+        assert self.job.state == model.Job.states.OK
+        assert self.dataset.state == model.Dataset.states.ERROR
+        assert "File is truncated." in hda.info
+        assert dependent_job.state == model.Job.states.PAUSED
+
+    def test_invalid_validated_output_stays_ok_by_default(self):
+        dependent_job = self._add_dependent_job()
+
+        self._finish_with_validated_state(model.DatasetInstance.validated_states.INVALID, "File is truncated.")
+
+        assert self.job.output_datasets[0].dataset.validated_state == model.DatasetInstance.validated_states.INVALID
+        assert self.dataset.state == model.Dataset.states.OK
+        assert dependent_job.state == model.Job.states.NEW
+
+    def test_valid_validated_output_stays_ok(self):
+        self.app.config.fail_invalid_validated_outputs = True
+
+        self._finish_with_validated_state(model.DatasetInstance.validated_states.OK, None)
+
+        assert self.dataset.state == model.Dataset.states.OK
+
+    def _add_dependent_job(self):
+        session = self.app.model.context
+        dependent_job = model.Job()
+        dependent_job.user = self.job.user
+        dependent_job.history = self.job.history
+        dependent_job.tool_id = self.tool.id
+        dependent_job.state = model.Job.states.NEW
+        dependent_job.add_input_dataset("input1", self.job.output_datasets[0].dataset)
+        session.add(dependent_job)
+        session.commit()
+        return dependent_job
+
+    def _finish_with_validated_state(self, validated_state, message):
+        wrapper = MinimalJobWrapper(self.job, self.app, tool=self.tool)
+        metadata = wrapper.external_output_metadata
+
+        def load_metadata(dataset, *args, **kwds):
+            dataset.validated_state = validated_state
+            dataset.validated_state_message = message
+
+        with (
+            patch.object(metadata, "external_metadata_set_successfully", return_value=True),
+            patch.object(metadata, "load_metadata", side_effect=load_metadata),
+        ):
+            self._finish_and_record_commits(wrapper)
+
     def _add_output_collection(self):
         session = self.app.model.context
         hdca = model.HistoryDatasetCollectionAssociation(

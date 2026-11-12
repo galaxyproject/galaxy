@@ -402,6 +402,7 @@ class GalaxyAppConfigurationAttributes:
     max_metadata_value_size: int
     outputs_to_working_directory: bool
     retry_job_output_collection: int
+    fail_invalid_validated_outputs: bool
     tool_evaluation_strategy: str
     preserve_python_environment: str
     cleanup_job: str

@@ -2305,6 +2305,28 @@ class MinimalJobWrapper(HasResourceParameters):
 
         self.sa_session.add(dataset)
 
+    def _fail_invalid_validated_outputs(self, job: Job) -> None:
+        """Put outputs that validation found invalid in the error state and pause their dependent jobs."""
+        for dataset_assoc in job.output_datasets + job.output_library_datasets:
+            dataset_instance = dataset_assoc.dataset
+            dataset = dataset_instance.dataset
+            assert dataset is not None
+            if (
+                dataset_instance.validated_state != dataset_instance.validated_states.INVALID
+                or dataset.state != Dataset.states.OK
+            ):
+                continue
+            message = dataset_instance.validated_state_message or "Output failed datatype validation."
+            log.info("(%s) setting invalid dataset %s state to ERROR: %s", job.id, dataset.id, message)
+            dataset.state = Dataset.states.ERROR
+            dataset_instance.blurb = "error"
+            dataset_instance.info = f"{(dataset_instance.info or '').rstrip()}\n{message}".strip()
+            for dep_job_assoc in dataset_instance.dependent_jobs:
+                self.pause(
+                    dep_job_assoc.job,
+                    "Execution of this dataset's job is paused because its input datasets are in an error state.",
+                )
+
     def finish(
         self,
         tool_stdout: str,
@@ -2523,6 +2545,9 @@ class MinimalJobWrapper(HasResourceParameters):
                 ):
                     # We don't set datsets in error state to OK because discover_outputs may have already set the state to error
                     dataset_assoc.dataset.dataset.state = Dataset.states.OK
+
+        if job.states.ERROR != final_job_state and self.app.config.fail_invalid_validated_outputs:
+            self._fail_invalid_validated_outputs(job)
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:

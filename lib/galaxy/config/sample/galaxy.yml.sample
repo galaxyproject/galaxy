@@ -2958,6 +2958,14 @@ galaxy:
   # staleness window without disabling caching.
   #retry_job_output_collection: 0
 
+  # When a tool or workflow step requests output validation ("Validate
+  # Tool Outputs") and a datatype's validator reports an output as
+  # invalid, put that output in the error state with the validator's
+  # message, so jobs that depend on it are paused as they would be for
+  # any errored dataset.  When false, the result is only recorded in the
+  # dataset's ``validated_state`` and the output stays ok.
+  #fail_invalid_validated_outputs: false
+
   # Determines which process will evaluate the tool command line. If set
   # to "local" the tool command line, configuration files and other
   # dynamic values will be templated in the job handler process. If set

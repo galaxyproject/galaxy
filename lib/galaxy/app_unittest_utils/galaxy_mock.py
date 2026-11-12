@@ -291,6 +291,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.check_job_script_integrity = False
         self.check_job_script_integrity_count = 0
         self.check_job_script_integrity_sleep = 0
+        self.fail_invalid_validated_outputs = False
 
         self.default_panel_view = "default"
         self.panel_views_dir = ""
