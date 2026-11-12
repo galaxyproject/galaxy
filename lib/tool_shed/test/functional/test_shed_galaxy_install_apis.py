@@ -648,6 +648,49 @@ class TestGalaxyInstallApis(ShedApiTestCase):
         response = requests.get(f"{images_url}/images%2Flogo.png", params={"changeset_revision": "000000000bad"})
         assert response.status_code == 404
 
+    def test_raw_tool_xml_at_changeset_revision(self):
+        """Return the original tool XML from each requested changeset."""
+        repository = self.populator.setup_test_data_repo("column_maker_with_rst_readme")
+        revisions = list(self.populator.get_metadata(repository).root.values())
+        fixture_dir = TEST_DATA_REPO_FILES.joinpath("repos", "column_maker_with_rst_readme")
+
+        assert len(revisions) == 3
+
+        for index, revision in enumerate(revisions, start=1):
+            url = (
+                f"{self.url}/api/repositories/{repository.id}"
+                f"/revisions/{revision.changeset_revision}"
+                "/tool_source/column_maker_with_rst_readme/column_maker.xml"
+            )
+
+            response = requests.get(url)
+            api_asserts.assert_status_code_is_ok(response)
+
+            expected_xml = fixture_dir.joinpath(str(index), "column_maker.xml").read_bytes()
+
+            assert response.content == expected_xml
+            assert "application/xml" in response.headers["content-type"]
+
+        revision = revisions[-1].changeset_revision
+        base_url = f"{self.url}/api/repositories/{repository.id}/revisions/{revision}/tool_source"
+
+        # Missing or incorrect paths must return 404.
+        for file_path in (
+            "column_maker.xml",
+            "missing/column_maker.xml",
+            "column_maker_with_rst_readme/README.rst",
+        ):
+            response = requests.get(f"{base_url}/{file_path}")
+            assert response.status_code == 404
+
+        # An unknown changeset must also return 404.
+        response = requests.get(
+            f"{self.url}/api/repositories/{repository.id}"
+            "/revisions/deadbeefdead/tool_source/"
+            "column_maker_with_rst_readme/column_maker.xml"
+        )
+        assert response.status_code == 404
+
     def test_status_for_installed_repository_redirects(self):
         """Legacy endpoint should 301 redirect to /api/repositories/updates/ with query string preserved."""
         params = dict(name="test_repo", owner="test_owner", changeset_revision="abc123")
