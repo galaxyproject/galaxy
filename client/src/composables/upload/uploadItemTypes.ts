@@ -104,6 +104,18 @@ export interface LibraryDatasetUploadItem extends UploadItemCommon {
     url: string;
 }
 
+/**
+ * Item imported from another Galaxy's export link by a Galaxy background task.
+ * The link is not kept: anyone with it can download the item until it expires.
+ */
+export interface GalaxyLinkUploadItem extends UploadItemCommon {
+    uploadMode: "galaxy-link";
+    /** Host of the Galaxy the link came from, for display */
+    sourceHost: string;
+    /** Galaxy task that imports the item, once it has started */
+    taskId?: string;
+}
+
 /** Union of all new upload item types (before state tracking is added) */
 export type NewUploadItem =
     | LocalFileUploadItem
@@ -111,7 +123,8 @@ export type NewUploadItem =
     | UrlUploadItem
     | RemoteFileUploadItem
     | LibraryDatasetUploadItem
-    | CompositeFileUploadItem;
+    | CompositeFileUploadItem
+    | GalaxyLinkUploadItem;
 
 /** Internal state tracking for an upload */
 export interface UploadState {
