@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
+import { isAdminUser } from "@/api";
 import type { JobBaseModel } from "@/api/jobs";
+import { useUserStore } from "@/stores/userStore";
 
 import Heading from "../Common/Heading.vue";
 import CodeRow from "./CodeRow.vue";
 import JobInformation from "./JobInformation.vue";
+import JobDestinationParams from "@/components/JobDestinationParams/JobDestinationParams.vue";
 import JobHeader from "@/components/JobInformation/JobHeader.vue";
 import JobMetrics from "@/components/JobMetrics/JobMetrics.vue";
 import JobParameters from "@/components/JobParameters/JobParameters.vue";
@@ -16,6 +20,8 @@ const props = defineProps<{
     invocationId?: string;
     showHeader?: boolean;
 }>();
+
+const { currentUser } = storeToRefs(useUserStore());
 
 const id = computed(() => props.job?.id || props.jobId);
 
@@ -44,6 +50,10 @@ const remoteHost = computed(() => (props.job && "remote_host" in props.job ? (pr
         <br />
         <Heading id="job-metrics-heading" h1 separator inline size="md"> Job Metrics </Heading>
         <JobMetrics :job-id="id" :include-title="false" />
+        <template v-if="isAdminUser(currentUser)">
+            <br />
+            <JobDestinationParams :job-id="id" />
+        </template>
     </div>
 </template>
 
