@@ -6,7 +6,7 @@ import { getFullAppUrl } from "@/app/utils";
 import { EMBED_LABELS } from "@/components/Page/constants";
 
 import EmbedCode from "./EmbedCode.vue";
-import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
+import EmbedSize from "./EmbedSize.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import PageView from "@/components/Page/PageView.vue";
 
@@ -22,16 +22,6 @@ const settings = ref({
     width: 800,
     height: 600,
 });
-
-// v-model casts a type="number" input's value to a number, but an empty or partial
-// number ("-", "1e") comes through as ""; keep the last size then
-function toSize(value: string | number | null, current: number) {
-    if (typeof value === "number") {
-        return value;
-    }
-    const size = parseFloat(value ?? "");
-    return Number.isNaN(size) ? current : size;
-}
 
 const embedUrl = computed(() => {
     let url = getFullAppUrl(`widgets/pages/${props.id}`);
@@ -62,28 +52,7 @@ const showEmbedDebounced = useDebounce(showEmbed, 100);
                 <GCheckbox v-model="settings.applyStyle" switch> Apply default styling </GCheckbox>
             </div>
 
-            <div v-if="settings.applyStyle" class="dimension-controls">
-                <label>
-                    Width
-                    <GFormInput
-                        :model-value="String(settings.width)"
-                        type="number"
-                        min="200"
-                        max="2000"
-                        step="50"
-                        @update:model-value="settings.width = toSize($event, settings.width)" />
-                </label>
-                <label>
-                    Height
-                    <GFormInput
-                        :model-value="String(settings.height)"
-                        type="number"
-                        min="200"
-                        max="2000"
-                        step="50"
-                        @update:model-value="settings.height = toSize($event, settings.height)" />
-                </label>
-            </div>
+            <EmbedSize v-if="settings.applyStyle" v-model:width="settings.width" v-model:height="settings.height" />
         </div>
 
         <div class="preview">
@@ -115,17 +84,6 @@ const showEmbedDebounced = useDebounce(showEmbed, 100);
 
         h4 {
             margin-bottom: 1rem;
-        }
-
-        .dimension-controls {
-            display: flex;
-            gap: 1rem;
-            margin-top: 0.5rem;
-
-            label {
-                flex: 1;
-                font-size: 0.875rem;
-            }
         }
     }
 
