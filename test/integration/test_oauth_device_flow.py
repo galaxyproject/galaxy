@@ -217,3 +217,26 @@ class TestOAuthDeviceFlowDisabled(integration_util.IntegrationTestCase):
         self._assert_status_code_is(response, 404)
         response = self._post("oauth/token", data={"client_id": "galaxy-cli"}, anon=True)
         self._assert_status_code_is(response, 404)
+
+
+class TestOAuthDeviceFlowUnderPrefix(integration_util.IntegrationTestCase):
+    url_prefix = "/galaxypf"
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["enable_oauth_device_flow"] = True
+        config["galaxy_url_prefix"] = cls.url_prefix
+
+    def test_server_metadata_where_rfc_8414_expects_it(self):
+        # For an issuer with a path, RFC 8414 §3 puts the document before the path
+        host_root = self.url[: -(len(self.url_prefix) + 1)]
+        response = self._get(f"{host_root}/.well-known/oauth-authorization-server{self.url_prefix}", anon=True)
+        self._assert_status_code_is(response, 200)
+        metadata = response.json()
+        assert metadata["issuer"].endswith(self.url_prefix)
+        prefixed = self._get(urljoin(self.url, ".well-known/oauth-authorization-server"), anon=True).json()
+        assert metadata == prefixed
+
+        response = self._post(metadata["device_authorization_endpoint"], data={"client_id": "galaxy-cli"}, anon=True)
+        self._assert_status_code_is(response, 200)

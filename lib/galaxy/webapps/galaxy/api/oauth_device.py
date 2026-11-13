@@ -7,6 +7,7 @@ standard OAuth libraries call them: requests are form-encoded and errors use the
 from typing import Any
 
 from fastapi import (
+    APIRouter,
     Form,
     Path,
     Request,
@@ -83,12 +84,33 @@ def authorization_server_metadata(trans: SessionRequestContext = DependsOnTrans)
     https://datatracker.ietf.org/doc/html/rfc8414#section-3
     """
     require_device_flow_enabled(trans.app.config)
+    return build_server_metadata(galaxy_url_for_path(trans, "").rstrip("/"))
+
+
+def build_server_metadata(issuer: str) -> AuthorizationServerMetadata:
+    """The server metadata for a Galaxy served at `issuer`, its URL including any prefix."""
     return AuthorizationServerMetadata(
-        issuer=galaxy_url_for_path(trans, "").rstrip("/"),
-        device_authorization_endpoint=galaxy_url_for_path(trans, "api/oauth/device_authorization"),
-        token_endpoint=galaxy_url_for_path(trans, "api/oauth/token"),
+        issuer=issuer,
+        device_authorization_endpoint=f"{issuer}/api/oauth/device_authorization",
+        token_endpoint=f"{issuer}/api/oauth/token",
         grant_types_supported=[DEVICE_CODE_GRANT_TYPE],
     )
+
+
+def server_metadata_outside_prefix_router(url_prefix: str) -> APIRouter:
+    """Serve the metadata where RFC 8414 §3 expects it when Galaxy runs under a URL prefix.
+
+    For an issuer with a path, e.g. `https://host/galaxy`, the document lives at
+    `/.well-known/oauth-authorization-server/galaxy`, outside the prefixed app.
+    """
+    prefix = url_prefix.rstrip("/")
+    prefixed_router = APIRouter()
+
+    @prefixed_router.get(f"/.well-known/oauth-authorization-server{prefix}", include_in_schema=False)
+    def prefixed_server_metadata(request: Request) -> AuthorizationServerMetadata:
+        return build_server_metadata(f"{str(request.base_url).rstrip('/')}{prefix}")
+
+    return prefixed_router
 
 
 @router.post(
