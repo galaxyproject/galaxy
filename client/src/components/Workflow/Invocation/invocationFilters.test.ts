@@ -8,6 +8,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import {
     historyColumnFilter,
+    invocationFilterParams,
     invocationSearch,
     invocationsFiltering,
     NAME_MATCH_LIMIT,
@@ -15,7 +16,6 @@ import {
     RECENT_LIMIT,
     workflowColumnFilter,
 } from "./invocationFilters";
-import invocationsGridConfig from "./invocations";
 
 const { server, http } = useServerMock();
 
@@ -49,13 +49,6 @@ function mockIndexes(workflows: Listing, histories: Listing) {
     );
 }
 
-describe("module loading", () => {
-    it("wires the column filters into the grid when this module loads first", () => {
-        const filters = invocationsGridConfig.fields.map((field) => field.filter).filter(Boolean);
-        expect(filters).toEqual([workflowColumnFilter, historyColumnFilter]);
-    });
-});
-
 describe("nameSearch", () => {
     it.each([
         ["rna", "name:rna"],
@@ -72,6 +65,34 @@ describe("nameSearch", () => {
     it("uses the given key", () => {
         expect(nameSearch("rna seq", "workflow")).toBe("workflow:rna workflow:seq");
         expect(nameSearch("'My data'", "history")).toBe("history:'My data'");
+    });
+});
+
+describe("invocationFilterParams", () => {
+    it.each([
+        ["", {}],
+        ["state:failed", { state: ["failed"] }],
+        ["state:FAILED", { state: ["failed"] }],
+        ["status:active", { state: ["new", "requires_materialization", "ready", "scheduled"] }],
+        ["status:finished", { state: ["completed"] }],
+        ["status:inactive", { state: ["cancelling", "cancelled"] }],
+        ["create_time_gt:2026-11-01", { date_range_min: "2026-11-01" }],
+        ["create_time_lt:2026-11-02", { date_range_max: "2026-11-02" }],
+        [
+            "create_time_gt:2026-11-01 create_time_lt:2026-11-02",
+            { date_range_min: "2026-11-01", date_range_max: "2026-11-02" },
+        ],
+        [
+            "create_time>2026-11-01 create_time<2026-11-02",
+            { date_range_min: "2026-11-01", date_range_max: "2026-11-02" },
+        ],
+        ["rna state:completed", { search: "workflow:rna", state: ["completed"] }],
+    ])("turns %j into %j", (text, params) => {
+        expect(invocationFilterParams(text)).toEqual(params);
+    });
+
+    it("uses the status group when a state is also given, as the job list does", () => {
+        expect(invocationFilterParams("status:inactive state:failed")).toEqual({ state: ["cancelling", "cancelled"] });
     });
 });
 

@@ -44,6 +44,7 @@ import {
 import type HistoryCard from "@/components/History/HistoryCard.vue";
 import { useHistoryCardActions } from "@/components/History/useHistoryCardActions";
 import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -170,13 +171,10 @@ const showBulkPurge = computed(() => selectedHistories.value.some((h) => !h.purg
 const showBulkMultiview = computed(() => selectedHistories.value.length > 1);
 
 const historyListFilters = computed(() => getHistoryListFilters(props.activeList));
-const rawFilters = computed(() =>
-    Object.fromEntries(historyListFilters.value.getFiltersForText(filterText.value, true, false)),
+const { invalidFilters, hasInvalidFilters, validatedFilterText } = useFilterTextValidation(
+    historyListFilters,
+    filterText,
 );
-const validFilters = computed(() => historyListFilters.value.getValidFilters(rawFilters.value, true).validFilters);
-const invalidFilters = computed(() => historyListFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
-const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
-const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
 
 const selectedHistories = computed<SelectedHistory[]>(() => {
     const ids = Array.from(selectedItems.value.keys());
@@ -314,22 +312,6 @@ async function load(overlayLoading: boolean = false, silent: boolean = false) {
 async function onPageChange(page: number) {
     offset.value = (page - 1) * limit.value;
     await load(true);
-}
-
-/**
- * Validates and processes filter text, handling quoted strings and filter validation
- * @returns {string} The processed filter text
- */
-function validatedFilterText(): string {
-    if (isSurroundedByQuotes.value) {
-        // the `filterText` is surrounded by quotes, remove them
-        return filterText.value.slice(1, -1);
-    } else if (Object.keys(rawFilters.value).length === 0) {
-        // there are no filters derived from the `filterText`
-        return filterText.value;
-    }
-    // there are valid filters derived from the `filterText`
-    return historyListFilters.value.getFilterText(validFilters.value, true, filterText.value);
 }
 
 /**

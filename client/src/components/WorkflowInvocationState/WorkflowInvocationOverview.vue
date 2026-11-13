@@ -53,7 +53,7 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
 </script>
 
 <template>
-    <div :class="props.fitToPage ? 'fit-to-page' : 'mb-3'">
+    <div :class="props.fitToPage ? 'fit-to-page' : { 'mb-3': props.isFullPage }">
         <SubworkflowAlert v-if="isSubworkflow" :invocation-id="props.invocation.id" :state="props.invocation.state" />
         <div v-if="props.invocationMessages?.length" class="d-flex align-items-center">
             <WorkflowInvocationError
@@ -76,13 +76,15 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
         <div v-else-if="workflow && !isSubworkflow" class="invocation-graph-container">
             <InvocationGraph
                 ref="invocationGraph"
-                class="mt-1"
+                :class="{ 'mt-1': isFullPage }"
                 data-description="workflow invocation graph"
                 :invocation="invocation"
                 :steps-jobs-summary="props.stepsJobsSummary"
                 :workflow="workflow"
                 :fit-to-page="props.fitToPage"
-                :show-minimap="isFullPage" />
+                :show-minimap="isFullPage"
+                :step-modal="!isFullPage"
+                :graph-height="isFullPage ? undefined : '16rem'" />
         </div>
         <GAlert v-else-if="!workflow" variant="info" show> No workflow found for this invocation. </GAlert>
     </div>

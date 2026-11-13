@@ -5,6 +5,7 @@ API operations for Workflows
 import json
 import logging
 import os
+from datetime import date
 from io import BytesIO
 from typing import (
     Annotated,
@@ -85,6 +86,8 @@ from galaxy.schema.schema import (
     WorkflowLandingRequest,
     WorkflowSortByEnum,
 )
+from galaxy.schema.states import InvocationState
+from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.schema.workflows import (
     InvokeWorkflowPayload,
     StoredWorkflowDetailed,
@@ -1370,6 +1373,30 @@ InvocationsSearchQueryParam = Annotated[
     ),
 ]
 
+InvocationsStateQueryParam = Annotated[
+    list[InvocationState] | None,
+    Query(
+        title="States",
+        description="Return only invocations in one of these states. Repeat the parameter for several states.",
+    ),
+]
+
+InvocationsDateRangeMinQueryParam = Annotated[
+    OffsetNaiveDatetime | date | None,
+    Query(
+        title="Date Range Minimum",
+        description="Return only invocations created after this date (e.g. '2014-01-01')",
+    ),
+]
+
+InvocationsDateRangeMaxQueryParam = Annotated[
+    OffsetNaiveDatetime | date | None,
+    Query(
+        title="Date Range Maximum",
+        description="Return only invocations created before this date (e.g. '2014-01-01')",
+    ),
+]
+
 JobIdQueryParam = Annotated[
     DecodedDatabaseIdField | None,
     Query(
@@ -1485,6 +1512,9 @@ class FastAPIInvocations:
         step_details: StepDetailQueryParam = False,
         include_nested_invocations: bool = True,
         search: InvocationsSearchQueryParam = None,
+        date_range_min: InvocationsDateRangeMinQueryParam = None,
+        date_range_max: InvocationsDateRangeMaxQueryParam = None,
+        state: InvocationsStateQueryParam = None,
         trans: SessionRequestContext = DependsOnTrans,
     ) -> list[WorkflowInvocationResponse]:
         if not trans.user:
@@ -1497,6 +1527,9 @@ class FastAPIInvocations:
             search=search,
             job_id=job_id,
             user_id=user_id,
+            date_range_min=date_range_min,
+            date_range_max=date_range_max,
+            state=state,
             sort_by=sort_by,
             sort_desc=sort_desc,
             include_terminal=include_terminal,
@@ -1539,6 +1572,9 @@ class FastAPIInvocations:
         instance: InvocationsInstanceQueryParam = False,
         view: SerializationViewQueryParam = None,
         step_details: StepDetailQueryParam = False,
+        date_range_min: InvocationsDateRangeMinQueryParam = None,
+        date_range_max: InvocationsDateRangeMaxQueryParam = None,
+        state: InvocationsStateQueryParam = None,
         trans: SessionRequestContext = DependsOnTrans,
     ) -> list[WorkflowInvocationResponse]:
         invocations = self.index_invocations(
@@ -1555,6 +1591,9 @@ class FastAPIInvocations:
             instance=instance,
             view=view,
             step_details=step_details,
+            date_range_min=date_range_min,
+            date_range_max=date_range_max,
+            state=state,
             trans=trans,
         )
         return invocations

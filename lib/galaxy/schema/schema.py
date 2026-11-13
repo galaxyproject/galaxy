@@ -54,6 +54,7 @@ from galaxy.schema.states import (
     DatasetSourceTransformActionType,
     DatasetState,
     DatasetValidatedState,
+    InvocationState,
     JobState,
     ToolRequestState,
 )
@@ -2014,6 +2015,19 @@ class InvocationIndexQueryPayload(Model):
     )
     job_id: int | None = Field(None, title="Job ID", description="Return only invocations for this Job ID")
     user_id: int | None = Field(None, title="User ID", description="Return invocations for this User ID")
+    date_range_min: OffsetNaiveDatetime | date | None = Field(
+        None,
+        title="Date Range Minimum",
+        description="Return only invocations created after this date (e.g. '2014-01-01')",
+    )
+    date_range_max: OffsetNaiveDatetime | date | None = Field(
+        None,
+        title="Date Range Maximum",
+        description="Return only invocations created before this date (e.g. '2014-01-01')",
+    )
+    state: list[InvocationState] | None = Field(
+        None, title="States", description="Return only invocations in one of these states"
+    )
     sort_by: InvocationSortByEnum | None = Field(
         None, title="Sort By", description="Sort Workflow Invocations by this attribute"
     )

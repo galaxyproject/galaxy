@@ -39,7 +39,6 @@ import CreateUserFileSource from "@/components/FileSources/Templates/CreateUserF
 import FormGeneric from "@/components/Form/FormGeneric.vue";
 import GalaxyAI from "@/components/GalaxyAI.vue";
 import GalaxyWizard from "@/components/GalaxyWizard.vue";
-import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridPage from "@/components/Grid/GridPage.vue";
 import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HelpTerm from "@/components/Help/HelpTerm.vue";
@@ -99,6 +98,7 @@ import VisualizationDisplay from "@/components/Visualizations/VisualizationDispl
 import VisualizationPublished from "@/components/Visualizations/VisualizationPublished.vue";
 import HistoryInvocations from "@/components/Workflow/HistoryInvocations.vue";
 import TrsSearch from "@/components/Workflow/Import/TrsSearch.vue";
+import InvocationList from "@/components/Workflow/Invocation/InvocationList.vue";
 import InvocationReport from "@/components/Workflow/InvocationReport.vue";
 import CuratedWorkflowList from "@/components/Workflow/List/CuratedWorkflowList.vue";
 import WorkflowList from "@/components/Workflow/List/WorkflowList.vue";
@@ -800,7 +800,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "workflows/invocations",
-                        component: GridInvocation,
+                        component: InvocationList,
                         redirect: redirectAnon(),
                     },
                     {

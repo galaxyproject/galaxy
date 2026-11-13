@@ -5,9 +5,10 @@ import { GalaxyApi } from "@/api";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import GridInvocation from "../Grid/GridInvocation.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import Heading from "@/components/Common/Heading.vue";
+import InvocationList from "@/components/Workflow/Invocation/InvocationList.vue";
 
 interface Props {
     storedWorkflowId: string;
@@ -35,13 +36,14 @@ onMounted(async () => {
 </script>
 
 <template>
-    <GridInvocation
-        v-if="!loading && workflow"
-        :filtered-for="{
-            type: 'StoredWorkflow',
-            id: workflow.id,
-            name: workflow.name,
-        }" />
+    <div v-if="!loading && workflow" class="d-flex flex-column h-100">
+        <Heading h1 separator inline truncate size="lg" class="mb-2">
+            Workflow Invocations for Workflow "{{ workflow.name }}"
+        </Heading>
+        <InvocationList
+            :workflow-id="workflow.id"
+            :no-data-message="`No Workflow Invocations to display for ${workflow.name}`" />
+    </div>
     <GAlert v-else-if="loading" variant="info" show>
         <LoadingSpan message="Loading invocations for workflow" />
     </GAlert>

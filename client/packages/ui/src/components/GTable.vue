@@ -20,6 +20,7 @@ import type {
 import GAlert from "./GAlert.vue";
 import GCheckbox from "./GCheckbox.vue";
 import GDropdown from "./GDropdown.vue";
+import GDropdownDivider from "./GDropdownDivider.vue";
 import GDropdownItem from "./GDropdownItem.vue";
 import GOverlay from "./GOverlay.vue";
 
@@ -198,6 +199,12 @@ interface Props {
     primaryKey?: string;
 
     /**
+     * Shows a row's details when it returns true, instead of the table tracking them by row index.
+     * With this set, `toggleDetails` has no effect: expand or collapse a row by changing the state this function checks.
+     */
+    rowDetailsShown?: (item: T) => boolean;
+
+    /**
      * Whether to show striped rows
      * @default true
      */
@@ -308,6 +315,7 @@ const props = withDefaults(defineProps<Props>(), {
     overlayLoading: false,
     perPage: undefined,
     primaryKey: "",
+    rowDetailsShown: undefined,
     selectable: false,
     selectCheckboxTitle: "Select for bulk actions",
     selectedItems: () => [],
@@ -503,6 +511,20 @@ const allSelected = computed(() => {
     return props.selectable && localItems.value.length > 0 && props.selectedItems.length === localItems.value.length;
 });
 
+/** An action's `title`, `visible` or `disabled` for one row, which may be set per row */
+function actionValue<T>(value: T | ((item: any) => T) | undefined, item: any, fallback: T): T {
+    return typeof value === "function" ? (value as (item: any) => T)(item) : (value ?? fallback);
+}
+
+/** The actions shown in a row's menu, each marking whether a divider goes before it (a new group) */
+function rowActions(item: any): { action: TableAction; divided: boolean }[] {
+    const visible = (props.actions ?? []).filter((action) => actionValue(action.visible, item, true));
+    return visible.map((action, index) => ({
+        action,
+        divided: index > 0 && action.groupId !== visible[index - 1]!.groupId,
+    }));
+}
+
 /**
  * Get the global index for a paginated item
  */
@@ -601,8 +623,8 @@ function onRowSelect(item: T, index: number) {
 /**
  * Check if row details are expanded
  */
-function isRowExpanded(index: number) {
-    return expandedRows.value.has(index);
+function isRowExpanded(item: T, index: number) {
+    return props.rowDetailsShown ? props.rowDetailsShown(item) : expandedRows.value.has(index);
 }
 
 /**
@@ -913,16 +935,15 @@ defineExpose({
                                                 <FontAwesomeIcon :icon="faEllipsisV" fixed-width />
                                             </template>
 
-                                            <template v-for="ac in props.actions">
+                                            <template v-for="{ action: ac, divided } in rowActions(item)" :key="ac.id">
+                                                <GDropdownDivider v-if="divided" />
                                                 <GDropdownItem
-                                                    v-if="ac.visible ?? true"
                                                     :id="ac.id"
-                                                    :key="ac.id"
-                                                    :disabled="ac.disabled"
+                                                    :disabled="actionValue(ac.disabled, item, false)"
                                                     :size="ac.size || 'sm'"
                                                     :variant="ac.variant || 'link'"
                                                     :to="ac.to"
-                                                    :title="ac.title"
+                                                    :title="actionValue(ac.title, item, '')"
                                                     :href="ac.href"
                                                     :target="ac.externalLink ? '_blank' : undefined"
                                                     @click.stop="
@@ -939,7 +960,7 @@ defineExpose({
 
                             <!-- Row details expansion -->
                             <tr
-                                v-if="isRowExpanded(getGlobalIndex(paginatedIndex))"
+                                v-if="isRowExpanded(item, getGlobalIndex(paginatedIndex))"
                                 :key="`details-${getGlobalIndex(paginatedIndex)}`"
                                 class="g-table-details-row">
                                 <td :colspan="props.fields.length + (selectable ? 1 : 0) + (props.actions ? 1 : 0)">
