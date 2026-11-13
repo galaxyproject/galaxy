@@ -2406,6 +2406,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         input_format: InputFormatT = "legacy",
         tags: list[str] | None = None,
         send_email_notification: bool = False,
+        send_notification: bool = False,
     ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
@@ -2440,8 +2441,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         if tags:
             execution_tracker.apply_tags(trans.tag_handler, trans.user, tags)
             trans.sa_session.commit()
-        if send_email_notification:
-            execution_tracker.apply_email_action(trans.user)
+        if send_notification or send_email_notification:
+            execution_tracker.request_completion_notification(trans.user, request_context.history)
             trans.sa_session.commit()
 
         # Raise an exception if there were jobs to execute and none of them were submitted,

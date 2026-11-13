@@ -3,7 +3,6 @@ import { BFormCheckbox, BFormGroup } from "bootstrap-vue";
 import { computed, reactive, ref, watch } from "vue";
 
 import type { WriteStoreToPayload } from "@/api/exports";
-import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 
 import ExportOnCompleteWizard from "./ExportOnCompleteWizard.vue";
@@ -13,12 +12,10 @@ import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue"
 import FormCard from "@/components/Form/FormCard.vue";
 
 interface OnCompleteAction {
-    send_notification?: Record<string, never>;
     export_to_file_source?: WriteStoreToPayload;
 }
 
 interface ComponentState {
-    sendNotification: boolean;
     exportEnabled: boolean;
     exportConfig: WriteStoreToPayload;
 }
@@ -32,12 +29,7 @@ const emit = defineEmits<{
     (e: "input", value: OnCompleteAction[]): void;
 }>();
 
-const { config, isConfigLoaded } = useConfig();
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
-
-const notificationSystemEnabled = computed(
-    () => isConfigLoaded.value && config.value?.enable_notification_system === true,
-);
 
 const showExportWizard = ref(false);
 
@@ -50,7 +42,6 @@ const defaultExportConfig: WriteStoreToPayload = {
 };
 
 const state = reactive<ComponentState>({
-    sendNotification: false,
     exportEnabled: false,
     exportConfig: { ...defaultExportConfig },
 });
@@ -60,7 +51,6 @@ watch(
     () => props.value,
     (newValue) => {
         if (newValue && newValue.length > 0) {
-            state.sendNotification = newValue.some((a) => "send_notification" in a);
             const exportAction = newValue.find((a) => "export_to_file_source" in a);
             if (exportAction && exportAction.export_to_file_source) {
                 const incoming = exportAction.export_to_file_source;
@@ -78,7 +68,7 @@ watch(
 
 // Emit changes when state changes
 watch(
-    () => [state.sendNotification, state.exportEnabled, state.exportConfig],
+    () => [state.exportEnabled, state.exportConfig],
     () => {
         emitOnComplete();
     },
@@ -87,9 +77,6 @@ watch(
 
 function emitOnComplete() {
     const actions: OnCompleteAction[] = [];
-    if (state.sendNotification) {
-        actions.push({ send_notification: {} });
-    }
     if (state.exportEnabled && state.exportConfig.target_uri) {
         actions.push({ export_to_file_source: { ...state.exportConfig } });
     }
@@ -120,17 +107,9 @@ const exportSummary = computed(() => {
 </script>
 
 <template>
-    <FormCard title="Completion Actions">
+    <FormCard v-if="hasWritableFileSources" title="Completion Actions">
         <template v-slot:body>
             <p class="text-muted">Configure actions to run automatically when this workflow invocation completes.</p>
-
-            <BFormGroup v-if="notificationSystemEnabled">
-                <BFormCheckbox v-model="state.sendNotification" switch data-test-id="send-notification-checkbox">
-                    <span class="font-weight-bold">Send notification</span>
-                    <br />
-                    <small class="text-muted"> Receive a notification when the workflow completes. </small>
-                </BFormCheckbox>
-            </BFormGroup>
 
             <BFormGroup v-if="hasWritableFileSources">
                 <div class="d-flex align-items-start">

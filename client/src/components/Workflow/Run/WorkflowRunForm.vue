@@ -19,11 +19,16 @@
                     @click="emit('showSimple')">
                     <span class="fas fa-arrow-left" /> Simple Form
                 </GButton>
+                <CompletionNotification
+                    v-if="currentUser && !currentUser.isAnonymous"
+                    :value="sendNotificationOnComplete"
+                    @input="sendNotificationOnComplete = $event"
+                    @busy="notificationPreferencesBusy = $event" />
                 <ButtonSpinner
                     id="run-workflow"
                     title="Run Workflow"
                     :tooltip="runButtonTooltip"
-                    :disabled="!canRunOnHistory || hasCredentialErrors"
+                    :disabled="!canRunOnHistory || hasCredentialErrors || notificationPreferencesBusy"
                     :wait="showExecuting"
                     @onClick="onExecute" />
             </div>
@@ -93,6 +98,7 @@
 </template>
 
 <script setup lang="ts">
+import { useVModel } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -115,6 +121,7 @@ import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormElement from "@/components/Form/FormElement.vue";
+import CompletionNotification from "@/components/Notifications/CompletionNotification.vue";
 import OnCompleteActions from "@/components/Workflow/Run/OnCompleteActions.vue";
 import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.vue";
 
@@ -128,6 +135,7 @@ interface CredentialStep {
 }
 
 interface Props {
+    sendNotification?: boolean;
     /**
      * Whether the current history accepts new datasets
      */
@@ -149,12 +157,14 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    sendNotification: false,
     disableSimpleForm: false,
     disableSimpleFormReason: undefined,
 });
 
 const emit = defineEmits<{
     (e: "showSimple"): void;
+    (e: "update:sendNotification", value: boolean): void;
     (e: "submissionSuccess", invocations: WorkflowInvocation[]): void;
     (e: "submissionError", error: any): void;
 }>();
@@ -167,6 +177,8 @@ const stepScrollTo = ref<{ stepId?: string; stepError?: ValidationScrollTo }>({}
 const wpData = ref<FormData>({});
 const historyData = ref<FormData>({});
 const useCachedJobs = ref(false);
+const sendNotificationOnComplete = useVModel(props, "sendNotification", emit, { passive: true });
+const notificationPreferencesBusy = ref(false);
 const onCompleteActions = ref<Record<string, unknown>[]>([]);
 // Not render state: step updates must not re-render the whole form.
 const stepData: Record<string, FormData> = {};
@@ -325,7 +337,10 @@ function onExecute() {
         require_exact_tool_versions: false,
         version: props.model.runData.version,
         // Completion actions to run when workflow finishes
-        on_complete: onCompleteActions.value.length > 0 ? onCompleteActions.value : null,
+        on_complete:
+            sendNotificationOnComplete.value || onCompleteActions.value.length > 0
+                ? [...onCompleteActions.value, ...(sendNotificationOnComplete.value ? [{ send_notification: {} }] : [])]
+                : null,
     };
 
     console.debug("WorkflowRunForm::onExecute()", "Ready for submission.", jobDef);

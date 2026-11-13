@@ -12,11 +12,11 @@ from typing import TYPE_CHECKING
 
 from galaxy.schema.notifications import (
     InternalNotificationCreateData,
-    MessageNotificationContent,
     NotificationCreateRequest,
     NotificationRecipients,
     NotificationVariant,
     PersonalNotificationCategory,
+    WorkflowCompletionNotificationContent,
 )
 from galaxy.workflow.completion_hooks.base import WorkflowCompletionHook
 
@@ -67,9 +67,9 @@ class SendNotificationHook(WorkflowCompletionHook):
         # Create the notification request
         notification_data = InternalNotificationCreateData(
             source="galaxy",
-            category=PersonalNotificationCategory.message,
+            category=PersonalNotificationCategory.workflow_execution_completed,
             variant=variant,
-            content=MessageNotificationContent(
+            content=WorkflowCompletionNotificationContent(
                 subject=subject,
                 message=message,
             ),

@@ -41,6 +41,7 @@ import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import CompletionNotification from "@/components/Notifications/CompletionNotification.vue";
 import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
 const IMMUTABLE_HISTORY_MSG =
@@ -78,7 +79,11 @@ const messageShow = ref(false);
 const messageVariant = ref<"success" | "danger" | undefined>(undefined);
 const messageText = ref("");
 const useCachedJobs = ref(false);
-const useEmail = ref(false);
+const sendNotification = ref(false);
+watch([() => props.id, () => props.uuid, () => props.jobId], () => {
+    sendNotification.value = false;
+});
+const notificationPreferencesBusy = ref(false);
 const useJobRemapping = ref(false);
 const dataManagerMode = ref("populate");
 const entryPoints = ref<JobResponse["jobs"]>([]);
@@ -140,8 +145,6 @@ const tooltip = computed(() => {
     return `Run tool: ${toolName.value} (${formConfig.value.version})`;
 });
 
-const emailAllowed = computed(() => config.value.server_mail_configured && !currentUser.value?.isAnonymous);
-
 const errorContentPretty = computed(() => JSON.stringify(errorContent.value, null, 4));
 
 const remapTitle = computed(() => {
@@ -184,7 +187,12 @@ const hasConfigOrValErrors = computed(
 );
 
 const runButtonDisabled = computed(
-    () => disabled.value || !canMutateHistory.value || hasConfigOrValErrors.value || hasCredentialsErrors.value,
+    () =>
+        notificationPreferencesBusy.value ||
+        disabled.value ||
+        !canMutateHistory.value ||
+        hasConfigOrValErrors.value ||
+        hasCredentialsErrors.value,
 );
 
 watch([() => currentHistoryId.value, () => lastUpdateTime.value], () => {
@@ -412,7 +420,8 @@ async function onExecute() {
         tool_version: formConfig.value.version,
         history_id: currentHistoryId.value,
         use_cached_jobs: useCachedJobs.value || false,
-        send_email_notification: useEmail.value || false,
+        send_notification: sendNotification.value,
+        send_email_notification: false,
         rerun_remap_job_id: useJobRemapping.value ? props.jobId : undefined,
         preferred_object_store_id: preferredObjectStoreId.value || undefined,
         tags: tags.value?.length ? tags.value : undefined,
@@ -550,7 +559,7 @@ requestTool();
             :options="formConfig"
             :message-text="messageText"
             :message-variant="messageVariant"
-            :disabled="disabled || showExecuting"
+            :disabled="disabled || showExecuting || notificationPreferencesBusy"
             :allow-object-store-selection="config.object_store_allows_id_selection"
             :preferred-object-store-id="preferredObjectStoreId || undefined"
             allow-generated-tours
@@ -581,13 +590,6 @@ requestTool();
             <div class="mt-2 mb-4">
                 <Heading v-localize h2 separator bold size="sm"> Additional Options </Heading>
                 <FormElement
-                    v-if="emailAllowed"
-                    id="send_email_notification"
-                    v-model="useEmail"
-                    :title="localize('Email notification')"
-                    :help="localize('Send an email notification when the job completes.')"
-                    type="boolean" />
-                <FormElement
                     v-if="remapAllowed"
                     id="rerun_remap_job_id"
                     v-model="useJobRemapping"
@@ -608,6 +610,14 @@ requestTool();
                     :title="localize('Create dataset bundle instead of adding data table to loc file ?')"></FormSelect>
                 <ToolFormTags v-model:tags="tags" />
             </div>
+            <template v-slot:header-buttons>
+                <CompletionNotification
+                    v-if="currentUser && !currentUser.isAnonymous"
+                    :value="sendNotification"
+                    kind="tool"
+                    @input="sendNotification = $event"
+                    @busy="notificationPreferencesBusy = $event" />
+            </template>
             <template v-slot:buttons>
                 <ButtonSpinner
                     id="execute"

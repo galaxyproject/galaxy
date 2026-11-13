@@ -73,9 +73,11 @@ from galaxy.schema.notifications import (
     RequestedTool,
     StorageOperationNotificationContent,
     StoredToolInstallationRequestContent,
+    ToolCompletionNotificationContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
+    WorkflowCompletionNotificationContent,
 )
 from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.schema.storage_operations import (
@@ -183,7 +185,9 @@ class NotificationManager:
         recipient_users = self.recipient_resolver.resolve(request.recipients)
         notification = self._create_notification_model(request.notification, request.galaxy_url)
         self.sa_session.add(notification)
-        self.sa_session.commit()
+        # Keep the notification and recipient associations in one transaction.
+        # Completion monitors also commit their delivery marker in this transaction.
+        self.sa_session.flush()
 
         notifications_sent = self._create_associations(notification, recipient_users)
         self.sa_session.commit()
@@ -534,7 +538,9 @@ class NotificationManager:
         current_notification_preferences = user.preferences.get(NOTIFICATION_PREFERENCES_SECTION_NAME)
         if current_notification_preferences:
             try:
-                return UserNotificationPreferences.model_validate_json(current_notification_preferences)
+                preferences = UserNotificationPreferences.default()
+                preferences.update(UserNotificationPreferences.model_validate_json(current_notification_preferences))
+                return preferences
             except ValidationError:
                 pass
         # Gracefully return default preferences is they don't exist or get corrupted
@@ -887,6 +893,27 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
         return f"[Galaxy] New message: {content.subject}"
 
 
+class WorkflowCompletionEmailNotificationTemplateBuilder(MessageEmailNotificationTemplateBuilder):
+    def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
+        content = WorkflowCompletionNotificationContent.model_validate(self.notification.content)
+        content.message = self.markdown_to[template_format](content.message)
+        return content
+
+    def get_subject(self) -> str:
+        content = cast(WorkflowCompletionNotificationContent, self.get_content(TemplateFormats.TXT))
+        return f"[Galaxy] {content.subject}"
+
+    def get_template_path(self, template_format: TemplateFormats) -> str:
+        return f"mail/notifications/message-email.{template_format.value}"
+
+
+class ToolCompletionEmailNotificationTemplateBuilder(WorkflowCompletionEmailNotificationTemplateBuilder):
+    def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
+        content = ToolCompletionNotificationContent.model_validate(self.notification.content)
+        content.message = self.markdown_to[template_format](content.message)
+        return content
+
+
 class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
     # item_name/owner_name are raw user-supplied strings; escape them in HTML.
     autoescape_html = True
@@ -980,6 +1007,8 @@ class EmailNotificationChannelPlugin(NotificationChannelPlugin):
     # Register the supported email templates here
     email_templates_by_category: dict[PersonalNotificationCategory, type[EmailNotificationTemplateBuilder]] = {
         PersonalNotificationCategory.message: MessageEmailNotificationTemplateBuilder,
+        PersonalNotificationCategory.workflow_execution_completed: WorkflowCompletionEmailNotificationTemplateBuilder,
+        PersonalNotificationCategory.tool_execution_completed: ToolCompletionEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.new_shared_item: NewSharedItemEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.storage_operation: StorageOperationEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.tool_installation_request: ToolInstallationRequestEmailNotificationTemplateBuilder,

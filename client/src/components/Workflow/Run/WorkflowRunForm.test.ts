@@ -30,6 +30,7 @@ vi.mock("./WorkflowRunInputStep.vue", () => stub("WorkflowRunInputStep", ["model
 vi.mock("@/components/Form/FormDisplay.vue", () => stub("FormDisplay", ["inputs"]));
 vi.mock("@/components/Form/FormElement.vue", () => stub("FormElement", ["value"]));
 vi.mock("@/components/Common/ButtonSpinner.vue", () => stub("ButtonSpinner", ["disabled", "wait", "tooltip"]));
+vi.mock("@/components/Notifications/CompletionNotification.vue", () => stub("CompletionNotification", ["value"]));
 vi.mock("@/components/Workflow/Run/OnCompleteActions.vue", () => stub("OnCompleteActions", ["value"]));
 vi.mock("@/components/Workflow/Run/WorkflowCredentials.vue", () => stub("WorkflowCredentials", ["toolIdentifiers"]));
 
@@ -119,7 +120,7 @@ describe("WorkflowRunForm", () => {
         findStep(wrapper, "4").vm.$emit("onChange", "4", { input: "text" });
         findStep(wrapper, "3").vm.$emit("onChange", "3", { num_lines: "5", input: { values: [] } });
         wrapper.findComponent({ name: "FormElement" }).vm.$emit("input", true);
-        wrapper.findComponent({ name: "OnCompleteActions" }).vm.$emit("input", [{ send_notification: {} }]);
+        wrapper.findComponent({ name: "CompletionNotification" }).vm.$emit("input", true);
         await wrapper.vm.$nextTick();
         expect(wrapper.findComponent({ name: "FormElement" }).props("value")).toBe(true);
         await run(wrapper);

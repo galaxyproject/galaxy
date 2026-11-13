@@ -14,6 +14,10 @@ const categoryDescriptionMap: Partial<Record<NotificationCategory, string>> = {
     `,
     new_shared_item:
         "You will receive these notifications when someone shares an item with you i.e. a history, workflow, visualization, etc.",
+    tool_execution_completed:
+        "Receive a notification when a tool run completes, with one summary for a collection. You can also change this preference on the tool form.",
+    workflow_execution_completed:
+        "Receive a notification when a workflow completes. You can also change this preference on the workflow run form.",
     storage_operation:
         "You will receive these notifications when a bulk storage operation completes (including failed outcomes).",
 };

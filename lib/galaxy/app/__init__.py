@@ -81,6 +81,7 @@ from galaxy.managers.tasks import (
     AsyncTasksManager,
     CeleryAsyncTasksManager,
 )
+from galaxy.managers.tool_completion import ToolCompletionManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.users import UserManager
 from galaxy.managers.workflow_completion import WorkflowCompletionManager
@@ -1155,8 +1156,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             scheduling_manager.WorkflowSchedulingManager, scheduling_manager.WorkflowSchedulingManager(self)
         )
 
-        # Initialize workflow completion monitoring (manager is always available,
-        # but monitor only runs on workflow scheduler processes)
+        # Monitor workflow completion on workflow handlers.
         self.workflow_completion_manager = WorkflowCompletionManager(self)
         self.workflow_completion_hook_registry = self._register_singleton(
             WorkflowCompletionHookRegistry, WorkflowCompletionHookRegistry(self)
@@ -1175,6 +1175,16 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
                     self.workflow_completion_monitor.shutdown_monitor,
                 )
             )
+
+        if self.is_job_handler and self.config.enable_notification_system:
+            tool_completion_manager = self._register_singleton(ToolCompletionManager)
+            tool_completion_monitor = IntervalTask(
+                func=tool_completion_manager.monitor,
+                name="ToolCompletionMonitor",
+                interval=self.config.workflow_completion_monitor_sleep,
+            )
+            self.application_stack.register_postfork_function(tool_completion_monitor.start)
+            self.haltables.append(("ToolCompletionMonitor", tool_completion_monitor.shutdown))
 
         # Start the job manager
         self.application_stack.register_postfork_function(self.job_manager.start)

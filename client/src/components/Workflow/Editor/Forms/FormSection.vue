@@ -1,13 +1,10 @@
 <template>
     <div v-if="firstOutput">
-        <FormElement
-            v-if="supportsJobBasedActions"
-            :id="emailActionKey"
-            :value="emailActionValue"
-            title="Email notification"
-            type="boolean"
-            help="An email notification will be sent when the job has completed."
-            @input="onInput" />
+        <GAlert v-if="hasLegacyEmailAction" variant="warning" data-test-id="removed-email-action">
+            Step email notifications have been removed. This action no longer sends email. Use the notification controls
+            on the workflow run form instead.
+            <GButton size="small" class="mt-2" @click="removeEmailActions">Remove obsolete email action</GButton>
+        </GAlert>
         <FormElement
             v-if="supportsJobBasedActions"
             :id="deleteActionKey"
@@ -30,11 +27,15 @@
 </template>
 
 <script>
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import FormOutput from "@/components/Workflow/Editor/Forms/FormOutput.vue";
 
 export default {
     components: {
+        GAlert,
+        GButton,
         FormElement,
         FormOutput,
     },
@@ -81,14 +82,8 @@ export default {
         firstOutput() {
             return this.outputs.length > 0 && this.outputs[0];
         },
-        emailActionKey() {
-            return `pja__${this.firstOutput.name}__EmailAction`;
-        },
-        emailPayloadKey() {
-            return `${this.emailActionKey}__host`;
-        },
-        emailActionValue() {
-            return Boolean(this.formData[this.emailActionKey]);
+        hasLegacyEmailAction() {
+            return Object.keys(this.formData).some((key) => key.split("__")[2] === "EmailAction");
         },
         deleteActionKey() {
             return `pja__${this.firstOutput.name}__DeleteIntermediatesAction`;
@@ -140,17 +135,13 @@ export default {
                     pjas[key] = true;
                 }
             });
-            if (pjas[this.emailPayloadKey]) {
-                pjas[this.emailActionKey] = true;
-            }
             this.formData = pjas;
         },
-        setEmailAction(pjas) {
-            if (pjas[this.emailActionKey]) {
-                pjas[this.emailPayloadKey] = window.location.host;
-            } else if (this.emailPayloadKey in pjas) {
-                delete pjas[this.emailPayloadKey];
-            }
+        removeEmailActions() {
+            this.formData = Object.fromEntries(
+                Object.entries(this.formData).filter(([key]) => key.split("__")[2] !== "EmailAction"),
+            );
+            this.postPostJobActions();
         },
         onInput(value, pjaKey) {
             let changed = false;
@@ -165,7 +156,6 @@ export default {
                 changed = true;
                 delete this.formData[pjaKey];
             }
-            this.setEmailAction(this.formData);
             if (changed) {
                 this.formData = Object.assign({}, this.formData);
                 this.postPostJobActions();

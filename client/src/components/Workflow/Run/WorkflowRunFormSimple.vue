@@ -2,6 +2,7 @@
 import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useVModel } from "@vueuse/core";
 import { BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
@@ -45,9 +46,11 @@ import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import CompletionNotification from "@/components/Notifications/CompletionNotification.vue";
 import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.vue";
 
 interface Props {
+    sendNotification?: boolean;
     model: Record<string, any>;
     targetHistory?: string;
     useJobCache?: boolean;
@@ -60,6 +63,7 @@ interface Props {
 type PaginatedDataOption = Pick<DataOption, "id" | "src" | "name" | "hid" | "keep" | "tags">;
 
 const props = withDefaults(defineProps<Props>(), {
+    sendNotification: false,
     targetHistory: "current",
     useJobCache: false,
     requestState: undefined,
@@ -69,6 +73,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "showAdvanced"): void;
+    (e: "update:sendNotification", value: boolean): void;
     (e: "submissionSuccess", invocations: any): void;
     (e: "submissionError", error: string): void;
 }>();
@@ -94,7 +99,8 @@ const preferredIntermediateObjectStoreId = ref<string | null>(null);
 const waitingForRequest = ref(false);
 const showRightPanel = ref<"help" | "graph" | null>(null);
 const checkInputMatching = ref(props.requestState !== undefined);
-const sendNotificationOnComplete = ref(false);
+const sendNotificationOnComplete = useVModel(props, "sendNotification", emit, { passive: true });
+const notificationPreferencesBusy = ref(false);
 const showExportWizard = ref(false);
 const exportCheckboxKey = ref(0);
 const exportOnCompleteConfig = ref<WriteStoreToPayload | null>(null);
@@ -570,7 +576,9 @@ onBeforeMount(() => {
             <div class="mb-2">
                 <WorkflowNavigationTitle
                     :workflow-id="model.runData.workflow_id"
-                    :run-disabled="hasValidationErrors || !canRunOnHistory || hasCredentialErrors"
+                    :run-disabled="
+                        hasValidationErrors || !canRunOnHistory || hasCredentialErrors || notificationPreferencesBusy
+                    "
                     :run-waiting="waitingForRequest"
                     :valid-rerun="isValidRerun"
                     @on-execute="onExecute">
@@ -610,6 +618,11 @@ onBeforeMount(() => {
                             @click="toggleRuntimeSettings">
                             <FontAwesomeIcon :icon="faCog" fixed-width />
                         </GButton>
+                        <CompletionNotification
+                            v-if="currentUser && !currentUser.isAnonymous"
+                            :value="sendNotificationOnComplete"
+                            @input="sendNotificationOnComplete = $event"
+                            @busy="notificationPreferencesBusy = $event" />
                     </template>
                 </WorkflowNavigationTitle>
 
@@ -635,17 +648,6 @@ onBeforeMount(() => {
                         <GCheckbox v-model="useCachedJobs" switch>
                             Re-use jobs with identical parameters
                             <HelpText uri="galaxy.workflows.runtimeSettings.useCachedJobs" info-icon />
-                        </GCheckbox>
-                    </div>
-
-                    <!-- Send notification -->
-                    <div v-if="isConfigLoaded && config.enable_notification_system" class="settings-row">
-                        <GCheckbox
-                            v-model="sendNotificationOnComplete"
-                            switch
-                            data-test-id="send-notification-checkbox">
-                            Notify me when complete
-                            <HelpText uri="galaxy.workflows.runtimeSettings.sendNotification" info-icon />
                         </GCheckbox>
                     </div>
 

@@ -3,6 +3,7 @@
 from typing import cast
 
 import pytest
+from sqlalchemy import event
 
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
@@ -13,6 +14,8 @@ from galaxy.schema.states import (
     JobState,
 )
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
+from galaxy.workflow.completion_monitor import WorkflowCompletionMonitor
 
 
 class TestWorkflowInvocationStepIsComplete:
@@ -364,3 +367,125 @@ class TestWorkflowCompletionManagerHandlerFiltering:
         pending = completion_manager.poll_pending_completions(handler="handler_a")
         assert len(pending) == 1
         assert inv_scheduled.id in pending
+
+
+class TestMappedWorkflowCompletion:
+    @pytest.fixture
+    def mapped_invocation(self):
+        app = MockApp()
+        session = app.model.context
+        workflow = model.Workflow()
+        workflow_step = model.WorkflowStep()
+        workflow_step.type = "tool"
+        workflow_step.order_index = 0
+        workflow.steps.append(workflow_step)
+        invocation = model.WorkflowInvocation()
+        invocation.workflow = workflow
+        invocation.state = InvocationState.SCHEDULED.value
+        step = model.WorkflowInvocationStep()
+        step.workflow_step = workflow_step
+        step.state = InvocationStepState.SCHEDULED.value
+        step.implicit_collection_jobs = model.ImplicitCollectionJobs(populated_state="ok")
+        invocation.steps.append(step)
+        session.add(invocation)
+        session.commit()
+        return app, invocation
+
+    @pytest.mark.parametrize("size", [1, 1000])
+    def test_completion_and_summary_do_not_load_mapped_jobs(self, mapped_invocation, size):
+        app, invocation = mapped_invocation
+        session = app.model.context
+        for index in range(size):
+            association = model.ImplicitCollectionJobsJobAssociation()
+            association.order_index = index
+            association.job = model.Job()
+            association.job.state = JobState.OK.value if index else JobState.ERROR.value
+            invocation.steps[0].implicit_collection_jobs.jobs.append(association)
+        session.commit()
+        invocation_id = invocation.id
+        session.expunge_all()
+
+        def reject_job_load(session, instance):
+            assert not isinstance(instance, model.Job), "Completion polling must not materialize mapped jobs"
+
+        event.listen(session(), "loaded_as_persistent", reject_job_load)
+        try:
+            manager = WorkflowCompletionManager(cast(MinimalManagerApp, app))
+            completion = manager.check_and_record_completion(invocation_id)
+            assert completion is not None
+            expected = {"error": 1}
+            if size > 1:
+                expected["ok"] = size - 1
+            assert completion.job_state_summary == expected
+            assert manager.check_and_record_completion(invocation_id) is None
+        finally:
+            event.remove(session(), "loaded_as_persistent", reject_job_load)
+
+    @pytest.mark.parametrize("state", [JobState.RUNNING, JobState.DELETING, JobState.PAUSED, JobState.SKIPPED])
+    def test_waits_for_unsettled_jobs(self, mapped_invocation, state):
+        app, invocation = mapped_invocation
+        association = model.ImplicitCollectionJobsJobAssociation()
+        association.order_index = 0
+        association.job = model.Job()
+        association.job.state = state.value
+        invocation.steps[0].implicit_collection_jobs.jobs.append(association)
+        app.model.context.commit()
+        assert invocation.is_complete is (state in (JobState.PAUSED, JobState.SKIPPED))
+
+    def test_cached_jobs_do_not_complete_until_map_is_populated(self, mapped_invocation):
+        app, invocation = mapped_invocation
+        collection_jobs = invocation.steps[0].implicit_collection_jobs
+        collection_jobs.populated_state = "new"
+        association = model.ImplicitCollectionJobsJobAssociation()
+        association.order_index = 0
+        association.job = model.Job()
+        association.job.state = JobState.OK.value
+        collection_jobs.jobs.append(association)
+        app.model.context.commit()
+        assert not invocation.is_complete
+        collection_jobs.populated_state = "ok"
+        app.model.context.commit()
+        assert invocation.is_complete
+
+    def test_monitor_reaches_completions_beyond_a_full_batch_of_running_invocations(self, mapped_invocation):
+        app, invocation = mapped_invocation
+        session = app.model.context
+        workflow = invocation.workflow
+        invocation.handler = "handler_a"
+        # This invocation and the next 99 remain unfinished.
+        invocation.steps[0].implicit_collection_jobs.populated_state = "new"
+        for _ in range(99):
+            waiting = model.WorkflowInvocation()
+            waiting.workflow = workflow
+            waiting.handler = "handler_a"
+            waiting.state = InvocationState.SCHEDULED.value
+            step = model.WorkflowInvocationStep()
+            step.workflow_step = workflow.steps[0]
+            step.state = InvocationStepState.NEW.value
+            waiting.steps.append(step)
+            session.add(waiting)
+        ready = model.WorkflowInvocation()
+        ready.workflow = workflow
+        ready.handler = "handler_a"
+        ready.state = InvocationState.SCHEDULED.value
+        session.add(ready)
+        session.commit()
+        first_id, ready_id = invocation.id, ready.id
+        app.config.server_name = "handler_a"
+        app.config.workflow_completion_monitor_sleep = 5
+        manager = WorkflowCompletionManager(cast(MinimalManagerApp, app))
+        registry = WorkflowCompletionHookRegistry(cast(MinimalManagerApp, app))
+        monitor = WorkflowCompletionMonitor(cast(MinimalManagerApp, app), manager, registry)
+
+        monitor._monitor_step()
+        assert manager.get_completion(ready_id) is None
+        monitor._monitor_step()
+        assert manager.get_completion(ready_id) is not None
+
+        # Reach the end, wrap, and pick up a previously unfinished invocation.
+        monitor._monitor_step()
+        first = session.get(model.WorkflowInvocation, first_id)
+        first.steps[0].implicit_collection_jobs.populated_state = "ok"
+        session.commit()
+        monitor._monitor_step()
+        assert manager.get_completion(first_id) is not None

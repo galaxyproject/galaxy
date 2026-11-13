@@ -73,6 +73,7 @@ from sqlalchemy import (
     Boolean,
     case,
     Cast,
+    CheckConstraint,
     Column,
     column,
     ColumnElement,
@@ -1961,6 +1962,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     # states that are not expected to change, except through admin action or re-scheduling
     terminal_states = [states.OK, states.ERROR, states.DELETED]
+    settled_states = (*terminal_states, states.SKIPPED, states.PAUSED, states.STOPPED)
     # deleting state should not turn back into any of the non-ready states
     finished_states = terminal_states + [states.DELETING]
     # States a job won't leave without outside action, such as the user resuming a paused job.
@@ -3341,6 +3343,32 @@ class ImplicitCollectionJobsJobAssociation(Base, RepresentById):
     order_index: Mapped[int]
     implicit_collection_jobs = relationship("ImplicitCollectionJobs", back_populates="jobs")
     job: Mapped["Job"] = relationship(back_populates="implicit_collection_jobs_association")
+
+
+class ToolCompletionNotification(Base):
+    """A durable request for one job or one collection map-over notification."""
+
+    __tablename__ = "tool_completion_notification"
+    __table_args__ = (
+        CheckConstraint(
+            "(job_id IS NULL) != (implicit_collection_jobs_id IS NULL)", name="ck_tool_completion_notification_target"
+        ),
+        Index("ix_tool_completion_notification_pending", "completed", "id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
+    # Empty maps can have no job from which to recover the destination history.
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id", ondelete="CASCADE"), index=True)
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id", ondelete="CASCADE"), unique=True)
+    implicit_collection_jobs_id: Mapped[int | None] = mapped_column(
+        ForeignKey("implicit_collection_jobs.id", ondelete="CASCADE"), unique=True
+    )
+    completed: Mapped[bool] = mapped_column(default=False)
+    user: Mapped["User"] = relationship()
+    history: Mapped["History"] = relationship()
+    job: Mapped[Optional["Job"]] = relationship()
+    implicit_collection_jobs: Mapped[Optional["ImplicitCollectionJobs"]] = relationship()
 
 
 class PostJobAction(Base, RepresentById):
@@ -10472,11 +10500,12 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                     )
                     if subworkflow_assoc:
                         collect_jobs(subworkflow_assoc.subworkflow_invocation)
-                else:
-                    # Collect job states from this step
-                    for job in step.jobs:
-                        state = str(job.state)
-                        summary[state] = summary.get(state, 0) + 1
+                elif step.implicit_collection_jobs:
+                    for state, count in step.implicit_collection_jobs.job_state_counts().items():
+                        summary[state] = summary.get(state, 0) + count
+                elif step.job:
+                    state = str(step.job.state)
+                    summary[state] = summary.get(state, 0) + 1
 
         collect_jobs(self)
         return summary
@@ -11255,14 +11284,18 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         if self.workflow_step.type == "subworkflow":
             return self._is_subworkflow_step_complete()
 
-        # Tool/module step - check job states
-        jobs = self.jobs
-        if not jobs:
-            # Steps without jobs (e.g., input steps, pause steps, parameter steps)
-            # are considered complete once they're in SCHEDULED state
-            return self.state == self.states.SCHEDULED
-
-        return all(job.is_terminal for job in jobs)
+        if self.implicit_collection_jobs:
+            # Check once per monitor poll without materializing mapped Job objects.
+            collection_jobs = self.implicit_collection_jobs
+            return (
+                collection_jobs.populated_state != collection_jobs.populated_states.NEW
+                and self.state == self.states.SCHEDULED
+                and not collection_jobs.has_job_not_in_states(Job.settled_states)
+            )
+        if self.job:
+            return self.job.is_terminal
+        # Input, pause and parameter steps have no jobs.
+        return self.state == self.states.SCHEDULED
 
     def _is_subworkflow_step_complete(self) -> bool:
         """Check if a subworkflow step is complete."""
