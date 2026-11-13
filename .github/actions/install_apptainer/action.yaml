@@ -4,14 +4,8 @@ runs:
   using: "composite"
   steps:
     - name: Add Apptainer official PPA
-      # Don't use `add-apt-repository ppa:apptainer/ppa`: it queries the
-      # Launchpad API (api.launchpad.net) for the signing key, which regularly
-      # fails with HTTP 500/503. The key is committed next to this file
-      # (fingerprint F6B0F5193D4F3301EF491FF0AFE36534FC6218AE, see
-      # https://launchpad.net/~apptainer/+archive/ubuntu/ppa).
-      # `Architectures: amd64` makes apt treat this PPA as a standard amd64
-      # repository. Otherwise apt will ignore the amd64 packages from the PPA
-      # and install the amd64v3 version from the Ubuntu repositories.
+      # Not add-apt-repository: it fetches the key from the flaky Launchpad API.
+      # Without `Architectures: amd64`, apt prefers Ubuntu's amd64v3 packages.
       run: |
         sudo install -D -m 644 "${{ github.action_path }}/apptainer-ppa.asc" /etc/apt/keyrings/apptainer-ppa.asc
         sudo tee /etc/apt/sources.list.d/apptainer-ppa.sources <<EOF
