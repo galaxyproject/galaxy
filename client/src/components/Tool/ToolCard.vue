@@ -218,6 +218,7 @@ onBeforeMount(() => {
                     :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                     @updated="onUpdatePreferredObjectStoreId" />
             </GModal>
+            <slot name="header-buttons" />
             <slot name="buttons" />
         </template>
 

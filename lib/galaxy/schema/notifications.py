@@ -67,8 +67,8 @@ class PersonalNotificationCategory(str, Enum):
     new_shared_item = "new_shared_item"
     storage_operation = "storage_operation"
     tool_installation_request = "tool_installation_request"
-    # TODO: enable this and create content model when we have a hook for completed workflows
-    # workflow_execution_completed = "workflow_execution_completed"
+    workflow_execution_completed = "workflow_execution_completed"
+    tool_execution_completed = "tool_execution_completed"
 
 
 NotificationCategory = MandatoryNotificationCategory | PersonalNotificationCategory
@@ -103,6 +103,18 @@ class BroadcastNotificationContent(MessageNotificationContentBase):
 
 class MessageNotificationContent(MessageNotificationContentBase):
     category: Literal[PersonalNotificationCategory.message] = PersonalNotificationCategory.message
+
+
+class WorkflowCompletionNotificationContent(MessageNotificationContentBase):
+    category: Literal[PersonalNotificationCategory.workflow_execution_completed] = (
+        PersonalNotificationCategory.workflow_execution_completed
+    )
+
+
+class ToolCompletionNotificationContent(MessageNotificationContentBase):
+    category: Literal[PersonalNotificationCategory.tool_execution_completed] = (
+        PersonalNotificationCategory.tool_execution_completed
+    )
 
 
 SharableItemType = Literal[
@@ -341,7 +353,11 @@ NotificationContentField = Field(
 # Content models shared verbatim between the response and create unions; the
 # two unions below differ only in the tool-installation-request entry.
 _CommonUserNotificationContent = (
-    MessageNotificationContent | NewSharedItemNotificationContent | StorageOperationNotificationContent
+    MessageNotificationContent
+    | NewSharedItemNotificationContent
+    | StorageOperationNotificationContent
+    | WorkflowCompletionNotificationContent
+    | ToolCompletionNotificationContent
 )
 
 AnyUserNotificationContent = Annotated[
@@ -726,14 +742,24 @@ class NotificationCategorySettings(Model):
 PersonalNotificationPreferences = dict[PersonalNotificationCategory, NotificationCategorySettings]
 
 
+def default_category_settings(category: PersonalNotificationCategory) -> NotificationCategorySettings:
+    if category in (
+        PersonalNotificationCategory.workflow_execution_completed,
+        PersonalNotificationCategory.tool_execution_completed,
+    ):
+        # Completion is shown in-app by default; email requires opting in.
+        return NotificationCategorySettings(channels=NotificationChannelSettings(email=False))
+    return NotificationCategorySettings()
+
+
 def get_default_personal_notification_preferences() -> PersonalNotificationPreferences:
     """Get the default personal notification preferences."""
-    return {category: NotificationCategorySettings() for category in PersonalNotificationCategory.__members__.values()}
+    return {category: default_category_settings(category) for category in PersonalNotificationCategory}
 
 
 def get_default_personal_notification_preferences_example() -> dict[str, Any]:
     return {
-        category: NotificationCategorySettings().model_dump()
+        category: default_category_settings(category).model_dump()
         for category in PersonalNotificationCategory.__members__.values()
     }
 
@@ -764,7 +790,7 @@ class UserNotificationPreferences(Model):
         preferences -- e.g. for users who saved preferences before this category was
         introduced (no migration backfills newly added categories).
         """
-        return self.preferences.get(category, NotificationCategorySettings())
+        return self.preferences.get(category, default_category_settings(category))
 
     @classmethod
     def default(cls):

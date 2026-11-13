@@ -24,7 +24,7 @@ from packaging.version import Version
 from galaxy import model
 from galaxy.exceptions import ToolInputsNotOKException
 from galaxy.model import (
-    PostJobAction,
+    ToolCompletionNotification,
     ToolRequest,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -546,11 +546,21 @@ class ExecutionTracker:
         for _, hdca in self.output_collections:
             tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
 
-    def apply_email_action(self, user) -> None:
+    def request_completion_notification(self, user, history) -> None:
         if user is None:
-            raise Exception("Anonymously run jobs cannot send an email notification.")
-        for job in self.successful_jobs:
-            job.add_post_job_action(PostJobAction("EmailAction"))
+            raise Exception("Anonymously run jobs cannot request completion notifications.")
+        collection_jobs = self.implicit_collection_jobs
+        if collection_jobs is not None:
+            self.trans.sa_session.add(
+                ToolCompletionNotification(
+                    user=user,
+                    history=history,
+                    implicit_collection_jobs=collection_jobs,
+                )
+            )
+        else:
+            for job in self.successful_jobs:
+                self.trans.sa_session.add(ToolCompletionNotification(user=user, history=job.history, job=job))
 
     @staticmethod
     def _collection_info_to_collection_hids_element_ids(

@@ -85,7 +85,7 @@ class WorkflowCompletionManager:
 
         return completion
 
-    def poll_pending_completions(self, limit: int = 100, handler: str | None = None) -> list[int]:
+    def poll_pending_completions(self, limit: int = 100, handler: str | None = None, after_id: int = 0) -> list[int]:
         """
         Find invocations that are SCHEDULED but not yet recorded as complete.
 
@@ -96,6 +96,7 @@ class WorkflowCompletionManager:
         Args:
             limit: Maximum number of invocation IDs to return.
             handler: If provided, only return invocations assigned to this handler.
+            after_id: Resume polling after this invocation ID.
 
         Returns:
             List of invocation IDs to check for completion.
@@ -107,6 +108,7 @@ class WorkflowCompletionManager:
                 WorkflowInvocation.id == WorkflowInvocationCompletion.workflow_invocation_id,
             )
             .where(WorkflowInvocation.state == InvocationState.SCHEDULED.value)
+            .where(WorkflowInvocation.id > after_id)
             .where(WorkflowInvocationCompletion.id.is_(None))
             # Waiting parents must not fill the batch and prevent their children from being checked.
             .where(
@@ -119,7 +121,7 @@ class WorkflowCompletionManager:
         )
         if handler is not None:
             stmt = stmt.where(WorkflowInvocation.handler == handler)
-        stmt = stmt.limit(limit)
+        stmt = stmt.order_by(WorkflowInvocation.id).limit(limit)
         session = self.sa_session
         return list(session.execute(stmt).scalars())
 

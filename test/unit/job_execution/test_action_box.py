@@ -60,7 +60,7 @@ def _warnings(caplog):
 
 
 def test_unsupported_action_warns_instead_of_running(caplog):
-    """EmailAction is configurable on a pick_value step but has no job to report on."""
+    """An old workflow may contain an EmailAction on a jobless step."""
     _dispatch("EmailAction", {})
     assert [record for record in _warnings(caplog) if "EmailAction" in record.getMessage()]
 

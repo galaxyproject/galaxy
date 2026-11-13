@@ -17,7 +17,8 @@ from pydantic import ValidationError
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.notification import (
     DefaultStrategy,
-    MessageEmailNotificationTemplateBuilder,
+    EmailNotificationChannelPlugin,
+    NOTIFICATION_PREFERENCES_SECTION_NAME,
     NotificationManager,
     NotificationRecipientResolver,
     TemplateFormats,
@@ -26,8 +27,12 @@ from galaxy.managers.notification import (
 from galaxy.model import (
     DatasetStorageOperationRun,
     Group,
+    History,
     Role,
     User,
+    Workflow,
+    WorkflowInvocation,
+    WorkflowInvocationCompletion,
 )
 from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
@@ -56,6 +61,7 @@ from galaxy.schema.storage_operations import (
     StorageOperationRunState,
 )
 from galaxy.util import now
+from galaxy.workflow.completion_hooks.notification import SendNotificationHook
 from .base import BaseTestCase
 
 
@@ -376,6 +382,15 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
 
         assert actual_preferences == default_preferences
 
+    def test_old_preferences_include_new_categories_without_changing_saved_settings(self):
+        user = self._create_test_user()
+        user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = UserNotificationPreferences(
+            preferences={PersonalNotificationCategory.message: NotificationCategorySettings(enabled=False)}
+        ).model_dump_json()
+        expected = UserNotificationPreferences.default()
+        expected.preferences[PersonalNotificationCategory.message].enabled = False
+        assert self.notification_manager.get_user_notification_preferences(user) == expected
+
     def test_update_user_notification_preferences(self):
         user = self._create_test_user()
         preferences = self.notification_manager.get_user_notification_preferences(user)
@@ -668,7 +683,6 @@ class TestUserNotificationPreferencesFallback:
 
 
 class TestToolInstallationRequestContentValidation:
-
     def test_control_characters_are_collapsed_in_single_line_fields(self):
         tool = RequestedTool(name="FastQC\nEvil", requested_version="1.0\r2")
         assert tool.name == "FastQC Evil"
@@ -747,15 +761,25 @@ class TestToolInstallationRequestContentValidation:
 
 
 class TestMessageEmailBuilder(NotificationManagerBaseTestCase):
-    def test_html_email_renders_the_message_markdown_and_escapes_the_subject(self):
+    @pytest.mark.parametrize(
+        "category",
+        [
+            PersonalNotificationCategory.message,
+            PersonalNotificationCategory.workflow_execution_completed,
+            PersonalNotificationCategory.tool_execution_completed,
+        ],
+    )
+    def test_html_email_renders_the_message_markdown_and_escapes_the_subject(self, category):
         user = self._create_test_user()
         notification, _ = self._send_message_notification_to_users(
             [user],
             notification={
-                "content": {"category": "message", "subject": "<i>Maintenance</i>", "message": "**Downtime** tonight"}
+                "category": category,
+                "content": {"category": category, "subject": "<i>Maintenance</i>", "message": "**Downtime** tonight"},
             },
         )
-        builder = MessageEmailNotificationTemplateBuilder(self.app.config, notification, user)
+        builder_class = EmailNotificationChannelPlugin.email_templates_by_category[category]
+        builder = builder_class(self.app.config, notification, user)
         html = builder.get_body(TemplateFormats.HTML)
         assert "<strong>Downtime</strong>" in html
         assert "&lt;i&gt;Maintenance&lt;/i&gt;" in html
@@ -826,3 +850,24 @@ class TestToolInstallationRequestEmailBuilder(NotificationManagerBaseTestCase):
         assert content["requester_email"] == "requester@user.email"
         assert "is_confirmation" not in content
         assert "workflow_name" not in content
+
+
+class TestWorkflowCompletionNotifications(NotificationManagerBaseTestCase):
+    def test_hook_creates_a_workflow_completion_summary(self):
+        user = self._create_test_user()
+        self.app.config.galaxy_infrastructure_url = "https://galaxy.example.org"
+        self.app.notification_manager = self.notification_manager
+        invocation = WorkflowInvocation()
+        invocation.workflow = Workflow()
+        invocation.history = History(user=user)
+        invocation.on_complete = [{"send_notification": {}}]
+        completion = WorkflowInvocationCompletion(job_state_summary={"ok": 1000, "error": 1}, hooks_executed=[])
+        completion.workflow_invocation = invocation
+        self.trans.sa_session.add(completion)
+        self.trans.sa_session.commit()
+        SendNotificationHook(self.app).execute(completion)
+        [notification] = self.notification_manager.get_user_notifications(user)
+        assert notification.category == "workflow_execution_completed"
+        assert "1000" in notification.content["message"]
+        assert "error: 1" in notification.content["message"]
+        assert "https://galaxy.example.org/workflows/invocations/" in notification.content["message"]

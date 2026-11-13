@@ -39,19 +39,15 @@ class TestWorkflowRunNotificationSeleniumIntegration(BaseWorkflowRunTargetTestCa
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        # Open the runtime settings panel by clicking the gear button
-        settings_button = self.find_element_by_selector("[data-test-id='workflow-run-settings-button']")
-        settings_button.click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.screenshot("workflow_run_settings_panel_open")
-
-        # Find and click the send notification checkbox
-        # GCheckbox root element is a clickable label
+        self.find_element_by_selector("[data-test-id='completion-notification-button']").click()
         notification_checkbox = self.find_element_by_selector("[data-test-id='send-notification-checkbox']")
+        assert notification_checkbox.is_displayed()
+        assert not notification_checkbox.is_selected()
         notification_checkbox.click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        assert notification_checkbox.is_selected()
         self.screenshot("workflow_run_on_complete_notification_enabled")
 
+        self.find_element_by_selector("[data-test-id='completion-notification-button']").click()
         self.workflow_run_submit()
         self.sleep_for(self.wait_types.UX_TRANSITION)
 

@@ -10,6 +10,9 @@ export async function submitToolJob({ jobDef, formData }) {
 
 function toLegacyPayload(jobDef, formData) {
     const inputs = { ...formData };
+    if (jobDef.send_notification) {
+        inputs["send_notification"] = true;
+    }
     if (jobDef.send_email_notification) {
         inputs["send_email_notification"] = true;
     }

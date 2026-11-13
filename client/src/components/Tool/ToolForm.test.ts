@@ -11,12 +11,14 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { AnyHistory } from "@/api/index.js";
 import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
 import { useToast } from "@/composables/toast";
+import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolCard from "./ToolCard.vue";
 import ToolForm from "./ToolForm.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
+import CompletionNotification from "@/components/Notifications/CompletionNotification.vue";
 
 const { server, http } = useServerMock();
 
@@ -126,6 +128,28 @@ describe("ToolForm", () => {
         expect(help.text()).toBe("help_text");
         const creator = wrapper.find(".creative-work-creator");
         expect(creator.text()).toContain("FakeName FakeSurname");
+    });
+
+    it("submits the per-run completion notification choice through the legacy tool API", async () => {
+        let submitted: any;
+        server.use(
+            http.untyped.post("/api/tools", async ({ request }) => {
+                submitted = await request.json();
+                return HttpResponse.json({ err_msg: "Submission captured" }, { status: 400 });
+            }),
+        );
+        await flushPromises();
+        useConfigStore().setConfiguration({ ...useConfigStore().config, enable_notification_system: true });
+        await flushPromises();
+        expect(wrapper.findComponent(CompletionNotification).props("value")).toBe(false);
+        wrapper.findComponent(CompletionNotification).vm.$emit("input", true);
+        await flushPromises();
+        wrapper.findComponent(FormDisplay).vm.$emit("onChange", {}, false);
+        await wrapper.find("[data-description='run tool button']").trigger("click");
+        await flushPromises();
+        expect(submitted.inputs.send_notification).toBe(true);
+        expect(submitted.inputs.send_email_notification).toBeUndefined();
+        useConfigStore().setConfiguration({ ...useConfigStore().config, enable_notification_system: false });
     });
 
     it("adds the executed tool to recent tools", async () => {

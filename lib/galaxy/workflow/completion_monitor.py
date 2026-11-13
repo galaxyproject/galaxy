@@ -52,6 +52,7 @@ class WorkflowCompletionMonitor(Monitors):
         self.completion_manager = completion_manager
         self.hook_registry = hook_registry
         self.monitor_sleep_time = app.config.workflow_completion_monitor_sleep
+        self._last_pending_id = 0
         self._init_monitor_thread(
             name="WorkflowCompletionMonitor.monitor_thread",
             target=self._monitor,
@@ -83,7 +84,12 @@ class WorkflowCompletionMonitor(Monitors):
             # Find SCHEDULED invocations without completion records
             # Only poll invocations assigned to this handler
             handler = self.app.config.server_name
-            pending_ids = self.completion_manager.poll_pending_completions(handler=handler)
+            pending_ids = self.completion_manager.poll_pending_completions(
+                handler=handler, after_id=self._last_pending_id
+            )
+            # Advance through bounded batches so long-running invocations cannot
+            # starve later completions. Start another pass after reaching the end.
+            self._last_pending_id = pending_ids[-1] if pending_ids else 0
 
             for invocation_id in pending_ids:
                 if not self.monitor_running:
