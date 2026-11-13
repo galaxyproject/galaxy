@@ -458,7 +458,6 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         resubmit_jobs = []
         next_ready_job_cursors: dict[ReadyJobPartition, tuple[int, int]] = {}
         self._mapper_waiting_partitions.clear()
-        # Jobs settled in this pass whose after-commit post job actions run once it is committed.
         if self.track_jobs_in_database:
             # Clear the session so we get fresh states for job and all datasets
             self.sa_session.expunge_all()

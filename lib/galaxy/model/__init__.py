@@ -1962,7 +1962,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     # states that are not expected to change, except through admin action or re-scheduling
     terminal_states = [states.OK, states.ERROR, states.DELETED]
-    settled_states = (*terminal_states, states.SKIPPED, states.PAUSED, states.STOPPED)
     # deleting state should not turn back into any of the non-ready states
     finished_states = terminal_states + [states.DELETING]
     # States a job won't leave without outside action, such as the user resuming a paused job.

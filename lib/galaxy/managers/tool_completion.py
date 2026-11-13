@@ -124,5 +124,10 @@ class ToolCompletionManager:
     def _notification_subject(self, job: Job | None) -> str:
         if job is None or not job.tool_id:
             return "Tool run completed"
-        tool = self.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
+        tool = self.app.toolbox.get_tool(
+            job.tool_id,
+            tool_version=job.tool_version,
+            tool_uuid=job.dynamic_tool and job.dynamic_tool.uuid,
+            user=job.user,
+        )
         return f"Tool '{tool.name if tool else job.tool_id}' completed"
