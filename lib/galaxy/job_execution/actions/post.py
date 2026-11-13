@@ -12,6 +12,7 @@ from galaxy.model import (
     DatasetInstance,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    Job,
     PostJobActionAssociation,
 )
 from galaxy.util import send_mail
@@ -20,6 +21,8 @@ from galaxy.util.custom_logging import get_logger
 log = get_logger(__name__)
 
 RENAME_INPUT_REFERENCE_PATTERN = re.compile(r"#\{([^}]*)\}")
+# A deleting job becomes deleted without running its post job actions, so it counts as settled too.
+MAPPED_OVER_SETTLED_STATES = (*Job.settled_states, Job.states.DELETING)
 
 
 class DefaultJobAction:
@@ -78,30 +81,74 @@ class EmailAction(DefaultJobAction):
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict=None, final_job_state=None):
+        """Runs after the commit that settles ``job`` (see ``ActionBox.after_commit_actions``)."""
         try:
-            history_id_encoded = app.security.encode_id(job.history_id)
-            link_invocation = None
-            if job.workflow_invocation_step:
-                invocation_id_encoded = app.security.encode_id(job.workflow_invocation_step.workflow_invocation_id)
-                link_invocation = (
-                    f"{app.config.galaxy_infrastructure_url}/workflows/invocations/report?id={invocation_id_encoded}"
-                )
-            link = f"{app.config.galaxy_infrastructure_url}/histories/view?id={history_id_encoded}"
-            to = job.get_user_email()
-            subject = f"Galaxy job completion notification from history '{job.history.name}'"
-            outdata = ",\n".join(ds.dataset.display_name() for ds in job.output_datasets)
-            body = (
-                f"Your Galaxy job generating dataset(s):\n\n{outdata}\n\nis complete as of {datetime.datetime.now().strftime('%H:%M')}. "
-                f"Click the link below to access your data: \n{link}\n\n"
-                "Please remember to cite Galaxy using our primary publication "
-                '(<a href="https://gxy.io/p/latest-nar">https://gxy.io/p/latest-nar</a>) '
-                "in any publication based on your analysis."
-            )
-            if link_invocation:
-                body += f"\n\nWorkflow Invocation Report:\n{link_invocation}"
-            send_mail(app.config.email_from, to, subject, body, app.config)
+            implicit_collection_jobs_association = job.implicit_collection_jobs_association
+            if implicit_collection_jobs_association is None:
+                completed = cls._job_completed(job)
+            else:
+                # A job mapped over a collection: send one email for the whole map-over, not one per job.
+                completed = cls._map_over_completed(job, implicit_collection_jobs_association.implicit_collection_jobs)
+            if completed:
+                cls._send(app, job, completed)
         except Exception:
             log.exception("EmailAction PJA Failed")
+
+    @staticmethod
+    def _job_completed(job) -> str | None:
+        """What completed, for a job not mapped over; None while it waits for the user to resume it."""
+        if job.state == job.states.PAUSED:
+            return None
+        outdata = ",\n".join(ds.dataset.display_name() for ds in job.output_datasets)
+        return f"Your Galaxy job generating dataset(s):\n\n{outdata}\n\nis complete"
+
+    @staticmethod
+    def _map_over_completed(job, implicit_collection_jobs) -> str | None:
+        """What completed, for the map-over of ``job``; None while some of its jobs still have to run.
+
+        Every job checks after its own settled state is committed, so the last one to commit
+        sees all jobs settled. Jobs that commit within moments of each other may both see
+        that, and the user gets the summary twice.
+        """
+        if job.state in (job.states.DELETING, job.states.DELETED):
+            # Cancelled by the user; cancelling a running map-over would otherwise report once per job.
+            return None
+        if implicit_collection_jobs.populated_state == implicit_collection_jobs.populated_states.NEW:
+            # More jobs are still to be created.
+            return None
+        if implicit_collection_jobs.has_job_not_in_states(MAPPED_OVER_SETTLED_STATES):
+            return None
+        state_counts = implicit_collection_jobs.job_state_counts()
+        job_count = sum(state_counts.values())
+        jobs, are = ("job", "is") if job_count == 1 else ("jobs", "are")
+        collections = ",\n".join(
+            assoc.dataset_collection_instance.name
+            for assoc in job.output_dataset_collection_instances
+            if assoc.dataset_collection_instance.name
+        )
+        states = ", ".join(f"{count} {state}" for state, count in sorted(state_counts.items()))
+        return f"Your {job_count} Galaxy {jobs} generating collection(s):\n\n{collections}\n\n{are} complete ({states})"
+
+    @staticmethod
+    def _send(app, job, completed):
+        history_id_encoded = app.security.encode_id(job.history_id)
+        link = f"{app.config.galaxy_infrastructure_url}/histories/view?id={history_id_encoded}"
+        subject = f"Galaxy job completion notification from history '{job.history.name}'"
+        body = (
+            f"{completed} as of {datetime.datetime.now().strftime('%H:%M')}. "
+            f"Click the link below to access your data: \n{link}\n\n"
+            "Please remember to cite Galaxy using our primary publication "
+            '(<a href="https://gxy.io/p/latest-nar">https://gxy.io/p/latest-nar</a>) '
+            "in any publication based on your analysis."
+        )
+        # Mapped over jobs reach their invocation step through their implicit collection jobs.
+        if invocation_step := job.effective_workflow_invocation_step:
+            invocation_id_encoded = app.security.encode_id(invocation_step.workflow_invocation_id)
+            link_invocation = (
+                f"{app.config.galaxy_infrastructure_url}/workflows/invocations/report?id={invocation_id_encoded}"
+            )
+            body += f"\n\nWorkflow Invocation Report:\n{link_invocation}"
+        send_mail(app.config.email_from, job.get_user_email(), subject, body, app.config)
 
     @classmethod
     def get_short_str(cls, pja):
@@ -585,6 +632,11 @@ class ActionBox:
     # Actions that can be applied ahead of the job execution while workflow is still
     # being scheduled and jobs created.
     immediate_actions = ["ChangeDatatypeAction", "RenameDatasetAction", "TagDatasetAction", "RemoveTagDatasetAction"]
+    # Actions that read the committed state of other jobs, so they run after the commit that
+    # settles the job (finished, failed, copied from a cached job or paused) rather than in it.
+    after_commit_actions = ["EmailAction"]
+    # Actions not run with the other post job actions in the commit that settles the job.
+    deferred_actions = immediate_actions + after_commit_actions
     # Actions that will be applied to implicit mapped over collection outputs and not
     # just individual outputs when steps include mapped over tools and implicit collection outputs.
     mapped_over_output_actions = [
@@ -640,6 +692,38 @@ class ActionBox:
         action.execute_on_mapped_over(
             trans, sa_session, pja, step_inputs, step_outputs, replacement_dict, final_job_state=final_job_state
         )
+
+    @classmethod
+    def has_after_commit_actions(cls, job) -> bool:
+        """Whether ``job`` has ``after_commit_actions``; check before the commit, while they are loaded."""
+        return any(pjaa.post_job_action.action_type in cls.after_commit_actions for pjaa in job.post_job_actions)
+
+    @classmethod
+    def execute_after_commit(cls, app, sa_session, jobs):
+        """Run the ``after_commit_actions`` of ``jobs``, whose settled states must be committed.
+
+        For mapped over jobs they report on the whole map-over, so they run for one job of each map-over.
+        Failures are logged, not raised: the jobs are already settled and committed.
+        """
+        reported_map_over_ids = set()
+        for job in jobs:
+            try:
+                actions = [
+                    pjaa.post_job_action
+                    for pjaa in job.post_job_actions
+                    if pjaa.post_job_action.action_type in cls.after_commit_actions
+                ]
+                if not actions:
+                    continue
+                if implicit_collection_jobs_association := job.implicit_collection_jobs_association:
+                    map_over_id = implicit_collection_jobs_association.implicit_collection_jobs_id
+                    if map_over_id in reported_map_over_ids:
+                        continue
+                    reported_map_over_ids.add(map_over_id)
+                for action in actions:
+                    cls.execute(app, sa_session, action, job)
+            except Exception:
+                log.exception("Running after-commit post job actions failed for job %s", job.id)
 
     @classmethod
     def execute(cls, app, sa_session, pja, job, replacement_dict=None, final_job_state=None):

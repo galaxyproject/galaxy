@@ -1237,7 +1237,14 @@ class JsonCollectedDatasetMatch:
 
     @property
     def ext(self) -> str:
-        return self.as_dict.get("ext", self.collector and self.collector.default_ext or "data")
+        # A named group that did not participate in the regex match shows up
+        # in ``groupdict()`` with a value of ``None``; treat that like a
+        # pattern without an ``ext`` group and fall back to the collector
+        # default extension.
+        ext = self.as_dict.get("ext")
+        if not ext:
+            return self.collector and self.collector.default_ext or "data"
+        return ext
 
     @property
     def visible(self) -> bool:
