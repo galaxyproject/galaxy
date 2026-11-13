@@ -286,8 +286,10 @@ sections:
       | `${ ... }` | Function body that must return a value. | `${ return inputs.num_lines * 2 }` |
 
       Substituted values are inserted literally; Galaxy does **not** shell-quote
-      them. Quote any substitution that can contain spaces yourself, as
-      `'$(inputs.query.path)'`.
+      them. Quote Galaxy-generated paths, as `'$(inputs.query.path)'`. Do not put
+      free-text input directly into a command or script source: shell or language
+      quotes can be terminated by the value. Serialize it into a config file with
+      `$(JSON.stringify(inputs.name))` and read it as data instead.
 
       Some datatypes, such as BLAST databases and `pbed`, keep their data in a
       folder of extra files. Reference that folder as

@@ -37,10 +37,11 @@ help:
 ## Input/Output Syntax in shell_command
 
 - Input file paths: `$(inputs.param_name.path)` for single files
-- Input values: `$(inputs.param_name)` for text, integer, float, boolean. Quote the
-  scalar -- `'$(inputs.param_name)'` -- whenever it is or may become **text**: the
-  value is whatever the end user typed and it is spliced in verbatim, so an unquoted
-  `$(inputs.text_param)` turns `hello; rm -rf /` into two commands.
+- Input values: `$(inputs.param_name)` for integer, float and boolean values. Do not
+  interpolate a free-text input directly into `shell_command` or script source, even
+  inside quotes: the value is spliced in verbatim and can terminate those quotes.
+  Write it to a JSON configfile with `$(JSON.stringify(inputs.param_name))`, then read
+  it as data from the command's script.
 - For `multiple: true` data inputs the value is a list of file objects, so map over
   it and join, quoting each path:
   ``$(inputs.param_name.map((input) => `'${input.path}'`).join(" "))``. The result is

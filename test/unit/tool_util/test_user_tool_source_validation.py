@@ -25,6 +25,7 @@ from galaxy.tool_util_models import (
     format_validation_errors,
     UserToolSource,
     UserToolSourceAuthoringView,
+    user_tool_security_diagnostics,
     YamlToolSource,
 )
 from galaxy.util.resources import resource_string
@@ -143,6 +144,73 @@ def test_canonical_model_stays_lenient_about_inputs_and_outputs() -> None:
     )
     assert tool.inputs == []
     assert tool.outputs == []
+
+
+def test_security_rejects_direct_text_in_shell_command() -> None:
+    tool = UserToolSource.model_validate(
+        {
+            **VALID_TOOL,
+            "shell_command": "printf '%s\\n' '$(inputs.label)' > out.txt",
+            "inputs": [{"type": "text", "name": "label"}],
+        }
+    )
+    assert user_tool_security_diagnostics(tool) == [
+        {
+            "path": "shell_command",
+            "code": "dynamic_tool.unsafe_text_interpolation",
+            "message": (
+                "free-text input 'inputs.label' is substituted as executable text; "
+                "serialize it into a config file with JSON.stringify and read it as data"
+            ),
+        }
+    ]
+
+
+def test_security_accepts_json_serialized_text_configfile() -> None:
+    tool = UserToolSource.model_validate(
+        {
+            **VALID_TOOL,
+            "shell_command": "python script.py",
+            "inputs": [{"type": "text", "name": "label"}],
+            "configfiles": [
+                {
+                    "filename": "params.json",
+                    "content": '{"label": $(JSON.stringify(inputs.label))}',
+                },
+                {"filename": "script.py", "content": "import json"},
+            ],
+        }
+    )
+    assert user_tool_security_diagnostics(tool) == []
+
+
+def test_security_accepts_direct_text_in_data_configfile() -> None:
+    tool = UserToolSource.model_validate(
+        {
+            **VALID_TOOL,
+            "shell_command": "cat label.txt > out.txt",
+            "inputs": [{"type": "text", "name": "label"}],
+            "configfiles": [{"filename": "label.txt", "content": "$(inputs.label)"}],
+        }
+    )
+    assert user_tool_security_diagnostics(tool) == []
+
+
+def test_security_rejects_direct_text_in_configfile() -> None:
+    tool = UserToolSource.model_validate(
+        {
+            **VALID_TOOL,
+            "shell_command": "python script.py > out.txt",
+            "inputs": [{"type": "text", "name": "label"}],
+            "configfiles": [{"filename": "script.py", "content": "label = '$(inputs.label)'"}],
+        }
+    )
+    assert user_tool_security_diagnostics(tool)[0]["path"] == "configfiles.0.content"
+
+
+def test_security_ignores_typed_non_text_inputs() -> None:
+    tool = UserToolSource.model_validate(VALID_TOOL)
+    assert user_tool_security_diagnostics(tool) == []
 
 
 def test_admin_yaml_tool_rejects_label_referencing_undeclared_input() -> None:
