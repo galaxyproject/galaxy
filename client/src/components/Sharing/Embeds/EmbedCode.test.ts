@@ -9,7 +9,7 @@ vi.mock("@/utils/clipboard", () => ({ copy: vi.fn() }));
 
 function mountCode(props: Record<string, string>) {
     return mount(EmbedCode as object, {
-        propsData: { title: "Galaxy Page", url: "https://galaxy/widgets/pages/a1", ...props },
+        props: { title: "Galaxy Page", url: "https://galaxy/widgets/pages/a1", ...props },
     });
 }
 
@@ -24,6 +24,12 @@ describe("EmbedCode", () => {
         expect((wrapper.find(".embed-code-input").element as HTMLInputElement).value).toBe(
             '<iframe title="Galaxy Page" style="border: none;" src="https://galaxy/widgets/pages/a1"></iframe>',
         );
+    });
+
+    it("labels the embed code field", () => {
+        const wrapper = mountCode({});
+        expect(wrapper.get("label").attributes("for")).toBe("embed-code");
+        expect(wrapper.get("input#embed-code").classes()).toContain("embed-code-input");
     });
 
     it("separates title and url without attributes", () => {

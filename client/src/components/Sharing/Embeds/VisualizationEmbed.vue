@@ -22,7 +22,7 @@ const embedUrl = computed(() => getFullAppUrl(`widgets/visualizations/${props.id
 
 const embedStyle = computed(() => {
     if (settings.value.applyStyle) {
-        return `width="${settings.value.width}px" height="${settings.value.height}px" style="border: none;"`;
+        return `width="${settings.value.width}" height="${settings.value.height}" style="border: none;"`;
     }
     return "";
 });

@@ -20,7 +20,7 @@ describe("WorkflowEmbed", () => {
         const embedCode = (embedInput.element as HTMLInputElement).value;
         expect(embedCode).toMatch(/^<iframe .*widgets\/workflows\/workflow-id\?.*<\/iframe>$/);
 
-        await wrapper.get("#embed-code button").trigger("click");
+        await wrapper.get("label[for='embed-code'] button").trigger("click");
         expect(copy).toHaveBeenCalledWith(embedCode);
     });
 

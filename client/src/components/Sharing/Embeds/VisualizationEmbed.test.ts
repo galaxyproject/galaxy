@@ -19,7 +19,7 @@ describe("VisualizationEmbed", () => {
     it("embeds the visualization widget at the default size", () => {
         const wrapper = mountVisualizationEmbed();
         expect(embedCode(wrapper)).toMatch(
-            /^<iframe title="Galaxy Visualization" width="800px" height="600px" style="border: none;" src=".*widgets\/visualizations\/viz-id"><\/iframe>$/,
+            /^<iframe title="Galaxy Visualization" width="800" height="600" style="border: none;" src=".*widgets\/visualizations\/viz-id"><\/iframe>$/,
         );
     });
 
@@ -28,7 +28,7 @@ describe("VisualizationEmbed", () => {
         const [width, height] = wrapper.findAll(".dimension-controls input");
         await width!.setValue("1000");
         await height!.setValue("450");
-        expect(embedCode(wrapper)).toContain('width="1000px" height="450px"');
+        expect(embedCode(wrapper)).toContain('width="1000" height="450"');
     });
 
     it("leaves out the size without default styling", async () => {

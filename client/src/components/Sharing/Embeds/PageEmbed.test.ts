@@ -59,7 +59,7 @@ describe("PageEmbed", () => {
         const embedCode = (embedInput.element as HTMLInputElement).value;
         expect(embedCode).toMatch(/^<iframe .*widgets\/pages\/page-id\?heading=true.*<\/iframe>$/);
 
-        await wrapper.get("#embed-code button").trigger("click");
+        await wrapper.get("label[for='embed-code'] button").trigger("click");
         expect(copy).toHaveBeenCalledWith(embedCode);
     });
 });

@@ -32,8 +32,8 @@ function onCopy() {
 <template>
     <label for="embed-code" class="w-100">
         Embed code
-        <BInputGroup id="embed-code">
-            <GFormInput class="embed-code-input" :model-value="embed" readonly />
+        <BInputGroup>
+            <GFormInput id="embed-code" class="embed-code-input" :model-value="embed" readonly />
             <BInputGroupAppend>
                 <GButton color="blue" @click="onCopy">
                     {{ copied ? "Copied!" : "Copy" }}
