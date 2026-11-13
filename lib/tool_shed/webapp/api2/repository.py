@@ -232,6 +232,39 @@ class FastAPILegacyInstall:
             raise ObjectNotFound("Image file not found.")
         return FileResponse(path=resolved, media_type=media_type)
 
+    @router.get(
+        "/api/repositories/{repository_id}/revisions/{changeset_revision}/tool_source/{tool_file:path}",
+        operation_id="repositories__raw_tool_source_at_revision",
+        summary="Return raw tool XML from a specific repository revision.",
+        openapi_extra={"security": []},
+        response_class=Response,
+        responses={200: {"content": {"application/xml": {"schema": {"type": "string"}}}}},
+    )
+    def raw_tool_source_at_revision(
+        self,
+        repository_id: str,
+        changeset_revision: str,
+        tool_file: str,
+    ) -> Response:
+        # Only allow XML files with safe, relative paths.
+        if not tool_file.endswith(".xml") or tool_file.startswith("/") or ".." in tool_file.split("/"):
+            raise ObjectNotFound("Tool XML file not found.")
+
+        repository = get_repository_in_tool_shed(self.app, repository_id)
+
+        data = get_file_data_from_manifest(
+            tool_file,
+            repository.hg_repo,
+            changeset_revision,
+            max_size=MAX_REVISION_IMAGE_SIZE,
+            exact_path=True,
+        )
+
+        if data is None:
+            raise ObjectNotFound("Tool XML file not found.")
+
+        return Response(content=data, media_type="application/xml")
+
     def _image_media_type(self, image_file: str) -> str:
         # Determine MIME type - try datatypes registry first, fall back to stdlib
         media_type: str | None = None
