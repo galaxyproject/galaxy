@@ -2073,6 +2073,8 @@ test assertions expressed with ``assert_contents``, to ``md5`` and ``checksum``,
 This flag is useful for testing compressed outputs that are non-deterministic
 despite having deterministic decompressed contents. By default, only files compressed
 with bz2, gzip and zip will be automatically decompressed.
+The result of combining ``decompress`` with ``md5`` or ``checksum`` on an archive with
+more than one member (for example a zip with several files) is undefined.
 Note, for specifying assertions for compressed as well as decompressed output
 the corresponding output tag can be specified multiple times.
 This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
