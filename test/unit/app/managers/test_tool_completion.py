@@ -2,11 +2,13 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
+from typing import cast
 
 import pytest
 from sqlalchemy import (
     event,
     select,
+    update,
 )
 from sqlalchemy.orm import object_session
 
@@ -14,13 +16,15 @@ from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.tool_completion import ToolCompletionManager
+from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.structured_app import MinimalManagerApp
 
 
 @pytest.fixture
 def app(tmp_path):
-    app = MockApp(database_connection=f"sqlite:///{tmp_path / 'notifications.sqlite'}")
+    app = cast(MinimalManagerApp, MockApp(database_connection=f"sqlite:///{tmp_path / 'notifications.sqlite'}"))
     app.config.galaxy_infrastructure_url = "https://galaxy.example.org"
-    app[NotificationManager] = NotificationManager(app.model.context, app.config)
+    app[NotificationManager] = NotificationManager(app[galaxy_scoped_session], app.config)
     yield app
     app.model.context.remove()
     app.model.engine.dispose()
@@ -41,6 +45,7 @@ def history(app):
 
 def request_notification(history, states, mapped=False, populated="ok"):
     session = object_session(history)
+    assert session is not None
     jobs = []
     collection_jobs = model.ImplicitCollectionJobs(populated_state=populated) if mapped else None
     for index, state in enumerate(states):
@@ -80,7 +85,7 @@ def test_map_over_loads_only_one_representative_job_after_completion(app, manage
     try:
         assert not manager.check_and_notify(request_id)
         assert loaded_jobs == []
-        session.execute(model.Job.__table__.update().where(model.Job.id == last_job_id).values(state="error"))
+        session.execute(update(model.Job).where(model.Job.id == last_job_id).values(state="error"))
         session.commit()
         assert manager.check_and_notify(request_id)
         assert len(loaded_jobs) == 1

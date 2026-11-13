@@ -17,6 +17,7 @@ from galaxy_test.driver.integration_util import IntegrationTestCase
 
 class TestToolCompletionNotifications(IntegrationTestCase):
     framework_tool_and_types = True
+    dataset_populator: DatasetPopulator
     email_dir: ClassVar[str]
 
     @classmethod

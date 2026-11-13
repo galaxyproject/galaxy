@@ -127,7 +127,7 @@ class ToolCompletionManager:
         tool = self.app.toolbox.get_tool(
             job.tool_id,
             tool_version=job.tool_version,
-            tool_uuid=job.dynamic_tool and job.dynamic_tool.uuid,
+            tool_uuid=job.dynamic_tool.uuid if job.dynamic_tool is not None else None,
             user=job.user,
         )
         return f"Tool '{tool.name if tool else job.tool_id}' completed"
