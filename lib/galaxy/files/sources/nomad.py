@@ -8,12 +8,9 @@ from typing import (
 
 from fsspec import AbstractFileSystem
 from pydantic import field_validator
-from urllib3.exceptions import LocationParseError
-from urllib3.util import parse_url
 
 from galaxy.exceptions import (
     AuthenticationRequired,
-    ConfigDoesNotAllowException,
     MessageException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -29,7 +26,7 @@ from galaxy.files.sources._fsspec import (
     FsspecBaseFileSourceTemplateConfiguration,
     FsspecFilesSource,
 )
-from galaxy.files.uris import validate_non_local
+from galaxy.files.uris import refuse_a_private_address
 from galaxy.util.config_templates import TemplateExpansion
 
 try:
@@ -94,7 +91,9 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
         if NomadFileSystem is None:
             raise self.required_package_exception
         config = context.config
-        self._refuse_a_private_address(config.base_url)
+        refuse_a_private_address(
+            config.base_url, self._file_sources_config.fetch_url_allowlist or [], self.label, DEFAULT_NOMAD_URL
+        )
         return NomadFileSystem(
             base_url=config.base_url,
             token=config.token,
@@ -102,26 +101,6 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
             skip_instance_cache=config.token is not None,
             **cache_options,
         )
-
-    def _refuse_a_private_address(self, base_url: str) -> None:
-        # parsed as requests parses it; validate_non_local needs a lowercase scheme and a bare IPv6 host
-        try:
-            url = parse_url(base_url.strip())
-        except LocationParseError:
-            url = None
-        if url is None or url.scheme not in ("http", "https") or not url.host:
-            raise MessageException(f"{self.label} needs a base_url like {DEFAULT_NOMAD_URL}.")
-        host = url.host.strip("[]")
-        try:
-            validate_non_local(f"{url.scheme}://{host}", self._file_sources_config.fetch_url_allowlist or [])
-        except ConfigDoesNotAllowException as e:
-            raise ConfigDoesNotAllowException(
-                f"{self.label} points to {host}, an address on this server's own network. An administrator "
-                "can allow it by adding its IP address to fetch_url_allowlist, which applies to every URL "
-                "Galaxy fetches."
-            ) from e
-        except RequestParameterInvalidException as e:
-            raise MessageException(f"Could not find {host}, the address of {self.label}.") from e
 
     def _list(
         self,
