@@ -6,6 +6,7 @@ import { BCard, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
+import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import localize from "@/utils/localization";
 
 import type {
@@ -104,14 +105,10 @@ const sortDesc = ref(props.gridConfig ? props.gridConfig.sortDesc : false);
 const filterText = ref("");
 const showAdvanced = ref(false);
 const filterClass = props.gridConfig.filtering;
-const rawFilters = computed(() =>
-    Object.fromEntries(filterClass?.getFiltersForText(filterText.value, true, false) || []),
-);
-const validFilters = computed(() => filterClass?.getValidFilters(rawFilters.value, true).validFilters);
-const invalidFilters = computed(() => filterClass?.getValidFilters(rawFilters.value, true).invalidFilters);
-const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
-const hasInvalidFilters = computed(
-    () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value || {}).length > 0,
+const { rawFilters, invalidFilters, hasInvalidFilters, validatedFilterText } = useFilterTextValidation(
+    filterClass,
+    filterText,
+    false,
 );
 
 // column filters stay reachable when the current filters match nothing
@@ -373,21 +370,6 @@ function showDetails(rowData: RowData, show: boolean) {
         expanded.value.delete(rowData);
     }
     expanded.value = new Set(expanded.value);
-}
-
-/**
- * A valid filter/query for the backend
- */
-function validatedFilterText() {
-    if (isSurroundedByQuotes.value) {
-        // the filterText is surrounded by quotes, remove them
-        return filterText.value.slice(1, -1);
-    } else if (Object.keys(rawFilters.value).length === 0) {
-        // there are no filters derived from the `filterText`
-        return filterText.value;
-    }
-    // there are valid filters derived from the `filterText`
-    return filterClass?.getFilterText(validFilters.value || {}, false, filterText.value) || "";
 }
 
 /**
