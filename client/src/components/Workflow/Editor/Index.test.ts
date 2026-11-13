@@ -20,6 +20,7 @@ import { Services } from "@/components/Workflow/services";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+import { useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
@@ -27,6 +28,7 @@ import { getModule, getVersions, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
+import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
@@ -572,6 +574,80 @@ describe("Index", () => {
         function emitDataChanged(wrapper: VueWrapper, stepId: number, data: object) {
             wrapper.findComponent(NodeInspector).vm.$emit("dataChanged", stepId, data);
         }
+
+        function refactoredWorkflow(label: string, version: number) {
+            const step = {
+                id: 0,
+                type: "tool",
+                label,
+                name: label,
+                content_id: "cat1",
+                tool_id: "cat1",
+                tool_state: {},
+                input_connections: {},
+                inputs: [],
+                outputs: [],
+                position: { left: 0, top: 0 },
+                workflow_outputs: [],
+            };
+            return { name: label, annotation: "", tags: [], version, comments: [], steps: { 0: step } };
+        }
+
+        function stepLabels() {
+            return Object.values(stepStore.steps).map((step) => step.label);
+        }
+
+        async function refactorTo(wrapper: VueWrapper, label: string, version: number) {
+            wrapper
+                .findComponent(RefactorConfirmationModal)
+                .vm.$emit("onRefactor", { workflow: refactoredWorkflow(label, version) });
+            await flushPromises();
+        }
+
+        it("undoes and redoes refactors as unsaved changes, without losing the newest version", async () => {
+            const { wrapper } = await mountWithSteps(2);
+            const undoRedoStore = useUndoRedoStore("workflow_id");
+            await refactorTo(wrapper, "first refactor", 2);
+            expect(stepLabels()).toEqual(["first refactor"]);
+            expect(stateStore.hasChanges).toBe(false);
+            await refactorTo(wrapper, "second refactor", 3);
+            expect(undoRedoStore.undoStackLength).toBeGreaterThanOrEqual(2);
+
+            undoRedoStore.undo();
+            await nextTick();
+            expect(stepLabels()).toEqual(["first refactor"]);
+            expect(stateStore.hasChanges).toBe(true);
+            expect(wrapper.findComponent(WorkflowGraph).exists()).toBe(true);
+
+            undoRedoStore.undo();
+            await nextTick();
+            expect(stepLabels()).toEqual(["step 0", "step 1"]);
+
+            undoRedoStore.redo();
+            undoRedoStore.redo();
+            await nextTick();
+            expect(stepLabels()).toEqual(["second refactor"]);
+        });
+
+        it("replays edits made after a refactor when rolling the history over it", async () => {
+            const { wrapper } = await mountWithSteps(1);
+            const undoRedoStore = useUndoRedoStore("workflow_id");
+            await refactorTo(wrapper, "refactored", 2);
+            const refactor = undoRedoStore.nextUndoAction!;
+            const setLabel = (label: string) => stepStore.updateStep({ ...stepStore.getStep(0)!, label });
+            undoRedoStore
+                .action()
+                .onRun(() => setLabel("edited"))
+                .onUndo(() => setLabel("refactored"))
+                .apply();
+
+            undoRedoStore.rollBackTo(refactor);
+            expect(stepLabels()).toEqual(["step 0"]);
+
+            const edit = undoRedoStore.redoActionStack[0]!;
+            undoRedoStore.rollForwardTo(edit);
+            expect(stepLabels()).toEqual(["edited"]);
+        });
 
         it("skips superseded form edits and applies the latest module response", async () => {
             const { wrapper, stepIds } = await mountWithSteps(1);

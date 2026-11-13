@@ -3,7 +3,10 @@ from typing import (
     Any,
 )
 
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    RequestParameterInvalidException,
+    ToolMissingException,
+)
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import contains_workflow_parameter
 from galaxy.tools.parameters.workflow_utils import (
@@ -44,6 +47,7 @@ from .schema import (
 )
 from ..modules import (
     InputParameterModule,
+    module_factory,
     WorkflowModuleInjector,
 )
 
@@ -462,7 +466,12 @@ class WorkflowRefactorExecutor:
         step = self.workflow.steps[step_def["id"]]
         new_workflow = trans.app.workflow_manager.get_owned_workflow(trans, content_id)
         step.subworkflow = new_workflow
-        self._inject_for_updated_step(step, execution)
+        try:
+            self._inject_for_updated_step(step, execution)
+        except ToolMissingException:
+            # Only the sub-workflow's inputs and outputs are needed from here on.
+            step.clear_module_extras()
+            step.module = module_factory.from_workflow_step(trans, step)
 
         self._patch_step(execution, step, step_def)
 
@@ -618,7 +627,6 @@ class WorkflowRefactorExecutor:
         """
         patch a workflow step after upgrading the tool / subworkflow
         """
-        # TODO: find workflow outputs that need to be dropped and report them
         upgrade_inputs = step.module.get_all_inputs()
         upgrade_outputs = step.module.get_all_outputs()
         upgrade_output_names = {u["name"] for u in upgrade_outputs}
@@ -657,6 +665,16 @@ class WorkflowRefactorExecutor:
                         from_step_label=from_step_label,
                     )
                     execution.messages.append(message)
+            else:
+                # The new sub-workflow can hold its inputs at other positions; connections follow the name.
+                is_subworkflow_input = (
+                    matching_input["name"] == input_name and "input_subworkflow_step_id" in matching_input
+                )
+                for input_connection in _listify_connections(input_connections):
+                    if is_subworkflow_input:
+                        input_connection["input_subworkflow_step_id"] = matching_input["input_subworkflow_step_id"]
+                    else:
+                        input_connection.pop("input_subworkflow_step_id", None)
 
         for input_name in inputs_to_delete:
             del all_input_connections[input_name]
@@ -710,6 +728,11 @@ class WorkflowRefactorExecutor:
                     output_label=output_label,
                 )
                 execution.messages.append(message)
+        step_def["workflow_outputs"] = [
+            workflow_output
+            for workflow_output in step_def.get("workflow_outputs", [])
+            if workflow_output not in workflow_outputs_to_delete
+        ]
 
     @staticmethod
     def normalize_input_connections_to_list(all_input_connections, input_name, add_if_missing=False):
