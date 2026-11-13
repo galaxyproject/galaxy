@@ -128,7 +128,6 @@ function onOk() {
                 </p>
                 <GButton
                     v-model:pressed="showFilledDefaults"
-                    :aria-pressed="showFilledDefaults ? 'true' : 'false'"
                     data-description="workflow state upgrade filled defaults toggle"
                     size="small"
                     color="blue"
