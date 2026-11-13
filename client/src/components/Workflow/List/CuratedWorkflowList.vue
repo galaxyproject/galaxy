@@ -198,7 +198,7 @@ function validatedFilterText() {
     } else if (Object.keys(rawFilters.value).length === 0) {
         return filterText.value;
     }
-    return workflowFilters.value.getFilterText(validFilters.value, true);
+    return workflowFilters.value.getFilterText(validFilters.value, true, filterText.value);
 }
 
 function updateFilterValue(filterKey: string, newValue: any) {
