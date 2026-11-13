@@ -630,6 +630,20 @@ class AgentOperationsManager:
             "invocation_id": invocation_id,
         }
 
+    def get_invocation_step_jobs_summary(self, invocation_id: str) -> dict[str, Any]:
+        """Get job-state summaries for a workflow invocation."""
+        decoded_id = self.trans.security.decode_id(invocation_id)
+
+        # Verify the user has access to this invocation.
+        self.invocations_service.get_invocation(self.trans, decoded_id)
+
+        summaries = self.invocations_service.show_invocation_step_jobs_summary(self.trans, decoded_id)
+
+        return {
+            "invocation_id": invocation_id,
+            "step_jobs_summary": self._encode_ids_in_response(summaries),
+        }
+
     def cancel_workflow_invocation(self, invocation_id: str) -> dict[str, Any]:
         decoded_invocation_id = self.trans.security.decode_id(invocation_id)
         serialization_params = InvocationSerializationParams(view="element")
