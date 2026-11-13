@@ -42,6 +42,7 @@ from galaxy.tool_util_models.tool_source import (
     XrefDict,
     YamlTemplateConfigFile,
 )
+from galaxy.tool_util_models.yaml_parameters import YamlReferenceDataParameter
 from galaxy.util import (
     Element,
     listify,
@@ -660,7 +661,7 @@ class YamlInputSource(InputSource):
 
 class CanonicalYamlPageSource(YamlPageSource):
     def _input_source(self, input_dict) -> "CanonicalYamlInputSource":
-        return CanonicalYamlInputSource(input_dict, trusted=self.trusted)
+        return _canonical_input_source(input_dict, self.trusted)
 
 
 class YamlReferenceDataOptions(DynamicOptions):
@@ -704,11 +705,6 @@ class CanonicalYamlInputSource(YamlInputSource):
             return "section"
         return super().parse_input_type()
 
-    def parse_dynamic_options(self) -> YamlReferenceDataOptions | None:
-        if self.input_dict["type"] != "reference_data":
-            return None
-        return YamlReferenceDataOptions(self.input_dict["table"])
-
     def parse_nested_inputs_source(self):
         input_type = self.parse_input_type()
         assert input_type in ("repeat", "section")
@@ -718,7 +714,28 @@ class CanonicalYamlInputSource(YamlInputSource):
         return CanonicalYamlPageSource(inputs_list, trusted=self.trusted)
 
     def _input_source(self, input_dict) -> "CanonicalYamlInputSource":
-        return CanonicalYamlInputSource(input_dict, trusted=self.trusted)
+        return _canonical_input_source(input_dict, self.trusted)
+
+
+class CanonicalYamlReferenceDataInputSource(CanonicalYamlInputSource):
+    """A GalaxyTool/GalaxyUserTool ``reference_data`` parameter, validated by its authoring model."""
+
+    def __init__(self, input_dict: dict[str, Any], trusted: bool = True) -> None:
+        self._reference_data = YamlReferenceDataParameter.model_validate(input_dict)
+        # Raw-dict readers (e.g. SelectToolParameter) see the model's coerced values.
+        super().__init__(self._reference_data.model_dump(by_alias=True, exclude_unset=True), trusted=trusted)
+
+    def parse_reference_data(self) -> YamlReferenceDataParameter:
+        return self._reference_data
+
+    def parse_dynamic_options(self) -> YamlReferenceDataOptions:
+        return YamlReferenceDataOptions(self._reference_data.table)
+
+
+def _canonical_input_source(input_dict: dict[str, Any], trusted: bool) -> CanonicalYamlInputSource:
+    if input_dict.get("type") == "reference_data":
+        return CanonicalYamlReferenceDataInputSource(input_dict, trusted=trusted)
+    return CanonicalYamlInputSource(input_dict, trusted=trusted)
 
 
 def _ensure_has(dict, defaults):

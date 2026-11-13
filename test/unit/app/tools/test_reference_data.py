@@ -6,6 +6,7 @@ from typing import (
 )
 
 import pytest
+from pydantic import ValidationError
 
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.model import (
@@ -16,18 +17,18 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.unittest_utils import GalaxyDataTestApp
+from galaxy.tool_util.parameters import input_models_for_tool_source
+from galaxy.tool_util.parameters.factory import ParameterDefinitionError
 from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util_models.parameters import ReferenceDataParameterModel
 from galaxy.tools import create_tool_from_source
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.evaluation import UserToolEvaluator
 from galaxy.tools.parameters.basic import (
     ParameterValueError,
     ReferenceDataToolParameter,
-    ToolParameter,
 )
 from galaxy.tools.runtime import setup_for_reference_data
-from galaxy.util import XML
-from galaxy.util.bunch import Bunch
 from galaxy.work.context import WorkRequestContext
 from .test_evaluation import ComputeEnvironment
 
@@ -175,15 +176,80 @@ def test_history_bundles_are_not_offered_as_table_entries(app, monkeypatch):
     assert [option.value for option in options] == ["hg38", "mm10"]
 
 
-def test_xml_tools_cannot_declare_reference_data(app):
-    tool = cast("Tool", Bunch(app=app, profile=26.1))
-    with pytest.raises(ParameterValueError, match="only supported in YAML tools"):
-        ToolParameter.build(tool, XML('<param name="reference" type="reference_data" table="open_refs"/>'))
+ONLY_IN_YAML_TOOL_CLASSES = "only supported in GalaxyTool and GalaxyUserTool YAML tools"
+
+
+def _xml_tool(param_xml: str) -> str:
+    return f'<tool id="x" name="x" version="1" profile="26.1"><command>x</command><inputs>{param_xml}</inputs></tool>'
+
+
+CLASSLESS_YAML_TOOL = {
+    "id": "x",
+    "name": "x",
+    "version": "1",
+    "command": "x",
+    "inputs": [{"name": "reference", "type": "reference_data", "table": "open_refs"}],
+    "outputs": {},
+}
+
+NON_YAML_TOOL_CLASS_SOURCES = pytest.mark.parametrize(
+    "tool_source_class, raw_tool_source",
+    [
+        ("XmlToolSource", _xml_tool('<param name="reference" type="reference_data" table="open_refs"/>')),
+        (
+            "XmlToolSource",
+            _xml_tool(
+                '<param name="reference" type="reference_data" table="closed_refs">'
+                '<options from_data_table="open_refs"/></param>'
+            ),
+        ),
+        ("YamlToolSource", json.dumps(CLASSLESS_YAML_TOOL)),
+    ],
+    ids=["xml_bare", "xml_with_options", "classless_yaml"],
+)
+
+
+@NON_YAML_TOOL_CLASS_SOURCES
+def test_tools_outside_the_yaml_tool_classes_cannot_declare_reference_data(app, tool_source_class, raw_tool_source):
+    tool_source = get_tool_source(tool_source_class=tool_source_class, raw_tool_source=raw_tool_source)
+    with pytest.raises(ParameterValueError, match=ONLY_IN_YAML_TOOL_CLASSES):
+        create_tool_from_source(app, tool_source=tool_source)
+
+
+@NON_YAML_TOOL_CLASS_SOURCES
+def test_parameter_models_reject_reference_data_outside_the_yaml_tool_classes(tool_source_class, raw_tool_source):
+    tool_source = get_tool_source(tool_source_class=tool_source_class, raw_tool_source=raw_tool_source)
+    with pytest.raises(ParameterDefinitionError, match=ONLY_IN_YAML_TOOL_CLASSES):
+        input_models_for_tool_source(tool_source)
 
 
 def test_table_this_instance_does_not_have_offers_nothing(app):
     tool = _tool(app, table="not_installed")
     assert _values(app, tool) == []
+
+
+@pytest.mark.parametrize(
+    "input_fields, field",
+    [
+        ({"filter": {"from_input": "reads", "on_metadata": "dbkey"}}, "filter"),
+        ({"options": [{"label": "A", "value": "a"}]}, "options"),
+        ({"multiple": "several"}, "multiple"),
+    ],
+    ids=["filter", "options", "non_bool_multiple"],
+)
+def test_definitions_the_authoring_model_rejects_fail_to_load(app, input_fields, field):
+    with pytest.raises(ValidationError, match=f"(?m)^{field}$"):
+        _tool(app, with_reads=True, **input_fields)
+
+
+def test_form_uses_the_authoring_model_coerced_flags(app):
+    tool = _tool(app, multiple="false", optional="true")
+    parameter = _parameter(tool)
+    assert parameter.multiple is False
+    assert parameter.optional is True
+    model = input_models_for_tool_source(tool.tool_source).parameters[0]
+    assert isinstance(model, ReferenceDataParameterModel)
+    assert (model.multiple, model.optional) == (False, True)
 
 
 @pytest.mark.parametrize("validated_state", [False, True], ids=["job_parameters", "validated_state"])
@@ -221,11 +287,12 @@ def test_entry_of_a_table_without_paths_has_only_metadata(app, tmp_path):
     assert reference["metadata"] == {"name": "Alpha"}
 
 
-def test_job_fails_when_admins_close_the_table_after_it_was_submitted(app, tmp_path):
+@pytest.mark.parametrize("validated_state", [False, True], ids=["job_parameters", "validated_state"])
+def test_job_fails_when_admins_close_the_table_after_it_was_submitted(app, tmp_path, validated_state):
     tool = _tool(app)
-    job = _job("hg38")
+    job = _job("hg38", validated_state)
     app.tool_data_tables["open_refs"].user_accessible = False
-    with pytest.raises(ParameterValueError):
+    with pytest.raises(ParameterValueError, match="no legal values"):
         _evaluated_reference(app, tool, job, tmp_path)
 
 
@@ -254,3 +321,45 @@ def test_resolving_a_path_enforces_the_allowlist_and_the_entry(app, table, value
     adapt = setup_for_reference_data(app, None, trusted=False)
     with pytest.raises(ValueError, match=message):
         adapt(table, value)
+
+
+NESTED_REFERENCE = {"name": "reference", "type": "reference_data", "table": "open_refs"}
+
+
+@pytest.mark.parametrize(
+    "wrapper, path",
+    [
+        ({"name": "outer", "type": "section", "parameters": [NESTED_REFERENCE]}, ("parameters",)),
+        (
+            {
+                "name": "outer",
+                "type": "conditional",
+                "test_parameter": {"name": "flag", "type": "boolean", "value": True},
+                "whens": [
+                    {"discriminator": True, "parameters": [NESTED_REFERENCE]},
+                    {"discriminator": False, "parameters": []},
+                ],
+            },
+            ("whens", 0, "parameters"),
+        ),
+    ],
+    ids=["section", "conditional_when"],
+)
+def test_nested_reference_data_loads_through_its_authoring_model(app, wrapper, path):
+    source = {
+        "class": "GalaxyUserTool",
+        "id": "nested_reference_tool",
+        "version": "1.0",
+        "name": "nested_reference_tool",
+        "container": "busybox",
+        "shell_command": "echo",
+        "inputs": [wrapper],
+        "outputs": [],
+    }
+    tool_source = get_tool_source(tool_source_class="YamlToolSource", raw_tool_source=json.dumps(source))
+    create_tool_from_source(app, tool_source=tool_source)
+    nested: Any = input_models_for_tool_source(tool_source).parameters[0]
+    for step in path:
+        nested = nested[step] if isinstance(step, int) else getattr(nested, step)
+    assert isinstance(nested[0], ReferenceDataParameterModel)
+    assert nested[0].table == "open_refs"

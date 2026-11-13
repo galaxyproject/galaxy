@@ -65,6 +65,7 @@ if TYPE_CHECKING:
         ToolOutputBase,
         ToolOutputCollection,
     )
+    from galaxy.tool_util_models.yaml_parameters import YamlReferenceDataParameter
     from .stdio import (
         ToolStdioExitCode,
         ToolStdioRegex,
@@ -620,6 +621,10 @@ class InputSource(metaclass=ABCMeta):
     def parse_text_optional(self) -> tuple[bool, bool]:
         """Return text optionality and whether it was inferred from validators accepting ""."""
         return text_input_is_optional(self)
+
+    def parse_reference_data(self) -> Optional["YamlReferenceDataParameter"]:
+        """Return the validated ``reference_data`` definition; only YAML tools declare one."""
+        return None
 
     def parse_dynamic_options(self) -> DynamicOptions | None:
         """Return an optional element describing dynamic options.

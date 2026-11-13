@@ -1880,18 +1880,20 @@ class ReferenceDataToolParameter(SelectToolParameter):
 
     def __init__(self, tool: Optional["Tool"], input_source, context=None):
         input_source = ensure_input_source(input_source)
-        table_name = input_source.get("table")
-        if table_name is None or input_source.parse_dynamic_options() is None:
-            raise ParameterValueError("reference_data is only supported in YAML tools", input_source.parse_name())
+        if (reference_data := input_source.parse_reference_data()) is None:
+            raise ParameterValueError(
+                "reference_data is only supported in GalaxyTool and GalaxyUserTool YAML tools",
+                input_source.parse_name(),
+            )
         super().__init__(tool, input_source, context)
-        self.table_name: str = table_name
-        self.requires_user_accessible_table = not input_source.trusted
+        self.table_name: str = reference_data.table
+        self.trusted = input_source.trusted
         # The tool form and the workflow editor render this as a plain select.
         self.type = "select"
 
     def get_options(self, trans: "ProvidesHistoryContext", other_values) -> Sequence[ParameterOption]:
         table = self.options.tool_data_table if self.options else None
-        if table is None or (self.requires_user_accessible_table and not table.user_accessible):
+        if table is None or not table.readable_by(trusted=self.trusted):
             return []
         # A history data bundle offered as an entry of the table is not an installed row.
         return [

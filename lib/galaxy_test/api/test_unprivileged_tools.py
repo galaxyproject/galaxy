@@ -4,6 +4,7 @@ from typing import Any
 from uuid import uuid4
 
 from galaxy.tool_util_models import UserToolSource
+from galaxy_test.base.api_asserts import assert_error_message_contains
 from galaxy_test.base.api_mixins import TestsTools
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -167,11 +168,31 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             self.dataset_populator.test_history() as history_id,
             self.dataset_populator.user_tool_execute_permissions(),
         ):
+            build = self.dataset_populator.build_unprivileged_tool(
+                UserToolSource(**representation), history_id=history_id
+            )
+            assert build["inputs"][0]["options"] == []
             dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**representation))
             response = self.dataset_populator.run_tool_raw(
                 None, {"reference": "data1"}, history_id, tool_uuid=dynamic_tool["uuid"]
             )
             self._assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "Parameter 'reference'")
+
+    def test_admin_yaml_tool_reads_a_table_closed_to_user_tools(self):
+        representation = {
+            **TOOL_WITH_REFERENCE_DATA,
+            "class": "GalaxyTool",
+            "id": "admin_reference_data_tool",
+            "shell_command": "echo '$(inputs.reference.basename) $(inputs.reference.metadata.name)' > output.txt",
+            "inputs": [{"name": "reference", "type": "reference_data", "table": "testalpha"}],
+        }
+        dynamic_tool = self.dataset_populator.create_tool(representation)
+        with self.dataset_populator.test_history() as history_id:
+            self._run(history_id=history_id, tool_uuid=dynamic_tool["uuid"], inputs={"reference": "data2"})
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            output_content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert output_content == "entry.txt data2name\n"
 
     def test_queued_job_fails_when_execute_role_is_revoked(self):
         with self.dataset_populator.test_history() as history_id:
