@@ -6,6 +6,7 @@ from galaxy.tool_util.deps.mulled.mulled_list import (
     get_missing_envs,
     get_singularity_containers,
 )
+from galaxy.util.unittest_utils import skip_on_network_error
 from ..util import external_dependency_management
 
 # def test_get_quay_containers():
@@ -16,6 +17,7 @@ from ..util import external_dependency_management
 
 
 @external_dependency_management
+@skip_on_network_error
 def test_get_singularity_containers():
     lst = get_singularity_containers()
     assert "aragorn:1.2.36--1" in lst
