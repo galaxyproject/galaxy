@@ -17,7 +17,7 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> None:
     create_table(
         "tool_completion_notification",
         sa.Column("id", sa.Integer, primary_key=True),
@@ -42,5 +42,5 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     drop_table("tool_completion_notification")
