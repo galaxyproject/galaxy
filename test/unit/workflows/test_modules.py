@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import (
     Any,
     NamedTuple,
@@ -1163,6 +1164,63 @@ def test_capture_propagates_failure_flushing_unrelated_pending_objects():
 
     with pytest.raises(IntegrityError):
         modules._capture_workflow_tool_request_state(trans, _PersistableFakeTool(), None, None, history, resolve, [])
+
+
+def _capture_int_tool_step(value, caplog):
+    tool = _PersistableFakeTool()
+    tool.id = "gx_int"
+    tool.tool_source = parameter_tool_source("gx_int")
+    tool.parameters = input_models_for_tool_source(tool.tool_source).parameters
+    trans = MockTrans()
+    history = model.History(name="target")
+    trans.sa_session.add(history)
+
+    def resolve(iteration_elements):
+        return bunch.Bunch(inputs={"parameter": value}), None, None
+
+    with caplog.at_level(logging.INFO, logger=modules.log.name):
+        _, _, request = modules._capture_workflow_tool_request_state(
+            trans, tool, bunch.Bunch(order_index=7), None, history, resolve, []
+        )
+    messages = [r.getMessage() for r in caplog.records if r.name == modules.log.name and r.levelno == logging.INFO]
+    return request, messages
+
+
+def test_capture_validated_logs_validated_at_info(caplog):
+    request, messages = _capture_int_tool_step(5, caplog)
+
+    assert request.request_state == "validated"
+    assert messages == ["tool request capture for step 7 (gx_int): validated, mapped_over=False"]
+
+
+def test_capture_validation_failed_info_log_is_not_a_step_verdict(caplog):
+    """The capture is execution-neutral: its INFO line must not read as the step failing."""
+    request, messages = _capture_int_tool_step("not-a-number", caplog)
+
+    assert request.request_state == "validation_failed"
+    assert len(messages) == 1
+    message = messages[0]
+    assert message.startswith(
+        "tool request capture for step 7 (gx_int): not validated, execution unaffected, mapped_over=False: "
+    )
+    assert "validation_failed" not in message
+    # The reason is included, collapsed to a single line.
+    assert "Input should be a valid integer" in message
+    assert "\n" not in message
+    assert "errors.pydantic.dev" not in message
+
+
+def test_single_line_reason():
+    assert modules._single_line_reason(None) is None
+    assert modules._single_line_reason("") is None
+    assert (
+        modules._single_line_reason(
+            "1 validation error for t\nparameter\n  Input should be a valid integer\n"
+            "    For further information visit https://errors.pydantic.dev/2/v/int_type"
+        )
+        == "1 validation error for t; parameter; Input should be a valid integer"
+    )
+    assert modules._single_line_reason("bad state") == "bad state"
 
 
 def test_to_decoded_json_lowers_connected_value_in_repeat():
