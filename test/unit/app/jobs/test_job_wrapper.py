@@ -1,4 +1,5 @@
 import abc
+import json
 import os
 from contextlib import contextmanager
 from types import SimpleNamespace
@@ -82,6 +83,17 @@ class AbstractTestCases:
             wrapper.prepare()
             yield wrapper
 
+        def _add_upload_paramfile(self) -> str:
+            param_file_path = os.path.join(self.test_directory, "upload_paramfile.txt")
+            with open(param_file_path, "w") as f:
+                f.write("contents")
+            self.job.tool_id = "upload1"
+            self.job.add_parameter("paramfile", json.dumps(param_file_path))
+            return param_file_path
+
+        def _paramfile_values(self) -> list[str]:
+            return [json.loads(p.value) for p in self.job.parameters if p.name == "paramfile"]
+
         def test_version_path(self):
             wrapper = self._wrapper()
             version_path = wrapper.get_version_string_path()
@@ -115,6 +127,14 @@ class TestJobWrapper(AbstractTestCases.BaseWrapperTestCase):
         with self._prepared_wrapper(requires_galaxy_python_environment=True) as wrapper:
             assert os.path.isfile(os.path.join(wrapper.working_directory, "configs", "registry.xml"))
             assert not os.path.exists(os.path.join(wrapper.working_directory, "registry.xml"))
+
+    def test_prepare_copies_upload_paramfile_for_toolbox_upload_tool(self):
+        self._add_upload_paramfile()
+        with self._prepared_wrapper() as wrapper:
+            new_path = os.path.join(wrapper.working_directory, "configs", "upload_params.json")
+            with open(new_path) as f:
+                assert f.read() == "contents"
+        assert self._paramfile_values() == [new_path]
 
 
 class TestTaskWrapper(AbstractTestCases.BaseWrapperTestCase):
@@ -198,8 +218,7 @@ class MockToolbox:
         return tool
 
     def tool_for_job(self, job, exact, check_access=True, user=None):
-        tool = self.get(job.tool_id)
-        return tool
+        return self.test_tool
 
     def materialize_tool(self, tool, *, reason):
         assert reason == "job_setup"
