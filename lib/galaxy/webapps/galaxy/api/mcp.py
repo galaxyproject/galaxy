@@ -928,6 +928,21 @@ def get_mcp_app(gx_app: StructuredApp):
             return ops_manager.get_job_details(dataset_id, history_id)
 
     @mcp.tool()
+    def get_job_errors(dataset_id: str, ctx: MCPContext, api_key: ApiKey = None) -> dict[str, Any]:
+        """Retrieve error information for the job that created a dataset.
+
+        Args:
+            dataset_id: Galaxy dataset ID, not the job ID.
+
+        Returns:
+            Job state, exit code, error message, stderr and stdout.
+            Long log messages may be truncated.
+        """
+        with _mcp_error_handler("get_job_errors"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.get_job_errors(dataset_id)
+
+    @mcp.tool()
     def download_dataset(dataset_id: str, ctx: MCPContext, api_key: ApiKey = None) -> dict[str, Any]:
         """Get a dataset's download URL plus basic metadata.
 

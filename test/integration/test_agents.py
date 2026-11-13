@@ -436,6 +436,7 @@ class TestMCPServerSmoke(IntegrationTestCase):
             "upload_file_from_url",
             "invoke_workflow",
             "get_job_status",
+            "get_job_errors",
             "list_user_tools",
             "create_user_tool",
             "delete_user_tool",
@@ -453,6 +454,35 @@ class TestMCPServerSmoke(IntegrationTestCase):
         }
         assert expected.issubset(tool_names), f"Missing tools: {expected - tool_names}"
 
+    def test_mcp_get_job_errors(self):
+        """MCP tool retrieves job information for an accessible dataset."""
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+
+        populator = DatasetPopulator(self._get_interactor(api_key=api_key))
+        history_id = populator.new_history()
+        dataset = populator.new_dataset(history_id=history_id, content="hello")
+
+        async def _get_errors():
+            async with Client(mcp_server) as client:
+                return await client.call_tool(
+                    "get_job_errors",
+                    {"api_key": api_key, "dataset_id": dataset["id"]},
+                )
+
+        result = self._run_async(_get_errors())
+
+        assert not result.is_error, result
+        assert result.data["dataset_id"] == dataset["id"]
+
+        if "job_id" in result.data:
+            assert "state" in result.data
+            assert "exit_code" in result.data
+            assert "stderr" in result.data
+            assert "stdout" in result.data
+        else:
+            assert result.data["error"] == "No creating job found for this dataset"
+
     def test_mcp_connect_with_valid_key(self):
         """connect() succeeds with a valid API key and returns user + server info."""
         mcp_server = self._get_mcp_server()
@@ -467,6 +497,42 @@ class TestMCPServerSmoke(IntegrationTestCase):
         data = result.data
         assert "user" in data
         assert "server" in data
+
+    def test_mcp_get_failed_job_errors(self):
+        """MCP retrieves diagnostic information from a failed job."""
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+
+        populator = DatasetPopulator(self._get_interactor(api_key=api_key))
+        history_id = populator.new_history()
+
+        run = populator.run_tool(
+            "detect_errors_aggressive",
+            inputs={"error_bool": "true"},
+            history_id=history_id,
+        )
+
+        job_id = run["jobs"][0]["id"]
+        dataset_id = run["outputs"][0]["id"]
+
+        populator.wait_for_job(job_id)
+
+        async def _get_errors():
+            async with Client(mcp_server) as client:
+                return await client.call_tool(
+                    "get_job_errors",
+                    {"api_key": api_key, "dataset_id": dataset_id},
+                )
+
+        result = self._run_async(_get_errors())
+        assert not result.is_error, result
+        assert result.data["job_id"] == job_id
+        assert result.data["state"] == "error"
+        assert result.data["tool_id"] == "detect_errors_aggressive"
+        assert "stderr" in result.data
+        assert "stdout" in result.data
+        assert "exit_code" in result.data
+        assert "ERROR: Problem" in result.data["stdout"]
 
     def test_mcp_connect_with_invalid_key(self):
         """connect() rejects an invalid API key."""
