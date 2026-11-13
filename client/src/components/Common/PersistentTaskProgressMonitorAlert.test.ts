@@ -78,11 +78,8 @@ const mountComponent = (
                 // `renderStubDefaultSlot: true` crashes (runs out of memory) for this
                 // component, so stub it explicitly instead.
                 GAlert: { template: "<div><slot /></div>" },
-                // VTU's auto-stub for bootstrap-vue's BLink (a legacy Vue.extend
-                // component) crashes the same way once this component's full
-                // composable graph is mounted around it -- stub it explicitly too.
-                // `class` and `href` fall through onto the root element as usual.
-                BLink: { template: "<a><slot /></a>" },
+                // Render the real link so assertions cover the markup users get.
+                GLink: false,
             },
         },
     });
@@ -214,7 +211,9 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
 
         const downloadLink = wrapper.find(".download-link");
         expect(downloadLink.exists()).toBe(true);
-        expect(downloadLink.text()).toContain("Download here");
+        expect(downloadLink.element.tagName).toBe("A");
+        expect(downloadLink.classes()).toContain("g-link");
+        expect(downloadLink.text()).toBe("Download here");
         expect(downloadLink.attributes("href")).toBe(`/api/short_term_storage/${taskId}`);
     });
 
