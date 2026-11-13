@@ -13,7 +13,6 @@ import { stateIsTerminal } from "@/utils/utils";
 
 import type { JobMessage } from "../../api/jobs";
 
-import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
 import JobIdChip from "./JobIdChip.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -228,9 +227,6 @@ function onJobInfoLeave(el: Element, done: () => void) {
         :header-icon="faInfoCircle"
         title="Job Execution Details"
         :collapsible="props.collapsible">
-        <template v-slot:header-indicators>
-            <JobIdChip v-if="job" :id="job.id" />
-        </template>
         <template v-slot:custom-content>
             <GCard :primary-actions="primaryActions">
                 <template v-slot:description>
@@ -323,10 +319,16 @@ function onJobInfoLeave(el: Element, done: () => void) {
 
                                     <slot name="extra-table-rows" />
 
+                                    <tr v-if="job && job.id">
+                                        <td>Job API ID</td>
+                                        <td id="encoded-job-id">
+                                            <JobIdChip :id="job.id" />
+                                        </td>
+                                    </tr>
                                     <tr v-if="job.copied_from_job_id">
                                         <td>Copied from Job API ID</td>
                                         <td id="encoded-copied-from-job-id">
-                                            {{ job.copied_from_job_id }} <DecodedId :id="job.copied_from_job_id" />
+                                            <JobIdChip :id="job.copied_from_job_id" />
                                         </td>
                                     </tr>
                                     <tr v-if="fetchedInvocationId">
@@ -398,7 +400,7 @@ function onJobInfoLeave(el: Element, done: () => void) {
     :deep(tr) {
         td {
             padding: 0.25rem 0.5rem;
-            vertical-align: top;
+            vertical-align: baseline;
             border-bottom: none;
         }
 

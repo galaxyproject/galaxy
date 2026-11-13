@@ -76,10 +76,11 @@ function toggleCollapse() {
             <div class="detail-block-icon">
                 <FontAwesomeIcon :icon="props.headerIcon" />
             </div>
-            <div class="d-flex flex-gapx-1">
+            <div class="detail-block-header d-flex flex-gapx-1">
                 <Heading
-                    class="flex-grow-1"
+                    class="flex-grow-1 detail-block-heading"
                     inline
+                    truncate
                     size="sm"
                     bold
                     separator
@@ -87,7 +88,9 @@ function toggleCollapse() {
                     @click="toggleCollapse">
                     {{ props.title }}
                 </Heading>
-                <slot name="header-indicators" />
+                <div class="detail-block-indicators">
+                    <slot name="header-indicators" />
+                </div>
             </div>
 
             <div class="detail-block-spacer" />
@@ -130,6 +133,14 @@ function toggleCollapse() {
 
     .heading {
         margin-bottom: 0;
+    }
+
+    .detail-block-heading {
+        min-width: 0;
+    }
+
+    .detail-block-indicators {
+        flex-shrink: 0;
     }
 
     // TODO: Maybe we need to max-width all poppers to 70vw globally?
