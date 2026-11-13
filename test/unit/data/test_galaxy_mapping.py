@@ -524,6 +524,7 @@ class TestMappings(BaseModelTestCase):
         workflow.help = "Some help text"
         workflow.logo_url = "https://galaxyproject.org/images/galaxy-logo.png"
         workflow.doi = ["10.1000/xyz123"]
+        workflow.is_based_on = [{"class": "SoftwareSourceCode", "name": "nf-core/demo"}]
         workflow.source_metadata = {"url": "https://example.org/workflow.ga"}
         self.persist(workflow)
 
