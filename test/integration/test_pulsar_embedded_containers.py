@@ -34,6 +34,23 @@ def _home_probe_tool(probe_name: str) -> dict:
     }
 
 
+def _index_probe_tool() -> dict:
+    index = "$(inputs.input.secondaryFiles[0].path)"
+    return {
+        "class": "GalaxyUserTool",
+        "id": "index_probe",
+        "name": "index_probe",
+        "version": "0.1",
+        "container": "busybox:1.36.1-glibc",
+        "shell_command": f"echo '{index}' > path.txt && od -An -v -tx1 '{index}' | tr -d ' \\n' > hex.txt",
+        "inputs": [{"type": "data", "name": "input", "format": "bam", "secondary_files": True}],
+        "outputs": [
+            {"name": "path", "type": "data", "format": "txt", "from_work_dir": "path.txt"},
+            {"name": "hex", "type": "data", "format": "txt", "from_work_dir": "hex.txt"},
+        ],
+    }
+
+
 class BaseEmbeddedPulsarContainerIntegration(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
     job_config_file: str
@@ -85,6 +102,25 @@ class BaseEmbeddedPulsarContainerIntegration(integration_util.IntegrationTestCas
         assert home == pwd
         assert home.startswith(self.pulsar_staging_directory)
         assert home.endswith("/working")
+
+    def test_user_defined_tool_secondary_files_are_staged(self) -> None:
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            bam = self.dataset_populator.new_bam_dataset(history_id, self.test_data_resolver)
+            tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**_index_probe_tool()))
+            inputs = {"input": {"src": "hda", "id": bam["id"]}}
+            response = self.dataset_populator.run_tool_raw(None, inputs, history_id, tool_uuid=tool["uuid"]).json()
+            self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True, timeout=EXTENDED_TIMEOUT)
+            outputs = {output["output_name"]: output["id"] for output in response["outputs"]}
+            path, hex_dump = (
+                self.dataset_populator.get_history_dataset_content(history_id, content_id=outputs[name]).strip()
+                for name in ("path", "hex")
+            )
+            index = self.dataset_populator.get_history_dataset_metadata_file(history_id, bam["id"], "bam_index")
+        assert path.startswith(self.pulsar_staging_directory)
+        assert hex_dump == index.hex()
 
 
 class TestEmbeddedSingularityPulsarIntegration(

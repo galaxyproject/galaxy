@@ -907,6 +907,7 @@ class Bam(BamNative):
     file_ext = "bam"
     track_type = "ReadTrack"
     data_sources = {"data": "bai", "index": "bigwig"}
+    secondary_file_suffixes = {"bam_index": ".bai", "bam_csi_index": ".csi"}
 
     MetadataElement(
         name="bam_index",
@@ -1000,6 +1001,14 @@ class Bam(BamNative):
         else:
             pysam.index(index_flag, "-o", index_file.get_file_name(), f"-@{extra_threads}", dataset.get_file_name())
         dataset.metadata.bam_index = index_file
+
+    def secondary_file_suffix(self, metadata_name: str, file_name: str) -> str:
+        # set_meta keeps the CSI index of a BAM with very long contigs in bam_index as well.
+        if metadata_name == "bam_index":
+            with open(file_name, "rb") as index:
+                if index.read(4) != b"BAI\x01":
+                    return ".csi"
+        return super().secondary_file_suffix(metadata_name, file_name)
 
     def sniff(self, filename: str) -> bool:
         return super().sniff(filename) and not self.dataset_content_needs_grooming(filename)
@@ -1144,6 +1153,7 @@ class CRAM(Binary):
     file_ext = "cram"
     edam_format = "format_3462"
     edam_data = "data_0863"
+    secondary_file_suffixes = {"cram_index": ".crai"}
 
     MetadataElement(
         name="cram_version",
@@ -1226,6 +1236,7 @@ class Bcf(BaseBcf):
     """
 
     file_ext = "bcf"
+    secondary_file_suffixes = {"bcf_index": ".csi"}
 
     MetadataElement(
         name="bcf_index",

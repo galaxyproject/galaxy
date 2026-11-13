@@ -29878,6 +29878,12 @@ export interface components {
              */
             optional: boolean;
             /**
+             * Secondary Files
+             * @description Set true to list each element's index, such as a BAM's `.bai`, under `secondaryFiles` and make it available to the job. It is not placed next to the element, so link or copy it where the tool looks.
+             * @default false
+             */
+            secondary_files: boolean;
+            /**
              * @description Lets the user select a history collection and exposes its elements to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
@@ -29932,6 +29938,12 @@ export interface components {
              * @default false
              */
             optional: boolean;
+            /**
+             * Secondary Files
+             * @description Set true to list the dataset's index, such as a BAM's `.bai`, under `secondaryFiles` and make it available to the job. It is not placed next to the dataset, so link or copy it where the tool looks.
+             * @default false
+             */
+            secondary_files: boolean;
             /**
              * @description Lets the user select history datasets and exposes their paths and metadata to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}

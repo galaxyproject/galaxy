@@ -9,6 +9,7 @@ from typing import (
 )
 
 from galaxy.datatypes.data import Directory
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
@@ -112,6 +113,43 @@ def input_extra_files_path(
     return rewrite or extra_files_path
 
 
+def secondary_files_json(
+    dataset: DatasetInstance,
+    basename: str,
+    compute_environment: Optional["ComputeEnvironment"] = None,
+) -> list[dict[str, Any]]:
+    """Describe a dataset's index files for a tool input that asked for them.
+
+    The rewrite is what makes Pulsar stage a metadata file, so call this only
+    for inputs that want the index.
+
+    Raises ``RequestParameterInvalidException`` if the datatype has an index and
+    this dataset doesn't. A deferred dataset passed to the tool as its source URI
+    has no local files, and so no index.
+    """
+    if dataset.has_deferred_data:
+        return []
+    datatype = dataset.datatype
+    secondary_files: dict[str, dict[str, Any]] = {}
+    for metadata_name in datatype.secondary_file_suffixes:
+        if not (metadata_file := dataset.metadata.get(metadata_name)):
+            continue
+        local_path = metadata_file.get_file_name()
+        suffix = datatype.secondary_file_suffix(metadata_name, local_path)
+        if suffix in secondary_files:
+            continue
+        rewrite = compute_environment.input_metadata_rewrite(dataset, local_path) if compute_environment else None
+        secondary_file: dict[str, Any] = {"class": "File", "path": rewrite or local_path, "format": suffix.lstrip(".")}
+        set_basename_and_derived_properties(secondary_file, f"{basename}{suffix}")
+        secondary_files[suffix] = secondary_file
+    if datatype.secondary_file_suffixes and not secondary_files:
+        raise RequestParameterInvalidException(
+            f"Dataset '{dataset.name}' has no index, which the tool needs. "
+            "Check that the dataset's metadata was set correctly, or auto-detect it again."
+        )
+    return list(secondary_files.values())
+
+
 def is_list_like(collection_type: str) -> bool:
     """Returns True if this collection type has array elements.
 
@@ -159,17 +197,20 @@ def setup_for_runtimeify(
     input_dataset_collections: InpDataCollectionsDictT | None = None,
     shell_quotable: bool = False,
     element_identifiers: dict[DatasetInstance, str] | None = None,
+    secondary_file_datasets: set[DatasetInstance] | None = None,
 ):
     """Set up callbacks for runtimeify to convert tool state to runtime representations.
 
     ``shell_quotable`` requires dataset paths that can be quoted on a command line (see ``dataset_path``).
     ``element_identifiers`` maps job input datasets to the element identifiers they were mapped over with.
+    ``secondary_file_datasets`` are the job input datasets whose inputs asked for their index files.
 
     Returns:
         Tuple of (hda_references, adapt_dataset, adapt_collection)
     """
     hda_references: list[HistoryDatasetAssociation] = []
     element_identifiers = element_identifiers or {}
+    secondary_file_datasets = secondary_file_datasets or set()
 
     # The request names the dataset the user picked. The job may have received that dataset,
     # an implicit conversion of it, or both when parameters accepting different formats share it.
@@ -245,6 +286,8 @@ def setup_for_runtimeify(
         set_basename_and_derived_properties(properties, hda_entry.dataset.created_from_basename or hda_entry.name)
         # Like Cheetah's ``element_identifier``, fall back to the dataset name outside a collection.
         properties["element_identifier"] = element_identifiers.get(hda_entry) or hda_entry.name
+        if hda_entry in secondary_file_datasets:
+            properties["secondaryFiles"] = secondary_files_json(hda_entry, properties["basename"], compute_environment)
         return DataInternalJson(**properties)
 
     def adapt_collection(

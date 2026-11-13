@@ -146,6 +146,10 @@ def _runtime_inputs(tool: UserToolSource) -> dict[str, Any]:
         parameter = parameter_wrapper.root
         if parameter.type == "data":
             values[parameter.name] = {"path": f"/tmp/{parameter.name}.txt"}
+            if parameter.secondary_files:
+                values[parameter.name]["secondaryFiles"] = [
+                    {"path": f"/tmp/{parameter.name}.txt.bai", "nameext": ".bai", "format": "bai"}
+                ]
         elif parameter.type == "integer":
             values[parameter.name] = parameter.value if parameter.value is not None else 10
         elif parameter.type == "float":

@@ -1462,6 +1462,13 @@ class BaseDatasetPopulator(BasePopulator):
         assert details_response.status_code == 200, details_response.content
         return details_response.json()
 
+    def get_history_dataset_metadata_file(self, history_id: str, dataset_id: str, metadata_file: str) -> bytes:
+        response = self._get_contents_request(
+            history_id, f"/{dataset_id}/metadata_file", {"metadata_file": metadata_file}
+        )
+        assert response.status_code == 200, response.content
+        return response.content
+
     def get_history_collection_details(self, history_id: str, **kwds) -> dict:
         kwds["history_content_type"] = "dataset_collection"
         hdca_id = self.__history_content_id(history_id, **kwds)

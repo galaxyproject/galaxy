@@ -2258,6 +2258,7 @@ class BaseDataToolParameter(ToolParameter):
 
     def __init__(self, tool: Optional["Tool"], input_source, trans: "ProvidesHistoryContext | None"):
         super().__init__(tool, input_source)
+        self.secondary_files = input_source.get_bool("secondary_files", False)
         self.min = input_source.get("min")
         self.max = input_source.get("max")
         if self.min:

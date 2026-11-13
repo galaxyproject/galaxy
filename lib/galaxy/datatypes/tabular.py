@@ -1106,6 +1106,7 @@ class VcfGz(BaseVcf, binary.Binary):
     file_ext_export_alias = "vcf.gz"
     compressed = True
     compressed_format = "gzip"
+    secondary_file_suffixes = {"tabix_index": ".tbi"}
 
     MetadataElement(
         name="tabix_index",

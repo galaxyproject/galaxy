@@ -307,6 +307,54 @@ sections:
               function basename(path) { return path.split('/').pop(); }
       ```
 
+  - id: index-files
+    title: Index files
+    kind: reference
+    body: |
+      Many tools expect a dataset's index next to it, such as `reads.bam.bai`
+      for `reads.bam`. Galaxy already indexes `bam`, `cram`, `bcf`, `vcf_bgzip`
+      and tabix datasets, so a tool doesn't need to make its own. Set
+      `secondary_files: true` on a `data` or `data_collection` input to get
+      the index in expressions. The option is spelled like other Galaxy tool
+      options, but the value uses CWL's name, `secondaryFiles`, like the
+      `path` and `nameext` around it:
+
+      | Reference | Value |
+      | --- | --- |
+      | `$(inputs.bam.secondaryFiles[0].path)` | Where the job can read the index. |
+      | `$(inputs.bam.secondaryFiles[0].nameext)` | The suffix tools expect, such as `.bai` or `.csi`. A BAM's index can be either. |
+      | `$(inputs.bam.secondaryFiles[0].format)` | The index format, such as `bai`, `csi`, `crai` or `tbi`. |
+
+      Galaxy keeps the dataset and its index in separate places and does not
+      place one next to the other, so put them where the tool looks. Link them
+      as below, or use `cp` for a tool that follows symlinks to their target
+      or changes its input.
+
+      ```yaml
+      inputs:
+        - name: bam
+          type: data
+          format: bam
+          secondary_files: true
+      shell_command: |
+        ln -s '$(inputs.bam.path)' input.bam &&
+        ln -s '$(inputs.bam.secondaryFiles[0].path)' 'input.bam$(inputs.bam.secondaryFiles[0].nameext)' &&
+        samtools idxstats input.bam > stats.txt
+      ```
+
+      Galaxy checks each dataset when the job is built, by the format of the
+      dataset the job receives rather than the formats the input allows. A
+      dataset in a format Galaxy doesn't index gets an empty list, so a tool
+      whose input allows `[bam, sam]` needs to check
+      `inputs.bam.secondaryFiles.length` before linking. A dataset in a
+      format Galaxy does index but whose index is missing, usually because
+      setting its metadata failed, fails the job with an error naming the
+      dataset. `secondaryFiles` is also empty for an input that doesn't set
+      the option.
+
+      Pick link names that your `discover_datasets` patterns don't match: a
+      link to an input is not a valid output, and fails the job.
+
   - id: output-labels
     title: Output labels
     kind: reference
