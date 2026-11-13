@@ -1905,6 +1905,10 @@ class InputParameterModule(WorkflowModule):
 
     def step_state_to_tool_state(self, state):
         state = safe_loads(state)
+        if not isinstance(state, dict) or "parameter_type" not in state:
+            raise RequestParameterInvalidException(
+                f"Workflow parameter input step state must define 'parameter_type', got {state!r}"
+            )
         parameter_type = state["parameter_type"]
         default_set, default_value = False, None
         if "default" in state:
