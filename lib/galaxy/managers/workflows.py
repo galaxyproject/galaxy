@@ -974,6 +974,10 @@ class WorkflowContentsManager(UsesAnnotations):
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
         else:
             raise exceptions.RequestParameterInvalidException(f"Unknown workflow style {style}")
+        if style == "format2":
+            # The format2 schema has no ``version`` key, and gxformat2 may give that name a
+            # format version, so keep the revision index out of the document itself.
+            return wf_dict
         if version is not None:
             wf_dict["version"] = version
             # If returning a run-form workflow for a specific version, use that version's name
