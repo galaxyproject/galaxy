@@ -73,6 +73,22 @@ describe("FormElement", () => {
         expect(wrapper.findAll("button[data-title='Enable Collapsible']").length).toEqual(0);
     });
 
+    it.each([
+        ["text", "initial", "input.ui-input", "typed", "typed"],
+        ["integer", 1, "input[type='number']", "7", "7"],
+    ])(
+        "passes a %s child's edits up through v-model with the parameter id",
+        async (type, initial, selector, typed, expected) => {
+            const element = mount(FormElement, {
+                props: { id: "param_id", type, modelValue: initial },
+                global: localVue,
+            });
+            await element.find(selector).setValue(typed);
+            expect(element.emitted("update:modelValue")?.at(-1)).toEqual([expected, "param_id"]);
+            element.unmount();
+        },
+    );
+
     it("check type matching", async () => {
         await wrapper.setProps({ type: "text" });
         expect(wrapper.findComponent(FormText).exists()).toBe(true);
