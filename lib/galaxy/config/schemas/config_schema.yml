@@ -1987,6 +1987,37 @@ mapping:
           Example value: ``[{label: Base site, url: https://usegalaxy.example.org},
           {label: Single Cell Omics, url: https://singlecell.usegalaxy.example.org}]``
 
+      another_galaxy_servers:
+        type: seq
+        default:
+          - label: usegalaxy.eu
+            url: https://usegalaxy.eu
+          - label: usegalaxy.org
+            url: https://usegalaxy.org
+          - label: usegalaxy.org.au
+            url: https://usegalaxy.org.au
+        required: false
+        sequence:
+          - type: map
+            mapping:
+              label:
+                type: str
+                required: true
+                pattern: '.+'
+              url:
+                type: str
+                required: true
+                pattern: '^(?:https://[^/?#@\s]+|http://(?:localhost|127\.0\.0\.1|\[::1\])(?::[0-9]+)?)(?:/[^?#\s]*)?$'
+        desc: |
+          Galaxy servers offered by the "Import from Another Galaxy" upload method.
+          Each entry requires a non-empty label and an absolute HTTPS URL (plain HTTP
+          only for localhost, 127.0.0.1 or [::1]), optionally with the path Galaxy is
+          served under, but without credentials, a query or a fragment.
+          Users can also type the URL of another Galaxy server.
+
+          Example value: ``[{label: usegalaxy.eu, url: https://usegalaxy.eu},
+          {label: Local Galaxy, url: https://galaxy.example.org/galaxy/}]``
+
       helpsite_url:
         type: str
         required: false

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { makeLocalFileItem, makeRemoteFilesItem, makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 
-import { getUploadItemDisplayInfo } from "./uploadProgressUi";
+import { getFileStatusMessage, getUploadItemDisplayInfo } from "./uploadProgressUi";
 
 function withState<T extends NewUploadItem>(item: T) {
     return {
@@ -26,5 +26,29 @@ describe("getUploadItemDisplayInfo sourceUrl", () => {
 
     it("omits the URL for local-file uploads", () => {
         expect(getUploadItemDisplayInfo(withState(makeLocalFileItem())).sourceUrl).toBeUndefined();
+    });
+});
+
+describe("getFileStatusMessage for imports from another Galaxy", () => {
+    const linkItem: NewUploadItem = {
+        uploadMode: "galaxy-link",
+        name: "reads.bed",
+        sourceHost: "usegalaxy.eu",
+        size: 0,
+        targetHistoryId: "hist_1",
+        dbkey: "?",
+        extension: "auto",
+        spaceToTab: false,
+        toPosixLines: false,
+        autoDecompress: false,
+        deferred: false,
+    };
+
+    it.each([
+        ["queued", "Starting the import from usegalaxy.eu"],
+        ["processing", "Importing from usegalaxy.eu"],
+        ["completed", "Imported from usegalaxy.eu"],
+    ] as const)("says what a %s import is doing", (status, message) => {
+        expect(getFileStatusMessage({ ...withState(linkItem), status })).toBe(message);
     });
 });

@@ -13,6 +13,7 @@ import {
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { useTerminalStateMonitor } from "@/composables/useTerminalStateMonitor";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
+import { useUploadTaskMonitorStore } from "@/stores/uploadTaskMonitorStore";
 
 type PendingEntry =
     | { kind: "datasets"; uploadId: string; historyId: string; datasetIds: string[] }
@@ -26,6 +27,8 @@ export const useUploadDatasetMonitorStore = defineStore("uploadDatasetMonitor", 
     const uploadState = useUploadState();
     const historyItemsStore = useHistoryItemsStore();
     const missingSince = new Map<string, number>();
+    // Every upload view starts this store, so imports that run as a task are followed from the same views.
+    useUploadTaskMonitorStore();
 
     const pendingEntries = computed<PendingEntry[]>(() => {
         const entries: PendingEntry[] = [];

@@ -2643,6 +2643,24 @@
 :Type: seq
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``another_galaxy_servers``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Galaxy servers offered by the "Import from Another Galaxy" upload
+    method. Each entry requires a non-empty label and an absolute
+    HTTPS URL (plain HTTP only for localhost, 127.0.0.1 or [::1]),
+    optionally with the path Galaxy is served under, but without
+    credentials, a query or a fragment. Users can also type the URL of
+    another Galaxy server.
+    Example value: ``[{label: usegalaxy.eu, url:
+    https://usegalaxy.eu}, {label: Local Galaxy, url:
+    https://galaxy.example.org/galaxy/}]``
+:Default: ``[{'label': 'usegalaxy.eu', 'url': 'https://usegalaxy.eu'}, {'label': 'usegalaxy.org', 'url': 'https://usegalaxy.org'}, {'label': 'usegalaxy.org.au', 'url': 'https://usegalaxy.org.au'}]``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~
 ``helpsite_url``
 ~~~~~~~~~~~~~~~~

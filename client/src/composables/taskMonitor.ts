@@ -10,8 +10,9 @@ const DEFAULT_EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24 hours
 
 /**
  * Composable for waiting on Galaxy background tasks.
+ * @param options.maxRequestFailures How many status requests in a row may fail before the monitor gives up (default 1).
  */
-export function useTaskMonitor() {
+export function useTaskMonitor(options: { maxRequestFailures?: number } = {}) {
     const fetchStatus = async (taskId: string) => {
         const { data, error } = await GalaxyApi().GET("/api/tasks/{task_id}/state", {
             params: { path: { task_id: taskId } },
@@ -42,5 +43,6 @@ export function useTaskMonitor() {
         fetchFailureReason,
         defaultPollDelay: DEFAULT_POLL_DELAY,
         expirationTime: DEFAULT_EXPIRATION_TIME,
+        maxRequestFailures: options.maxRequestFailures,
     });
 }

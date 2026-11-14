@@ -162,7 +162,7 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
     "galaxy-link": {
         id: "galaxy-link",
         name: "Import from Another Galaxy",
-        description: "Import datasets or collections from a link exported by another Galaxy server",
+        description: "Choose datasets or collections on another Galaxy server, or paste a link exported there",
         icon: faFileImport,
         headerAction: "Import from Another Galaxy",
         requiresTargetHistory: true,
@@ -170,7 +170,8 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         requiresConfig: ["enable_celery_tasks"],
         showStartButton: false,
         tips: [
-            "On the other Galaxy, expand a dataset or open a collection and click **Export to another Galaxy**",
+            "Pick a server, log in there in the window that opens and tick the items to send",
+            "Older servers: expand a dataset or open a collection there, click **Export to another Galaxy** and paste the link",
             "Datatypes, tags and collection structure are kept",
             "No need to share the history: the link gives access until it expires, 24 hours by default",
         ],
