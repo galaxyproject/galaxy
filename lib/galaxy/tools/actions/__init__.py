@@ -689,7 +689,13 @@ class DefaultToolAction(ToolAction):
         child_dataset_names: set[str] = set()
 
         for name, output in tool.outputs.items():
-            if not filter_output(tool, output, incoming):
+            filtered = filter_output(tool, output, incoming)
+            if filtered and skip:
+                # A skipped job produces a null placeholder for filtered outputs too, so
+                # consumers receive a skipped value. When mapping over a collection, the
+                # implicit output collections decide which outputs exist.
+                filtered = dataset_collection_elements is not None and name not in dataset_collection_elements
+            if not filtered:
                 handle_output_timer = ExecutionTimer()
                 if tool_output_is_collection(output):  # Only XML tools include collections in tool.outputs
                     if completed_job and dataset_collection_elements and name in dataset_collection_elements:
