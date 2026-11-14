@@ -9511,6 +9511,9 @@ class Workflow(Base, Dictifiable, RepresentById):
     help: Mapped[str | None] = mapped_column(Text)
     uuid: Mapped[UUID | str | None] = mapped_column(UUIDType)
     doi: Mapped[list[str] | None] = mapped_column(JSON)
+    # Upstream works (e.g. an nf-core pipeline) this workflow was adapted from, as
+    # schema.org isBasedOn entries - their authors are credited there, not in creator_metadata.
+    is_based_on: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON)
 
     steps: Mapped[list["WorkflowStep"]] = relationship(
         "WorkflowStep",
@@ -9663,6 +9666,7 @@ class Workflow(Base, Dictifiable, RepresentById):
         copied_workflow.help = self.help
         copied_workflow.logo_url = self.logo_url
         copied_workflow.doi = self.doi
+        copied_workflow.is_based_on = self.is_based_on
         # uuid identifies a single revision and __init__ mints a fresh one, and
         # source_metadata records where this exact content was fetched from and is
         # dropped whenever a workflow is modified (see test_trs_import) - so neither

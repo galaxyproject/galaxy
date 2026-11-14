@@ -26,6 +26,8 @@ from pydantic import (
     BaseModel,
     Field,
     SerializerFunctionWrapHandler,
+    TypeAdapter,
+    ValidationError,
     WrapSerializer,
 )
 from sqlalchemy import (
@@ -98,6 +100,7 @@ from galaxy.model.index_filter_util import (
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import (
+    BasedOnWork,
     CuratedWorkflowsQueryPayload,
     WorkflowIndexQueryPayload,
 )
@@ -162,6 +165,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 MAX_SUBWORKFLOW_URL_DEPTH = 10
+BASED_ON_ADAPTER = TypeAdapter(list[BasedOnWork])
 
 INDEX_SEARCH_FILTERS = {
     "name": "name",
@@ -1130,6 +1134,12 @@ class WorkflowContentsManager(UsesAnnotations):
                 if not util.validate_doi(doi):
                     raise exceptions.RequestParameterInvalidException(f"Invalid DOI format: {doi}")
             workflow.doi = data["doi"]
+        if is_based_on := data.get("is_based_on"):
+            try:
+                BASED_ON_ADAPTER.validate_python(is_based_on)
+            except ValidationError as e:
+                raise exceptions.RequestParameterInvalidException(f"Invalid is_based_on: {e}")
+            workflow.is_based_on = is_based_on
         try:
             if "help" in data:
                 workflow.help = data["help"]
@@ -1648,6 +1658,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data["help"] = workflow.help
         data["logo_url"] = workflow.logo_url
         data["doi"] = workflow.doi
+        data["is_based_on"] = workflow.is_based_on
         data["source_metadata"] = workflow.source_metadata
         data["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
         data["comments"] = [comment.to_dict() for comment in workflow.comments]
@@ -1924,6 +1935,8 @@ class WorkflowContentsManager(UsesAnnotations):
             data["logo_url"] = workflow.logo_url
         if workflow.doi is not None:
             data["doi"] = workflow.doi
+        if workflow.is_based_on:
+            data["is_based_on"] = workflow.is_based_on
 
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
@@ -2156,6 +2169,7 @@ class WorkflowContentsManager(UsesAnnotations):
         item["help"] = workflow.help
         item["logo_url"] = workflow.logo_url
         item["doi"] = workflow.doi
+        item["is_based_on"] = workflow.is_based_on
 
         steps = {}
         steps_to_order_index = {}

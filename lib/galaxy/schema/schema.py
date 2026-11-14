@@ -3025,6 +3025,25 @@ class Grant(Thing):
     )
 
 
+class BasedOnWork(Thing):
+    """An upstream work (https://schema.org/isBasedOn) a workflow was derived from, e.g. an nf-core pipeline."""
+
+    class_: str = Field(
+        "SoftwareSourceCode",
+        alias="class",
+        description="The schema.org class of the upstream work, e.g. SoftwareSourceCode or ComputationalWorkflow.",
+    )
+    version: str | None = Field(None, title="Version", description="The version of the upstream work.")
+    license: str | None = Field(
+        None, title="License", description="SPDX Identifier of the license of the upstream work."
+    )
+    creator: list[Person | CreatorOrganization] | None = Field(
+        None,
+        title="Creator",
+        description="The creators of the upstream work.",
+    )
+
+
 class Input(Model):
     name: str = Field(..., title="Name", description="The name of the input.")
     description: str = Field(..., title="Description", description="The annotation or description of the input.")
@@ -3206,6 +3225,11 @@ class WorkflowToExport(Model):
         None,
         title="Creator",
         description=("Additional information about the creator (or multiple creators) of this workflow."),
+    )
+    is_based_on: list[BasedOnWork] | None = Field(
+        None,
+        title="Is Based On",
+        description="Upstream works (e.g. a pipeline in another workflow language) this workflow was derived from.",
     )
     license: str | None = Field(
         None, title="License", description="SPDX Identifier of the license associated with this workflow."

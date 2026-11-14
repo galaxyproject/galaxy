@@ -271,47 +271,11 @@ class WorkflowRunCrateProfileBuilder:
             crate.mainEntity["subjectOf"] = cwl_wf
 
             # Adding multiple creators if available
-            if self.workflow.creator_metadata:
-                for creator_data in self.workflow.creator_metadata:
-                    if creator_data.get("class") == "Person":
-                        # Create the person entity
-                        creator_entity = crate.add(
-                            ContextEntity(
-                                crate,
-                                creator_data.get("identifier", ""),  # Default to empty string if identifier is missing
-                                properties={
-                                    "@type": "Person",
-                                    "name": creator_data.get("name", ""),  # Default to empty string if name is missing
-                                    "identifier": creator_data.get(
-                                        "identifier", ""
-                                    ),  # Assuming identifier is ORCID, or adjust as needed
-                                    "url": creator_data.get("url", ""),  # Add URL if available, otherwise empty string
-                                    "email": creator_data.get(
-                                        "email", ""
-                                    ),  # Add email if available, otherwise empty string
-                                },
-                            )
-                        )
-                        # Append the person creator entity to the mainEntity
-                        crate.mainEntity.append_to("creator", creator_entity)
+            for creator_entity in self._add_creators(crate, self.workflow.creator_metadata):
+                crate.mainEntity.append_to("creator", creator_entity)
 
-                    elif creator_data.get("class") == "Organization":
-                        # Create the organization entity
-                        organization_entity = crate.add(
-                            ContextEntity(
-                                crate,
-                                creator_data.get(
-                                    "url", ""
-                                ),  # Use URL as identifier if available, otherwise empty string
-                                properties={
-                                    "@type": "Organization",
-                                    "name": creator_data.get("name", ""),  # Default to empty string if name is missing
-                                    "url": creator_data.get("url", ""),  # Add URL if available, otherwise empty string
-                                },
-                            )
-                        )
-                        # Append the organization entity to the mainEntity
-                        crate.mainEntity.append_to("creator", organization_entity)
+            for based_on_entity in self._add_based_on(crate, self.workflow.is_based_on):
+                crate.mainEntity.append_to("isBasedOn", based_on_entity)
 
             # Add CWL workflow entity if exists
             crate.mainEntity["subjectOf"] = cwl_wf
@@ -319,6 +283,61 @@ class WorkflowRunCrateProfileBuilder:
         # Add tools used in the workflow
         self._add_tools(crate)
         self._add_steps(crate)
+
+    def _add_creators(self, crate: ROCrate, creator_metadata: list[dict[str, Any]] | None) -> list[ContextEntity]:
+        creator_entities: list[ContextEntity] = []
+        for creator_data in creator_metadata or []:
+            if creator_data.get("class") == "Person":
+                # Create the person entity
+                creator_entity = crate.add(
+                    ContextEntity(
+                        crate,
+                        creator_data.get("identifier", ""),  # Default to empty string if identifier is missing
+                        properties={
+                            "@type": "Person",
+                            "name": creator_data.get("name", ""),  # Default to empty string if name is missing
+                            "identifier": creator_data.get(
+                                "identifier", ""
+                            ),  # Assuming identifier is ORCID, or adjust as needed
+                            "url": creator_data.get("url", ""),  # Add URL if available, otherwise empty string
+                            "email": creator_data.get("email", ""),  # Add email if available, otherwise empty string
+                        },
+                    )
+                )
+                creator_entities.append(creator_entity)
+
+            elif creator_data.get("class") == "Organization":
+                # Create the organization entity
+                organization_entity = crate.add(
+                    ContextEntity(
+                        crate,
+                        creator_data.get("url", ""),  # Use URL as identifier if available, otherwise empty string
+                        properties={
+                            "@type": "Organization",
+                            "name": creator_data.get("name", ""),  # Default to empty string if name is missing
+                            "url": creator_data.get("url", ""),  # Add URL if available, otherwise empty string
+                        },
+                    )
+                )
+                creator_entities.append(organization_entity)
+        return creator_entities
+
+    def _add_based_on(self, crate: ROCrate, is_based_on: list[dict[str, Any]] | None) -> list[ContextEntity]:
+        """Add the upstream works this workflow was derived from, crediting their creators."""
+        based_on_entities: list[ContextEntity] = []
+        for index, work in enumerate(is_based_on or []):
+            identifier = work.get("identifier")
+            # Prefer a resolvable identifier (e.g. a DOI URL) as @id - it pins the upstream version.
+            entity_id = identifier if identifier and "://" in identifier else work.get("url") or f"#based-on-{index}"
+            properties = {"@type": work.get("class", "SoftwareSourceCode")}
+            for key in ("name", "url", "identifier", "version", "license", "description"):
+                if work.get(key):
+                    properties[key] = work[key]
+            based_on_entity = crate.add(ContextEntity(crate, entity_id, properties=properties))
+            for creator_entity in self._add_creators(crate, work.get("creator")):
+                based_on_entity.append_to("creator", creator_entity)
+            based_on_entities.append(based_on_entity)
+        return based_on_entities
 
     def _add_steps(self, crate: ROCrate):
         """
