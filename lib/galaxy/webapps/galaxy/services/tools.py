@@ -615,7 +615,7 @@ class ToolsService(ServiceBase):
         return detected_versions
 
     def get_tool_icon_path(self, trans: ProvidesUserContext, tool_id, tool_version=None) -> str:
-        tool = self._get_tool(trans, tool_id, tool_version)
+        tool = self._get_tool(trans, tool_id, tool_version, user=trans.user)
         if tool.icon:
             materialized_tool = trans.app.toolbox.materialize_tool(tool, reason="detail")
             if materialized_tool.tool_dir and (icon_path := find_tool_file(materialized_tool.tool_dir, tool.icon)):

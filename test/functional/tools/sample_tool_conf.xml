@@ -33,6 +33,7 @@
   <tool file="help_images/help_images_markdown.xml" />
   <tool file="help_images/help_images_rst.xml" />
   <tool file="help_images/icon_outside_tool_dir.xml" />
+  <tool file="help_images/help_images_require_login.xml" />
   <tool file="select_from_url.xml" />
   <tool file="multi_select.xml" />
   <tool file="multi_select_numeric.xml" />
