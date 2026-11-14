@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { BPagination } from "bootstrap-vue";
-import { computed, ref, toRef } from "vue";
+import { computed, ref, toRef, watch } from "vue";
 
 import { useToolExecutionJobs } from "./useToolExecutionJobs";
 
 import JobDetailsTabs from "./JobDetailsTabs.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GPagination from "@/components/BaseComponents/GPagination.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
 import JobHeader from "@/components/JobInformation/JobHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -25,11 +25,17 @@ const props = defineProps<Props>();
 const { jobs, loading, error } = useToolExecutionJobs(toRef(props, "toolExecutionId"));
 
 const currentIndex = ref(0);
+watch(
+    () => props.toolExecutionId,
+    () => {
+        currentIndex.value = 0;
+    },
+);
 const currentJob = computed(() => jobs.value[currentIndex.value] ?? null);
 
 const hasMany = computed(() => jobs.value.length > 1);
 
-// BPagination is 1-indexed; bridge to the 0-indexed currentIndex.
+// GPagination is 1-indexed; bridge to the 0-indexed currentIndex.
 const paginationPage = computed<number>({
     get: () => currentIndex.value + 1,
     set: (val: number) => {
@@ -47,17 +53,17 @@ const paginationPage = computed<number>({
                 <template v-slot:nav-end>
                     <JobHeader v-if="currentJob" :job-id="currentJob.id" no-tool-name no-hr>
                         <template v-slot:pagination>
-                            <BPagination
+                            <GPagination
                                 v-if="hasMany"
                                 v-model="paginationPage"
                                 :total-rows="jobs.length"
                                 :per-page="1"
-                                size="sm"
+                                size="small"
                                 :limit="3"
                                 first-number
                                 last-number
                                 hide-goto-end-buttons
-                                class="mb-0 mr-2" />
+                                class="job-pagination" />
                         </template>
                     </JobHeader>
                 </template>
@@ -66,3 +72,10 @@ const paginationPage = computed<number>({
         </template>
     </div>
 </template>
+
+<style scoped>
+.job-pagination {
+    margin-bottom: 0;
+    margin-right: var(--spacing-2);
+}
+</style>

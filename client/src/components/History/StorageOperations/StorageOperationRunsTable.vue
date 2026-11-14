@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faEye, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BPagination } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
@@ -13,6 +12,7 @@ import { bytesToString } from "@/utils/utils";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GPagination from "@/components/BaseComponents/GPagination.vue";
 import GTable from "@/components/Common/GTable.vue";
 import Heading from "@/components/Common/Heading.vue";
 import StorageOperationOutcomeProgress from "@/components/History/StorageOperations/StorageOperationOutcomeProgress.vue";
@@ -172,12 +172,12 @@ function formatDataCopied(totalBytesProcessed: number, succeededCount: number) {
         </GTable>
 
         <div v-if="showPagination" class="d-flex justify-content-end" :class="props.paginationClass">
-            <BPagination
-                :value="props.currentPage"
+            <GPagination
+                :model-value="props.currentPage"
                 :total-rows="props.rows.length"
                 :per-page="props.perPage"
                 align="right"
-                size="sm"
+                size="small"
                 first-number
                 last-number
                 @change="onPageChange" />
