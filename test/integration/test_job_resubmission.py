@@ -28,6 +28,9 @@ JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE = os.path.join(
     SCRIPT_DIRECTORY, "resubmission_job_resource_parameters_conf.xml"
 )
 JOB_RESUBMISSION_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_pulsar_job_conf.xml")
+JOB_RESUBMISSION_EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(
+    SCRIPT_DIRECTORY, "resubmission_embedded_pulsar_job_conf.yml"
+)
 JOB_RESUBMISSION_UNMAPPABLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_unmappable_job_conf.yml")
 
 
@@ -358,6 +361,20 @@ class TestJobResubmissionPulsarIntegration(_BaseResubmissionIntegrationTestCase)
 
     def test_resubmit_on_invalid_pulsar_url(self):
         self._assert_job_passes()
+
+
+# Verify a tool error detected on a job run by Pulsar can resubmit it to the same Pulsar.
+class TestJobResubmissionEmbeddedPulsarToolDetectedErrorIntegration(_BaseResubmissionIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["job_config_file"] = JOB_RESUBMISSION_EMBEDDED_PULSAR_JOB_CONFIG_FILE
+
+    def test_resubmit_on_tool_detected_error(self):
+        # the tool test assumes that the test fails (expect_failure="true")
+        # _assert_job_fails checks if this test fails, i.e. the tool is running
+        # successfully after the resubmit
+        self._assert_job_fails("exit_code_from_env")
 
 
 class TestJobResubmissionUnmappableIntegration(_BaseResubmissionIntegrationTestCase):

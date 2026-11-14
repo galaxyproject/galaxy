@@ -1136,7 +1136,10 @@ execution:
 
     #   - "walltime_reached" (True if and only if the job runner indicates a walltime maximum was reached)
     #   - "memory_limit_reached" (True if and only if the job runner indicates a memory limit was hit)
+    #   - "node_failure" (True if and only if the job runner indicates a node the job was running on failed)
+    #   - "preempted" (True if and only if the job runner indicates the job was preempted by another job)
     #   - "unknown_error" (True for job or job runner problems that aren't otherwise classified)
+    #   - "runner_state" (the reason reported by the job runner as a string, e.g. ``runner_state == 'node_failure'``)
     #   - "attempt" (the re-submission attempt number this is)
     #   - "seconds_since_queued" (the number of seconds since the last time the job was in a queued state within Galaxy)
     #   - "seconds_running" (the number of seconds the job was in a running state within Galaxy)

@@ -58,6 +58,7 @@ from galaxy.jobs.runners import (
     ContainerRequiredException,
     JobState,
 )
+from galaxy.jobs.runners.runner_state_definitions import RUNNER_STATE_DEFINITIONS
 from galaxy.model.base import check_database_connection
 from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.tool_util.deps import dependencies
@@ -65,6 +66,7 @@ from galaxy.tool_util.deps.container_classes import (
     Container,
     requires_dependency_resolution,
 )
+from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util.runtime_environment import RUNTIME_ENVIRONMENT_WARNING_FILE
@@ -274,6 +276,9 @@ PULSAR_PARAM_SPECS = dict(
 )
 
 
+# A reason this Galaxy has no definition for, e.g. from a newer Pulsar server, is still
+# offered to resubmit conditions, but it has to at least look like a reason.
+REMOTE_RUNNER_STATE = re.compile(r"[a-z][a-z0-9_]*")
 PARAMETER_SPECIFICATION_REQUIRED = object()
 PARAMETER_SPECIFICATION_IGNORED = object()
 
@@ -420,7 +425,13 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             # either way we are done I guess.
             self.mark_as_finished(job_state)
             return None
-        return self._update_job_state_for_status(job_state, status)
+        full_status = None
+        if status == "failed":
+            try:
+                full_status = client.full_status()
+            except Exception:
+                log.warning("(%s) Unable to fetch details of failed Pulsar job", job_state.job_id, exc_info=True)
+        return self._update_job_state_for_status(job_state, status, full_status=full_status)
 
     def _update_job_state_for_status(
         self,
@@ -439,7 +450,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             return None
         if pulsar_status in ["failed", "lost"]:
             if pulsar_status == "failed":
-                message = FAILED_REMOTE_ERROR
+                message = _apply_remote_runner_state(job_state, full_status) or FAILED_REMOTE_ERROR
             else:
                 message = LOST_REMOTE_ERROR
             if not job_state.job_wrapper.get_job().finished:
@@ -599,6 +610,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             client = self.get_client_from_wrapper(job_wrapper)
             assert job_wrapper.tool is not None
             tool = job_wrapper.tool
+            if job_wrapper.get_job().resubmission_count:
+                self.__discard_previous_attempt(client, job_wrapper)
             remote_job_config = client.setup(tool.id, tool.version, tool.requires_galaxy_python_environment)
             needed_features = self.__needed_features(client)
             PulsarJobRunner.check_job_config(remote_job_config, check_features=needed_features)
@@ -776,9 +789,21 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         input_paths = job_wrapper.job_io.get_input_paths(None)
         return [str(i) for i in input_paths]  # Force job_path from DatasetPath objects.
 
+    @staticmethod
+    def __discard_previous_attempt(client: "BaseJobClient", job_wrapper: "MinimalJobWrapper") -> None:
+        """Remove what a failed attempt left behind, since a resubmitted job reuses its job id.
+
+        A Pulsar server ignores a job whose id has a job directory that reached a final status.
+        """
+        try:
+            client.clean()
+        except Exception:
+            log.debug("(%s) No previous attempt to clean up", job_wrapper.job_id, exc_info=True)
+
     def get_client_from_wrapper(self, job_wrapper: "MinimalJobWrapper") -> "BaseJobClient":
         job_id = job_wrapper.job_id
         params = job_wrapper.job_destination.params.copy()
+        params["resubmission_count"] = job_wrapper.get_job().resubmission_count
         if user := job_wrapper.get_job().user:
             for key, value in params.items():
                 if value and isinstance(value, str):
@@ -896,18 +921,21 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             job_metrics_directory=_job_metrics_directory(job_wrapper),
         )
         self._complete_staged_job(
-            job_wrapper,
+            job_state,
             result,
             handle_metadata_externally=not PulsarJobRunner.__remote_metadata(client),
         )
 
     def _complete_staged_job(
         self,
-        job_wrapper,
+        job_state: AsynchronousJobState,
         result: PulsarFinishJobResult,
         handle_metadata_externally=True,
     ):
         """Set metadata and finish the job, once outputs are already staged back."""
+        job_wrapper = job_state.job_wrapper
+        if self._resubmitted_for_tool_failure(job_state, result):
+            return
         if handle_metadata_externally:
             # we need an actual exit code file in the job working directory to detect job errors in the metadata script
             with open(
@@ -916,6 +944,32 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 exit_code_file.write(str(result.exit_code))
             self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
         self._finish_pulsar_job(job_wrapper, result)
+
+    def _resubmitted_for_tool_failure(self, job_state: AsynchronousJobState, result: PulsarFinishJobResult) -> bool:
+        """Give the destination's resubmit conditions a chance at a job the tool's output says failed."""
+        job_wrapper = job_state.job_wrapper
+        job = job_wrapper.get_job()
+        if not job_state.job_destination.resubmit or job.finished:
+            return False
+        detected_state = job_wrapper.check_tool_output(
+            result.tool_stdout,
+            result.tool_stderr,
+            tool_exit_code=result.exit_code,
+            job=job,
+            job_stdout=result.job_stdout,
+            job_stderr=result.job_stderr,
+        )
+        if detected_state == DETECTED_JOB_STATE.OK:
+            return False
+        self.sa_session.add(job)
+        self.sa_session.commit()
+        job_state.runner_state = (
+            JobState.runner_states.MEMORY_LIMIT_REACHED
+            if detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR
+            else JobState.runner_states.TOOL_DETECT_ERROR
+        )
+        self._handle_runner_state("failure", job_state)
+        return job_state.runner_state_handled
 
     def _finish_pulsar_job(self, job_wrapper, result: PulsarFinishJobResult):
         try:
@@ -958,7 +1012,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             remote_metadata_directory=None,
             job_metrics_directory=os.path.join(working_directory, "metadata"),
         )
-        self._complete_staged_job(job_wrapper, result)
+        self._complete_staged_job(job_state, result)
 
     @staticmethod
     def __read_staged_stream(working_directory, name):
@@ -1310,6 +1364,21 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             log.exception(f"Failed to update Pulsar job status for job_id ({galaxy_job_id}/{remote_job_id})")
             raise
             # Nothing else to do? - Attempt to fail the job?
+
+
+def _apply_remote_runner_state(job_state: AsynchronousJobState, full_status: dict[str, Any] | None) -> str | None:
+    """Record why the Pulsar server says a job failed, returning the message for the user if it said."""
+    full_status = full_status or {}
+    message = full_status.get("runner_state_message")
+    runner_state = full_status.get("runner_state")
+    if runner_state is None:
+        return message
+    definition = RUNNER_STATE_DEFINITIONS.get(runner_state)
+    if definition is None and not REMOTE_RUNNER_STATE.fullmatch(runner_state):
+        log.warning("(%s) Ignoring malformed runner state from Pulsar: %s", job_state.job_id, runner_state)
+        return message
+    job_state.runner_state = runner_state
+    return message or (definition.fail_message if definition else None)
 
 
 class PulsarLegacyJobRunner(PulsarJobRunner):

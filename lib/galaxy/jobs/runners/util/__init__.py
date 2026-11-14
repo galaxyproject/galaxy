@@ -16,6 +16,9 @@ runner_states = Bunch(
     TOOL_TIMELIMIT_REACHED="tool_timelimit_reached",
     OUTPUT_SIZE_LIMIT="output_size_limit",
     TOOL_DETECT_ERROR="tool_detected",  # job runner interaction worked fine but the tool indicated error
+    NODE_FAILURE="node_failure",
+    PREEMPTED="preempted",
+    CANCELLED="cancelled",  # stopped by someone outside of Galaxy
 )
 
 
