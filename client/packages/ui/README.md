@@ -28,6 +28,23 @@ So a change has to work in both. In particular:
 load, is generated from it: run `pnpm --filter @galaxyproject/galaxy-ui build:tokens` after a change.
 `src/styles/tokens.test.ts` fails when `tokens.css` is out of date.
 
+## Focus ring
+
+Controls draw their keyboard focus ring with the `focus-ring` mixin in `src/styles/_focus-ring.scss`: a 2px `--color-ring` (blue-600) outline at a 2px offset, with a page-colour halo (`box-shadow`) filling the gap so the ring stays clear of the control's fill and its neighbours. The ring is an outline because forced-colors mode keeps outlines and drops box-shadows. The partial holds mixins only, so `@use "../styles/focus-ring" as *;` emits no CSS by itself. Use the relative path (`../../styles/focus-ring` from `Form/`) so it resolves in both consumers.
+
+```scss
+&:focus-visible {
+    @include focus-ring; // ($color: ..., $halo: false, $important: true) where needed
+}
+```
+
+Deliberate exceptions:
+
+- GCheckbox and the native GRadio use `$halo: false`: the halo is square and would show as a page-colour box around the control on tinted rows. The offset gap already shows the real background.
+- GDropdownItem and GDropdownItemButton keep an inset ring: items fill the menu edge to edge, so an outer ring would be clipped by the menu and run into neighbouring items.
+- The GAlert close button keeps a `currentColor` ring: it sits on the variant fill, where blue-600 can fall below 3:1.
+- Stated GFormInput and GSelect fields keep the shape and tint only the ring (green-700 valid, red-600 invalid) through `outline-color`.
+
 ## Public class names
 
 Consumers restyle or select a few components by class name, so these classes are public API; renaming

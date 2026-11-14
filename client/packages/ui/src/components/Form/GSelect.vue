@@ -88,6 +88,8 @@ const selected = computed({
 </template>
 
 <style scoped lang="scss">
+@use "../../styles/focus-ring" as *;
+
 .g-select {
     display: inline-block;
     width: 100%;
@@ -110,8 +112,7 @@ const selected = computed({
     cursor: pointer;
 
     &:focus-visible {
-        outline: 2px solid var(--color-blue-500, #197cd2);
-        outline-offset: 1px;
+        @include focus-ring;
     }
 
     &.g-disabled {
@@ -120,12 +121,21 @@ const selected = computed({
         cursor: not-allowed;
     }
 
+    // The ring takes the state colour, like GFormInput's
     &.g-invalid {
         border-color: var(--color-red-600, #e31a1e);
+
+        &:focus-visible {
+            outline-color: var(--color-red-600, #e31a1e);
+        }
     }
 
     &.g-valid {
         border-color: var(--color-green-700, #006f50);
+
+        &:focus-visible {
+            outline-color: var(--color-green-700, #006f50);
+        }
     }
 
     &.g-small {
