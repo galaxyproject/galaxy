@@ -315,6 +315,14 @@ class TestToolsApi(ApiTestCase, TestsTools):
         response = self._get_tool_help_image("not_a_tool", "help_image.png")
         self._assert_status_code_is(response, 404)
 
+    @skip_without_tool("help_images_require_login")
+    def test_tool_help_image_require_login(self):
+        response = self._get_tool_help_image("help_images_require_login", "help_image.png")
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Content-Type"] == "image/png"
+        response = self._get_tool_help_image("help_images_require_login", "help_image.png", anon=True)
+        self._assert_status_code_is(response, 401)
+
     @skip_without_tool("help_images_markdown")
     def test_tool_help_image_caching(self):
         response = self._get_tool_help_image("help_images_markdown", "help_image.png", tool_version="1.0.0")
@@ -960,11 +968,11 @@ class TestToolsApi(ApiTestCase, TestsTools):
     def _get_tool_icon(self, tool_id, headers=None, anon=False):
         return self._get(f"tools/{tool_id}/icon", headers=headers, anon=anon)
 
-    def _get_tool_help_image(self, tool_id, path, tool_version=None, headers=None):
+    def _get_tool_help_image(self, tool_id, path, tool_version=None, headers=None, anon=False):
         params = {"path": path}
         if tool_version:
             params["tool_version"] = tool_version
-        return self._get(f"tools/{tool_id}/help_image", data=params, headers=headers)
+        return self._get(f"tools/{tool_id}/help_image", data=params, headers=headers, anon=anon)
 
     def _show_valid_tool(self, tool_id, tool_version=None):
         data = dict(io_details=True)
