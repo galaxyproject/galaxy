@@ -96,7 +96,8 @@ class TestLocalJobRunner(TestCase, UsesTools):
         external_id = self.job_wrapper.wait_for_external_id()
         assert psutil.pid_exists(external_id)
         runner.stop_job(self.job_wrapper)
-        t.join(1)
+        t.join(30)
+        assert not t.is_alive(), "queue_job did not return after stop_job"
         assert not psutil.pid_exists(external_id)
 
     def test_shutdown_no_jobs(self):
@@ -120,7 +121,9 @@ class TestLocalJobRunner(TestCase, UsesTools):
         external_id = self.job_wrapper.wait_for_external_id()
         assert psutil.pid_exists(external_id)
         runner.shutdown()
-        t.join(1)
+        # queue_job only calls fail() after shutdown() releases the process lock.
+        t.join(30)
+        assert not t.is_alive(), "queue_job did not return after shutdown"
         assert not psutil.pid_exists(external_id)
         assert "job terminated by Galaxy shutdown" in self.job_wrapper.fail_message
 
