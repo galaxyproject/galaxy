@@ -47,6 +47,7 @@ from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.oauth_device import OAuthDeviceManager
 from galaxy.managers.queue_metrics import emit_queue_metrics
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.managers.workflow_completion import WorkflowCompletionManager
@@ -788,6 +789,13 @@ def prune_kombu_sqla_transport(config: GalaxyAppConfiguration):
 def cleanup_short_term_storage(storage_monitor: ShortTermStorageMonitor):
     """Cleanup short term storage."""
     storage_monitor.cleanup()
+
+
+@galaxy_task(action="clean up expired OAuth device flow logins")
+def cleanup_expired_oauth_device_logins(oauth_device_manager: OAuthDeviceManager):
+    """Delete OAuth device flow logins that expired without being approved."""
+    deleted_count = oauth_device_manager.cleanup_expired_unapproved()
+    log.info(f"Deleted {deleted_count} expired OAuth device flow logins.")
 
 
 @galaxy_task(action="clean up expired notifications")

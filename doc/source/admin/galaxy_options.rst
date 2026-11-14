@@ -6472,6 +6472,38 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_oauth_device_flow``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable the OAuth 2.0 device flow (RFC 8628), which lets an
+    external app such as a command-line tool log in to Galaxy for a
+    user. The app shows the user a short code, the user enters it at
+    /login/device after logging in to Galaxy, and approves or denies
+    the access the app asked for.
+    The approval page shows the IP address the login was started from.
+    Behind a proxy, set Gunicorn's `--forwarded-allow-ips` as in the
+    production setup docs, or it shows the proxy's address instead.
+    This feature is experimental and disabled by default.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``oauth_device_flow_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between attempts to delete OAuth device
+    flow logins that expired without being approved (every 24 hours by
+    default). Approved logins are kept as a record of who approved
+    which app. Runs in a Celery task when `enable_oauth_device_flow`
+    is on.
+:Default: ``86400``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``expired_notifications_cleanup_interval``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

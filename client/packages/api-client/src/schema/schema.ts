@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/.well-known/oauth-authorization-server": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get this Galaxy's OAuth server metadata
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        get: operations["authorization_server_metadata__well_known_oauth_authorization_server_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/extensions": {
         parameters: {
             query?: never;
@@ -4370,6 +4390,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/oauth/device_authorization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start an OAuth device flow login
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        post: operations["device_authorization_api_oauth_device_authorization_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/oauth/device_authorization/{user_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a pending OAuth device flow login
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        get: operations["get_device_authorization_api_oauth_device_authorization__user_code__get"];
+        /**
+         * Approve or deny an OAuth device flow login
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        put: operations["decide_device_authorization_api_oauth_device_authorization__user_code__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/oauth/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get a token for an approved OAuth device flow login
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        post: operations["token_api_oauth_token_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/object_store_instances": {
         parameters: {
             query?: never;
@@ -8508,6 +8592,46 @@ export interface components {
             /** Queue of task being done derived from Celery AsyncResult */
             queue?: string | null;
         };
+        /**
+         * AuthorizationServerMetadata
+         * @description What a standard OAuth app needs to log in to this Galaxy (RFC 8414 §2).
+         */
+        AuthorizationServerMetadata: {
+            /**
+             * Device Authorization Endpoint
+             * @description URL to start a device flow login at.
+             */
+            device_authorization_endpoint: string;
+            /**
+             * Grant Types Supported
+             * @description OAuth grant types this Galaxy supports.
+             */
+            grant_types_supported: string[];
+            /**
+             * Issuer
+             * @description Base URL of this Galaxy.
+             */
+            issuer: string;
+            /**
+             * Response Types Supported
+             * @description Always empty: only the device flow is supported.
+             * @default []
+             */
+            response_types_supported: string[];
+            /**
+             * Token Endpoint
+             * @description URL to poll for the token at.
+             */
+            token_endpoint: string;
+            /**
+             * Token Endpoint Auth Methods Supported
+             * @description Always `none`: apps are public and have no secret.
+             * @default [
+             *       "none"
+             *     ]
+             */
+            token_endpoint_auth_methods_supported: string[];
+        };
         /** Authorizations */
         Authorizations: {
             /**
@@ -8797,6 +8921,19 @@ export interface components {
             /** Uuid */
             uuid?: unknown;
         };
+        /** Body_device_authorization_api_oauth_device_authorization_post */
+        Body_device_authorization_api_oauth_device_authorization_post: {
+            /**
+             * Client Id
+             * @description Required. ID of the app asking for access, e.g. `galaxy-cli`.
+             */
+            client_id?: string | null;
+            /**
+             * Scope
+             * @description Space-separated scopes the app asks for.
+             */
+            scope?: string | null;
+        };
         /** Body_fetch_form_api_tools_fetch_post */
         Body_fetch_form_api_tools_fetch_post: {
             /** Files */
@@ -8838,6 +8975,24 @@ export interface components {
             workflow_type_version: string;
             /** Workflow Url */
             workflow_url?: string | null;
+        };
+        /** Body_token_api_oauth_token_post */
+        Body_token_api_oauth_token_post: {
+            /**
+             * Client Id
+             * @description Required. ID of the app that started the login.
+             */
+            client_id?: string | null;
+            /**
+             * Device Code
+             * @description Required. The device code from the device authorization.
+             */
+            device_code?: string | null;
+            /**
+             * Grant Type
+             * @description Required. Must be `urn:ietf:params:oauth:grant-type:device_code`.
+             */
+            grant_type?: string | null;
         };
         /** BooleanParameterModel */
         BooleanParameterModel: {
@@ -12700,6 +12855,122 @@ export interface components {
              * @description The name of the user.
              */
             username: string;
+        };
+        /**
+         * DeviceAuthorizationDecisionPayload
+         * @description The user's answer to a pending device flow login.
+         */
+        DeviceAuthorizationDecisionPayload: {
+            /**
+             * Approve
+             * @description Whether the user approves the login (`true`) or denies it (`false`).
+             */
+            approve: boolean;
+        };
+        /**
+         * DeviceAuthorizationDetails
+         * @description A pending device flow login, as shown to the user before they approve or deny it.
+         */
+        DeviceAuthorizationDetails: {
+            /**
+             * App Name
+             * @description Display name of the app, e.g. `Galaxy CLI`.
+             */
+            app_name: string;
+            /**
+             * Client Id
+             * @description ID of the app asking for access, e.g. `galaxy-cli`.
+             */
+            client_id: string;
+            /**
+             * Create Time
+             * Format: date-time
+             * @description When the app started the login (UTC).
+             */
+            create_time: string;
+            /**
+             * Expires At
+             * Format: date-time
+             * @description When the code expires (UTC).
+             */
+            expires_at: string;
+            /**
+             * Requesting Ip
+             * @description IP address the app started the login from.
+             */
+            requesting_ip?: string | null;
+            /**
+             * Scopes
+             * @description Scopes the app asks for. Empty if it asked for none.
+             */
+            scopes: string[];
+            /**
+             * User Code
+             * @description The code the user entered, e.g. `WDJB-MJHT`.
+             */
+            user_code: string;
+        };
+        /**
+         * DeviceAuthorizationResponse
+         * @description Response to a device authorization request (RFC 8628 §3.2).
+         *
+         *     _The optional `verification_uri_complete` is left out on purpose, so the user always types the
+         *     code and can't approve a login from a link someone else sent them (RFC 8628 §5.4)._
+         */
+        DeviceAuthorizationResponse: {
+            /**
+             * Device Code
+             * @description Secret code the app polls the token endpoint with.
+             */
+            device_code: string;
+            /**
+             * Expires In
+             * @description Seconds until both codes expire.
+             */
+            expires_in: number;
+            /**
+             * Interval
+             * @description Minimum seconds the app waits between token requests.
+             */
+            interval: number;
+            /**
+             * User Code
+             * @description Short code the user enters on the verification page.
+             */
+            user_code: string;
+            /**
+             * Verification Uri
+             * @description Page where the user enters the code.
+             */
+            verification_uri: string;
+        };
+        /**
+         * DeviceTokenResponse
+         * @description Token issued once the user approves a device flow login (RFC 6749 §5.1).
+         */
+        DeviceTokenResponse: {
+            /**
+             * Access Token
+             * @description Token the app sends with its Galaxy API requests.
+             */
+            access_token: string;
+            /**
+             * Expires In
+             * @description Seconds until the token expires. Left out if it does not expire.
+             */
+            expires_in?: number | null;
+            /**
+             * Scope
+             * @description Space-separated scopes the token grants.
+             */
+            scope?: string | null;
+            /**
+             * Token Type
+             * @description Always `Bearer`.
+             * @default Bearer
+             * @constant
+             */
+            token_type: "Bearer";
         };
         /** DirectoryUriParameterModel */
         DirectoryUriParameterModel: {
@@ -21084,6 +21355,35 @@ export interface components {
         OAuth2Info: {
             /** Authorize Url */
             authorize_url: string;
+        };
+        /**
+         * OAuthErrorCode
+         * @description OAuth error codes Galaxy can return (RFC 6749 §5.2 and RFC 8628 §3.5).
+         * @enum {string}
+         */
+        OAuthErrorCode:
+            | "invalid_request"
+            | "invalid_client"
+            | "invalid_grant"
+            | "unauthorized_client"
+            | "unsupported_grant_type"
+            | "invalid_scope"
+            | "authorization_pending"
+            | "slow_down"
+            | "access_denied"
+            | "expired_token";
+        /**
+         * OAuthErrorResponse
+         * @description Error response from an OAuth endpoint (RFC 6749 §5.2).
+         */
+        OAuthErrorResponse: {
+            /** @description OAuth error code, such as `invalid_client`. */
+            error: components["schemas"]["OAuthErrorCode"];
+            /**
+             * Error Description
+             * @description Human-readable explanation of the error.
+             */
+            error_description?: string | null;
         };
         /** ObjectExportTaskResponse */
         ObjectExportTaskResponse: {
@@ -34037,6 +34337,47 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    authorization_server_metadata__well_known_oauth_authorization_server_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthorizationServerMetadata"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     index_api_admin_extensions_get: {
         parameters: {
             query?: never;
@@ -47933,6 +48274,204 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    device_authorization_api_oauth_device_authorization_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_device_authorization_api_oauth_device_authorization_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceAuthorizationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthErrorResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_device_authorization_api_oauth_device_authorization__user_code__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The code shown in the app's terminal, e.g. `WDJB-MJHT`. */
+                user_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceAuthorizationDetails"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    decide_device_authorization_api_oauth_device_authorization__user_code__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The code shown in the app's terminal, e.g. `WDJB-MJHT`. */
+                user_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeviceAuthorizationDecisionPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    token_api_oauth_token_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_token_api_oauth_token_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceTokenResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthErrorResponse"];
+                };
             };
             /** @description Request Error */
             "4XX": {
