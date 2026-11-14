@@ -169,11 +169,11 @@ function dismiss() {
                 <div class="action-links">
                     <GButton
                         v-for="(actionLink, index) in displayedBroadcast.content.action_links"
-                        :key="`${displayedBroadcast.id}-${index}`"
                         v-bind="{
                             ...variantToColor(displayedBroadcast.variant === 'urgent' ? 'danger' : 'primary'),
                             ...actionLinkBind(actionLink),
-                        }">
+                        }"
+                        :key="`${displayedBroadcast.id}-${index}`">
                         {{ actionLink.action_name }}
                         <span v-if="actionLink.target === '_blank'" class="sr-only"> (opens in a new tab)</span>
                     </GButton>

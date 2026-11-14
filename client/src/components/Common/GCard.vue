@@ -718,11 +718,11 @@ function onKeyDown(event: KeyboardEvent) {
                                     <template v-for="indicator in props.indicators" :key="indicator.id">
                                         <GButton
                                             v-if="(indicator.visible ?? true) && !indicator.disabled"
+                                            v-bind="variantToColor(indicator.variant || 'link')"
                                             :id="getIndicatorId(props.id, indicator.id)"
                                             v-g-tooltip.hover
                                             class="inline-icon-button"
                                             :title="localize(indicator.title)"
-                                            v-bind="variantToColor(indicator.variant || 'link')"
                                             :size="sizeToGSize(indicator.size || 'sm')"
                                             :to="indicator.to"
                                             :href="indicator.href"
@@ -875,11 +875,11 @@ function onKeyDown(event: KeyboardEvent) {
                                     <template v-for="sa in props.secondaryActions" :key="sa.id">
                                         <GButton
                                             v-if="sa.visible ?? true"
+                                            v-bind="variantToColor(sa.variant || 'outline-primary')"
                                             :id="getActionId(props.id, sa.id)"
                                             v-g-tooltip.hover
                                             :disabled="sa.disabled"
                                             :title="localize(sa.title)"
-                                            v-bind="variantToColor(sa.variant || 'outline-primary')"
                                             :size="sizeToGSize(sa.size || 'sm')"
                                             :to="sa.to"
                                             :href="sa.href"
@@ -904,11 +904,11 @@ function onKeyDown(event: KeyboardEvent) {
                                         <template v-for="pa in props.primaryActions" :key="pa.id">
                                             <GButton
                                                 v-if="pa.visible ?? true"
+                                                v-bind="variantToColor(pa.variant || 'primary')"
                                                 :id="getActionId(props.id, pa.id)"
                                                 v-g-tooltip.hover
                                                 :disabled="pa.disabled"
                                                 :title="localize(pa.title)"
-                                                v-bind="variantToColor(pa.variant || 'primary')"
                                                 :size="sizeToGSize(pa.size || 'sm')"
                                                 :to="pa.to"
                                                 :href="pa.href"
