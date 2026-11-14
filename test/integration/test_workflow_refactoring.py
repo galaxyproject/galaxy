@@ -5,12 +5,18 @@ from typing import (
     Any,
     cast,
 )
+from unittest import mock
 
+import pytest
 from sqlalchemy import (
     func,
     select,
 )
 
+from galaxy.exceptions import (
+    RequestParameterInvalidException,
+    UpstreamProxyError,
+)
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.workflows import RefactorRequest
 from galaxy.model import (
@@ -26,6 +32,7 @@ from galaxy.model import (
 )
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEnum
+from galaxy.workflow.trs_proxy import TrsServer
 from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.base.workflow_fixtures import (
@@ -49,8 +56,119 @@ steps:
       input1: test_input
 """
 
+WORKFLOW_DOUBLY_NESTED = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: middle_workflow/middle_output
+steps:
+  middle_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        middle_input: data
+      outputs:
+        middle_output:
+          outputSource: nested_workflow/workflow_output
+      steps:
+        nested_workflow:
+          run:
+            class: GalaxyWorkflow
+            inputs:
+              inner_input: data
+            outputs:
+              workflow_output:
+                outputSource: random_lines/out_file1
+            steps:
+              random_lines:
+                tool_id: random_lines1
+                state:
+                  num_lines: 1
+                  input:
+                    $link: inner_input
+                  seed_source:
+                    seed_source_selector: set_seed
+                    seed: asdf
+          in:
+            inner_input: middle_input
+    in:
+      middle_input: outer_input
+"""
+
+TRS_SUBWORKFLOW = """
+class: GalaxyWorkflow
+name: TRS sub-workflow
+inputs:
+  inner_input: data
+outputs:
+  workflow_output:
+    outputSource: random_lines/out_file1
+steps:
+  random_lines:
+    tool_id: random_lines1
+    state:
+      num_lines: {num_lines}
+      input:
+        $link: inner_input
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+"""
+FAKE_TRS_SERVER = TrsServer("https://dockstore.org/api")
+FAKE_TRS_TOOL_ID = "#workflow/github.com/galaxyproject/fake-subworkflow/main"
+# version name -> num_lines of its random_lines step
+FAKE_TRS_VERSIONS = {"v0.1": "1", "main": "3", "v0.2": "2"}
+
 ActionJson = dict[str, Any]
 ActionsJson = list[ActionJson]
+SUBWORKFLOW_WITH_MISSING_TOOL = """
+class: GalaxyWorkflow
+name: Sub-workflow with a tool this server lacks
+inputs:
+  inner_input: data
+steps:
+  not_installed:
+    tool_id: cat_missing_tool
+    in:
+      input1: inner_input
+"""
+WORKFLOW_NESTED_TWO_INPUTS = """
+class: GalaxyWorkflow
+inputs:
+  outer_a: data
+  outer_b: data
+steps:
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        first: data
+        second: data
+      steps:
+        cat_inputs:
+          tool_id: cat1
+          in:
+            input1: first
+            queries_0|input2: second
+    in:
+      first: outer_a
+      second: outer_b
+"""
+SUBWORKFLOW_REORDERED_INPUTS = """
+class: GalaxyWorkflow
+name: Sub-workflow with its inputs in the other order
+inputs:
+  second: data
+  first: data
+steps:
+  cat_inputs:
+    tool_id: cat1
+    in:
+      input1: first
+      queries_0|input2: second
+"""
 
 
 class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, UsesShedApi):
@@ -947,6 +1065,293 @@ steps:
         post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
         self._assert_nested_workflow_num_lines_is(post_upgrade_native, "20")
 
+    def test_subworkflow_upgrade_to_workflow_using_a_missing_tool(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        stored_workflow = self._most_recent_stored_workflow
+        self.workflow_populator.upload_yaml_workflow(SUBWORKFLOW_WITH_MISSING_TOOL)
+        replacement = self._most_recent_stored_workflow.latest_workflow
+        actions = [
+            {
+                "action_type": "upgrade_subworkflow",
+                "step": {"label": "nested_workflow"},
+                "content_id": self._app.security.encode_id(replacement.id),
+            }
+        ]
+        self._refactor(actions, stored_workflow=stored_workflow)
+        self._app.model.session.expire_all()
+        nested_step = next(s for s in stored_workflow.latest_workflow.steps if s.label == "nested_workflow")
+        assert nested_step.subworkflow.id == replacement.id
+
+    def test_subworkflow_upgrade_keeps_connections_when_inputs_are_reordered(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_TWO_INPUTS)
+        stored_workflow = self._most_recent_stored_workflow
+        self.workflow_populator.upload_yaml_workflow(SUBWORKFLOW_REORDERED_INPUTS)
+        replacement = self._most_recent_stored_workflow.latest_workflow
+        actions = [
+            {
+                "action_type": "upgrade_subworkflow",
+                "step": {"label": "nested_workflow"},
+                "content_id": self._app.security.encode_id(replacement.id),
+            }
+        ]
+        self._refactor(actions, stored_workflow=stored_workflow)
+        self._app.model.session.expire_all()
+        connections = stored_workflow.latest_workflow.step_by_label("nested_workflow").input_connections
+        assert {c.input_name: c.input_subworkflow_step.label for c in connections} == {
+            "first": "first",
+            "second": "second",
+        }
+
+    def test_subworkflow_upgrade_to_version(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        self._increment_nested_workflow_version(nested_stored_workflow, num_lines_from="1", num_lines_to="20")
+        self._increment_nested_workflow_version(nested_stored_workflow, num_lines_from="20", num_lines_to="30")
+
+        actions: ActionsJson = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, "version": 1},
+        ]
+        action_executions = self._dry_run(actions).action_executions
+        assert action_executions[0].messages == []
+        self._refactor(actions)
+        self._assert_nested_workflow_num_lines_is(self._download_native(), "20")
+
+        actions = [{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, "version": 0}]
+        self._refactor(actions)
+        self._assert_nested_workflow_num_lines_is(self._download_native(), "1")
+
+    def test_subworkflow_upgrade_recursive(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_DOUBLY_NESTED)
+        outer_stored_workflow = self._most_recent_stored_workflow
+        middle_stored_workflow = self._subworkflow(
+            outer_stored_workflow.latest_workflow, "middle_workflow"
+        ).stored_workflow
+        inner_stored_workflow = self._subworkflow(
+            middle_stored_workflow.latest_workflow, "nested_workflow"
+        ).stored_workflow
+        self._increment_nested_workflow_version(inner_stored_workflow, num_lines_from="1", num_lines_to="2")
+        self._app.model.session.expire_all()
+
+        # the middle workflow is at its newest version already
+        upgrade: ActionsJson = [{"action_type": "upgrade_subworkflow", "step": {"label": "middle_workflow"}}]
+        assert not self._refactor(upgrade).changed
+
+        recursive_upgrade = [{**upgrade[0], "recursive": True}]
+        assert self._dry_run(recursive_upgrade).changed
+        response = self._refactor(recursive_upgrade)
+        assert response.changed
+        assert response.action_executions[0].messages == []
+
+        self._app.model.session.expire_all()
+        assert len(middle_stored_workflow.workflows) == 2
+        upgraded_middle = self._subworkflow(outer_stored_workflow.latest_workflow, "middle_workflow")
+        assert upgraded_middle.id == middle_stored_workflow.latest_workflow.id
+        assert self._subworkflow(upgraded_middle, "nested_workflow").id == inner_stored_workflow.latest_workflow.id
+        assert not self._refactor(recursive_upgrade).changed
+
+    def test_subworkflow_upgrade_recursive_saves_nothing_for_tool_substitutions_alone(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_DOUBLY_NESTED)
+        outer_stored_workflow = self._most_recent_stored_workflow
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        target_stored_workflow = self._most_recent_stored_workflow
+        target_workflow = target_stored_workflow.latest_workflow
+        target_workflow.step_by_label("first_cat").tool_version = "0.1"
+        self._app.model.session.commit()
+
+        actions: ActionsJson = [
+            {
+                "action_type": "upgrade_subworkflow",
+                "step": {"label": "middle_workflow"},
+                "content_id": self._app.security.encode_id(target_workflow.id),
+                "recursive": True,
+            }
+        ]
+        self._refactor(actions, stored_workflow=outer_stored_workflow)
+        self._app.model.session.expire_all()
+        assert len(target_stored_workflow.workflows) == 1
+
+    def test_subworkflow_upgrade_recursive_rejects_cycles(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        outer_stored_workflow = self._most_recent_stored_workflow
+        nested_stored_workflow = self._subworkflow(
+            outer_stored_workflow.latest_workflow, "nested_workflow"
+        ).stored_workflow
+        # the nested workflow's newest version runs the outer workflow
+        with self._export_for_update(nested_stored_workflow) as nested_dict:
+            nested_dict["steps"][str(len(nested_dict["steps"]))] = {
+                "id": len(nested_dict["steps"]),
+                "type": "subworkflow",
+                "label": "outer_again",
+                "content_id": self._app.security.encode_id(outer_stored_workflow.latest_workflow.id),
+                "input_connections": {},
+                "position": {"left": 0, "top": 0},
+                "workflow_outputs": [],
+            }
+        self._app.model.session.expire_all()
+
+        upgrade: ActionsJson = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, "recursive": True}
+        ]
+        with pytest.raises(RequestParameterInvalidException, match="contains itself"):
+            self._refactor(upgrade, stored_workflow=outer_stored_workflow)
+
+    def test_subworkflow_upgrade_trs_version(self):
+        with self._fake_trs():
+            self.workflow_populator.create_workflow(self._outer_workflow_with_trs_subworkflow("v0.1"))
+            stored_workflow = self._most_recent_stored_workflow
+            imported_v1 = self._subworkflow(stored_workflow.latest_workflow, "nested_workflow")
+            assert imported_v1.source_metadata
+            assert imported_v1.source_metadata["trs_version_id"] == "v0.1"
+            upgrade: ActionsJson = [{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}}]
+
+            # a dry run imports the target version, hidden, for a later real run to reuse
+            response = self._refactor(upgrade, stored_workflow=stored_workflow, dry_run=True)
+            assert response.changed
+            user_id = stored_workflow.user.id
+            imported_v2 = self._manager.get_workflow_by_trs_id_and_version(FAKE_TRS_TOOL_ID, "v0.2", user_id=user_id)
+            assert imported_v2 is not None
+            assert imported_v2.hidden
+
+            response = self._refactor(upgrade, stored_workflow=stored_workflow)
+            assert response.changed
+            assert response.action_executions[0].messages == []
+            self._app.model.session.expire_all()
+            upgraded = self._subworkflow(stored_workflow.latest_workflow, "nested_workflow")
+            assert upgraded.id == imported_v2.latest_workflow.id
+            assert upgraded.source_metadata
+            assert upgraded.source_metadata["trs_url"] == FAKE_TRS_SERVER.get_trs_url(FAKE_TRS_TOOL_ID, "v0.2")
+            nested_step = _step_with_label(self._download_native(stored_workflow), "nested_workflow")
+            assert json.loads(nested_step["subworkflow"]["steps"]["1"]["tool_state"])["num_lines"] == "2"
+            linked = self.workflow_populator.download_workflow(
+                self._app.security.encode_id(stored_workflow.id), preserve_external_subworkflow_links=True
+            )
+            nested_step = _step_with_label(linked, "nested_workflow")
+            assert nested_step["content_source"] == "trs_url"
+            assert nested_step["content_id"] == FAKE_TRS_SERVER.get_trs_url(FAKE_TRS_TOOL_ID, "v0.2")
+
+            # nothing newer to move to
+            assert not self._refactor(upgrade, stored_workflow=stored_workflow).changed
+
+            # back to the first version, reusing its import
+            self._refactor([{**upgrade[0], "trs_version_id": "v0.1"}], stored_workflow=stored_workflow)
+            self._app.model.session.expire_all()
+            assert self._subworkflow(stored_workflow.latest_workflow, "nested_workflow").id == imported_v1.id
+
+    @pytest.mark.parametrize("failing_call", ["get_versions", "get_version_descriptor"])
+    def test_subworkflow_upgrade_keeps_trs_version_when_server_is_down(self, failing_call):
+        with self._fake_trs():
+            self.workflow_populator.create_workflow(self._outer_workflow_with_trs_subworkflow("v0.1"))
+        stored_workflow = self._most_recent_stored_workflow
+        imported = self._subworkflow(stored_workflow.latest_workflow, "nested_workflow")
+
+        def unreachable(server, *args, **kwd):
+            raise UpstreamProxyError("TRS server could not be reached.")
+
+        with (
+            self._fake_trs(),
+            mock.patch.object(TrsServer, failing_call, unreachable),
+            # imports from earlier tests would otherwise be reused
+            mock.patch.object(self._manager, "get_workflow_by_trs_id_and_version", return_value=None),
+        ):
+            response = self._refactor([{"action_type": "upgrade_all_steps"}], stored_workflow=stored_workflow)
+        assert not response.changed
+        (message,) = response.action_executions[0].messages
+        assert message.message_type == RefactorActionExecutionMessageTypeEnum.subworkflow_versions_unavailable
+        assert message.step_label == "nested_workflow"
+        self._app.model.session.expire_all()
+        assert self._subworkflow(stored_workflow.latest_workflow, "nested_workflow").id == imported.id
+
+    def test_subworkflow_versions_lists_trs_versions(self):
+        with self._fake_trs():
+            self.workflow_populator.create_workflow(self._outer_workflow_with_trs_subworkflow("v0.1"))
+            subworkflow = self._subworkflow(self._latest_workflow, "nested_workflow")
+            response = self._get(
+                f"workflows/{self._app.security.encode_id(subworkflow.id)}/subworkflow_versions?instance=true"
+            )
+        response.raise_for_status()
+        versions = response.json()
+        assert versions["current_version"] == 0
+        assert len(versions["versions"]) == 1
+        assert versions["trs_tool_id"] == FAKE_TRS_TOOL_ID
+        assert versions["trs_version_id"] == "v0.1"
+        assert [v["trs_version_id"] for v in versions["trs_versions"]] == ["v0.2", "v0.1", "main"]
+        assert versions["trs_upgrade_version_id"] == "v0.2"
+        assert versions["trs_error"] is None
+
+    def test_subworkflow_upgrade_trs_version_of_stored_subworkflow(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        actions: ActionsJson = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, "trs_version_id": "v0.2"}
+        ]
+        with pytest.raises(RequestParameterInvalidException, match="not imported from a TRS server"):
+            self._refactor(actions)
+
+    def _assert_replaced_with_trs_import(self, target: dict[str, Any], trs_version_id: str):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        stored_workflow = self._most_recent_stored_workflow
+        actions: ActionsJson = [{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, **target}]
+        user_id = stored_workflow.user_id
+        with self._fake_trs():
+            assert self._refactor(actions, stored_workflow=stored_workflow, dry_run=True).workflow
+            dry_run_import = self._manager.get_workflow_by_trs_id_and_version(
+                FAKE_TRS_TOOL_ID, trs_version_id, user_id=user_id
+            )
+            assert dry_run_import is not None and dry_run_import.hidden
+            self._refactor(actions, stored_workflow=stored_workflow)
+        self._app.model.session.expire_all()
+        assert self._subworkflow(stored_workflow.latest_workflow, "nested_workflow").stored_workflow == dry_run_import
+        assert dry_run_import.latest_workflow.source_metadata["trs_url"] == FAKE_TRS_SERVER.get_trs_url(
+            FAKE_TRS_TOOL_ID, trs_version_id
+        )
+
+    def test_replace_subworkflow_with_trs_id(self):
+        self._assert_replaced_with_trs_import(
+            {"trs_server": "dockstore", "trs_tool_id": FAKE_TRS_TOOL_ID, "trs_version_id": "v0.2"}, "v0.2"
+        )
+
+    def test_replace_subworkflow_with_trs_url(self):
+        self._assert_replaced_with_trs_import({"url": FAKE_TRS_SERVER.get_trs_url(FAKE_TRS_TOOL_ID, "v0.1")}, "v0.1")
+
+    def test_replace_subworkflow_with_unknown_trs_server(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        actions: ActionsJson = [
+            {
+                "action_type": "upgrade_subworkflow",
+                "step": {"label": "nested_workflow"},
+                "trs_server": "not-configured",
+                "trs_tool_id": FAKE_TRS_TOOL_ID,
+                "trs_version_id": "v0.2",
+            }
+        ]
+        with pytest.raises(RequestParameterInvalidException, match="Unknown TRS server"):
+            self._refactor(actions)
+
+    def test_replace_subworkflow_with_github_file_link(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        stored_workflow = self._most_recent_stored_workflow
+        raw_url = "https://raw.githubusercontent.com/example/workflows/main/qc.gxwf.yml"
+        actions: ActionsJson = [
+            {
+                "action_type": "upgrade_subworkflow",
+                "step": {"label": "nested_workflow"},
+                "url": "https://github.com/example/workflows/blob/main/qc.gxwf.yml",
+            }
+        ]
+        with (
+            mock.patch("galaxy.managers.workflows.validate_uri_access") as validate_uri_access,
+            mock.patch(
+                "galaxy.managers.workflows.stream_url_to_str", return_value=TRS_SUBWORKFLOW.format(num_lines=5)
+            ) as stream_url_to_str,
+        ):
+            self._refactor(actions, stored_workflow=stored_workflow)
+        assert validate_uri_access.call_args.args[0] == raw_url
+        assert stream_url_to_str.call_args.args[0] == raw_url
+        self._app.model.session.expire_all()
+        imported = self._subworkflow(stored_workflow.latest_workflow, "nested_workflow")
+        assert imported.source_metadata
+        assert imported.source_metadata["url"] == raw_url
+        assert imported.stored_workflow.hidden
+
     def test_subworkflow_upgrade_connection_input_dropped(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
 
@@ -1036,6 +1441,7 @@ steps:
         assert message.step_label == "nested_workflow"
         assert message.output_name == "workflow_output"
         assert message.output_label == "outer_output"
+        assert not _step_with_label(self._download_native(), "nested_workflow")["workflow_outputs"]
 
     def test_upgrade_all_steps(self):
         self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
@@ -1078,6 +1484,56 @@ steps:
         workflow = workflow or self._most_recent_stored_workflow
         workflow_id = self._app.security.encode_id(workflow.id)
         return self.workflow_populator.download_workflow(workflow_id)
+
+    @staticmethod
+    def _subworkflow(workflow: Workflow, label: str) -> Workflow:
+        subworkflow = workflow.step_by_label(label).subworkflow
+        assert subworkflow
+        return subworkflow
+
+    @contextlib.contextmanager
+    def _fake_trs(self):
+        def get_versions(server, tool_id, **kwd):
+            assert tool_id == FAKE_TRS_TOOL_ID
+            return [{"id": f"{tool_id}:{name}", "name": name} for name in FAKE_TRS_VERSIONS]
+
+        def get_version_descriptor(server, tool_id, version_id, **kwd):
+            assert tool_id == FAKE_TRS_TOOL_ID
+            return TRS_SUBWORKFLOW.format(num_lines=FAKE_TRS_VERSIONS[version_id])
+
+        with (
+            mock.patch.object(TrsServer, "get_versions", get_versions),
+            mock.patch.object(TrsServer, "get_version_descriptor", get_version_descriptor),
+        ):
+            yield
+
+    @staticmethod
+    def _outer_workflow_with_trs_subworkflow(trs_version_id: str) -> dict[str, Any]:
+        return {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "Outer Workflow",
+            "annotation": "",
+            "steps": {
+                "0": {
+                    "type": "data_input",
+                    "id": 0,
+                    "label": "outer_input",
+                    "tool_state": json.dumps({"name": "outer_input"}),
+                    "input_connections": {},
+                    "annotation": "",
+                },
+                "1": {
+                    "type": "subworkflow",
+                    "id": 1,
+                    "label": "nested_workflow",
+                    "content_source": "trs_url",
+                    "content_id": FAKE_TRS_SERVER.get_trs_url(FAKE_TRS_TOOL_ID, trs_version_id),
+                    "input_connections": {"inner_input": {"id": 0, "output_name": "output"}},
+                    "annotation": "",
+                },
+            },
+        }
 
     @contextlib.contextmanager
     def _export_for_update(self, workflow):
@@ -1245,6 +1701,10 @@ class MockTrans(ProvidesAppContext):
 
     def get_user(self):
         return self.user
+
+    @property
+    def user_is_admin(self) -> bool:
+        return False
 
     @property
     def galaxy_session(self):

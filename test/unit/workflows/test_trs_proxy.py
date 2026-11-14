@@ -14,6 +14,7 @@ from galaxy.exceptions import (
     ConfigDoesNotAllowException,
     GatewayTimeoutException,
     MessageException,
+    UpstreamProxyError,
 )
 from galaxy.util import requests
 from galaxy.util.unittest_utils import (
@@ -24,6 +25,10 @@ from galaxy.workflow import trs_proxy
 from galaxy.workflow.trs_proxy import (
     GA4GH_GALAXY_DESCRIPTOR,
     parse_search_kwds,
+    parse_trs_version,
+    sort_trs_versions,
+    trs_upgrade_version_id,
+    trs_version_id,
     TrsProxy,
 )
 
@@ -224,6 +229,22 @@ def test_trs_error_document_is_passed_through():
             server.get_tool("138")
 
 
+def test_version_with_slash_stays_one_path_segment():
+    server = get_trs_proxy().server_from_url("https://workflowhub.eu")
+    parts = trs_proxy.parse_trs_url(server.get_trs_url("138", "feature/x"))
+    assert parts and parts["version_id"] == "feature/x"
+    with _mock_get(_response(200, '{"content": "class: GalaxyWorkflow"}')) as get:
+        server.get_version_descriptor("138", parts["version_id"])
+    assert get.call_args.args[0].endswith("/tools/138/versions/feature%2Fx/GALAXY/descriptor")
+
+
+def test_successful_response_without_json_is_upstream_error():
+    server = get_trs_proxy().server_from_url("https://workflowhub.eu")
+    with _mock_get(_response(200, "<html>Sign in</html>")):
+        with pytest.raises(UpstreamProxyError, match="not JSON"):
+            server.get_tool("138")
+
+
 def test_timeout_is_gateway_timeout():
     server = get_trs_proxy().server_from_url("https://workflowhub.eu")
     with _mock_get(requests.exceptions.ReadTimeout("read timed out")):
@@ -332,3 +353,42 @@ def test_skip_if_workflowhub_down_skips_unresponsive_server_reported_to_client(t
     with _mock_get(trs_error):
         with pytest.raises(SkipTest, match=reason):
             import_workflow()
+
+
+DOCKSTORE_TOOL_ID = "#workflow/github.com/iwc-workflows/example/main"
+
+
+def _dockstore_version(name):
+    return {"id": f"{DOCKSTORE_TOOL_ID}:{name}", "name": name}
+
+
+def test_parse_trs_version():
+    assert parse_trs_version("v1.2.3") == (1, 2, 3)
+    assert parse_trs_version("v0.10") == (0, 10, 0)
+    assert parse_trs_version("2") == (2, 0, 0)
+    assert parse_trs_version("main") is None
+
+
+def test_trs_version_id():
+    assert trs_version_id(_dockstore_version("v0.1")) == "v0.1"
+    assert trs_version_id({"id": "5", "name": "Version 5"}) == "5"
+
+
+def test_sort_trs_versions():
+    versions = [_dockstore_version(name) for name in ["v0.2", "develop", "v0.10", "Main", "v0.9.1"]]
+    assert [v["name"] for v in sort_trs_versions(versions)] == ["v0.10", "v0.9.1", "v0.2", "Main", "develop"]
+
+
+def test_trs_upgrade_version_id():
+    versions = sort_trs_versions([_dockstore_version(name) for name in ["v0.1", "v0.2", "main"]])
+    assert trs_upgrade_version_id(versions, "v0.1") == "v0.2"
+    assert trs_upgrade_version_id(versions, "v0.2") is None
+    # a version newer than the server lists, e.g. one the server has since removed
+    assert trs_upgrade_version_id(versions, "v0.3") is None
+    assert trs_upgrade_version_id(versions, "main") is None
+    assert trs_upgrade_version_id(sort_trs_versions([_dockstore_version("main")]), "main") is None
+    with_prereleases = sort_trs_versions(
+        [_dockstore_version(name) for name in ["v1.1", "v2.0.0-rc1", "fix-issue-2025"]]
+    )
+    assert trs_upgrade_version_id(with_prereleases, "v1.0") == "v1.1"
+    assert trs_upgrade_version_id(with_prereleases, "v2.0.0-rc1") is None

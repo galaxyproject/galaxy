@@ -8,6 +8,7 @@ export type RefactorRequestAction = components["schemas"]["RefactorRequest"]["ac
 export type RefactorResponse = components["schemas"]["RefactorResponse"];
 export type RefactorResponseActionExecution = RefactorResponse["action_executions"][number];
 export type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
+export type SubworkflowVersions = components["schemas"]["SubworkflowVersionsResponse"];
 export type WorkflowStepTyped = StoredWorkflowDetailed["steps"][number];
 
 //TODO: replace with generated schema model when available
@@ -122,6 +123,17 @@ export async function getWorkflowInfo(workflowId: string, version?: number, inst
         rethrowSimple(error);
     }
 
+    return data;
+}
+
+/** The versions a sub-workflow step using the workflow version `workflowId` can switch to. */
+export async function getSubworkflowVersions(workflowId: string): Promise<SubworkflowVersions> {
+    const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}/subworkflow_versions", {
+        params: { path: { workflow_id: workflowId }, query: { instance: true } },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
     return data;
 }
 

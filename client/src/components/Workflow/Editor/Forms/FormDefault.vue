@@ -37,6 +37,16 @@
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
+            <FormSubworkflowVersion
+                v-if="isSubworkflow && contentId"
+                :content-id="contentId"
+                :step-id="stepId"
+                @onAttemptRefactor="(actions: unknown) => emit('onAttemptRefactor', actions)" />
+            <FormSubworkflowReplace
+                v-if="isSubworkflow"
+                :step-id="stepId"
+                :workflow-id="workflowId"
+                @onAttemptRefactor="(actions: unknown) => emit('onAttemptRefactor', actions)" />
             <FormConditional
                 v-if="isSubworkflow"
                 :step="step"
@@ -89,6 +99,8 @@ import { useStepProps } from "../composables/useStepProps";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 
 import FormConditional from "./FormConditional.vue";
+import FormSubworkflowReplace from "./FormSubworkflowReplace.vue";
+import FormSubworkflowVersion from "./FormSubworkflowVersion.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
@@ -113,7 +125,7 @@ const emit = defineEmits([
 const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm, stepInputs, postJobActions } =
     useStepProps(stepRef);
-const { stepStore } = useWorkflowStores();
+const { stepStore, workflowId } = useWorkflowStores();
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
     if (isSubworkflow.value) {

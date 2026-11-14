@@ -7,7 +7,9 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
+    model_validator,
 )
 
 LABEL_DESCRIPTION = "The unique label of the step being referenced."
@@ -208,11 +210,93 @@ class FileDefaultsAction(BaseAction):
 
 
 class UpgradeSubworkflowAction(BaseAction):
+    """Switch a sub-workflow step to another version of its sub-workflow, or to another workflow.
+
+    Without a target, a sub-workflow imported from a TRS server moves to the newest numbered TRS
+    version if that is newer than the current one, and any other sub-workflow moves to the newest
+    version of its stored workflow.
+
+    A target owned by someone else, e.g. a published workflow, is copied into this user's account as
+    a hidden workflow, and the step uses the copy. A dry run reads the target without copying it.
+
+    A workflow from a TRS server or a URL is imported as a hidden workflow, also during a dry run,
+    and the real run reuses that import.
+    """
+
+    # An unrecognized target would otherwise fall through to the upgrade without a target.
+    model_config = ConfigDict(extra="forbid")
+
     action_type: Literal["upgrade_subworkflow"]
     step: step_reference_union = step_target_field
     # Once we start storing these actions in the database, this needs to be decoded
     # before adding it into the database.
-    content_id: str | None = None
+    content_id: str | None = Field(
+        default=None,
+        description="The encoded id of the workflow version (not stored workflow) to switch to. "
+        "It may be a version of another workflow this user owns or can access.",
+    )
+    stored_workflow_id: str | None = Field(
+        default=None,
+        description="The encoded id of another stored workflow this user owns or can access, e.g. a published one, "
+        "to switch to. Uses its newest version, or the one given by `version`.",
+    )
+    version: int | None = Field(
+        default=None,
+        ge=0,
+        description="The version to switch to, counted from 0 for the oldest, as listed by "
+        "`/api/workflows/{workflow_id}/versions`. A version of `stored_workflow_id` if given, "
+        "else of the sub-workflow's own stored workflow.",
+    )
+    trs_version_id: str | None = Field(
+        default=None,
+        description="The TRS version to switch to: a version of `trs_tool_id` if given, else of the TRS workflow "
+        "the sub-workflow was imported from. The version is imported if this user has no copy of it yet, "
+        "also during a dry run.",
+    )
+    trs_server: str | None = Field(
+        default=None,
+        description="The id of the TRS server configured on this Galaxy that holds `trs_tool_id`.",
+    )
+    trs_tool_id: str | None = Field(
+        default=None,
+        description="The id of a workflow on `trs_server` to switch to, at the version given by `trs_version_id`.",
+    )
+    url: str | None = Field(
+        default=None,
+        description="The URL of a workflow file to switch to, e.g. a link to a file on GitHub, or of a version on a "
+        "TRS server. The workflow is imported unless this user already imported the same content from this URL, "
+        "also during a dry run.",
+    )
+    recursive: bool = Field(
+        default=False,
+        description="Also upgrade the sub-workflow steps nested inside the target sub-workflow to their newest "
+        "versions, innermost first, saving a new version of each nested sub-workflow that changes. Sub-workflows "
+        "imported from a URL or a TRS server are left as published, and so are a target copied from another user and "
+        "a target that is not the newest version of its stored workflow. A dry run saves no nested upgrades: it "
+        "reports what they would change, but the returned workflow still points at the target's current nested "
+        "versions.",
+    )
+
+    @model_validator(mode="after")
+    def at_most_one_target(self) -> "UpgradeSubworkflowAction":
+        version = None if self.stored_workflow_id is not None else self.version
+        targets = [
+            t
+            for t in (self.content_id, self.stored_workflow_id, version, self.trs_version_id, self.url)
+            if t is not None
+        ]
+        if len(targets) > 1:
+            raise ValueError(
+                "Specify at most one of content_id, stored_workflow_id (optionally with version), "
+                "version, trs_version_id (optionally with trs_server and trs_tool_id) and url."
+            )
+        if self.recursive and (self.url is not None or self.trs_version_id is not None):
+            raise ValueError("recursive can't be set with url or trs_version_id, which stay as published.")
+        if (self.trs_server is None) != (self.trs_tool_id is None) or (
+            self.trs_tool_id is not None and self.trs_version_id is None
+        ):
+            raise ValueError("trs_server, trs_tool_id and trs_version_id must be given together.")
+        return self
 
 
 class UpgradeToolAction(BaseAction):
@@ -272,6 +356,7 @@ class RefactorActionExecutionMessageTypeEnum(str, Enum):
     tool_state_adjustment = "tool_state_adjustment"
     connection_drop_forced = "connection_drop_forced"
     workflow_output_drop_forced = "workflow_output_drop_forced"
+    subworkflow_versions_unavailable = "subworkflow_versions_unavailable"
 
 
 INPUT_REFERENCE = """

@@ -1,3 +1,7 @@
+import pytest
+from pydantic import ValidationError
+
+from galaxy.managers.workflows import github_raw_file_url
 from galaxy.workflow.refactor.schema import (
     AddInputAction,
     AddStepAction,
@@ -12,6 +16,7 @@ from galaxy.workflow.refactor.schema import (
     StepReferenceByLabel,
     StepReferenceByOrderIndex,
     UpdateStepLabelAction,
+    UpgradeSubworkflowAction,
 )
 
 
@@ -117,3 +122,72 @@ def test_executions():
     assert isinstance(execution.messages, (list,))
     execution = RefactorActionExecution(action=ar.actions[0].model_dump(), messages=[])
     assert isinstance(execution.messages, (list,))
+
+
+@pytest.mark.parametrize(
+    "targets",
+    [
+        {"version": 0, "trs_version_id": "v0.2"},
+        {"url": "https://example.org/a.ga", "trs_server": "dockstore", "trs_tool_id": "a", "trs_version_id": "v1"},
+    ],
+)
+def test_upgrade_subworkflow_takes_one_target(targets):
+    with pytest.raises(ValidationError, match="at most one of"):
+        UpgradeSubworkflowAction(action_type="upgrade_subworkflow", step={"label": "nested"}, **targets)
+
+
+@pytest.mark.parametrize(
+    "targets",
+    [
+        {"trs_tool_id": "a", "trs_version_id": "v1"},
+        {"trs_server": "dockstore", "trs_tool_id": "a"},
+    ],
+)
+def test_upgrade_subworkflow_trs_id_needs_server_tool_and_version(targets):
+    with pytest.raises(ValidationError, match="must be given together"):
+        UpgradeSubworkflowAction(action_type="upgrade_subworkflow", step={"label": "nested"}, **targets)
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        (
+            "https://github.com/iwc-workflows/qc/blob/main/qc.ga",
+            "https://raw.githubusercontent.com/iwc-workflows/qc/main/qc.ga",
+        ),
+        (
+            "https://www.github.com/iwc-workflows/qc/blob/v1.0/sub/dir/qc.gxwf.yml?plain=1#L3",
+            "https://raw.githubusercontent.com/iwc-workflows/qc/v1.0/sub/dir/qc.gxwf.yml",
+        ),
+        (
+            "https://github.com/iwc-workflows/qc/raw/main/qc.ga",
+            "https://raw.githubusercontent.com/iwc-workflows/qc/main/qc.ga",
+        ),
+        (
+            "https://raw.githubusercontent.com/iwc-workflows/qc/main/qc.ga",
+            "https://raw.githubusercontent.com/iwc-workflows/qc/main/qc.ga",
+        ),
+        ("https://example.org/blob/main/qc.ga", "https://example.org/blob/main/qc.ga"),
+        ("https://github.com/iwc-workflows/qc", "https://github.com/iwc-workflows/qc"),
+    ],
+)
+def test_github_raw_file_url(url, expected):
+    assert github_raw_file_url(url) == expected
+
+
+@pytest.mark.parametrize("target", [{"url": "https://example.org/a.ga"}, {"trs_version_id": "v1"}])
+def test_upgrade_subworkflow_recursive_needs_a_target_that_can_change(target):
+    with pytest.raises(ValidationError, match="stay as published"):
+        UpgradeSubworkflowAction(action_type="upgrade_subworkflow", step={"label": "nested"}, recursive=True, **target)
+
+
+def test_upgrade_subworkflow_rejects_unknown_target():
+    with pytest.raises(ValidationError):
+        UpgradeSubworkflowAction.model_validate(
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested"}, "trs_url": "https://a.org"}
+        )
+
+
+def test_upgrade_subworkflow_version_is_not_negative():
+    with pytest.raises(ValidationError):
+        UpgradeSubworkflowAction(action_type="upgrade_subworkflow", step={"label": "nested"}, version=-1)
