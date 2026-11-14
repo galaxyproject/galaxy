@@ -253,6 +253,11 @@ dataset_display:
     tabular_rows: .dataset-display tbody tr
     tabular_row: '.dataset-display tbody tr:nth-child(${index})'
 
+export_to_another_galaxy:
+  selectors:
+    link: '[data-description="galaxy export link"]'
+    link_warning: '[data-description="galaxy export link warning"]'
+
 history_panel:
   menu:
     labels:
@@ -325,6 +330,7 @@ history_panel:
       download_button: '${_} .download-btn'
       info_button: '${_} .info-btn'
       highlight_button: '${_} .highlight-btn'
+      export_to_another_galaxy_button: '${_} [data-description="export to another galaxy"]'
       alltags: '${_} .stateless-tags .tag'
       tag_area_button: '${_} .stateless-tags .toggle-button'
       tag_area_input: '${_} .stateless-tags .headless-multiselect input'

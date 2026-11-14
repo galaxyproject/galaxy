@@ -217,4 +217,22 @@ describe("ExportToAnotherGalaxyDialog", () => {
         await vi.waitFor(() => expect(linkInput(wrapper).exists()).toBe(true));
         expect(wrapper.text()).toContain("usually after 24 hours");
     });
+
+    it("exports again once a reused link would be past half its lifetime", async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        serveConfig({ short_term_storage_effective_duration: 1800 });
+        exportEndsIn("SUCCESS");
+        const { wrapper, store } = mountDialog();
+        store.open(dataset("d1"));
+        await vi.waitFor(() => expect(wrapper.text()).toContain("usually after 30 minutes"));
+        store.close();
+        vi.setSystemTime(Date.now() + 14 * 60 * 1000);
+        store.open(dataset("d1"));
+        await flushPromises();
+        expect(exportUrls).toHaveLength(1);
+        store.close();
+        vi.setSystemTime(Date.now() + 2 * 60 * 1000);
+        store.open(dataset("d1"));
+        await vi.waitFor(() => expect(exportUrls).toHaveLength(2));
+    });
 });

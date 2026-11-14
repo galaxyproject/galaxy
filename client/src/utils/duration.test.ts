@@ -16,6 +16,17 @@ describe("formatDurationSeconds", () => {
         expect(formatDurationSeconds(seconds)).toBe(label);
     });
 
+    it.each([
+        [10, "1 minute"],
+        [90, "2 minutes"],
+        [3599, "1 hour"],
+        [4980, "2 hours"],
+        [172799, "2 days"],
+        [293760, "4 days"],
+    ])("rounds %s seconds up to %s", (seconds, label) => {
+        expect(formatDurationSeconds(seconds)).toBe(label);
+    });
+
     it.each([undefined, null, 0, -60, Number.NaN, Number.POSITIVE_INFINITY, "86400"])(
         "returns undefined for %s",
         (seconds) => {
