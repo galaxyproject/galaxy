@@ -27,8 +27,9 @@ export default {
             required: true,
         },
     },
-    // Under @vue/compat, undeclared listeners don't reach the root element, so the
-    // hover events the rule builder uses to highlight columns are re-emitted.
+    // The rule builder highlights columns on these hover events. They're declared
+    // so the template's re-emit is the only path; undeclared, they'd also fall through
+    // to the <li> and the parent would get each one twice.
     emits: ["remove", "edit", "mouseover", "mouseout"],
     computed: {
         typeDisplay() {

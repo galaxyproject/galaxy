@@ -45,8 +45,6 @@ export const SimpleProviderMixin = {
             this.loading = false;
         },
     },
-    // No RENDER_FUNCTION marker needed: compat only wraps a render declared on the component
-    // itself, so this mixin's render already gets slot functions in `$slots`.
     render() {
         const slotFn = this.$slots.default;
         if (slotFn) {
