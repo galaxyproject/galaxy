@@ -17,12 +17,7 @@ describe("FormNumber", () => {
     const getInput = async (wrapper) => await wrapper.find("input[type='number']");
     const getInputRange = async (wrapper) => await wrapper.find("input[type='range']");
     const getAlert = async (wrapper) => await wrapper.find(".alert");
-    // The native input event bubbling from the field is recorded under "input" too.
-    const lastEmittedValue = (wrapper) =>
-        wrapper
-            .emitted("update:modelValue")
-            .filter(([value]) => !(value instanceof Event))
-            .at(-1);
+    const lastEmittedValue = (wrapper) => wrapper.emitted("update:modelValue").at(-1);
 
     it("renders a number input with appropriate type", async () => {
         const wrapperFloat = await mountFormNumber({ modelValue: 1, type: "float" });
