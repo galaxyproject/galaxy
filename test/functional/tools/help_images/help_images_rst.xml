@@ -16,5 +16,9 @@ Bare name found in static/images:
 Image relative to the tool:
 
 .. image:: static/images/help_image.png
+
+Tool Shed style prefix:
+
+.. image:: $PATH_TO_IMAGES/help_image.png
 ]]></help>
 </tool>

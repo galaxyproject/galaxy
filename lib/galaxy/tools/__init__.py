@@ -82,6 +82,7 @@ from galaxy.tool_shed.util.shed_util_common import (
     has_local_image_paths,
     make_image_paths_relative,
     set_image_paths,
+    strip_path_to_images,
 )
 from galaxy.tool_util.abstract_tool import AbstractTool
 from galaxy.tool_util.deps import (
@@ -2175,6 +2176,9 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 elif has_local_image_paths(help_text) and self.tool_shed_repository:
                     # Text check first: after startup tool_shed_repository may query the install database.
                     help_text = make_image_paths_relative(help_text)
+                elif "$PATH_TO_IMAGES/" in help_text:
+                    # Lets shed-style help render the same when the tool is loaded from a checkout.
+                    help_text = strip_path_to_images(help_text)
             except Exception:
                 log.exception(
                     "Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id

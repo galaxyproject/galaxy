@@ -524,7 +524,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
 
     @selenium_test
     def test_tool_help_rst_relative_images(self):
-        self._assert_tool_help_images_load("help_images_rst", 2)
+        self._assert_tool_help_images_load("help_images_rst", 3)
 
     def _assert_tool_help_images_load(self, tool_id, image_count):
         self.home()

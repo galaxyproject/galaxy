@@ -17,6 +17,7 @@ DATATYPES_CONFIG_FILENAME = "datatypes_conf.xml"
 REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = "data_manager_conf.xml"
 LOCAL_IMAGE_DIRECTIVE = re.compile(r"\.\. image:: (?!https?://)/?(.+)")
 LOCAL_IMAGE_OR_FIGURE_DIRECTIVE = re.compile(r"\.\. (image|figure):: (?!https?://)/?(.+)")
+PATH_TO_IMAGES_TARGET = re.compile(r"(\.\. (?:image|figure):: )\$PATH_TO_IMAGES/")
 
 
 def can_eliminate_repository_dependency(metadata_dict, tool_shed_url, name, owner):
@@ -157,6 +158,11 @@ def make_image_paths_relative(text: str) -> str:
     return LOCAL_IMAGE_OR_FIGURE_DIRECTIVE.sub(r".. \1:: \2", _strip_legacy_image_prefixes(text))
 
 
+def strip_path_to_images(text: str) -> str:
+    """Drop the ``$PATH_TO_IMAGES/`` prefix from ``.. image::``/``.. figure::`` targets."""
+    return PATH_TO_IMAGES_TARGET.sub(r"\1", text)
+
+
 def set_image_paths(
     app: "RequiredAppT",
     text: str,
@@ -209,4 +215,5 @@ __all__ = (
     "have_shed_tool_conf_for_install",
     "make_image_paths_relative",
     "set_image_paths",
+    "strip_path_to_images",
 )

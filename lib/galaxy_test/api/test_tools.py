@@ -167,6 +167,12 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert 'src="help_image.png"' in tool["help"]
         assert 'src="static/images/help_image.png"' in tool["help"]
 
+    @skip_without_tool("help_images_rst")
+    def test_build_tool_help_rst_strips_path_to_images(self, history_id):
+        tool = self.dataset_populator.build_tool_state("help_images_rst", history_id)
+        assert "PATH_TO_IMAGES" not in tool["help"]
+        assert tool["help"].count('src="help_image.png"') == 2
+
     @skip_without_tool("test_sam_to_bam_conversions")
     def test_requirements(self):
         requirements_response = self._get("tools/test_sam_to_bam_conversions/requirements", admin=True)

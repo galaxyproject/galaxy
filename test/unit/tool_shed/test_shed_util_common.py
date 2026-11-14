@@ -6,6 +6,7 @@ from typing import (
 from galaxy.tool_shed.util.shed_util_common import (
     make_image_paths_relative,
     set_image_paths,
+    strip_path_to_images,
 )
 
 if TYPE_CHECKING:
@@ -53,4 +54,23 @@ def test_make_image_paths_relative():
         ".. image:: e.png",
         ".. image:: https://example.com/f.png",
         ".. figure:: g.png",
+    ]
+
+
+def test_strip_path_to_images():
+    text = "\n".join(
+        [
+            ".. image:: $PATH_TO_IMAGES/a.png",
+            "    .. figure:: $PATH_TO_IMAGES/b.png",
+            ".. image:: ${static_path}/images/c.png",
+            ".. image:: /static/images/d.png",
+            "Images live in $PATH_TO_IMAGES/.",
+        ]
+    )
+    assert strip_path_to_images(text).splitlines() == [
+        ".. image:: a.png",
+        "    .. figure:: b.png",
+        ".. image:: ${static_path}/images/c.png",
+        ".. image:: /static/images/d.png",
+        "Images live in $PATH_TO_IMAGES/.",
     ]
