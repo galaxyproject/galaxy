@@ -181,9 +181,17 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
         margin-bottom: 1rem;
     }
 
+    // At most three columns, fewer when a card would get narrower than 15rem.
     .notifications-preferences-body {
-        display: flex;
-        justify-content: space-around;
+        --columns-gap: 1rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(max(15rem, calc((100% - 2 * var(--columns-gap)) / 3)), 1fr));
+        gap: var(--columns-gap);
+        margin-bottom: 1rem;
+
+        .card-container {
+            margin: 0;
+        }
     }
 
     .push-notifications-notice {

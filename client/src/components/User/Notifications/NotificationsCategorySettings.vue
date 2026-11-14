@@ -48,7 +48,7 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
 </script>
 
 <template>
-    <div>
+    <div class="category-settings">
         <div class="category-header">
             <GCheckbox v-model="isCategoryEnabled" v-g-tooltip.hover :title="checkBoxTitle" switch>
                 <span v-localize class="category-title">{{ snakeCaseToTitleCase(category) }}</span>
@@ -59,18 +59,31 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
             {{ categoryDescription }}
         </div>
 
-        <div v-for="channel in supportedChannels" :key="channel">
-            <NotificationsChannelSettings
-                :preferences="preferences"
-                :category="category"
-                :is-category-enabled="isCategoryEnabled"
-                :channel="channel"
-                @onChange="onChannelChange" />
+        <div class="category-channels">
+            <div v-for="channel in supportedChannels" :key="channel">
+                <NotificationsChannelSettings
+                    :preferences="preferences"
+                    :category="category"
+                    :is-category-enabled="isCategoryEnabled"
+                    :channel="channel"
+                    @onChange="onChannelChange" />
+            </div>
         </div>
     </div>
 </template>
 
 <style scoped lang="scss">
+// Fill the card, so the channels line up at the bottom of cards that share a row.
+.category-settings {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.category-channels {
+    margin-top: auto;
+}
+
 .category-header {
     gap: 1rem;
     display: flex;
