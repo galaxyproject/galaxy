@@ -5,9 +5,9 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GRadio from "@/components/BaseComponents/GRadio.vue";
 import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 
-const emit = defineEmits(["input"]);
+const emit = defineEmits(["update:modelValue"]);
 const props = defineProps({
-    value: {
+    modelValue: {
         default: null,
     },
     options: {
@@ -23,10 +23,10 @@ const props = defineProps({
 
 const currentValue = computed({
     get: () => {
-        return props.value;
+        return props.modelValue;
     },
     set: (val) => {
-        emit("input", val);
+        emit("update:modelValue", val);
     },
 });
 

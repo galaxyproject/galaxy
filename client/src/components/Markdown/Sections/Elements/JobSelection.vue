@@ -9,15 +9,15 @@ interface JobSelectionProps {
     jobId?: string;
     implicitCollectionJobsId?: string;
     selectJobOptions: SelectOption[];
-    value?: string;
+    modelValue?: string;
 }
 
 const emit = defineEmits<{
-    (e: "input", id: string | undefined): void;
+    (e: "update:modelValue", id: string | undefined): void;
 }>();
 
 function handleInput(value: string | undefined) {
-    emit("input", value);
+    emit("update:modelValue", value);
 }
 defineProps<JobSelectionProps>();
 </script>
@@ -37,7 +37,7 @@ defineProps<JobSelectionProps>();
                                 aria-label="Select Job"
                                 class="text-right"
                                 size="small"
-                                :model-value="value"
+                                :model-value="modelValue"
                                 :options="selectJobOptions"
                                 @update:model-value="handleInput" />
                         </BInputGroup>

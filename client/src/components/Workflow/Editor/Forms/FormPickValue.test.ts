@@ -93,7 +93,7 @@ describe("FormPickValue", () => {
         it("emits onChange with updated mode", () => {
             const wrapper = mountPickValue();
             const formElement = wrapper.findComponent(FormElement);
-            formElement.vm.$emit("input", "the_only_non_null");
+            formElement.vm.$emit("update:modelValue", "the_only_non_null");
 
             const state = getLastEmittedState(wrapper);
             expect(state.mode).toBe("the_only_non_null");
@@ -103,7 +103,7 @@ describe("FormPickValue", () => {
         it("preserves num_inputs when changing mode", () => {
             const wrapper = mountPickValue(makeStep({ tool_state: { mode: "first_non_null", num_inputs: 5 } }));
             const formElement = wrapper.findComponent(FormElement);
-            formElement.vm.$emit("input", "all_non_null");
+            formElement.vm.$emit("update:modelValue", "all_non_null");
 
             const state = getLastEmittedState(wrapper);
             expect(state.mode).toBe("all_non_null");

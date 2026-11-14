@@ -60,6 +60,10 @@ const props = withDefaults(defineProps<Props>(), {
     isMultiViewItem: false,
 });
 
+const emit = defineEmits<{
+    (e: "view-collection", item: HistoryItemSummary, currentOffset: number): void;
+}>();
+
 const filterClass = HistoryFilters;
 const filterText = ref("");
 const invisibleHistoryItems = ref<Record<string, any>>({});
@@ -567,7 +571,7 @@ const {
                                 @toggleHighlights="updateFilterValue('related', item.hid)"
                                 @update:expand-dataset="setExpanded(item, $event)"
                                 @update:selected="setSelected(item, $event)"
-                                @view-collection="$emit('view-collection', item, currentOffset)"
+                                @view-collection="emit('view-collection', item, currentOffset)"
                                 @delete="onDelete"
                                 @undelete="onUndelete(item)"
                                 @unhide="onUnhide(item)">

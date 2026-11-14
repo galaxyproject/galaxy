@@ -110,7 +110,7 @@ async function mountTarget(quota?: ReturnType<typeof quotaDetails>) {
 
 async function choose(wrapper: VueWrapper, selectionId: string, value: string) {
     const selection = wrapper.findAllComponents(FormSelection).find((w) => w.props("id") === selectionId);
-    selection!.vm.$emit("input", value);
+    selection!.vm.$emit("update:modelValue", value);
     await flushPromises();
 }
 

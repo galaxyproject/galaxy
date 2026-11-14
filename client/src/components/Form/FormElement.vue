@@ -43,7 +43,7 @@ const TYPE_TO_PLACEHOLDER: Record<string, string> = {
 interface FormElementProps {
     id?: string;
     type?: FormParameterTypes;
-    value?: FormParameterValue;
+    modelValue?: FormParameterValue;
     title?: string;
     refreshOnChange?: boolean;
     help?: string;
@@ -84,7 +84,7 @@ const props = withDefaults(defineProps<FormElementProps>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: FormParameterValue, id: string): void;
+    (e: "update:modelValue", value: FormParameterValue, id: string): void;
     (e: "change", shouldRefresh: boolean): void;
     (e: "load-more", payload: { name: string; src: string; offset: number; limit: number; search?: string }): void;
     (e: "search-change", payload: { name: string; src: string; query: string; limit: number }): void;
@@ -136,7 +136,7 @@ const connectable = computed(() => collapsible.value && Boolean(attrs.value["con
 
 // Determines whether to expand or collapse the input
 {
-    const valueJson = JSON.stringify(props.value);
+    const valueJson = JSON.stringify(props.modelValue);
     connected.value = valueJson === JSON.stringify(connectedValue);
     collapsed.value =
         connected.value ||
@@ -145,7 +145,7 @@ const connectable = computed(() => collapsible.value && Boolean(attrs.value["con
 
 /** Submits a changed value. */
 function setValue(value: FormParameterValue) {
-    emit("input", value, props.id);
+    emit("update:modelValue", value, props.id);
     emit("change", props.refreshOnChange);
 }
 
@@ -180,7 +180,7 @@ const showField = computed(() => !collapsed.value && !props.disabled);
 const formDataField = computed(() =>
     props.type && ["data", "data_collection"].includes(props.type) ? (props.type as "data" | "data_collection") : null,
 );
-const isUriDataField = computed(() => formDataField.value && isDataUri(props.value));
+const isUriDataField = computed(() => formDataField.value && isDataUri(props.modelValue));
 
 const previewText = computed(() => attrs.value["text_value"]);
 const helpText = computed(() => {
@@ -200,7 +200,7 @@ const showNonMdHelp = computed(() => Boolean(nonMdHelp.value) && (!props.workflo
 
 const currentValue = computed({
     get() {
-        return props.value;
+        return props.modelValue;
     },
     set(val) {
         setValue(val);
@@ -389,7 +389,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                 <FormValueList
                     v-else-if="valueListType"
                     :id="props.id"
-                    :value="currentValue"
+                    :model-value="currentValue"
                     :max="attrs.max"
                     :min="attrs.min"
                     :placeholder="computedPlaceholder"
@@ -397,11 +397,11 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     :show-state="props.workflowRun"
                     :type="valueListType"
                     :datalist="attrs.datalist"
-                    @input="(v: FormParameterValue) => (currentValue = v)" />
+                    @update:model-value="(v: FormParameterValue) => (currentValue = v)" />
                 <FormNumber
                     v-else-if="props.type === 'integer' || props.type === 'float'"
                     :id="props.id"
-                    :value="currentValue"
+                    :model-value="currentValue"
                     :max="attrs.max"
                     :min="attrs.min"
                     :placeholder="computedPlaceholder"
@@ -409,7 +409,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     :show-state="props.workflowRun"
                     :type="props.type ?? 'float'"
                     :workflow-building-mode="workflowBuildingMode"
-                    @input="(v: FormParameterValue) => (currentValue = v)" />
+                    @update:model-value="(v: FormParameterValue) => (currentValue = v)" />
                 <FormOptionalText
                     v-else-if="props.type === 'select' && attrs.is_workflow && attrs.optional"
                     :id="props.id"

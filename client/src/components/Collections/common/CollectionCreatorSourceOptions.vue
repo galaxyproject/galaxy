@@ -8,30 +8,30 @@ import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
 interface Props {
-    value: boolean;
+    modelValue: boolean;
     extensionsToggle?: boolean;
     renderExtensionsToggle?: boolean;
 }
 
 const props = defineProps<Props>();
 
-const localHideSourceItems = ref(props.value);
+const localHideSourceItems = ref(props.modelValue);
 
 const emit = defineEmits<{
-    (e: "input", value: boolean): void;
+    (e: "update:modelValue", value: boolean): void;
     (e: "remove-extensions-toggle"): void;
 }>();
 
-// Watch for external updates to value and sync with innerValue
+// Keep the local copy in step when the parent changes modelValue
 watch(
-    () => props.value,
+    () => props.modelValue,
     (newValue) => {
         localHideSourceItems.value = newValue;
     },
 );
 
 watch(localHideSourceItems, (newValue) => {
-    emit("input", newValue);
+    emit("update:modelValue", newValue);
 });
 </script>
 

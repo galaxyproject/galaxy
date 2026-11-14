@@ -62,6 +62,7 @@ export default {
             default: true,
         },
     },
+    emits: ["update:expanded"],
     data() {
         return {
             faChevronUp,

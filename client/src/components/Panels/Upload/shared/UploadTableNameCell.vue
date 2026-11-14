@@ -3,7 +3,7 @@ import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 interface Props {
     /** Current name value */
-    value: string;
+    modelValue: string;
     /** Validation state (true = valid, false = invalid, null = neutral) */
     state?: boolean | null;
     /** Tooltip text for the input */
@@ -16,12 +16,12 @@ withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
     (e: "blur"): void;
 }>();
 
 function handleInput(value: string | null) {
-    emit("input", value ?? "");
+    emit("update:modelValue", value ?? "");
 }
 
 function handleBlur() {
@@ -32,7 +32,7 @@ function handleBlur() {
 <template>
     <GFormInput
         v-g-tooltip.hover
-        :model-value="value"
+        :model-value="modelValue"
         size="small"
         :state="state"
         :title="tooltip"

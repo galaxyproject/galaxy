@@ -173,11 +173,11 @@ function showRecent() {
                 :loading="historiesLoading" />
             <MultipleViewList
                 v-show="!showAdvanced"
-                v-model:show-modal="showSelectModal"
                 :filter="filter"
                 :current-history="currentHistory"
                 :selected-histories="selectedHistories"
                 :can-load-more="canLoadMore"
+                @update:show-modal="showSelectModal = $event"
                 @load-more="loadMore" />
         </div>
         <GAlert v-else-if="!histories.length" class="m-2" variant="danger" show>

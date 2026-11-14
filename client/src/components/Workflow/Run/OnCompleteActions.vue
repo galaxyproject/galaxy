@@ -25,12 +25,12 @@ interface ComponentState {
 }
 
 interface Props {
-    value: OnCompleteAction[];
+    modelValue: OnCompleteAction[];
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<{
-    (e: "input", value: OnCompleteAction[]): void;
+    (e: "update:modelValue", value: OnCompleteAction[]): void;
 }>();
 
 const { config, isConfigLoaded } = useConfig();
@@ -56,9 +56,9 @@ const state = reactive<ComponentState>({
     exportConfig: { ...defaultExportConfig },
 });
 
-// Initialize state from value prop (Vue 2 style v-model)
+// Initialize state from the modelValue prop
 watch(
-    () => props.value,
+    () => props.modelValue,
     (newValue) => {
         if (newValue && newValue.length > 0) {
             state.sendNotification = newValue.some((a) => "send_notification" in a);
@@ -66,7 +66,7 @@ watch(
             if (exportAction && exportAction.export_to_file_source) {
                 const incoming = exportAction.export_to_file_source;
                 // Only update exportConfig if content actually changed, to avoid circular watcher loop:
-                // state change → emit("input") → props.value update → state change → ...
+                // state change → emit("update:modelValue") → props.modelValue update → state change → ...
                 if (JSON.stringify(incoming) !== JSON.stringify(state.exportConfig)) {
                     state.exportEnabled = true;
                     state.exportConfig = { ...incoming };
@@ -94,7 +94,7 @@ function emitOnComplete() {
     if (state.exportEnabled && state.exportConfig.target_uri) {
         actions.push({ export_to_file_source: { ...state.exportConfig } });
     }
-    emit("input", actions);
+    emit("update:modelValue", actions);
 }
 
 function onExportConfigured(config: WriteStoreToPayload) {

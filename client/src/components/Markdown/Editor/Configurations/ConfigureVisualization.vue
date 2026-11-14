@@ -10,11 +10,11 @@
         <FormElementLabel title="Height" help="Specify the height of the view in pixel.">
             <FormNumber
                 id="visualization-height"
-                :value="height"
+                :model-value="height"
                 :min="100"
                 :max="1000"
                 type="integer"
-                @input="
+                @update:model-value="
                     (v: number) => {
                         height = v;
                         onHeight(v);

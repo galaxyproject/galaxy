@@ -6,7 +6,7 @@ import { computed, ref, useId, watch } from "vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 interface Props {
-    value: string;
+    modelValue: string;
     title?: string;
     component?: string;
     noSaveOnBlur?: boolean;
@@ -15,22 +15,22 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
 }>();
 
 const inputId = `click-to-edit-${useId()}`;
 
 const clickToEditInput = ref<InstanceType<typeof GFormInput> | null>(null);
 const editable = ref(false);
-const localValue = ref(props.value);
+const localValue = ref(props.modelValue);
 
-const computedValue = computed(() => props.value);
+const computedValue = computed(() => props.modelValue);
 
 watch(
     () => editable.value,
     (value) => {
         if (!value) {
-            emit("input", localValue.value);
+            emit("update:modelValue", localValue.value);
         } else {
             setTimeout(() => {
                 clickToEditInput.value?.focus();
@@ -40,7 +40,7 @@ watch(
 );
 
 watch(
-    () => props.value,
+    () => props.modelValue,
     (value) => {
         if (!editable.value) {
             localValue.value = value;
@@ -57,7 +57,7 @@ function onBlur() {
 }
 
 function revertToOriginal() {
-    localValue.value = props.value;
+    localValue.value = props.modelValue;
     editable.value = false;
 }
 </script>

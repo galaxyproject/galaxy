@@ -297,7 +297,7 @@ async function generateViaLLM() {
         <CustomToolEditorWorkspace :documentation-visible="showDocumentation">
             <template v-slot:editor>
                 <VueMonacoEditor
-                    v-model="yamlRepresentation"
+                    v-model:value="yamlRepresentation"
                     language="yaml-with-js"
                     default-path="tool.yml"
                     :options="{

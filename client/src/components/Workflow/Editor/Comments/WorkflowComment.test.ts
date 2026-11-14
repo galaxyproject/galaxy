@@ -224,4 +224,25 @@ describe("WorkflowComment", () => {
             expect(wrapper.find(".rendered-markdown .sanitized").exists()).toBe(true);
         });
     });
+
+    // Vue 3 renders enumerated attributes as given instead of coercing them (compat-config.js
+    // turns ATTR_ENUMERATED_COERCION off), so check the editable title/text spans still get
+    // explicit "true"/"false".
+    describe("contenteditable without enumerated coercion", () => {
+        function editable(type: string, data: object, readonly: boolean) {
+            const wrapper = mount(WorkflowComment as any, {
+                propsData: { comment: { ...comment, type, data }, scale: 1, rootOffset: {}, readonly },
+                provide: { transform: mockTransform },
+            });
+            return wrapper.find("[contenteditable]").attributes("contenteditable");
+        }
+
+        it.each([
+            ["text", { size: 1, text: "text" }],
+            ["frame", { title: "title" }],
+        ])("renders %s comments editable only when not readonly", (type, data) => {
+            expect(editable(type, data, false)).toBe("true");
+            expect(editable(type, data, true)).toBe("false");
+        });
+    });
 });

@@ -75,7 +75,7 @@ const props = withDefaults(
         pinned?: Record<string, Array<DataOption>>;
         optionsMeta?: Record<string, OptionsMetaEntry>;
         name?: string;
-        value?: {
+        modelValue?: {
             values: Array<DataOption>;
         };
         extensions?: Array<string>;
@@ -91,7 +91,7 @@ const props = withDefaults(
         loading: false,
         multiple: false,
         optional: false,
-        value: undefined,
+        modelValue: undefined,
         extensions: () => [],
         type: "data",
         collectionTypes: () => [],
@@ -108,7 +108,7 @@ const props = withDefaults(
 const eventStore = useEventStore();
 const { datatypesMapper } = useDatatypesMapper();
 
-const $emit = defineEmits(["input", "alert", "focus", "load-more", "search-change"]);
+const $emit = defineEmits(["update:modelValue", "alert", "focus", "load-more", "search-change"]);
 
 /** Active backend search query for this parameter. Updated when the user types
  * in the dropdown's search box (debounced upstream by ``FormSelect``). Sent in
@@ -169,8 +169,8 @@ const currentSource = computed(() => (currentVariant.value ? currentVariant.valu
 const currentValue = computed({
     get: () => {
         const value: Array<DataOption> = [];
-        if (props.value) {
-            for (const v of props.value.values) {
+        if (props.modelValue) {
+            for (const v of props.modelValue.values) {
                 const foundEntry = formattedOptions.value.find(
                     (entry) => entry.value && entry.value.id === v.id && entry.value.src === v.src,
                 );
@@ -195,7 +195,7 @@ const currentValue = computed({
         return undefined;
     },
     set: (val) => {
-        $emit("input", createValue(val));
+        $emit("update:modelValue", createValue(val));
     },
 });
 
@@ -1095,8 +1095,8 @@ function onDrop(e: DragEvent) {
  */
 const matchedValues = computed(() => {
     const values: Array<DataOption> = [];
-    if (props.value && props.value.values.length > 0) {
-        props.value.values.forEach((entry) => {
+    if (props.modelValue && props.modelValue.values.length > 0) {
+        props.modelValue.values.forEach((entry) => {
             if ("src" in entry && entry.src) {
                 const pageOptions = props.options[entry.src] || [];
                 const pinnedOptions = (props.pinned && props.pinned[entry.src]) || [];
@@ -1116,10 +1116,10 @@ const matchedValues = computed(() => {
 });
 
 onMounted(() => {
-    if (props.value && matchedValues.value.length > 0) {
-        $emit("input", createValue(matchedValues.value));
+    if (props.modelValue && matchedValues.value.length > 0) {
+        $emit("update:modelValue", createValue(matchedValues.value));
     } else {
-        $emit("input", createValue(currentValue.value));
+        $emit("update:modelValue", createValue(currentValue.value));
     }
 });
 
@@ -1129,7 +1129,7 @@ onMounted(() => {
 watch(
     () => [props.options, currentLinked.value, currentVariant.value],
     () => {
-        $emit("input", createValue(currentValue.value));
+        $emit("update:modelValue", createValue(currentValue.value));
     },
 );
 

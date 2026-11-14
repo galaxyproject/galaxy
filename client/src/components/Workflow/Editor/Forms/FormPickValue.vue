@@ -120,12 +120,12 @@ if (connections) {
     <div>
         <FormElement
             id="mode"
-            :value="asToolState(toolState).mode"
+            :model-value="asToolState(toolState).mode"
             title="Selection Mode"
             type="select"
             :options="modeOptions"
             help="How to select among the connected inputs."
-            @input="onMode" />
+            @update:model-value="onMode" />
         <div v-if="datatypes && step.outputs && step.outputs.length > 0" class="mt-2 mb-4">
             <Heading h2 separator bold size="sm"> Additional Options </Heading>
             <FormSection

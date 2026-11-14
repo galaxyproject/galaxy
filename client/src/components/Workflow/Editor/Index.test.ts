@@ -410,10 +410,10 @@ describe("Index", () => {
             mockSaveWorkflow.mockResolvedValue({ version: 1 });
 
             wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
-            // vue-test-utils' auto-stub for `BFormTextarea` declares its own v-model
-            // config (`{ prop: "value", event: "update" }`), so the emit event to
-            // drive `v-model="saveAsAnnotation"` is "update", not "input".
-            wrapper.findComponent(BFormTextarea).vm.$emit("update", "A description");
+            // vue-test-utils' auto-stub for `BFormTextarea` doesn't carry bootstrap-vue's
+            // legacy compatConfig, so with COMPONENT_V_MODEL off globally the stub takes
+            // v-model as modelValue / update:modelValue (the real component keeps value/update).
+            wrapper.findComponent(BFormTextarea).vm.$emit("update:modelValue", "A description");
             await nextTick();
 
             wrapper.findComponent<typeof GModal>("[data-description='save-as-modal']").vm.$emit("ok");
@@ -447,7 +447,7 @@ describe("Index", () => {
 
         it("resets save-as fields when the modal is cancelled", async () => {
             wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
-            wrapper.findComponent(BFormTextarea).vm.$emit("update", "A description");
+            wrapper.findComponent(BFormTextarea).vm.$emit("update:modelValue", "A description");
             await nextTick();
 
             expect(wrapper.findComponent(GFormInput).props("modelValue")).toBe("My New Workflow");
@@ -456,7 +456,8 @@ describe("Index", () => {
             await nextTick();
 
             expect(wrapper.findComponent(GFormInput).props("modelValue")).toBeNull();
-            expect(wrapper.findComponent({ name: "BFormTextarea" }).props("value")).toBeNull();
+            // The stub only declares BFormTextarea's own props (`value`), so modelValue is an attr.
+            expect(wrapper.findComponent({ name: "BFormTextarea" }).vm.$attrs.modelValue).toBeNull();
         });
 
         it("prevents navigation only if hasChanges", async () => {
@@ -482,14 +483,14 @@ describe("Index", () => {
                 await flushPromises();
 
                 // save button is disabled initially until a change is made
-                expect(wrapper.find("#workflow-save-button").attributes("disabled")).toBeTruthy();
+                expect(wrapper.findComponent<typeof GButton>("#workflow-save-button").props("disabled")).toBe(true);
 
                 // simulate WorkflowGraph making a change to enable the Save button
                 wrapper.findComponent(WorkflowGraph).vm.$emit("onChange");
                 await nextTick();
 
                 // save button is now enabled
-                expect(wrapper.find("#workflow-save-button").attributes("disabled")).toBeFalsy();
+                expect(wrapper.findComponent<typeof GButton>("#workflow-save-button").props("disabled")).toBe(false);
 
                 wrapper.findComponent<typeof GButton>("#workflow-save-button").vm.$emit("click");
                 await flushPromises();

@@ -63,7 +63,7 @@ async function mountCreator(initialElements: HDASummary[]) {
 }
 
 function inListElements(wrapper: ReturnType<typeof mount>): HDASummary[] {
-    return wrapper.findComponent(FormSelectMany).props("value") as HDASummary[];
+    return wrapper.findComponent(FormSelectMany).props("modelValue") as HDASummary[];
 }
 
 async function selectIntoList(wrapper: ReturnType<typeof mount>, names: string[]) {

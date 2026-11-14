@@ -43,11 +43,11 @@ const emit = defineEmits(["onChange"]);
     <div>
         <FormElement
             :id="prefix + '_type'"
-            :value="currentValue"
+            :model-value="currentValue"
             :attributes="{ data: columnTypes }"
             title="Column type"
             :optional="false"
             type="select"
-            @input="onInput" />
+            @update:model-value="onInput" />
     </div>
 </template>

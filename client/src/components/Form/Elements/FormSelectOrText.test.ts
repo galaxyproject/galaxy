@@ -17,7 +17,7 @@ const OPTIONS = [
 
 function mountWithValue(value: string | null, validate?: (text: string) => string | undefined): VueWrapper {
     return mount(FormSelectOrText as object, {
-        propsData: { id: "fruit", value, options: OPTIONS, otherLabel: "Other fruit...", validate },
+        propsData: { id: "fruit", modelValue: value, options: OPTIONS, otherLabel: "Other fruit...", validate },
         localVue,
     });
 }
@@ -31,7 +31,7 @@ function textField(wrapper: VueWrapper) {
 }
 
 function emitted(wrapper: VueWrapper) {
-    return (wrapper.emitted("input") ?? []).map((args) => args[0]);
+    return (wrapper.emitted("update:modelValue") ?? []).map((args) => args[0]);
 }
 
 function lastAlert(wrapper: VueWrapper) {
@@ -77,7 +77,7 @@ describe("FormSelectOrText", () => {
         const wrapper = mount(FormSelectOrText as object, {
             props: {
                 id: "fruit",
-                value: "banana",
+                modelValue: "banana",
                 options: OPTIONS,
                 otherLabel: "Other fruit...",
                 otherPlaceholder: "Fruit name",
@@ -108,7 +108,7 @@ describe("FormSelectOrText", () => {
     it("emits option values that look like its own placeholder values", async () => {
         const wrapper = mount(FormSelectOrText as object, {
             propsData: {
-                value: null,
+                modelValue: null,
                 options: [
                     { label: "Nothing", value: null },
                     { label: "Null section", value: "__null__" },
@@ -128,7 +128,7 @@ describe("FormSelectOrText", () => {
         await pick(wrapper, "Apple");
         expect(emitted(wrapper)).toEqual([]);
 
-        await wrapper.setProps({ value: "banana" });
+        await wrapper.setProps({ modelValue: "banana" });
         await pick(wrapper, "Other fruit...");
         expect(emitted(wrapper)).toEqual([]);
         expect(textField(wrapper).exists()).toBe(true);
@@ -144,7 +144,7 @@ describe("FormSelectOrText", () => {
     it("emits typed text and keeps the text field while it passes through a listed value", async () => {
         const wrapper = mountWithValue("banana");
         await type(wrapper, "apple");
-        await wrapper.setProps({ value: "apple" });
+        await wrapper.setProps({ modelValue: "apple" });
         expect(textField(wrapper).exists()).toBe(true);
         await type(wrapper, "apple tart");
         expect(emitted(wrapper)).toEqual(["apple", "apple tart"]);
@@ -152,7 +152,7 @@ describe("FormSelectOrText", () => {
 
     it("leaves the text field when the value is changed from outside", async () => {
         const wrapper = mountWithValue("banana");
-        await wrapper.setProps({ value: "apple pie" });
+        await wrapper.setProps({ modelValue: "apple pie" });
         expect(selectedLabel(wrapper)).toBe("Apple pie");
         expect(textField(wrapper).exists()).toBe(false);
     });
@@ -161,9 +161,9 @@ describe("FormSelectOrText", () => {
         const wrapper = mountWithValue("apple");
         await pick(wrapper, "Other fruit...");
         await type(wrapper, "banana");
-        await wrapper.setProps({ value: "banana" });
-        await wrapper.setProps({ value: "apple" });
-        await wrapper.setProps({ value: "banana" });
+        await wrapper.setProps({ modelValue: "banana" });
+        await wrapper.setProps({ modelValue: "apple" });
+        await wrapper.setProps({ modelValue: "banana" });
         expect(selectedLabel(wrapper)).toBe("Other fruit...");
         expect((textField(wrapper).element as HTMLInputElement).value).toBe("banana");
     });
@@ -235,7 +235,7 @@ describe("FormSelectOrText", () => {
                 show.value
                     ? h(FormSelectOrText, {
                           id: "fruit",
-                          value: "banana",
+                          modelValue: "banana",
                           options: OPTIONS,
                           onAlert: (message?: string) => (alert.value = message),
                       })

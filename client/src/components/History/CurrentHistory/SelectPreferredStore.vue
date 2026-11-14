@@ -158,7 +158,6 @@ function reset() {
         @cancel="reset"
         @ok="modalOk">
         <SelectObjectStore
-            :show-sub-setting="props.showSubSetting"
             :for-what="newDatasetsDescription"
             :selected-object-store-id="currentSelectedStoreId"
             :default-option-title="defaultOptionTitle"

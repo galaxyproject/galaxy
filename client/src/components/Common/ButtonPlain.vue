@@ -1,3 +1,9 @@
+<script setup lang="ts">
+defineEmits<{
+    (e: "click"): void;
+}>();
+</script>
+
 <template>
     <div
         role="button"

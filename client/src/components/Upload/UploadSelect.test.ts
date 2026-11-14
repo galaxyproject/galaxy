@@ -18,38 +18,38 @@ function mountComponent(props: object = {}) {
 
 describe("UploadSelect", () => {
     it("emits the id of the selected option", async () => {
-        const wrapper = mountComponent({ value: "fasta" });
+        const wrapper = mountComponent({ modelValue: "fasta" });
 
         await wrapper.find(".multiselect").trigger("focus");
         await wrapper.findAll(".multiselect__option")[2]!.trigger("click");
 
-        expect(wrapper.emitted("input")).toEqual([["fastq"]]);
+        expect(wrapper.emitted("update:modelValue")).toEqual([["fastq"]]);
     });
 
     it("keeps the current value when the selected option is clicked again", async () => {
-        const wrapper = mountComponent({ value: "fasta" });
+        const wrapper = mountComponent({ modelValue: "fasta" });
 
         await wrapper.find(".multiselect").trigger("focus");
         await wrapper.find(".multiselect__option--selected").trigger("click");
 
-        expect(wrapper.emitted("input")).toBeUndefined();
+        expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     });
 
     it("keeps the current value when backspace is pressed in an empty search", async () => {
-        const wrapper = mountComponent({ value: "fasta" });
+        const wrapper = mountComponent({ modelValue: "fasta" });
 
         await wrapper.find(".multiselect").trigger("focus");
         await wrapper.find(".multiselect__input").trigger("keydown.delete");
 
-        expect(wrapper.emitted("input")).toBeUndefined();
+        expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     });
 
     it("ignores a null selection", () => {
-        const wrapper = mountComponent({ value: "fasta" });
+        const wrapper = mountComponent({ modelValue: "fasta" });
 
-        wrapper.findComponent(Multiselect).vm.$emit("input", null);
+        wrapper.findComponent(Multiselect).vm.$emit("update:modelValue", null);
 
-        expect(wrapper.emitted("input")).toBeUndefined();
+        expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     });
 
     it("lists the option whose id matches exactly first", async () => {
