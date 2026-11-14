@@ -521,10 +521,12 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
     @selenium_test
     def test_tool_help_markdown_relative_images(self):
         self._assert_tool_help_images_load("help_images_markdown", 4)
+        self.screenshot("tool_form_help_markdown_relative_images")
 
     @selenium_test
     def test_tool_help_rst_relative_images(self):
         self._assert_tool_help_images_load("help_images_rst", 3)
+        self.screenshot("tool_form_help_rst_relative_images")
 
     def _assert_tool_help_images_load(self, tool_id, image_count):
         self.home()
@@ -539,8 +541,10 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
             for image in images:
                 loaded = self.execute_script("return arguments[0].complete && arguments[0].naturalWidth > 0;", image)
                 assert loaded, image.get_attribute("src")
+            return images
 
-        assert_images_loaded()
+        images = assert_images_loaded()
+        self.scroll_into_view(images[0])
 
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
         tds = self._get_dataset_tool_parameters(hid)
