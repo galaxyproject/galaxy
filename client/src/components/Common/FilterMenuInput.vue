@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormDatalist, BFormDatepicker, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormDatalist, BFormDatepicker, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { ValidFilter } from "@/utils/filtering";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
 
@@ -34,6 +35,14 @@ const emit = defineEmits<{
 const propValue = computed(() => props.filters[props.name]);
 
 const localValue = ref(propValue.value);
+
+// GFormInput holds text, while the filters dict also types its values as boolean
+const inputValue = computed({
+    get: () => (localValue.value === undefined ? null : String(localValue.value)),
+    set: (value: string | null) => {
+        localValue.value = value ?? undefined;
+    },
+});
 
 const helpToggle = ref(false);
 const modalTitle = `${capitalizeFirstLetter(props.filter.placeholder || "")} Help`;
@@ -67,13 +76,13 @@ watch(
         <small>Filter by {{ props.filter.placeholder }}:</small>
 
         <BInputGroup>
-            <BFormInput
+            <GFormInput
                 :id="`${identifier}-advanced-filter-${props.name}`"
                 ref="filterMenuInput"
-                v-model="localValue"
+                v-model="inputValue"
                 v-g-tooltip.focus.v-danger="props.error"
                 class="mw-100"
-                size="sm"
+                size="small"
                 :state="props.error ? false : null"
                 :placeholder="`any ${props.filter.placeholder}`"
                 :disabled="props.disabled"
