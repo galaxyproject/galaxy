@@ -22,7 +22,6 @@ describe("FormTags", () => {
         const model = ref("alpha, beta");
         // A modelValue/onUpdate:modelValue vnode is what a parent's v-model compiles to.
         const Parent = defineComponent({
-            compatConfig: { MODE: 3 },
             setup() {
                 return () =>
                     h(FormTags, {
