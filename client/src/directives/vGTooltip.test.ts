@@ -356,6 +356,24 @@ describe("vGTooltip", () => {
             wrapper.unmount();
         });
 
+        test("links the description to the toggle instead of the element", async () => {
+            const wrapper = mountDropdown(
+                `<GDropdown v-g-tooltip title="More options"><template v-slot:button-content><svg /></template></GDropdown>`,
+            );
+            const toggle = wrapper.get(".dropdown-toggle");
+            const describedBy = toggle.attributes("aria-describedby");
+
+            expect(describedBy).toMatch(/^g-tooltip-/);
+            expect(wrapper.attributes("aria-describedby")).toBeUndefined();
+
+            await toggle.trigger("click");
+            expect(toggle.attributes("aria-describedby")).toBe(describedBy);
+
+            vGTooltip.unmounted?.(wrapper.element as HTMLElement, bindingForCleanup(), unusedVNode, null);
+            expect(toggle.attributes("aria-describedby")).toBeUndefined();
+            wrapper.unmount();
+        });
+
         test("keeps the name of a toggle with text or its own label", () => {
             const wrapper = mountDropdown(`<div>
                 <GDropdown v-g-tooltip id="text" title="More options" text="Menu" />
