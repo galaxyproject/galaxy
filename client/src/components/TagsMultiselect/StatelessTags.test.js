@@ -128,6 +128,7 @@ describe("StatelessTags", () => {
 
         expect(onNewTagSeenMock.mock.calls.length).toBe(1);
         expect(onNewTagSeenMock.mock.results[0].value).toBe("new_tag");
+        expect(wrapper.emitted("update:modelValue")?.at(-1)?.[0]).toContain("new_tag");
     });
 
     it("warns about not allowed tags", async () => {
