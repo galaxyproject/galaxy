@@ -41,21 +41,21 @@ describe("GAlert", () => {
 
         expect(wrapper.find(".alert").exists()).toBe(false);
         expect(wrapper.emitted("dismissed")).toHaveLength(1);
-        expect(wrapper.emitted("input")?.[0]).toEqual([false]);
+        expect(wrapper.emitted("update:modelValue")?.[0]).toEqual([false]);
         expect(wrapper.emitted("update:show")?.[0]).toEqual([false]);
     });
 
-    it("uses default v-model value before the show default", async () => {
+    it("uses the v-model value before the show default", async () => {
         const wrapper = mount(GAlert, {
             global: localVue,
             props: {
-                value: false,
+                modelValue: false,
             },
         });
 
         expect(wrapper.find(".alert").exists()).toBe(false);
 
-        await wrapper.setProps({ value: true });
+        await wrapper.setProps({ modelValue: true });
 
         expect(wrapper.find(".alert").exists()).toBe(true);
     });

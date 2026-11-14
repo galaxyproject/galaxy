@@ -25,11 +25,6 @@ export interface TabsContext {
     tabsCard: boolean;
 }
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 const props = withDefaults(
     defineProps<{
         modelValue?: number;
@@ -189,9 +184,9 @@ const TabTitleContent = defineComponent({
                         :class="[tab.titleLinkClass, { active: index === activeIndex, disabled: tab.disabled }]"
                         role="tab"
                         href="#"
-                        :aria-selected="index === activeIndex"
+                        :aria-selected="index === activeIndex ? 'true' : 'false'"
                         :aria-controls="tab.id"
-                        :aria-disabled="tab.disabled"
+                        :aria-disabled="tab.disabled || undefined"
                         :data-tab-title="tab.title"
                         @click.prevent="!tab.disabled && setActive(index)">
                         <TabTitleContent v-if="tab.titleRenderer" :tab="tab" />
@@ -217,9 +212,9 @@ const TabTitleContent = defineComponent({
                     :class="[tab.titleLinkClass, { active: index === activeIndex, disabled: tab.disabled }]"
                     role="tab"
                     href="#"
-                    :aria-selected="index === activeIndex"
+                    :aria-selected="index === activeIndex ? 'true' : 'false'"
                     :aria-controls="tab.id"
-                    :aria-disabled="tab.disabled"
+                    :aria-disabled="tab.disabled || undefined"
                     :data-tab-title="tab.title"
                     @click.prevent="!tab.disabled && setActive(index)">
                     <TabTitleContent v-if="tab.titleRenderer" :tab="tab" />

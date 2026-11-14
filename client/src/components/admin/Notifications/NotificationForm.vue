@@ -229,8 +229,8 @@ async function sendNewNotification() {
                         description="The notification will be displayed after this time. Default is the current time.">
                         <GDateTime
                             id="notification-publication-time"
-                            :value="publicationDate"
-                            @input="(v: Date) => (publicationDate = v)" />
+                            :model-value="publicationDate"
+                            @update:model-value="(v: Date) => (publicationDate = v)" />
                     </BFormGroup>
                 </BCol>
                 <BCol>
@@ -241,8 +241,8 @@ async function sendNewNotification() {
                         description="The notification will be deleted from the database after this time. Default is 6 months from the creation time.">
                         <GDateTime
                             id="notification-expiration-time"
-                            :value="expirationDate"
-                            @input="(v: Date) => (expirationDate = v)" />
+                            :model-value="expirationDate"
+                            @update:model-value="(v: Date) => (expirationDate = v)" />
                     </BFormGroup>
                 </BCol>
             </BRow>

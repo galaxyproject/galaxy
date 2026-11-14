@@ -17,14 +17,14 @@ export interface SelectOption {
 }
 
 const emit = defineEmits<{
-    (e: "input", value: any): void;
+    (e: "update:modelValue", value: any): void;
     (e: "search-change", query: string): void;
     (e: "preference-change", state: { showManyButton: boolean; showMultiButton: boolean }): void;
 }>();
 
 const props = defineProps({
     id: { type: String, default: () => `form-selection-${uid()}` },
-    value: {
+    modelValue: {
         type: null as unknown as PropType<any>,
         default: null,
     },
@@ -75,10 +75,10 @@ const props = defineProps({
 
 const currentValue = computed({
     get: () => {
-        return props.value;
+        return props.modelValue;
     },
     set: (val: any) => {
-        emit("input", val);
+        emit("update:modelValue", val);
     },
 });
 
@@ -114,7 +114,7 @@ watch(
 
         if (newValue === "none") {
             if (
-                (Array.isArray(props.value) && props.value.length >= 15) ||
+                (Array.isArray(props.modelValue) && props.modelValue.length >= 15) ||
                 (props.options && props.options.length >= 500)
             ) {
                 useMany.value = true;

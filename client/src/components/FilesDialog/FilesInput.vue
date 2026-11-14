@@ -10,7 +10,7 @@ import type { SelectionItem } from "../SelectionDialog/selectionTypes";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 interface Props {
-    value: string;
+    modelValue: string;
     mode?: FileSourceBrowsingMode;
     requireWritable?: boolean;
     filterOptions?: FilterFileSourcesOptions;
@@ -25,7 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
     (e: "navigated"): void;
 }>();
 
@@ -33,10 +33,10 @@ const router = useRouter();
 
 const currentValue = computed({
     get() {
-        return props.value;
+        return props.modelValue;
     },
     set(newValue) {
-        emit("input", newValue);
+        emit("update:modelValue", newValue);
     },
 });
 

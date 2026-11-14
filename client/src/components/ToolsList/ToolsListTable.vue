@@ -22,6 +22,10 @@ const props = defineProps<{
     gridView?: boolean;
 }>();
 
+const emit = defineEmits<{
+    (e: "apply-filter", filter: string, value: string): void;
+}>();
+
 const toolStore = useToolStore();
 const { helpDataCached } = storeToRefs(toolStore);
 
@@ -87,7 +91,7 @@ const toolsKey = computed(() => JSON.stringify(props.tools.map((tool) => tool.id
                 :workflow-compatible="item.is_workflow_compatible"
                 :version="item.version"
                 :grid-view="props.gridView"
-                @apply-filter="(filter: string, value: string) => $emit('apply-filter', filter, value)" />
+                @apply-filter="(filter: string, value: string) => emit('apply-filter', filter, value)" />
         </template>
     </ScrollList>
 </template>

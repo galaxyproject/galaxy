@@ -9,11 +9,6 @@ import { RouterLink } from "vue-router";
 
 import type { BadgeVariant, ColorVariant } from "./componentVariants";
 
-defineOptions({
-    // Under @vue/compat: let listeners such as @click fall through to the root element, as in Vue 3
-    compatConfig: { INSTANCE_LISTENERS: false },
-});
-
 const props = defineProps<{
     /** Color scheme; `outline-*` draws the color as border and text on the page background. Defaults to secondary */
     variant?: BadgeVariant;

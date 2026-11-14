@@ -5,24 +5,24 @@ import { computed } from "vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 export interface FormColorProps {
-    value?: string;
+    modelValue?: string;
     id: string;
 }
 
 const props = withDefaults(defineProps<FormColorProps>(), {
-    value: "",
+    modelValue: "",
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
 }>();
 
 const currentValue = computed({
     get() {
-        return props.value;
+        return props.modelValue;
     },
     set(newValue) {
-        emit("input", newValue);
+        emit("update:modelValue", newValue);
     },
 });
 </script>

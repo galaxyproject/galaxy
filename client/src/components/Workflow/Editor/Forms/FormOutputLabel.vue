@@ -1,12 +1,12 @@
 <template>
     <FormElement
         :id="id"
-        :value="label"
+        :model-value="label"
         :error="error"
         :title="title"
         type="text"
         help="Provide a short, unique name to describe this output."
-        @input="onInput" />
+        @update:model-value="onInput" />
 </template>
 
 <script setup lang="ts">

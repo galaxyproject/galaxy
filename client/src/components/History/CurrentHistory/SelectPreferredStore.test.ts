@@ -36,7 +36,7 @@ interface PutRequest {
 
 let putRequests: PutRequest[] = [];
 
-async function mountComponent(preferredObjectStoreId: string | null = null) {
+async function mountComponent(preferredObjectStoreId: string | null = null, extraProps: Record<string, unknown> = {}) {
     server.use(
         http.get("/api/configuration", ({ response }) => {
             return response(200).json({});
@@ -58,6 +58,7 @@ async function mountComponent(preferredObjectStoreId: string | null = null) {
             preferredObjectStoreId: preferredObjectStoreId,
             history: TEST_HISTORY,
             show: true,
+            ...extraProps,
         },
         global: localVue,
     });
@@ -97,6 +98,12 @@ describe("SelectPreferredStore.vue", () => {
         expect(putRequests[0]?.data.preferred_object_store_id).toEqual(null);
 
         expect(emittedArg(wrapper, "updated")).toEqual(null);
+    });
+
+    // SelectObjectStore has no showSubSetting prop, so passing it on only leaks a root attribute
+    it.each([true, false])("does not leak show-sub-setting=%s onto the store selector", async (showSubSetting) => {
+        const wrapper = await mountComponent(null, { showSubSetting });
+        expect(wrapper.find("[show-sub-setting]").exists()).toBe(false);
     });
 
     it("updates object store to on non-null selection", async () => {

@@ -25,6 +25,7 @@ export default {
             required: true,
         },
     },
+    emits: ["update:target"],
     computed: {
         label() {
             return _l("Regular Expression");

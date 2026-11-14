@@ -839,10 +839,10 @@ function onKeyDown(event: KeyboardEvent) {
                             :id="getElementId(props.id, 'tags')"
                             inline
                             :clickable="props.tagsEditable"
-                            :value="props.tags"
+                            :model-value="props.tags"
                             :disabled="!props.tagsEditable"
                             :max-visible-tags="props.maxVisibleTags"
-                            @input="emit('tagsUpdate', $event)"
+                            @update:model-value="emit('tagsUpdate', $event)"
                             @tag-click="emit('tagClick', $event)" />
                     </slot>
 

@@ -617,9 +617,9 @@ watch(operationMessage, () => {
                                     <StatelessTags
                                         v-else-if="fieldEntry.type == 'tags'"
                                         clickable
-                                        :value="rowData[fieldEntry.key]"
+                                        :model-value="rowData[fieldEntry.key]"
                                         :disabled="fieldEntry.disabled"
-                                        @input="onTagInput(rowData, $event, fieldEntry.handler)"
+                                        @update:model-value="onTagInput(rowData, $event, fieldEntry.handler)"
                                         @tag-click="applyFilter('tag', $event, true)" />
                                     <span v-else v-localize> Not available. </span>
                                 </div>

@@ -13,7 +13,7 @@ describe("FormInput", () => {
         wrapper = mount(FormInput, {
             props: {
                 id: "input",
-                value: "initial_value",
+                modelValue: "initial_value",
             },
             global: localVue,
         });
@@ -24,7 +24,7 @@ describe("FormInput", () => {
         expect(input.element.value).toBe("initial_value");
         await input.setValue("new_value");
         expect(input.element.value).toBe("new_value");
-        expect(emittedArg(wrapper, "input")).toBe("new_value");
+        expect(emittedArg(wrapper, "update:modelValue")).toBe("new_value");
     });
 
     it("check switching to text area", async () => {
@@ -33,6 +33,6 @@ describe("FormInput", () => {
         expect(input.element.value).toBe("initial_value");
         await input.setValue("new_value");
         expect(input.element.value).toBe("new_value");
-        expect(emittedArg(wrapper, "input")).toBe("new_value");
+        expect(emittedArg(wrapper, "update:modelValue")).toBe("new_value");
     });
 });

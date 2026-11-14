@@ -11,7 +11,7 @@ import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GButton from "../BaseComponents/GButton.vue";
 
 interface Props {
-    value?: string;
+    modelValue?: string;
     delay?: number;
     loading?: boolean;
     placeholder?: string;
@@ -28,7 +28,7 @@ interface AutocompleteMatch {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    value: "",
+    modelValue: "",
     delay: 1000,
     loading: false,
     placeholder: "Enter your search term here.",
@@ -39,7 +39,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
     (e: "change", value: string): void;
     (e: "onToggle", showAdvanced: boolean): void;
 }>();
@@ -79,7 +79,7 @@ function delayQuery(query: string) {
 }
 
 function setQuery(queryNew: string) {
-    emit("input", queryNew);
+    emit("update:modelValue", queryNew);
     emit("change", queryNew);
 }
 
@@ -269,7 +269,7 @@ watch(
 );
 
 watchImmediate(
-    () => props.value,
+    () => props.modelValue,
     (newQuery) => {
         queryInput.value = newQuery;
     },

@@ -1,5 +1,5 @@
 <template>
-    <div v-g-tooltip.hover :disabled="disabled" :title="title"><slot /></div>
+    <div v-g-tooltip.hover :disabled="disabled || undefined" :title="title"><slot /></div>
 </template>
 <script>
 export default {

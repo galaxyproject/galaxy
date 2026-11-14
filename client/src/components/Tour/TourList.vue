@@ -49,7 +49,12 @@ loadTours();
         <h2 class="h-sm">Tours</h2>
         <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
         <div v-else>
-            <DelayedInput class="mb-3" :value="searchQuery" placeholder="search tours" :delay="0" @change="onSearch" />
+            <DelayedInput
+                class="mb-3"
+                :model-value="searchQuery"
+                placeholder="search tours"
+                :delay="0"
+                @change="onSearch" />
             <div v-for="tour in tours" :key="tour.id">
                 <div v-if="match(tour)" class="rounded border p-2 mb-2">
                     <GLink :to="withPrefix(`/tours/${tour.id}`)" data-description="tour link" thin>

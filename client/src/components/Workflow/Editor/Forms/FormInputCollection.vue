@@ -135,7 +135,12 @@ emit("onChange", cleanToolState());
 <template>
     <div>
         <FormCollectionType :value="collectionType" @onChange="onCollectionType" />
-        <FormElement id="optional" :value="toolState.optional" title="Optional" type="boolean" @input="onOptional" />
+        <FormElement
+            id="optional"
+            :model-value="toolState.optional"
+            title="Optional"
+            type="boolean"
+            @update:model-value="onOptional" />
         <FormDatatype
             id="format"
             :value="formatsAsList"
@@ -146,12 +151,12 @@ emit("onChange", cleanToolState());
             @onChange="onDatatype" />
         <FormElement
             id="tag"
-            :value="toolState.tag"
+            :model-value="toolState.tag"
             title="Tag filter"
             :optional="true"
             type="text"
             help="Tags to automatically filter inputs"
-            @input="onTags" />
+            @update:model-value="onTags" />
         <FormColumnDefinitions
             v-if="isSampleSheetType"
             :collection-type="sampleSheetCollectionType"

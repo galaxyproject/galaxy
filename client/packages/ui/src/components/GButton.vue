@@ -17,11 +17,6 @@ import { type ComponentColor, type ComponentSize, type ComponentVariantClassList
 
 import GTooltip from "./GTooltip.vue";
 
-defineOptions({
-    // Under @vue/compat: let undeclared listeners (@blur, @mouseout) fall through to the element, as in Vue 3
-    compatConfig: { INSTANCE_LISTENERS: false },
-});
-
 const props = withDefaults(
     defineProps<{
         /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
@@ -141,7 +136,7 @@ const buttonElementRef = useResolveElement(buttonRef);
 <template>
     <component
         :is="baseComponent"
-        v-bind="{ ...anchorAttributes, ...$attrs }"
+        v-bind="anchorAttributes"
         ref="buttonRef"
         class="g-button"
         :data-title="currentTitle"

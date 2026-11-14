@@ -33,16 +33,16 @@ function onSkipBoolean(value: boolean) {
 <template>
     <FormElement
         id="__conditional"
-        :value="conditionalDefined"
+        :model-value="conditionalDefined"
         title="Conditionally skip step?"
         help="Set to true and connect a boolean parameter that determines whether the step should run. The step runs if the parameter value is true and will be skipped if the parameter value is false"
         type="boolean"
-        @input="onSkipBoolean"></FormElement>
+        @update:model-value="onSkipBoolean"></FormElement>
     <!-- We don't seem to have a disabled text field
         <FormElement
             v-if="setConditional"
             id="__when"
-            :value="step.when"
+            :model-value="step.when"
             type="text"
             help="Step will be executed if javascript expression below evaluates to true."
             >

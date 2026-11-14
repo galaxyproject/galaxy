@@ -7,7 +7,7 @@ import ClickToEdit from "./ClickToEdit.vue";
 describe("ClickToEdit accessibility", () => {
     it.each(["enter", "space"])("starts editing with the %s key and saves the name", async (key) => {
         const wrapper = mount(ClickToEdit, {
-            props: { value: "Dataset" },
+            props: { modelValue: "Dataset" },
             global: getLocalVue(),
             attachTo: document.body,
         });
@@ -19,19 +19,19 @@ describe("ClickToEdit accessibility", () => {
         await vi.waitFor(() => expect(document.activeElement).toBe(input.element));
         await input.setValue("Renamed dataset");
         await input.trigger("keyup.enter");
-        expect(wrapper.emitted("input")?.[0]).toEqual(["Renamed dataset"]);
-        await wrapper.setProps({ value: "Renamed dataset" });
+        expect(wrapper.emitted("update:modelValue")?.[0]).toEqual(["Renamed dataset"]);
+        await wrapper.setProps({ modelValue: "Renamed dataset" });
         expect(wrapper.get("button").text()).toBe("Renamed dataset");
         wrapper.unmount();
     });
 
     it("reverts the name with the escape key", async () => {
-        const wrapper = mount(ClickToEdit, { props: { value: "Dataset" }, global: getLocalVue() });
+        const wrapper = mount(ClickToEdit, { props: { modelValue: "Dataset" }, global: getLocalVue() });
         await wrapper.get("button").trigger("click");
         const input = wrapper.get("input");
         await input.setValue("Discarded");
         await input.trigger("keyup.escape");
-        expect(wrapper.emitted("input")?.[0]).toEqual(["Dataset"]);
+        expect(wrapper.emitted("update:modelValue")?.[0]).toEqual(["Dataset"]);
         expect(wrapper.find("input").exists()).toBe(false);
     });
 
@@ -39,7 +39,7 @@ describe("ClickToEdit accessibility", () => {
         const wrapper = mount(
             {
                 components: { ClickToEdit },
-                template: '<div><ClickToEdit value="First" /><ClickToEdit value="Second" /></div>',
+                template: '<div><ClickToEdit model-value="First" /><ClickToEdit model-value="Second" /></div>',
             },
             { global: getLocalVue() },
         );

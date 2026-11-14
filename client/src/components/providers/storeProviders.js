@@ -46,8 +46,7 @@ export const SimpleProviderMixin = {
         },
     },
     render() {
-        // Use $scopedSlots for Vue 3 compat mode
-        const slotFn = this.$scopedSlots?.default || this.$slots?.default;
+        const slotFn = this.$slots.default;
         if (slotFn) {
             return slotFn({
                 loading: this.loading,

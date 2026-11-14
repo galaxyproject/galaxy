@@ -4,16 +4,7 @@ import "ag-grid-community/styles/ag-theme-alpine.min.css";
 import type { GridApi, GridReadyEvent } from "ag-grid-community";
 import { defineAsyncComponent, nextTick, ref } from "vue";
 
-// ag-grid-vue3 is a Vue 3 component; under the app's MODE 2 compat its `v-model` would be rewritten to
-// `value`/`input`. Compat checks each vnode's own component, so both the async wrapper and the grid opt out.
-const VUE3_MODE = { compatConfig: { MODE: 3 as const } };
-const AgGridVue = Object.assign(
-    defineAsyncComponent(async () => {
-        const { AgGridVue } = await import("ag-grid-vue3");
-        return { ...AgGridVue, ...VUE3_MODE } as typeof AgGridVue;
-    }),
-    VUE3_MODE,
-);
+const AgGridVue = defineAsyncComponent(async () => (await import("ag-grid-vue3")).AgGridVue);
 
 /** `forceGridSize` defaults to fitting the columns to the grid's width. */
 export function useAgGrid(forceGridSize?: () => void) {

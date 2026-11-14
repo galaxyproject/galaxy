@@ -12,7 +12,7 @@ describe("FormCheck", () => {
     beforeEach(() => {
         wrapper = mount(MountTarget, {
             props: {
-                value: null,
+                modelValue: null,
                 options: [],
             },
             global: localVue,
@@ -37,9 +37,9 @@ describe("FormCheck", () => {
             expect(labels.at(i + 1).text()).toBe(`label_${i}`);
             expect(inputs.at(i + 1).attributes("value")).toBe(`value_${i}`);
             expectedValues.push(`value_${i}`);
-            expect(emittedArg(wrapper, "input", i)).toEqual(expectedValues);
+            expect(emittedArg(wrapper, "update:modelValue", i)).toEqual(expectedValues);
             // the group owns no state of its own, so feed the emitted value back like v-model
-            await wrapper.setProps({ value: [...expectedValues] });
+            await wrapper.setProps({ modelValue: [...expectedValues] });
         }
         for (let i = 0; i < n; i++) {
             await inputs.at(i + 1).setValue(false);
@@ -47,8 +47,8 @@ describe("FormCheck", () => {
             if (expectedValues.length === 0) {
                 expectedValues = null;
             }
-            expect(emittedArg(wrapper, "input", i + 3)).toEqual(expectedValues);
-            await wrapper.setProps({ value: expectedValues && [...expectedValues] });
+            expect(emittedArg(wrapper, "update:modelValue", i + 3)).toEqual(expectedValues);
+            await wrapper.setProps({ modelValue: expectedValues && [...expectedValues] });
         }
     });
 
@@ -66,7 +66,7 @@ describe("FormCheck", () => {
             await inputs.at(i + 1).setValue(true);
             expect(inputs.at(i + 1).attributes("value")).toBe(emptyValues[i]);
             expectedValues.push(expectedValues[i]);
-            expect(emittedArg(wrapper, "input", i)).toEqual(expectedValues);
+            expect(emittedArg(wrapper, "update:modelValue", i)).toEqual(expectedValues);
         }
     });
 
@@ -93,16 +93,16 @@ describe("FormCheck", () => {
         await inputs.at(0).setValue(true);
         /* ...confirm corresponding options checked */
         const values = options.map((option) => option.value);
-        expect(emittedArg(wrapper, "input")).toStrictEqual(values);
-        await wrapper.setProps({ value: emittedArg(wrapper, "input") });
+        expect(emittedArg(wrapper, "update:modelValue")).toStrictEqual(values);
+        await wrapper.setProps({ modelValue: emittedArg(wrapper, "update:modelValue") });
         expect(inputs.at(0).element.checked).toBeTruthy();
         for (let i = 0; i < n; i++) {
             expect(inputs.at(i + 1).element.checked).toBe(true);
         }
         /* 2 - confirm select-all option UNchecked */
         await inputs.at(0).setValue(false);
-        expect(emittedArg(wrapper, "input", 1)).toBeNull();
-        await wrapper.setProps({ value: null });
+        expect(emittedArg(wrapper, "update:modelValue", 1)).toBeNull();
+        await wrapper.setProps({ modelValue: null });
         expect(inputs.at(0).element.checked).toBeFalsy();
         /* ...confirm corresponding options UNchecked */
         for (let i = 0; i < n; i++) {
@@ -110,8 +110,8 @@ describe("FormCheck", () => {
         }
         /* 3 - confirm corresponding options indeterminate-state */
         await inputs.at(1).setValue(true);
-        expect(emittedArg(wrapper, "input", 2)).toStrictEqual(["value_0"]);
-        await wrapper.setProps({ value: ["value_0"] });
+        expect(emittedArg(wrapper, "update:modelValue", 2)).toStrictEqual(["value_0"]);
+        await wrapper.setProps({ modelValue: ["value_0"] });
         expect(inputs.at(0).element.indeterminate).toBe(true);
     });
 });

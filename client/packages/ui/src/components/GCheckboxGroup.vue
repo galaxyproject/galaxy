@@ -17,11 +17,6 @@ import type { ComponentSize } from "./componentVariants";
 
 import GCheckbox from "./GCheckbox.vue";
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 interface Props {
     /**
      * Help text under the options, linked to the group with aria-describedby

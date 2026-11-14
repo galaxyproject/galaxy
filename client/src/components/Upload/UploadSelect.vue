@@ -22,7 +22,7 @@ const props = defineProps({
         type: String,
         default: "",
     },
-    value: {
+    modelValue: {
         type: String,
         default: null,
     },
@@ -40,15 +40,15 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["input"]);
+const emit = defineEmits(["update:modelValue"]);
 
 const { rankedItems: rankedOptions, onSearchChange } = useRankedSearch(() => props.options, ["text", "id"]);
 
 const currentValue = computed({
-    get: () => props.options.find((option) => option.id === props.value),
+    get: () => props.options.find((option) => option.id === props.modelValue),
     set(newValue) {
         if (newValue) {
-            emit("input", newValue.id);
+            emit("update:modelValue", newValue.id);
         }
     },
 });

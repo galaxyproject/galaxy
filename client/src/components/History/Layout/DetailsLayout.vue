@@ -150,12 +150,12 @@ function selectText() {
             <template v-if="!summarized && !editing">
                 <ClickToEdit
                     v-if="renameable"
-                    :value="clickToEditName"
+                    :model-value="clickToEditName"
                     component="h3"
                     data-description="name display"
                     no-save-on-blur
                     class="name-display my-2 w-100"
-                    @input="(v: string) => (clickToEditName = v)" />
+                    @update:model-value="(v: string) => (clickToEditName = v)" />
                 <Heading v-else h3 :clamp="2" class="my-2 w-100">
                     {{ props.name || "..." }}
                 </Heading>
@@ -208,7 +208,7 @@ function selectText() {
                     tags: ['both', 'tags'].includes(summarized || ''),
                     hidden: summarized === 'hidden',
                 }"
-                :value="tags"
+                :model-value="tags"
                 disabled
                 :max-visible-tags="summarized ? 1 : 5" />
             <slot v-if="summarized" name="update-time" />

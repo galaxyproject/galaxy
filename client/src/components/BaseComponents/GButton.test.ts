@@ -361,3 +361,19 @@ describe("GButton.vue pressed", () => {
         expect(wrapper.emitted("update:pressed")).toEqual([[true]]);
     });
 });
+
+describe("GButton.vue attributes", () => {
+    it("puts a consumer's class and style on the button once", () => {
+        const wrapper = mount(GButton as object, {
+            props: { color: "blue" },
+            attrs: { class: "consumer-class", style: "margin: 1px;" },
+            global: localVue,
+        });
+        const button = wrapper.get("button");
+        const classes = button.attributes("class")!.split(" ");
+
+        expect(classes).toEqual(expect.arrayContaining(["g-button", "g-blue", "consumer-class"]));
+        expect(new Set(classes).size).toBe(classes.length);
+        expect(button.attributes("style")).toBe("margin: 1px;");
+    });
+});

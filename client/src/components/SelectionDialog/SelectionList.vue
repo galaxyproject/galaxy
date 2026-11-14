@@ -187,7 +187,7 @@ function formatTime(date?: Date) {
                 </template>
 
                 <template v-slot:cell(tags)="data">
-                    <StatelessTags v-if="data.value?.length > 0" :value="data.value" :disabled="true" />
+                    <StatelessTags v-if="data.value?.length > 0" :model-value="data.value" :disabled="true" />
                     <span v-else>-</span>
                 </template>
 

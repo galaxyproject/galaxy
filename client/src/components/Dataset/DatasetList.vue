@@ -384,9 +384,9 @@ onMounted(() => {
 
                 <template v-slot:cell(tags)="row">
                     <StatelessTags
-                        :value="row.item.tags"
+                        :model-value="row.item.tags"
                         :disabled="row.item.deleted"
-                        @input="(tags: string[]) => onTags(tags, row.index)" />
+                        @update:model-value="(tags: string[]) => onTags(tags, row.index)" />
                 </template>
 
                 <template v-slot:cell(update_time)="data">

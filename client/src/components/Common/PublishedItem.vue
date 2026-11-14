@@ -69,7 +69,7 @@ const urlAll = computed(() => `/${pluralPath.value}/list_published`);
 
                 <img :src="gravatarSource" alt="user avatar" />
 
-                <StatelessTags v-if="props.item?.tags" class="tags mt-2" :value="props.item.tags" disabled />
+                <StatelessTags v-if="props.item?.tags" class="tags mt-2" :model-value="props.item.tags" disabled />
 
                 <br />
 

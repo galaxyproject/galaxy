@@ -145,11 +145,11 @@ defineExpose({
                     class="mt-3">
                     <FilesInput
                         id="source-selector"
-                        :value="sourceUri"
+                        :model-value="sourceUri"
                         mode="source"
                         :require-writable="true"
                         :filter-options="includeOnlyRDMCompatible"
-                        @input="(v: string) => (sourceUri = v)" />
+                        @update:model-value="(v: string) => (sourceUri = v)" />
                 </BFormGroup>
 
                 <BFormGroup
@@ -196,12 +196,12 @@ defineExpose({
                 class="mt-3">
                 <FilesInput
                     id="existing-record-selector"
-                    :value="recordUri"
+                    :model-value="recordUri"
                     mode="directory"
                     :require-writable="true"
                     :filter-options="fileSource ? undefined : includeOnlyRDMCompatible"
                     :selected-item="fileSourceAsItem"
-                    @input="(v: string) => (recordUri = v)" />
+                    @update:model-value="(v: string) => (recordUri = v)" />
             </BFormGroup>
         </div>
     </div>

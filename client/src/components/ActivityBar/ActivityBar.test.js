@@ -30,7 +30,6 @@ const localVue = getLocalVue();
 
 // shallowMount stubs draggable without rendering its scoped item slot, so render it ourselves.
 const draggableStub = {
-    compatConfig: { MODE: 3 },
     props: ["modelValue"],
     render() {
         return h(

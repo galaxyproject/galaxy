@@ -37,6 +37,7 @@ export default {
             required: true,
         },
     },
+    emits: ["clicked-convert"],
     data: function () {
         return {
             selectedConverter: {},

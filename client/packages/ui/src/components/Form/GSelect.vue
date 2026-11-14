@@ -13,11 +13,6 @@ import { computed } from "vue";
 import { type ComponentSize, prefix } from "../componentVariants";
 import type { SelectOption } from "./GSelect.types";
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 interface Props {
     /**
      * Disables the select

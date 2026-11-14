@@ -438,11 +438,11 @@ function unexpandedClick(event: Event) {
                 v-if="!tagsDisabled || hasTags"
                 class="px-2 pb-2"
                 :class="{ 'cursor-pointer': !expandDataset }"
-                :value="tags"
+                :model-value="tags"
                 :disabled="tagsDisabled"
                 :clickable="filterable"
                 :use-toggle-link="false"
-                @input="onTags"
+                @update:model-value="onTags"
                 @tag-click="onTagClick" />
         </span>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->

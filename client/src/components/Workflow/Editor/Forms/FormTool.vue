@@ -13,18 +13,18 @@
         @onUpdateFavorites="onUpdateFavorites">
         <FormElement
             id="__label"
-            :value="label"
+            :model-value="label"
             title="Label"
             help="Add a step label."
             :error="uniqueErrorLabel"
-            @input="onLabel" />
+            @update:model-value="onLabel" />
         <FormElement
             id="__annotation"
-            :value="annotation"
+            :model-value="annotation"
             title="Step Annotation"
             :area="true"
             help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-            @input="onAnnotation" />
+            @update:model-value="onAnnotation" />
         <FormConditional :step="step" @onUpdateStep="(id, step) => $emit('onUpdateStep', id, step)" />
         <div class="mt-2 mb-4">
             <Heading h2 separator bold size="sm"> Tool Parameters </Heading>

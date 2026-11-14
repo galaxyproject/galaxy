@@ -103,6 +103,7 @@ export default {
             default: null,
         },
     },
+    emits: ["ok", "hide"],
     setup() {
         const { config, isConfigLoaded } = useConfig();
         return { config, isConfigLoaded };

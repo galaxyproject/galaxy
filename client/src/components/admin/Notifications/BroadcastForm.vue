@@ -262,8 +262,8 @@ if (props.id) {
                         description="The broadcast will be displayed from this time onwards. Default is the time of creation.">
                         <GDateTime
                             id="broadcast-publication-time"
-                            :value="publicationDate"
-                            @input="(v: Date) => (publicationDate = v)" />
+                            :model-value="publicationDate"
+                            @update:model-value="(v: Date) => (publicationDate = v)" />
                     </BFormGroup>
                 </BCol>
                 <BCol>
@@ -274,8 +274,8 @@ if (props.id) {
                         description="The broadcast will not be displayed and will be deleted from the database after this time. Default is 6 months from the creation time.">
                         <GDateTime
                             id="broadcast-expiration-time"
-                            :value="expirationDate"
-                            @input="(v: Date) => (expirationDate = v)" />
+                            :model-value="expirationDate"
+                            @update:model-value="(v: Date) => (expirationDate = v)" />
                     </BFormGroup>
                 </BCol>
             </BRow>

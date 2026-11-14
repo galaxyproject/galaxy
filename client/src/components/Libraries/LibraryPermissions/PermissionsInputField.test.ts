@@ -32,7 +32,7 @@ describe("PermissionsInputField", () => {
     });
 
     it("reports the roles picked in the multiselect to its parent", async () => {
-        // A real multiselect: a stub would lose its compat MODE 3 and take the Vue 2 v-model.
+        // A real multiselect, so the test sees the event vue-multiselect actually emits.
         const wrapper = mount(PermissionsInputField, {
             props: PROPS,
             global: getLocalVue(),

@@ -25,7 +25,7 @@ const { mockGet, mockPost, mockPut, routeMock, routerMock, ChatMessageCellStub, 
     },
     ChatInputStub: {
         name: "ChatInputStub",
-        props: ["value", "busy"],
+        props: ["modelValue", "busy"],
         render() {
             return h("input", { class: "chat-input-stub" });
         },
@@ -109,7 +109,7 @@ function messageTexts(wrapper: VueWrapper) {
 
 async function sendMessage(wrapper: VueWrapper, text: string) {
     const input = wrapper.findComponent(ChatInputStub);
-    input.vm.$emit("input", text);
+    input.vm.$emit("update:modelValue", text);
     await wrapper.vm.$nextTick();
     input.vm.$emit("submit");
     await flushPromises();
@@ -165,7 +165,7 @@ describe("GalaxyAI route sync", () => {
         });
         await flushPromises();
 
-        expect(wrapper.findComponent(ChatInputStub).props("value")).toBe("trim my reads");
+        expect(wrapper.findComponent(ChatInputStub).props("modelValue")).toBe("trim my reads");
         // the seeded question is only prefilled, never sent on the user's behalf
         expect(mockPost).not.toHaveBeenCalled();
         // only `?q=` is dropped, in place, so a reload starts empty
@@ -175,7 +175,7 @@ describe("GalaxyAI route sync", () => {
         // the navigation clears the prop but leaves the prefilled question in place
         await wrapper.setProps({ initialQuestion: undefined });
         await flushPromises();
-        expect(wrapper.findComponent(ChatInputStub).props("value")).toBe("trim my reads");
+        expect(wrapper.findComponent(ChatInputStub).props("modelValue")).toBe("trim my reads");
     });
 
     it("does not route back to the previous exchange when a new chat is started", async () => {

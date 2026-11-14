@@ -14,6 +14,10 @@ interface SharingIndicatorsProps {
     };
 }
 const props = defineProps<SharingIndicatorsProps>();
+
+const emit = defineEmits<{
+    (e: "filter", filter: "published" | "importable" | "shared_with_me"): void;
+}>();
 </script>
 
 <template>
@@ -28,7 +32,7 @@ const props = defineProps<SharingIndicatorsProps>();
             transparent
             icon-only
             title="Find all published items"
-            @click.prevent="$emit('filter', 'published')">
+            @click.prevent="emit('filter', 'published')">
             <FontAwesomeIcon :icon="faGlobe" />
         </GButton>
         <GButton
@@ -39,7 +43,7 @@ const props = defineProps<SharingIndicatorsProps>();
             transparent
             icon-only
             title="Find all importable items"
-            @click.prevent="$emit('filter', 'importable')">
+            @click.prevent="emit('filter', 'importable')">
             <FontAwesomeIcon :icon="faLink" />
         </GButton>
         <GButton
@@ -50,7 +54,7 @@ const props = defineProps<SharingIndicatorsProps>();
             transparent
             icon-only
             title="Find all items shared with me"
-            @click.prevent="$emit('filter', 'shared_with_me')">
+            @click.prevent="emit('filter', 'shared_with_me')">
             <FontAwesomeIcon :icon="faShareAlt" />
         </GButton>
     </span>
