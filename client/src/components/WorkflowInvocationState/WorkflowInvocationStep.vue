@@ -3,11 +3,12 @@ import { faTimesCircle } from "@fortawesome/free-regular-svg-icons";
 import { faInfoCircle, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onUnmounted, ref, watch, watchEffect } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import type { WorkflowStepTyped } from "@/api/workflows";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { type StepTab, useInvocationSelection } from "@/composables/invocationSelection";
 import type { GraphStep } from "@/composables/useInvocationGraph";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useInvocationStore } from "@/stores/invocationStore";
@@ -43,11 +44,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "update:expanded", value: boolean): void;
+    (e: "select"): void;
 }>();
 
 const invocationStore = useInvocationStore();
 const { datatypes } = useDatatypesMapper();
 
+const selection = useInvocationSelection();
+const localTab = ref<StepTab>();
 const localExpanded = ref(Boolean(props.expanded));
 const stepConfigData = ref<Record<string, any> | null>(null);
 const loadingStepConfig = ref(false);
@@ -70,7 +74,9 @@ const workflowStepType = computed(() => props.workflowStep.type);
 
 const invocationInput = computed(() => props.invocation.inputs[props.workflowStep.id]);
 
-const invocationStep = computed(() => props.invocation.steps[props.workflowStep.id]);
+const invocationStep = computed(() =>
+    props.invocation.steps.find((step) => step.order_index === props.workflowStep.id),
+);
 
 const invocationStepId = computed(() => invocationStep.value?.id);
 
@@ -136,6 +142,82 @@ async function pollStepUntilTerminal() {
     }
 }
 
+const availableTabs = computed<StepTab[]>(() => [
+    ...(workflowStepType.value === "tool" ? ["jobs" as const] : []),
+    ...(hasOutputDatasets.value || hasOutputCollections.value ? ["outputs" as const] : []),
+    "config",
+]);
+let rebuildingTabs = false;
+let disposing = false;
+onBeforeUnmount(() => {
+    disposing = true;
+});
+watch(
+    availableTabs,
+    async (tabs, previous) => {
+        if (tabs.join(",") !== previous.join(",")) {
+            rebuildingTabs = true;
+            await nextTick();
+            rebuildingTabs = false;
+        }
+    },
+    { flush: "pre" },
+);
+
+const selectedTab = computed({
+    get: () => {
+        const requested =
+            selection?.stepIndex.value === props.workflowStep.id ? selection.stepTab.value : localTab.value;
+        const index = requested ? availableTabs.value.indexOf(requested) : -1;
+        return index >= 0 ? index : 0;
+    },
+    set: (index: number) => {
+        // GTabs emits index adjustments while its children unregister.
+        if (disposing || rebuildingTabs || !computedExpanded.value) {
+            return;
+        }
+        const tab = availableTabs.value[index];
+        localTab.value = tab;
+        if (selection) {
+            emit("select");
+            selection.stepIndex.value = props.workflowStep.id;
+            selection.stepTab.value = tab;
+            if (tab !== "jobs") {
+                selection.job.value = undefined;
+            }
+            if (tab !== "outputs") {
+                selection.output.value = undefined;
+            }
+        }
+    },
+});
+watch(
+    [selectedTab, computedExpanded, stepDetails],
+    () => {
+        if (computedExpanded.value && stepDetails.value && availableTabs.value[selectedTab.value] === "config") {
+            void fetchStepConfig();
+        }
+    },
+    { immediate: true },
+);
+// A terminal step won't gain jobs or outputs, so drop link targets it can't show.
+watchEffect(() => {
+    const details = stepDetails.value;
+    if (!selection || selection.stepIndex.value !== props.workflowStep.id || !details || !stepIsTerminal.value) {
+        return;
+    }
+    if (selection.stepTab.value && !availableTabs.value.includes(selection.stepTab.value)) {
+        selection.stepTab.value = undefined;
+    }
+    if (selection.job.value && !details.jobs.some((job) => job.id === selection.job.value)) {
+        selection.job.value = undefined;
+    }
+    const output = selection.output.value;
+    if (output && !(output in details.outputs) && !(output in details.output_collections)) {
+        selection.output.value = undefined;
+    }
+});
+
 const jobsTabIcon = computed(() =>
     hasOutputDatasets.value || hasOutputCollections.value ? faInfoCircle : faTimesCircle,
 );
@@ -185,6 +267,19 @@ async function fetchStepConfig() {
         stepConfigData.value = data;
     } finally {
         loadingStepConfig.value = false;
+    }
+}
+
+function selectOutput(name: string, expanded: boolean) {
+    if (
+        selection &&
+        (expanded || (selection.stepIndex.value === props.workflowStep.id && selection.output.value === name))
+    ) {
+        emit("select");
+        selection.stepIndex.value = props.workflowStep.id;
+        selection.stepTab.value = "outputs";
+        selection.job.value = undefined;
+        selection.output.value = expanded ? name : undefined;
     }
 }
 
@@ -260,7 +355,11 @@ onUnmounted(() => {
                                                     v-for="stepInput in Object.values(props.workflowStep.input_steps)"
                                                     :key="stepInput.source_step">
                                                     <WorkflowStepTitle
-                                                        :invocation-step="props.invocation.steps[stepInput.source_step]"
+                                                        :invocation-step="
+                                                            props.invocation.steps.find(
+                                                                (step) => step.order_index === stepInput.source_step,
+                                                            )
+                                                        "
                                                         :workflow-step="props.workflowStep" />
                                                 </li>
                                             </ul>
@@ -270,7 +369,7 @@ onUnmounted(() => {
                                     <SubworkflowAlert v-else :invocation-id="stepDetails.subworkflow_invocation_id" />
                                 </div>
 
-                                <GTabs justified>
+                                <GTabs :key="availableTabs.join(',')" v-model="selectedTab" justified>
                                     <GTab v-if="workflowStepType === 'tool'" class="portlet-body" style="width: 100%">
                                         <template v-slot:title>
                                             <FontAwesomeIcon :icon="jobsTabIcon" />
@@ -282,7 +381,9 @@ onUnmounted(() => {
                                                 v-if="stepDetails.jobs?.length"
                                                 class="mt-1"
                                                 :jobs="stepDetails.jobs"
-                                                :invocation-id="props.invocation.id" />
+                                                :step-index="props.workflowStep.id"
+                                                :invocation-id="props.invocation.id"
+                                                @select="emit('select')" />
                                             <GAlert v-else v-localize variant="info" show>This step has no jobs</GAlert>
                                         </div>
                                     </GTab>
@@ -297,7 +398,17 @@ onUnmounted(() => {
                                             </Heading>
                                             <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                                                 <b>{{ name }}</b>
-                                                <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
+                                                <GenericHistoryItem
+                                                    :item-id="value.id"
+                                                    :item-src="value.src"
+                                                    :expanded="
+                                                        selection?.stepIndex.value === props.workflowStep.id &&
+                                                        selection.output.value === name
+                                                            ? true
+                                                            : undefined
+                                                    "
+                                                    scroll-on-expand
+                                                    @update:expanded="selectOutput(String(name), $event)" />
                                             </div>
                                         </div>
 
@@ -311,7 +422,17 @@ onUnmounted(() => {
                                                 v-for="(value, name) in stepDetails.output_collections"
                                                 :key="value.id">
                                                 <b>{{ name }}</b>
-                                                <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
+                                                <GenericHistoryItem
+                                                    :item-id="value.id"
+                                                    :item-src="value.src"
+                                                    :expanded="
+                                                        selection?.stepIndex.value === props.workflowStep.id &&
+                                                        selection.output.value === name
+                                                            ? true
+                                                            : undefined
+                                                    "
+                                                    scroll-on-expand
+                                                    @update:expanded="selectOutput(String(name), $event)" />
                                             </div>
                                         </div>
                                     </GTab>
@@ -319,8 +440,7 @@ onUnmounted(() => {
                                     <GTab
                                         :class="{ 'invocation-view-step-config': props.inGraphView }"
                                         title-item-class="invocation-step-config-tab"
-                                        lazy
-                                        @click="fetchStepConfig">
+                                        lazy>
                                         <template v-slot:title>
                                             <FontAwesomeIcon :icon="faWrench" />
                                             <span v-localize>Step Config</span>
