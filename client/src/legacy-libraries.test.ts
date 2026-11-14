@@ -5,6 +5,8 @@ import { defineComponent, nextTick } from "vue";
 
 import { LEGACY_COMPAT_CONFIG } from "./legacy-libraries";
 
+import FormText from "@/components/Form/Elements/FormText.vue";
+
 function compatConfigOf(component: any) {
     return (component.options ?? component).compatConfig;
 }
@@ -16,15 +18,20 @@ describe("legacy-libraries marker", () => {
         }
     });
 
-    // Global MODE is still 2 and COMPONENT_V_MODEL still on, so the v-model and
-    // attribute checks pass either way for now. What catches a missing marker
-    // here is compat's console.error for bootstrap-vue's beforeDestroy hooks,
-    // since compat-config.js turns OPTIONS_BEFORE_DESTROY off.
+    // compat-config.js turns COMPONENT_V_MODEL and ATTR_FALSE_VALUE off, so
+    // without the marker BFormTextarea's v-model would bind modelValue against
+    // its value/input model and BButton would render disabled="false". The
+    // FormText next to them checks that Galaxy's own components still get the
+    // Vue 3 modelValue contract, i.e. the marker stays on bootstrap-vue.
     it("keeps bootstrap-vue's v-model and attributes working with Galaxy's flags off", async () => {
         const Parent = defineComponent({
-            components: { BButton, BFormTextarea },
-            data: () => ({ text: "start" }),
-            template: `<div><BFormTextarea v-model="text" /><BButton :disabled="false">Go</BButton></div>`,
+            components: { BButton, BFormTextarea, FormText },
+            data: () => ({ text: "start", galaxyText: "galaxy start" }),
+            template: `<div>
+                <BFormTextarea v-model="text" />
+                <BButton :disabled="false">Go</BButton>
+                <FormText v-model="galaxyText" />
+            </div>`,
         });
         const wrapper = mount(Parent);
         const textarea = wrapper.find("textarea");
@@ -38,5 +45,13 @@ describe("legacy-libraries marker", () => {
         expect((textarea.element as HTMLTextAreaElement).value).toBe("from parent");
 
         expect(wrapper.find("button").attributes("disabled")).toBeUndefined();
+
+        const formText = wrapper.findComponent(FormText);
+        expect(formText.props("modelValue")).toBe("galaxy start");
+        const input = formText.find("input");
+        expect((input.element as HTMLInputElement).value).toBe("galaxy start");
+        await input.setValue("galaxy typed");
+        expect(formText.emitted("update:modelValue")?.at(-1)).toEqual(["galaxy typed"]);
+        expect((wrapper.vm as any).galaxyText).toBe("galaxy typed");
     });
 });
