@@ -14,6 +14,7 @@ interface Props {
     config: object;
     title?: string;
     visualizationId?: string;
+    embed?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -59,6 +60,7 @@ async function render() {
             const pluginPath = plugin.href;
             const dataIncoming = {
                 root: window.location.origin + getAppRoot(),
+                visualization_embedded: Boolean(props.embed),
                 visualization_config: props.config,
                 visualization_id: props.visualizationId,
                 visualization_plugin: plugin,

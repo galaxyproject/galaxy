@@ -114,3 +114,15 @@ def test_workflow_accepts(parameters):
 def test_workflow_rejects(parameters):
     with pytest.raises(ValidationError):
         Draft202012Validator(widget("workflow").parameters_schema).validate(parameters)
+
+
+def test_visualization_accepts():
+    Draft202012Validator(widget("visualization").parameters_schema).validate({"visualization_id": "1a"})
+
+
+@pytest.mark.parametrize(
+    "parameters", [{}, {"visualization_id": "not-hex"}, {"visualization_id": "1a", "dataset_id": "2b"}]
+)
+def test_visualization_rejects(parameters):
+    with pytest.raises(ValidationError):
+        Draft202012Validator(widget("visualization").parameters_schema).validate(parameters)

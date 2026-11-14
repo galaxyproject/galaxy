@@ -12,6 +12,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import EditableUrl from "./EditableUrl.vue";
 import PageEmbed from "./Embeds/PageEmbed.vue";
+import VisualizationEmbed from "./Embeds/VisualizationEmbed.vue";
 import WorkflowEmbed from "./Embeds/WorkflowEmbed.vue";
 import ErrorMessages from "./ErrorMessages.vue";
 import UserSharing from "./UserSharing.vue";
@@ -207,9 +208,7 @@ async function setUsername() {
 }
 
 const embedable = computed(
-    () =>
-        item.value.importable &&
-        (props.modelClass.toLocaleLowerCase() === "workflow" || props.modelClass.toLocaleLowerCase() === "page"),
+    () => item.value.importable && ["workflow", "page", "visualization"].includes(props.modelClass.toLocaleLowerCase()),
 );
 </script>
 
@@ -274,6 +273,7 @@ const embedable = computed(
 
                 <WorkflowEmbed v-if="props.modelClass.toLowerCase() === 'workflow'" :id="id" />
                 <PageEmbed v-else-if="props.modelClass.toLowerCase() === 'page'" :id="id" />
+                <VisualizationEmbed v-else-if="props.modelClass.toLowerCase() === 'visualization'" :id="id" />
             </div>
 
             <Heading h2 size="md"> Share {{ modelClass }} with Individual Users </Heading>

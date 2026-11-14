@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { useDebounce } from "@vueuse/core";
-import { BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
 import { EMBED_LABELS } from "@/components/Page/constants";
-import { copy } from "@/utils/clipboard";
 
-import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
-import GButton from "@/components/BaseComponents/GButton.vue";
+import EmbedCode from "./EmbedCode.vue";
+import EmbedSize from "./EmbedSize.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import PageView from "@/components/Page/PageView.vue";
 
@@ -25,16 +23,6 @@ const settings = ref({
     height: 600,
 });
 
-// v-model casts a type="number" input's value to a number, but an empty or partial
-// number ("-", "1e") comes through as ""; keep the last size then
-function toSize(value: string | number | null, current: number) {
-    if (typeof value === "number") {
-        return value;
-    }
-    const size = parseFloat(value ?? "");
-    return Number.isNaN(size) ? current : size;
-}
-
 const embedUrl = computed(() => {
     let url = getFullAppUrl(`widgets/pages/${props.id}`);
     url += `?heading=${settings.value.showHeading}`;
@@ -43,27 +31,13 @@ const embedUrl = computed(() => {
 
 const embedStyle = computed(() => {
     if (settings.value.applyStyle) {
-        return ` width="${settings.value.width}px" height="${settings.value.height}px" style="border: 1px solid #ddd; border-radius: 4px;" `;
+        return `width="${settings.value.width}px" height="${settings.value.height}px" style="border: 1px solid #ddd; border-radius: 4px;"`;
     }
-    return " ";
+    return "";
 });
-
-const embed = computed(
-    () => `<iframe title="${EMBED_LABELS.iframeTitle}"${embedStyle.value}src="${embedUrl.value}"></iframe>`,
-);
 
 const showEmbed = ref(false);
 const showEmbedDebounced = useDebounce(showEmbed, 100);
-
-const copied = ref(false);
-
-function onCopy() {
-    copy(embed.value);
-    copied.value = true;
-    setTimeout(() => {
-        copied.value = false;
-    }, 2000);
-}
 </script>
 
 <template>
@@ -78,42 +52,11 @@ function onCopy() {
                 <GCheckbox v-model="settings.applyStyle" switch> Apply default styling </GCheckbox>
             </div>
 
-            <div v-if="settings.applyStyle" class="dimension-controls">
-                <label>
-                    Width
-                    <GFormInput
-                        :model-value="String(settings.width)"
-                        type="number"
-                        min="200"
-                        max="2000"
-                        step="50"
-                        @update:model-value="settings.width = toSize($event, settings.width)" />
-                </label>
-                <label>
-                    Height
-                    <GFormInput
-                        :model-value="String(settings.height)"
-                        type="number"
-                        min="200"
-                        max="2000"
-                        step="50"
-                        @update:model-value="settings.height = toSize($event, settings.height)" />
-                </label>
-            </div>
+            <EmbedSize v-if="settings.applyStyle" v-model:width="settings.width" v-model:height="settings.height" />
         </div>
 
         <div class="preview">
-            <label for="embed-code" class="w-100">
-                Embed code
-                <BInputGroup id="embed-code">
-                    <GFormInput class="embed-code-input" :model-value="embed" readonly />
-                    <BInputGroupAppend>
-                        <GButton color="blue" @click="onCopy">
-                            {{ copied ? "Copied!" : "Copy" }}
-                        </GButton>
-                    </BInputGroupAppend>
-                </BInputGroup>
-            </label>
+            <EmbedCode :title="EMBED_LABELS.iframeTitle" :url="embedUrl" :attributes="embedStyle" />
 
             <GCheckbox v-model="showEmbed" class="align-self-start" switch>Show embed Preview</GCheckbox>
             <PageView
@@ -142,17 +85,6 @@ function onCopy() {
         h4 {
             margin-bottom: 1rem;
         }
-
-        .dimension-controls {
-            display: flex;
-            gap: 1rem;
-            margin-top: 0.5rem;
-
-            label {
-                flex: 1;
-                font-size: 0.875rem;
-            }
-        }
     }
 
     .preview {
@@ -160,12 +92,6 @@ function onCopy() {
         display: flex;
         flex-direction: column;
         gap: 1rem;
-
-        .embed-code-input {
-            background-color: transparent;
-            font-family: monospace;
-            font-size: 0.875rem;
-        }
 
         .page-preview {
             border: 2px solid $border-color;
