@@ -472,3 +472,15 @@ def make_fast_zipfile(
     if root_dir is not None:
         zip_filename = os.path.abspath(zip_filename)
     return zip_filename
+
+
+def decompress_bytes(data: bytes) -> bytes:
+    """Return ``data`` decompressed if it is in a compressed format ``get_fileobj`` recognizes, else unchanged.
+
+    For a zip archive this is the content of its first member, as ``get_fileobj`` reads it.
+    """
+    with tempfile.NamedTemporaryFile() as tmpfh:
+        tmpfh.write(data)
+        tmpfh.flush()
+        with get_fileobj(tmpfh.name, mode="rb", compressed_formats=None) as fh:
+            return fh.read()
