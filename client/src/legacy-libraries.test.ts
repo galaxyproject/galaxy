@@ -53,4 +53,18 @@ describe("legacy-libraries marker", () => {
         expect(formText.emitted("update:modelValue")?.at(-1)).toEqual(["galaxy typed"]);
         expect((wrapper.vm as any).galaxyText).toBe("galaxy typed");
     });
+
+    // Compat checks COMPONENT_FUNCTIONAL on the rendering parent, not on the
+    // functional component, so this is what the global flag keeps working.
+    it("renders bootstrap-vue's functional components from a Galaxy parent", () => {
+        const Parent = defineComponent({
+            components: { BCol, BRow },
+            template: `<BRow><BCol data-test="col">content</BCol></BRow>`,
+        });
+        const wrapper = mount(Parent);
+        const col = wrapper.find("[data-test='col']");
+        expect(col.classes()).toContain("col");
+        expect(col.text()).toBe("content");
+        expect(wrapper.classes()).toContain("row");
+    });
 });
