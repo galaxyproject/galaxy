@@ -1,4 +1,5 @@
 import csv
+import json
 import tempfile
 from typing import (
     Any,
@@ -60,6 +61,43 @@ def test_delimited_metadata_empty_input(tmp_path, datatype):
     assert dataset.metadata.column_types == []
     assert dataset.metadata.columns == 0
     assert dataset.metadata.column_names == []
+
+
+def _write_delimited(path, datatype, rows):
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        csv.writer(handle, dialect=datatype.dialect).writerows(rows)
+
+
+@pytest.mark.parametrize("datatype", [CSV(), TSV()], ids=["csv", "tsv"])
+def test_delimited_display_peek_renders_header_once(tmp_path, datatype):
+    source = tmp_path / f"input.{datatype.file_ext}"
+    _write_delimited(source, datatype, [["name", "value"], ["first", "1"]])
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    datatype.set_meta(dataset)
+    cast(Any, dataset.metadata).spec = {}
+    cast(Any, dataset).peek = source.read_text()
+
+    html = datatype.display_peek(dataset)
+
+    assert "<th>1.name</th>" in html
+    assert "<td>name</td>" not in html
+    assert "<td>first</td>" in html
+
+
+@pytest.mark.parametrize("datatype", [CSV(), TSV()], ids=["csv", "tsv"])
+def test_delimited_chunk_skips_header_only_in_first_chunk(tmp_path, datatype):
+    source = tmp_path / f"input.{datatype.file_ext}"
+    _write_delimited(source, datatype, [["A", "B"], ["1", "2"], ["3", "4"], ["5", "6"]])
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    datatype.set_meta(dataset)
+
+    first_chunk = json.loads(datatype.get_chunk(None, dataset, 0, ck_size=6))
+    next_chunk = json.loads(datatype.get_chunk(None, dataset, first_chunk["offset"], ck_size=6))
+
+    assert first_chunk["data_line_offset"] == 1
+    assert next_chunk["data_line_offset"] == 0
 
 
 def test_tabular_set_meta_large_file():
