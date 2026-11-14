@@ -6,6 +6,7 @@ import abc
 import copy
 import datetime
 import errno
+import functools
 import json
 import logging
 import os
@@ -2438,7 +2439,18 @@ class MinimalJobWrapper(HasResourceParameters):
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
         if extended_metadata:
             try:
-                import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
+                # The job writes this model store, so it may only edit the job's own outputs. User-defined tools
+                # can't link their outputs to server files or move them to another object store either.
+                user_defined_tool = bool(job.dynamic_tool and job.dynamic_tool.tool_format == "GalaxyUserTool")
+                import_options = store.ImportOptions(
+                    allow_dataset_object_edit=True,
+                    allow_edit=True,
+                    editable_objects=store.EditableObjects(
+                        job,
+                        allow_dataset_file_edit=not user_defined_tool,
+                        can_add_to_library_folder=functools.partial(self._can_add_to_library_folder, job),
+                    ),
+                )
                 import_model_store = store.get_import_model_store_for_directory(
                     os.path.join(self.working_directory, "metadata", "outputs_populated"),
                     app=self.app,
@@ -2712,6 +2724,11 @@ class MinimalJobWrapper(HasResourceParameters):
             # Metadata set for legacy galaxy.json datasets writes its temp files here.
             metadata_tmp_files_dir=job_metadata_directory(self.working_directory),
         )
+
+    def _can_add_to_library_folder(self, job: model.Job, folder_id: int) -> bool:
+        folder = self.sa_session.get(model.LibraryFolder, folder_id)
+        trans = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
+        return folder is not None and self.app.library_folder_manager.can_add_item(trans, folder)
 
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):
         state, tool_stdout, tool_stderr, job_messages = check_output(
