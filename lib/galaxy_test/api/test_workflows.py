@@ -2581,6 +2581,53 @@ steps:
             job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
             assert sorted(job_details["outputs"].keys()) == ["AA", "CC"]
 
+    @skip_without_tool("simple_constructs")
+    def test_export_editor_unhashable_multiple_select_value(self):
+        # a list holding a dict (e.g. a conditional-shaped value) can never match a select option
+        workflow = {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "unhashable select value",
+            "annotation": "",
+            "steps": {
+                "0": {
+                    "id": 0,
+                    "type": "tool",
+                    "tool_id": "simple_constructs",
+                    "tool_state": json.dumps({"check_select": [{"value": "x"}]}),
+                    "input_connections": {},
+                }
+            },
+        }
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        assert "invalid options" in downloaded_workflow["upgrade_messages"]["0"]["check_select"]
+
+    def test_import_parameter_input_without_parameter_type(self):
+        workflow = {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "parameter input without parameter_type",
+            "annotation": "",
+            "steps": {
+                "0": {
+                    "id": 0,
+                    "type": "parameter_input",
+                    "label": "skip",
+                    "tool_state": json.dumps({"parameter_definition": {"parameter_type": "boolean"}}),
+                    "input_connections": {},
+                }
+            },
+        }
+        response = self.workflow_populator.create_workflow_response(workflow)
+        self._assert_status_code_is(response, 400)
+        assert "parameter_type" in response.json()["err_msg"]
+
+    def test_import_without_annotation(self):
+        workflow = {"a_galaxy_workflow": "true", "format-version": "0.1", "name": "no annotation", "steps": {}}
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        assert self._download_workflow(workflow_id)["annotation"] == ""
+
     @skip_without_tool("collection_type_source")
     def test_export_editor_collection_type_source(self):
         workflow_id = self._upload_yaml_workflow(WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE)

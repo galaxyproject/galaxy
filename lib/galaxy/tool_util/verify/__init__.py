@@ -46,7 +46,10 @@ from galaxy.tool_util.parser.util import (
 )
 from galaxy.tool_util.parser.yaml import to_test_assert_list
 from galaxy.util import unicodify
-from galaxy.util.compression_utils import get_fileobj
+from galaxy.util.compression_utils import (
+    decompress_bytes,
+    get_fileobj,
+)
 from ._types import (
     ExpandedToolInputsJsonified,
     ToolTestDescriptionDict,
@@ -115,16 +118,7 @@ def verify(
                 f.write(file_content)
             return local_name
 
-    # Check assertions...
     assertions = attributes.get("assert_list", None)
-    if assertions is not None:
-        try:
-            sep = _assertion_separator(profile, get_delimiter)
-            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress", False), sep=sep)
-        except AssertionError as err:
-            errmsg = f"{item_label} different than expected\n"
-            errmsg += unicodify(err)
-            raise AssertionError(errmsg)
 
     # Verify checksum attributes...
     # works with older Galaxy style md5=<expected_sum> or cwltest
@@ -141,12 +135,33 @@ def verify(
         )  # redundant with the test in the elif, but cannot use := until we drop support for Python 3.7
         expected_checksum_type, expected_checksum = checksum_value.split("$", 1)
 
-    if expected_checksum_type:
+    # decompress applies to assertions, checksums and compare
+    decompress = attributes.get("decompress", False)
+    content = output_content
+    if decompress and (assertions is not None or expected_checksum_type):
         try:
-            _verify_checksum(output_content, expected_checksum_type, expected_checksum)
+            content = decompress_bytes(output_content)
+        except Exception as err:
+            raise AssertionError(f"{item_label} could not be decompressed: {unicodify(err)}")
+
+    # Check assertions...
+    if assertions is not None:
+        try:
+            sep = _assertion_separator(profile, get_delimiter)
+            verify_assertions(content, assertions, sep=sep)
         except AssertionError as err:
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)
+            raise AssertionError(errmsg)
+
+    if expected_checksum_type:
+        try:
+            _verify_checksum(content, expected_checksum_type, expected_checksum)
+        except AssertionError as err:
+            errmsg = f"{item_label} different than expected\n"
+            errmsg += unicodify(err)
+            if decompress:
+                errmsg += " (checksum of the decompressed content, because decompress is set)"
             raise AssertionError(errmsg)
 
     # expected object might be None, so don't pull unless available
