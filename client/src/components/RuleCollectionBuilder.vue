@@ -611,7 +611,6 @@
 </template>
 
 <script>
-import HotTable from "@handsontable/vue";
 import axios from "axios";
 import { BRow } from "bootstrap-vue";
 import { escape } from "lodash";
@@ -619,6 +618,7 @@ import { mapActions } from "pinia";
 
 import { ERROR_STATES, NON_TERMINAL_STATES } from "@/api/jobs";
 import { fetchDatasetsToJobId, fetchJobErrorMessage } from "@/api/tools";
+import HotTable from "@/components/Common/legacy/HotTable";
 import RuleDefs from "@/components/RuleBuilder/rule-definitions";
 import UploadUtils from "@/components/Upload/utils";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -747,6 +747,7 @@ export default {
             default: "modal", // set to wizard to use embedded formatting
         },
     },
+    emits: ["validInput", "onCreate", "onAttemptCreate"],
     data: function () {
         let orientation = "vertical";
         let mapping;

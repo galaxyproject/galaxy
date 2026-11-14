@@ -141,7 +141,7 @@ const buttonElementRef = useResolveElement(buttonRef);
 <template>
     <component
         :is="baseComponent"
-        v-bind="{ ...anchorAttributes, ...$attrs }"
+        v-bind="anchorAttributes"
         ref="buttonRef"
         class="g-button"
         :data-title="currentTitle"

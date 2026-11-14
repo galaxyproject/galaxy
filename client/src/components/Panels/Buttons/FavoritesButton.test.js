@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { useUserStore } from "@/stores/userStore";
 
 import FavoritesButton from "./FavoritesButton.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const localVue = getLocalVue();
 
@@ -30,14 +31,14 @@ describe("Favorites Button", () => {
             email: "user.email",
         });
 
-        expect(wrapper.attributes("disabled")).toBeFalsy();
+        expect(wrapper.findComponent(GButton).props("disabled")).toBe(false);
         expect(wrapper.attributes("title")).toBe("Show favorites");
     });
 
     it("prompts anonymous users to log in", async () => {
         const wrapper = await createWrapper(FavoritesButton, localVue, {});
 
-        expect(wrapper.attributes("disabled")).toBeTruthy();
+        expect(wrapper.findComponent(GButton).props("disabled")).toBe(true);
         expect(wrapper.attributes("title").toLowerCase()).toContain("log in");
     });
 });

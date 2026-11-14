@@ -21,6 +21,7 @@ export default {
             required: true,
         },
     },
+    emits: ["update:displayRuleType", "saveRule"],
     data: function () {
         return {
             applyLabel: _l("Apply"),

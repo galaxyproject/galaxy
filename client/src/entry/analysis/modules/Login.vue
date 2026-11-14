@@ -45,7 +45,6 @@ const queryAttributeForceString = function (
             :disable-local-accounts="config.disable_local_accounts"
             :enable-oidc="config.enable_oidc"
             :mailing-join-addr="config.mailing_join_addr"
-            :prefer-custos-login="config.prefer_custos_login"
             :redirect="queryAttributeForceString(route.query?.redirect)"
             :registration-warning-message="config.registration_warning_message"
             :session-csrf-token="sessionCsrfToken"

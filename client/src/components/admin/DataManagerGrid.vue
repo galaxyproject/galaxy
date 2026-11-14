@@ -43,6 +43,7 @@ export default {
             required: true,
         },
     },
+    emits: ["reloaddatamanager"],
     methods: {
         handleReloadButtonClick(event) {
             this.$emit("reloaddatamanager", this.dataManagerTableName);

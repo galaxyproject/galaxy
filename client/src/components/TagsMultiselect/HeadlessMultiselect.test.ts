@@ -314,6 +314,21 @@ describe("HeadlessMultiselect", () => {
             await close(wrapper);
         });
 
+        // The scoped style paints `[aria-selected].highlighted` as "already applied, will be
+        // removed", so only the selected options may carry the attribute at all.
+        it("marks only the selected options as aria-selected", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: ["abc"],
+            });
+
+            await open(wrapper);
+            const marked = new DOMWrapper(document.body).findAll(`${selectors.option}[aria-selected]`);
+            expect(marked.map((option) => option.attributes("aria-selected"))).toEqual(["true"]);
+            expect(marked[0]?.text()).toContain("abc");
+            await close(wrapper);
+        });
+
         it("marks only an invalid search value as invalid", async () => {
             const wrapper = mountWithProps({
                 options: sampleOptions,
