@@ -151,7 +151,10 @@ describe("galaxy-ui design tokens", () => {
         expect(resolveToken("--color-primary")).toBe(brandColor("--color-galaxy-primary"));
         expect(resolveToken("--color-foreground")).toBe(brandColor("--color-galaxy-dark"));
         expect(resolveToken("--color-highlight")).toBe(brandColor("--color-galaxy-gold"));
-        expect(resolveToken("--color-input")).toBe(brandColor("--color-ebony-clay-400"));
+    });
+
+    it("gives inputs the gray-500 border GFormInput and GSelect draw", () => {
+        expect(tokens.get("--color-input")).toBe("var(--color-gray-500)");
     });
 
     it("agrees with brand-tokens on every shared name except accent", () => {
@@ -175,7 +178,15 @@ describe("galaxy-ui design tokens", () => {
         expect(failures).toEqual([]);
     });
 
-    it("gives input borders at least 3:1 against the background (WCAG 1.4.11)", () => {
-        expect(contrast(resolveToken("--color-input"), resolveToken("--color-background"))).toBeGreaterThanOrEqual(3);
+    it("gives input borders at least 3:1 on every surface an input sits on (WCAG 1.4.11)", () => {
+        // Side panels (tool panel search, filters) put inputs on muted / sidebar, not on the page background.
+        const failures = ["background", "muted", "sidebar"]
+            .map((surface) => ({
+                surface,
+                ratio: contrast(resolveToken("--color-input"), resolveToken(`--color-${surface}`)),
+            }))
+            .filter(({ ratio }) => ratio < 3)
+            .map(({ surface, ratio }) => `input on ${surface}: ${ratio.toFixed(2)}:1`);
+        expect(failures).toEqual([]);
     });
 });

@@ -101,7 +101,7 @@
 
     .multiselect__tags {
         background: transparent;
-        border: $border-default;
+        border: 1px solid $input-border-color;
         min-height: unset;
         .multiselect__single {
             background: transparent;
