@@ -982,6 +982,42 @@ class InputsSelectOptionsMetaFileKey(Linter):
                 )
 
 
+class InputsSelectOptionsDependsOn(Linter):
+    """
+    Lint dynamic options select: depends_on can only be used with from_url and must name existing parameters
+    """
+
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        param_names = {param_name for _, param_name in _iter_param(tool_xml)}
+        for param, param_name, param_type in _iter_param_type(tool_xml):
+            if param_type != "select":
+                continue
+            options = param.find("./options")
+            if options is None:
+                continue
+            depends_on = options.get("depends_on", None)
+            if depends_on is None:
+                continue
+            if options.get("from_url", None) is None:
+                lint_ctx.error(
+                    f"Select parameter [{param_name}] 'depends_on' is only compatible with 'from_url'.",
+                    linter=cls.name(),
+                    node=options,
+                )
+            for name in depends_on.split(","):
+                name = name.strip()
+                if name and name.split(".")[-1] not in param_names:
+                    lint_ctx.error(
+                        f"Select parameter [{param_name}] 'depends_on' refers to non existing parameter '{name}'",
+                        linter=cls.name(),
+                        node=options,
+                    )
+
+
 class InputsBoolDistinctValues(Linter):
     """
     Lint booleans for distinct true/false value

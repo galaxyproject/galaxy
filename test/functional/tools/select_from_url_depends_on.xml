@@ -1,0 +1,33 @@
+<tool id="select_from_url_depends_on" name="select_from_url_depends_on" version="0.1.0" profile="24.0">
+    <!-- test/integration/test_select_from_url_depends_on.py replaces the token value with the URL of a local test server. -->
+    <macros>
+        <token name="@OPTIONS_SERVER@">http://options-server.invalid</token>
+    </macros>
+    <command>echo '$crop $genotype_set' > '$output'</command>
+    <inputs>
+        <param name="crop" type="select" optional="true" label="Crop">
+            <options from_url="@OPTIONS_SERVER@/crops"/>
+        </param>
+        <param name="genotype_set" type="select" label="Genotype set">
+            <options from_url="@OPTIONS_SERVER@/crops/$crop/genotype_sets" depends_on="crop">
+                <request_headers type="json">
+                    {"x-crop": "$crop"}
+                </request_headers>
+            </options>
+        </param>
+        <repeat name="queries" title="Queries">
+            <param name="query_crop" type="select" optional="true" label="Crop">
+                <options from_url="@OPTIONS_SERVER@/crops"/>
+            </param>
+            <param name="query_set" type="select" optional="true" label="Genotype set">
+                <options from_url="@OPTIONS_SERVER@/crops/$query_crop/genotype_sets" depends_on="query_crop"/>
+            </param>
+        </repeat>
+        <param name="all_query_sets" type="select" optional="true" label="Genotype sets of all queried crops">
+            <options from_url="@OPTIONS_SERVER@/genotype_sets?crops=$queries.query_crop" depends_on="queries.query_crop"/>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+</tool>
