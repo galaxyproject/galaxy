@@ -148,3 +148,10 @@
 .multiselect--active {
     z-index: 1500; // Should be on top of everything
 }
+
+// vue-multiselect 3's own CSS still starts its fades from Vue 2's `-enter`
+// class, which Vue 3 doesn't apply now that TRANSITION_CLASSES is off.
+.multiselect-enter-from,
+.multiselect__loading-enter-from {
+    opacity: 0;
+}
