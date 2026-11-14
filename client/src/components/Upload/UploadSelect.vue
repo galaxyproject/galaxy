@@ -3,6 +3,7 @@ import { computed } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useRankedSearch } from "@/composables/useRankedSearch";
+import { scrollMultiselectOptionIntoView } from "@/utils/multiselect";
 import { uid } from "@/utils/utils";
 
 const props = defineProps({
@@ -71,9 +72,13 @@ const currentValue = computed({
         select-label=""
         selected-label=""
         track-by="id"
+        @keydown="scrollMultiselectOptionIntoView"
         @search-change="onSearchChange">
         <template v-slot:noResult>
             <span v-localize>No matching {{ what }}s found.</span>
+        </template>
+        <template v-slot:option="{ option }">
+            <slot name="option" :option="option">{{ option.text }}</slot>
         </template>
         <template v-slot:singleLabel="{ option }">
             <span :class="{ 'selection-warning': warn }">
