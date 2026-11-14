@@ -10,12 +10,16 @@ import { configureCompat } from "vue";
 //
 // Galaxy code runs with Vue 3 semantics. The Vue 2 libraries (bootstrap-vue,
 // vue-json-pretty 1.x, @handsontable/vue 2.x) are put back on MODE 2 for their
-// own components by legacy-libraries.js. What's left on here is only what
-// those libraries need from places compat checks without their component:
-// global APIs (no component at all) and two flags it checks on the Galaxy
-// component around them. Don't turn any other per-component flag on here: a
-// global `true` also reaches the Vue 3 libraries that opt in with only
-// `{ MODE: 3 }` (vue-multiselect, vue-router's RouterLink, ...).
+// own components by legacy-libraries.js. Most of what's left on here is what
+// those libraries need where compat doesn't look at their component: global
+// APIs (no component at all), plus COMPONENT_FUNCTIONAL and
+// INSTANCE_EVENT_EMITTER, which compat checks on the Galaxy component around
+// them. The last two settings have their own reasons, given below.
+// TRANSITION_CLASSES is global-only too but stays off; multiselect.scss adds
+// the Vue 3 class names vue-multiselect's CSS is missing. Don't turn any
+// other per-component flag on here: a global `true` also reaches the Vue 3
+// libraries that opt in with only `{ MODE: 3 }` (vue-multiselect, vue-router's
+// RouterLink, ...).
 configureCompat({
     MODE: 3,
     // bootstrap-vue builds every one of its components with Vue.extend.
