@@ -19,7 +19,7 @@ const emit = defineEmits<{
     (e: "update:modelValue", value: string): void;
 }>();
 
-// Watch for external updates to modelValue and sync with innerValue
+// Keep the local copy in step when the parent changes modelValue
 watch(
     () => props.modelValue,
     (newValue) => {
