@@ -1581,6 +1581,8 @@ class WorkflowContentsManager(UsesAnnotations):
         data["name"] = workflow.name
         data["steps"] = {}
         data["upgrade_messages"] = {}
+        # parameters that had no stored value and got their tool default; informational, not upgrade problems
+        data["filled_defaults"] = {}
         data["report"] = workflow.reports_config or {}
         data["license"] = workflow.license
         data["creator"] = workflow.creator_metadata
@@ -1607,6 +1609,8 @@ class WorkflowContentsManager(UsesAnnotations):
             self.__set_default_label(step, module, step.tool_inputs)
             # Fix any missing parameters
             upgrade_message_dict = module.check_and_update_state() or {}
+            if module.filled_defaults:
+                data["filled_defaults"][step.order_index] = module.filled_defaults
             version_changes = getattr(module, "version_changes", None)
             if version_changes:
                 upgrade_message_dict[module.get_name()] = "\n".join(version_changes)

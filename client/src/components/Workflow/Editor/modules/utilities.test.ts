@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getStateUpgradeMessages } from "./utilities";
+import { getFilledDefaults, getStateUpgradeMessages } from "./utilities";
 
 describe("getStateUpgradeMessages", () => {
     it("flattens nested subworkflow messages into their text", () => {
@@ -12,6 +12,7 @@ describe("getStateUpgradeMessages", () => {
                     "Step 2": { inttest: "Parameter 'inttest': an integer or workflow parameter is required" },
                 },
             },
+            filled_defaults: {},
         });
 
         expect(message!.details).toEqual([
@@ -24,6 +25,7 @@ describe("getStateUpgradeMessages", () => {
         const [message] = getStateUpgradeMessages({
             steps: { "0": { name: "Tool", type: "tool", label: "", errors: "Tool is not installed" } },
             upgrade_messages: { "0": { param: "Value changed" } },
+            filled_defaults: {},
         });
 
         expect(message!.details).toEqual(["Tool is not installed", "Value changed"]);
@@ -33,8 +35,21 @@ describe("getStateUpgradeMessages", () => {
         const messages = getStateUpgradeMessages({
             steps: { "0": { name: "Tool", type: "tool", label: "" } },
             upgrade_messages: {},
+            filled_defaults: {},
         });
 
         expect(messages).toEqual([]);
+    });
+});
+
+describe("getFilledDefaults", () => {
+    it("reads filled defaults per step, without step errors", () => {
+        const data = {
+            steps: { "0": { name: "Tool", type: "tool", label: "qc", errors: "Tool is not installed" } },
+            upgrade_messages: {},
+            filled_defaults: { "0": { kmers: "Default for 'Kmers': '7'." } },
+        };
+        expect(getFilledDefaults(data)[0]?.details).toEqual(["Default for 'Kmers': '7'."]);
+        expect(getStateUpgradeMessages(data)[0]?.details).toEqual(["Tool is not installed"]);
     });
 });

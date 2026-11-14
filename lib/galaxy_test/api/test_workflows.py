@@ -1323,6 +1323,122 @@ steps:
             assert not workflow["has_upgrade_messages"]
             assert workflow["steps"][1]["inputs"][0]["value"] == {"__class__": "ConnectedValue"}
 
+    def _assert_runs_with_num_lines_default(self, workflow_id: str):
+        with self.dataset_populator.test_history() as history_id:
+            assert not self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
+            hda = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\n", wait=True)
+            # runs without allow_tool_state_corrections, which bioblend leaves off
+            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(hda)}
+            )
+            self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+            # the job used the num_lines default of 1
+            assert len(self.dataset_populator.get_history_dataset_content(history_id).splitlines()) == 1
+
+    @skip_without_tool("random_lines1")
+    def test_missing_tool_state_values_are_filled_defaults(self):
+        # Format 2 may leave out parameters that have defaults; those are filled, not upgrade problems
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  lines:
+    tool_id: random_lines1
+    in:
+      input: input1
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        assert not any(editor["upgrade_messages"].values())
+        assert "num_lines" in editor["filled_defaults"]["1"]
+        self._assert_runs_with_num_lines_default(workflow_id)
+
+    @skip_without_tool("random_lines1")
+    def test_missing_tool_state_values_in_a_subworkflow_are_filled_defaults(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  nested:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      steps:
+        lines:
+          tool_id: random_lines1
+          in:
+            input: inner_input
+    in:
+      inner_input: input1
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        assert not any(editor["upgrade_messages"].values())
+        assert "num_lines" in editor["filled_defaults"]["1"]["Step 2"]
+        self._assert_runs_with_num_lines_default(workflow_id)
+
+    @skip_without_tool("multiple_versions_changes")
+    def test_filled_defaults_after_a_tool_version_change_need_corrections(self):
+        # 0.05 isn't installed, so 0.2 runs, and its new floattest parameter has no stored value
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  multiple_versions_changes:
+    tool_id: multiple_versions_changes
+    tool_version: "0.05"
+    state:
+      inttest: 1
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        assert "floattest" in editor["upgrade_messages"]["0"]
+        assert "0" not in editor["filled_defaults"]
+        with self.dataset_populator.test_history() as history_id:
+            # 0.05 isn't installed, so without this the invocation is refused before the state check
+            request: dict[str, Any] = {"history_id": history_id, "require_exact_tool_versions": False}
+            response = self.workflow_populator.invoke_workflow_raw(workflow_id, request)
+            self._assert_status_code_is(response, 400)
+            assert "upgrade messages" in response.json()["err_msg"]
+            request["allow_tool_state_corrections"] = True
+            self.workflow_populator.invoke_workflow_raw(workflow_id, request, assert_ok=True)
+
+    @skip_without_tool("random_lines1")
+    def test_replaced_tool_state_values_are_upgrade_messages(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  lines:
+    tool_id: random_lines1
+    in:
+      input: input1
+    state:
+      num_lines: not-a-number
+""",
+            client_convert=False,
+            fill_defaults=False,
+        )
+        editor = self._download_workflow(workflow_id, style="editor")
+        assert "num_lines" in editor["upgrade_messages"]["1"]
+        assert "num_lines" not in editor["filled_defaults"].get("1", {})
+        with self.dataset_populator.test_history() as history_id:
+            assert self._download_workflow(workflow_id, style="run", history_id=history_id)["has_upgrade_messages"]
+
     def test_refactor(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
@@ -1620,7 +1736,7 @@ steps:
         upgrade_result = refactor_result["action_executions"][0]
         assert upgrade_result["action"]["action_type"] == "upgrade_all_steps"
         message_one, message_two = upgrade_result["messages"]
-        assert message_one["message"] == "No value found for 'floattest'. Using default: '1.0'."
+        assert message_one["message"] == "Default for 'floattest': '1.0'."
         assert message_one["input_name"] == "floattest"
         assert message_two["message"] == "The selected case is unavailable/invalid. Using default: 'b'."
         assert message_two["input_name"] == "cond|bool_to_select"
@@ -1656,8 +1772,8 @@ steps:
         assert upgrade_result["action"]["action_type"] == "upgrade_all_steps"
         message_one, message_two, message_three = upgrade_result["messages"]
         assert message_one["input_name"] == "inttest"
-        assert message_one["message"] == "No value found for 'inttest'. Using default: '1'."
-        assert message_two["message"] == "No value found for 'floattest'. Using default: '1.0'."
+        assert message_one["message"] == "Default for 'inttest': '1'."
+        assert message_two["message"] == "Default for 'floattest': '1.0'."
         assert message_two["input_name"] == "floattest"
         assert message_three["message"] == "The selected case is unavailable/invalid. Using default: 'b'."
         assert message_three["input_name"] == "cond|bool_to_select"
