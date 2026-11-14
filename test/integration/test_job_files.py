@@ -36,6 +36,7 @@ from sqlalchemy import select
 from tusclient import client
 
 from galaxy import model
+from galaxy.job_execution.job_security import job_files_kind_for_params
 from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.webapps.galaxy.api.job_files import UPLOAD_STAGING_PREFIX
@@ -456,6 +457,157 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         response = requests.post(post_url, data=data, files=files)
         _assert_insufficient_permissions(response)
 
+    def _bind_to_compute_resource(self, job, resource_id):
+        """Bind ``job`` to a compute resource and return the matching scoped
+        files key — what the BYOC runner would mint at dispatch. Derives the
+        ``kind`` via the shared helper so the test key always matches the
+        verifier (and the base62 encoding stays in one place)."""
+        job.destination_params = {"compute_resource_id": resource_id}
+        sa_session = self.sa_session
+        sa_session.add(job)
+        sa_session.commit()
+        kind = job_files_kind_for_params(job.destination_params)
+        return self._app.security.encode_id(job.id, kind=kind)
+
+    def test_read_path_constraint(self):
+        """A valid job_key must not be usable to read arbitrary paths on the
+        Galaxy server — only paths the job legitimately needs to stage."""
+        job, _, _ = self.create_static_job_with_state("running")
+        job_key = self._bind_to_compute_resource(job, 42)
+        job_id = self._app.security.encode_id(job.id)
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+
+        # A tempfile that has nothing to do with this job's I/O. A trusted
+        # runner may still read unstructured server-side inputs such as .loc
+        # files, so this constraint applies to compute-resource jobs only.
+        with tempfile.NamedTemporaryFile("w", delete=False) as t_file:
+            t_file.write("server-side secret")
+            outside_path = t_file.name
+        try:
+            response = requests.get(get_url, params={"path": outside_path, "job_key": job_key})
+            _assert_insufficient_permissions(response)
+        finally:
+            os.unlink(outside_path)
+
+    def test_read_via_authorization_header(self):
+        """``Authorization: Bearer <key>`` should be accepted in place of the
+        query-string ``job_key`` parameter."""
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        response = requests.get(
+            get_url,
+            params={"path": self.input_hda.get_file_name()},
+            headers={"Authorization": f"Bearer {job_key}"},
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        assert response.text == TEST_INPUT_TEXT
+
+    def test_compute_resource_write_allowlist_blocks_outputs_populated(self):
+        """A compute-resource job must not write into ``metadata/outputs_populated``
+        even via a path that's lexically inside its working directory. That
+        path is the remote-extended-metadata import store; trusting it from
+        user-controlled compute is a cross-user mutation primitive (and the
+        compute-resource runner refuses ``metadata_strategy='extended'`` at
+        dispatch for the same reason)."""
+        job, _, working_directory = self.create_static_job_with_state("running")
+        sa_session = self.sa_session
+        job.destination_params = {"compute_resource_id": 99}
+        sa_session.add(job)
+        sa_session.commit()
+
+        job_id = self._app.security.encode_id(job.id)
+        scoped_key = self._app.security.encode_id(job.id, kind=job_files_kind_for_params({"compute_resource_id": 99}))
+
+        post_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+
+        # metadata/outputs_populated/* is denied for compute-resource jobs
+        denied_paths = [
+            os.path.join(working_directory, "metadata", "outputs_populated", "results.json"),
+            os.path.join(working_directory, "container_runtime.json"),
+            os.path.join(working_directory, "tool_script.sh"),
+            os.path.join(working_directory, "configs", "foo.txt"),
+        ]
+        for path in denied_paths:
+            data = {"path": path, "job_key": scoped_key}
+            files = {"file": io.StringIO("attack payload")}
+            response = requests.post(post_url, data=data, files=files)
+            _assert_insufficient_permissions(response)
+
+        # working/** is the tool's CWD — legitimately writable
+        allowed_path = os.path.join(working_directory, "working", "outputs", "galaxy.json")
+        data = {"path": allowed_path, "job_key": scoped_key}
+        files = {"file": io.StringIO('{"foo": 1}')}
+        response = requests.post(post_url, data=data, files=files)
+        api_asserts.assert_status_code_is_ok(response)
+
+    def test_write_through_symlink_is_rejected(self):
+        """Defense in depth: refuse to write to a path that's already a
+        symlink. Galaxy never places symlinks at output paths a runner
+        would post to, so an existing symlink can only be a foreign artefact
+        the API should not blindly follow."""
+        job, output_hda, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        real_path = self._app.object_store.get_filename(output_hda.dataset)
+        assert real_path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            symlink_path = os.path.join(tmpdir, "linked")
+            os.symlink(real_path, symlink_path)
+            data = {"path": symlink_path, "job_key": job_key}
+            files = {"file": io.StringIO("attack payload")}
+            post_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+            response = requests.post(post_url, data=data, files=files)
+            _assert_insufficient_permissions(response)
+
+    def test_compute_resource_scoped_key_rejects_legacy_kind(self):
+        """A job bound to a compute resource refuses the legacy ``jobs_files``
+        key — only the tenant-scoped kind from ``job_files_kind_for_params``
+        key is accepted. Prevents cross-tenant replay of a leaked credential."""
+        job, _, _ = self.create_static_job_with_state("running")
+        sa_session = self.sa_session
+        job.destination_params = {"compute_resource_id": 42}
+        sa_session.add(job)
+        sa_session.commit()
+
+        job_id = self._app.security.encode_id(job.id)
+        legacy_key = self._app.security.encode_id(job.id, kind="jobs_files")
+        scoped_key = self._app.security.encode_id(job.id, kind=job_files_kind_for_params({"compute_resource_id": 42}))
+
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        data = {"path": self.input_hda.get_file_name(), "job_key": legacy_key}
+        response = requests.get(get_url, params=data)
+        _assert_insufficient_permissions(response)
+
+        data["job_key"] = scoped_key
+        response = requests.get(get_url, params=data)
+        api_asserts.assert_status_code_is_ok(response)
+        assert response.text == TEST_INPUT_TEXT
+
+    def test_compute_resource_scoped_key_rejects_other_tenant(self):
+        """A well-formed scoped key for a *different* compute resource is
+        rejected: a credential lifted from tenant A's Pulsar node cannot be
+        replayed against tenant B's job. The legacy-kind test only proves the
+        pre-tenant key is refused; this proves cross-tenant isolation."""
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id = self._app.security.encode_id(job.id)
+        # Job is bound to resource 42; mint a valid key scoped to resource 99.
+        own_key = self._bind_to_compute_resource(job, 42)
+        other_kind = job_files_kind_for_params({"compute_resource_id": 99})
+        other_tenant_key = self._app.security.encode_id(job.id, kind=other_kind)
+        assert other_tenant_key != own_key
+
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        data = {"path": self.input_hda.get_file_name(), "job_key": other_tenant_key}
+        response = requests.get(get_url, params=data)
+        _assert_insufficient_permissions(response)
+
+        # Sanity: the correctly-scoped key for this job's own resource works.
+        data["job_key"] = own_key
+        response = requests.get(get_url, params=data)
+        api_asserts.assert_status_code_is_ok(response)
+        assert response.text == TEST_INPUT_TEXT
+
     @property
     def sa_session(self):
         return self._app.model.session
@@ -473,9 +625,9 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         sa_session = self.sa_session
         hda = input_hda or self.input_hda
         assert hda
-        history = sa_session.scalars(select(model.History)).all()[0]
+        history = sa_session.scalars(select(model.History).order_by(model.History.id)).first()
         assert history
-        user = sa_session.scalars(select(model.User)).all()[0]
+        user = sa_session.scalars(select(model.User).order_by(model.User.id)).first()
         assert user
         output_hda = model.HistoryDatasetAssociation(history=history, create_dataset=True, flush=False)
         output_hda.hid = 2

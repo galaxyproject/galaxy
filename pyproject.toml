@@ -76,7 +76,10 @@ dependencies = [
     "pillow",
     "pkg-resources-backport",  # needed by fs https://github.com/PyFilesystem/pyfilesystem2/issues/577
     "psutil",
+    # Keep this floor at or above 0.15.16: earlier clients ignore the manager_name
+    # Galaxy mints for a compute resource (galaxyproject/pulsar#514).
     "pulsar-galaxy-lib>=0.16.0",
+    "pulsar-relay-client>=0.2.2",
     "pycryptodome",
     "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
     "pydantic-ai>=1.56.0",  # https://github.com/pydantic/pydantic-ai/security/advisories/GHSA-2jrp-274c-jhv3
@@ -140,6 +143,7 @@ test = [
     "onedatafilerestclient==21.2.5.2",
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
+    "pulsar-relay>=0.2.1",  # BYOC e2e tests boot the relay server in-process
     "pyftpdlib",
     "pykube-ng==23.6.0",  # Match the conditional Kubernetes runner dependency.
     "pytest",

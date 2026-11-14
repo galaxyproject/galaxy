@@ -12,6 +12,7 @@ from urllib.parse import parse_qsl
 
 import anyio
 from fastapi import (
+    Depends,
     Path,
     Query,
     Request,
@@ -29,6 +30,7 @@ from galaxy import (
     exceptions,
     util,
 )
+from galaxy.job_execution.job_security import resolve_job_key
 from galaxy.managers.job_files import JobFilesManager
 from galaxy.webapps.base.api import (
     GalaxyFileResponse,
@@ -59,6 +61,18 @@ JobKeyQueryParam = Annotated[
     str | None,
     Query(description="A key used to authenticate this request as acting on behalf of a job runner for the job."),
 ]
+
+
+def _resolved_job_key(request: Request, job_key: JobKeyQueryParam = None) -> str | None:
+    """The job key for this request, from ``Authorization: Bearer`` or the query.
+
+    Compute-resource runners send the key as a bearer token so it never reaches
+    a proxy access log; the query parameter stays for every other runner.
+    """
+    return resolve_job_key(request.headers.get("Authorization"), job_key)
+
+
+JobKeyParam = Annotated[str | None, Depends(_resolved_job_key)]
 
 UPLOAD_FIELD_PROPERTIES = {
     "path": {"type": "string", "description": "Path to file to create, if not given as a query parameter."},
@@ -93,7 +107,7 @@ class FastAPIJobFiles:
         self,
         job_id: JobIdPathParam,
         path: FilePathQueryParam = None,
-        job_key: JobKeyQueryParam = None,
+        job_key: JobKeyParam = None,
     ) -> GalaxyFileResponse:
         return GalaxyFileResponse(self.manager.readable_path(job_id, path, job_key))
 
@@ -116,11 +130,11 @@ class FastAPIJobFiles:
         request: Request,
         job_id: JobIdPathParam,
         path: FilePathQueryParam = None,
-        job_key: JobKeyQueryParam = None,
+        job_key: JobKeyParam = None,
     ) -> dict[str, str]:
         params = dict(request.query_params)
-        query_auth = path is not None and job_key is not None
-        staging_dir = await anyio.to_thread.run_sync(self._start_upload, job_id, path, job_key, query_auth)
+        pre_body_auth = path is not None and job_key is not None
+        staging_dir = await anyio.to_thread.run_sync(self._start_upload, job_id, path, job_key, pre_body_auth)
         started = time.monotonic()
         try:
             try:
@@ -131,15 +145,17 @@ class FastAPIJobFiles:
             for key, value in fields.items():
                 params.setdefault(key, value)
             # A long upload can outlive the job; a small one arrives right after the first check.
-            recheck = query_auth and _long_upload(request, time.monotonic() - started)
-            await anyio.to_thread.run_sync(self._finish_upload, job_id, params, uploads, query_auth, recheck)
+            recheck = pre_body_auth and _long_upload(request, time.monotonic() - started)
+            await anyio.to_thread.run_sync(
+                self._finish_upload, job_id, params, uploads, pre_body_auth, recheck, job_key
+            )
         finally:
             await anyio.to_thread.run_sync(_remove_staging_dir, staging_dir)
         return {"message": "ok"}
 
-    def _start_upload(self, job_id: str, path: str | None, job_key: str | None, query_auth: bool) -> str:
-        """Return a new directory to stage the upload in, authorizing first when the query allows it."""
-        if query_auth:
+    def _start_upload(self, job_id: str, path: str | None, job_key: str | None, pre_body_auth: bool) -> str:
+        """Return a new directory to stage the upload in, authorizing first when the request allows it."""
+        if pre_body_auth:
             # Authorize before reading the body so the upload is staged on the target's filesystem and renamed.
             staging_parent = self.manager.authorize_write(job_id, path, job_key)
             util.safe_makedirs(staging_parent)
@@ -149,11 +165,17 @@ class FastAPIJobFiles:
         return tempfile.mkdtemp(prefix=UPLOAD_STAGING_PREFIX, dir=staging_parent)
 
     def _finish_upload(
-        self, job_id: str, params: dict[str, str], uploads: dict[str, str], query_auth: bool, recheck: bool
+        self,
+        job_id: str,
+        params: dict[str, str],
+        uploads: dict[str, str],
+        pre_body_auth: bool,
+        recheck: bool,
+        job_key: str | None = None,
     ) -> None:
         path = params.get("path")
-        if not query_auth:
-            self.manager.authorize_write(job_id, path, params.get("job_key"))
+        if not pre_body_auth:
+            self.manager.authorize_write(job_id, path, params.get("job_key") or job_key)
         elif recheck:
             # The path was authorized before the body was read; only the job can have finished since.
             self.manager.assert_job_active(job_id)
