@@ -34,8 +34,8 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import now
 from galaxy.util.unittest_utils import read_mock_emails
+from galaxy.util.wait import wait_on
 from galaxy.web_stack import application_stack_instance
-from galaxy_test.base.populators import wait_on
 
 
 @pytest.fixture
@@ -281,7 +281,7 @@ def test_only_elected_monitor_polls_and_failover_resumes_empty_map(app, app_fact
             app.model.context.remove()
             return app.model.context.scalars(select(model.Notification)).all() or None
 
-        [notification] = wait_on(notifications, "notification after monitor failover")
+        [notification] = wait_on(notifications, "notification after monitor failover", timeout=10)
         assert "0 jobs" in notification.content["message"]
 
         # The same process can lose and regain the role without reusing a stopped thread.
