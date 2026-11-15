@@ -25,7 +25,7 @@ The legacy tool API option ``send_email_notification`` is an alias for
 with the user's saved delivery preferences when notifications are enabled.
 
 See :doc:`Completion notifications </admin/completion_notifications>` for
-configuration, monitor placement, and upgrade guidance.
+configuration and upgrade guidance.
 
 Workflow expression compatibility
 =================================
