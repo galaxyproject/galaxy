@@ -5,7 +5,7 @@ from typing import ClassVar
 
 import pytest
 
-from galaxy.managers.notification import EmailNotificationChannelPlugin
+from galaxy.celery.tasks import dispatch_pending_notifications
 from galaxy.util.unittest_utils import read_mock_emails
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -27,7 +27,6 @@ class TestToolCompletionNotifications(IntegrationTestCase):
         config["email_from"] = "galaxy-noreply@example.com"
         config["smtp_server"] = f"mock_emails_to_path://{cls.email_dir}"
         config["enable_notification_system"] = True
-        config["enable_celery_tasks"] = False
         config["metadata_strategy"] = "extended"
         config["workflow_completion_monitor_sleep"] = 0.1
 
@@ -35,8 +34,6 @@ class TestToolCompletionNotifications(IntegrationTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
-        # Exercise the real email channel synchronously without a Celery worker.
-        self._app.notification_manager.channel_plugins["email"] = EmailNotificationChannelPlugin(self._app.config)
         for email in Path(self.email_dir).iterdir():
             email.unlink()
         self._set_email_delivery(False)
@@ -52,26 +49,35 @@ class TestToolCompletionNotifications(IntegrationTestCase):
             [notification] = self._wait_for_notifications(history_id)
             assert "1 ok" in notification["content"]["message"]
             assert "Concatenate" in notification["content"]["subject"]
-            self._app.notification_manager.dispatch_pending_notifications_via_channels()
+            dispatch_pending_notifications.delay().get(timeout=10)
             assert read_mock_emails(self.email_dir) == []
 
-    def test_map_over_sends_one_summary_and_uses_the_saved_email_preference(self):
+    @pytest.mark.parametrize("asynchronous", [False, True])
+    def test_map_over_sends_one_summary_and_uses_the_saved_email_preference(self, asynchronous):
         self._set_email_delivery(True)
         with self.dataset_populator.test_history() as history_id:
             hdca = self.collection_populator.create_list_in_history(
                 history_id, contents=["a\n", "b\n", "c\n"], wait=True
             ).json()["outputs"][0]
-            result = self.dataset_populator.run_tool(
-                "cat1",
-                {"input1": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"]}]}, "send_notification": True},
-                history_id,
-            )
-            for job in result["jobs"]:
-                self.dataset_populator.wait_for_job(job["id"], assert_ok=True)
+            batch = {"__class__": "Batch"} if asynchronous else {"batch": True}
+            inputs = {"input1": {**batch, "values": [{"src": "hdca", "id": hdca["id"]}]}}
+            if asynchronous:
+                response = self.dataset_populator.tool_request_raw(
+                    "cat1", inputs, history_id, strict=False, send_notification=True
+                )
+                self._assert_status_code_is(response, 200)
+                request_id = response.json()["tool_request_id"]
+                assert self.dataset_populator.wait_on_tool_request(request_id)
+                jobs = self.galaxy_interactor.jobs_for_tool_request(request_id)
+            else:
+                jobs = self.dataset_populator.run_tool("cat1", {**inputs, "send_notification": True}, history_id)[
+                    "jobs"
+                ]
+            self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
             [notification] = self._wait_for_notifications(history_id)
             assert "3 ok" in notification["content"]["message"]
             assert "Concatenate" in notification["content"]["subject"]
-            self._app.notification_manager.dispatch_pending_notifications_via_channels()
+            dispatch_pending_notifications.delay().get(timeout=10)
             [email] = read_mock_emails(self.email_dir)
             assert email["to"] == self._get("users/current").json()["email"]
             assert "3 ok" in email["body"]

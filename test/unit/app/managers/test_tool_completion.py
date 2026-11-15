@@ -1,7 +1,11 @@
 """Transaction and polling boundaries for tool completion notifications."""
 
 from concurrent.futures import ThreadPoolExecutor
-from threading import Barrier
+from datetime import timedelta
+from threading import (
+    Barrier,
+    Event,
+)
 from typing import cast
 
 import pytest
@@ -15,19 +19,41 @@ from sqlalchemy.orm import object_session
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.managers.notification import NotificationManager
-from galaxy.managers.tool_completion import ToolCompletionManager
+from galaxy.managers.tool_completion import (
+    ToolCompletionManager,
+    ToolCompletionMonitor,
+)
+from galaxy.model.database_heartbeat import (
+    DatabaseHeartbeat,
+    WEBAPP,
+)
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util import now
+from galaxy.web_stack import application_stack_instance
+from galaxy_test.base.populators import wait_on
 
 
 @pytest.fixture
-def app(tmp_path):
-    app = cast(MinimalManagerApp, MockApp(database_connection=f"sqlite:///{tmp_path / 'notifications.sqlite'}"))
-    app.config.galaxy_infrastructure_url = "https://galaxy.example.org"
-    app[NotificationManager] = NotificationManager(app[galaxy_scoped_session], app.config)
-    yield app
-    app.model.context.remove()
-    app.model.engine.dispose()
+def app_factory(tmp_path):
+    apps = []
+
+    def create_app():
+        app = cast(MinimalManagerApp, MockApp(database_connection=f"sqlite:///{tmp_path / 'notifications.sqlite'}"))
+        app.config.galaxy_infrastructure_url = "https://galaxy.example.org"
+        app[NotificationManager] = NotificationManager(app[galaxy_scoped_session], app.config)
+        apps.append(app)
+        return app
+
+    yield create_app
+    for app in apps:
+        app.model.context.remove()
+        app.model.engine.dispose()
+
+
+@pytest.fixture
+def app(app_factory):
+    return app_factory()
 
 
 @pytest.fixture
@@ -176,3 +202,74 @@ def test_monitor_reaches_later_requests_and_revisits_unfinished_jobs(app, manage
     session.commit()
     manager.monitor()
     assert session.get(model.ToolCompletionNotification, first_id).completed
+
+
+def test_only_elected_monitor_polls_and_failover_resumes_empty_map(app, app_factory, history):
+    request, _ = request_notification(history, [], mapped=True, populated="new")
+    collection_id = request.implicit_collection_jobs_id
+    apps = [app, *(app_factory() for _ in range(3))]
+    heartbeats = []
+    monitors = []
+    polled = [Event() for _ in apps]
+    listeners = []
+    for index, worker in enumerate(apps):
+        worker.config.server_name = f"web_{index}"
+        worker.config.attach_to_pools = False
+        worker.config.workflow_completion_monitor_sleep = 0.01
+        heartbeat = DatabaseHeartbeat(application_stack_instance(app=worker), app_type=WEBAPP)
+        monitor = worker[ToolCompletionMonitor]
+        heartbeat.add_change_callback(monitor.on_role_change)
+        heartbeats.append(heartbeat)
+        monitors.append(monitor)
+        app.model.context.add(
+            model.WorkerProcess(server_name=worker.config.server_name, hostname=heartbeat.hostname, app_type=WEBAPP)
+        )
+
+        def record_poll(conn, cursor, statement, parameters, context, executemany, signal=polled[index]):
+            if statement.startswith("SELECT tool_completion_notification.id"):
+                signal.set()
+
+        event.listen(worker.model.engine, "before_cursor_execute", record_poll)
+        listeners.append(record_poll)
+    app.model.context.commit()
+    try:
+        for heartbeat in heartbeats:
+            heartbeat.update_watcher_designation()
+        assert polled[3].wait(timeout=5)
+        assert not any(signal.is_set() for signal in polled[:3])
+
+        # Simulate losing the elected process while map population is incomplete.
+        monitors[3].shutdown()
+        app.model.context.execute(
+            update(model.WorkerProcess)
+            .where(model.WorkerProcess.server_name == "web_3")
+            .values(update_time=now() - timedelta(minutes=2))
+        )
+        app.model.context.execute(
+            update(model.ImplicitCollectionJobs)
+            .where(model.ImplicitCollectionJobs.id == collection_id)
+            .values(populated_state="ok")
+        )
+        app.model.context.commit()
+        for heartbeat in heartbeats[:3]:
+            heartbeat.update_watcher_designation()
+        assert polled[2].wait(timeout=5)
+        assert not any(signal.is_set() for signal in polled[:2])
+
+        def notifications():
+            app.model.context.remove()
+            return app.model.context.scalars(select(model.Notification)).all() or None
+
+        [notification] = wait_on(notifications, "notification after monitor failover")
+        assert "0 jobs" in notification.content["message"]
+
+        # The same process can lose and regain the role without reusing a stopped thread.
+        monitors[2].shutdown()
+        polled[2].clear()
+        monitors[2].on_role_change(True)
+        assert polled[2].wait(timeout=5)
+        assert len(notifications()) == 1
+    finally:
+        for worker, monitor, listener in zip(apps, monitors, listeners):
+            monitor.shutdown()
+            event.remove(worker.model.engine, "before_cursor_execute", listener)

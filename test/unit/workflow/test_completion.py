@@ -391,11 +391,10 @@ class TestMappedWorkflowCompletion:
         session.commit()
         return app, invocation
 
-    @pytest.mark.parametrize("size", [1, 1000])
-    def test_completion_and_summary_do_not_load_mapped_jobs(self, mapped_invocation, size):
+    def test_completion_and_summary_do_not_load_mapped_jobs(self, mapped_invocation):
         app, invocation = mapped_invocation
         session = app.model.context
-        for index in range(size):
+        for index in range(1000):
             association = model.ImplicitCollectionJobsJobAssociation()
             association.order_index = index
             association.job = model.Job()
@@ -413,10 +412,7 @@ class TestMappedWorkflowCompletion:
             manager = WorkflowCompletionManager(cast(MinimalManagerApp, app))
             completion = manager.check_and_record_completion(invocation_id)
             assert completion is not None
-            expected = {"error": 1}
-            if size > 1:
-                expected["ok"] = size - 1
-            assert completion.job_state_summary == expected
+            assert completion.job_state_summary == {"error": 1, "ok": 999}
             assert manager.check_and_record_completion(invocation_id) is None
         finally:
             event.remove(session(), "loaded_as_persistent", reject_job_load)

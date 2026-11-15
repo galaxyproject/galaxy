@@ -81,7 +81,7 @@ from galaxy.managers.tasks import (
     AsyncTasksManager,
     CeleryAsyncTasksManager,
 )
-from galaxy.managers.tool_completion import ToolCompletionManager
+from galaxy.managers.tool_completion import ToolCompletionMonitor
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.users import UserManager
 from galaxy.managers.workflow_completion import WorkflowCompletionManager
@@ -1032,6 +1032,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             ("queue worker", self._shutdown_queue_worker),
             ("file watcher", self._shutdown_watcher),
             ("database heartbeat", self._shutdown_database_heartbeat),
+            ("tool completion monitor", self._shutdown_tool_completion_monitor),
             ("SSE connection gauge emitter", self._shutdown_sse_connection_gauge_emitter),
             ("history audit monitor", self._shutdown_history_audit_monitor),
             ("workflow scheduler", self._shutdown_scheduling_manager),
@@ -1176,16 +1177,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
                 )
             )
 
-        if self.is_job_handler and self.config.enable_notification_system:
-            tool_completion_manager = self._register_singleton(ToolCompletionManager)
-            tool_completion_monitor = IntervalTask(
-                func=tool_completion_manager.monitor,
-                name="ToolCompletionMonitor",
-                interval=self.config.workflow_completion_monitor_sleep,
-            )
-            self.application_stack.register_postfork_function(tool_completion_monitor.start)
-            self.haltables.append(("ToolCompletionMonitor", tool_completion_monitor.shutdown))
-
         # Start the job manager
         self.application_stack.register_postfork_function(self.job_manager.start)
         # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if
@@ -1205,6 +1196,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         )
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.database_heartbeat.add_change_callback(self._on_config_watcher_change)
+        if self.is_webapp and self.config.enable_notification_system:
+            tool_completion_monitor = self._register_singleton(ToolCompletionMonitor)
+            self.database_heartbeat.add_change_callback(tool_completion_monitor.on_role_change)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
         # History audit monitor for SSE-based history updates. The monitor only
@@ -1288,6 +1282,10 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
 
     def _shutdown_database_heartbeat(self):
         self.database_heartbeat.shutdown()
+
+    def _shutdown_tool_completion_monitor(self):
+        if self.is_webapp and self.config.enable_notification_system:
+            self[ToolCompletionMonitor].shutdown()
 
     def _shutdown_sse_connection_gauge_emitter(self):
         if self.sse_connection_gauge_emitter is not None:

@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from galaxy_test.base.populators import wait_on
 from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
 from galaxy_test.selenium.framework import (
     managed_history,
@@ -28,6 +29,7 @@ class TestWorkflowRunNotificationSeleniumIntegration(BaseWorkflowRunTargetTestCa
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         config["enable_notification_system"] = True
+        config["workflow_completion_monitor_sleep"] = 0.1
 
     @selenium_test
     @managed_history
@@ -51,11 +53,58 @@ class TestWorkflowRunNotificationSeleniumIntegration(BaseWorkflowRunTargetTestCa
         self.workflow_run_submit()
         self.sleep_for(self.wait_types.UX_TRANSITION)
 
-        # Verify the invocation has the on_complete action
         history_id = self.current_history_id()
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
         invocations = self.workflow_populator.history_invocations(history_id)
-        invocation = self.workflow_populator.get_invocation(invocations[0]["id"])
-        on_complete = invocation.get("on_complete") or []
-        assert len(on_complete) == 1, f"Expected 1 on_complete action, got {on_complete}"
-        assert "send_notification" in on_complete[0], f"Expected send_notification in {on_complete[0]}"
+        notification = self._wait_for_notification(
+            "workflow_execution_completed", f"/workflows/invocations/{invocations[0]['id']}"
+        )
+        assert "ok: 1" in notification["content"]["message"]
+        self._assert_notification_visible(notification)
+
+    @selenium_test
+    @managed_history
+    def test_tool_map_notification_and_saved_delivery_settings(self):
+        history_id = self.current_history_id()
+        self.dataset_collection_populator.create_list_in_history(history_id, contents=["a\n", "b\n", "c\n"], wait=True)
+        self.get("?tool_id=cat1")
+        self.components.tool_form.parameter_data_input_collection(parameter="input1").wait_for_and_click()
+        self.wait_for_and_click_selector("[data-test-id='completion-notification-button']")
+        notification = self.wait_for_selector_visible("[data-test-id='send-notification-checkbox']")
+        assert not notification.is_selected()
+        notification.click()
+        email = self.wait_for_selector_visible("[data-test-id='completion-email-checkbox']")
+        assert not email.is_selected()
+        email.click()
+        wait_on(
+            lambda: self.api_get("notifications/preferences")["preferences"]["tool_execution_completed"]["channels"][
+                "email"
+            ],
+            "saved tool email preference",
+        )
+        self.wait_for_and_click_selector("[data-test-id='completion-notification-button']")
+        self.tool_form_execute()
+        notification = self._wait_for_notification("tool_execution_completed", f"?id={history_id}")
+        assert "3 ok" in notification["content"]["message"]
+        self._assert_notification_visible(notification)
+
+        self.get("?tool_id=cat1")
+        self.wait_for_and_click_selector("[data-test-id='completion-notification-button']")
+        assert not self.wait_for_selector_visible("[data-test-id='send-notification-checkbox']").is_selected()
+        assert self.wait_for_selector_visible("[data-test-id='completion-email-checkbox']").is_selected()
+
+    def _wait_for_notification(self, category, link):
+        def notifications():
+            return [
+                notification
+                for notification in self.api_get("notifications")
+                if notification["category"] == category and link in notification["content"]["message"]
+            ] or None
+
+        [notification] = wait_on(notifications, "completion notification")
+        return notification
+
+    def _assert_notification_visible(self, notification):
+        self.get("user/notifications")
+        subject = notification["content"]["subject"]
+        self.wait_for_xpath_visible(f'//*[text()[contains(., "{subject}")]]')

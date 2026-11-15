@@ -1,6 +1,10 @@
 """Deliver tool completion summaries outside job finishing transactions."""
 
 import logging
+from threading import (
+    Event,
+    Lock,
+)
 
 from sqlalchemy import (
     select,
@@ -21,6 +25,7 @@ from galaxy.schema.notifications import (
     ToolCompletionNotificationContent,
 )
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util.task import IntervalTask
 
 log = logging.getLogger(__name__)
 
@@ -31,11 +36,13 @@ class ToolCompletionManager:
         self.notification_manager = notification_manager
         self._last_pending_id = 0
 
-    def monitor(self) -> None:
+    def monitor(self, stop_event: Event | None = None) -> None:
         try:
             pending_ids = self.poll_pending_notifications(self._last_pending_id)
             self._last_pending_id = pending_ids[-1] if pending_ids else 0
             for request_id in pending_ids:
+                if stop_event is not None and stop_event.is_set():
+                    break
                 try:
                     self.check_and_notify(request_id)
                 except Exception:
@@ -132,3 +139,31 @@ class ToolCompletionManager:
             user=job.user,
         )
         return f"Tool '{tool.name if tool else job.tool_id}' completed"
+
+
+class ToolCompletionMonitor:
+    """Run the global tool completion queue on the elected config watcher."""
+
+    def __init__(self, manager: ToolCompletionManager):
+        self.manager = manager
+        self._task: IntervalTask | None = None
+        self._lock = Lock()
+
+    def on_role_change(self, is_leader: bool) -> None:
+        with self._lock:
+            if is_leader and self._task is None:
+                task: IntervalTask = IntervalTask(
+                    func=lambda: self.manager.monitor(task.event),
+                    name="ToolCompletionMonitor",
+                    interval=self.manager.app.config.workflow_completion_monitor_sleep,
+                )
+                self._task = task
+                task.start()
+                log.info("Started tool completion monitor on elected web process")
+            elif not is_leader and self._task is not None:
+                self._task.shutdown()
+                self._task = None
+                log.info("Stopped tool completion monitor")
+
+    def shutdown(self) -> None:
+        self.on_role_change(False)

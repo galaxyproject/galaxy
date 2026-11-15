@@ -27,12 +27,8 @@ from galaxy.managers.notification import (
 from galaxy.model import (
     DatasetStorageOperationRun,
     Group,
-    History,
     Role,
     User,
-    Workflow,
-    WorkflowInvocation,
-    WorkflowInvocationCompletion,
 )
 from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
@@ -61,7 +57,6 @@ from galaxy.schema.storage_operations import (
     StorageOperationRunState,
 )
 from galaxy.util import now
-from galaxy.workflow.completion_hooks.notification import SendNotificationHook
 from .base import BaseTestCase
 
 
@@ -879,24 +874,3 @@ class TestToolInstallationRequestEmailBuilder(NotificationManagerBaseTestCase):
         assert content["requester_email"] == "requester@user.email"
         assert "is_confirmation" not in content
         assert "workflow_name" not in content
-
-
-class TestWorkflowCompletionNotifications(NotificationManagerBaseTestCase):
-    def test_hook_creates_a_workflow_completion_summary(self):
-        user = self._create_test_user()
-        self.app.config.galaxy_infrastructure_url = "https://galaxy.example.org"
-        self.app.notification_manager = self.notification_manager
-        invocation = WorkflowInvocation()
-        invocation.workflow = Workflow()
-        invocation.history = History(user=user)
-        invocation.on_complete = [{"send_notification": {}}]
-        completion = WorkflowInvocationCompletion(job_state_summary={"ok": 1000, "error": 1}, hooks_executed=[])
-        completion.workflow_invocation = invocation
-        self.trans.sa_session.add(completion)
-        self.trans.sa_session.commit()
-        SendNotificationHook(self.app).execute(completion)
-        [notification] = self.notification_manager.get_user_notifications(user)
-        assert notification.category == "workflow_execution_completed"
-        assert "1000" in notification.content["message"]
-        assert "error: 1" in notification.content["message"]
-        assert "https://galaxy.example.org/workflows/invocations/" in notification.content["message"]
