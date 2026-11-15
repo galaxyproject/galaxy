@@ -54,6 +54,10 @@ HasFindElement = Union[WebDriver, WebElement]
 DEFAULT_AXE_SCRIPT_URL = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.7.1/axe.min.js"
 AXE_SCRIPT_HASH: dict[str, str] = {}
 AXE_SCRIPT_HASH_LOCK = threading.Lock()
+ARIA_DISABLED_SCRIPT = """
+const nearest = arguments[0].closest('[aria-disabled="true" i], [aria-disabled="false" i]');
+return nearest !== null && nearest.getAttribute("aria-disabled").toLowerCase() === "true";
+"""
 
 
 def get_axe_script(script_url: str) -> str:
@@ -96,11 +100,12 @@ def _protocol_to_webelement(element: WebElementProtocol) -> WebElement:
 
 
 def _element_to_be_clickable(locator_tuple: tuple):
-    """Like ``ec.element_to_be_clickable``, but an ``aria-disabled="true"`` element is not clickable yet.
+    """Like ``ec.element_to_be_clickable``, but not while the element is ``aria-disabled``.
 
     Selenium only checks the native ``disabled`` attribute, so it clicks a disabled ``GButton``
-    (which only sets ``aria-disabled``) and the click is silently dropped. Playwright's enabled
-    check already honors ``aria-disabled``.
+    (which only sets ``aria-disabled``) and the click is silently dropped. As in Playwright's
+    enabled check, the nearest ``aria-disabled="true"`` or ``"false"`` on the element or an
+    ancestor decides.
     """
     clickable = ec.element_to_be_clickable(locator_tuple)
 
@@ -109,7 +114,7 @@ def _element_to_be_clickable(locator_tuple: tuple):
         if not element:
             return False
         try:
-            if element.get_attribute("aria-disabled") == "true":
+            if driver.execute_script(ARIA_DISABLED_SCRIPT, element):
                 return False
         except StaleElementReferenceException:
             return False
