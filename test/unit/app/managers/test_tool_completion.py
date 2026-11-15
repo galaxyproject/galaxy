@@ -2,6 +2,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from smtplib import SMTPRecipientsRefused
 from threading import (
     Barrier,
     Event,
@@ -136,6 +137,10 @@ def test_empty_map_waits_for_population_and_links_to_the_requested_history(app, 
     app.model.context.commit()
     assert manager.check_and_notify(request_id)
     [notification] = app.model.context.scalars(select(model.Notification)).all()
+    assert notification.content["implicit_collection_jobs_id"] == app.security.encode_id(
+        request.implicit_collection_jobs_id
+    )
+    assert notification.content["job_id"] is None
     assert notification.content["subject"] == "Tool run completed"
     assert "0 jobs" in notification.content["message"]
     assert f"https://galaxy.example.org/histories/view?id={history_id}" in notification.content["message"]
@@ -166,7 +171,12 @@ def test_failed_delivery_rolls_back_marker_and_notification(app, manager, histor
     assert len(app.model.context.scalars(select(model.UserNotificationAssociation)).all()) == 1
 
 
-def test_concurrent_monitors_create_one_notification(app, history):
+@pytest.mark.parametrize("notifications_enabled", [True, False])
+def test_concurrent_monitors_create_one_notification(app, history, tmp_path, notifications_enabled):
+    app.config.enable_notification_system = notifications_enabled
+    email_dir = tmp_path / "emails"
+    email_dir.mkdir()
+    app.config.smtp_server = f"mock_emails_to_path://{email_dir}"
     request, _ = request_notification(history, ["ok"])
     request_id = request.id
     sessions = app.model.context
@@ -174,7 +184,7 @@ def test_concurrent_monitors_create_one_notification(app, history):
     barrier = Barrier(2)
 
     def synchronize_claims(conn, cursor, statement, parameters, context, executemany):
-        if statement.startswith("UPDATE tool_completion_notification"):
+        if statement.startswith(("UPDATE tool_completion_notification", "UPDATE notification")):
             barrier.wait(timeout=10)
 
     def notify():
@@ -190,6 +200,13 @@ def test_concurrent_monitors_create_one_notification(app, history):
         assert sorted(results) == [False, True]
         assert len(sessions.scalars(select(model.UserNotificationAssociation)).all()) == 1
         assert len(sessions.scalars(select(model.Notification)).all()) == 1
+        if not notifications_enabled:
+            sessions.remove()
+            dispatchers = [NotificationManager(app[galaxy_scoped_session], app.config) for _ in range(2)]
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                list(executor.map(lambda dispatcher: dispatcher.dispatch_completion_emails(), dispatchers))
+            assert len(read_mock_emails(email_dir)) == 1
+            assert list(sessions.scalars(select(model.Notification))) == []
     finally:
         event.remove(app.model.engine, "before_cursor_execute", synchronize_claims)
 
@@ -298,65 +315,51 @@ def test_only_elected_monitor_polls_and_failover_resumes_empty_map(app, app_fact
             event.remove(worker.model.engine, "before_cursor_execute", listener)
 
 
-def test_smtp_outbox_retries_after_failure_and_worker_restart(
-    app, app_factory, manager, history, tmp_path, monkeypatch
+@pytest.mark.parametrize(
+    "smtp_error", [SMTPRecipientsRefused({"user@example.org": (550, b"Rejected")}), OSError("SMTP unavailable")]
+)
+def test_smtp_failure_is_not_retried_and_does_not_block_later_emails(
+    app, app_factory, manager, history, tmp_path, monkeypatch, caplog, smtp_error
 ):
     app.config.enable_notification_system = False
     app.config.enable_celery_tasks = False
     email_dir = tmp_path / "emails"
     email_dir.mkdir()
     app.config.smtp_server = f"mock_emails_to_path://{email_dir}"
-    # A category mute applies to in-app notifications, not an explicit SMTP-only request.
     history.user.preferences["notifications"] = '{"tool_execution_completed":{"enabled":false}}'
-    request, _ = request_notification(history, ["ok"])
-    request_id, user_id = request.id, history.user_id
-    assert manager.check_and_notify(request_id)
+    for _ in range(2):
+        request, _ = request_notification(history, ["ok"])
+        assert manager.check_and_notify(request.id)
     notifications = app[NotificationManager]
-    [queued] = app.model.context.scalars(select(model.Notification)).all()
-    queued_id = queued.id
     assert notifications.get_user_notifications(history.user) == []
     assert notifications.get_user_total_unread_notification_count(history.user) == 0
 
-    def failed_send(*args, **kwds):
-        # Network I/O must not hold the worker's database transaction open.
+    send_mail = util.send_mail
+    attempts = []
+
+    def fail_first_send(*args, **kwds):
         assert not app.model.context().in_transaction()
-        raise OSError("SMTP unavailable")
+        attempts.append(kwds)
+        if len(attempts) == 1:
+            raise smtp_error
+        return send_mail(*args, **kwds)
 
     with monkeypatch.context() as patcher:
-        patcher.setattr(util, "send_mail", failed_send)
+        patcher.setattr(util, "send_mail", fail_first_send)
         notifications.dispatch_completion_emails()
-    assert app.model.context.get(model.ToolCompletionNotification, request_id).completed
-    assert app.model.context.get(model.Notification, queued_id).email_claimed_at is not None
-    app.model.context.remove()
-
-    replacement = app_factory()
-    replacement.config.smtp_server = app.config.smtp_server
-    replacement.config.enable_notification_system = False
-    replacement.config.enable_celery_tasks = False
-    dispatcher = replacement[NotificationManager]
-    # A new owner must honor the outstanding lease; then recover the failed send.
-    dispatcher.dispatch_completion_emails()
-    assert read_mock_emails(email_dir) == []
-    # Already queued emails still drain if the administrator enables notifications.
-    replacement.config.enable_notification_system = True
-    replacement.model.context.execute(
-        update(model.Notification)
-        .where(model.Notification.id == queued_id)
-        .values(email_claimed_at=now() - timedelta(minutes=6))
-    )
-    replacement.model.context.commit()
-    dispatcher.dispatch_completion_emails()
+        notifications.dispatch_completion_emails()
+        # Neither restarting the dispatcher nor enabling notifications retries a failed send.
+        replacement = app_factory()
+        replacement.config.smtp_server = app.config.smtp_server
+        replacement[NotificationManager].dispatch_completion_emails()
+    assert len(attempts) == 2
+    assert caplog.text.count("will not retry") == 1
     [email] = read_mock_emails(email_dir)
     assert email["to"] == "user@example.org"
     assert "1 ok" in email["body"]
-    assert replacement.model.context.get(model.Notification, queued_id) is None
-    assert (
-        list(
-            replacement.model.context.scalars(
-                select(model.UserNotificationAssociation).where(model.UserNotificationAssociation.user_id == user_id)
-            )
-        )
-        == []
-    )
-    dispatcher.dispatch_completion_emails()
-    assert len(read_mock_emails(email_dir)) == 1
+    assert list(app.model.context.scalars(select(model.Notification))) == []
+    assert list(app.model.context.scalars(select(model.UserNotificationAssociation))) == []
+    assert [request.completed for request in app.model.context.scalars(select(model.ToolCompletionNotification))] == [
+        True,
+        True,
+    ]

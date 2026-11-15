@@ -16,7 +16,7 @@ each notification category and defaults to off for tool and workflow completion.
 When SMTP is configured and notifications are disabled, the bell offers
 "Email me when finished" for each run. This mode needs no Celery worker and
 keeps other notification categories disabled. Galaxy queues completion emails
-in the database and retries failed sends.
+in the database. Failed sends are logged without retries.
 
 With ``enable_notification_system`` enabled, workflow notifications and email
 delivery use Celery. Run Celery Beat for fallback delivery and scheduled cleanup.

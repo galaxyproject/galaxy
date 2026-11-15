@@ -71,6 +71,7 @@ class SendNotificationHook(WorkflowCompletionHook):
             category=PersonalNotificationCategory.workflow_execution_completed,
             variant=variant,
             content=WorkflowCompletionNotificationContent(
+                invocation_id=self.app.security.encode_id(invocation.id),
                 subject=subject,
                 message=message,
             ),

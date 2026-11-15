@@ -25834,6 +25834,16 @@ export interface components {
              */
             category: "tool_execution_completed";
             /**
+             * Implicit Collection Jobs Id
+             * @description The encoded job group ID for a collection map-over.
+             */
+            implicit_collection_jobs_id?: string | null;
+            /**
+             * Job Id
+             * @description The encoded job ID for a single tool execution.
+             */
+            job_id?: string | null;
+            /**
              * Message
              * @description The message of the notification (supports Markdown).
              */
@@ -28536,6 +28546,11 @@ export interface components {
              * @enum {string}
              */
             category: "workflow_execution_completed";
+            /**
+             * Invocation Id
+             * @description The encoded workflow invocation ID.
+             */
+            invocation_id?: string | null;
             /**
              * Message
              * @description The message of the notification (supports Markdown).

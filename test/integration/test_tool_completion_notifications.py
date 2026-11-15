@@ -48,6 +48,8 @@ class TestToolCompletionNotifications(IntegrationTestCase):
             )
             self.dataset_populator.wait_for_job(result["jobs"][0]["id"], assert_ok=True)
             [notification] = self._wait_for_notifications(history_id)
+            assert notification["content"]["job_id"] == result["jobs"][0]["id"]
+            assert notification["content"]["implicit_collection_jobs_id"] is None
             assert "1 ok" in notification["content"]["message"]
             assert "Concatenate" in notification["content"]["subject"]
 
@@ -74,6 +76,12 @@ class TestToolCompletionNotifications(IntegrationTestCase):
                 ]
             self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
             [notification] = self._wait_for_notifications(history_id)
+            assert notification["content"]["job_id"] is None
+            group_id = notification["content"]["implicit_collection_jobs_id"]
+            assert group_id
+            source_jobs = self._get("jobs", data={"implicit_collection_jobs_id": group_id})
+            self._assert_status_code_is(source_jobs, 200)
+            assert {job["id"] for job in source_jobs.json()} == {job["id"] for job in jobs}
             assert "3 ok" in notification["content"]["message"]
             assert "Concatenate" in notification["content"]["subject"]
             [email] = wait_on(

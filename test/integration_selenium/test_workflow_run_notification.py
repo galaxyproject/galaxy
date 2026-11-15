@@ -61,6 +61,7 @@ class TestWorkflowRunNotificationSeleniumIntegration(BaseWorkflowRunTargetTestCa
         notification = self._wait_for_notification(
             "workflow_execution_completed", f"/workflows/invocations/{invocations[0]['id']}"
         )
+        assert notification["content"]["invocation_id"] == invocations[0]["id"]
         assert "ok: 1" in notification["content"]["message"]
         self._assert_notification_visible(notification)
 

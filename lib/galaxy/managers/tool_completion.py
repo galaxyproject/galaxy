@@ -106,6 +106,12 @@ class ToolCompletionManager:
                         else NotificationVariant.info
                     ),
                     content=ToolCompletionNotificationContent(
+                        job_id=self.app.security.encode_id(request.job_id) if request.job_id is not None else None,
+                        implicit_collection_jobs_id=(
+                            self.app.security.encode_id(request.implicit_collection_jobs_id)
+                            if request.implicit_collection_jobs_id is not None
+                            else None
+                        ),
                         subject=self._notification_subject(job),
                         message=f"Your tool run has completed ({summary}).\n\n[View history]({link})",
                     ),

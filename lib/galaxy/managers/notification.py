@@ -1,9 +1,6 @@
 import logging
 from collections.abc import Callable
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import datetime
 from enum import Enum
 from threading import Event
 from typing import (
@@ -240,45 +237,38 @@ class NotificationManager:
         return notification
 
     def dispatch_completion_emails(self, stop_event: Event | None = None) -> None:
-        """Drain a bounded batch on the elected web process, outside completion checks.
+        """Consume a bounded batch before attempting SMTP, with no send retries.
 
-        A recoverable lease prevents concurrent delivery during leadership changes.
-        SMTP runs without a database transaction. Like other SMTP delivery, a crash
-        after acceptance but before acknowledgement can result in a duplicate email.
+        Deleting each queued email in the claim transaction makes delivery at most
+        once, including across worker restarts. A crash after that commit can lose
+        an email. SMTP runs without holding a database connection.
         """
         session = self.sa_session
         try:
-            available = and_(
-                Notification.email_only.is_(True),
-                or_(
-                    Notification.email_claimed_at.is_(None),
-                    Notification.email_claimed_at < now() - timedelta(minutes=5),
-                ),
-            )
+            pending = and_(Notification.email_only.is_(True), Notification.dispatched.is_(False))
             ids = list(
                 session.scalars(
                     select(Notification.id)
-                    .where(available, Notification.id > self._last_completion_email_id)
+                    .where(pending, Notification.id > self._last_completion_email_id)
                     .order_by(Notification.id)
                     .limit(100)
                 )
             )
-            # Advance past failures even when a slow SMTP batch outlasts their leases.
             self._last_completion_email_id = ids[-1] if ids else 0
             session.rollback()
             for notification_id in ids:
                 if stop_event is not None and stop_event.is_set():
                     break
                 try:
-                    claimed_at = now()
+                    # The conditional update also claims exclusively on SQLite.
                     claimed = session.scalar(
                         update(Notification)
-                        .where(Notification.id == notification_id, available)
-                        .values(email_claimed_at=claimed_at)
+                        .where(Notification.id == notification_id, pending)
+                        .values(dispatched=True)
                         .returning(Notification.id)
                     )
-                    session.commit()
                     if claimed is None:
+                        session.rollback()
                         continue
                     notification = session.get(Notification, notification_id)
                     assert notification is not None
@@ -290,32 +280,26 @@ class NotificationManager:
                         )
                     )
                     expired = notification.expiration_time is not None and notification.expiration_time <= now()
-                    # Templates use scalar attributes only. Release the connection before SMTP.
+                    # Templates use scalar attributes only. Consume the queue entry and
+                    # detach those attributes before committing and releasing the connection.
                     session.expunge_all()
-                    session.rollback()
-                    if not expired:
-                        for user in users:
-                            EmailNotificationChannelPlugin(self.config).send(notification, user, timeout=30)
-                    # Keep the lease check in the acknowledgement too, in case ownership changed.
-                    owned = session.scalar(
-                        update(Notification)
-                        .where(Notification.id == notification_id, Notification.email_claimed_at == claimed_at)
-                        .values(email_claimed_at=claimed_at)
-                        .returning(Notification.id)
-                    )
-                    if owned is not None:
-                        session.execute(
-                            delete(UserNotificationAssociation).where(
-                                UserNotificationAssociation.notification_id == notification_id
-                            )
+                    session.execute(
+                        delete(UserNotificationAssociation).where(
+                            UserNotificationAssociation.notification_id == notification_id
                         )
-                        session.execute(delete(Notification).where(Notification.id == notification_id))
+                    )
+                    session.execute(delete(Notification).where(Notification.id == notification_id))
                     session.commit()
                 except Exception:
                     session.rollback()
-                    log.exception(
-                        "Could not send completion email %d; will retry after its lease expires", notification_id
-                    )
+                    log.exception("Error consuming completion email %d", notification_id)
+                    continue
+                try:
+                    if not expired:
+                        for user in users:
+                            EmailNotificationChannelPlugin(self.config).send(notification, user, timeout=30)
+                except Exception:
+                    log.exception("Could not send completion email %d; will not retry", notification_id)
         except Exception:
             log.exception("Error polling completion emails")
         finally:
