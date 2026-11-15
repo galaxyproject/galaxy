@@ -1,0 +1,46 @@
+# TPV configuration for user-self-registered compute resources.
+#
+# Include this file from your operator-managed TPV config file list so that
+# Galaxy jobs submitted by users with an active compute resource are routed
+# to their own Pulsar via the single multi-tenant ``compute_resource`` runner.
+#
+# The destination's ``params`` are filled in at job dispatch time by a rule
+# that consults ``app.compute_resource_manager.get_active_for(user)`` — a
+# method exposed on the Galaxy app when ``enable_compute_resources: true``.
+# No per-user file regeneration is required.
+#
+# Two stanzas:
+#   1. The destination ``compute_resource``: inherits ``_pulsar`` (or whatever
+#      your base Pulsar destination is named), uses the multi-tenant runner,
+#      and requires the ``compute_resource`` scheduling tag.
+#   2. A default tools rule that adds the ``compute_resource`` tag to any job
+#      submitted by a user with an active compute resource, making the job
+#      eligible for the destination.
+#
+# Adjust ``inherits`` to point at your existing Pulsar destination, and
+# tighten the tools rule if you only want compute-resource eligibility for
+# a subset of tools.
+
+destinations:
+  compute_resource:
+    inherits: _pulsar
+    runner: compute_resource
+    scheduling:
+      require:
+        - compute_resource
+    rules:
+      - id: inject_compute_resource_params
+        if: app.compute_resource_manager.get_active_for(user) is not None
+        params:
+          compute_resource_id: "{app.compute_resource_manager.get_active_for(user).id}"
+          relay_url: "{app.compute_resource_manager.get_active_for(user).relay_url}"
+          manager: "{app.compute_resource_manager.get_active_for(user).manager_name}"
+
+tools:
+  default:
+    rules:
+      - id: compute_resource_eligibility
+        if: app.compute_resource_manager.get_active_for(user) is not None
+        scheduling:
+          require:
+            - compute_resource
