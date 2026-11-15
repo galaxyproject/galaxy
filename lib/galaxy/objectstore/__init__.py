@@ -1736,6 +1736,13 @@ class HierarchicalObjectStore(NestedObjectStore):
         """Call the primary object store."""
         return self.backends[0].create(obj, **kwargs)
 
+    def _update_from_file(self, obj, create: bool = False, **kwargs) -> None:
+        if create:
+            path_kwargs = {k: v for k, v in kwargs.items() if k not in ("file_name", "preserve_symlinks")}
+            # _create() writes to the primary backend; an object a later backend holds is updated where it is.
+            create = not self._exists(obj, **path_kwargs)
+        super()._update_from_file(obj, create=create, **kwargs)
+
     def _is_private(self, obj) -> bool:
         # Unlink the DistributedObjectStore - the HierarchicalObjectStore does not use
         # object_store_id - so all the contained object stores need to define is_private

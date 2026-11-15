@@ -25,6 +25,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import get_before_flush_handler
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.objectstore.examples import get_example
 from galaxy.objectstore.s3_boto3 import S3ObjectStore as Boto3ObjectStore
 from galaxy.objectstore.unittest_utils import (
     Config as TestConfig,
@@ -228,13 +229,15 @@ def test_copy_from_inserts_each_metadata_file_row_once():
 
 
 class InMemoryRemoteBoto3ObjectStore(Boto3ObjectStore):
-    """A boto3 object store whose bucket is a dict; records downloads."""
+    """A boto3 object store whose bucket is a dict; records downloads and existence checks."""
 
     def _initialize(self):
         self.remote: dict[str, bytes] = {}
         self.downloads: list[str] = []
+        self.existence_checks: list[str] = []
 
     def _exists_remotely(self, rel_path: str) -> bool:
+        self.existence_checks.append(rel_path)
         return rel_path in self.remote
 
     def _get_remote_size(self, rel_path: str) -> int:
@@ -293,9 +296,12 @@ def test_copy_from_writes_metadata_files_without_downloading_them():
         target.copy_from(source, include_metadata=True)
         session.commit()
         assert not object_store.downloads
+        # Each remote existence check is a request; a job cache hit over a mapped collection copies a file per element.
+        copied = target.metadata.bam_index
+        copied_checks = [p for p in object_store.existence_checks if p.endswith(f"metadata_{copied.id}.dat")]
+        assert len(copied_checks) == 1
 
         # Re-set metadata on a node whose cache lacks the copied file's directory.
-        copied = target.metadata.bam_index
         cache_path = copied.get_file_name(sync_cache=False)
         shutil.rmtree(os.path.dirname(cache_path))
         copied.update_from_file(test_config.write("oink", "regenerated_index"))
@@ -303,6 +309,23 @@ def test_copy_from_writes_metadata_files_without_downloading_them():
         assert not object_store.downloads
         assert os.path.exists(cache_path)
         with open(cache_path) as fh:
+            assert fh.read() == "oink"
+
+
+def test_updating_a_metadata_file_keeps_it_in_its_hierarchical_backend():
+    with _setup_mapping_and_user(get_example("hierarchical_simple.yml")) as (test_config, object_store, model, history):
+        hda = _create_hda(model, object_store, history, test_config.write("moo", "source"), include_metadata_file=True)
+        index = hda.metadata.bam_index
+        primary_path = index.get_file_name()
+        primary_root = os.path.join(test_config.temp_directory, "files1")
+        secondary_path = primary_path.replace(primary_root, os.path.join(test_config.temp_directory, "files2"))
+        os.makedirs(os.path.dirname(secondary_path))
+        shutil.move(primary_path, secondary_path)
+
+        index.update_from_file(test_config.write("oink", "regenerated_index"))
+
+        assert not os.path.exists(primary_path)
+        with open(secondary_path) as fh:
             assert fh.read() == "oink"
 
 

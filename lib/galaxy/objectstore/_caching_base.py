@@ -346,7 +346,10 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         if create:
             self._create(obj, **kwargs)
 
-        if self._exists(obj, **kwargs):
+        # An update without create only writes to an object that already exists. _create() makes the object
+        # when it is missing, so after it the object is known to exist, and _exists() would spend another
+        # request to the remote store to confirm that.
+        if create or self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             # Chose whether to use the dataset file itself or an alternate file
             if file_name:
