@@ -3,7 +3,7 @@
 import logging
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 from typing import (
     Annotated,
@@ -372,8 +372,8 @@ def to_utc_datetime(value: Any) -> datetime | None:
         log.warning("Ignoring unparseable file source timestamp %r", value)
         return None
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 class RemoteFile(RemoteEntry):

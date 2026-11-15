@@ -358,7 +358,7 @@ class SSEConnectionManager:
                     if event is _SHUTDOWN_WAKEUP:
                         break
                     yield event.to_wire()
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     yield ": keepalive\n\n"
         finally:
             self.disconnect(user_id, queue, galaxy_session_id)

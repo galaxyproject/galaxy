@@ -2,7 +2,7 @@ import json
 import stat
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 
 import pytest
@@ -44,7 +44,7 @@ def _index(source_hash: str = "source-a") -> ToolIndex:
 
 def test_manifest_contract_and_snapshot_counts(monkeypatch):
     monkeypatch.setattr(manifest_module, "_source_checkout_revision", lambda: "abc123")
-    built_at = datetime(2026, 7, 16, 12, 0, tzinfo=timezone.utc)
+    built_at = datetime(2026, 7, 16, 12, 0, tzinfo=UTC)
 
     manifest = build_manifest("cvmfs_main", _index(), built_at=built_at)
 
@@ -63,8 +63,8 @@ def test_manifest_contract_and_snapshot_counts(monkeypatch):
 def test_snapshot_digest_is_stable_and_content_sensitive():
     first = _index()
     second = _index()
-    second.entries["tool_a"].indexed_at = datetime.now(timezone.utc)
-    second.entries_by_version["tool_a"]["1.0"].indexed_at = datetime.now(timezone.utc)
+    second.entries["tool_a"].indexed_at = datetime.now(UTC)
+    second.entries_by_version["tool_a"]["1.0"].indexed_at = datetime.now(UTC)
 
     assert tool_snapshot(first).digest == tool_snapshot(second).digest
     assert tool_snapshot(first).digest != tool_snapshot(_index(source_hash="source-b")).digest
@@ -154,8 +154,8 @@ def test_manifest_compatibility_requires_current_cohort_schema_and_store():
 
 
 def test_resolve_compatible_store_selects_newest_compatible_candidate(tmp_path):
-    older_time = datetime(2026, 7, 15, tzinfo=timezone.utc)
-    newer_time = datetime(2026, 7, 16, tzinfo=timezone.utc)
+    older_time = datetime(2026, 7, 15, tzinfo=UTC)
+    newer_time = datetime(2026, 7, 16, tzinfo=UTC)
     for cohort, built_at in (("old", older_time), ("new", newer_time)):
         database_path = tmp_path / cohort / "sources.sqlite"
         database_path.parent.mkdir()

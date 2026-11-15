@@ -6,7 +6,7 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
-from enum import Enum
+from enum import StrEnum
 from typing import TypeAlias
 
 try:
@@ -15,7 +15,7 @@ try:
     job_states: TypeAlias = Job.states
 except ImportError:
     # Not in Galaxy, map Galaxy job states to Pulsar ones.
-    class job_states(str, Enum):  # type: ignore[no-redef]
+    class job_states(StrEnum):  # type: ignore[no-redef]
         RUNNING = "running"
         OK = "complete"
         QUEUED = "queued"

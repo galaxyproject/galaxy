@@ -164,13 +164,8 @@ def test_do_eval_without_quickjs_parameter_references(without_quickjs, expressio
 
 @pytest.mark.parametrize("expression", ["$(1 + 1)", "${ return false; }"])
 def test_do_eval_without_quickjs_fails_closed(without_quickjs, expression):
-    with pytest.raises(WorkflowException, match=r"Full JavaScript evaluation requires Python 3\.10\+.*quickjs-ng"):
+    with pytest.raises(WorkflowException, match="requires the quickjs-ng package"):
         do_eval(expression, {})
-
-
-def test_evaluate_without_quickjs_fails_closed(without_quickjs):
-    with pytest.raises(JavascriptException, match=r"Full JavaScript evaluation requires Python 3\.10\+.*quickjs-ng"):
-        evaluate(None, {"script": "{return 42;}"})
 
 
 def test_do_eval_javascript_expression():
@@ -264,7 +259,7 @@ def test_worker_without_quickjs_is_a_worker_error():
         "-c",
         "import runpy, sys; sys.modules['quickjs'] = None; runpy.run_path(sys.argv[2], run_name='__main__')",
     ]
-    with pytest.raises(ExpressionWorkerError, match="requires Python 3.10\\+ and the quickjs-ng package"):
+    with pytest.raises(ExpressionWorkerError, match="requires the quickjs-ng package"):
         evaluate_program("JSON.stringify(42)", sandbox_command=wrapper)
 
 

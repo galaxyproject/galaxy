@@ -2,7 +2,7 @@ import json
 from collections.abc import Iterator
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 from typing import Any
 
@@ -52,5 +52,5 @@ def compute_token_expiry_for_provider(user: User | None, provider: str) -> datet
         expires = locate_token_expiration(extra_data)
         if auth_time is None or expires is None:
             return None
-        return datetime.fromtimestamp(int(auth_time) + int(expires), tz=timezone.utc)
+        return datetime.fromtimestamp(int(auth_time) + int(expires), tz=UTC)
     return None

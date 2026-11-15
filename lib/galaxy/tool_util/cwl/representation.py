@@ -4,7 +4,7 @@ input description and the CWL description for a job json."""
 import json
 import logging
 import os
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
     NamedTuple,
@@ -24,7 +24,7 @@ NOT_PRESENT = object()
 NO_GALAXY_INPUT = object()
 
 
-class INPUT_TYPE(str, Enum):
+class INPUT_TYPE(StrEnum):
     DATA = "data"
     INTEGER = "integer"
     FLOAT = "float"

@@ -1,7 +1,7 @@
 from datetime import (
     datetime,
     timedelta,
-    timezone,
+    UTC,
 )
 from types import SimpleNamespace
 from unittest.mock import MagicMock
@@ -55,7 +55,7 @@ def test_tool_id_fallback_when_path_misses(monkeypatch):
 
 def test_tool_id_fallback_picks_latest_stored_at(monkeypatch):
     _patch_get_tool_source(monkeypatch)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     store = MagicMock()
     store.get_by_source_path.return_value = None
     store.get_by_tool_id.return_value = [
@@ -70,7 +70,7 @@ def test_tool_id_fallback_picks_latest_stored_at(monkeypatch):
 
 def test_tool_id_fallback_prefers_dated_row_over_undated(monkeypatch):
     _patch_get_tool_source(monkeypatch)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     store = MagicMock()
     store.get_by_source_path.return_value = None
     store.get_by_tool_id.return_value = [

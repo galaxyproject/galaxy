@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import (
     BaseModel,
@@ -13,7 +13,7 @@ from ..panel import (
 )
 
 
-class ToolPanelViewModelType(str, Enum):
+class ToolPanelViewModelType(StrEnum):
     default_type = "default"
     favorites = "favorites"
     generic = "generic"

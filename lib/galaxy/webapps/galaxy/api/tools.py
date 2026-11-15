@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 from json import (
     dumps,
@@ -263,9 +263,7 @@ class FetchTools:
 
         # Get file modification time
         file_stat = os.stat(tool_icon_path)
-        last_modified = datetime.fromtimestamp(file_stat.st_mtime, tz=timezone.utc).strftime(
-            "%a, %d %b %Y %H:%M:%S GMT"
-        )
+        last_modified = datetime.fromtimestamp(file_stat.st_mtime, tz=UTC).strftime("%a, %d %b %Y %H:%M:%S GMT")
 
         # Check If-Modified-Since
         if_modified_since = request.headers.get("If-Modified-Since")

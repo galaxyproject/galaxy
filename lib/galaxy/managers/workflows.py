@@ -985,8 +985,7 @@ class WorkflowContentsManager(UsesAnnotations):
             ]
             raise MissingToolsException(workflow, errors)
 
-        report_markdown = (workflow.reports_config or {}).get("markdown")
-        if report_markdown:
+        if report_markdown := (workflow.reports_config or {}).get("markdown"):
             try:
                 validate_galaxy_markdown_fence_types(report_markdown)
             except ValueError as e:

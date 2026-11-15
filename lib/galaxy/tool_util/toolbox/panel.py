@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from galaxy.tool_util.abstract_tool import AbstractTool
 
 
-class panel_item_types(str, Enum):
+class panel_item_types(StrEnum):
     TOOL = "TOOL"
     WORKFLOW = "WORKFLOW"
     SECTION = "SECTION"

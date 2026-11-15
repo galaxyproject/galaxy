@@ -1,6 +1,6 @@
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 
 from galaxy.files.plugins import FileSourcePluginsConfig
@@ -61,7 +61,7 @@ def _omero_file_source() -> OmeroFileSource:
 def test_omero_image_ctime_converts_gateway_local_time_to_utc(non_utc_local_time):
     image = _Image(datetime.fromtimestamp(ACQUISITION_TIMESTAMP))
     remote_file = _omero_file_source()._create_remote_file_for_image(image, "/image/1")
-    assert remote_file.ctime == datetime.fromtimestamp(ACQUISITION_TIMESTAMP, tz=timezone.utc)
+    assert remote_file.ctime == datetime.fromtimestamp(ACQUISITION_TIMESTAMP, tz=UTC)
 
 
 def test_omero_image_without_date_has_no_ctime():
