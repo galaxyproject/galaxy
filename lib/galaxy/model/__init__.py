@@ -10679,11 +10679,16 @@ class MetadataFile(Base, StorableObject, Serializable):
         da = self.history_dataset or self.library_dataset
         return da and da.dataset
 
-    def update_from_file(self, file_name):
+    def update_from_file(self, file_name: Optional[str]):
         if not self.dataset:
             raise Exception("Attempted to write MetadataFile, but no DatasetAssociation set")
         if not self.dataset.purged:
             object_store, alt_name = self._object_store_and_alt_name()
+            if file_name is None:
+                # The file is already at its object store path. Without a cache sync this is a path lookup.
+                file_name = object_store.get_filename(
+                    self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name, sync_cache=False
+                )
             # create=True makes the object if it is missing. Asking for the file name first would check for
             # it twice more, and on a caching object store download the object this call replaces.
             object_store.update_from_file(

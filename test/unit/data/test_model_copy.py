@@ -312,6 +312,60 @@ def test_copy_from_writes_metadata_files_without_downloading_them():
             assert fh.read() == "oink"
 
 
+@patch("galaxy.objectstore.s3_boto3.S3ObjectStore", InMemoryRemoteBoto3ObjectStore)
+def test_update_from_file_without_a_file_name_uploads_the_stored_file():
+    with _setup_mapping_and_user(BOTO3_TEST_CONFIG, store_by="uuid") as (test_config, object_store, model, history):
+        hda = _create_hda(model, object_store, history, test_config.write("moo", "source"))
+        index = hda.datatype.metadata_spec["bam_index"].param.new_file(dataset=hda)
+        with open(index.get_file_name(), "w") as fh:
+            fh.write("index")
+        checks_before = len(object_store.existence_checks)
+
+        index.update_from_file(None)
+
+        (remote_path,) = (p for p in object_store.remote if p.endswith(f"metadata_{index.uuid}.dat"))
+        assert object_store.remote[remote_path] == b"index"
+        assert len(object_store.existence_checks) == checks_before + 1
+
+
+class RegisteringRucioBroker:
+    def __init__(self, object_store):
+        self.registrations: list[tuple[str, str]] = []
+
+    def data_object_exists(self, rel_path):
+        return False
+
+    def get_size(self, rel_path):
+        return 0
+
+    def register(self, rel_path, source):
+        self.registrations.append((rel_path, source))
+
+
+RUCIO_REGISTER_ONLY_TEST_CONFIG = """
+type: rucio
+register_only: true
+enable_cache_monitor: false
+cache:
+  path: "${temp_directory}/cache"
+"""
+
+
+@patch("galaxy.objectstore.rucio.RucioBroker", RegisteringRucioBroker)
+def test_update_from_file_without_a_file_name_registers_the_stored_file():
+    with _setup_mapping_and_user(RUCIO_REGISTER_ONLY_TEST_CONFIG, store_by="uuid") as (_, object_store, model, history):
+        hda = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=model.context)
+        history.add_dataset(hda)
+        index = hda.datatype.metadata_spec["bam_index"].param.new_file(dataset=hda)
+        path = index.get_file_name()
+        with open(path, "w") as fh:
+            fh.write("index")
+
+        index.update_from_file(None)
+
+        assert [source for _, source in object_store.rucio_broker.registrations] == [path]
+
+
 def test_updating_a_metadata_file_keeps_it_in_its_hierarchical_backend():
     with _setup_mapping_and_user(get_example("hierarchical_simple.yml")) as (test_config, object_store, model, history):
         hda = _create_hda(model, object_store, history, test_config.write("moo", "source"), include_metadata_file=True)
