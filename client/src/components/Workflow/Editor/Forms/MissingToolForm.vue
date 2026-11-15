@@ -16,6 +16,7 @@ import FormElement from "@/components/Form/FormElement.vue";
 
 const props = defineProps<{
     step: Step;
+    error: string;
 }>();
 
 const emit = defineEmits<{
@@ -32,8 +33,6 @@ const toolId = computed(() => contentId?.value || name.value);
 const toolParts = computed(() => parseRequestedToolParts(toolId.value));
 // the backend only sends tool_version for installed tools, tool shed ids carry it as their last segment
 const toolVersion = computed(() => props.step.tool_version || toolParts.value.requested_version);
-// the backend sends a plain string here despite the Step typing
-const errorMessage = computed(() => String(props.step.errors || "Tool is not installed"));
 
 function onAnnotation(newAnnotation: string) {
     emit("onAnnotation", stepId.value, newAnnotation);
@@ -48,7 +47,7 @@ function onLabel(newLabel: string) {
     <FormCard :title="toolParts.name" :icon="WorkflowIcons.tool">
         <template v-slot:body>
             <GAlert variant="warning" show data-description="missing tool alert">
-                <p class="font-weight-bold mb-1">{{ errorMessage }}</p>
+                <p class="font-weight-bold mb-1">{{ props.error }}</p>
                 <div>
                     Tool ID: <code>{{ toolId }}</code>
                 </div>

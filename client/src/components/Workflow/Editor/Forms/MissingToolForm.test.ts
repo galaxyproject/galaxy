@@ -21,7 +21,6 @@ function makeStep(overrides: Partial<Step> = {}): Step {
         label: "my label",
         annotation: "my annotation",
         config_form: undefined,
-        errors: ["Tool is not installed"],
         input_connections: {},
         inputs: [],
         outputs: [],
@@ -43,7 +42,7 @@ function mountTarget(step: Step = makeStep(), workflowOutputLabels: string[] = [
         };
     }
     return mount(MissingToolForm as object, {
-        props: { step },
+        props: { step, error: "Tool is not installed" },
         global: { ...withPlugins(localVue, pinia), provide: { workflowId: "mock-workflow" } },
     });
 }
