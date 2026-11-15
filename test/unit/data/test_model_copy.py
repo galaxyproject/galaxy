@@ -163,6 +163,24 @@ def test_copy_from_gives_target_and_its_copies_their_own_metadata_files():
         assert len(index_ids) == 3
 
 
+def test_copy_from_the_same_source_twice_copies_metadata_files_once():
+    # A cached job's structured collection output is copied as a job output and again as a collection element.
+    with _setup_mapping_and_user() as (test_config, object_store, model, history):
+        session = model.context
+        source = _create_hda(
+            model, object_store, history, test_config.write("moo", "source"), include_metadata_file=True
+        )
+        target = _create_hda(model, object_store, history, test_config.write("cow", "target"))
+        session.commit()
+
+        target.copy_from(source, include_metadata=True)
+        target.copy_from(source, include_metadata=True)
+        session.commit()
+
+        owned = session.scalars(select(MetadataFile).where(MetadataFile.hda_id == target.id)).all()
+        assert owned == [target.metadata.bam_index]
+
+
 def test_copy_from_leaves_the_transaction_to_the_caller():
     # Job.copy_from_job holds row locks until it commits; the default disk object store stores by id.
     with _setup_mapping_and_user() as (test_config, object_store, model, history):

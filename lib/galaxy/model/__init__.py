@@ -5904,7 +5904,13 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         if include_tags and self.history:
             self.copy_tags_from(self.user, other_hda)
         self.dataset = new_dataset or other_hda.dataset
-        if include_metadata:
+        # A cached job's structured collection output is copied as a job output and again as a collection element.
+        already_copied = (
+            old_dataset is self.dataset
+            and other_hda.id is not None
+            and self.copied_from_history_dataset_association_id == other_hda.id
+        )
+        if include_metadata and not already_copied:
             # Copy metadata files into rows this HDA owns, as HDA.copy() does: purging other_hda removes
             # the files its rows name. Copying needs the extension and dataset set above.
             self.metadata = other_hda.metadata
