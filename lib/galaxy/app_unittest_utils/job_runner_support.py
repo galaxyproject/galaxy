@@ -65,6 +65,8 @@ class MockJobWrapper:
         self.entry_points_checked = False
         self.cleanup_called = False
         self.user = None
+        # Read by BaseJobRunner._ensure_db_session() when a worker thread runs the job.
+        self._job_io = None
 
         self.external_output_metadata: bunch.Bunch | None = bunch.Bunch()
         self.app.datatypes_registry.set_external_metadata_tool = bunch.Bunch(
@@ -83,6 +85,9 @@ class MockJobWrapper:
                 break
             time.sleep(0.1)
         return external_id
+
+    def enqueue(self):
+        return True
 
     def prepare(self):
         self.prepare_called = True

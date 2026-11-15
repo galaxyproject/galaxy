@@ -2,7 +2,10 @@ import errno
 import logging
 import os
 import signal
-from time import sleep
+from time import (
+    monotonic,
+    sleep,
+)
 
 log = logging.getLogger(__name__)
 
@@ -48,3 +51,46 @@ def kill_pg(pgid):
             return
     else:
         log.warning("Some process in process group %d refuses to die after signaling TERM/KILL", pgid)
+
+
+def kill_pgs(pgids, grace_period=1.0):
+    """Kill all processes in each of the process groups pgids.
+
+    Unlike calling kill_pg() for each group, every group gets SIGTERM before
+    waiting, and the groups still alive after grace_period seconds all get
+    SIGKILL, so the wait does not grow with the number of groups.
+
+    Liveness is tested by sending signal 0 instead of with check_pg(), so this
+    does not reap the processes and whoever waits on them still gets their
+    exit status.
+    """
+    pgids = list(pgids)
+    alive = pgids
+    for sig in [signal.SIGTERM, signal.SIGKILL]:
+        alive = [pgid for pgid in alive if _signal_pg(pgid, sig)]
+        deadline = monotonic() + grace_period
+        while alive and monotonic() < deadline:
+            sleep(0.1)
+            alive = [pgid for pgid in alive if _signal_pg(pgid, 0)]
+        if not alive:
+            log.debug("Processes in process groups %s successfully killed with signal %d", pgids, sig)
+            return
+    log.warning("Some process in process groups %s refuses to die after signaling TERM/KILL", alive)
+
+
+def _signal_pg(pgid, sig):
+    """Send sig to process group pgid, return False if the group no longer exists."""
+    try:
+        os.killpg(pgid, sig)
+    except OSError as e:
+        if e.errno == errno.ESRCH:
+            return False
+        if sig:
+            log.warning(
+                "Got errno %s when sending signal %d to process group %d: %s",
+                errno.errorcode[e.errno] if e.errno is not None else None,
+                sig,
+                pgid,
+                e.strerror,
+            )
+    return True

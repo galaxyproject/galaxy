@@ -1,6 +1,7 @@
 import os
 import signal
 import threading
+import time
 from typing import (
     cast,
     TYPE_CHECKING,
@@ -171,6 +172,40 @@ class TestLocalJobRunner(TestCase, UsesTools):
         t.join(1)
         assert not psutil.pid_exists(external_id)
         assert "job terminated by Galaxy shutdown" in self.job_wrapper.fail_message
+
+    @pytest.mark.parametrize("njobs", [1, 3])
+    def test_shutdown_kills_jobs_run_by_workers(self, njobs):
+        self.app.config.monitor_thread_join_timeout = 15
+        runner = local.LocalJobRunner(self.app, njobs)
+        runner.start()
+        job_wrappers = []
+        for job_id in range(1, njobs + 1):
+            job_wrapper = MockJobWrapper(
+                self.app, self.test_directory, self.tool, job_id=job_id, use_unique_working_directory=True
+            )
+            job_wrapper.command_line = '''python -c "import time; time.sleep(60)"'''
+            runner.put(cast(MinimalJobWrapper, job_wrapper))
+            job_wrappers.append(job_wrapper)
+        external_ids = [job_wrapper.wait_for_external_id() for job_wrapper in job_wrappers]
+        assert all(external_id and psutil.pid_exists(external_id) for external_id in external_ids)
+
+        start = time.monotonic()
+        runner.shutdown()
+        elapsed = time.monotonic() - start
+
+        assert elapsed < 5, f"shutdown() took {elapsed:.1f}s"
+        for job_wrapper in job_wrappers:
+            assert "job terminated by Galaxy shutdown" in getattr(job_wrapper, "fail_message", "")
+        assert not any(psutil.pid_exists(external_id) for external_id in external_ids)
+
+    def test_job_dequeued_after_shutdown_is_not_started(self):
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.start()
+        runner.shutdown()
+        # What a worker that was waiting on the queue when shutdown began does.
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
+        assert self.job_wrapper.job.job_runner_external_id is None
+        assert not hasattr(self.job_wrapper, "fail_message")
 
     def test_timelimit_kills_job(self):
         self.tool.timelimit = 3
