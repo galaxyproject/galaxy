@@ -25,7 +25,6 @@ from galaxy.model import (
 )
 from galaxy.model.base import get_before_flush_handler
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.objectstore.examples import get_example
 from galaxy.objectstore.s3_boto3 import S3ObjectStore as Boto3ObjectStore
 from galaxy.objectstore.unittest_utils import (
     Config as TestConfig,
@@ -366,8 +365,28 @@ def test_update_from_file_without_a_file_name_registers_the_stored_file():
         assert [source for _, source in object_store.rucio_broker.registrations] == [path]
 
 
+HIERARCHICAL_TEST_CONFIG = """
+type: hierarchical
+backends:
+- type: disk
+  files_dir: "${temp_directory}/files1"
+  extra_dirs:
+  - type: temp
+    path: "${temp_directory}/tmp1"
+  - type: job_work
+    path: "${temp_directory}/job_working_directory1"
+- type: disk
+  files_dir: "${temp_directory}/files2"
+  extra_dirs:
+  - type: temp
+    path: "${temp_directory}/tmp2"
+  - type: job_work
+    path: "${temp_directory}/job_working_directory2"
+"""
+
+
 def test_updating_a_metadata_file_keeps_it_in_its_hierarchical_backend():
-    with _setup_mapping_and_user(get_example("hierarchical_simple.yml")) as (test_config, object_store, model, history):
+    with _setup_mapping_and_user(HIERARCHICAL_TEST_CONFIG) as (test_config, object_store, model, history):
         hda = _create_hda(model, object_store, history, test_config.write("moo", "source"), include_metadata_file=True)
         index = hda.metadata.bam_index
         primary_path = index.get_file_name()
