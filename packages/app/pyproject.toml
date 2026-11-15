@@ -64,6 +64,7 @@ dependencies = [
     "starlette",
     "svgwrite",
     "typing-extensions",
+    "tzdata",
     "WebOb>=1.8.9",
     "Whoosh",
 ]
