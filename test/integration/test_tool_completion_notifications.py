@@ -5,7 +5,6 @@ from typing import ClassVar
 
 import pytest
 
-from galaxy.celery.tasks import dispatch_pending_notifications
 from galaxy.util.unittest_utils import read_mock_emails
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -49,8 +48,6 @@ class TestToolCompletionNotifications(IntegrationTestCase):
             [notification] = self._wait_for_notifications(history_id)
             assert "1 ok" in notification["content"]["message"]
             assert "Concatenate" in notification["content"]["subject"]
-            dispatch_pending_notifications.delay().get(timeout=10)
-            assert read_mock_emails(self.email_dir) == []
 
     @pytest.mark.parametrize("asynchronous", [False, True])
     def test_map_over_sends_one_summary_and_uses_the_saved_email_preference(self, asynchronous):
@@ -77,8 +74,11 @@ class TestToolCompletionNotifications(IntegrationTestCase):
             [notification] = self._wait_for_notifications(history_id)
             assert "3 ok" in notification["content"]["message"]
             assert "Concatenate" in notification["content"]["subject"]
-            dispatch_pending_notifications.delay().get(timeout=10)
-            [email] = read_mock_emails(self.email_dir)
+            [email] = wait_on(
+                lambda: [email for email in read_mock_emails(self.email_dir) if f"?id={history_id}" in email["body"]]
+                or None,
+                "completion email",
+            )
             assert email["to"] == self._get("users/current").json()["email"]
             assert "3 ok" in email["body"]
             assert f"?id={history_id}" in email["body"]

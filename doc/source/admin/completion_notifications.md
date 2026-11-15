@@ -18,7 +18,7 @@ Tell users about these changes before the upgrade. Existing SMTP settings alone 
 
 Set `enable_notification_system: true` in the Galaxy configuration. Its default is `false`.
 
-For workflow completion notifications, run the Celery worker that executes workflow completion hooks. For email delivery, also enable `enable_celery_tasks` and run Celery Beat. Configure the broker and result backend as described in the [administrator guide for Celery](https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks).
+For workflow completion notifications, run the Celery worker that executes workflow completion hooks. For email delivery, also enable `enable_celery_tasks`. Run Celery Beat for fallback delivery and scheduled cleanup. Configure the broker and result backend as described in the [administrator guide for Celery](https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks).
 
 Configure `smtp_server` and `email_from` for outgoing mail. Set `galaxy_infrastructure_url` to the public Galaxy URL so notification links use the correct address.
 
@@ -46,7 +46,9 @@ For collection map-over, Galaxy waits until population finishes and every job re
 
 Settled states include `ok`, `error`, `deleted`, `skipped`, `paused`, and `stopped`. A completion notification does not mean that every job succeeded.
 
-Email has a separate dispatch schedule. `dispatch_notifications_interval` defaults to 600 seconds. Email can arrive later than the notification in Galaxy.
+Completion notifications queue a Celery task for email delivery as soon as Galaxy creates the notification. Email can arrive later than the notification in Galaxy if workers are busy.
+
+If Galaxy cannot queue that task, the periodic dispatcher handles delivery. `dispatch_notifications_interval` defaults to 600 seconds and controls this fallback.
 
 SSE delivers browser updates when enabled. Without SSE, the client polls for notifications. SSE does not replace either completion monitor or the email dispatcher.
 
@@ -70,6 +72,6 @@ If a tool notification does not arrive, confirm that a web process runs and the 
 
 If a workflow notification does not arrive, check its workflow handler and Celery worker. Search the handler log for "Error queuing hook". Confirm that the user requested a notification for that invocation.
 
-If a notification appears in Galaxy but email does not arrive, check the category preference, SMTP settings, Celery worker, and Beat. Allow for `dispatch_notifications_interval`. Search the worker log for "Error sending email notification".
+If a notification appears in Galaxy but email does not arrive, check the category preference, SMTP settings, and Celery worker. Search the worker log for "Error sending email notification". If the application logs "Could not queue the dispatch", also check Beat and allow for `dispatch_notifications_interval`.
 
 For a smoke test, request a notification for a small collection map-over and enable email for tool runs. Confirm one summary in Galaxy and one email. Reopen the tool form and confirm that "Notify me" is off while "Send email" remains on.

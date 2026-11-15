@@ -30,6 +30,8 @@ class TestWorkflowRunNotificationSeleniumIntegration(BaseWorkflowRunTargetTestCa
         super().handle_galaxy_config_kwds(config)
         config["enable_notification_system"] = True
         config["workflow_completion_monitor_sleep"] = 0.1
+        config["smtp_server"] = f"mock_emails_to_path://{cls._test_driver.mkdtemp()}"
+        config["email_from"] = "galaxy-noreply@example.com"
 
     @selenium_test
     @managed_history

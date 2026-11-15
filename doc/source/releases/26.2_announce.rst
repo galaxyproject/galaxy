@@ -15,8 +15,9 @@ each notification category and defaults to off for tool and workflow completion.
 
 Administrators must enable ``enable_notification_system`` to offer these
 notifications. Workflow completion notifications require a Celery worker.
-Email delivery also requires ``enable_celery_tasks``, Celery Beat, and SMTP
-configuration. Existing SMTP settings alone do not preserve completion emails.
+Email delivery also requires ``enable_celery_tasks`` and SMTP configuration.
+Completion emails queue immediately. Run Celery Beat for fallback delivery and
+scheduled cleanup. Existing SMTP settings alone do not preserve completion emails.
 The legacy API option ``send_email_notification`` now requests a notification
 whose delivery follows the user's preferences.
 
