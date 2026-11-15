@@ -81,6 +81,7 @@ class SendNotificationHook(WorkflowCompletionHook):
             recipients=recipients,
             notification=notification_data,
             galaxy_url=self.app.config.galaxy_infrastructure_url,
+            dispatch_now=True,
         )
 
         # Send the notification

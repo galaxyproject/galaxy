@@ -104,6 +104,7 @@ class ToolCompletionManager:
                     ),
                 ),
                 galaxy_url=galaxy_url,
+                dispatch_now=True,
             )
             # The conditional update also protects SQLite, where FOR UPDATE is
             # ignored, if two monitors both read the same unfinished request.

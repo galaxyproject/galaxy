@@ -179,11 +179,16 @@ class NotificationManager:
         Creates a new notification and associates it with all the recipient users.
 
         It takes into account the user's notification preferences to decide if the notification should be sent to them.
-        No other notification channel is used here, only the internal database associations are created.
+        Only the internal database associations are created here. The other channels deliver the notification with the
+        next run of the pending notifications dispatcher, or in a Celery task queued right away if the request sets
+        ``dispatch_now``.
         """
         self.ensure_notifications_enabled()
         recipient_users = self.recipient_resolver.resolve(request.recipients)
         notification = self._create_notification_model(request.notification, request.galaxy_url)
+        dispatch_now = request.dispatch_now and self.can_send_notifications_async
+        # Marked in the same transaction that creates it, so the periodic dispatcher doesn't send it again.
+        notification.dispatched = dispatch_now
         self.sa_session.add(notification)
         # Keep the notification and recipient associations in one transaction.
         # Completion monitors also commit their delivery marker in this transaction.
@@ -196,7 +201,30 @@ class NotificationManager:
         user_ids = [user.id for user in recipient_users]
         self._notify_users_via_sse(user_ids, notification)
 
+        if dispatch_now:
+            self._queue_dispatch(notification)
+
         return notification, notifications_sent
+
+    def _queue_dispatch(self, notification: Notification) -> None:
+        # Local import: galaxy.celery.tasks imports NotificationManager at module load.
+        from galaxy.celery.tasks import dispatch_notification
+
+        try:
+            dispatch_notification.delay(notification_id=notification.id)
+        except Exception:
+            log.exception(
+                "Could not queue the dispatch of notification %s, leaving it to the dispatcher", notification.id
+            )
+            notification.dispatched = False
+            self.sa_session.commit()
+
+    def dispatch_notification_via_channels(self, notification_id: int) -> None:
+        """Delivers one notification through the channels each recipient has enabled."""
+        notification = self.sa_session.get(Notification, notification_id)
+        if notification is None:
+            raise ObjectNotFound(f"Notification {notification_id} not found.")
+        self._dispatch_notification_to_users(notification)
 
     def send_storage_operation_notification(
         self,

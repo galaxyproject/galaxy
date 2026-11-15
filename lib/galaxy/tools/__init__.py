@@ -2441,7 +2441,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         if tags:
             execution_tracker.apply_tags(trans.tag_handler, trans.user, tags)
             trans.sa_session.commit()
-        if send_notification or send_email_notification:
+        # Only the completion monitor delivers these, and it runs only with the notification system.
+        if (send_notification or send_email_notification) and trans.app.config.enable_notification_system:
             execution_tracker.request_completion_notification(trans.user, request_context.history)
             trans.sa_session.commit()
 

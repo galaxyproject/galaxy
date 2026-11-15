@@ -572,6 +572,35 @@ class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
         mock_send_mail.assert_called_once()
         assert self.notification_manager.get_pending_notifications() == []
 
+    def test_dispatch_now_queues_delivery_instead_of_waiting_for_the_dispatcher(self):
+        user = self._create_test_user()
+
+        with patch("galaxy.celery.tasks.dispatch_notification.delay") as queue_dispatch:
+            notification, _ = self._send_dispatch_now_notification(user)
+
+        queue_dispatch.assert_called_once_with(notification_id=notification.id)
+        assert self.notification_manager.get_pending_notifications() == []
+        with patch("galaxy.util.send_mail") as mock_send_mail:
+            self.notification_manager.dispatch_notification_via_channels(notification.id)
+        mock_send_mail.assert_called_once()
+
+    def test_dispatch_now_leaves_notification_to_the_dispatcher_when_queueing_fails(self):
+        user = self._create_test_user()
+
+        with patch("galaxy.celery.tasks.dispatch_notification.delay", side_effect=ConnectionError("broker down")):
+            notification, _ = self._send_dispatch_now_notification(user)
+
+        assert self.notification_manager.get_pending_notifications() == [notification]
+
+    def _send_dispatch_now_notification(self, user: User):
+        request = NotificationCreateRequest(
+            recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
+            notification=InternalNotificationCreateData(**self._default_test_notification_data()),
+            galaxy_url="https://test.galaxy.url",
+            dispatch_now=True,
+        )
+        return self.notification_manager.send_notification_to_recipients(request)
+
 
 class TestNotificationRecipientResolver(NotificationsBaseTestCase):
     def test_default_resolution_strategy(self):
