@@ -1920,7 +1920,7 @@
 
 :Description:
     Email address to use in the 'From' field when sending emails for
-    account activations, workflow step notifications, password resets,
+    account activations, completion notifications, password resets,
     and tool error reports.  We recommend using a string in the
     following format: Galaxy Project <galaxy-no-reply@example.com>. If
     not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
@@ -5226,10 +5226,13 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Time in seconds between workflow completion monitor iterations.
-    The completion monitor checks for workflows that have all jobs
-    completed and triggers completion hooks (e.g., exports,
-    notifications). Float values are allowed.
+    Time in seconds between workflow and tool completion monitor
+    iterations. Workflow handlers check their assigned invocations and
+    trigger completion hooks, such as exports and notifications. When
+    notifications are enabled, one elected web process checks tool
+    completion requests. Each monitor checks up to 100 requests per
+    iteration, so large queues can take several iterations to revisit
+    a request. Float values are allowed.
 :Default: ``5.0``
 :Type: float
 

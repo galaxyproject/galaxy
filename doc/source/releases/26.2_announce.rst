@@ -5,6 +5,24 @@
 26.2 Galaxy Release
 ===========================================================
 
+Completion notifications
+========================
+
+Saved email post-job actions no longer send mail. Users can request a completion
+notification through the bell beside Run in the tool and workflow forms.
+The run choice resets for each run. Email delivery is a saved preference for
+each notification category and defaults to off for tool and workflow completion.
+
+Administrators must enable ``enable_notification_system`` to offer these
+notifications. Workflow completion notifications require a Celery worker.
+Email delivery also requires ``enable_celery_tasks``, Celery Beat, and SMTP
+configuration. Existing SMTP settings alone do not preserve completion emails.
+The legacy API option ``send_email_notification`` now requests a notification
+whose delivery follows the user's preferences.
+
+See :doc:`Completion notifications </admin/completion_notifications>` for
+configuration, monitor placement, and upgrade guidance.
+
 Workflow expression compatibility
 =================================
 

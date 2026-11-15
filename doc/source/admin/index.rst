@@ -15,6 +15,7 @@ Galaxy Deployment & Administration
    apache
    scaling
    sse_updates
+   completion_notifications
    cluster
    jobs
    job_metrics
