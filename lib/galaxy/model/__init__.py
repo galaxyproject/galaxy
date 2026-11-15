@@ -3807,6 +3807,11 @@ class Notification(Base, Dictifiable, RepresentById):
     dispatched: Mapped[bool] = mapped_column(
         Boolean, index=True, default=False
     )  # Whether the notification has been dispatched to users via other channels
+    # Explicit completion emails queued while the notification system is disabled.
+    email_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    email_claimed_at: Mapped[datetime | None]
+    __table_args__ = (Index("ix_notification_completion_email", "email_only", "email_claimed_at", "id"),)
+
     galaxy_url: Mapped[str | None] = mapped_column(
         String(255)
     )  # The URL to the Galaxy instance, used for generating links in the notification
