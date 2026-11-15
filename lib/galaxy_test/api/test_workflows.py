@@ -2473,6 +2473,12 @@ steps:
         missing_tool_steps = [v for v in steps.values() if v["tool_id"] == "cat_missing_tool"]
         assert len(missing_tool_steps) == 1
 
+        editor_steps = self._download_workflow(workflow_id, style="editor")["steps"]
+        missing_tool_steps = [v for v in editor_steps.values() if v["content_id"] == "cat_missing_tool"]
+        assert len(missing_tool_steps) == 1
+        assert missing_tool_steps[0]["errors"] == "Tool is not installed"
+        assert missing_tool_steps[0]["tool_version"] == "1.0.0"
+
     def test_import_no_tool_id(self):
         # Import works with missing tools, but not with absent content/tool id.
         workflow = self.workflow_populator.load_workflow_from_resource(name="test_workflow_missing_tool")

@@ -31,7 +31,7 @@ const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
 
 const toolId = computed(() => contentId?.value || name.value);
 const toolParts = computed(() => parseRequestedToolParts(toolId.value));
-// the backend only sends tool_version for installed tools, tool shed ids carry it as their last segment
+// tool shed ids carry the version as their last segment
 const toolVersion = computed(() => props.step.tool_version || toolParts.value.requested_version);
 
 function onAnnotation(newAnnotation: string) {

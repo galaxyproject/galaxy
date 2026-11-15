@@ -1631,6 +1631,8 @@ class WorkflowContentsManager(UsesAnnotations):
             input_connections = step.input_connections
             input_connections_type = {}
             multiple_input = {}  # Boolean value indicating if this can be multiple
+            if isinstance(module, ToolModule) and not module.tool:
+                step_dict["tool_version"] = step.tool_version
             if isinstance(module, ToolModule) and module.tool:
                 # Serialize tool version
                 step_dict["tool_version"] = module.tool.version
