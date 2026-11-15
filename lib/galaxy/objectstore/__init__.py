@@ -1736,12 +1736,39 @@ class HierarchicalObjectStore(NestedObjectStore):
         """Call the primary object store."""
         return self.backends[0].create(obj, **kwargs)
 
-    def _update_from_file(self, obj, create: bool = False, **kwargs) -> None:
+    def _update_from_file(
+        self,
+        obj,
+        base_dir=None,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+        file_name=None,
+        create: bool = False,
+        preserve_symlinks: bool = False,
+    ) -> None:
         if create:
-            path_kwargs = {k: v for k, v in kwargs.items() if k not in ("file_name", "preserve_symlinks")}
             # _create() writes to the primary backend; an object a later backend holds is updated where it is.
-            create = not self._exists(obj, **path_kwargs)
-        super()._update_from_file(obj, create=create, **kwargs)
+            create = not self._exists(
+                obj,
+                base_dir=base_dir,
+                extra_dir=extra_dir,
+                extra_dir_at_root=extra_dir_at_root,
+                alt_name=alt_name,
+                obj_dir=obj_dir,
+            )
+        super()._update_from_file(
+            obj,
+            base_dir=base_dir,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=obj_dir,
+            file_name=file_name,
+            create=create,
+            preserve_symlinks=preserve_symlinks,
+        )
 
     def _is_private(self, obj) -> bool:
         # Unlink the DistributedObjectStore - the HierarchicalObjectStore does not use
