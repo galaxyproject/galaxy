@@ -8,6 +8,7 @@ from sqlalchemy import (
 from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetCollectionAssociation,
+    Job,
 )
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -318,9 +319,14 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
             }, f"Expected forward/reverse but got {identifiers} for '{element.element_identifier}'"
 
     def test_purge_while_job_running(self):
-        # pass extra_sleep, since templating the command line will fail if the output
-        # is deleted before remote_tool_eval runs.
-        purge_while_job_running(self.dataset_populator, extra_sleep=10)
+        # The longer sleep keeps the job running while all outputs are purged.
+        purge_while_job_running(
+            self.dataset_populator, sleep_param=15, job_working_directory=self._job_working_directory
+        )
+
+    def _job_working_directory(self, job_id: str) -> str:
+        job = self._app.model.session.get(Job, self._app.security.decode_id(job_id))
+        return self._app.object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
 
 
 class TestExtendedMetadataSecurityIntegration(integration_util.IntegrationTestCase):
