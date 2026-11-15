@@ -114,7 +114,7 @@ const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm, stepInputs, postJobActions } =
     useStepProps(stepRef);
 const { stepStore } = useWorkflowStores();
-const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
+const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
 const stepTitle = computed(() => {
     if (isSubworkflow.value) {
         return name.value;

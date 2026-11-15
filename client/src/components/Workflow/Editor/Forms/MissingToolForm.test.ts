@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
 import { type Step, useWorkflowStepStore } from "@/stores/workflowStepStore";
@@ -31,7 +31,7 @@ function makeStep(overrides: Partial<Step> = {}): Step {
     };
 }
 
-function mountTarget(step: Step = makeStep(), workflowOutputLabels: string[] = []) {
+function mountTarget(step: Step = makeStep(), workflowOutputLabels: string[] = []): VueWrapper {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     if (workflowOutputLabels.length) {
         useWorkflowStepStore("mock-workflow").steps = {
@@ -88,6 +88,15 @@ describe("MissingToolForm", () => {
     it("flags a label that is already used as a workflow output label", () => {
         const wrapper = mountTarget(makeStep(), ["my label"]);
         expect(wrapper.text()).toContain("Duplicate label my label. Please fix this before saving the workflow.");
+    });
+
+    it("updates the duplicate label error when the label changes", async () => {
+        const wrapper = mountTarget(makeStep(), ["used label"]);
+        expect(wrapper.text()).not.toContain("Duplicate label");
+        await wrapper.setProps({ step: makeStep({ label: "used label" }) });
+        expect(wrapper.text()).toContain("Duplicate label used label.");
+        await wrapper.setProps({ step: makeStep({ label: "fixed label" }) });
+        expect(wrapper.text()).not.toContain("Duplicate label");
     });
 
     it("does not flag a unique label", () => {

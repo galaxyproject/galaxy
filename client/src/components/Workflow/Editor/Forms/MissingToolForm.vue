@@ -26,7 +26,7 @@ const emit = defineEmits<{
 
 const { stepId, contentId, annotation, label, name } = useStepProps(toRef(props, "step"));
 const { stepStore } = useWorkflowStores();
-const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
+const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
 
 const toolId = computed(() => contentId?.value || name.value);
 const toolParts = computed(() => parseRequestedToolParts(toolId.value));

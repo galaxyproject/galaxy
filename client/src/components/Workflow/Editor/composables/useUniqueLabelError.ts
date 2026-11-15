@@ -1,14 +1,16 @@
-import { ref } from "vue";
+import { computed, type MaybeRefOrGetter, toValue } from "vue";
 
 import type { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 export function useUniqueLabelError(
     workflowStateStore: ReturnType<typeof useWorkflowStepStore>,
-    label: string | null | undefined,
+    label: MaybeRefOrGetter<string | null | undefined>,
 ) {
-    const error = ref<string | null>(null);
-    if (label && workflowStateStore.workflowOutputs[label]) {
-        error.value = `Duplicate label ${label}. Please fix this before saving the workflow.`;
-    }
-    return error;
+    return computed(() => {
+        const currentLabel = toValue(label);
+        if (currentLabel && workflowStateStore.workflowOutputs[currentLabel]) {
+            return `Duplicate label ${currentLabel}. Please fix this before saving the workflow.`;
+        }
+        return null;
+    });
 }
