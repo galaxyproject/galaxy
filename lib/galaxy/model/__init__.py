@@ -5869,7 +5869,10 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
             # hist.deleted holds old value(s)
             changes[attr.key] = hist.deleted
-        if changes and self.update_time and self.state == self.states.OK and not self.deleted:
+        # An HDA flushed before it joined its history (a copied MetadataFile needs the HDA's id) has no
+        # earlier version worth keeping.
+        joins_history = any(changes.get(key) and changes[key][0] is None for key in ("history_id", "hid"))
+        if changes and not joins_history and self.update_time and self.state == self.states.OK and not self.deleted:
             # We only record changes to HDAs that exist in the database and have a update_time
             new_values = {}
             new_values["name"] = changes.get("name", self.name)

@@ -18,6 +18,7 @@ import galaxy.model.mapping as mapping
 from galaxy.model import (
     History,
     HistoryDatasetAssociation,
+    HistoryDatasetAssociationHistory,
     MetadataFile,
     setup_global_object_store_for_models,
     User,
@@ -325,6 +326,36 @@ def test_copying_metadata_files_onto_an_output_not_yet_in_a_history(monkeypatch)
         assert output.metadata.bam_index.id != source.metadata.bam_index.id
         with open(output.metadata.bam_index.get_file_name()) as fh:
             assert fh.read() == "moo"
+
+
+def test_output_flushed_before_joining_its_history_gets_no_version():
+    # Under store_by id, copying a metadata file flushes the output of a job cache hit at submission.
+    with _setup_mapping_and_user() as (test_config, object_store, model, history):
+        session = model.context
+        source = _create_hda(
+            model, object_store, history, test_config.write("moo", "source"), include_metadata_file=True
+        )
+        source.dataset.state = "ok"
+        session.commit()
+
+        output = HistoryDatasetAssociation(extension="bam", dataset=source.dataset, sa_session=session, flush=False)
+        session.add(output)
+        output.metadata = source.metadata
+        assert output.id is not None
+        output.name = "cached output"
+        history.add_dataset(output)
+        session.commit()
+
+        assert output.version == 1
+        versions = select(func.count(HistoryDatasetAssociationHistory.id)).where(
+            HistoryDatasetAssociationHistory.history_dataset_association_id == output.id
+        )
+        assert session.scalar(versions) == 0
+
+        output.name = "renamed"
+        session.commit()
+        assert output.version == 2
+        assert session.scalar(versions) == 1
 
 
 @contextlib.contextmanager
