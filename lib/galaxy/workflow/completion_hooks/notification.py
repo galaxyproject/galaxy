@@ -37,12 +37,13 @@ class SendNotificationHook(WorkflowCompletionHook):
 
     plugin_type = "send_notification"
 
-    def execute(self, completion: "WorkflowInvocationCompletion") -> None:
+    def execute(self, completion: "WorkflowInvocationCompletion", *, commit: bool = True) -> None:
         """
         Send a notification for the completed workflow.
 
         Args:
             completion: The completion record.
+            commit: If false, stage an SMTP-only email in the caller's transaction.
         """
         invocation = completion.workflow_invocation
         history = invocation.history
@@ -87,10 +88,13 @@ class SendNotificationHook(WorkflowCompletionHook):
         # Send the notification
         try:
             notification_manager = self.app.notification_manager
-            notification, count = notification_manager.send_notification_to_recipients(request)
+            if commit:
+                notification, _ = notification_manager.send_completion_notification(request)
+            else:
+                notification = notification_manager.enqueue_completion_email(request)
             if notification:
                 log.info(
-                    "Sent workflow completion notification to user %d for invocation %d",
+                    "Queued workflow completion notification to user %d for invocation %d",
                     user.id,
                     invocation.id,
                 )

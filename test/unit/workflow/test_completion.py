@@ -3,11 +3,16 @@
 from typing import cast
 
 import pytest
-from sqlalchemy import event
+from sqlalchemy import (
+    event,
+    select,
+)
 
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.workflow_completion import WorkflowCompletionManager
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.states import (
     InvocationState,
     InvocationStepState,
@@ -390,6 +395,45 @@ class TestMappedWorkflowCompletion:
         session.add(invocation)
         session.commit()
         return app, invocation
+
+    def test_email_enqueue_failure_does_not_lose_workflow_completion(self, mapped_invocation):
+        app, invocation = mapped_invocation
+        app.config.enable_notification_system = False
+        app.config.enable_celery_tasks = False
+        app.config.smtp_server = "smtp.example.org"
+        app.config.galaxy_infrastructure_url = "https://galaxy.example.org"
+        app.config.workflow_completion_monitor_sleep = 0.1
+        app[NotificationManager] = NotificationManager(app[galaxy_scoped_session], app.config)
+        app.notification_manager = app[NotificationManager]
+        session = app.model.context
+        invocation.history = model.History(user=model.User(email="user@example.org", password="password"))
+        invocation.on_complete = [{"send_notification": {}}]
+        session.commit()
+        invocation_id = invocation.id
+        manager = WorkflowCompletionManager(app)
+        monitor = WorkflowCompletionMonitor(app, manager, WorkflowCompletionHookRegistry(app))
+
+        def fail_insert(conn, cursor, statement, parameters, context, executemany):
+            if statement.startswith("INSERT INTO user_notification_association"):
+                raise RuntimeError("recipient insert failed")
+
+        event.listen(app.model.engine, "before_cursor_execute", fail_insert)
+        try:
+            with pytest.raises(RuntimeError, match="recipient insert failed"):
+                monitor._check_invocation(invocation_id)
+        finally:
+            event.remove(app.model.engine, "before_cursor_execute", fail_insert)
+        assert manager.get_completion(invocation_id) is None
+        assert invocation.state == InvocationState.SCHEDULED.value
+        assert list(session.scalars(select(model.Notification))) == []
+
+        monitor._check_invocation(invocation_id)
+        monitor._check_invocation(invocation_id)
+        completion = manager.get_completion(invocation_id)
+        assert completion is not None
+        assert completion.hooks_executed == ["send_notification"]
+        [email] = session.scalars(select(model.Notification)).all()
+        assert email.email_only
 
     def test_completion_and_summary_do_not_load_mapped_jobs(self, mapped_invocation):
         app, invocation = mapped_invocation

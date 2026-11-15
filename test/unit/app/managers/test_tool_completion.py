@@ -16,7 +16,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import object_session
 
-from galaxy import model
+from galaxy import (
+    model,
+    util,
+)
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.tool_completion import (
@@ -30,6 +33,7 @@ from galaxy.model.database_heartbeat import (
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import now
+from galaxy.util.unittest_utils import read_mock_emails
 from galaxy.web_stack import application_stack_instance
 from galaxy_test.base.populators import wait_on
 
@@ -139,7 +143,10 @@ def test_empty_map_waits_for_population_and_links_to_the_requested_history(app, 
     assert notification.variant == ("warning" if population == "failed" else "info")
 
 
-def test_failed_delivery_rolls_back_marker_and_notification(app, manager, history):
+@pytest.mark.parametrize("notifications_enabled", [True, False])
+def test_failed_delivery_rolls_back_marker_and_notification(app, manager, history, notifications_enabled):
+    app.config.enable_notification_system = notifications_enabled
+    app.config.smtp_server = "smtp.example.org"
     request, _ = request_notification(history, ["ok"])
     request_id = request.id
 
@@ -211,6 +218,7 @@ def test_only_elected_monitor_polls_and_failover_resumes_empty_map(app, app_fact
     heartbeats = []
     monitors = []
     polled = [Event() for _ in apps]
+    email_polled = [Event() for _ in apps]
     listeners = []
     for index, worker in enumerate(apps):
         worker.config.server_name = f"web_{index}"
@@ -225,9 +233,20 @@ def test_only_elected_monitor_polls_and_failover_resumes_empty_map(app, app_fact
             model.WorkerProcess(server_name=worker.config.server_name, hostname=heartbeat.hostname, app_type=WEBAPP)
         )
 
-        def record_poll(conn, cursor, statement, parameters, context, executemany, signal=polled[index]):
+        def record_poll(
+            conn,
+            cursor,
+            statement,
+            parameters,
+            context,
+            executemany,
+            signal=polled[index],
+            email_signal=email_polled[index],
+        ):
             if statement.startswith("SELECT tool_completion_notification.id"):
                 signal.set()
+            if statement.startswith("SELECT notification.id") and "WHERE notification.email_only" in statement:
+                email_signal.set()
 
         event.listen(worker.model.engine, "before_cursor_execute", record_poll)
         listeners.append(record_poll)
@@ -236,7 +255,8 @@ def test_only_elected_monitor_polls_and_failover_resumes_empty_map(app, app_fact
         for heartbeat in heartbeats:
             heartbeat.update_watcher_designation()
         assert polled[3].wait(timeout=5)
-        assert not any(signal.is_set() for signal in polled[:3])
+        assert email_polled[3].wait(timeout=5)
+        assert not any(signal.is_set() for signal in [*polled[:3], *email_polled[:3]])
 
         # Simulate losing the elected process while map population is incomplete.
         monitors[3].shutdown()
@@ -254,7 +274,8 @@ def test_only_elected_monitor_polls_and_failover_resumes_empty_map(app, app_fact
         for heartbeat in heartbeats[:3]:
             heartbeat.update_watcher_designation()
         assert polled[2].wait(timeout=5)
-        assert not any(signal.is_set() for signal in polled[:2])
+        assert email_polled[2].wait(timeout=5)
+        assert not any(signal.is_set() for signal in [*polled[:2], *email_polled[:2]])
 
         def notifications():
             app.model.context.remove()
@@ -266,10 +287,76 @@ def test_only_elected_monitor_polls_and_failover_resumes_empty_map(app, app_fact
         # The same process can lose and regain the role without reusing a stopped thread.
         monitors[2].shutdown()
         polled[2].clear()
+        email_polled[2].clear()
         monitors[2].on_role_change(True)
         assert polled[2].wait(timeout=5)
+        assert email_polled[2].wait(timeout=5)
         assert len(notifications()) == 1
     finally:
         for worker, monitor, listener in zip(apps, monitors, listeners):
             monitor.shutdown()
             event.remove(worker.model.engine, "before_cursor_execute", listener)
+
+
+def test_smtp_outbox_retries_after_failure_and_worker_restart(
+    app, app_factory, manager, history, tmp_path, monkeypatch
+):
+    app.config.enable_notification_system = False
+    app.config.enable_celery_tasks = False
+    email_dir = tmp_path / "emails"
+    email_dir.mkdir()
+    app.config.smtp_server = f"mock_emails_to_path://{email_dir}"
+    # A category mute applies to in-app notifications, not an explicit SMTP-only request.
+    history.user.preferences["notifications"] = '{"tool_execution_completed":{"enabled":false}}'
+    request, _ = request_notification(history, ["ok"])
+    request_id, user_id = request.id, history.user_id
+    assert manager.check_and_notify(request_id)
+    notifications = app[NotificationManager]
+    [queued] = app.model.context.scalars(select(model.Notification)).all()
+    queued_id = queued.id
+    assert notifications.get_user_notifications(history.user) == []
+    assert notifications.get_user_total_unread_notification_count(history.user) == 0
+
+    def failed_send(*args, **kwds):
+        # Network I/O must not hold the worker's database transaction open.
+        assert not app.model.context().in_transaction()
+        raise OSError("SMTP unavailable")
+
+    with monkeypatch.context() as patcher:
+        patcher.setattr(util, "send_mail", failed_send)
+        notifications.dispatch_completion_emails()
+    assert app.model.context.get(model.ToolCompletionNotification, request_id).completed
+    assert app.model.context.get(model.Notification, queued_id).email_claimed_at is not None
+    app.model.context.remove()
+
+    replacement = app_factory()
+    replacement.config.smtp_server = app.config.smtp_server
+    replacement.config.enable_notification_system = False
+    replacement.config.enable_celery_tasks = False
+    dispatcher = replacement[NotificationManager]
+    # A new owner must honor the outstanding lease; then recover the failed send.
+    dispatcher.dispatch_completion_emails()
+    assert read_mock_emails(email_dir) == []
+    # Already queued emails still drain if the administrator enables notifications.
+    replacement.config.enable_notification_system = True
+    replacement.model.context.execute(
+        update(model.Notification)
+        .where(model.Notification.id == queued_id)
+        .values(email_claimed_at=now() - timedelta(minutes=6))
+    )
+    replacement.model.context.commit()
+    dispatcher.dispatch_completion_emails()
+    [email] = read_mock_emails(email_dir)
+    assert email["to"] == "user@example.org"
+    assert "1 ok" in email["body"]
+    assert replacement.model.context.get(model.Notification, queued_id) is None
+    assert (
+        list(
+            replacement.model.context.scalars(
+                select(model.UserNotificationAssociation).where(model.UserNotificationAssociation.user_id == user_id)
+            )
+        )
+        == []
+    )
+    dispatcher.dispatch_completion_emails()
+    assert len(read_mock_emails(email_dir)) == 1

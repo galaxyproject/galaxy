@@ -20,7 +20,10 @@ const emit = defineEmits<{
     (e: "busy", value: boolean): void;
 }>();
 const { config, isConfigLoaded } = useConfig();
-const enabled = computed(() => isConfigLoaded.value && config.value.enable_notification_system);
+const notificationsEnabled = computed(() => config.value.enable_notification_system);
+const enabled = computed(
+    () => isConfigLoaded.value && (notificationsEnabled.value || config.value.server_mail_configured),
+);
 const category = computed(() => (props.kind === "tool" ? "tool_execution_completed" : "workflow_execution_completed"));
 const buttonLabel = computed(() => `Completion notifications: ${props.value ? "on" : "off"} for this run`);
 const trigger = ref<InstanceType<typeof GButton>>();
@@ -36,6 +39,9 @@ function setBusy(value: boolean) {
 }
 
 async function loadPreferences() {
+    if (!notificationsEnabled.value) {
+        return;
+    }
     setBusy(true);
     errorMessage.value = null;
     try {
@@ -114,36 +120,40 @@ watch(enabled, (value) => {
                     :model-value="props.value"
                     data-test-id="send-notification-checkbox"
                     @update:model-value="emit('input', $event)">
-                    Notify me
+                    {{ notificationsEnabled ? "Notify me" : "Email me when finished" }}
                 </GCheckbox>
                 <p class="text-muted mt-1 mb-3">For this run only.</p>
-                <h3 class="h6">Delivery settings</h3>
-                <p v-if="busy && !settings" role="status">Loading delivery settings…</p>
-                <GCheckbox
-                    v-if="emailSupported"
-                    :model-value="pendingEmail ?? settings?.channels.email ?? false"
-                    :disabled="busy || !settings"
-                    data-test-id="completion-email-checkbox"
-                    @update:model-value="saveEmailPreference($event)">
-                    Send email
-                </GCheckbox>
-                <p v-if="emailSupported" class="text-muted mt-1">Saved for future and active {{ props.kind }} runs.</p>
-                <p v-else-if="settings" class="text-muted">Email delivery is not available on this server.</p>
-                <GAlert v-if="settings && !settings.enabled" variant="warning">
-                    {{ props.kind === "tool" ? "Tool" : "Workflow" }} notifications are off in your account. Enable them
-                    in notification settings.
-                </GAlert>
-                <GAlert v-if="errorMessage" variant="warning">
-                    Could not load or save settings: {{ errorMessage }}
-                    <GButton v-if="!settings" size="small" :disabled="busy" @click="loadPreferences">Retry</GButton>
-                </GAlert>
-                <a
-                    :href="prependPath('/user/notifications/preferences')"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="All notification settings (opens in a new tab)">
-                    All notification settings
-                </a>
+                <template v-if="notificationsEnabled">
+                    <h3 class="h6">Delivery settings</h3>
+                    <p v-if="busy && !settings" role="status">Loading delivery settings…</p>
+                    <GCheckbox
+                        v-if="emailSupported"
+                        :model-value="pendingEmail ?? settings?.channels.email ?? false"
+                        :disabled="busy || !settings"
+                        data-test-id="completion-email-checkbox"
+                        @update:model-value="saveEmailPreference($event)">
+                        Send email
+                    </GCheckbox>
+                    <p v-if="emailSupported" class="text-muted mt-1">
+                        Saved for future and active {{ props.kind }} runs.
+                    </p>
+                    <p v-else-if="settings" class="text-muted">Email delivery is not available on this server.</p>
+                    <GAlert v-if="settings && !settings.enabled" variant="warning">
+                        {{ props.kind === "tool" ? "Tool" : "Workflow" }} notifications are off in your account. Enable
+                        them in notification settings.
+                    </GAlert>
+                    <GAlert v-if="errorMessage" variant="warning">
+                        Could not load or save settings: {{ errorMessage }}
+                        <GButton v-if="!settings" size="small" :disabled="busy" @click="loadPreferences">Retry</GButton>
+                    </GAlert>
+                    <a
+                        :href="prependPath('/user/notifications/preferences')"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="All notification settings (opens in a new tab)">
+                        All notification settings
+                    </a>
+                </template>
             </div>
         </GPopover>
     </span>

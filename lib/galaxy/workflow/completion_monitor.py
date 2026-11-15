@@ -13,6 +13,7 @@ from typing import (
 
 from galaxy.celery.tasks import execute_workflow_completion_hook
 from galaxy.util.monitors import Monitors
+from galaxy.workflow.completion_hooks.notification import SendNotificationHook
 
 if TYPE_CHECKING:
     from galaxy.managers.workflow_completion import WorkflowCompletionManager
@@ -112,7 +113,18 @@ class WorkflowCompletionMonitor(Monitors):
         Args:
             invocation_id: The ID of the invocation to check.
         """
-        completion = self.completion_manager.check_and_record_completion(invocation_id)
+        session = self.app.model.context
+        try:
+            completion = self.completion_manager.check_and_record_completion(invocation_id, commit=False)
+            if completion and not self.app.config.enable_notification_system and self.app.config.smtp_server:
+                hook = self.hook_registry.get_hook("send_notification")
+                if isinstance(hook, SendNotificationHook) and hook.is_applicable(completion):
+                    hook.execute(completion, commit=False)
+                    completion.hooks_executed = [*(completion.hooks_executed or []), "send_notification"]
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
 
         if completion:
             log.info(
@@ -169,6 +181,8 @@ class WorkflowCompletionMonitor(Monitors):
         )
 
         for hook_name in hooks_to_queue:
+            if hook_name in (completion.hooks_executed or []):
+                continue
             try:
                 execute_workflow_completion_hook.delay(
                     invocation_id=invocation.id,

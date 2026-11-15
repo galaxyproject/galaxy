@@ -151,9 +151,21 @@ describe("Run completion notification bell", () => {
     });
 
     it("hides the bell when notifications are disabled", async () => {
-        setMockConfig({ enable_notification_system: false });
+        setMockConfig({ enable_notification_system: false, server_mail_configured: false });
         const wrapper = await mountControl("workflow", false);
         expect(wrapper.find(bellSelector).exists()).toBe(false);
         expect(reads).toBe(0);
+    });
+    it("offers a per-run email without notification preferences on SMTP-only servers", async () => {
+        setMockConfig({ enable_notification_system: false, server_mail_configured: true });
+        const wrapper = await mountControl();
+        expect(body.text()).toContain("Email me when finished");
+        expect(body.find(emailSelector).exists()).toBe(false);
+        expect(body.find("a").exists()).toBe(false);
+        await body.get(notificationSelector).setValue(true);
+        await flushPromises();
+        expect(wrapper.props("value")).toBe(true);
+        expect(reads).toBe(0);
+        expect(updates).toEqual([]);
     });
 });

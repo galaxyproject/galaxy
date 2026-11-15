@@ -547,6 +547,8 @@ class ExecutionTracker:
             tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
 
     def request_completion_notification(self, user, history) -> None:
+        if not (self.trans.app.config.enable_notification_system or self.trans.app.config.smtp_server):
+            return
         if user is None:
             raise Exception("Anonymously run jobs cannot request completion notifications.")
         collection_jobs = self.implicit_collection_jobs

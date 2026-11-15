@@ -1196,7 +1196,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         )
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.database_heartbeat.add_change_callback(self._on_config_watcher_change)
-        if self.is_webapp and self.config.enable_notification_system:
+        if self.is_webapp and (self.config.enable_notification_system or self.config.smtp_server):
             tool_completion_monitor = self._register_singleton(ToolCompletionMonitor)
             self.database_heartbeat.add_change_callback(tool_completion_monitor.on_role_change)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
@@ -1284,7 +1284,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.database_heartbeat.shutdown()
 
     def _shutdown_tool_completion_monitor(self):
-        if self.is_webapp and self.config.enable_notification_system:
+        if self.is_webapp and (self.config.enable_notification_system or self.config.smtp_server):
             self[ToolCompletionMonitor].shutdown()
 
     def _shutdown_sse_connection_gauge_emitter(self):

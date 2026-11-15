@@ -38,7 +38,9 @@ class WorkflowCompletionManager:
     def sa_session(self) -> scoped_session:
         return self.app.model.context
 
-    def check_and_record_completion(self, invocation_id: int) -> WorkflowInvocationCompletion | None:
+    def check_and_record_completion(
+        self, invocation_id: int, *, commit: bool = True
+    ) -> WorkflowInvocationCompletion | None:
         """
         Check if invocation is complete and record completion if so.
 
@@ -47,6 +49,7 @@ class WorkflowCompletionManager:
 
         Args:
             invocation_id: The ID of the workflow invocation to check.
+            commit: If false, the caller commits completion together with any related work.
 
         Returns:
             The WorkflowInvocationCompletion record if newly completed,
@@ -80,7 +83,10 @@ class WorkflowCompletionManager:
         invocation.state = InvocationState.COMPLETED.value
 
         session.add(completion)
-        session.commit()
+        if commit:
+            session.commit()
+        else:
+            session.flush()
         log.info("Recorded completion for invocation %d, job_summary=%s", invocation_id, job_summary)
 
         return completion

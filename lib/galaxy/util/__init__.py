@@ -1820,7 +1820,7 @@ def size_to_bytes(size, binary: bool = False):
         raise ValueError(f"Unknown multiplier '{multiple}' in '{size}'")
 
 
-def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
+def send_mail(frm, to, subject, body, config, html=None, reply_to=None, timeout=None):
     """
     Sends an email.
 
@@ -1845,6 +1845,8 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
 
     :type  reply_to: str
     :param reply_to: Reply-to address (Default None)
+
+    :param timeout: SMTP socket timeout in seconds, or None to use the socket default.
     """
     smtp_server = config.smtp_server
     if smtp_server and isinstance(smtp_server, str) and smtp_server.startswith("mock_emails_to_path://"):
@@ -1887,9 +1889,9 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
 
     smtp_ssl = asbool(getattr(config, "smtp_ssl", False))
     if smtp_ssl:
-        s = smtplib.SMTP_SSL(config.smtp_server)
+        s = smtplib.SMTP_SSL(config.smtp_server, **({"timeout": timeout} if timeout is not None else {}))
     else:
-        s = smtplib.SMTP(config.smtp_server)
+        s = smtplib.SMTP(config.smtp_server, **({"timeout": timeout} if timeout is not None else {}))
     try:
         if not smtp_ssl:
             try:

@@ -53,7 +53,7 @@ class ToolCompletionManager:
             self.app.model.context.remove()
 
     def poll_pending_notifications(self, after_id: int = 0, limit: int = 100) -> list[int]:
-        if not self.app.config.enable_notification_system:
+        if not (self.app.config.enable_notification_system or self.app.config.smtp_server):
             return []
         stmt = (
             select(ToolCompletionNotification.id)
@@ -123,7 +123,7 @@ class ToolCompletionManager:
             )
             if claimed is None:
                 return False
-            self.notification_manager.send_notification_to_recipients(notification_request)
+            self.notification_manager.send_completion_notification(notification_request)
             return True
         finally:
             # Release locks for unfinished runs; on failure also roll back the marker.
@@ -147,6 +147,7 @@ class ToolCompletionMonitor:
     def __init__(self, manager: ToolCompletionManager):
         self.manager = manager
         self._task: IntervalTask | None = None
+        self._email_task: IntervalTask | None = None
         self._lock = Lock()
 
     def on_role_change(self, is_leader: bool) -> None:
@@ -160,7 +161,18 @@ class ToolCompletionMonitor:
                 self._task = task
                 task.start()
                 log.info("Started tool completion monitor on elected web process")
+                if self.manager.app.config.smtp_server:
+                    email_task: IntervalTask = IntervalTask(
+                        func=lambda: self.manager.notification_manager.dispatch_completion_emails(email_task.event),
+                        name="CompletionEmailDispatcher",
+                        interval=self.manager.app.config.workflow_completion_monitor_sleep,
+                    )
+                    self._email_task = email_task
+                    email_task.start()
             elif not is_leader and self._task is not None:
+                if self._email_task is not None:
+                    self._email_task.shutdown()
+                    self._email_task = None
                 self._task.shutdown()
                 self._task = None
                 log.info("Stopped tool completion monitor")

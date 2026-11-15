@@ -4,74 +4,76 @@
 
 Saved email post-job actions no longer send mail. The workflow editor shows a notice for these actions and lets users remove them.
 
-Users request completion notifications through the bell beside Run in the tool and workflow forms. "Notify me" applies only to that run. "Send email" saves a delivery preference for that notification category. Tool and workflow runs have separate categories.
+Users request a completion message through the bell beside Run in the tool and workflow forms. The choice applies only to that run. Collection map-over produces one summary after the whole map settles.
 
-Email is off by default for both categories. A saved email preference does not opt later runs into notifications. Users must select "Notify me" for each run.
+Galaxy supports two delivery modes:
 
-For API submissions, use `send_notification` to request a completion notification.
+| Configuration | Run form | Delivery |
+| --- | --- | --- |
+| Notifications disabled, SMTP configured | "Email me when finished" | One email for the requested run. No Celery required. |
+| Notifications enabled | "Notify me", plus saved "Send email" preference | In-app notification, with optional email through Celery. |
+| Notifications disabled, no SMTP | No bell | Completion messages unavailable. |
 
-The legacy API option `send_email_notification` still requests a completion notification. Delivery follows the user's saved preferences. The option does not force an email.
+Existing SMTP settings support the email-only mode. Administrators do not need to enable the notification system to keep per-run completion emails. Users must request them through the run form or API. Legacy workflow email actions remain retired.
 
-Tell users about these changes before the upgrade. Existing SMTP settings alone will not preserve completion emails.
+For tool API submissions, use `send_notification`. The legacy option `send_email_notification` is an alias. Workflow API submissions use `on_complete: [{"send_notification": {}}]`.
 
 ## Configuration
 
-Set `enable_notification_system: true` in the Galaxy configuration. Its default is `false`.
+Configure `smtp_server` and `email_from` for outgoing mail. Set `galaxy_infrastructure_url` to the public Galaxy URL so emails link to the correct address.
 
-For workflow completion notifications, run the Celery worker that executes workflow completion hooks. For email delivery, also enable `enable_celery_tasks`. Run Celery Beat for fallback delivery and scheduled cleanup. Configure the broker and result backend as described in the [administrator guide for Celery](https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks).
+With `enable_notification_system: false`, those settings are sufficient for completion emails. Galaxy records each requested email in the database. A separate thread sends it through SMTP. It does not create an in-app notification or enable other notification categories.
 
-Configure `smtp_server` and `email_from` for outgoing mail. Set `galaxy_infrastructure_url` to the public Galaxy URL so notification links use the correct address.
+To offer in-app notifications, set `enable_notification_system: true`. Workflow notification hooks require a Celery worker. For email delivery through the notification system, also enable `enable_celery_tasks`. Run Celery Beat for fallback delivery and scheduled cleanup. See the [administrator guide for Celery](https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks).
 
-Tool completion notifications can appear in Galaxy without Celery. Email delivery requires Celery. Galaxy offers the email setting when `enable_celery_tasks` is `true`. This setting does not test the SMTP connection.
+Tool notifications can appear in Galaxy without Celery. When the notification system is enabled, its email channel requires Celery. The run form offers that channel when `enable_celery_tasks` is true. This setting does not test the SMTP connection.
 
-Apply the database migration before you start the upgraded application. It adds durable tool completion requests. Use the normal Galaxy upgrade procedure.
+Apply the database migrations through the normal Galaxy upgrade procedure. They add durable tool completion requests and fields for email-only delivery leases.
 
-## Monitor placement
+## Monitor placement and delays
 
-Galaxy starts background threads inside existing processes. This feature does not launch a separate monitor process.
+Galaxy starts background threads inside existing processes. This feature does not launch a separate process.
 
-The web process elected by Galaxy's database heartbeat runs one tool completion thread. Other web processes and job handlers do not poll tool completion requests.
+When notifications or SMTP are configured, the web process elected by the database heartbeat runs one tool completion thread. When SMTP is configured, that process also runs one email dispatcher thread. SMTP calls cannot block either completion monitor. Other web processes and job handlers do not poll these global queues.
 
-The election uses the existing config-watcher role. If the elected process stops, another web process takes over after the heartbeat detects its departure. Pending requests remain in the database. Row locks and a conditional update protect delivery during an election change.
+The election uses the existing config-watcher role. If the elected process stops, another web process takes over after the heartbeat detects its departure.
 
-Each workflow-handler process runs its own workflow completion thread. That thread checks invocations assigned to its handler. With four workflow handlers and notifications enabled, Galaxy runs five completion threads in total.
+Each workflow-handler process runs its own workflow completion thread and checks its assigned invocations. With four workflow handlers and SMTP configured, Galaxy runs four workflow completion threads, one tool completion thread, and one email dispatcher thread.
 
-## Polling and delivery delays
+`workflow_completion_monitor_sleep` controls these threads. Its default is 5 seconds. Each handles up to 100 requests per iteration. The threads advance through pending requests and then return to the start. Large queues increase the delay before the monitor checks a request again.
 
-`workflow_completion_monitor_sleep` controls both completion monitors. Its default is 5 seconds.
+For collection map-over, Galaxy waits until population finishes and every job reaches a settled state. Empty maps can also produce a summary. Settled states include `ok`, `error`, `deleted`, `skipped`, `paused`, and `stopped`. A completion message does not mean that every job succeeded.
 
-Each monitor handles up to 100 requests per iteration. It advances through pending requests and then returns to the start. Large queues increase the delay before the monitor checks a request again.
+## Email delivery
 
-For collection map-over, Galaxy waits until population finishes and every job reaches a settled state. It creates one summary for the map. Empty maps can also produce a summary.
+In email-only mode, Galaxy records the email request and completion marker in one transaction. The dispatcher claims each email for five minutes and releases its database connection before it contacts SMTP. Socket operations have a 30-second timeout. Galaxy retries failed sends after the lease expires, even after a restart. The dispatcher removes successful sends from the queue. It also removes expired requests without sending them.
 
-Settled states include `ok`, `error`, `deleted`, `skipped`, `paused`, and `stopped`. A completion notification does not mean that every job succeeded.
+SMTP cannot guarantee exactly-once delivery. If the server accepts an email and Galaxy stops before it records success, a retry can send a duplicate.
 
-Completion notifications queue a Celery task for email delivery as soon as Galaxy creates the notification. Email can arrive later than the notification in Galaxy if workers are busy.
+With the notification system enabled, completion notifications queue a Celery task for email delivery immediately. If Galaxy cannot queue the task, the periodic dispatcher handles it. `dispatch_notifications_interval` controls this fallback and defaults to 600 seconds.
 
-If Galaxy cannot queue that task, the periodic dispatcher handles delivery. `dispatch_notifications_interval` defaults to 600 seconds and controls this fallback.
+SSE delivers browser updates when enabled. Otherwise, the client polls for notifications. SSE does not replace completion checks or email delivery.
 
-SSE delivers browser updates when enabled. Without SSE, the client polls for notifications. SSE does not replace either completion monitor or the email dispatcher.
+## Defaults and preferences
 
-## Default configuration
+The notification system remains off by default. The global flag also enables sharing and other categories, some of which default to email on. Review those defaults before you enable it. Without Celery Beat, expired in-app notifications and recipient associations can accumulate.
 
-The notification system remains off by default in this release. The global flag also enables notifications for sharing and other categories. Some existing categories default to email on when Celery is available.
+With notifications enabled, email is off by default for tool and workflow completion. The two categories have separate delivery preferences. "Send email" saves a preference, but does not opt later runs into notifications. Saved preferences also affect active runs.
 
-Enable the system after you configure delivery and review these defaults. Without Celery Beat, expired notifications do not receive the scheduled cleanup. Stored notifications and recipient associations can accumulate.
+Users can mute a category in their account settings. The run form warns about a muted category. The "Send email" option does not unmute it.
 
-## User preferences
-
-Users can turn a category off in their notification settings. The run form shows a warning when that category is off. The "Send email" option does not turn the category back on.
-
-Saved delivery preferences also affect active runs. The email dispatcher reads the current preferences when it dispatches a notification.
+Email-only mode has no saved delivery preference. The per-run checkbox explicitly requests an email, even if the user previously muted an in-app category.
 
 ## Troubleshooting
 
-If the bell is absent, check `enable_notification_system` and confirm that the user has a tool or workflow run form open.
+If the bell is absent, check the notification and SMTP configuration.
 
-If a tool notification does not arrive, confirm that a web process runs and the database heartbeat elects a config watcher. Check if map population is complete and if jobs remain unsettled. Search the web process log for "Error polling tool completion notifications" or "Error delivering tool completion notification".
+If a tool message does not arrive, confirm that a web process runs and the heartbeat elects a config watcher. Check if map population is complete and any jobs remain unsettled. Search the web process log for "Error polling tool completion notifications" or "Error delivering tool completion notification".
 
-If a workflow notification does not arrive, check its workflow handler and Celery worker. Search the handler log for "Error queuing hook". Confirm that the user requested a notification for that invocation.
+For email-only delivery failures, search the elected web process log for "Could not send completion email". Check SMTP settings and allow five minutes for a retry. A queued email remains eligible if you later enable the notification system.
 
-If a notification appears in Galaxy but email does not arrive, check the category preference, SMTP settings, and Celery worker. Search the worker log for "Error sending email notification". If the application logs "Could not queue the dispatch", also check Beat and allow for `dispatch_notifications_interval`.
+If a workflow message does not arrive, check its workflow handler. With notifications enabled, also check the Celery worker and search for "Error queuing hook". Confirm that the user requested a message for that invocation.
 
-For a smoke test, request a notification for a small collection map-over and enable email for tool runs. Confirm one summary in Galaxy and one email. Reopen the tool form and confirm that "Notify me" is off while "Send email" remains on.
+If an in-app notification arrives without email, check the category preference, SMTP settings, and Celery worker. Search for "Error sending notification". If Galaxy logs "Could not queue the dispatch", check Beat and allow for `dispatch_notifications_interval`.
+
+For an email-only smoke test, request an email for a small collection map-over. Confirm one summary email, then reopen the run form and confirm the checkbox is off.
