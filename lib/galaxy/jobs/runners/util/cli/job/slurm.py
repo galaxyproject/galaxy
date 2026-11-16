@@ -134,11 +134,12 @@ class Slurm(BaseJobExec):
                 state = self.slurm_longjobstate_to_shortjobstate.get(long_state, "UN")
         return state
 
-    def _get_job_state(self, state):
-        return {
+    def _get_job_state(self, state: str) -> str:
+        job_state: str | None = {
             "BF": job_states.ERROR,
             "CA": job_states.ERROR,
             "CD": job_states.OK,
+            "CF": job_states.QUEUED,
             "CG": job_states.RUNNING,
             "DL": job_states.ERROR,
             "F": job_states.ERROR,
@@ -147,13 +148,24 @@ class Slurm(BaseJobExec):
             "PD": job_states.QUEUED,
             "PR": job_states.ERROR,
             "R": job_states.RUNNING,
+            "RD": job_states.QUEUED,
+            "RF": job_states.QUEUED,
+            "RH": job_states.QUEUED,
             "RQ": job_states.RUNNING,
             "RS": job_states.RUNNING,
             "RV": job_states.ERROR,
             "S": job_states.RUNNING,
+            "SE": job_states.ERROR,
+            "SI": job_states.RUNNING,
+            "SO": job_states.RUNNING,
+            "ST": job_states.RUNNING,
             "TO": job_states.ERROR,
             "UN": job_states.ERROR,  # Custom code for unknown
         }.get(state)
+        if job_state is None:
+            log.warning("Unknown Slurm job state code [%s], assuming the job is still running", state)
+            job_state = job_states.RUNNING
+        return job_state
 
     def get_failure_reason(self, job_id):
         # scontrol remembers finished jobs for MinJobAge even without accounting,
