@@ -9,10 +9,13 @@ from typing import (
 
 from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
+from galaxy.jobs.runners.runner_state_definitions import RUNNER_STATE_DEFINITIONS
+from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.slurm import (
     check_memory_limit,
     MEMORY_LIMIT_EXCEEDED,
     MEMORY_LIMIT_PROBABLY_EXCEEDED,
+    NOT_FOUND,
     slurm_job_state,
 )
 from galaxy.util.custom_logging import get_logger
@@ -25,7 +28,9 @@ log = get_logger(__name__)
 __all__ = ("SlurmJobRunner",)
 
 # These messages are returned to the user
-OUT_OF_MEMORY_MSG = "This job was terminated because it used more memory than it was allocated."
+OUT_OF_MEMORY_MSG = RUNNER_STATE_DEFINITIONS[runner_states.MEMORY_LIMIT_REACHED].fail_message
+WALLTIME_MSG = RUNNER_STATE_DEFINITIONS[runner_states.WALLTIME_REACHED].fail_message
+CANCELLED_MSG = RUNNER_STATE_DEFINITIONS[runner_states.CANCELLED].fail_message
 PROBABLY_OUT_OF_MEMORY_MSG = "This job was cancelled probably because it used more memory than it was allocated."
 MEMORY_LIMIT_MESSAGES = {
     MEMORY_LIMIT_EXCEEDED: OUT_OF_MEMORY_MSG,
@@ -59,7 +64,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                         ajs.fail_message = "This job failed and the system timed out while trying to determine the cause of the failure."
                         break
                     slurm_state = _get_slurm_state()
-                if slurm_state == "NOT_FOUND":
+                if slurm_state == NOT_FOUND:
                     log.warning(
                         "(%s/%s) Job not found, assuming job check exceeded MinJobAge and completing as successful",
                         ajs.job_wrapper.get_id_tag(),
@@ -75,9 +80,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                     drmaa_state = self.drmaa_job_states.DONE
                 elif slurm_state == "TIMEOUT":
                     log.info("(%s/%s) Job hit walltime", ajs.job_wrapper.get_id_tag(), ajs.job_id)
-                    ajs.fail_message = (
-                        "This job was terminated because it ran longer than the maximum allowed job run time."
-                    )
+                    ajs.fail_message = WALLTIME_MSG
                     ajs.runner_state = ajs.runner_states.WALLTIME_REACHED
                 elif slurm_state == "NODE_FAIL":
                     log.warning(
@@ -115,7 +118,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                             ajs.job_wrapper.get_id_tag(),
                             ajs.job_id,
                         )
-                        ajs.fail_message = "This job failed because it was cancelled by an administrator."
+                        ajs.fail_message = CANCELLED_MSG
                 elif slurm_state in ("PENDING", "RUNNING"):
                     log.warning(
                         "(%s/%s) Job was reported by drmaa as terminal but job state in SLURM is: %s, returning to monitor queue",
