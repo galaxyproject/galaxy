@@ -122,6 +122,7 @@ const readyItems = computed<PickedItem[]>(() =>
 );
 
 const failedItems = computed(() => sent.value.filter(({ state }) => state.value.status === "failed"));
+const sentVariant = computed(() => (failedItems.value.length > 0 ? "warning" : "success"));
 
 // Dataset and collection ids can be equal, so the type is part of the key.
 function keyOf(item: HistoryItemSummary) {
@@ -436,7 +437,11 @@ watch(
             </ul>
 
             <template v-if="allDone">
-                <GAlert v-if="hasOpener && readyItems.length > 0" variant="success" show data-description="picker sent">
+                <GAlert
+                    v-if="hasOpener && readyItems.length > 0"
+                    :variant="sentVariant"
+                    show
+                    data-description="picker sent">
                     Sent {{ readyItems.length === 1 ? "1 item" : `${readyItems.length} items` }} to {{ targetHost }}.
                     <span v-if="failedItems.length > 0">The items above that could not be exported were not sent.</span>
                 </GAlert>
