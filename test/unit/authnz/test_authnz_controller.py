@@ -89,3 +89,13 @@ def test_cancellation_returns_empty_response_without_login(trans):
     assert result == {}
     trans.app.authnz_manager.cancel_user_creation.assert_called_once_with("keycloak", "pending", trans)
     trans.handle_user_login.assert_not_called()
+
+
+def test_get_logout_url_passes_csrf_token_to_logout(trans, monkeypatch):
+    monkeypatch.setattr("galaxy.webapps.galaxy.controllers.authnz.url_for", lambda **kwargs: kwargs)
+    trans.response.send_redirect = Mock()
+    controller = object.__new__(OIDC)
+    controller.get_logout_url(trans, provider="keycloak", session_csrf_token="csrf")
+    trans.response.send_redirect.assert_called_once_with(
+        {"controller": "authnz", "action": "logout", "provider": "keycloak", "session_csrf_token": "csrf"}
+    )

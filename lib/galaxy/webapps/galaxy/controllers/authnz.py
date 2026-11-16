@@ -241,7 +241,10 @@ class OIDC(BaseUIController):
     def get_logout_url(self, trans, provider=None, **kwargs):
         idp_provider = provider if provider else trans.get_cookie(name=PROVIDER_COOKIE_NAME)
         if idp_provider:
-            return trans.response.send_redirect(url_for(controller="authnz", action="logout", provider=idp_provider))
+            params = {"controller": "authnz", "action": "logout", "provider": idp_provider}
+            if session_csrf_token := kwargs.get("session_csrf_token"):
+                params["session_csrf_token"] = session_csrf_token
+            return trans.response.send_redirect(url_for(**params))
 
     @web.expose
     @web.json
