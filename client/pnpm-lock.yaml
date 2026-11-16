@@ -70,6 +70,9 @@ importers:
       '@handsontable/vue':
         specifier: ^2.0.0
         version: 2.0.0(handsontable@4.0.0)
+      '@lucide/vue':
+        specifier: ^1.73.0
+        version: 1.73.0(vue@3.5.43(typescript@5.8.3))
       '@monaco-editor/loader':
         specifier: ^1.5.0
         version: 1.7.0
@@ -205,9 +208,6 @@ importers:
       lodash.isequal:
         specifier: ^4.5.0
         version: 4.5.0
-      lucide-vue-next:
-        specifier: ^0.344.0
-        version: 0.344.0(vue@3.5.43(typescript@5.8.3))
       markdown-it:
         specifier: ^14.1.1
         version: 14.3.3
@@ -1252,6 +1252,11 @@ packages:
 
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
+
+  '@lucide/vue@1.73.0':
+    resolution: {integrity: sha512-QVVRSgu2rqRX3NAUktT9venW0Bvtr03aCZjhFRLwnV3uqLyR7KCTOx5mMlukhw0aiyjC3D6w2b+fmy4MeM5R3Q==}
+    peerDependencies:
+      vue: 3.5.43
 
   '@mdn/browser-compat-data@5.7.6':
     resolution: {integrity: sha512-7xdrMX0Wk7grrTZQwAoy1GkvPMFoizStUoL+VmtUkAxegbCCec+3FKwOM6yc/uGU5+BEczQHXAlWiqvM8JeENg==}
@@ -4045,12 +4050,6 @@ packages:
     resolution: {integrity: sha512-ESL2CrkS/2wTPfuend7Zhkzo2u0daGJ/A2VucJOgQ/C48S/zB8MMeMHSGKYpXhIjbPxfuezITkaBH1wqv00DDQ==}
     engines: {node: 20 || >=22}
 
-  lucide-vue-next@0.344.0:
-    resolution: {integrity: sha512-YvexWTTzcRScmOKUvbQvexDmIK63x6NT8lV3Cot9TShQyy3PpFxfx5i2wZNhaZfV8bKqTMRXgCs372rnrtPYKQ==}
-    deprecated: Package deprecated. Please use @lucide/vue instead.
-    peerDependencies:
-      vue: 3.5.43
-
   magic-string-ast@1.0.3:
     resolution: {integrity: sha512-CvkkH1i81zl7mmb94DsRiFeG9V2fR2JeuK8yDgS8oiZSFa++wWLEgZ5ufEOyLHbvSbD1gTRKv9NdX69Rnvr9JA==}
     engines: {node: '>=20.19.0'}
@@ -6270,6 +6269,10 @@ snapshots:
       keyv: 5.6.0
 
   '@keyv/serialize@1.1.1': {}
+
+  '@lucide/vue@1.73.0(vue@3.5.43(typescript@5.8.3))':
+    dependencies:
+      vue: 3.5.43(typescript@5.8.3)
 
   '@mdn/browser-compat-data@5.7.6': {}
 
@@ -9243,10 +9246,6 @@ snapshots:
       - supports-color
 
   lru-cache@11.2.6: {}
-
-  lucide-vue-next@0.344.0(vue@3.5.43(typescript@5.8.3)):
-    dependencies:
-      vue: 3.5.43(typescript@5.8.3)
 
   magic-string-ast@1.0.3:
     dependencies:

@@ -10,9 +10,8 @@ import {
     faTrashRestore,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { ScanEye } from "@lucide/vue";
 import axios from "axios";
-//@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
-import { ScanEye } from "lucide-vue-next";
 import { computed, type Ref, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";

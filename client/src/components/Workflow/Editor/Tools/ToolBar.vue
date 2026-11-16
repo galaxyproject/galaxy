@@ -13,9 +13,8 @@ import {
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { SquareDashed, Workflow } from "@lucide/vue";
 import { useMagicKeys, whenever } from "@vueuse/core";
-//@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
-import { BoxSelect, Workflow } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
 import { computed, toRefs, watch } from "vue";
 
@@ -269,7 +268,7 @@ function autoLayout() {
                     :pressed="currentTool === 'boxSelect'"
                     class="button"
                     @click="onClickBoxSelect">
-                    <BoxSelect />
+                    <SquareDashed />
                 </GButton>
 
                 <GButton
