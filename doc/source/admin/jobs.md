@@ -198,7 +198,8 @@ Destinations may also specify other destinations (which may be dynamic destinati
 condition
 : Failure expression on which to resubmit jobs - this Python expression may contain
   the boolean variables ``memory_limit_reached``, ``walltime_reached``, ``node_failure``,
-  ``preempted``, ``unknown_error``, or ``any_failure``, the string ``runner_state`` for
+  ``preempted``, ``job_output_not_returned_from_cluster``, ``unknown_error``, or
+  ``any_failure``, the string ``runner_state`` for
   reasons with no variable of their own, and the numeric variables ``seconds_running``
   and ``attempt``. See the [test case configuration](https://github.com/galaxyproject/galaxy/blob/dev/test/integration/resubmission_job_conf.yml) for examples of various expressions.
 
