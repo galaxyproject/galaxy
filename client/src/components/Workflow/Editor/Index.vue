@@ -1366,7 +1366,7 @@ initializeWorkflowEditor();
             @cancel="resetSaveAs">
             <GForm @submit.prevent="doSaveAs">
                 <GFormLabel title="Name">
-                    <GFormInput v-model="saveAsName" />
+                    <GFormInput v-model="saveAsName" data-description="save-as name input" />
                 </GFormLabel>
                 <GFormLabel title="Annotation">
                     <BFormTextarea v-model="saveAsAnnotation" />
