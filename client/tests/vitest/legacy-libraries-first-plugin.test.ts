@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
@@ -17,6 +18,7 @@ describe("legacyLibrariesFirstPlugin", () => {
         // moves the module fails here instead of silently skipping the import.
         const packageJson = createRequire(import.meta.url).resolve("bootstrap-vue/package.json");
         const id = join(dirname(packageJson), "esm", "vue.js");
+        expect(existsSync(id)).toBe(true);
         expect(transform(id)?.code.startsWith(MARKER_IMPORT)).toBe(true);
     });
 
