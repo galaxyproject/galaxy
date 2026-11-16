@@ -71,7 +71,6 @@ from galaxy.tool_util.deps.container_classes import (
     Container,
     requires_dependency_resolution,
 )
-from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util.runtime_environment import RUNTIME_ENVIRONMENT_WARNING_FILE
@@ -1098,7 +1097,10 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     ):
         """Set metadata and finish the job, once outputs are already staged back."""
         job_wrapper = job_state.job_wrapper
-        if self._resubmitted_for_tool_failure(job_state, result):
+        check_output_detected_state = self._check_output_for_resubmission(job_state, result)
+        if check_output_detected_state is not None and self._resubmit_for_detected_state(
+            job_state, check_output_detected_state
+        ):
             return
         if handle_metadata_externally:
             # we need an actual exit code file in the job working directory to detect job errors in the metadata script
@@ -1107,15 +1109,20 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             ) as exit_code_file:
                 exit_code_file.write(str(result.exit_code))
             self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
-        self._finish_pulsar_job(job_wrapper, result)
+        self._finish_pulsar_job(job_wrapper, result, check_output_detected_state=check_output_detected_state)
 
-    def _resubmitted_for_tool_failure(self, job_state: AsynchronousJobState, result: PulsarFinishJobResult) -> bool:
-        """Give the destination's resubmit conditions a chance at a job the tool's output says failed."""
+    def _check_output_for_resubmission(
+        self, job_state: AsynchronousJobState, result: PulsarFinishJobResult
+    ) -> str | None:
+        """Check the tool's output before finishing when the destination may resubmit the job for it.
+
+        Returns None when there is nothing to resubmit, leaving the check to ``job_wrapper.finish``.
+        """
         job_wrapper = job_state.job_wrapper
         job = job_wrapper.get_job()
         if not job_state.job_destination.resubmit or job.finished:
-            return False
-        detected_state = job_wrapper.check_tool_output(
+            return None
+        check_output_detected_state: str = job_wrapper.check_tool_output(
             result.tool_stdout,
             result.tool_stderr,
             tool_exit_code=result.exit_code,
@@ -1123,19 +1130,13 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             job_stdout=result.job_stdout,
             job_stderr=result.job_stderr,
         )
-        if detected_state == DETECTED_JOB_STATE.OK:
-            return False
         self.sa_session.add(job)
         self.sa_session.commit()
-        job_state.runner_state = (
-            JobState.runner_states.MEMORY_LIMIT_REACHED
-            if detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR
-            else JobState.runner_states.TOOL_DETECT_ERROR
-        )
-        self._handle_runner_state("failure", job_state)
-        return job_state.runner_state_handled
+        return check_output_detected_state
 
-    def _finish_pulsar_job(self, job_wrapper, result: PulsarFinishJobResult):
+    def _finish_pulsar_job(
+        self, job_wrapper, result: PulsarFinishJobResult, check_output_detected_state: str | None = None
+    ):
         try:
             job_wrapper.finish(
                 result.tool_stdout,
@@ -1143,6 +1144,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 result.exit_code,
                 job_stdout=result.job_stdout,
                 job_stderr=result.job_stderr,
+                check_output_detected_state=check_output_detected_state,
                 remote_metadata_directory=result.remote_metadata_directory,
                 job_metrics_directory=result.job_metrics_directory,
             )

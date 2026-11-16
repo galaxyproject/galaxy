@@ -814,6 +814,18 @@ class BaseJobRunner:
             log.exception("(%s) Failed to read remote tool evaluation error", job_wrapper.get_id_tag())
             return None
 
+    def _resubmit_for_detected_state(self, job_state: "JobState", check_output_detected_state: str) -> bool:
+        """Offer a job whose tool output indicates failure to the resubmit handler, returns whether it handled the job."""
+        if check_output_detected_state == DETECTED_JOB_STATE.OK:
+            return False
+        job_state.runner_state = (
+            JobState.runner_states.MEMORY_LIMIT_REACHED
+            if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR
+            else JobState.runner_states.TOOL_DETECT_ERROR
+        )
+        self._handle_runner_state("failure", job_state)
+        return job_state.runner_state_handled
+
     def _finish_or_resubmit_job(self, job_state: "JobState", job_stdout, job_stderr, job_id=None, external_job_id=None):
         job_wrapper = job_state.job_wrapper
         try:
@@ -886,15 +898,9 @@ class BaseJobRunner:
             self.sa_session.add(job)
             self.sa_session.commit()
 
-            if not job_ok:
-                job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
-                if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR:
-                    job_runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
-                job_state.runner_state = job_runner_state
-                self._handle_runner_state("failure", job_state)
+            if self._resubmit_for_detected_state(job_state, check_output_detected_state):
                 # Was resubmitted or something - I think we are done with it.
-                if job_state.runner_state_handled:
-                    return
+                return
 
             if stdio_errors:
                 # Finishing may require metadata that was never produced. Fail with the

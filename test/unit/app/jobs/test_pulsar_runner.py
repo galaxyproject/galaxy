@@ -42,6 +42,7 @@ from galaxy.exceptions import (
 )
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.runners import (
+    AsynchronousJobRunner,
     AsynchronousJobState,
     JobState,
     pulsar as pulsar_runner,
@@ -605,7 +606,8 @@ RESULT = PulsarFinishJobResult(
     remote_metadata_directory=None,
     job_metrics_directory="",
 )
-resubmitted_for_tool_failure = PulsarJobRunner._resubmitted_for_tool_failure
+resubmit_for_detected_state = AsynchronousJobRunner._resubmit_for_detected_state
+check_output_for_resubmission = PulsarJobRunner._check_output_for_resubmission
 
 
 @pytest.mark.parametrize(
@@ -617,36 +619,29 @@ resubmitted_for_tool_failure = PulsarJobRunner._resubmitted_for_tool_failure
 )
 def test_tool_detected_failures_reach_resubmission(detected_state, expected_runner_state):
     job_state = _failing_job_state()
-    job_state.job_destination.resubmit = [{"condition": "memory_limit_reached"}]
-    job_state.job_wrapper.check_tool_output.return_value = detected_state
     runner = _tool_failure_runner(job_state, handled=True)
-    assert resubmitted_for_tool_failure(runner, job_state, RESULT) is True
+    assert resubmit_for_detected_state(runner, job_state, detected_state) is True
     assert job_state.runner_state == expected_runner_state
     runner._handle_runner_state.assert_called_once_with("failure", job_state)
 
 
 def test_unhandled_tool_failure_finishes_normally():
     job_state = _failing_job_state()
-    job_state.job_destination.resubmit = [{"condition": "memory_limit_reached"}]
-    job_state.job_wrapper.check_tool_output.return_value = DETECTED_JOB_STATE.GENERIC_ERROR
     runner = _tool_failure_runner(job_state, handled=False)
-    assert resubmitted_for_tool_failure(runner, job_state, RESULT) is False
+    assert resubmit_for_detected_state(runner, job_state, DETECTED_JOB_STATE.GENERIC_ERROR) is False
 
 
 def test_successful_tool_is_not_resubmitted():
     job_state = _failing_job_state()
-    job_state.job_destination.resubmit = [{"condition": "any_failure"}]
-    job_state.job_wrapper.check_tool_output.return_value = DETECTED_JOB_STATE.OK
     runner = _tool_failure_runner(job_state, handled=True)
-    assert resubmitted_for_tool_failure(runner, job_state, RESULT) is False
+    assert resubmit_for_detected_state(runner, job_state, DETECTED_JOB_STATE.OK) is False
     runner._handle_runner_state.assert_not_called()
 
 
 def test_destination_without_resubmit_skips_output_check():
     job_state = _failing_job_state()
     job_state.job_destination.resubmit = []
-    runner = _tool_failure_runner(job_state, handled=True)
-    assert resubmitted_for_tool_failure(runner, job_state, RESULT) is False
+    assert check_output_for_resubmission(MagicMock(), job_state, RESULT) is None
     job_state.job_wrapper.check_tool_output.assert_not_called()
 
 
@@ -654,8 +649,7 @@ def test_job_already_finished_is_not_resubmitted():
     job_state = _failing_job_state()
     job_state.job_destination.resubmit = [{"condition": "any_failure"}]
     job_state.job_wrapper.get_job.return_value.finished = True
-    runner = _tool_failure_runner(job_state, handled=True)
-    assert resubmitted_for_tool_failure(runner, job_state, RESULT) is False
+    assert check_output_for_resubmission(MagicMock(), job_state, RESULT) is None
 
 
 def test_client_from_wrapper_reports_resubmission_count():
