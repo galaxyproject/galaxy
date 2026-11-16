@@ -612,8 +612,9 @@ describe("Index", () => {
             await refactorTo(wrapper, "first refactor", 2);
             expect(stepLabels()).toEqual(["first refactor"]);
             expect(stateStore.hasChanges).toBe(false);
+            expect(undoRedoStore.undoStackLength).toBe(1);
             await refactorTo(wrapper, "second refactor", 3);
-            expect(undoRedoStore.undoStackLength).toBeGreaterThanOrEqual(2);
+            expect(undoRedoStore.undoStackLength).toBe(2);
 
             undoRedoStore.undo();
             await nextTick();
