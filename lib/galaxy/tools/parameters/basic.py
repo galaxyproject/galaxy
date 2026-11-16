@@ -1577,7 +1577,8 @@ class ColumnListParameter(SelectToolParameter):
             # that it is converted into a list, with extra whitespace around items removed.
             value = util.listify(value, do_strip=True)
             if not set(value).issubset(set(legal_values)) and self.is_file_empty(trans, other_values):
-                legal_values.extend(value)
+                # The columns of the referenced dataset are unknown, so any column number is accepted.
+                legal_values.extend(v for v in value if isinstance(v, str) and v.isascii() and v.isdigit())
 
         return set(legal_values)
 

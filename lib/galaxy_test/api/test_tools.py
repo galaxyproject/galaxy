@@ -1748,6 +1748,35 @@ class TestToolsApi(ApiTestCase, TestsTools):
             final_job_state = self.dataset_populator.wait_for_job(job["id"])
             assert final_job_state == "error"
 
+    def _empty_tabular_dataset_param(self, history_id):
+        empty_dataset = self._run_and_get_outputs("empty_output", history_id)[0]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.dataset_populator.update_dataset(empty_dataset["id"], {"datatype": "tabular"})
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return dataset_to_param(empty_dataset)
+
+    @skip_without_tool("column_param")
+    def test_column_legal_values_empty_dataset(self, history_id):
+        input1 = self._empty_tabular_dataset_param(history_id)
+        for col in ["1;id", "' ; echo 'moo", "-1", "1.5", "c1;id"]:
+            response = self._run("column_param", history_id, {"input1": input1, "col": col, "col_names": "1"})
+            self._assert_status_code_is(response, 400)
+            assert "col" in response.json()["param_errors"]
+        for col in ["1", "3", "c3"]:
+            response = self._run("column_param", history_id, {"input1": input1, "col": col, "col_names": "1"})
+            self._assert_status_code_is(response, 200)
+
+    @skip_without_tool("column_param_list")
+    def test_multiple_column_legal_values_empty_dataset(self, history_id):
+        input1 = self._empty_tabular_dataset_param(history_id)
+        for col in ["1,2;id", ["1", "2;id"], "1\n$(id)"]:
+            response = self._run("column_param_list", history_id, {"input1": input1, "col": col, "col_names": "1"})
+            self._assert_status_code_is(response, 400)
+            assert "col" in response.json()["param_errors"]
+        for col in ["1,3", ["1", "3"], "c1\nc3"]:
+            response = self._run("column_param_list", history_id, {"input1": input1, "col": col, "col_names": "1"})
+            self._assert_status_code_is(response, 200)
+
     @requires_new_history
     @skip_without_tool("collection_paired_test")
     def test_collection_parameter(self, history_id):

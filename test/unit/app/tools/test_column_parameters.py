@@ -2,8 +2,12 @@
 test_select_parameters.py.
 """
 
+import pytest
+
 from galaxy import model
 from galaxy.app_unittest_utils.tools_support import datatypes_registry
+from galaxy.tools.parameters.basic import ParameterValueError
+from galaxy.tools.parameters.workflow_utils import RuntimeValue
 from galaxy.util import bunch
 from .util import BaseParameterTestCase
 
@@ -41,6 +45,32 @@ class TestDataColumnParameter(BaseParameterTestCase):
         self.multiple = True
         value = self.param.from_json("c1,c2,c3", self.trans, {"input_tsv": self.build_ready_hda()})
         assert value == ["1", "2", "3"]
+
+    def test_from_json_rejects_non_numeric_column_for_empty_dataset(self):
+        for value in ["1;id", "c1;id", "-1", "1.5", "\u00b2", "B"]:
+            with pytest.raises(ParameterValueError):
+                self.param.from_json(value, self.trans, {"input_tsv": self.build_ready_hda()})
+
+    def test_multiple_from_json_rejects_non_numeric_column_for_empty_dataset(self):
+        self.multiple = True
+        for value in ["1,2;id", ["1", "2;id"], "1\n$(id)"]:
+            with pytest.raises(ParameterValueError):
+                self.param.from_json(value, self.trans, {"input_tsv": self.build_ready_hda()})
+
+    def test_multiple_from_json_newline_separated(self):
+        self.multiple = True
+        value = self.param.from_json("c1\n3", self.trans, {"input_tsv": self.build_ready_hda()})
+        assert value == ["1", "3"]
+
+    def test_from_json_runtime_data_ref(self):
+        assert self.param.from_json("3", self.trans, {"input_tsv": RuntimeValue()}) == "3"
+
+    def test_from_json_workflow_building_mode(self):
+        self.trans["workflow_building_mode"] = True
+        assert self.param.from_json("3", self.trans, {"input_tsv": RuntimeValue()}) == "3"
+        self.multiple = True
+        self._param = None
+        assert self.param.from_json("1,3", self.trans, {"input_tsv": RuntimeValue()}) == ["1", "3"]
 
     def test_get_initial_value_default(self):
         assert "1" == self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()})

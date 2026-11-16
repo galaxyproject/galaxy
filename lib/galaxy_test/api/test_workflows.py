@@ -2737,10 +2737,38 @@ steps:
       input1: empty_output/out_file1
     state:
       col: 2
-      col_names: 'B'
+      col_names: 2
 """,
                 history_id=history_id,
             )
+
+    @skip_without_tool("column_param")
+    def test_empty_file_data_column_requires_column_number(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+steps:
+  empty_output:
+    tool_id: empty_output
+    outputs:
+      out_file1:
+        change_datatype: tabular
+  column_param:
+    tool_id: column_param
+    in:
+      input1: empty_output/out_file1
+    state:
+      col: '2;id'
+      col_names: 2
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            column_param_job = next(job for job in summary.jobs if job["tool_id"] == "column_param")
+            job = self.dataset_populator.get_job_details(column_param_job["id"], full=True).json()
+            assert job["state"] == "error"
+            assert job["command_line"] is None
 
     @skip_without_tool("column_param_list")
     def test_comma_separated_columns(self):
@@ -2760,7 +2788,7 @@ steps:
       input1: empty_output/out_file1
     state:
       col: '2,3'
-      col_names: 'B'
+      col_names: 'c2,c3'
 """,
                 history_id=history_id,
             )
@@ -2785,13 +2813,13 @@ steps:
       input1: empty_output/out_file1
     state:
       col: '2,3\n'
-      col_names: 'B\n'
+      col_names: '2\n'
 """,
                 history_id=history_id,
             )
             job = self.dataset_populator.get_job_details(job_summary.jobs[0]["id"], full=True).json()
             assert "col 2,3" in job["command_line"]
-            assert 'echo "col_names B" >>' in job["command_line"]
+            assert 'echo "col_names 2" >>' in job["command_line"]
 
     @skip_without_tool("column_param")
     def test_runtime_data_column_parameter(self):
