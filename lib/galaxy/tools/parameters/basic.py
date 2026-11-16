@@ -61,6 +61,7 @@ from galaxy.tool_util.parser.util import (
     ParameterParseException,
     text_input_is_optional,
 )
+from galaxy.tool_util_models.parameters import ensure_color_valid
 from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.workflow_utils import (
@@ -869,6 +870,14 @@ class ColorToolParameter(ToolParameter):
     (255, 255, 255)
     >>> with assert_throws_param_value_error("Parameter '_name': Failed to convert 'None' to RGB."):
     ...      p.to_param_dict_string(None)
+    >>> print(p.from_json("#AABBCC", trans), p.from_json("grey", trans), p.from_json("ff0000", trans))
+    #AABBCC grey ff0000
+    >>> with assert_throws_param_value_error("Parameter '_name': a color in the format #RRGGBB or a color name is required"):
+    ...      p.from_json("#fff'; id; '", trans)
+    >>> with assert_throws_param_value_error("Parameter '_name': a color in the format #RRGGBB or a color name is required"):
+    ...      p.to_param_dict_string("#fff'; id; '")
+    >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff" optional="true"/>'))
+    >>> assert p.from_json(None, trans) is None
     """
 
     def __init__(self, tool: Optional["Tool"], input_source):
@@ -881,7 +890,29 @@ class ColorToolParameter(ToolParameter):
         if self.value is not None:
             return self.value.lower()
 
+    def _ensure_color(self, value):
+        # Tools declare color names ("grey") and bare hex ("ff0000") as defaults.
+        if isinstance(value, str) and value.isascii() and value.isalnum():
+            return
+        try:
+            ensure_color_valid(value.lower() if isinstance(value, str) else value)
+        except ValueError:
+            raise ParameterValueError(
+                "a color in the format #RRGGBB or a color name is required", self.name, value
+            ) from None
+
+    def from_json(self, value, trans, other_values=None):
+        if value in ("", None) and self.optional:
+            return value
+        if contains_workflow_parameter(value) and trans.workflow_building_mode is workflow_building_modes.ENABLED:
+            return value
+        self._ensure_color(value)
+        return value
+
     def to_param_dict_string(self, value, other_values=None):
+        # Values connected in a workflow reach the job without passing through from_json.
+        if value not in ("", None):
+            self._ensure_color(value)
         if self.rgb:
             try:
                 return str(tuple(int(value.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)))

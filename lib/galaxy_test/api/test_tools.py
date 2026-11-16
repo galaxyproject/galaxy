@@ -1733,6 +1733,41 @@ class TestToolsApi(ApiTestCase, TestsTools):
         response = self._run("multi_select", history_id, inputs)
         self._assert_status_code_is(response, 400)
 
+    @skip_without_tool("color_param")
+    def test_color_param_rejects_non_color(self, history_id):
+        for name in ("color_default", "color_rgb"):
+            for value in ("#fff'; id; '", "#fff", "red;id", "re d", "$(id)", "#gggggg"):
+                response = self._run("color_param", history_id, {name: value})
+                self._assert_status_code_is(response, 400)
+                assert name in response.json()["err_data"]
+
+    @skip_without_tool("color_param")
+    def test_color_param_accepts_uppercase_hex(self, history_id):
+        response = self._run(
+            "color_param", history_id, {"color_default": "#AABBCC", "color_rgb": "#AABBCC"}, assert_ok=True
+        )
+        outputs = response["outputs"]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        assert self.dataset_populator.get_history_dataset_content(history_id, dataset=outputs[0]).strip() == "#AABBCC"
+        assert (
+            self.dataset_populator.get_history_dataset_content(history_id, dataset=outputs[1]).strip()
+            == "(170, 187, 204)"
+        )
+
+    @skip_without_tool("gx_color")
+    def test_color_param_accepts_color_name(self, history_id):
+        response = self._run("gx_color", history_id, {"parameter": "goldenrod"}, assert_ok=True)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=response["outputs"][0])
+        assert content.strip() == "goldenrod"
+
+    @skip_without_tool("gx_color_optional")
+    def test_color_param_optional_unset(self, history_id):
+        response = self._run("gx_color_optional", history_id, {"parameter": None}, assert_ok=True)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=response["outputs"][0])
+        assert content.strip() == "None"
+
     @skip_without_tool("column_param")
     def test_column_legal_values(self, history_id):
         new_dataset1 = self.dataset_populator.new_dataset(history_id, content="#col1\tcol2")
