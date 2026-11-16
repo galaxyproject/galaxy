@@ -1,7 +1,11 @@
 import string
+from pathlib import Path
+
+import pytest
 
 from galaxy_test.base.populators import skip_without_tool
 from galaxy_test.driver import integration_util
+from .test_job_cache_metadata_files import RunsCachedBamJob
 from .test_scripts import BaseScriptsIntegrationTestCase
 
 DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""
@@ -31,7 +35,7 @@ USER_OBJECT_STORE_CATALOG = """
 SCRIPT = "cleanup_datasets/pgcleanup.py"
 
 
-class TestScriptsPgCleanupIntegration(BaseScriptsIntegrationTestCase):
+class TestScriptsPgCleanupIntegration(RunsCachedBamJob, BaseScriptsIntegrationTestCase):
     def test_help(self):
         self._skip_unless_postgres()
         self._scripts_check_argparse_help(SCRIPT)
@@ -239,6 +243,24 @@ class TestScriptsPgCleanupIntegration(BaseScriptsIntegrationTestCase):
         )
 
         assert not self.is_purged(history_id, hda)
+
+    @pytest.mark.parametrize("rename_input", [False, True], ids=["hit_at_submission", "hit_at_job_preparation"])
+    def test_purge_deleted_hdas_with_cached_copy(self, rename_input: bool):
+        self._skip_unless_postgres()
+
+        history_id = self.dataset_populator.new_history()
+        source_id, cached_id = self._run_cached_bam_job(history_id, rename_input=rename_input)
+        cached = self._hda(cached_id)
+        cached_index_path = cached.metadata.bam_index.get_file_name()
+        cached_index = Path(cached_index_path).read_bytes()
+        assert cached_index
+
+        self.dataset_populator.delete_dataset(history_id, source_id)
+        self._pgcleanup_check_output(["--older-than", "0", "--sequence", "purge_deleted_hdas"])
+
+        assert self.is_purged(history_id, source_id)
+        assert not self.is_purged(history_id, cached_id)
+        assert Path(cached_index_path).read_bytes() == cached_index
 
 
 class TestPgCleanupUserObjectStoreIntegration(
