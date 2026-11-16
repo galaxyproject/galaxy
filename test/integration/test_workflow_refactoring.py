@@ -979,14 +979,7 @@ steps:
         # ensure subworkflow updated properly...
         nested_stored_workflow = self._recent_stored_workflow(2)
         assert len(nested_stored_workflow.workflows) == 3
-        middle_workflow_id = self._app.security.encode_id(nested_stored_workflow.workflows[1].id)
-        actions: ActionsJson = [
-            {
-                "action_type": "upgrade_subworkflow",
-                "step": {"label": "nested_workflow"},
-                "content_id": middle_workflow_id,
-            },
-        ]
+        actions = self._upgrade_subworkflow_to("nested_workflow", nested_stored_workflow.workflows[1])
         action_executions = self._dry_run(actions).action_executions
         assert len(action_executions) == 1
         assert len(action_executions[0].messages) == 0
@@ -1002,13 +995,7 @@ steps:
         stored_workflow = self._most_recent_stored_workflow
         self.workflow_populator.upload_yaml_workflow(SUBWORKFLOW_WITH_MISSING_TOOL)
         replacement = self._most_recent_stored_workflow.latest_workflow
-        actions = [
-            {
-                "action_type": "upgrade_subworkflow",
-                "step": {"label": "nested_workflow"},
-                "content_id": self._app.security.encode_id(replacement.id),
-            }
-        ]
+        actions = self._upgrade_subworkflow_to("nested_workflow", replacement)
         action_executions = self._refactor(actions, stored_workflow=stored_workflow).action_executions
         assert action_executions[0].messages == []
         self._app.model.session.expire_all()
@@ -1030,13 +1017,7 @@ steps:
         stored_workflow = self._most_recent_stored_workflow
         self.workflow_populator.upload_yaml_workflow(SUBWORKFLOW_REORDERED_INPUTS)
         replacement = self._most_recent_stored_workflow.latest_workflow
-        actions = [
-            {
-                "action_type": "upgrade_subworkflow",
-                "step": {"label": "nested_workflow"},
-                "content_id": self._app.security.encode_id(replacement.id),
-            }
-        ]
+        actions = self._upgrade_subworkflow_to("nested_workflow", replacement)
         self._refactor(actions, stored_workflow=stored_workflow)
         self._app.model.session.expire_all()
         connections = stored_workflow.latest_workflow.step_by_label("nested_workflow").input_connections
@@ -1184,6 +1165,15 @@ steps:
         assert message.order_index == 2
         assert message.step_label == "tool_update_step"
         assert message.output_name == "output"
+
+    def _upgrade_subworkflow_to(self, label: str, workflow: Workflow) -> ActionsJson:
+        return [
+            {
+                "action_type": "upgrade_subworkflow",
+                "step": {"label": label},
+                "content_id": self._app.security.encode_id(workflow.id),
+            }
+        ]
 
     def _download_native(self, workflow=None):
         workflow = workflow or self._most_recent_stored_workflow
