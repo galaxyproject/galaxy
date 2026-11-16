@@ -9,6 +9,7 @@ from galaxy.tool_util.deps.mulled.mulled_search import (
 )
 from galaxy.util.unittest_utils import (
     skip_if_quay_down,
+    skip_on_network_error,
     skip_unless_executable,
 )
 from ..util import external_dependency_management
@@ -16,6 +17,7 @@ from ..util import external_dependency_management
 
 @external_dependency_management
 @skip_if_quay_down
+@skip_on_network_error
 def test_quay_search():
     t = QuaySearch("biocontainers")
     t.build_index()
@@ -36,6 +38,7 @@ def test_conda_search():
 
 
 @external_dependency_management
+@skip_on_network_error
 def test_github_recipe_present():
     t = GitHubSearch()
 
@@ -54,6 +57,7 @@ def test_github_recipe_present():
 
 
 @external_dependency_management
+@skip_on_network_error
 def test_get_package_hash():
     package_hash1 = get_package_hash(["bamtools", "samtools"], {})
     package_hash2 = get_package_hash(["bamtools", "samtools"], {"bamtools": "2.4.0", "samtools": "1.3.1"})
@@ -66,6 +70,7 @@ def test_get_package_hash():
 
 
 @external_dependency_management
+@skip_on_network_error
 def test_singularity_search():
     sing1 = singularity_search("mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa")
     sing1_versions = {result["version"] for result in sing1}
