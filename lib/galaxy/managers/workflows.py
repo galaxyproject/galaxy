@@ -6,6 +6,7 @@ import os
 import re
 import uuid
 from collections.abc import Collection
+from contextvars import ContextVar
 from typing import (
     Annotated,
     Any,
@@ -174,6 +175,17 @@ if TYPE_CHECKING:
     from sqlalchemy.engine import ScalarResult
 
 log = logging.getLogger(__name__)
+
+# Set while a refactor runs, so its saves and imports are committed or rolled back together.
+_refactoring: ContextVar[bool] = ContextVar("refactoring", default=False)
+
+
+def _commit_unless_refactoring(sa_session) -> None:
+    if _refactoring.get():
+        sa_session.flush()
+    else:
+        sa_session.commit()
+
 
 MAX_SUBWORKFLOW_URL_DEPTH = 10
 GITHUB_FILE_URL_REGEX = re.compile(r"https://(?:www\.)?github\.com/(?P<repo>[^/]+/[^/]+)/(?:blob|raw)/(?P<path>[^?#]+)")
@@ -592,7 +604,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             owner = workflow.top_level_stored_workflow.user
             stored_workflow = StoredWorkflow(user=owner, name=workflow.name, workflow=workflow, hidden=True)
             trans.sa_session.add(stored_workflow)
-            trans.sa_session.commit()
+            _commit_unless_refactoring(trans.sa_session)
             return stored_workflow
 
     def get_accessible_workflow(self, trans: ProvidesUserContext, encoded_workflow_id) -> Workflow:
@@ -1061,7 +1073,7 @@ class WorkflowContentsManager(UsesAnnotations):
             annotation = sanitize_html(data["annotation"])
             self.add_item_annotation(trans.sa_session, stored.user, stored, annotation)
         workflow_tags = data.get("tags", [])
-        trans.tag_handler.set_tags_from_list(user=trans.user, item=stored, new_tags_list=workflow_tags)
+        trans.tag_handler.set_tags_from_list(user=trans.user, item=stored, new_tags_list=workflow_tags, flush=False)
 
         # Persist
         trans.sa_session.add(stored)
@@ -1073,7 +1085,7 @@ class WorkflowContentsManager(UsesAnnotations):
             menuEntry.stored_workflow = stored
             trans.user.stored_workflow_menu_entries.append(menuEntry)
 
-        trans.sa_session.commit()
+        _commit_unless_refactoring(trans.sa_session)
 
         return CreatedWorkflow(stored_workflow=stored, workflow=workflow, missing_tools=missing_tool_tups)
 
@@ -1145,7 +1157,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         # Persist
         if not dry_run:
-            trans.sa_session.commit()
+            _commit_unless_refactoring(trans.sa_session)
             if stored_workflow.from_path:
                 self._sync_stored_workflow(trans, stored_workflow)
         # Return something informative
@@ -2784,13 +2796,28 @@ class WorkflowContentsManager(UsesAnnotations):
     def refactor(
         self, trans: ProvidesHistoryContext, stored_workflow: StoredWorkflow, refactor_request: RefactorRequest
     ):
-        refactored_workflow, action_executions, changed = self.do_refactor(trans, stored_workflow, refactor_request)
-        return RefactorResponse(
-            action_executions=action_executions,
-            workflow=self.workflow_to_dict(trans, refactored_workflow.stored_workflow, style=refactor_request.style),
-            dry_run=refactor_request.dry_run,
-            changed=changed,
-        )
+        """Apply ``refactor_request`` in one transaction: a dry run or a failed refactor saves nothing."""
+        token = _refactoring.set(True)
+        try:
+            refactored_workflow, action_executions, changed = self.do_refactor(trans, stored_workflow, refactor_request)
+            response = RefactorResponse(
+                action_executions=action_executions,
+                workflow=self.workflow_to_dict(
+                    trans, refactored_workflow.stored_workflow, style=refactor_request.style
+                ),
+                dry_run=refactor_request.dry_run,
+                changed=changed,
+            )
+        except BaseException:
+            trans.sa_session.rollback()
+            raise
+        finally:
+            _refactoring.reset(token)
+        if refactor_request.dry_run:
+            trans.sa_session.rollback()
+        else:
+            trans.sa_session.commit()
+        return response
 
     def resolve_subworkflow_upgrade(
         self,
@@ -2972,7 +2999,7 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(f"The file at '{url}' is not a Galaxy workflow.")
         workflow = self.__build_subworkflow_from_url_content(trans, url, as_dict, frozenset())
         workflow.source_metadata = {**(workflow.source_metadata or {}), "content_sha256": content_sha256}
-        sa_session.commit()
+        _commit_unless_refactoring(sa_session)
         return workflow
 
     def upgrade_nested_subworkflows(

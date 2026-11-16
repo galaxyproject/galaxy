@@ -219,8 +219,8 @@ class UpgradeSubworkflowAction(BaseAction):
     A target owned by someone else, e.g. a published workflow, is copied into this user's account as
     a hidden workflow, and the step uses the copy. A dry run reads the target without copying it.
 
-    A workflow from a TRS server or a URL is imported as a hidden workflow, also during a dry run,
-    and the real run reuses that import.
+    A workflow from a TRS server or a URL is imported as a hidden workflow, which later upgrades
+    to the same version or content reuse. A dry run imports nothing.
     """
 
     # An unrecognized target would otherwise fall through to the upgrade without a target.
@@ -250,8 +250,7 @@ class UpgradeSubworkflowAction(BaseAction):
     trs_version_id: str | None = Field(
         default=None,
         description="The TRS version to switch to: a version of `trs_tool_id` if given, else of the TRS workflow "
-        "the sub-workflow was imported from. The version is imported if this user has no copy of it yet, "
-        "also during a dry run.",
+        "the sub-workflow was imported from. The version is imported if this user has no copy of it yet.",
     )
     trs_server: str | None = Field(
         default=None,
@@ -264,8 +263,7 @@ class UpgradeSubworkflowAction(BaseAction):
     url: str | None = Field(
         default=None,
         description="The URL of a workflow file to switch to, e.g. a link to a file on GitHub, or of a version on a "
-        "TRS server. The workflow is imported unless this user already imported the same content from this URL, "
-        "also during a dry run.",
+        "TRS server. The workflow is imported unless this user already imported the same content from this URL.",
     )
     recursive: bool = Field(
         default=False,

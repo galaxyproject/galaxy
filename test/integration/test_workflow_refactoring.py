@@ -1178,6 +1178,28 @@ steps:
         self._app.model.session.expire_all()
         assert len(target_stored_workflow.workflows) == 1
 
+    def test_subworkflow_upgrade_recursive_saves_nothing_when_a_later_action_fails(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_DOUBLY_NESTED)
+        outer_stored_workflow = self._most_recent_stored_workflow
+        middle_stored_workflow = self._subworkflow(
+            outer_stored_workflow.latest_workflow, "middle_workflow"
+        ).stored_workflow
+        inner_stored_workflow = self._subworkflow(
+            middle_stored_workflow.latest_workflow, "nested_workflow"
+        ).stored_workflow
+        self._increment_nested_workflow_version(inner_stored_workflow, num_lines_from="1", num_lines_to="2")
+        self._app.model.session.expire_all()
+
+        actions: ActionsJson = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "middle_workflow"}, "recursive": True},
+            {"action_type": "upgrade_subworkflow", "step": {"label": "middle_workflow"}, "trs_version_id": "v0.2"},
+        ]
+        with pytest.raises(RequestParameterInvalidException, match="not imported from a TRS server"):
+            self._refactor(actions, stored_workflow=outer_stored_workflow)
+        self._app.model.session.expire_all()
+        assert len(middle_stored_workflow.workflows) == 1
+        assert len(outer_stored_workflow.workflows) == 1
+
     def test_subworkflow_upgrade_recursive_rejects_cycles(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
         outer_stored_workflow = self._most_recent_stored_workflow
@@ -1212,18 +1234,19 @@ steps:
             assert imported_v1.source_metadata["trs_version_id"] == "v0.1"
             upgrade: ActionsJson = [{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}}]
 
-            # a dry run imports the target version, hidden, for a later real run to reuse
+            user_id = stored_workflow.user.id
+            count = self._stored_workflow_count(user_id)
             response = self._refactor(upgrade, stored_workflow=stored_workflow, dry_run=True)
             assert response.changed
-            user_id = stored_workflow.user.id
-            imported_v2 = self._manager.get_workflow_by_trs_id_and_version(FAKE_TRS_TOOL_ID, "v0.2", user_id=user_id)
-            assert imported_v2 is not None
-            assert imported_v2.hidden
+            assert self._stored_workflow_count(user_id) == count
 
             response = self._refactor(upgrade, stored_workflow=stored_workflow)
             assert response.changed
             assert response.action_executions[0].messages == []
             self._app.model.session.expire_all()
+            imported_v2 = self._manager.get_workflow_by_trs_id_and_version(FAKE_TRS_TOOL_ID, "v0.2", user_id=user_id)
+            assert imported_v2 is not None
+            assert imported_v2.hidden
             upgraded = self._subworkflow(stored_workflow.latest_workflow, "nested_workflow")
             assert upgraded.id == imported_v2.latest_workflow.id
             assert upgraded.source_metadata
@@ -1300,15 +1323,15 @@ steps:
         actions: ActionsJson = [{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, **target}]
         user_id = stored_workflow.user_id
         with self._fake_trs():
+            count = self._stored_workflow_count(user_id)
             assert self._refactor(actions, stored_workflow=stored_workflow, dry_run=True).workflow
-            dry_run_import = self._manager.get_workflow_by_trs_id_and_version(
-                FAKE_TRS_TOOL_ID, trs_version_id, user_id=user_id
-            )
-            assert dry_run_import is not None and dry_run_import.hidden
+            assert self._stored_workflow_count(user_id) == count
             self._refactor(actions, stored_workflow=stored_workflow)
         self._app.model.session.expire_all()
-        assert self._subworkflow(stored_workflow.latest_workflow, "nested_workflow").stored_workflow == dry_run_import
-        assert dry_run_import.latest_workflow.source_metadata["trs_url"] == FAKE_TRS_SERVER.get_trs_url(
+        imported = self._manager.get_workflow_by_trs_id_and_version(FAKE_TRS_TOOL_ID, trs_version_id, user_id=user_id)
+        assert imported is not None and imported.hidden
+        assert self._subworkflow(stored_workflow.latest_workflow, "nested_workflow").stored_workflow == imported
+        assert imported.latest_workflow.source_metadata["trs_url"] == FAKE_TRS_SERVER.get_trs_url(
             FAKE_TRS_TOOL_ID, trs_version_id
         )
 
@@ -1557,6 +1580,10 @@ steps:
         workflow_id = self._app.security.encode_id(workflow.id)
         with self.workflow_populator.export_for_update(workflow_id) as workflow_object:
             yield workflow_object
+
+    def _stored_workflow_count(self, user_id: int) -> int:
+        stmt = select(func.count(StoredWorkflow.id)).where(StoredWorkflow.user_id == user_id)
+        return self._app.model.session.execute(stmt).scalar_one()
 
     def _refactor(self, actions: list[dict[str, Any]], stored_workflow=None, dry_run=False, style="ga"):
         stmt = select(User).order_by(User.id.desc()).limit(1)
