@@ -1,3 +1,5 @@
+from urllib.parse import urljoin
+
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_OPTIONAL_TRUE_INPUT_DATA,
     WORKFLOW_SIMPLE_CAT_TWICE,
@@ -80,6 +82,71 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         # Find that the changed input badge exists
         form_element.changed_value_badge.wait_for_visible()
         self.screenshot("workflow_rerun_changed_input")
+
+    @selenium_test
+    @managed_history
+    def test_workflow_rerun_lineage(self):
+        """Both run forms retain lineage across reloads and allow navigation in either direction."""
+        invocations = self.components.invocations
+        self.workflow_run_open_workflow(WORKFLOW_BOOLEAN_PARAMETER_DEFAULT_TRUE)
+        self.workflow_run_submit()
+        invocations.state_details.wait_for_visible()
+        self.workflow_run_wait_for_ok(hid=1)
+        original_url = self.current_url.split("?")[0]
+        invocation_urls = [original_url]
+        invocations.source_invocation_link.assert_absent()
+        invocations.latest_rerun_invocation_link.assert_absent()
+
+        for expanded, output_hid in ((False, 2), (True, 3)):
+            invocations.workflow_rerun_button.wait_for_and_click()
+            self.components.workflow_run.run_workflow.wait_for_visible()
+            if expanded:
+                self.workflow_run_ensure_expanded()
+            self.workflow_run_submit()
+            invocations.source_invocation_link.wait_for_visible()
+            self.workflow_run_wait_for_ok(hid=output_hid)
+            rerun_url = self.current_url.split("?")[0]
+            assert rerun_url != original_url
+            self.refresh()
+            source_link = invocations.source_invocation_link.wait_for_visible()
+            assert urljoin(self.current_url, source_link.get_attribute("href")) == original_url
+            invocations.overview_graph.wait_for_visible()
+            self.history_panel_wait_for_hid_ok(output_hid)
+            self.screenshot(f"workflow_rerun_lineage_{'expanded' if expanded else 'simple'}")
+
+            source_link.click()
+            latest_link = invocations.latest_rerun_invocation_link.wait_for_visible()
+            assert urljoin(self.current_url, latest_link.get_attribute("href")) == rerun_url
+            invocations.overview_graph.wait_for_visible()
+            self.history_panel_wait_for_hid_ok(output_hid)
+            self.screenshot(f"workflow_rerun_lineage_source_{output_hid}")
+            latest_link.click()
+            invocations.source_invocation_link.wait_for_visible()
+            assert self.current_url.split("?")[0] == rerun_url
+            original_url = rerun_url
+            invocation_urls.append(rerun_url)
+
+        invocations.activity.wait_for_and_click()
+        invocation_id = original_url.rsplit("/", 1)[-1]
+        invocations.lineage_rerun_badge(invocation_id=invocation_id).wait_for_visible()
+        self.screenshot("workflow_rerun_lineage_list_marker")
+
+        invocations.activity_expand.wait_for_and_click()
+        invocations.invocations_table.wait_for_visible()
+        # The grid sorts newest first, so row 1 is J, the rerun with both links.
+        invocations.lineage_grid_row_toggle(row=1).wait_for_and_click()
+        source_link = invocations.lineage_grid_source_link.wait_for_visible()
+        latest_link = invocations.lineage_grid_latest_link.wait_for_visible()
+        first_url, middle_url, last_url = invocation_urls
+        assert urljoin(self.current_url, source_link.get_attribute("href")) == first_url
+        assert urljoin(self.current_url, latest_link.get_attribute("href")) == last_url
+        invocations.overview_graph.wait_for_visible()
+        self.screenshot("workflow_rerun_lineage_grid_expanded")
+        source_link.click()
+        invocations.invocations_table.wait_for_absent_or_hidden()
+        source_page_latest_link = invocations.latest_rerun_invocation_link.wait_for_visible()
+        assert self.current_url.split("?")[0] == first_url
+        assert urljoin(self.current_url, source_page_latest_link.get_attribute("href")) == middle_url
 
     @selenium_test
     @managed_history

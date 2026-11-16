@@ -18725,6 +18725,11 @@ export interface components {
              */
             require_exact_tool_versions: boolean | null;
             /**
+             * Rerun of invocation ID
+             * @description The encoded ID of the invocation being rerun. It must be accessible and an invocation of the same workflow (any version).
+             */
+            rerun_of_invocation_id?: string | null;
+            /**
              * Resource Parameters
              * @description If a workflow_resource_params_file file is defined and the target workflow is configured to consumer resource parameters, they can be specified with this parameter. See https://github.com/galaxyproject/galaxy/pull/4830 for more information.
              */
@@ -29038,6 +29043,12 @@ export interface components {
              */
             id: string;
             /**
+             * Is Rerun
+             * @description Whether this invocation reruns a previous invocation.
+             * @default false
+             */
+            is_rerun: boolean;
+            /**
              * Landing UUID
              * @description The UUID of the workflow landing request associated with this invocation.
              */
@@ -29139,10 +29150,21 @@ export interface components {
                 [key: string]: components["schemas"]["InvocationInput"];
             };
             /**
+             * Is Rerun
+             * @description Whether this invocation reruns a previous invocation.
+             * @default false
+             */
+            is_rerun: boolean;
+            /**
              * Landing UUID
              * @description The UUID of the workflow landing request associated with this invocation.
              */
             landing_uuid?: string | null;
+            /**
+             * Latest Rerun Invocation Id
+             * @description The latest accessible direct rerun of this invocation.
+             */
+            latest_rerun_invocation_id?: string | null;
             /**
              * Messages
              * @description A list of messages about why the invocation did not succeed.
@@ -29184,6 +29206,11 @@ export interface components {
             outputs: {
                 [key: string]: components["schemas"]["InvocationOutput"];
             };
+            /**
+             * Rerun Of Invocation Id
+             * @description The invocation being rerun, if it is still accessible to the current user.
+             */
+            rerun_of_invocation_id?: string | null;
             /**
              * Invocation state
              * @description State of workflow invocation. `completed` means every job reached a terminal state (ok, error, deleted, skipped, paused or stopped), not that every job succeeded; see `job_state_summary` in `/api/invocations/{invocation_id}/completion`.

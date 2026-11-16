@@ -114,6 +114,11 @@ class GetTargetHistoryPayload(Model):
 
 
 class InvokeWorkflowPayload(GetTargetHistoryPayload):
+    rerun_of_invocation_id: str | None = Field(
+        None,
+        title="Rerun of invocation ID",
+        description="The encoded ID of the invocation being rerun. It must be accessible and an invocation of the same workflow (any version).",
+    )
     # TODO - Are the descriptions correct?
     version: int | None = Field(
         None,

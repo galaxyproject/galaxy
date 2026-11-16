@@ -128,6 +128,7 @@ interface CredentialStep {
 }
 
 interface Props {
+    rerunOfInvocationId?: string;
     /**
      * Whether the current history accepts new datasets
      */
@@ -149,6 +150,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    rerunOfInvocationId: undefined,
     disableSimpleForm: false,
     disableSimpleFormReason: undefined,
 });
@@ -306,6 +308,7 @@ function onExecute() {
     });
 
     const jobDef = {
+        ...(props.rerunOfInvocationId ? { rerun_of_invocation_id: props.rerunOfInvocationId } : {}),
         new_history_name: historyData.value["new_history|name"] ? historyData.value["new_history|name"] : null,
         history_id: !historyData.value["new_history|name"] ? props.model.historyId : null,
         resource_params: resourceData,
