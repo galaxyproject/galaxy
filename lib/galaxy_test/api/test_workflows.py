@@ -1715,6 +1715,8 @@ steps:
         uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export_format2")
         downloaded_workflow = self._download_workflow(uploaded_workflow_id, style="format2")
         assert downloaded_workflow["class"] == "GalaxyWorkflow"
+        # The revision index is not part of the format2 schema, which forbids extra keys.
+        assert "version" not in downloaded_workflow
 
     def test_export_format2_comments(self):
         # Build a native workflow with comments
