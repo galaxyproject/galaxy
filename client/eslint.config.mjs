@@ -224,10 +224,6 @@ export default defineConfig(
         rules: baseRules,
     },
     {
-        files: ["src/components/Common/legacy/**"],
-        rules: { "no-restricted-imports": "off" },
-    },
-    {
         // Still waiting on Phase 3, which rewrites the Form/Elements emits.
         // Drop each entry as it lands.
         files: [
