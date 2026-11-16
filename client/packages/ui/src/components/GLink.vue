@@ -86,6 +86,7 @@ const linkElementRef = useResolveElement(linkRef);
         :data-title="currentTitle"
         :to="!props.disabled ? props.to : ''"
         :title="props.tooltip ? undefined : currentTitle"
+        :type="baseComponent === 'button' ? ($attrs.type ?? 'button') : undefined"
         :aria-disabled="props.disabled || undefined"
         @click="onClick">
         <slot></slot>

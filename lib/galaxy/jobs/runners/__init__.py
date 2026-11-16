@@ -276,11 +276,18 @@ class BaseJobRunner:
 
     def shutdown(self):
         """Attempts to gracefully shut down the worker threads"""
+        self._stop_worker_threads()
+        self._join_worker_threads()
+
+    def _stop_worker_threads(self) -> None:
+        """Tell the worker threads to stop once their current work item is done."""
         log.info("%s: Sending stop signal to %s job worker threads", self.runner_name, len(self.work_threads))
         self._should_stop = True
         for _ in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
 
+    def _join_worker_threads(self) -> None:
+        """Wait up to ``monitor_thread_join_timeout`` seconds for the worker threads to exit."""
         if (join_timeout := self.app.config.monitor_thread_join_timeout) > 0:
             log.info("Waiting up to %d seconds for job worker threads to shutdown...", join_timeout)
             start = time.time()
