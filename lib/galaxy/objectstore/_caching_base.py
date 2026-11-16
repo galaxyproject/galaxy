@@ -346,7 +346,10 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         if create:
             self._create(obj, **kwargs)
 
-        if self._exists(obj, **kwargs):
+        # An update without create only writes to an object that already exists. _create() makes the object
+        # when it is missing, so after it the object is known to exist, and _exists() would spend another
+        # request to the remote store to confirm that.
+        if create or self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             # Chose whether to use the dataset file itself or an alternate file
             if file_name:
@@ -355,6 +358,8 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 cache_file = self._get_cache_path(rel_path)
                 try:
                     if source_file != cache_file and self.cache_updated_data:
+                        # Callers may not have synced this object into the cache, so its directory may be missing.
+                        os.makedirs(os.path.dirname(cache_file), exist_ok=True)
                         # FIXME? Should this be a `move`?
                         shutil.copy(source_file, cache_file)
                     fix_permissions(self.config, cache_file)

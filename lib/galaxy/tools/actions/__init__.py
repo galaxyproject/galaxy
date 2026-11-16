@@ -625,7 +625,8 @@ class DefaultToolAction(ToolAction):
             if completed_job:
                 data.blurb = completed_data.blurb
                 data.peek = completed_data.peek
-                data._metadata = completed_data._metadata
+                # Copy metadata files into rows this output owns, so purging completed_data keeps them.
+                data.metadata = completed_data.metadata
             else:
                 data.blurb = "queued"
             # Set output label

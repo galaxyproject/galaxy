@@ -2114,7 +2114,9 @@ class DirectoryModelExportStore(ModelExportStore):
         for dataset in self.included_datasets:
             for metadata_element in dataset.metadata.values():
                 if isinstance(metadata_element, model.MetadataFile):
-                    metadata_element.update_from_file(metadata_element.get_file_name())
+                    # The file is already at its object store path; get_file_name() would check for the
+                    # object again only to hand that path back.
+                    metadata_element.update_from_file(None)
 
     def export_job(self, job: model.Job, tool=None, include_job_data=True):
         self.export_jobs([job], include_job_data=include_job_data)
