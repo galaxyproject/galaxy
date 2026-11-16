@@ -58,6 +58,13 @@ const props = withDefaults(
         loading?: boolean;
     }>(),
     {
+        href: undefined,
+        to: undefined,
+        color: undefined,
+        title: undefined,
+        disabledTitle: undefined,
+        size: undefined,
+        tooltipPlacement: undefined,
         // An absent Boolean prop would cast to false; undefined marks a button that is not a toggle.
         pressed: undefined,
     },
