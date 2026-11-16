@@ -101,3 +101,9 @@ def test_distance_matrix_sniff_zero_count(tmp_path, datatype):
     path = tmp_path / "input"
     path.write_text("0\n")
     assert datatype.sniff(str(path)) is False
+
+
+def test_sabund_sniff_with_heading_line(tmp_path):
+    path = tmp_path / "input"
+    path.write_text("label\tnumOtus\tOtu1\tOtu2\nunique\t2\t94\t2\n0.03\t2\t75\t6\n")
+    assert Sabund().sniff(str(path)) is True
