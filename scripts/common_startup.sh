@@ -172,9 +172,11 @@ fi
 if command -v uv >/dev/null; then
     PIP_CMD="$(command -v uv) pip"
     UNINSTALL_OPTIONS=''
+    CONDITIONAL_OVERRIDE_OPTIONS='--override lib/galaxy/dependencies/conditional-overrides.txt'
 else
     PIP_CMD='python -m pip'
     UNINSTALL_OPTIONS='--yes'
+    CONDITIONAL_OVERRIDE_OPTIONS=''
 fi
 
 # activate virtualenv or conda env, sets $GALAXY_VIRTUAL_ENV and $GALAXY_CONDA_ENV
@@ -220,7 +222,8 @@ if [ $FETCH_WHEELS -eq 1 ]; then
             echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
             ${PIP_CMD} uninstall ${UNINSTALL_OPTIONS} psycopg2 psycopg2-binary
         fi
-        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}" --constraint lib/galaxy/dependencies/conditional-constraints.txt
+        # shellcheck disable=SC2086
+        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}" --constraint lib/galaxy/dependencies/conditional-constraints.txt $CONDITIONAL_OVERRIDE_OPTIONS
     fi
 fi
 
