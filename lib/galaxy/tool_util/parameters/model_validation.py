@@ -20,6 +20,12 @@ from galaxy.tool_util_models.parameters import (
 )
 
 
+def clean_pydantic_error(error: object, separator: str = "\n") -> str:
+    """Render a pydantic error as stripped lines joined by ``separator``, minus its docs-URL lines."""
+    lines = (line.strip() for line in str(error).splitlines())
+    return separator.join(line for line in lines if line and not line.startswith("For further information visit"))
+
+
 def validate_against_model(pydantic_model: type[BaseModel], parameter_state: dict[str, Any]) -> None:
     try:
         pydantic_model(**parameter_state)

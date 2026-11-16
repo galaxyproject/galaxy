@@ -77,6 +77,7 @@ from galaxy.schema.invocation import (
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parameters import (
+    clean_pydantic_error,
     fill_static_defaults,
     from_workflow_execution_state,
     JobInternalToolState,
@@ -2680,14 +2681,6 @@ def _capture_workflow_tool_request_state(
     return validated_template, validated_combinations, tool_request
 
 
-def _single_line_reason(validation_error: str | None) -> str | None:
-    """Collapse a (possibly multi-line pydantic) validation error to one log line."""
-    if not validation_error:
-        return None
-    lines = (line.strip() for line in validation_error.splitlines())
-    return "; ".join(line for line in lines if line and not line.startswith("For further information visit"))
-
-
 def _log_workflow_tool_request_state(
     trans: "ProvidesAppContext",
     tool,
@@ -2714,7 +2707,7 @@ def _log_workflow_tool_request_state(
             step_index,
             tool_id,
             mapped_over,
-            _single_line_reason(validation_error) or "no reason given",
+            clean_pydantic_error(validation_error or "", separator="; ") or "no reason given",
         )
     execution_timer_factory = getattr(trans.app, "execution_timer_factory", None)
     statsd_client = getattr(execution_timer_factory, "galaxy_statsd_client", None)
