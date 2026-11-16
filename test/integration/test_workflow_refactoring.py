@@ -1044,6 +1044,18 @@ steps:
             "first": "first",
             "second": "second",
         }
+        dataset_populator = self.workflow_populator.dataset_populator
+        history_id = dataset_populator.new_history()
+        inputs = {
+            label: {"src": "hda", "id": dataset_populator.new_dataset(history_id, content=content, wait=True)["id"]}
+            for label, content in (("outer_a", "a\n"), ("outer_b", "b\n"))
+        }
+        workflow_id = self._app.security.encode_id(stored_workflow.id)
+        invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+            workflow_id, history_id=history_id, inputs=inputs, inputs_by="name"
+        )
+        self.workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id)
+        assert dataset_populator.get_history_dataset_content(history_id) == "a\nb\n"
 
     def test_subworkflow_upgrade_connection_input_dropped(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
