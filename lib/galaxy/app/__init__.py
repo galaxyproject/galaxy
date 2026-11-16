@@ -71,6 +71,7 @@ from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.object_store_instances import UserObjectStoreResolverImpl
 from galaxy.managers.roles import RoleManager
+from galaxy.managers.run_notifications import RunNotificationMonitor
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.sse import (
     SSEConnectionGaugeEmitter,
@@ -81,7 +82,6 @@ from galaxy.managers.tasks import (
     AsyncTasksManager,
     CeleryAsyncTasksManager,
 )
-from galaxy.managers.tool_completion import ToolCompletionMonitor
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.users import UserManager
 from galaxy.managers.workflow_completion import WorkflowCompletionManager
@@ -1032,7 +1032,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             ("queue worker", self._shutdown_queue_worker),
             ("file watcher", self._shutdown_watcher),
             ("database heartbeat", self._shutdown_database_heartbeat),
-            ("tool completion monitor", self._shutdown_tool_completion_monitor),
+            ("run notification monitor", self._shutdown_run_notification_monitor),
             ("SSE connection gauge emitter", self._shutdown_sse_connection_gauge_emitter),
             ("history audit monitor", self._shutdown_history_audit_monitor),
             ("workflow scheduler", self._shutdown_scheduling_manager),
@@ -1197,8 +1197,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.database_heartbeat.add_change_callback(self._on_config_watcher_change)
         if self.is_webapp and (self.config.enable_notification_system or self.config.smtp_server):
-            tool_completion_monitor = self._register_singleton(ToolCompletionMonitor)
-            self.database_heartbeat.add_change_callback(tool_completion_monitor.on_role_change)
+            run_notification_monitor = self._register_singleton(RunNotificationMonitor)
+            self.database_heartbeat.add_change_callback(run_notification_monitor.on_role_change)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
         # History audit monitor for SSE-based history updates. The monitor only
@@ -1283,9 +1283,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
     def _shutdown_database_heartbeat(self):
         self.database_heartbeat.shutdown()
 
-    def _shutdown_tool_completion_monitor(self):
+    def _shutdown_run_notification_monitor(self):
         if self.is_webapp and (self.config.enable_notification_system or self.config.smtp_server):
-            self[ToolCompletionMonitor].shutdown()
+            self[RunNotificationMonitor].shutdown()
 
     def _shutdown_sse_connection_gauge_emitter(self):
         if self.sse_connection_gauge_emitter is not None:

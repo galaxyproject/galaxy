@@ -3244,6 +3244,10 @@ class ImplicitCollectionJobs(Base, Serializable):
         stmt = select(self._job_states_stmt().where(Job.state.not_in(states)).exists())
         return bool(required_object_session(self).scalar(stmt))
 
+    def has_job_in_states(self, states: Iterable[str]) -> bool:
+        stmt = select(self._job_states_stmt().where(Job.state.in_(states)).exists())
+        return bool(required_object_session(self).scalar(stmt))
+
     def job_state_counts(self) -> dict[str, int]:
         """Number of these jobs in each state."""
         stmt = self._job_states_stmt().add_columns(func.count()).group_by(Job.state)
@@ -3344,15 +3348,18 @@ class ImplicitCollectionJobsJobAssociation(Base, RepresentById):
     job: Mapped["Job"] = relationship(back_populates="implicit_collection_jobs_association")
 
 
-class ToolCompletionNotification(Base):
-    """A durable request for one job or one collection map-over notification."""
+class RunNotificationRequest(Base):
+    """A durable notification request for one tool run or workflow invocation."""
 
-    __tablename__ = "tool_completion_notification"
+    __tablename__ = "run_notification_request"
     __table_args__ = (
         CheckConstraint(
-            "(job_id IS NULL) != (implicit_collection_jobs_id IS NULL)", name="ck_tool_completion_notification_target"
+            "(job_id IS NOT NULL AND implicit_collection_jobs_id IS NULL AND workflow_invocation_id IS NULL) OR "
+            "(job_id IS NULL AND implicit_collection_jobs_id IS NOT NULL AND workflow_invocation_id IS NULL) OR "
+            "(job_id IS NULL AND implicit_collection_jobs_id IS NULL AND workflow_invocation_id IS NOT NULL)",
+            name="ck_run_notification_request_target",
         ),
-        Index("ix_tool_completion_notification_pending", "completed", "id"),
+        Index("ix_run_notification_request_pending", "completed", "id"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -3363,7 +3370,12 @@ class ToolCompletionNotification(Base):
     implicit_collection_jobs_id: Mapped[int | None] = mapped_column(
         ForeignKey("implicit_collection_jobs.id", ondelete="CASCADE"), unique=True
     )
+    workflow_invocation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("workflow_invocation.id", ondelete="CASCADE"), unique=True
+    )
+    attention_sent: Mapped[bool] = mapped_column(default=False)
     completed: Mapped[bool] = mapped_column(default=False)
+    workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="notification_request")
     user: Mapped["User"] = relationship()
     history: Mapped["History"] = relationship()
     job: Mapped[Optional["Job"]] = relationship()
@@ -10389,6 +10401,9 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         back_populates="workflow_invocation",
         uselist=False,
     )
+    notification_request: Mapped[Optional["RunNotificationRequest"]] = relationship(
+        back_populates="workflow_invocation", uselist=False
+    )
     completion: Mapped[Optional["WorkflowInvocationCompletion"]] = relationship(
         "WorkflowInvocationCompletion",
         back_populates="workflow_invocation",
@@ -10420,6 +10435,16 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     def __strict_check_before_flush__(self):
         if self.state is None:
             raise Exception("Workflow invocation without state, this should not happen")
+
+    def request_notifications(self) -> None:
+        """Register once, independently of completion hooks and invocation state."""
+        if not self.history or not self.history.user:
+            return
+        if not any(isinstance(action, dict) and "send_notification" in action for action in self.on_complete or []):
+            return
+        if self.notification_request is None:
+            request = RunNotificationRequest(user=self.history.user, history=self.history, workflow_invocation=self)
+            required_object_session(self).add(request)
 
     def get_last_workflow_invocation_step_update_time(self) -> datetime | None:
         session = required_object_session(self)

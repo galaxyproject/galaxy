@@ -24,7 +24,7 @@ from packaging.version import Version
 from galaxy import model
 from galaxy.exceptions import ToolInputsNotOKException
 from galaxy.model import (
-    ToolCompletionNotification,
+    RunNotificationRequest,
     ToolRequest,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -554,7 +554,7 @@ class ExecutionTracker:
         collection_jobs = self.implicit_collection_jobs
         if collection_jobs is not None:
             self.trans.sa_session.add(
-                ToolCompletionNotification(
+                RunNotificationRequest(
                     user=user,
                     history=history,
                     implicit_collection_jobs=collection_jobs,
@@ -562,7 +562,7 @@ class ExecutionTracker:
             )
         else:
             for job in self.successful_jobs:
-                self.trans.sa_session.add(ToolCompletionNotification(user=user, history=job.history, job=job))
+                self.trans.sa_session.add(RunNotificationRequest(user=user, history=job.history, job=job))
 
     @staticmethod
     def _collection_info_to_collection_hids_element_ids(

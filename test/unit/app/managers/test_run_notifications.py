@@ -1,4 +1,4 @@
-"""Transaction and polling boundaries for tool completion notifications."""
+"""Transaction and polling boundaries for tool and workflow run notifications."""
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
@@ -23,10 +23,11 @@ from galaxy import (
 )
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.managers.notification import NotificationManager
-from galaxy.managers.tool_completion import (
-    ToolCompletionManager,
-    ToolCompletionMonitor,
+from galaxy.managers.run_notifications import (
+    RunNotificationManager,
+    RunNotificationMonitor,
 )
+from galaxy.managers.workflow_completion import WorkflowCompletionManager
 from galaxy.model.database_heartbeat import (
     DatabaseHeartbeat,
     WEBAPP,
@@ -63,7 +64,7 @@ def app(app_factory):
 
 @pytest.fixture
 def manager(app):
-    return app[ToolCompletionManager]
+    return app[RunNotificationManager]
 
 
 @pytest.fixture
@@ -90,7 +91,7 @@ def request_notification(history, states, mapped=False, populated="ok"):
             association.job = job
             association.order_index = index
             collection_jobs.jobs.append(association)
-    request = model.ToolCompletionNotification(
+    request = model.RunNotificationRequest(
         user=history.user,
         history=history,
         job=jobs[0] if collection_jobs is None else None,
@@ -148,11 +149,12 @@ def test_empty_map_waits_for_population_and_links_to_the_requested_history(app, 
     assert notification.variant == ("warning" if population == "failed" else "info")
 
 
+@pytest.mark.parametrize("state", ["paused", "ok"])
 @pytest.mark.parametrize("notifications_enabled", [True, False])
-def test_failed_delivery_rolls_back_marker_and_notification(app, manager, history, notifications_enabled):
+def test_failed_delivery_rolls_back_marker_and_notification(app, manager, history, notifications_enabled, state):
     app.config.enable_notification_system = notifications_enabled
     app.config.smtp_server = "smtp.example.org"
-    request, _ = request_notification(history, ["ok"])
+    request, _ = request_notification(history, [state])
     request_id = request.id
 
     def fail_recipient_insert(conn, cursor, statement, parameters, context, executemany):
@@ -165,31 +167,34 @@ def test_failed_delivery_rolls_back_marker_and_notification(app, manager, histor
             manager.check_and_notify(request_id)
     finally:
         event.remove(app.model.engine, "before_cursor_execute", fail_recipient_insert)
-    assert not app.model.context.get(model.ToolCompletionNotification, request_id).completed
+    persisted = app.model.context.get(model.RunNotificationRequest, request_id)
+    assert not persisted.completed
+    assert not persisted.attention_sent
     assert app.model.context.scalars(select(model.Notification)).all() == []
     assert manager.check_and_notify(request_id)
     assert len(app.model.context.scalars(select(model.UserNotificationAssociation)).all()) == 1
 
 
+@pytest.mark.parametrize("state", ["paused", "ok"])
 @pytest.mark.parametrize("notifications_enabled", [True, False])
-def test_concurrent_monitors_create_one_notification(app, history, tmp_path, notifications_enabled):
+def test_concurrent_monitors_create_one_notification(app, history, tmp_path, notifications_enabled, state):
     app.config.enable_notification_system = notifications_enabled
     email_dir = tmp_path / "emails"
     email_dir.mkdir()
     app.config.smtp_server = f"mock_emails_to_path://{email_dir}"
-    request, _ = request_notification(history, ["ok"])
+    request, _ = request_notification(history, [state])
     request_id = request.id
     sessions = app.model.context
     sessions.remove()
     barrier = Barrier(2)
 
     def synchronize_claims(conn, cursor, statement, parameters, context, executemany):
-        if statement.startswith(("UPDATE tool_completion_notification", "UPDATE notification")):
+        if statement.startswith(("UPDATE run_notification_request", "UPDATE notification")):
             barrier.wait(timeout=10)
 
     def notify():
         try:
-            return app[ToolCompletionManager].check_and_notify(request_id)
+            return app[RunNotificationManager].check_and_notify(request_id)
         finally:
             sessions.remove()
 
@@ -217,15 +222,15 @@ def test_monitor_reaches_later_requests_and_revisits_unfinished_jobs(app, manage
     first_id, ready_id = requests[0].id, ready.id
     session = app.model.context
     manager.monitor()
-    assert not session.get(model.ToolCompletionNotification, ready_id).completed
+    assert not session.get(model.RunNotificationRequest, ready_id).completed
     manager.monitor()
-    assert session.get(model.ToolCompletionNotification, ready_id).completed
+    assert session.get(model.RunNotificationRequest, ready_id).completed
     manager.monitor()
-    first = session.get(model.ToolCompletionNotification, first_id)
+    first = session.get(model.RunNotificationRequest, first_id)
     first.job.state = "ok"
     session.commit()
     manager.monitor()
-    assert session.get(model.ToolCompletionNotification, first_id).completed
+    assert session.get(model.RunNotificationRequest, first_id).completed
 
 
 def test_only_elected_monitor_polls_and_failover_resumes_empty_map(app, app_factory, history):
@@ -242,7 +247,7 @@ def test_only_elected_monitor_polls_and_failover_resumes_empty_map(app, app_fact
         worker.config.attach_to_pools = False
         worker.config.workflow_completion_monitor_sleep = 0.01
         heartbeat = DatabaseHeartbeat(application_stack_instance(app=worker), app_type=WEBAPP)
-        monitor = worker[ToolCompletionMonitor]
+        monitor = worker[RunNotificationMonitor]
         heartbeat.add_change_callback(monitor.on_role_change)
         heartbeats.append(heartbeat)
         monitors.append(monitor)
@@ -260,7 +265,7 @@ def test_only_elected_monitor_polls_and_failover_resumes_empty_map(app, app_fact
             signal=polled[index],
             email_signal=email_polled[index],
         ):
-            if statement.startswith("SELECT tool_completion_notification.id"):
+            if statement.startswith("SELECT run_notification_request.id"):
                 signal.set()
             if statement.startswith("SELECT notification.id") and "WHERE notification.email_only" in statement:
                 email_signal.set()
@@ -327,9 +332,11 @@ def test_smtp_failure_is_not_retried_and_does_not_block_later_emails(
     email_dir.mkdir()
     app.config.smtp_server = f"mock_emails_to_path://{email_dir}"
     history.user.preferences["notifications"] = '{"tool_execution_completed":{"enabled":false}}'
-    for _ in range(2):
-        request, _ = request_notification(history, ["ok"])
-        assert manager.check_and_notify(request.id)
+    paused_request, paused_jobs = request_notification(history, ["paused"])
+    paused_request_id, paused_job_id = paused_request.id, paused_jobs[0].id
+    assert manager.check_and_notify(paused_request_id)
+    request, _ = request_notification(history, ["ok"])
+    assert manager.check_and_notify(request.id)
     notifications = app[NotificationManager]
     assert notifications.get_user_notifications(history.user) == []
     assert notifications.get_user_total_unread_notification_count(history.user) == 0
@@ -348,18 +355,171 @@ def test_smtp_failure_is_not_retried_and_does_not_block_later_emails(
         patcher.setattr(util, "send_mail", fail_first_send)
         notifications.dispatch_completion_emails()
         notifications.dispatch_completion_emails()
+        # A failed attention email does not consume the final completion event.
+        resumed_job = app.model.context.get(model.Job, paused_job_id)
+        resumed_job.resume()
+        resumed_job.state = "ok"
+        app.model.context.commit()
+        assert manager.check_and_notify(paused_request_id)
+        notifications.dispatch_completion_emails()
         # Neither restarting the dispatcher nor enabling notifications retries a failed send.
         replacement = app_factory()
         replacement.config.smtp_server = app.config.smtp_server
         replacement[NotificationManager].dispatch_completion_emails()
-    assert len(attempts) == 2
+    assert len(attempts) == 3
+    assert "needs attention" in attempts[0]["subject"]
     assert caplog.text.count("will not retry") == 1
-    [email] = read_mock_emails(email_dir)
-    assert email["to"] == "user@example.org"
-    assert "1 ok" in email["body"]
+    emails = read_mock_emails(email_dir)
+    assert len(emails) == 2
+    assert all(email["to"] == "user@example.org" and "1 ok" in email["body"] for email in emails)
     assert list(app.model.context.scalars(select(model.Notification))) == []
     assert list(app.model.context.scalars(select(model.UserNotificationAssociation))) == []
-    assert [request.completed for request in app.model.context.scalars(select(model.ToolCompletionNotification))] == [
+    assert [request.completed for request in app.model.context.scalars(select(model.RunNotificationRequest))] == [
         True,
         True,
     ]
+
+
+@pytest.mark.parametrize("mapped", [False, True])
+def test_pause_resume_cycles_send_one_attention_and_one_completion(app, app_factory, manager, history, mapped):
+    request, jobs = request_notification(
+        history, ["paused", "running"] if mapped else ["paused"], mapped=mapped, populated="new" if mapped else "ok"
+    )
+    request_id = request.id
+    assert manager.check_and_notify(request_id)
+    [attention] = app.model.context.scalars(select(model.Notification)).all()
+    assert attention.content["event"] == "needs_attention"
+    assert attention.variant == "warning"
+    assert not request.completed
+    assert request.attention_sent
+    assert not manager.check_and_notify(request_id)
+
+    # Actual resume paths require no notification writes or resets.
+    jobs[0].resume()
+    assert not manager.check_and_notify(request_id)
+    jobs[0].state = "paused"
+    app.model.context.commit()
+    assert not manager.check_and_notify(request_id)
+    jobs[0].resume()
+    for job in jobs:
+        job.state = "ok"
+    app.model.context.commit()
+    if mapped:
+        assert not manager.check_and_notify(request_id)  # Population still owns the map.
+        request.implicit_collection_jobs.populated_state = "ok"
+        app.model.context.commit()
+    app.model.context.remove()
+    # A replacement process retains the attention marker and sends only the final event.
+    replacement = app_factory()
+    replacement_manager = replacement[RunNotificationManager]
+    assert replacement_manager.check_and_notify(request_id)
+    assert not replacement_manager.check_and_notify(request_id)
+    notifications = replacement.model.context.scalars(select(model.Notification).order_by(model.Notification.id)).all()
+    assert [notification.content["event"] for notification in notifications] == ["needs_attention", "completed"]
+    assert f"{len(jobs)} ok" in notifications[-1].content["message"]
+
+
+def request_workflow_notification(history, states):
+    request, jobs = request_notification(history, states, mapped=True)
+    group = request.implicit_collection_jobs
+    session = object_session(history)
+    assert session is not None
+    child_workflow = model.Workflow()
+    child_step = model.WorkflowStep()
+    child_step.type = "tool"
+    child_step.order_index = 0
+    child_workflow.steps.append(child_step)
+    child = model.WorkflowInvocation(workflow=child_workflow, history=history, state="ready")
+    child.steps.append(
+        model.WorkflowInvocationStep(workflow_step=child_step, state="scheduled", implicit_collection_jobs=group)
+    )
+    root_workflow = model.Workflow()
+    root_step = model.WorkflowStep()
+    root_step.type = "subworkflow"
+    root_step.order_index = 0
+    root_step.subworkflow = child_workflow
+    root_workflow.steps.append(root_step)
+    root = model.WorkflowInvocation(workflow=root_workflow, history=history, state="ready")
+    root.steps.append(model.WorkflowInvocationStep(workflow_step=root_step, state="scheduled"))
+    root.attach_subworkflow_invocation_for_step(root_step, child)
+    request.implicit_collection_jobs = None
+    request.workflow_invocation = root
+    session.add(root)
+    session.commit()
+    return request, jobs, root, child
+
+
+@pytest.mark.parametrize("state", ["failed", "cancelled"])
+def test_terminated_workflow_waits_for_created_jobs_but_not_unscheduled_descendants(app, manager, history, state):
+    request, jobs, root, child = request_workflow_notification(history, ["running"])
+    request_id = request.id
+    root.state = state
+    child.state = "new"
+    app.model.context.commit()
+    assert not manager.check_and_notify(request_id)
+    jobs[0].state = "error"
+    app.model.context.commit()
+    assert manager.check_and_notify(request_id)
+    [notification] = app.model.context.scalars(select(model.Notification)).all()
+    assert notification.content["event"] == "completed"
+    assert state in notification.content["subject"]
+    assert notification.variant == "warning"
+
+
+def test_nested_workflow_watch_outlives_completion_record_without_loading_mapped_jobs(app, manager, history):
+    request, jobs, root, child = request_workflow_notification(history, ["paused"] + ["running"] * 999)
+    session = app.model.context
+    request_id, root_id, child_id, paused_job_id, history_id = request.id, root.id, child.id, jobs[0].id, history.id
+    session.expunge_all()
+
+    def reject_job_load(session, instance):
+        assert not isinstance(instance, model.Job), "Run notifications must aggregate workflow jobs in SQL"
+
+    event.listen(session(), "loaded_as_persistent", reject_job_load)
+    try:
+        assert manager.check_and_notify(request_id)  # Scheduling has not finished yet.
+        assert not manager.check_and_notify(request_id)
+        session.execute(
+            update(model.Job)
+            .where(model.Job.history_id == history_id, model.Job.id != paused_job_id)
+            .values(state="ok")
+        )
+        session.execute(
+            update(model.WorkflowInvocation)
+            .where(model.WorkflowInvocation.id.in_([root_id, child_id]))
+            .values(state="scheduled")
+        )
+        session.commit()
+        completions = WorkflowCompletionManager(app)
+        assert completions.check_and_record_completion(child_id) is not None
+        completion = completions.check_and_record_completion(root_id)
+        assert completion is not None
+        completion.hooks_executed = ["send_notification", "export_to_file_source"]
+        session.commit()
+        completion_id = completion.id
+        assert completion.job_state_summary == {"ok": 999, "paused": 1}
+        assert not manager.check_and_notify(request_id)
+
+        session.execute(update(model.Job).where(model.Job.id == paused_job_id).values(state="running"))
+        session.commit()
+        assert not manager.check_and_notify(request_id)
+        session.execute(update(model.Job).where(model.Job.id == paused_job_id).values(state="paused"))
+        session.commit()
+        assert not manager.check_and_notify(request_id)
+        session.execute(update(model.Job).where(model.Job.id == paused_job_id).values(state="ok"))
+        session.commit()
+        assert manager.check_and_notify(request_id)
+        assert not manager.check_and_notify(request_id)
+        notifications = session.scalars(select(model.Notification).order_by(model.Notification.id)).all()
+        assert [n.content["event"] for n in notifications] == ["needs_attention", "completed"]
+        assert "ok: 1000" in notifications[-1].content["message"]
+        assert notifications[-1].content["invocation_id"] == app.security.encode_id(root_id)
+        # Completion hooks and their original snapshot are untouched.
+        assert completions.check_and_record_completion(root_id) is None
+        preserved = completions.get_completion(root_id)
+        assert preserved is not None
+        assert preserved.id == completion_id
+        assert preserved.hooks_executed == ["send_notification", "export_to_file_source"]
+        assert preserved.job_state_summary == {"ok": 999, "paused": 1}
+    finally:
+        event.remove(session(), "loaded_as_persistent", reject_job_load)

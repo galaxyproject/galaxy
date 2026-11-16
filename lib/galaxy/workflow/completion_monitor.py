@@ -116,7 +116,7 @@ class WorkflowCompletionMonitor(Monitors):
         session = self.app.model.context
         try:
             completion = self.completion_manager.check_and_record_completion(invocation_id, commit=False)
-            if completion and not self.app.config.enable_notification_system and self.app.config.smtp_server:
+            if completion and (self.app.config.enable_notification_system or self.app.config.smtp_server):
                 hook = self.hook_registry.get_hook("send_notification")
                 if isinstance(hook, SendNotificationHook) and hook.is_applicable(completion):
                     hook.execute(completion, commit=False)

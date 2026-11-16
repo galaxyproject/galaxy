@@ -25834,6 +25834,12 @@ export interface components {
              */
             category: "tool_execution_completed";
             /**
+             * Event
+             * @default completed
+             * @enum {string}
+             */
+            event: "needs_attention" | "completed";
+            /**
              * Implicit Collection Jobs Id
              * @description The encoded job group ID for a collection map-over.
              */
@@ -28546,6 +28552,12 @@ export interface components {
              * @enum {string}
              */
             category: "workflow_execution_completed";
+            /**
+             * Event
+             * @default completed
+             * @enum {string}
+             */
+            event: "needs_attention" | "completed";
             /**
              * Invocation Id
              * @description The encoded workflow invocation ID.

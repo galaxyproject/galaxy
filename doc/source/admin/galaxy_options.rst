@@ -5228,13 +5228,14 @@
 :Description:
     Time in seconds between workflow and tool completion monitor
     iterations. Workflow handlers check their assigned invocations and
-    trigger completion hooks, such as exports and notifications. When
-    notifications or SMTP are configured, one elected web process
-    checks tool completion requests. With SMTP configured, that
-    process also dispatches queued completion emails in a separate
-    thread at this interval. Each monitor checks up to 100 requests
-    per iteration, so large queues can take several iterations to
-    revisit a request. Float values are allowed.
+    trigger completion hooks, such as exports. When notifications or
+    SMTP are configured, one elected web process checks tool and
+    workflow runs that requested notifications, reporting when
+    attention is needed and when they finish. With SMTP configured,
+    that process also dispatches queued completion emails in a
+    separate thread at this interval. Each monitor checks up to 100
+    requests per iteration, so large queues can take several
+    iterations to revisit a request. Float values are allowed.
 :Default: ``5.0``
 :Type: float
 

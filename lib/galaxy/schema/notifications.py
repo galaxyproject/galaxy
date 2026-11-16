@@ -105,7 +105,11 @@ class MessageNotificationContent(MessageNotificationContentBase):
     category: Literal[PersonalNotificationCategory.message] = PersonalNotificationCategory.message
 
 
-class WorkflowCompletionNotificationContent(MessageNotificationContentBase):
+class RunNotificationContent(MessageNotificationContentBase):
+    event: Literal["needs_attention", "completed"] = "completed"
+
+
+class WorkflowCompletionNotificationContent(RunNotificationContent):
     # These IDs are encoded before storage. Keep them as strings to avoid encoding
     # them again when the notification is read through the API.
     invocation_id: str | None = Field(default=None, description="The encoded workflow invocation ID.")
@@ -114,7 +118,7 @@ class WorkflowCompletionNotificationContent(MessageNotificationContentBase):
     )
 
 
-class ToolCompletionNotificationContent(MessageNotificationContentBase):
+class ToolCompletionNotificationContent(RunNotificationContent):
     job_id: str | None = Field(default=None, description="The encoded job ID for a single tool execution.")
     implicit_collection_jobs_id: str | None = Field(
         default=None, description="The encoded job group ID for a collection map-over."

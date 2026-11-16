@@ -396,7 +396,7 @@ class TestMappedWorkflowCompletion:
         session.commit()
         return app, invocation
 
-    def test_email_enqueue_failure_does_not_lose_workflow_completion(self, mapped_invocation):
+    def test_notification_watch_registration_commits_with_workflow_completion(self, mapped_invocation):
         app, invocation = mapped_invocation
         app.config.enable_notification_system = False
         app.config.enable_celery_tasks = False
@@ -414,12 +414,12 @@ class TestMappedWorkflowCompletion:
         monitor = WorkflowCompletionMonitor(app, manager, WorkflowCompletionHookRegistry(app))
 
         def fail_insert(conn, cursor, statement, parameters, context, executemany):
-            if statement.startswith("INSERT INTO user_notification_association"):
-                raise RuntimeError("recipient insert failed")
+            if statement.startswith("INSERT INTO run_notification_request"):
+                raise RuntimeError("notification watch insert failed")
 
         event.listen(app.model.engine, "before_cursor_execute", fail_insert)
         try:
-            with pytest.raises(RuntimeError, match="recipient insert failed"):
+            with pytest.raises(RuntimeError, match="notification watch insert failed"):
                 monitor._check_invocation(invocation_id)
         finally:
             event.remove(app.model.engine, "before_cursor_execute", fail_insert)
@@ -432,8 +432,10 @@ class TestMappedWorkflowCompletion:
         completion = manager.get_completion(invocation_id)
         assert completion is not None
         assert completion.hooks_executed == ["send_notification"]
-        [email] = session.scalars(select(model.Notification)).all()
-        assert email.email_only
+        [request] = session.scalars(select(model.RunNotificationRequest)).all()
+        assert request.workflow_invocation_id == invocation_id
+        assert not request.completed
+        assert list(session.scalars(select(model.Notification))) == []
 
     def test_completion_and_summary_do_not_load_mapped_jobs(self, mapped_invocation):
         app, invocation = mapped_invocation

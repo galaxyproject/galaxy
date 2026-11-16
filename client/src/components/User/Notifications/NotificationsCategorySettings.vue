@@ -7,6 +7,11 @@ import { snakeCaseToTitleCase } from "@/utils/strings";
 
 import NotificationsChannelSettings from "./NotificationsChannelSettings.vue";
 
+const categoryLabelMap: Partial<Record<NotificationCategory, string>> = {
+    tool_execution_completed: "Tool runs",
+    workflow_execution_completed: "Workflow runs",
+};
+
 const categoryDescriptionMap: Partial<Record<NotificationCategory, string>> = {
     message: `
         You will receive these notifications only when your Galaxy administrators send you a message.
@@ -15,9 +20,9 @@ const categoryDescriptionMap: Partial<Record<NotificationCategory, string>> = {
     new_shared_item:
         "You will receive these notifications when someone shares an item with you i.e. a history, workflow, visualization, etc.",
     tool_execution_completed:
-        "Receive a notification when a tool run completes, with one summary for a collection. You can also change this preference on the tool form.",
+        "Receive a notification when a tool run needs attention and when it finishes, with one summary for a collection. You can also change this preference on the tool form.",
     workflow_execution_completed:
-        "Receive a notification when a workflow completes. You can also change this preference on the workflow run form.",
+        "Receive a notification when a workflow needs attention and when it finishes. You can also change this preference on the workflow run form.",
     storage_operation:
         "You will receive these notifications when a bulk storage operation completes (including failed outcomes).",
 };
@@ -55,7 +60,9 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
     <div>
         <div class="category-header">
             <BFormCheckbox v-model="isCategoryEnabled" v-g-tooltip.hover :title="checkBoxTitle" switch>
-                <span v-localize class="category-title">{{ snakeCaseToTitleCase(category) }}</span>
+                <span v-localize class="category-title">{{
+                    categoryLabelMap[category] ?? snakeCaseToTitleCase(category)
+                }}</span>
             </BFormCheckbox>
         </div>
 

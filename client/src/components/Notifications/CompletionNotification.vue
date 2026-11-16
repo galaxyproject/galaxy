@@ -25,7 +25,7 @@ const enabled = computed(
     () => isConfigLoaded.value && (notificationsEnabled.value || config.value.server_mail_configured),
 );
 const category = computed(() => (props.kind === "tool" ? "tool_execution_completed" : "workflow_execution_completed"));
-const buttonLabel = computed(() => `Completion notifications: ${props.value ? "on" : "off"} for this run`);
+const buttonLabel = computed(() => `Run notifications: ${props.value ? "on" : "off"} for this run`);
 const trigger = ref<InstanceType<typeof GButton>>();
 const settings = ref<UserNotificationPreferences["workflow_execution_completed"]>();
 const emailSupported = ref(false);
@@ -111,7 +111,7 @@ watch(enabled, (value) => {
             :target="() => trigger"
             triggers="click"
             placement="bottomright"
-            title="Completion notifications"
+            title="Run notifications"
             custom-class="completion-notification-popover"
             @shown="loadPreferences">
             <div class="completion-notification-settings">
@@ -120,9 +120,9 @@ watch(enabled, (value) => {
                     :model-value="props.value"
                     data-test-id="send-notification-checkbox"
                     @update:model-value="emit('input', $event)">
-                    {{ notificationsEnabled ? "Notify me" : "Email me when finished" }}
+                    {{ notificationsEnabled ? "Notify me" : "Email me" }}
                 </GCheckbox>
-                <p class="text-muted mt-1 mb-3">For this run only.</p>
+                <p class="text-muted mt-1 mb-3">When this run needs attention or finishes.</p>
                 <template v-if="notificationsEnabled">
                     <h3 class="h6">Delivery settings</h3>
                     <p v-if="busy && !settings" role="status">Loading delivery settings…</p>

@@ -28,6 +28,7 @@ class TestToolCompletionNotifications(IntegrationTestCase):
         config["email_from"] = "galaxy-noreply@example.com"
         config["smtp_server"] = f"mock_emails_to_path://{cls.email_dir}"
         config["enable_notification_system"] = True
+        config["enable_quotas"] = True
         config["metadata_strategy"] = "extended"
         config["workflow_completion_monitor_sleep"] = 0.1
 
@@ -92,6 +93,79 @@ class TestToolCompletionNotifications(IntegrationTestCase):
             assert email["to"] == self._get("users/current").json()["email"]
             assert "3 ok" in email["body"]
             assert f"?id={history_id}" in email["body"]
+
+    @pytest.mark.parametrize("workflow", [False, True])
+    def test_quota_pause_then_resume_sends_attention_and_completion(self, workflow):
+        with self.dataset_populator.test_history() as history_id:
+            hdca = self.collection_populator.create_list_in_history(
+                history_id, contents=["first dataset\n", "second dataset\n"], wait=True
+            ).json()["outputs"][0]
+            quota = self.dataset_populator.create_quota(
+                {
+                    "name": f"pause-notifications-{history_id}",
+                    "description": "Pause this user's jobs until the quota is removed",
+                    "amount": "1 bytes",
+                    "operation": "=",
+                    "default": "no",
+                    "in_users": [self._get("users/current").json()["email"]],
+                    "in_groups": [],
+                }
+            )
+            try:
+                if workflow:
+                    workflows = WorkflowPopulator(self.galaxy_interactor)
+                    workflow_id = workflows.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+                    response = workflows.invoke_workflow(
+                        workflow_id,
+                        history_id=history_id,
+                        inputs={"input1": {"src": "hdca", "id": hdca["id"]}},
+                        inputs_by="name",
+                        request={"on_complete": [{"send_notification": {}}]},
+                    )
+                    response.raise_for_status()
+                    invocation_id = response.json()["id"]
+                    link = f"/workflows/invocations/{invocation_id}"
+                else:
+                    self.dataset_populator.run_tool(
+                        "cat1",
+                        {
+                            "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"]}]},
+                            "send_notification": True,
+                        },
+                        history_id,
+                    )
+                    link = f"?id={history_id}"
+
+                def run_notifications():
+                    return [
+                        notification
+                        for notification in self._get("notifications").json()
+                        if link in notification["content"].get("message", "")
+                    ]
+
+                [attention] = wait_on(lambda: run_notifications() or None, "paused run notification")
+                assert attention["content"]["event"] == "needs_attention"
+                paused_jobs = wait_on(
+                    lambda: [
+                        job
+                        for job in self._get("jobs", data={"history_id": history_id}).json()
+                        if job["state"] == "paused"
+                    ]
+                    or None,
+                    "quota-paused jobs",
+                )
+            finally:
+                self._delete(f"quotas/{quota['id']}", data={"purge": "true"}, admin=True, json=True).raise_for_status()
+            for job in paused_jobs:
+                self._put(f"jobs/{job['id']}/resume").raise_for_status()
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            notifications = wait_on(
+                lambda: (items if len(items := run_notifications()) == 2 else None),
+                "resumed run completion notification",
+            )
+            assert sorted(n["content"]["event"] for n in notifications) == ["completed", "needs_attention"]
+            completed = next(n for n in notifications if n["content"]["event"] == "completed")
+            assert ("ok: 2" if workflow else "2 ok") in completed["content"]["message"]
 
     def _set_email_delivery(self, enabled):
         response = self._put(
