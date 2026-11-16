@@ -899,21 +899,6 @@ class CountTable(Tabular):
         U68600  1       1       0
         U68591  1       1       0
         U68647  1       0       1
-
-        Empty count tables (e.g. written by ``chimera.uchime``) have no header line at all
-        and must not fail metadata detection:
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> from galaxy.util.bunch import Bunch
-        >>> dataset = Bunch()
-        >>> dataset.metadata = Bunch()
-        >>> dataset.get_file_name = lambda: get_test_fname( 'empty.txt' )
-        >>> dataset.has_data = lambda: True
-        >>> CountTable().set_meta(dataset)
-        >>> dataset.metadata.columns
-        0
-        >>> dataset.metadata.column_types
-        []
         """
         super().__init__(**kwd)
         self.column_names = ["name", "total"]

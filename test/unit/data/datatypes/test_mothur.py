@@ -30,8 +30,10 @@ def _dataset(tmp_path, content):
     return dataset
 
 
-def test_count_table_set_meta_empty(tmp_path):
-    dataset = _dataset(tmp_path, "")
+@pytest.mark.parametrize("content", ["", "\n"], ids=["empty", "blank_line"])
+def test_count_table_set_meta_empty(tmp_path, content):
+    """Empty count tables (e.g. from chimera.uchime) have no header line."""
+    dataset = _dataset(tmp_path, content)
     CountTable().set_meta(dataset)
     assert dataset.metadata.columns == 0
     assert dataset.metadata.column_types == []
