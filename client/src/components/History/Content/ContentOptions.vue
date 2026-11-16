@@ -109,7 +109,7 @@ function onDisplay($event: MouseEvent) {
 </script>
 
 <template>
-    <span class="align-self-start btn-group align-items-baseline">
+    <span class="align-self-start btn-group align-items-center">
         <!-- Special case for collections -->
         <GButton
             v-if="isCollection && canShowCollectionDetails"
@@ -174,7 +174,7 @@ function onDisplay($event: MouseEvent) {
                 size="sm"
                 variant="link"
                 no-caret
-                toggle-class="p-0 m-0"
+                toggle-class="p-0 m-0 d-flex align-items-center"
                 :aria-label="localize('Delete')">
                 <template v-slot:button-content>
                     <FontAwesomeIcon :icon="faTrash" />
