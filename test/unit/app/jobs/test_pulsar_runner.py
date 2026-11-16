@@ -610,39 +610,11 @@ resubmit_for_detected_state = AsynchronousJobRunner._resubmit_for_detected_state
 check_output_for_resubmission = PulsarJobRunner._check_output_for_resubmission
 
 
-@pytest.mark.parametrize(
-    "detected_state,expected_runner_state",
-    [
-        (DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR, JobState.runner_states.MEMORY_LIMIT_REACHED),
-        (DETECTED_JOB_STATE.GENERIC_ERROR, JobState.runner_states.TOOL_DETECT_ERROR),
-    ],
-)
-def test_tool_detected_failures_reach_resubmission(detected_state, expected_runner_state):
-    job_state = _failing_job_state()
-    runner = _tool_failure_runner(job_state, handled=True)
-    assert resubmit_for_detected_state(runner, job_state, detected_state) is True
-    assert job_state.runner_state == expected_runner_state
-    runner._handle_runner_state.assert_called_once_with("failure", job_state)
-
-
-def test_unhandled_tool_failure_finishes_normally():
-    job_state = _failing_job_state()
-    runner = _tool_failure_runner(job_state, handled=False)
-    assert resubmit_for_detected_state(runner, job_state, DETECTED_JOB_STATE.GENERIC_ERROR) is False
-
-
 def test_successful_tool_is_not_resubmitted():
     job_state = _failing_job_state()
     runner = _tool_failure_runner(job_state, handled=True)
     assert resubmit_for_detected_state(runner, job_state, DETECTED_JOB_STATE.OK) is False
     runner._handle_runner_state.assert_not_called()
-
-
-def test_destination_without_resubmit_skips_output_check():
-    job_state = _failing_job_state()
-    job_state.job_destination.resubmit = []
-    assert check_output_for_resubmission(MagicMock(), job_state, RESULT) is None
-    job_state.job_wrapper.check_tool_output.assert_not_called()
 
 
 def test_job_already_finished_is_not_resubmitted():

@@ -3,6 +3,8 @@
 import os
 from decimal import Decimal
 
+import yaml
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from .resubmission_rules.rules import UNMAPPABLE_RESUBMISSION_MESSAGE
@@ -380,6 +382,30 @@ class TestJobResubmissionEmbeddedPulsarToolDetectedErrorIntegration(_BaseResubmi
             assert job["state"] == "ok"
             assert job["exit_code"] == 0
             self._assert_resubmission_count(history_id, 1)
+
+    def test_resubmit_on_oom_exit_code(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._assert_job_passes("exit_code_oom", history_id=history_id)
+            self._assert_resubmission_count(history_id, 1)
+
+
+class TestJobResubmissionEmbeddedPulsarUnmatchedToolErrorIntegration(_BaseResubmissionIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        with open(JOB_RESUBMISSION_EMBEDDED_PULSAR_JOB_CONFIG_FILE) as fh:
+            job_config = yaml.safe_load(fh)
+        job_config["execution"]["default"] = "pulsar_unmatched_tool_error"
+        config["job_config"] = job_config
+
+    def test_tool_error_without_matching_resubmit_condition_fails(self):
+        with self.dataset_populator.test_history() as history_id:
+            run = self.dataset_populator.run_tool("exit_code_from_env", {"input": 5}, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+            job = self.dataset_populator.get_job_details(run["jobs"][0]["id"], full=True).json()
+            assert job["state"] == "error"
+            assert job["exit_code"] == 4
+            assert [message["exit_code"] for message in job["job_messages"]] == [4]
 
 
 class TestJobResubmissionUnmappableIntegration(_BaseResubmissionIntegrationTestCase):

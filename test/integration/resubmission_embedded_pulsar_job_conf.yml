@@ -22,3 +22,23 @@ execution:
       env:
         - name: GX_TARGET_EXIT_CODE
           value: "0"
+    pulsar_small_memory:
+      runner: pulsar_embed
+      env:
+        - name: GALAXY_MEMORY_MB
+          value: "4"
+      resubmit:
+        - condition: memory_limit_reached
+          environment: pulsar_good
+    pulsar_unmatched_tool_error:
+      runner: pulsar_embed
+      env:
+        - name: GX_TARGET_EXIT_CODE
+          value: "4"
+      resubmit:
+        - condition: memory_limit_reached
+          environment: pulsar_good
+
+tools:
+  - id: exit_code_oom
+    environment: pulsar_small_memory
