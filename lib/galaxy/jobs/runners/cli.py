@@ -30,6 +30,16 @@ DEFAULT_EMBED_METADATA_IN_JOB = True
 MAX_SUBMIT_RETRY = 3
 
 
+def failure_reason_from_output(job_interface, stdout: str, external_job_id: str) -> tuple[str | None, str | None]:
+    """Return the registered runner state and the message for the user that a failure reason command reported."""
+    runner_state = job_interface.parse_failure_reason(stdout, external_job_id)
+    message = job_interface.parse_failure_message(stdout, external_job_id)
+    definition = RUNNER_STATE_DEFINITIONS.get(runner_state)
+    if definition is None:
+        return None, message
+    return definition.value, message or definition.fail_message
+
+
 class ShellJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
@@ -212,17 +222,14 @@ class ShellJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         shell, job_interface = self.get_cli_plugins(shell_params, job_params)
         cmd_out = shell.execute(job_interface.get_failure_reason(external_job_id))
         if cmd_out is not None:
-            reported_jobstate = job_interface.parse_failure_reason(cmd_out.stdout, external_job_id)
-            definition = RUNNER_STATE_DEFINITIONS.get(reported_jobstate)
-            message = job_interface.parse_failure_message(cmd_out.stdout, external_job_id)
-            if definition:
-                ajs.runner_state = reported_jobstate
-                message = message or definition.fail_message
+            runner_state, message = failure_reason_from_output(job_interface, cmd_out.stdout, external_job_id)
+            if runner_state:
+                ajs.runner_state = runner_state
                 log.info(
                     "(%s/%s) Job failed with runner state: %s",
                     ajs.job_wrapper.get_id_tag(),
                     ajs.job_id,
-                    definition.value,
+                    runner_state,
                 )
             if message:
                 ajs.fail_message = message
