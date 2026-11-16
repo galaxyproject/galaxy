@@ -36,6 +36,28 @@ JOB_RESUBMISSION_UNMAPPABLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "re
 
 class _BaseResubmissionIntegrationTestCase(integration_util.IntegrationTestCase):
     framework_tool_and_types = True
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def _job_metrics(self, history_id):
+        jobs = self.dataset_populator.history_jobs(history_id=history_id)
+        assert len(jobs) == 1
+        job_metrics = self.dataset_populator._get(f"/api/jobs/{jobs[0]['id']}/metrics").json()
+        assert job_metrics
+        return job_metrics
+
+    def _assert_resubmission_count(self, history_id, expected_count):
+        job_metrics = self._job_metrics(history_id)
+        resubmission_metric = next(metric for metric in job_metrics if metric["name"] == "resubmission_count")
+        assert resubmission_metric["plugin"] == "core"
+        assert resubmission_metric["title"] == "Resubmission Count"
+        assert resubmission_metric["value"] == str(expected_count)
+        # raw_value is the metric's numeric column rendered as a string, so its shape follows
+        # the database: PostgreSQL yields "1.0000000" for a count of one. Compare numerically.
+        assert Decimal(resubmission_metric["raw_value"]) == expected_count
 
     def _assert_job_passes(self, tool_id="exit_code_oom", resource_parameters=None, history_id=None):
         resource_parameters = resource_parameters or {}
@@ -54,11 +76,6 @@ class _BaseResubmissionIntegrationTestCase(integration_util.IntegrationTestCase)
 
 class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
     framework_tool_and_types = True
-    dataset_populator: DatasetPopulator
-
-    def setUp(self):
-        super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -71,23 +88,6 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
         config["job_metrics"] = [{"type": "core"}]
         # Can't set job_metrics_config_file to None as default location will be used otherwise
         config["job_metrics_config_file"] = "xxx.xml"
-
-    def _job_metrics(self, history_id):
-        jobs = self.dataset_populator.history_jobs(history_id=history_id)
-        assert len(jobs) == 1
-        job_metrics = self.dataset_populator._get(f"/api/jobs/{jobs[0]['id']}/metrics").json()
-        assert job_metrics
-        return job_metrics
-
-    def _assert_resubmission_count(self, history_id, expected_count):
-        job_metrics = self._job_metrics(history_id)
-        resubmission_metric = next(metric for metric in job_metrics if metric["name"] == "resubmission_count")
-        assert resubmission_metric["plugin"] == "core"
-        assert resubmission_metric["title"] == "Resubmission Count"
-        assert resubmission_metric["value"] == str(expected_count)
-        # raw_value is the metric's numeric column rendered as a string, so its shape follows
-        # the database: PostgreSQL yields "1.0000000" for a count of one. Compare numerically.
-        assert Decimal(resubmission_metric["raw_value"]) == expected_count
 
     def _assert_resubmission_metric_not_displayed(self, history_id):
         """A count of zero is recorded, but the formatter keeps it out of what the API returns."""
@@ -369,12 +369,17 @@ class TestJobResubmissionEmbeddedPulsarToolDetectedErrorIntegration(_BaseResubmi
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_EMBEDDED_PULSAR_JOB_CONFIG_FILE
+        config["job_metrics"] = [{"type": "core"}]
+        config["job_metrics_config_file"] = "xxx.xml"
 
     def test_resubmit_on_tool_detected_error(self):
-        # the tool test assumes that the test fails (expect_failure="true")
-        # _assert_job_fails checks if this test fails, i.e. the tool is running
-        # successfully after the resubmit
-        self._assert_job_fails("exit_code_from_env")
+        with self.dataset_populator.test_history() as history_id:
+            run = self.dataset_populator.run_tool("exit_code_from_env", {"input": 5}, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            job = self.dataset_populator.get_job_details(run["jobs"][0]["id"]).json()
+            assert job["state"] == "ok"
+            assert job["exit_code"] == 0
+            self._assert_resubmission_count(history_id, 1)
 
 
 class TestJobResubmissionUnmappableIntegration(_BaseResubmissionIntegrationTestCase):
