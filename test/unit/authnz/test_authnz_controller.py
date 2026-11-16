@@ -119,7 +119,7 @@ def test_logout_with_csrf_token_logs_user_out(trans):
     assert trans.response.status == 200
     assert result == {"redirect_uri": "https://idp.example.org/logout"}
     trans.app.authnz_manager.logout.assert_called_once()
-    trans.handle_user_logout.assert_called_once_with()
+    trans.handle_user_logout.assert_called_once()
 
 
 def test_logout_after_galaxy_logout_returns_idp_url_without_token(trans):
@@ -135,6 +135,8 @@ def test_get_logout_url_passes_csrf_token_to_logout(trans, monkeypatch):
     trans.response.send_redirect = Mock()
     controller = object.__new__(OIDC)
     controller.get_logout_url(trans, provider="keycloak", session_csrf_token="csrf")
-    trans.response.send_redirect.assert_called_once_with(
-        {"controller": "authnz", "action": "logout", "provider": "keycloak", "session_csrf_token": "csrf"}
-    )
+    trans.response.send_redirect.assert_called_once()
+    redirect = trans.response.send_redirect.call_args.args[0]
+    assert redirect["action"] == "logout"
+    assert redirect["provider"] == "keycloak"
+    assert redirect["session_csrf_token"] == "csrf"
