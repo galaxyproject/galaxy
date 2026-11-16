@@ -39,7 +39,7 @@ describe("TrsTool", () => {
                     description: "",
                     organization: "org",
                     versions: [
-                        { id: "id-1", name: "1.0" },
+                        { id: "#workflow/example:1.0", name: "1.0" },
                         { id: "id-2", name: "2.0" },
                     ],
                 },
@@ -55,6 +55,6 @@ describe("TrsTool", () => {
         await select.trigger("change");
         await flushPromises();
 
-        expect(wrapper.emitted("onSelect")).toEqual([["id-2"], ["id-1"]]);
+        expect(wrapper.emitted("onSelect")).toEqual([["id-2"], ["1.0"]]);
     });
 });
