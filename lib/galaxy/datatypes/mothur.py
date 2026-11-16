@@ -26,13 +26,13 @@ from galaxy.util import unicodify
 log = logging.getLogger(__name__)
 
 # The first column of an otu/list/sabund/rabund file is a mothur label: either the
-# literal 'unique' or a distance cutoff such as 0.03. It is never a plain integer, which
-# is what distinguishes these formats from a generic table of numbers at sniff time.
-MOTHUR_LABEL_RE = re.compile(r"^(?:unique|\d*\.\d+)$")
+# literal 'unique', a distance cutoff such as 0.03, or a taxonomy level such as 1
+# (written by phylotype).
+MOTHUR_LABEL_RE = re.compile(r"^(?:unique|\d+|\d*\.\d+)$")
 
 
 def is_mothur_label(value: str) -> bool:
-    """Return True if value can be a mothur label, i.e. 'unique' or a distance cutoff.
+    """Return True if value can be a mothur label: 'unique', a distance cutoff or a taxonomy level.
 
     >>> is_mothur_label( 'unique' )
     True
@@ -41,13 +41,15 @@ def is_mothur_label(value: str) -> bool:
     >>> is_mothur_label( '1.00' )
     True
     >>> is_mothur_label( '1' )
+    True
+    >>> is_mothur_label( '1.5' )
     False
     >>> is_mothur_label( 'Otu01' )
     False
     """
     if not MOTHUR_LABEL_RE.match(value):
         return False
-    return value == "unique" or float(value) <= 1
+    return value == "unique" or value.isdigit() or float(value) <= 1
 
 
 @build_sniff_from_prefix

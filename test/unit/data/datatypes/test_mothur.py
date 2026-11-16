@@ -8,7 +8,9 @@ from galaxy.datatypes.mothur import (
     CountTable,
     GroupAbund,
     LowerTriangleDistanceMatrix,
+    Otu,
     PairwiseDistanceMatrix,
+    Sabund,
     SffFlow,
     SquareDistanceMatrix,
 )
@@ -75,3 +77,18 @@ def test_distance_matrix_sniff_empty(tmp_path, datatype):
     path = tmp_path / "input"
     path.write_text("")
     assert datatype.sniff(str(path)) is False
+
+
+PHYLOTYPE_SABUND = "1\t3\t0\t1\t2\n2\t3\t1\t0\t2\n3\t4\t2\t1\t0\t1\n"
+PHYLOTYPE_LIST = "label\tnumOtus\tOtu1\tOtu2\n1\t2\tseqA,seqB\tseqC\n2\t2\tseqA\tseqB,seqC\n3\t2\tseqA\tseqB,seqC\n"
+
+
+@pytest.mark.parametrize(
+    "datatype, content",
+    [(Sabund(), PHYLOTYPE_SABUND), (Otu(), PHYLOTYPE_SABUND), (Otu(), PHYLOTYPE_LIST)],
+    ids=["sabund", "otu_no_heading", "list"],
+)
+def test_sniff_phylotype_integer_labels(tmp_path, datatype, content):
+    path = tmp_path / "input"
+    path.write_text(content)
+    assert datatype.sniff(str(path)) is True
