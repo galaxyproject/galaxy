@@ -1,5 +1,6 @@
 import gzip
 import ipaddress
+import os
 
 import pytest
 from sqlalchemy import select
@@ -8,8 +9,11 @@ from galaxy.files import ConfiguredFileSources
 from galaxy.files.models import FileSourcePluginsConfig
 from galaxy.files.unittest_utils import TestPosixConfiguredFileSources
 from galaxy.model import (
+    Dataset,
     DatasetCollection,
     DatasetCollectionElement,
+    DatasetHash,
+    DatasetSource,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
@@ -19,6 +23,7 @@ from galaxy.model.deferred import (
     materialize_collection_instance,
     materializer_factory,
 )
+from galaxy.model.dereference import get_replacement_dataset
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
     deferred_hda_model_store_dict_space_to_tab,
@@ -88,6 +93,86 @@ def test_deferred_hdas_basic_attached(bed_2_uri, file_sources):
     assert path
     _assert_path_contains_2_bed(path)
     _assert_2_bed_metadata(materialized_hda)
+
+
+def test_in_place_materialization_from_replacement_owns_metadata_files(tmpdir):
+    app, replacement, deferred = _deferred_bam_with_replacement(tmpdir)
+
+    materializer = materializer_factory(True, object_store=app.object_store)
+    materialized = materializer.ensure_materialized(deferred, in_place=True)
+
+    assert materialized is deferred
+    _assert_materialized_from_replacement_owns_its_index(materialized, replacement)
+
+
+def test_materialization_from_replacement_owns_metadata_files(tmpdir):
+    app, replacement, deferred = _deferred_bam_with_replacement(tmpdir)
+
+    materializer = materializer_factory(True, object_store=app.object_store)
+    materialized = materializer.ensure_materialized(deferred)
+
+    assert materialized is not deferred
+    _assert_materialized_from_replacement_owns_its_index(materialized, replacement)
+
+
+def test_purged_hda_is_not_a_replacement(tmpdir):
+    app, replacement, deferred = _deferred_bam_with_replacement(tmpdir)
+    session = app.model.session
+
+    def find_replacement():
+        return get_replacement_dataset(
+            session=session,
+            user=deferred.history.user,
+            dataset_sources=deferred.dataset.sources,
+            dataset_hashes=deferred.dataset.hashes,
+            extension=deferred.extension,
+            object_store_id=replacement.dataset.object_store_id,
+        )
+
+    assert find_replacement() is replacement
+    # pgcleanup's purge_deleted_hdas purges the HDA and removes its metadata files, but keeps a Dataset other HDAs use.
+    replacement.deleted = True
+    replacement.purged = True
+    session.commit()
+    assert not replacement.dataset.purged
+    assert find_replacement() is None
+
+
+def _deferred_bam_with_replacement(tmpdir):
+    """A deferred BAM and an OK BAM with the same source and hash, which materialization reuses."""
+    app, sa_session, user, history = setup_fixture_context_with_history()
+    bam_path = tmpdir.join("1.bam")
+    bam_path.write("moo")
+    replacement = _create_hda(sa_session, app.object_store, history, bam_path, include_metadata_file=True)
+    replacement.dataset.state = Dataset.states.OK
+    _set_source(replacement.dataset)
+    deferred = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=sa_session)
+    assert deferred.dataset is not None
+    deferred.dataset.state = Dataset.states.DEFERRED
+    _set_source(deferred.dataset)
+    history.add_dataset(deferred)
+    sa_session.commit()
+    return app, replacement, deferred
+
+
+def _set_source(dataset: Dataset) -> None:
+    dataset.sources = [DatasetSource(source_uri="https://example.org/1.bam")]
+    dataset.hashes = [DatasetHash(hash_function="SHA-1", hash_value="abc")]
+
+
+def _assert_materialized_from_replacement_owns_its_index(
+    materialized: HistoryDatasetAssociation, replacement: HistoryDatasetAssociation
+) -> None:
+    assert materialized.dataset is replacement.dataset
+    assert materialized.metadata_deferred is False
+    replacement_index = replacement.metadata.bam_index
+    materialized_index = materialized.metadata.bam_index
+    assert materialized_index.history_dataset is materialized
+    assert materialized_index.id != replacement_index.id
+    # Purging the replacement removes the files its rows name; the materialized input keeps its own.
+    os.remove(replacement_index.get_file_name())
+    with open(materialized_index.get_file_name()) as fh:
+        assert fh.read() == "moo"
 
 
 def test_hash_validate(bed_2_uri, file_sources):
