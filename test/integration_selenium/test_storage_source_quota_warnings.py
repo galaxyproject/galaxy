@@ -31,6 +31,13 @@ class TestStorageSourceQuotaWarningsSeleniumIntegration(SeleniumIntegrationTestC
         )
         response.raise_for_status()
 
+    def _wait_for_texts(self, target, condition, description):
+        def texts_meeting_condition(driver=None):
+            texts = [element.text for element in target.all()]
+            return texts if condition(texts) else None
+
+        return self._wait_on_custom(texts_meeting_condition, description)
+
     @selenium_test
     @managed_history
     def test_warns_about_other_source_over_quota(self):
@@ -42,8 +49,12 @@ class TestStorageSourceQuotaWarningsSeleniumIntegration(SeleniumIntegrationTestC
         self.home()
         masthead = self.components.masthead
         masthead.other_storage_over_quota.wait_for_visible()
-        warning = self.components.history_panel.other_sources_over_quota.wait_for_text()
-        assert "Second Tier Storage" in warning
+        # The storage names load after the usage, so the warning shows the raw source label first
+        self._wait_for_texts(
+            self.components.history_panel.other_sources_over_quota,
+            lambda texts: any("Second Tier Storage" in text for text in texts),
+            "over quota warning to name Second Tier Storage",
+        )
 
         # The popover has to stay open while the pointer moves onto its button
         self.hover(masthead.storage_dashboard_link.wait_for_visible())
@@ -56,8 +67,9 @@ class TestStorageSourceQuotaWarningsSeleniumIntegration(SeleniumIntegrationTestC
 
         masthead.storage_dashboard_button.wait_for_and_click()
         labels = self.components.storage_dashboard.source_label
-        labels.wait_for_visible()
-        assert "Second Tier Storage" in [label.text for label in labels.all()]
+        self._wait_for_texts(
+            labels, lambda texts: "Second Tier Storage" in texts, "storage dashboard to list Second Tier Storage"
+        )
 
     @selenium_test
     def test_anonymous_user_is_offered_login(self):
