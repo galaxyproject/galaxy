@@ -92,3 +92,10 @@ def test_sniff_phylotype_integer_labels(tmp_path, datatype, content):
     path = tmp_path / "input"
     path.write_text(content)
     assert datatype.sniff(str(path)) is True
+
+
+@pytest.mark.parametrize("datatype", [LowerTriangleDistanceMatrix(), SquareDistanceMatrix()])
+def test_distance_matrix_sniff_zero_count(tmp_path, datatype):
+    path = tmp_path / "input"
+    path.write_text("0\n")
+    assert datatype.sniff(str(path)) is False

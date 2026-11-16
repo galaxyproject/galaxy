@@ -468,9 +468,8 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
                         sequence_count = int("".join(line))
                     except ValueError:
                         return False
-                    # exceptions raised by a sniffer are treated as "no match", so this
-                    # assertion is equivalent to returning False (see datatypes/sniff.py)
-                    assert sequence_count > 0
+                    if sequence_count <= 0:
+                        return False
                 else:
                     # number of fields should equal the line number
                     if len(line) != (line_num):
@@ -482,9 +481,6 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
                     except ValueError:
                         return False
                 line_num += 1
-
-        if line_num == 0:
-            return False
 
         # check if the number of lines in the file was as expected
         if line_num == sequence_count + 1 or line_num == numlines + 1:
@@ -539,9 +535,8 @@ class SquareDistanceMatrix(DistanceMatrix):
                         sequence_count = int("".join(line))
                     except ValueError:
                         return False
-                    # exceptions raised by a sniffer are treated as "no match", so this
-                    # assertion is equivalent to returning False (see datatypes/sniff.py)
-                    assert sequence_count > 0
+                    if sequence_count <= 0:
+                        return False
                 else:
                     # number of fields should equal the number of sequences
                     if len(line) != sequence_count + 1:
@@ -553,9 +548,6 @@ class SquareDistanceMatrix(DistanceMatrix):
                     except ValueError:
                         return False
                 line_num += 1
-
-        if line_num == 0:
-            return False
 
         # check if the number of lines in the file was as expected
         if line_num == sequence_count + 1 or line_num == numlines + 1:
