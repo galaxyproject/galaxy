@@ -78,6 +78,9 @@ const activityBarStub = defineComponent({
 function editorStubs() {
     return {
         ActivityBar: activityBarStub,
+        // The real textarea, so the save-as tests go through bootstrap-vue's value/update v-model.
+        // An auto-stub wouldn't carry its legacy compatConfig and would take modelValue instead.
+        BFormTextarea: false,
         WorkflowGraph: {
             template: "<div />",
             props: ["datatypesMapper"],
@@ -410,10 +413,7 @@ describe("Index", () => {
             mockSaveWorkflow.mockResolvedValue({ version: 1 });
 
             wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
-            // vue-test-utils' auto-stub for `BFormTextarea` doesn't carry bootstrap-vue's
-            // legacy compatConfig, so with COMPONENT_V_MODEL off globally the stub takes
-            // v-model as modelValue / update:modelValue (the real component keeps value/update).
-            wrapper.findComponent(BFormTextarea).vm.$emit("update:modelValue", "A description");
+            await wrapper.findComponent(BFormTextarea).find("textarea").setValue("A description");
             await nextTick();
 
             wrapper.findComponent<typeof GModal>("[data-description='save-as-modal']").vm.$emit("ok");
@@ -447,8 +447,7 @@ describe("Index", () => {
 
         it("resets save-as fields when the modal is cancelled", async () => {
             wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
-            wrapper.findComponent(BFormTextarea).vm.$emit("update:modelValue", "A description");
-            await nextTick();
+            await wrapper.findComponent(BFormTextarea).find("textarea").setValue("A description");
 
             expect(wrapper.findComponent(GFormInput).props("modelValue")).toBe("My New Workflow");
 
@@ -456,8 +455,7 @@ describe("Index", () => {
             await nextTick();
 
             expect(wrapper.findComponent(GFormInput).props("modelValue")).toBeNull();
-            // The stub only declares BFormTextarea's own props (`value`), so modelValue is an attr.
-            expect(wrapper.findComponent({ name: "BFormTextarea" }).vm.$attrs.modelValue).toBeNull();
+            expect(wrapper.findComponent(BFormTextarea).find("textarea").element.value).toBe("");
         });
 
         it("prevents navigation only if hasChanges", async () => {
