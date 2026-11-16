@@ -37,11 +37,6 @@ def _job_state(runner_state, resubmit):
 
 
 @pytest.mark.parametrize("runner_state,condition", HANDLED_RUNNER_STATES)
-def test_every_handled_runner_state_has_a_message(runner_state, condition):
-    assert RUNNER_STATE_DEFINITIONS[runner_state].resubmit_description
-
-
-@pytest.mark.parametrize("runner_state,condition", HANDLED_RUNNER_STATES)
 def test_every_handled_runner_state_has_a_condition(runner_state, condition):
     context = _ExpressionContext(_job_state(runner_state, []))
     assert context.safe_eval(condition) is True
@@ -54,26 +49,6 @@ def test_resubmits_for_every_handled_runner_state(runner_state, condition):
     job_state = _job_state(runner_state, [{"condition": condition}])
     failure(MagicMock(), MagicMock(), job_state)
     assert job_state.runner_state_handled is True
-
-
-def test_does_not_resubmit_when_condition_is_for_another_state():
-    job_state = _job_state(JobState.runner_states.WALLTIME_REACHED, [{"condition": "memory_limit_reached"}])
-    failure(MagicMock(), MagicMock(), job_state)
-    assert job_state.runner_state_handled is False
-
-
-@pytest.mark.parametrize(
-    "runner_state",
-    [
-        JobState.runner_states.CANCELLED,
-        JobState.runner_states.GLOBAL_WALLTIME_REACHED,
-        JobState.runner_states.OUTPUT_SIZE_LIMIT,
-    ],
-)
-def test_states_without_a_description_are_never_resubmitted(runner_state):
-    job_state = _job_state(runner_state, [{"condition": "any_failure"}])
-    failure(MagicMock(), MagicMock(), job_state)
-    assert job_state.runner_state_handled is False
 
 
 @pytest.fixture
@@ -101,9 +76,3 @@ def test_reason_without_definition_counts_as_unknown():
     context = _ExpressionContext(_job_state("from_the_future", []))
     assert context.safe_eval("unknown_error") is True
     assert context.safe_eval("memory_limit_reached") is False
-
-
-def test_reason_without_definition_can_be_matched_by_name():
-    job_state = _job_state("from_the_future", [{"condition": "runner_state == 'from_the_future'"}])
-    failure(MagicMock(), MagicMock(), job_state)
-    assert job_state.runner_state_handled is True

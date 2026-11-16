@@ -178,6 +178,51 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
             }
         )
 
+    def test_node_failure_and_preemption_resubmission(self):
+        for failure_state in ("node_failure", "preempted"):
+            self._assert_job_passes(
+                resource_parameters={
+                    "test_name": f"test_{failure_state}_resubmission",
+                    "initial_target_environment": "fail_first_node_failure_or_preempted",
+                    "failure_state": failure_state,
+                }
+            )
+
+    def test_cancelled_is_never_resubmitted(self):
+        self._assert_job_fails(
+            resource_parameters={
+                "test_name": "test_cancelled_is_never_resubmitted",
+                "initial_target_environment": "fail_first_any_failure",
+                "failure_state": "cancelled",
+            }
+        )
+
+    def test_unknown_error_does_not_match_classified_reasons(self):
+        self._assert_job_fails(
+            resource_parameters={
+                "test_name": "test_unknown_error_does_not_match_node_failure",
+                "initial_target_environment": "fail_first_unknown_error_only",
+                "failure_state": "node_failure",
+            }
+        )
+        # A reason Galaxy has no definition for, e.g. from a newer Pulsar, still counts as unknown.
+        self._assert_job_passes(
+            resource_parameters={
+                "test_name": "test_unknown_error_matches_undefined_reason",
+                "initial_target_environment": "fail_first_unknown_error_only",
+                "failure_state": "from_the_future",
+            }
+        )
+
+    def test_undefined_reason_matched_by_runner_state(self):
+        self._assert_job_passes(
+            resource_parameters={
+                "test_name": "test_undefined_reason_matched_by_runner_state",
+                "initial_target_environment": "fail_first_runner_state_by_name",
+                "failure_state": "from_the_future",
+            }
+        )
+
     def test_condition_attempt(self):
         self._assert_job_fails(
             resource_parameters={
