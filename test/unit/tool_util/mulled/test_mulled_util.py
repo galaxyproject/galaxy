@@ -1,9 +1,12 @@
 import pytest
 
 from galaxy.tool_util.deps.mulled.util import (
+    get_files_from_conda_package,
     quay_repositories,
     version_sorted,
 )
+from galaxy.util.unittest_utils import skip_on_network_error
+from ..util import external_dependency_management
 
 
 def test_quay_repositories_paginates(mocker):
@@ -37,3 +40,19 @@ def test_quay_repositories_paginates(mocker):
 )
 def test_version_sorted(tags, tag):
     assert version_sorted(tags)[0] == tag
+
+
+@external_dependency_management
+@skip_on_network_error
+def test_get_files_from_conda_package():
+    content_dict = get_files_from_conda_package(
+        "https://anaconda.org/conda-forge/chopin2/1.0.6/download/noarch/chopin2-1.0.6-pyhd8ed1ab_0.tar.bz2",
+        ["info/recipe/meta.yaml"],
+    )
+    assert "info/recipe/meta.yaml" in content_dict, content_dict
+    assert isinstance(content_dict["info/recipe/meta.yaml"], bytes)
+    content_dict = get_files_from_conda_package(
+        "https://anaconda.org/conda-forge/chopin2/1.0.7/download/noarch/chopin2-1.0.7-pyhd8ed1ab_1.conda",
+        ["info/about.json", "info/recipe/meta.yaml", "foo/bar"],
+    )
+    assert sorted(content_dict.keys()) == ["info/about.json", "info/recipe/meta.yaml"], content_dict

@@ -93,12 +93,14 @@ def test_find_anaconda_download_url():
 
 
 @external_dependency_management
+@skip_on_network_error
 def test_open_recipe_file():
     recipe = open_recipe_file("recipes/samtools/1.1/meta.yaml")
     assert b"samtools" in recipe
 
 
 @external_dependency_management
+@skip_on_network_error
 def test_get_alternative_versions():
     try:
         versions = get_alternative_versions("recipes/bioblend", "meta.yaml")
@@ -110,6 +112,7 @@ def test_get_alternative_versions():
 
 
 @external_dependency_management
+@skip_on_network_error
 def test_deep_test_search():
     tests = deep_test_search("abundancebin:1.0.1--0")
     assert tests["commands"] == ["command -v abundancebin", 'abundancebin &> /dev/null || [[ "$?" == "255" ]]']
@@ -126,6 +129,7 @@ def test_main_test_search():
 
 
 @external_dependency_management
+@skip_on_network_error
 def test_hashed_test_search():
     tests = hashed_test_search(
         "mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa:c17ce694dd57ab0ac1a2b86bb214e65fedef760e-0"
