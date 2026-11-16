@@ -29,6 +29,7 @@ from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEn
 from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_NESTED_OUTPUT,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL,
@@ -56,6 +57,9 @@ class: GalaxyWorkflow
 name: Sub-workflow with a tool this server lacks
 inputs:
   inner_input: data
+outputs:
+  workflow_output:
+    outputSource: not_installed/out_file1
 steps:
   not_installed:
     tool_id: cat_missing_tool
@@ -994,7 +998,7 @@ steps:
         self._assert_nested_workflow_num_lines_is(post_upgrade_native, "20")
 
     def test_subworkflow_upgrade_to_workflow_using_a_missing_tool(self):
-        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_OUTPUT)
         stored_workflow = self._most_recent_stored_workflow
         self.workflow_populator.upload_yaml_workflow(SUBWORKFLOW_WITH_MISSING_TOOL)
         replacement = self._most_recent_stored_workflow.latest_workflow
@@ -1005,10 +1009,21 @@ steps:
                 "content_id": self._app.security.encode_id(replacement.id),
             }
         ]
-        self._refactor(actions, stored_workflow=stored_workflow)
+        action_executions = self._refactor(actions, stored_workflow=stored_workflow).action_executions
+        assert action_executions[0].messages == []
         self._app.model.session.expire_all()
-        nested_step = next(s for s in stored_workflow.latest_workflow.steps if s.label == "nested_workflow")
+        workflow = stored_workflow.latest_workflow
+        nested_step = workflow.step_by_label("nested_workflow")
         assert nested_step.subworkflow.id == replacement.id
+        [inner_connection] = nested_step.input_connections
+        assert inner_connection.input_subworkflow_step.label == "inner_input"
+        assert inner_connection.output_step.label == "first_cat"
+        assert [o.label for o in nested_step.workflow_outputs] == ["nested_output"]
+        second_cat_connections = workflow.step_by_label("second_cat").input_connections
+        assert {(c.input_name, c.output_step.label, c.output_name) for c in second_cat_connections} == {
+            ("input1", "nested_workflow", "workflow_output"),
+            ("queries_0|input2", "nested_workflow", "workflow_output"),
+        }
 
     def test_subworkflow_upgrade_keeps_connections_when_inputs_are_reordered(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_TWO_INPUTS)
