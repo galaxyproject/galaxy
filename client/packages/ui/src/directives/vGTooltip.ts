@@ -11,7 +11,7 @@
  *   Menus:     hidden while a menu toggle (aria-haspopup) owned by the element is expanded
  *
  * Value forms:
- *   v-g-tooltip                           → reads element's title attribute
+ *   v-g-tooltip                           → reads element's title attribute, or an icon's own <title> element
  *   v-g-tooltip="'text'"                  → string content
  *   v-g-tooltip="{ title, placement }"    → object config (title optional, falls back to :title)
  *   v-g-tooltip="{ title, show }"         → also shows/hides whenever `show` changes (like b-tooltip :show)
@@ -153,8 +153,8 @@ function getContent(el: HTMLElement, bindingValue: unknown): string {
     if (typeof bindingValue === "object" && bindingValue !== null && "title" in bindingValue) {
         return String((bindingValue as { title: string }).title || "");
     }
-    // Fall back to the element's title attribute, cached because the native tooltip is suppressed while shown.
-    const title = el.getAttribute("title");
+    // Fall back to the element's title, cached because the native tooltip is suppressed while shown.
+    const title = el.getAttribute("title") || getIconTitle(el)?.textContent;
     if (title) {
         el.dataset.gTooltipTitle = title;
     }
@@ -257,15 +257,31 @@ function showTooltip(el: HTMLElement) {
     state.cleanupAutoUpdate = autoUpdate(el, state.tooltipEl, () => updatePosition(el, state));
 }
 
+/** The `<title>` element of an icon, which Font Awesome renders instead of a title attribute. */
+function getIconTitle(el: HTMLElement): SVGTitleElement | null {
+    return el instanceof SVGElement ? el.querySelector(":scope > title") : null;
+}
+
 function suppressNativeTooltip(el: HTMLElement) {
     if (el.hasAttribute("title")) {
         el.setAttribute("title", "");
     }
+    const iconTitle = getIconTitle(el);
+    if (iconTitle) {
+        iconTitle.textContent = "";
+    }
 }
 
 function restoreNativeTooltip(el: HTMLElement) {
-    if (el.dataset.gTooltipTitle) {
-        el.setAttribute("title", el.dataset.gTooltipTitle);
+    const title = el.dataset.gTooltipTitle;
+    if (!title) {
+        return;
+    }
+    const iconTitle = getIconTitle(el);
+    if (iconTitle) {
+        iconTitle.textContent = title;
+    } else {
+        el.setAttribute("title", title);
     }
 }
 
