@@ -25,8 +25,7 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const POLL_DELAY = 3000;
-// Well inside the shortest storage duration a server is likely to use, so a reused link still works.
-const REUSE_FOR_MS = 60 * 60 * 1000;
+const MAX_REUSE_MS = 60 * 60 * 1000;
 
 interface Export {
     storageRequestId: string;
@@ -62,6 +61,11 @@ const noun = computed(() => (item.value?.contentType === "dataset_collection" ? 
 const linkLifetime = computed(
     () => formatDurationSeconds(config.value?.short_term_storage_effective_duration) ?? "24 hours",
 );
+// Half the lifetime when that is shorter, so a reused link still works.
+const reuseForMs = computed(() => {
+    const lifetime = config.value?.short_term_storage_effective_duration;
+    return lifetime > 0 ? Math.min(MAX_REUSE_MS, lifetime * 500) : MAX_REUSE_MS;
+});
 const shown = computed(() => (item.value ? exports.get(keyOf(item.value)) : undefined));
 // The export task's own state, not the storage's: a failed export still marks its storage ready.
 const link = computed(() =>
@@ -137,7 +141,7 @@ async function startExport(exportable: ExportableItem) {
         return;
     }
     const existing = exports.get(key);
-    if (existing && !existing.monitor.hasFailed.value && Date.now() - existing.startedAt < REUSE_FOR_MS) {
+    if (existing && !existing.monitor.hasFailed.value && Date.now() - existing.startedAt < reuseForMs.value) {
         if (existing.monitor.requestHasFailed.value) {
             existing.monitor.waitForTask(existing.taskId, POLL_DELAY);
         }
@@ -206,7 +210,7 @@ onUnmounted(() => exports.forEach((entry) => entry.monitor.stopWaitingForTask())
                     </GButton>
                 </BInputGroupAppend>
             </BInputGroup>
-            <p class="mt-2">
+            <p class="mt-2" data-description="galaxy export link warning">
                 Anyone with this link can download this {{ noun }} without logging in, until the link expires (usually
                 after {{ linkLifetime }}). It can't be withdrawn before then.
             </p>
