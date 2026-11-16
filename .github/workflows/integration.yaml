@@ -183,10 +183,22 @@ jobs:
       - name: Install Python
         run: uv python install
       - name: Download mulled resolution cache seed
+        id: download-mulled-seed
+        # The artifact expires after a day, which would fail "Re-run failed jobs"
+        # later on, as that does not re-run the prepare job.
+        continue-on-error: true
         uses: actions/download-artifact@v8
         with:
           name: mulled-resolution-cache-seed
           path: '${{ runner.temp }}/mulled-resolution-seed'
+      - name: Create fallback seed
+        if: steps.download-mulled-seed.outcome == 'failure'
+        env:
+          SEED_DIRECTORY: '${{ runner.temp }}/mulled-resolution-seed'
+        run: |
+          echo '::warning::Could not download the mulled resolution cache seed, integration tests run without a seeded mulled resolution cache'
+          mkdir -p "$SEED_DIRECTORY"
+          echo '{"namespace":"biocontainers","repositories":[]}' > "$SEED_DIRECTORY/biocontainers.json"
       - name: Install Apptainer's singularity
         uses: './galaxy root/.github/actions/install_apptainer'
       - name: Run tests
