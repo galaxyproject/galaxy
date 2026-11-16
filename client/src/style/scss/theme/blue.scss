@@ -121,6 +121,8 @@ $code-color: #c2266e;
 // Color of input elements
 $input-color: $text-color;
 $input-color-placeholder: $text-muted;
+// galaxy-ui input border (3:1 on white and side panels); the fallback covers entries without tokens.css
+$input-border-color: var(--color-input, #63656d);
 
 // Galaxy Variables (not used by bootstrap)
 $body-bg: $white;
