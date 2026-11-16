@@ -145,13 +145,6 @@ async function mountDatasetView(tab = "preview", options = {}) {
                 props: ["datasetId", "visualization", "visualizationParams"],
             },
         },
-        mocks: {
-            $store: {
-                state: {
-                    config: {},
-                },
-            },
-        },
     });
 
     await flushPromises();
@@ -189,13 +182,6 @@ async function mountLoadingDatasetView({ pendingFetch = true } = {}) {
             BLink: true,
             GTabs: true,
             GTab: true,
-        },
-        mocks: {
-            $store: {
-                state: {
-                    config: {},
-                },
-            },
         },
     });
 
