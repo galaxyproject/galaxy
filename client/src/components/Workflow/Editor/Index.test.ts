@@ -632,6 +632,18 @@ describe("Index", () => {
             expect(stepLabels()).toEqual(["second refactor"]);
         });
 
+        it("keeps tags set after a refactor when undoing it", async () => {
+            const { wrapper } = await mountWithSteps(1);
+            const undoRedoStore = useUndoRedoStore("workflow_id");
+            await refactorTo(wrapper, "refactored", 2);
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("tags", ["kept"]);
+
+            undoRedoStore.undo();
+            await nextTick();
+            expect(stepLabels()).toEqual(["step 0"]);
+            expect(wrapper.findComponent(WorkflowAttributes).props("tags")).toEqual(["kept"]);
+        });
+
         it("replays edits made after a refactor when rolling the history over it", async () => {
             const { wrapper } = await mountWithSteps(1);
             const undoRedoStore = useUndoRedoStore("workflow_id");

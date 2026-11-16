@@ -682,7 +682,8 @@ function restoreWorkflowState(data: Workflow) {
     stateStore.activeNodeId = null;
     stateStore.clearStepMultiSelection();
     fromSimple(id.value, restored);
-    applyWorkflowAttributes(restored);
+    // Tags are saved on the server as they change and are not part of undo history.
+    applyWorkflowAttributes({ ...restored, tags: tags.value });
     hideErrorModal();
 
     adjustForCoordinateShift(transformBefore, boundsBefore);
