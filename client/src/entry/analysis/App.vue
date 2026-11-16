@@ -1,5 +1,5 @@
 <template>
-    <div id="app" :style="theme">
+    <div :style="theme">
         <div id="everything">
             <div id="background" />
             <template v-if="!embedded">
