@@ -6,7 +6,6 @@ import abc
 import datetime
 import os
 from collections import defaultdict
-from contextlib import suppress
 from queue import (
     Empty,
     Queue,
@@ -312,10 +311,26 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         job = self.sa_session.get(model.Job, id)
         assert job is not None
         job_wrapper = self.job_wrapper(job, use_persisted_destination=True)
-        # resubmits are not persisted, this job can only resubmit with the configured ones
-        with suppress(KeyError):
-            job_wrapper.job_destination.resubmit = self.app.job_config.get_destination(job.destination_id).resubmit
+        self._restore_unpersisted_destination_fields(job, job_wrapper.job_destination)
         return job, job_wrapper
+
+    def _restore_unpersisted_destination_fields(self, job: model.Job, job_destination: JobDestination) -> None:
+        """Add back what a persisted destination lacks from the job config, e.g. its resubmit rules."""
+        if job.destination_id is None:
+            return
+        try:
+            config_job_destination = self.app.job_config.get_destination(job.destination_id)
+        except KeyError:
+            log.debug(
+                "(%s) Recovered destination id (%s) does not exist in job config (but this may be normal in the case of a dynamically generated destination)",
+                job.id,
+                job.destination_id,
+            )
+            return
+        # resubmits are not persisted (it's a good thing)
+        job_destination.resubmit = config_job_destination.resubmit
+        job_destination.env = config_job_destination.env
+        job_destination.tags = config_job_destination.tags
 
     def __check_jobs_at_startup(self):
         """
@@ -389,19 +404,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         # Use the persisted destination as its params may differ from
         # what's in the job config
         job_destination = JobDestination(runner=job.job_runner_name, from_job=job)
-        # resubmits are not persisted (it's a good thing) so they
-        # should be added back to the in-memory destination on startup
-        try:
-            config_job_destination = self.app.job_config.get_destination(job.destination_id)
-            job_destination.resubmit = config_job_destination.resubmit
-            job_destination.env = config_job_destination.env
-            job_destination.tags = config_job_destination.tags
-        except KeyError:
-            log.debug(
-                "(%s) Recovered destination id (%s) does not exist in job config (but this may be normal in the case of a dynamically generated destination)",
-                job.id,
-                job.destination_id,
-            )
+        self._restore_unpersisted_destination_fields(job, job_destination)
         if resubmit:
             # On resubmit pickup, route through the mapper so dynamic
             # destinations (including chains) are walked fresh. This is what
