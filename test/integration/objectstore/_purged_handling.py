@@ -1,22 +1,44 @@
 import os
-import time
+from collections.abc import Callable
+from typing import Optional
 
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    wait_on,
+)
 
 
-def purge_while_job_running(dataset_populator: DatasetPopulator, extra_sleep=0):
+def purge_while_job_running(
+    dataset_populator: DatasetPopulator,
+    sleep_param: int = 5,
+    job_working_directory: Optional[Callable[[str], str]] = None,
+):
+    """Purge the outputs of a running ``all_output_types`` job.
+
+    With remote tool evaluation the command line is templated inside the running job,
+    and templating fails if the outputs are purged first. Pass ``job_working_directory``
+    (mapping an encoded job id to its working directory) to wait for that.
+    """
     with dataset_populator.test_history() as history_id:
         response = dataset_populator.run_tool(
             "all_output_types",
             inputs={
-                "sleep_param": 5 + extra_sleep,
+                "sleep_param": sleep_param,
             },
             history_id=history_id,
         )
         job = dataset_populator.get_job_details(response["jobs"][0]["id"], full=True).json()
         # Make sure job runs (and thus command is templated before purging output)
         dataset_populator.wait_for_job(job["id"], ok_states=["running"])
-        time.sleep(extra_sleep)
+        if job_working_directory:
+            tool_script = os.path.join(job_working_directory(job["id"]), "tool_script.sh")
+
+            def command_templated():
+                with open(tool_script) as fh:
+                    # galaxy.json is the last argument of the tool's command
+                    return "galaxy.json" in fh.read() or None
+
+            wait_on(command_templated, "remote tool evaluation to template the command line")
         hda_ids = []
         hda_filenames = []
         for output_name, output in job["outputs"].items():
