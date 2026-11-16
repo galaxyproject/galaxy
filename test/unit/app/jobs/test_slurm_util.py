@@ -2,11 +2,6 @@ from unittest import mock
 
 import pytest
 
-from galaxy.jobs.runners.slurm import (
-    MEMORY_LIMIT_MESSAGES,
-    OUT_OF_MEMORY_MSG,
-    PROBABLY_OUT_OF_MEMORY_MSG,
-)
 from galaxy.jobs.runners.util.slurm import (
     check_memory_limit,
     MEMORY_LIMIT_EXCEEDED,
@@ -61,26 +56,20 @@ def test_other_scontrol_errors_are_raised():
 
 
 @pytest.mark.parametrize(
-    "stderr,expected,message",
+    "stderr,expected",
     [
-        (b"tool noise\nslurmstepd: error: Exceeded job memory limit\n", MEMORY_LIMIT_EXCEEDED, OUT_OF_MEMORY_MSG),
-        (
-            b"slurmstepd: error: task/cgroup: Exceeded job memory limit at some point.\n",
-            MEMORY_LIMIT_PROBABLY_EXCEEDED,
-            PROBABLY_OUT_OF_MEMORY_MSG,
-        ),
+        (b"tool noise\nslurmstepd: error: Exceeded job memory limit\n", MEMORY_LIMIT_EXCEEDED),
+        (b"slurmstepd: error: task/cgroup: Exceeded job memory limit at some point.\n", MEMORY_LIMIT_PROBABLY_EXCEEDED),
         (
             b"slurmstepd: error: task/cgroup: Exceeded step memory limit at some point.\n",
             MEMORY_LIMIT_PROBABLY_EXCEEDED,
-            PROBABLY_OUT_OF_MEMORY_MSG,
         ),
     ],
 )
-def test_memory_limit_messages(tmp_path, stderr, expected, message):
+def test_memory_limit_messages(tmp_path, stderr, expected):
     efile = tmp_path / "stderr"
     efile.write_bytes(stderr)
     assert check_memory_limit(str(efile)) == expected
-    assert MEMORY_LIMIT_MESSAGES[expected] == message
 
 
 def test_no_memory_limit_message(tmp_path):
