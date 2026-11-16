@@ -471,6 +471,7 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         dry_run = replace(url, dry_run=True)
         self._assert_status_code_is(dry_run, 200)
         assert dry_run.json()["changed"]
+        assert workflow_count() == count
         replace(url).raise_for_status()
         assert workflow_count() == count + 1
         imported_id = self._subworkflow_step_workflow_id(workflow_id)
