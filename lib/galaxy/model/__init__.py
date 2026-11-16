@@ -6586,7 +6586,10 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
 
             # hist.deleted holds old value(s)
             changes[attr.key] = hist.deleted
-        if changes and self.update_time and self.state == self.states.OK and not self.deleted:
+        # An HDA flushed before it joined its history (a copied MetadataFile needs the HDA's id) has no
+        # earlier version worth keeping.
+        joins_history = any(changes.get(key) and changes[key][0] is None for key in ("history_id", "hid"))
+        if changes and not joins_history and self.update_time and self.state == self.states.OK and not self.deleted:
             # We only record changes to HDAs that exist in the database and have a update_time
             new_values = {}
             new_values["name"] = changes.get("name", self.name)
@@ -6608,8 +6611,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
         # in the history (e.g. during job finishing).
         old_dataset = self.dataset
         copies = self._lock_and_load_copies()
-        if include_metadata:
-            self._metadata = other_hda._metadata
         self.metadata_deferred = other_hda.metadata_deferred
         self.info = other_hda.info
         self.blurb = other_hda.blurb
@@ -6623,6 +6624,16 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
         if include_tags and self.history:
             self.copy_tags_from(self.user, other_hda)
         self.dataset = new_dataset or other_hda.dataset
+        # A cached job's structured collection output is copied as a job output and again as a collection element.
+        already_copied = (
+            old_dataset is self.dataset
+            and other_hda.id is not None
+            and self.copied_from_history_dataset_association_id == other_hda.id
+        )
+        if include_metadata and not already_copied:
+            # Copy metadata files into rows this HDA owns, as HDA.copy() does: purging other_hda removes
+            # the files its rows name. Copying needs the extension and dataset set above.
+            self.metadata = other_hda.metadata
         self.copied_from_history_dataset_association_id = other_hda.id
         for copied_hda in copies:
             # A copy made by a database operation tool is usually a hidden collection element.
@@ -11733,33 +11744,45 @@ class MetadataFile(Base, StorableObject, Serializable):
         da = self.history_dataset or self.library_dataset
         return da.dataset if da is not None else None
 
-    def update_from_file(self, file_name):
+    def update_from_file(self, file_name: str | None):
         if not self.dataset:
             raise Exception("Attempted to write MetadataFile, but no DatasetAssociation set")
         if not self.dataset.purged:
-            self.dataset.object_store.update_from_file(
+            object_store, alt_name = self._object_store_and_alt_name()
+            if file_name is None:
+                # The file is already at its object store path. Without a cache sync this is a path lookup.
+                file_name = object_store.get_filename(
+                    self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name, sync_cache=False
+                )
+            # create=True makes the object if it is missing. Asking for the file name first would check for
+            # it twice more, and on a caching object store download the object this call replaces.
+            object_store.update_from_file(
                 self,
                 file_name=file_name,
+                create=True,
                 extra_dir="_metadata_files",
                 extra_dir_at_root=True,
-                alt_name=os.path.basename(self.get_file_name()),
+                alt_name=alt_name,
             )
+
+    def _object_store_and_alt_name(self) -> tuple["BaseObjectStore", str]:
+        da = self.history_dataset or self.library_dataset
+        assert da is not None
+        assert da.dataset is not None
+        if self.object_store_id is None:
+            self.object_store_id = da.dataset.object_store_id
+        object_store = da.dataset.object_store
+        assert object_store is not None
+        store_by = object_store.get_store_by(da.dataset)
+        if store_by == "id" and self.id is None:
+            self.flush()  # type: ignore[unreachable]
+        identifier = getattr(self, store_by)
+        return object_store, f"metadata_{identifier}.dat"
 
     def get_file_name(self, sync_cache: bool = True, auth: ObjectStoreAuth | None = None) -> str:
         # Ensure the directory structure and the metadata file object exist
         try:
-            da = self.history_dataset or self.library_dataset
-            assert da is not None
-            assert da.dataset is not None
-            if self.object_store_id is None:
-                self.object_store_id = da.dataset.object_store_id
-            object_store = da.dataset.object_store
-            assert object_store is not None
-            store_by = object_store.get_store_by(da.dataset)
-            if store_by == "id" and self.id is None:
-                self.flush()  # type: ignore[unreachable]
-            identifier = getattr(self, store_by)
-            alt_name = f"metadata_{identifier}.dat"
+            object_store, alt_name = self._object_store_and_alt_name()
             if not object_store.exists(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name):
                 object_store.create(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name)
             path = object_store.get_filename(
