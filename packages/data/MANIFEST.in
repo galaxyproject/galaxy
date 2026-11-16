@@ -403,6 +403,8 @@ include src/galaxy/datatypes/test/2.cram
 include src/galaxy/datatypes/test/2.shuffled.unsorted.bam
 include src/galaxy/datatypes/test/hexrd.eta_ome.npz
 include src/galaxy/datatypes/test/1_1119_2_22_001.textgrid
+include src/galaxy/datatypes/test/example.srt
+include src/galaxy/datatypes/test/example.vtt
 include src/galaxy/datatypes/test/mothur_datatypetest_true.mothur.filter
 include src/galaxy/datatypes/test/3.fastq
 include src/galaxy/datatypes/test/affy_v_agcc.cel
