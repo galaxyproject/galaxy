@@ -512,6 +512,18 @@ def test_malformed_runner_state_is_logged_and_ignored(caplog):
     assert "malformed runner state" in caplog.text
 
 
+@pytest.mark.parametrize("runner_state", [42, ["memory_limit_reached"], {"state": "oom"}])
+def test_non_string_runner_state_is_logged_and_ignored(runner_state, caplog):
+    job_state = SimpleNamespace(job_id="1", runner_state=None)
+    with caplog.at_level(logging.WARNING):
+        message = pulsar_runner._apply_remote_runner_state(
+            cast(AsynchronousJobState, job_state), {"status": "failed", "runner_state": runner_state}
+        )
+    assert job_state.runner_state is None
+    assert message is None
+    assert "malformed runner state" in caplog.text
+
+
 def test_runner_state_message_is_preferred_over_the_definition():
     job_state = _failing_job_state()
     full_status = {

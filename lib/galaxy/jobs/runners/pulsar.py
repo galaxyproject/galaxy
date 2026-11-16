@@ -1545,8 +1545,8 @@ def _apply_remote_runner_state(job_state: AsynchronousJobState, full_status: dic
     runner_state = full_status.get("runner_state")
     if runner_state is None:
         return message
-    definition = RUNNER_STATE_DEFINITIONS.get(runner_state)
-    if definition is None and not REMOTE_RUNNER_STATE.fullmatch(runner_state):
+    definition = RUNNER_STATE_DEFINITIONS.get(runner_state) if isinstance(runner_state, str) else None
+    if definition is None and not (isinstance(runner_state, str) and REMOTE_RUNNER_STATE.fullmatch(runner_state)):
         log.warning("(%s) Ignoring malformed runner state from Pulsar: %s", job_state.job_id, runner_state)
         return message
     job_state.runner_state = runner_state
