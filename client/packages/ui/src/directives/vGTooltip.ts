@@ -27,7 +27,7 @@ import {
     shift,
 } from "@floating-ui/dom";
 import purify from "dompurify";
-import type { DirectiveBinding, ObjectDirective, VNode } from "vue";
+import type { DirectiveBinding, ObjectDirective } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, useDelayedAction } from "../utils/tooltipTiming";
 
@@ -146,19 +146,17 @@ function getShow(bindingValue: unknown): boolean | undefined {
     return undefined;
 }
 
-function getContent(el: HTMLElement, bindingValue: unknown, vnode?: VNode): string {
+function getContent(el: HTMLElement, bindingValue: unknown): string {
     if (typeof bindingValue === "string" && bindingValue) {
         return bindingValue;
     }
     if (typeof bindingValue === "object" && bindingValue !== null && "title" in bindingValue) {
         return String((bindingValue as { title: string }).title || "");
     }
-    // Fall back to element's title attribute.
-    // Also check the vnode's props for components with inheritAttrs: false (e.g. BFormCheckbox)
-    // where :title doesn't land on the root DOM element.
-    const title = el.getAttribute("title") || vnode?.props?.title || null;
+    // Fall back to the element's title attribute, cached because the native tooltip is suppressed while shown.
+    const title = el.getAttribute("title");
     if (title) {
-        el.dataset.gTooltipTitle = String(title);
+        el.dataset.gTooltipTitle = title;
     }
     return el.dataset.gTooltipTitle || "";
 }
@@ -376,8 +374,8 @@ function getHtmlLabel(contentEl: HTMLElement): string {
     return (copy.textContent || "").replace(/\s+/g, " ").trim();
 }
 
-function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipState, vnode?: VNode) {
-    const content = getContent(el, bindingValue, vnode);
+function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipState) {
+    const content = getContent(el, bindingValue);
     if (state.isHtml) {
         state.contentEl.innerHTML = purify.sanitize(content);
     } else {
@@ -410,7 +408,7 @@ function getLabelTarget(el: HTMLElement) {
 }
 
 export const vGTooltip: ObjectDirective<HTMLElement> = {
-    mounted(el, binding, vnode) {
+    mounted(el, binding) {
         const modifiers = binding.modifiers || {};
         const isDanger = !!modifiers["v-danger"];
         const isHtml = !!modifiers.html;
@@ -452,18 +450,18 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
         };
 
         stateMap.set(el, state);
-        updateContent(el, binding.value, state, vnode);
+        updateContent(el, binding.value, state);
         if (getShow(binding.value)) {
             showTooltip(el);
         }
     },
 
-    updated(el, binding, vnode) {
+    updated(el, binding) {
         const state = stateMap.get(el);
         if (!state) {
             return;
         }
-        updateContent(el, binding.value, state, vnode);
+        updateContent(el, binding.value, state);
         state.placement = getPlacement(binding.modifiers || {}, binding.value);
 
         // Only act on a change, so re-renders don't close a tooltip the user opened by hovering
