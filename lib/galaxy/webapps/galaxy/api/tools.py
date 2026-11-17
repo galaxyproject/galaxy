@@ -95,7 +95,7 @@ PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
-ICON_CACHE_MAX_AGE = 2592000  # 30 days
+ICON_CACHE_MAX_AGE = 86400  # 1 day
 
 
 class FormDataApiRoute(APIContentTypeRoute):
