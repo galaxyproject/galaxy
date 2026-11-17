@@ -579,7 +579,11 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                         <div class="invocation-row-layout">
                             <InvocationRowSummary :invocation="item">
                                 <template v-slot:actions>
-                                    <GButton size="small" color="blue" @click="viewInvocation(item)">
+                                    <GButton
+                                        size="small"
+                                        color="blue"
+                                        data-description="view invocation button"
+                                        @click="viewInvocation(item)">
                                         <FontAwesomeIcon :icon="faEye" />
                                         {{ localize("View invocation") }}
                                     </GButton>

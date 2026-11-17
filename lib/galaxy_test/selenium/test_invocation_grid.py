@@ -117,6 +117,57 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
         self._assert_showing_n_invocations(0)
         invocations.column_filter_toggle(key="workflow_id").wait_for_visible()
 
+    @selenium_test
+    def test_filter_by_status(self):
+        history_id = self.dataset_populator.new_history()
+        self.workflow_populator.run_workflow(WORKFLOW_RENAME_ON_INPUT, history_id=history_id, wait=True)
+        cancelled = self.workflow_populator.run_workflow(WORKFLOW_RENAME_ON_INPUT, history_id=history_id, wait=False)
+        self.workflow_populator.cancel_invocation(cancelled.invocation_id)
+        self.navigate_to_invocations_grid()
+        invocations = self.components.invocations
+        self._assert_showing_n_invocations(2)
+
+        invocations.status_group_button(group="inactive").wait_for_and_click()
+        self._assert_showing_n_invocations(1)
+        self.screenshot("invocations_status_filter_inactive")
+        invocations.status_group_button(group="problem").wait_for_and_click()
+        self._assert_showing_n_invocations(0)
+        # clicking the active button again clears the filter
+        invocations.status_group_button(group="problem").wait_for_and_click()
+        self._assert_showing_n_invocations(2)
+
+    @selenium_test
+    def test_expanded_row(self):
+        history_id = self.dataset_populator.new_history()
+        self.workflow_populator.run_workflow(WORKFLOW_RENAME_ON_INPUT, history_id=history_id, wait=True)
+        self.navigate_to_invocations_grid()
+        invocations = self.components.invocations
+        self._assert_showing_n_invocations(1)
+        invocations.toggle_row_details.wait_for_and_click()
+        invocations.expanded_row_summary.wait_for_visible()
+        timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
+        invocations.graph_node_state(label="first_cat", state="ok").wait_for_present(timeout=timeout)
+        # the summary grows as the invocation's details load, moving the graph below it
+        self._assert_expanded_row_summary_contains("1 ok")
+        self.screenshot("invocations_expanded_row")
+
+        # a clicked graph step opens in a modal, and closing it deselects the step so it can open again
+        for _ in range(2):
+            self.components.workflow_editor.node._(label="first_cat").title.wait_for_and_click()
+            invocations.step_card_modal.wait_for_visible()
+            invocations.step_card_modal_close.wait_for_and_click()
+            invocations.step_card_modal.wait_for_absent()
+
+        # the row is still expanded after viewing the invocation and coming back
+        invocations.expanded_row_view_button.wait_for_and_click()
+        invocations.state_details.wait_for_visible()
+        self.execute_script("window.history.back();")
+        invocations.expanded_row_summary.wait_for_visible()
+
+    @retry_assertion_during_transitions
+    def _assert_expanded_row_summary_contains(self, text):
+        assert text in self.components.invocations.expanded_row_summary.wait_for_visible().text
+
     @retry_assertion_during_transitions
     def _assert_n_elements(self, component, n):
         assert len(component.all()) == n
