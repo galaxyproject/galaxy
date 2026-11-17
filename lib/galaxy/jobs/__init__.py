@@ -2472,6 +2472,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 metadata_directory = os.path.join(self.working_directory, "metadata")
                 # The job writes this model store, so it may only edit the job's own outputs. User-defined tools
                 # can't link their outputs to server files or move them to another object store either.
+                # Unregistered extensions are set to data, with a job message, by _set_unknown_output_extensions_to_data.
                 user_defined_tool = bool(job.dynamic_tool and job.dynamic_tool.tool_format == "GalaxyUserTool")
                 import_options = store.ImportOptions(
                     allow_dataset_object_edit=True,
@@ -2484,6 +2485,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     datasets_attrs_at_job_setup=store.load_datasets_attrs_by_id(
                         os.path.join(metadata_directory, "outputs_new")
                     ),
+                    keep_unregistered_extensions=True,
                 )
                 import_model_store = store.get_import_model_store_for_directory(
                     os.path.join(metadata_directory, "outputs_populated"),
