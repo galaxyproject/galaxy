@@ -302,6 +302,7 @@ def test_wait_for_job_returns_when_job_is_ok(interactor, mocked):
 
 
 def _query_as_server_decodes_it(request: requests.PreparedRequest) -> dict[str, list[str]]:
+    assert request.url
     return parse_qs(urlsplit(request.url).query)
 
 
