@@ -232,7 +232,7 @@ describe("WorkflowComment", () => {
         function editable(type: string, data: object, readonly: boolean) {
             const wrapper = mount(WorkflowComment as any, {
                 propsData: { comment: { ...comment, type, data }, scale: 1, rootOffset: {}, readonly },
-                provide: { transform: mockTransform },
+                global: { provide: { transform: mockTransform } },
             });
             return wrapper.find("[contenteditable]").attributes("contenteditable");
         }
