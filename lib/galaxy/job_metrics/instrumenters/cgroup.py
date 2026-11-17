@@ -195,7 +195,9 @@ class CgroupPlugin(InstrumentPlugin):
                 if isinstance(metrics.get(mem_key), int):
                     metrics[mem_key] = min(metrics[mem_key], hierarchical_memory_limit)
         if hierarchical_memsw_limit is not None and isinstance(metrics.get("memory.memsw.limit_in_bytes"), int):
-            metrics["memory.memsw.limit_in_bytes"] = min(metrics["memory.memsw.limit_in_bytes"], hierarchical_memsw_limit)
+            metrics["memory.memsw.limit_in_bytes"] = min(
+                metrics["memory.memsw.limit_in_bytes"], hierarchical_memsw_limit
+            )
         return metrics
 
     def __add_metric(self, metrics, metric):
