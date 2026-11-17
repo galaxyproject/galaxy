@@ -295,6 +295,15 @@ class TestLibrariesApi(ApiTestCase):
         assert dataset["file_size"] == 61, dataset
 
     @requires_new_library
+    def test_fetch_to_folder_denied(self):
+        _, _, destination = self._setup_fetch_to_folder("fetch_denied")
+        with self._different_user():
+            history_id = self.dataset_populator.new_history()
+            targets = [{"destination": destination, "items": [{"src": "pasted", "paste_content": "1 2 3"}]}]
+            response = self.dataset_populator.fetch({"history_id": history_id, "targets": targets}, assert_ok=False)
+            self._assert_status_code_is(response, 403)
+
+    @requires_new_library
     def test_fetch_single_url_with_invalid_datatype(self):
         _, response = self.library_populator.fetch_single_url_to_folder("xxx", assert_ok=False)
         self._assert_status_code_is(response, 400)

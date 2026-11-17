@@ -51,6 +51,9 @@ def validate_and_normalize_targets(trans, payload, set_internal_fields=True):
                 if key in destination:
                     del destination[key]
             destination["library_folder_id"] = library.root_folder.id
+        elif destination_type == "library_folder":
+            folder_id = get_required_item(destination, "library_folder_id", "Must specify a library_folder_id")
+            trans.app.library_folder_manager.get_for_adding(trans, folder_id)
 
     # Unlike upload.py we don't transmit or use run_as_real_user in the job - we just make sure
     # in_place and purge_source are set on the individual upload fetch sources as needed based
