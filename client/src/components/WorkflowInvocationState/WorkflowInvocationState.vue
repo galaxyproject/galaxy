@@ -39,6 +39,8 @@ import WorkflowInvocationShare from "./WorkflowInvocationShare.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+/** How many times to fetch a scheduled invocation after its jobs finish, waiting for the server to mark it `completed` */
+const COMPLETION_CHECKS = 4;
 /** Below this tab height, the overview scrolls instead of fitting the graph and step details to the tab */
 const OVERVIEW_FIT_MIN_HEIGHT = 600;
 
@@ -71,6 +73,13 @@ const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
 const cancellingInvocation = ref(false);
 const isPolling = ref(false);
+/**
+ * Whether this view saw the invocation still running (non-terminal).
+ *
+ * Used to determine if a final polling should continue after the invocation's jobs have finished,
+ * to mark the invocation as `completed` once the server updates its state as such.
+ */
+let sawRunning = false;
 
 const tabContent = ref<HTMLElement | null>(null);
 const { height: tabContentHeight } = useElementSize(tabContent);
@@ -286,6 +295,7 @@ onUnmounted(() => {
 
 async function pollStepStatesUntilTerminal() {
     if (!invocationSchedulingTerminal.value) {
+        sawRunning = true;
         await invocationStore.fetchInvocationById({ id: props.invocationId });
         stepStatesInterval.value = setTimeout(pollStepStatesUntilTerminal, 3000);
     }
@@ -295,9 +305,23 @@ async function pollJobStatesUntilTerminal() {
         isPolling.value = true;
         await invocationStore.fetchInvocationJobsSummaryForId({ id: props.invocationId });
         await invocationStore.fetchInvocationStepJobsSummaryForId({ id: props.invocationId });
+        if (!jobStatesTerminal.value) {
+            sawRunning = true;
+        }
         jobStatesInterval.value = setTimeout(pollJobStatesUntilTerminal, 3000);
     } else {
         isPolling.value = false;
+        pollUntilCompleted();
+    }
+}
+/** The server marks a scheduled invocation `completed` a few seconds after its jobs finish, so check a few times. */
+function pollUntilCompleted(checksLeft = COMPLETION_CHECKS) {
+    // Only continue polling if we've seen the invocation running since this view was mounted
+    if (sawRunning && invocationState.value === "scheduled" && checksLeft > 0) {
+        stepStatesInterval.value = setTimeout(async () => {
+            await invocationStore.fetchInvocationById({ id: props.invocationId });
+            pollUntilCompleted(checksLeft - 1);
+        }, 3000);
     }
 }
 function onError(e: any) {

@@ -4,6 +4,7 @@ import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { reactive } from "vue";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
@@ -56,6 +57,10 @@ const invocationById = {
         ...invocationData,
         id: "terminal-error-jobs",
     },
+    "finishing-jobs": {
+        ...invocationData,
+        id: "finishing-jobs",
+    },
 };
 
 // Jobs summary constants
@@ -64,7 +69,8 @@ const invocationDataJobsSummary = {
     states: {},
     populated_state: "ok",
 };
-const invocationJobsSummaryById = {
+// reactive, so a test can finish an invocation's jobs while it's shown
+const invocationJobsSummaryById: Record<string, any> = reactive({
     [invocationData.id]: invocationDataJobsSummary,
     "not-fetched-invocation": null,
     "retrying-invocation": null,
@@ -93,7 +99,13 @@ const invocationJobsSummaryById = {
             error: 1,
         },
     },
-};
+    "finishing-jobs": {
+        ...invocationDataJobsSummary,
+        states: {
+            running: 1,
+        },
+    },
+});
 
 // Mock functions that we'll export for assertions
 const mockFetchInvocationById = vi.fn().mockImplementation((fetchParams) => {
@@ -191,6 +203,27 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         // Invocation is fetched once and the jobs summary isn't fetched at all for terminal invocations
         assertInvocationFetched(1);
         assertJobsSummaryFetched(0);
+    });
+
+    it("checks a scheduled invocation a few times after seeing its jobs finish, for the server marking it completed", async () => {
+        vi.useFakeTimers();
+        await mountWorkflowInvocationState("finishing-jobs");
+        invocationJobsSummaryById["finishing-jobs"].states = { ok: 1 };
+        await vi.runAllTimersAsync();
+        vi.useRealTimers();
+        invocationJobsSummaryById["finishing-jobs"].states = { running: 1 };
+
+        // the first fetch, then 4 checks, after which it stays scheduled and polling stops
+        assertInvocationFetched(5);
+    });
+
+    it("doesn't check an invocation whose jobs had already finished, which may never be marked completed", async () => {
+        vi.useFakeTimers();
+        await mountWorkflowInvocationState(invocationData.id);
+        await vi.runAllTimersAsync();
+        vi.useRealTimers();
+
+        assertInvocationFetched(1);
     });
 
     it("determines that invocation and job states are not terminal with no fetched invocation", async () => {
