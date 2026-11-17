@@ -155,6 +155,23 @@ describe("InvocationList", () => {
         expect(lastQuery().search).toBe("workflow:rna");
     });
 
+    it("goes back to the first page when the filter changes", async () => {
+        vi.mocked(fetchInvocations).mockResolvedValue([INVOCATIONS, 100] as unknown as InvocationsPage);
+        const wrapper = mountTarget();
+        await flushPromises();
+        wrapper.findComponent({ name: "GPagination" }).vm.$emit("update:modelValue", 3);
+        await flushPromises();
+        expect(lastQuery().offset).toBe(50);
+        vi.mocked(fetchInvocations).mockClear();
+
+        await wrapper.find("[data-description='filter text input']").setValue("workflow:rna");
+        vi.runAllTimers();
+        await flushPromises();
+
+        expect(fetchInvocations).toHaveBeenCalledOnce();
+        expect(lastQuery()).toMatchObject({ search: "workflow:rna", offset: 0 });
+    });
+
     it("sends the state, status and invoked time filters as their own parameters", async () => {
         const wrapper = mountTarget();
         await flushPromises();

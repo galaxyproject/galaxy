@@ -429,7 +429,14 @@ async function onBulkCancel() {
 
 onMounted(load);
 
-watch([currentPage, filterText, sortBy, sortDesc], load);
+watch([currentPage, filterText, sortBy, sortDesc], ([page], [oldPage]) => {
+    // a new filter or sort starts from the first page, which loads through this watch again
+    if (page === oldPage && page !== 1) {
+        currentPage.value = 1;
+    } else {
+        load();
+    }
+});
 </script>
 
 <template>
