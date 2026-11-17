@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from enum import Enum
 from typing import (
     Annotated,
@@ -608,4 +609,52 @@ class WorkflowExtractionResult(Model):
             "Warnings from building the workflow report when from_page_id was supplied (e.g. a page directive "
             "that had to be dropped because it has no workflow-relative form)."
         ),
+    )
+
+
+class SubworkflowStoredVersion(Model):
+    version: int = Field(
+        ..., title="Version", description="The version of the stored workflow, counted from 0 for the oldest."
+    )
+    workflow_id: EncodedDatabaseIdField = Field(
+        ..., title="Workflow ID", description="The id of this workflow version, the `content_id` of a step using it."
+    )
+    update_time: datetime = Field(..., title="Update Time")
+    steps: int = Field(..., title="Steps", description="The number of steps in this version.")
+
+
+class SubworkflowTrsVersion(Model):
+    trs_version_id: str = Field(
+        ...,
+        title="TRS Version ID",
+        description="The version as it appears in a TRS version URL, the `trs_version_id` of an `upgrade_subworkflow` action.",
+    )
+    name: str = Field(..., title="Name")
+
+
+class SubworkflowVersionsResponse(Model):
+    workflow_id: EncodedDatabaseIdField = Field(..., title="Workflow ID", description="The current workflow version.")
+    stored_workflow_id: EncodedDatabaseIdField = Field(..., title="Stored Workflow ID")
+    current_version: int = Field(
+        ..., title="Current Version", description="The version of the stored workflow that the step uses now."
+    )
+    versions: list[SubworkflowStoredVersion] = Field(
+        ..., title="Versions", description="The versions of the stored workflow, oldest first."
+    )
+    trs_tool_id: str | None = Field(
+        None, title="TRS Tool ID", description="The TRS tool this workflow was imported from, if any."
+    )
+    trs_version_id: str | None = Field(None, title="TRS Version ID", description="The imported TRS version.")
+    trs_versions: list[SubworkflowTrsVersion] | None = Field(
+        None,
+        title="TRS Versions",
+        description="The versions the TRS server offers: numbered versions newest first, then the others by name.",
+    )
+    trs_upgrade_version_id: str | None = Field(
+        None,
+        title="TRS Upgrade Version ID",
+        description="The TRS version an `upgrade_subworkflow` action without a target moves to, if any.",
+    )
+    trs_error: str | None = Field(
+        None, title="TRS Error", description="Why the TRS versions could not be listed, if they could not."
     )
