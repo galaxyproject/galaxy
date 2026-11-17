@@ -375,7 +375,15 @@ def test_import_library_from_dict_unregistered_extension():
     assert ldda.extension == "data"
 
 
-def test_import_edit_dataset_unregistered_extension():
+@pytest.mark.parametrize(
+    "keep_unregistered_extensions, expected_extension",
+    [
+        (False, "data"),
+        # Job output imports leave the replacement, and its job message, to the job wrapper.
+        (True, "not_a_registered_datatype"),
+    ],
+)
+def test_import_edit_dataset_unregistered_extension(keep_unregistered_extensions, expected_extension):
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
     datasets_metadata_path = os.path.join(temp_directory, store.ATTRS_FILENAME_DATASETS)
     with open(datasets_metadata_path) as f:
@@ -384,9 +392,10 @@ def test_import_edit_dataset_unregistered_extension():
     with open(datasets_metadata_path, "w") as f:
         json.dump(datasets_metadata, f)
 
-    _perform_import_from_directory(temp_directory, app, h.user, import_history, store.ImportOptions(allow_edit=True))
+    import_options = store.ImportOptions(allow_edit=True, keep_unregistered_extensions=keep_unregistered_extensions)
+    _perform_import_from_directory(temp_directory, app, h.user, import_history, import_options)
 
-    assert h.datasets[0].extension == "data"
+    assert h.datasets[0].extension == expected_extension
 
 
 def test_import_allow_discarded():

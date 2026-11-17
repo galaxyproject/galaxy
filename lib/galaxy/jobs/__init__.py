@@ -2438,7 +2438,10 @@ class MinimalJobWrapper(HasResourceParameters):
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
         if extended_metadata:
             try:
-                import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
+                # Unregistered extensions are set to data, with a job message, by _set_unknown_output_extensions_to_data.
+                import_options = store.ImportOptions(
+                    allow_dataset_object_edit=True, allow_edit=True, keep_unregistered_extensions=True
+                )
                 import_model_store = store.get_import_model_store_for_directory(
                     os.path.join(self.working_directory, "metadata", "outputs_populated"),
                     app=self.app,

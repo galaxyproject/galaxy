@@ -218,6 +218,7 @@ class ImportOptions:
     allow_library_creation: bool
     allow_dataset_object_edit: bool
     discarded_data: ImportDiscardedDataType
+    keep_unregistered_extensions: bool
 
     def __init__(
         self,
@@ -225,6 +226,7 @@ class ImportOptions:
         allow_library_creation: bool = False,
         allow_dataset_object_edit: bool | None = None,
         discarded_data: ImportDiscardedDataType = DEFAULT_DISCARDED_DATA_TYPE,
+        keep_unregistered_extensions: bool = False,
     ) -> None:
         self.allow_edit = allow_edit
         self.allow_library_creation = allow_library_creation
@@ -233,6 +235,7 @@ class ImportOptions:
         else:
             self.allow_dataset_object_edit = allow_dataset_object_edit
         self.discarded_data = discarded_data
+        self.keep_unregistered_extensions = keep_unregistered_extensions
 
 
 class SessionlessContext:
@@ -1012,7 +1015,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         ``auto`` is kept, deferred datasets resolve it on materialization.
         """
         if (
-            self.app is None
+            self.import_options.keep_unregistered_extensions
+            or self.app is None
             or not extension
             or extension == "auto"
             or self.app.datatypes_registry.get_datatype_by_extension(extension) is not None
