@@ -57,7 +57,7 @@ export interface RowClickEvent<T> {
 export interface RowSelectEvent<T> {
     /** The selected row item */
     item: T;
-    /** The row index */
+    /** Index of the row in the original `items` array (not the locally sorted display index) */
     index: number;
     /** Whether the row is now selected */
     selected: boolean;

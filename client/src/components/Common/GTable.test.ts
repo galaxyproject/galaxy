@@ -4,6 +4,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
 import GTable from "./GTable.vue";
 
@@ -32,7 +33,6 @@ describe("GTable sorting", () => {
                 selectedItems: [0],
                 sortBy: "name",
             },
-            attachTo: document.body,
         });
 
         const checkboxes = wrapper.findAll("tbody input").wrappers.map((row) => checkbox(row.element));
@@ -60,17 +60,16 @@ describe("GTable sorting", () => {
             scopedSlots: {
                 "row-details": rowDetailsSlot,
             },
-            attachTo: document.body,
         });
 
         await wrapper.findAll("tbody tr").wrappers[0]!.trigger("click");
         const rowClick = wrapper.emitted("row-click")?.[0]?.[0] as { toggleDetails: () => void };
         rowClick.toggleDetails();
-        await wrapper.vm.$nextTick();
+        await nextTick();
         expect(wrapper.find(".details-body").text()).toBe("second body");
 
         await wrapper.findAll("thead th").wrappers[0]!.trigger("click");
-        await wrapper.vm.$nextTick();
+        await nextTick();
 
         expect(wrapper.findAll(".details-body").wrappers).toHaveLength(1);
         expect(wrapper.find(".details-body").text()).toBe("second body");

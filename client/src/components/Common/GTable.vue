@@ -205,7 +205,8 @@ interface Props {
     selectCheckboxTitle?: string;
 
     /**
-     * Array of selected item indices
+     * Indices of selected rows in the original `items` array (stable when `items` are
+     * sorted locally; slot and `row-click` indices still follow the sorted display order)
      * @default []
      */
     selectedItems?: number[];
@@ -217,12 +218,6 @@ interface Props {
      * @default ""
      */
     primaryKey?: string;
-
-    /**
-     * Indices of rows that should render as indeterminate (e.g. a folder with only some children selected)
-     * @default []
-     */
-    indeterminateItems?: number[];
 
     /**
      * Whether to show the empty state message when no items are available
@@ -306,7 +301,6 @@ const props = withDefaults(defineProps<Props>(), {
     selectCheckboxTitle: "Select for bulk actions",
     selectedItems: () => [],
     primaryKey: "",
-    indeterminateItems: () => [],
     showEmpty: false,
     showSelectAll: false,
     sortBy: "",
@@ -496,11 +490,6 @@ function getItemStateKey(item: T): string | number {
 function isRowSelected(item: T): boolean {
     const index = getItemSourceIndex(item);
     return index >= 0 && props.selectedItems.includes(index);
-}
-
-function isRowIndeterminate(item: T): boolean {
-    const index = getItemSourceIndex(item);
-    return index >= 0 && props.indeterminateItems.includes(index);
 }
 
 const indeterminateSelected = computed(() => {
@@ -803,7 +792,6 @@ defineExpose({
                                             :id="`${getRowId(props.id, getGlobalIndex(paginatedIndex))}-select`"
                                             v-g-tooltip.hover
                                             :checked="isRowSelected(item)"
-                                            :indeterminate="isRowIndeterminate(item)"
                                             :title="props.selectCheckboxTitle"
                                             @click.stop
                                             @change="onRowSelect(item)" />
