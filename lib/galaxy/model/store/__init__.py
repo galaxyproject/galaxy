@@ -319,6 +319,7 @@ class ImportOptions:
     discarded_data: ImportDiscardedDataType
     editable_objects: EditableObjects | None
     datasets_attrs_at_job_setup: DatasetsAttrsById
+    keep_unregistered_extensions: bool
 
     def __init__(
         self,
@@ -328,6 +329,7 @@ class ImportOptions:
         discarded_data: ImportDiscardedDataType = DEFAULT_DISCARDED_DATA_TYPE,
         editable_objects: EditableObjects | None = None,
         datasets_attrs_at_job_setup: DatasetsAttrsById | None = None,
+        keep_unregistered_extensions: bool = False,
     ) -> None:
         """
         :param datasets_attrs_at_job_setup: when editing a job's outputs, their attributes as exported at job
@@ -343,6 +345,7 @@ class ImportOptions:
         # Restricts editing to these objects; every existing object is editable without it.
         self.editable_objects = editable_objects
         self.datasets_attrs_at_job_setup = datasets_attrs_at_job_setup or {}
+        self.keep_unregistered_extensions = keep_unregistered_extensions
 
 
 class SessionlessContext:
@@ -1158,7 +1161,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         ``auto`` is kept, deferred datasets resolve it on materialization.
         """
         if (
-            self.app is None
+            self.import_options.keep_unregistered_extensions
+            or self.app is None
             or not extension
             or extension == "auto"
             or self.app.datatypes_registry.get_datatype_by_extension(extension) is not None
