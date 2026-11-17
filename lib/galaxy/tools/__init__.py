@@ -81,7 +81,7 @@ from galaxy.tool_util.ontologies.ontology_data import (
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parameters import (
     input_models_for_pages,
-    ToolParameterBundle,
+    ToolParameterT,
 )
 from galaxy.tool_util.parser import (
     get_tool_source,
@@ -999,7 +999,7 @@ class JobContext(BaseJobContext):
         return self.job.implicit_collection_jobs_association and self.job.implicit_collection_jobs_association.id
 
 
-class Tool(UsesDictVisibleKeys, ToolParameterBundle):
+class Tool(UsesDictVisibleKeys):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
@@ -1095,6 +1095,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.credentials: Optional[list[CredentialsRequirement]] = None
         self._is_workflow_compatible = None
         self.__tests: Optional[str] = None
+        # Input models, None if the tool's inputs can't be modeled yet.
+        self.parameters: Optional[list[ToolParameterT]] = None
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:

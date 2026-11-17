@@ -43,7 +43,10 @@ from galaxy.tool_util.parameters import (
     LandingRequestInternalToolState,
     LandingRequestToolState,
 )
-from galaxy.tool_util_models.parameters import DataOrCollectionRequestAdapter
+from galaxy.tool_util_models.parameters import (
+    DataOrCollectionRequestAdapter,
+    ToolParameterBundleModel,
+)
 from galaxy.util import safe_str_cmp
 from .context import ProvidesUserContext
 from .tools import (
@@ -76,10 +79,12 @@ class LandingRequestManager:
         ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
         tool = get_tool_from_toolbox(self.app.toolbox, ref, user=None)
         landing_request_state = LandingRequestToolState(request_state or {})
-        # Okay this is a hack until tool request API commit is merged, tools don't yet have a parameter
-        # schema - so we can't do this properly.
-        if hasattr(tool, "parameters"):
-            internal_landing_request_state = landing_decode(landing_request_state, tool, self.security.decode_id)
+        # __DATA_FETCH__ has no parameter models, its request is validated by the fetch API models.
+        if tool.parameters is not None:
+            parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
+            internal_landing_request_state = landing_decode(
+                landing_request_state, parameter_bundle, self.security.decode_id
+            )
         else:
             assert tool.id == "__DATA_FETCH__"
             # we have validated the payload as part of the API request
@@ -225,9 +230,10 @@ class LandingRequestManager:
             return None
         ref = ToolRunReference(tool_id=model.tool_id, tool_version=model.tool_version, tool_uuid=None)
         tool = get_tool_from_toolbox(self.app.toolbox, ref, user=None)
-        if hasattr(tool, "parameters"):
+        if tool.parameters is not None:
+            parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
             internal_state = LandingRequestInternalToolState(model.request_state)
-            return landing_encode(internal_state, tool, self.security.encode_id).input_state
+            return landing_encode(internal_state, parameter_bundle, self.security.encode_id).input_state
         return encode_fetch_request_ids(model.request_state, self.security.encode_id)
 
     def _workflow_response(self, model: WorkflowLandingRequestModel) -> WorkflowLandingRequest:
