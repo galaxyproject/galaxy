@@ -40,19 +40,13 @@ type InvocationViewTab = "steps" | "inputs" | "outputs" | "report" | "reports" |
 interface Props {
     invocationId: string;
     tab?: InvocationViewTab;
-    isSubworkflow?: boolean;
     isFullPage?: boolean;
     success?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     tab: undefined,
-    isSubworkflow: false,
 });
-
-const emit = defineEmits<{
-    (e: "invocation-cancelled"): void;
-}>();
 
 const route = useRoute();
 
@@ -231,7 +225,6 @@ async function onCancel() {
     } catch (e) {
         onError(e);
     } finally {
-        emit("invocation-cancelled");
         cancellingInvocation.value = false;
     }
 }
@@ -409,15 +402,11 @@ async function onCancel() {
                     :steps-jobs-summary="stepsJobsSummary || undefined"
                     :is-full-page="props.isFullPage"
                     :fit-to-page="fitOverviewToTab"
-                    :is-subworkflow="isSubworkflow"
                     :invocation-messages="uniqueMessages" />
             </div>
             <div v-if="props.tab === 'steps'" class="steps-tab-content">
-                <GAlert v-if="isSubworkflow" variant="info" show>
-                    <span v-localize>Subworkflow steps are not available.</span>
-                </GAlert>
                 <WorkflowInvocationSteps
-                    v-else-if="invocation && stepsJobsSummary"
+                    v-if="invocation && stepsJobsSummary"
                     :invocation="invocation"
                     :steps-jobs-summary="stepsJobsSummary"
                     :is-full-page="props.isFullPage" />
@@ -428,11 +417,8 @@ async function onCancel() {
                 :terminal="invocationAndJobTerminal"
                 :tab="props.tab" />
             <div v-if="props.tab === 'report' || props.tab === 'reports'" class="steps-tab-content">
-                <GAlert v-if="isSubworkflow" variant="info" show>
-                    <span v-localize>Report is not available for subworkflow.</span>
-                </GAlert>
                 <TabsDisabledAlert
-                    v-else-if="tabsDisabled"
+                    v-if="tabsDisabled"
                     :invocation-id="props.invocationId"
                     :tooltip="disabledTabTooltip" />
                 <InvocationReport
