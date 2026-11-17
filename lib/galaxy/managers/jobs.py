@@ -2357,8 +2357,8 @@ class JobSubmitter:
             )
             if request.tags:
                 execution_tracker.apply_tags(request_context.tag_handler, request_context.user, request.tags)
-            if request.send_email_notification:
-                execution_tracker.apply_email_action(request_context.user)
+            if request.send_notification or request.send_email_notification:
+                execution_tracker.request_completion_notification(request_context.user, target_history)
             tool_request.state = ToolRequest.states.SUBMITTED
             sa_session.add(tool_request)
             sa_session.commit()

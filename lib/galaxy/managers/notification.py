@@ -2,6 +2,7 @@ import logging
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
+from threading import Event
 from typing import (
     cast,
     NamedTuple,
@@ -73,9 +74,11 @@ from galaxy.schema.notifications import (
     RequestedTool,
     StorageOperationNotificationContent,
     StoredToolInstallationRequestContent,
+    ToolCompletionNotificationContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
+    WorkflowCompletionNotificationContent,
 )
 from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.schema.storage_operations import (
@@ -147,6 +150,7 @@ class NotificationManager:
             Notification.content,
         ]
         self.channel_plugins = self._register_supported_channels()
+        self._last_completion_email_id = 0
 
     @property
     def notifications_enabled(self):
@@ -160,6 +164,7 @@ class NotificationManager:
     def _notification_is_active(self):
         """Condition to filter active (published and not expired) notifications only."""
         return and_(
+            Notification.email_only.is_(False),
             Notification.publication_time <= self._now,
             Notification.expiration_time > self._now,
         )
@@ -177,13 +182,20 @@ class NotificationManager:
         Creates a new notification and associates it with all the recipient users.
 
         It takes into account the user's notification preferences to decide if the notification should be sent to them.
-        No other notification channel is used here, only the internal database associations are created.
+        Only the internal database associations are created here. The other channels deliver the notification with the
+        next run of the pending notifications dispatcher, or in a Celery task queued right away if the request sets
+        ``dispatch_now``.
         """
         self.ensure_notifications_enabled()
         recipient_users = self.recipient_resolver.resolve(request.recipients)
         notification = self._create_notification_model(request.notification, request.galaxy_url)
+        dispatch_now = request.dispatch_now and self.can_send_notifications_async
+        # Marked in the same transaction that creates it, so the periodic dispatcher doesn't send it again.
+        notification.dispatched = dispatch_now
         self.sa_session.add(notification)
-        self.sa_session.commit()
+        # Keep the notification and recipient associations in one transaction.
+        # Completion monitors also commit their delivery marker in this transaction.
+        self.sa_session.flush()
 
         notifications_sent = self._create_associations(notification, recipient_users)
         self.sa_session.commit()
@@ -192,7 +204,126 @@ class NotificationManager:
         user_ids = [user.id for user in recipient_users]
         self._notify_users_via_sse(user_ids, notification)
 
+        if dispatch_now:
+            self._queue_dispatch(notification)
+
         return notification, notifications_sent
+
+    def send_completion_notification(self, request: NotificationCreateRequest) -> tuple[Notification | None, int]:
+        if self.notifications_enabled:
+            return self.send_notification_to_recipients(request)
+        notification = self.enqueue_completion_email(request)
+        self.sa_session.commit()
+        return notification, 1
+
+    def enqueue_completion_email(self, request: NotificationCreateRequest) -> Notification:
+        """Stage an explicit per-run email in the caller's completion transaction."""
+        if not self.config.smtp_server:
+            raise ConfigDoesNotAllowException("Completion email requires SMTP configuration.")
+        if request.notification.category not in (
+            PersonalNotificationCategory.tool_execution_completed,
+            PersonalNotificationCategory.workflow_execution_completed,
+        ):
+            raise ValueError("Only completion emails can bypass the notification system.")
+        # Completion requests always belong to one submitting user. Account notification
+        # preferences do not apply to this explicit email-only opt-in.
+        users = self.recipient_resolver.resolve(request.recipients)
+        if len(users) != 1:
+            raise ValueError("A completion email must have exactly one recipient.")
+        notification = self._create_notification_model(request.notification, request.galaxy_url)
+        notification.email_only = True
+        self.sa_session.add(notification)
+        self.sa_session.add(UserNotificationAssociation(users[0], notification))
+        return notification
+
+    def dispatch_completion_emails(self, stop_event: Event | None = None) -> None:
+        """Consume a bounded batch before attempting SMTP, with no send retries.
+
+        Deleting each queued email in the claim transaction makes delivery at most
+        once, including across worker restarts. A crash after that commit can lose
+        an email. SMTP runs without holding a database connection.
+        """
+        session = self.sa_session
+        try:
+            pending = and_(Notification.email_only.is_(True), Notification.dispatched.is_(False))
+            ids = list(
+                session.scalars(
+                    select(Notification.id)
+                    .where(pending, Notification.id > self._last_completion_email_id)
+                    .order_by(Notification.id)
+                    .limit(100)
+                )
+            )
+            self._last_completion_email_id = ids[-1] if ids else 0
+            session.rollback()
+            for notification_id in ids:
+                if stop_event is not None and stop_event.is_set():
+                    break
+                try:
+                    # The conditional update also claims exclusively on SQLite.
+                    claimed = session.scalar(
+                        update(Notification)
+                        .where(Notification.id == notification_id, pending)
+                        .values(dispatched=True)
+                        .returning(Notification.id)
+                    )
+                    if claimed is None:
+                        session.rollback()
+                        continue
+                    notification = session.get(Notification, notification_id)
+                    assert notification is not None
+                    users = list(
+                        session.scalars(
+                            select(User)
+                            .join(UserNotificationAssociation)
+                            .where(UserNotificationAssociation.notification_id == notification_id)
+                        )
+                    )
+                    expired = notification.expiration_time is not None and notification.expiration_time <= now()
+                    # Templates use scalar attributes only. Consume the queue entry and
+                    # detach those attributes before committing and releasing the connection.
+                    session.expunge_all()
+                    session.execute(
+                        delete(UserNotificationAssociation).where(
+                            UserNotificationAssociation.notification_id == notification_id
+                        )
+                    )
+                    session.execute(delete(Notification).where(Notification.id == notification_id))
+                    session.commit()
+                except Exception:
+                    session.rollback()
+                    log.exception("Error consuming completion email %d", notification_id)
+                    continue
+                try:
+                    if not expired:
+                        for user in users:
+                            EmailNotificationChannelPlugin(self.config).send(notification, user, timeout=30)
+                except Exception:
+                    log.exception("Could not send completion email %d; will not retry", notification_id)
+        except Exception:
+            log.exception("Error polling completion emails")
+        finally:
+            session.remove()
+
+    def _queue_dispatch(self, notification: Notification) -> None:
+        # Local import: galaxy.celery.tasks imports NotificationManager at module load.
+        from galaxy.celery.tasks import dispatch_notification
+
+        try:
+            dispatch_notification.delay(notification_id=notification.id)
+        except Exception:
+            log.exception(
+                "Could not queue the dispatch of notification %s, leaving it to the dispatcher", notification.id
+            )
+            notification.dispatched = False
+            self.sa_session.commit()
+
+    def dispatch_notification_via_channels(self, notification_id: int) -> None:
+        """Delivers one notification through the channels each recipient has enabled."""
+        notification = self.sa_session.get(Notification, notification_id)
+        if notification is None:
+            raise ObjectNotFound(f"Notification {notification_id} not found.")
+        self._dispatch_notification_to_users(notification)
 
     def send_storage_operation_notification(
         self,
@@ -534,7 +665,9 @@ class NotificationManager:
         current_notification_preferences = user.preferences.get(NOTIFICATION_PREFERENCES_SECTION_NAME)
         if current_notification_preferences:
             try:
-                return UserNotificationPreferences.model_validate_json(current_notification_preferences)
+                preferences = UserNotificationPreferences.default()
+                preferences.update(UserNotificationPreferences.model_validate_json(current_notification_preferences))
+                return preferences
             except ValidationError:
                 pass
         # Gracefully return default preferences is they don't exist or get corrupted
@@ -619,7 +752,7 @@ class NotificationManager:
                 UserNotificationAssociation,
                 UserNotificationAssociation.notification_id == Notification.id,
             )
-            .where(UserNotificationAssociation.user_id == user.id)
+            .where(UserNotificationAssociation.user_id == user.id, Notification.email_only.is_(False))
         )
         if since is not None:
             stmt = stmt.where(
@@ -823,7 +956,7 @@ class EmailNotificationTemplateBuilder(Protocol):
         )
         notification_settings_url = (
             f"{self.notification.galaxy_url}/user/notifications?preferences=true"
-            if self.notification.galaxy_url
+            if self.notification.galaxy_url and not self.notification.email_only
             else None
         )
         contact_email = self.config.error_email_to or None
@@ -885,6 +1018,27 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
     def get_subject(self) -> str:
         content = cast(MessageNotificationContent, self.get_content(TemplateFormats.TXT))
         return f"[Galaxy] New message: {content.subject}"
+
+
+class WorkflowCompletionEmailNotificationTemplateBuilder(MessageEmailNotificationTemplateBuilder):
+    def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
+        content = WorkflowCompletionNotificationContent.model_validate(self.notification.content)
+        content.message = self.markdown_to[template_format](content.message)
+        return content
+
+    def get_subject(self) -> str:
+        content = cast(WorkflowCompletionNotificationContent, self.get_content(TemplateFormats.TXT))
+        return f"[Galaxy] {content.subject}"
+
+    def get_template_path(self, template_format: TemplateFormats) -> str:
+        return f"mail/notifications/message-email.{template_format.value}"
+
+
+class ToolCompletionEmailNotificationTemplateBuilder(WorkflowCompletionEmailNotificationTemplateBuilder):
+    def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
+        content = ToolCompletionNotificationContent.model_validate(self.notification.content)
+        content.message = self.markdown_to[template_format](content.message)
+        return content
 
 
 class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
@@ -980,30 +1134,29 @@ class EmailNotificationChannelPlugin(NotificationChannelPlugin):
     # Register the supported email templates here
     email_templates_by_category: dict[PersonalNotificationCategory, type[EmailNotificationTemplateBuilder]] = {
         PersonalNotificationCategory.message: MessageEmailNotificationTemplateBuilder,
+        PersonalNotificationCategory.workflow_execution_completed: WorkflowCompletionEmailNotificationTemplateBuilder,
+        PersonalNotificationCategory.tool_execution_completed: ToolCompletionEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.new_shared_item: NewSharedItemEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.storage_operation: StorageOperationEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.tool_installation_request: ToolInstallationRequestEmailNotificationTemplateBuilder,
     }
 
-    def send(self, notification: Notification, user: User):
-        try:
-            category = cast(PersonalNotificationCategory, notification.category)
-            email_template_builder = self.email_templates_by_category.get(category)
-            if email_template_builder is None:
-                log.warning(f"No email template found for notification category '{notification.category}'.")
-                return
-            template_builder = email_template_builder(self.config, notification, user)
-            subject = template_builder.get_subject()
-            text_body = template_builder.get_body(TemplateFormats.TXT)
-            html_body = template_builder.get_body(TemplateFormats.HTML)
-            util.send_mail(
-                frm=self.config.email_from,
-                to=user.email,
-                subject=subject,
-                body=text_body,
-                config=self.config,
-                html=html_body,
-            )
-        except Exception as e:
-            log.error(f"Error sending email notification to user {user.id}. Reason: {util.unicodify(e)}")
-            pass
+    def send(self, notification: Notification, user: User, timeout: float | None = None):
+        category = cast(PersonalNotificationCategory, notification.category)
+        email_template_builder = self.email_templates_by_category.get(category)
+        if email_template_builder is None:
+            log.warning(f"No email template found for notification category '{notification.category}'.")
+            return
+        template_builder = email_template_builder(self.config, notification, user)
+        subject = template_builder.get_subject()
+        text_body = template_builder.get_body(TemplateFormats.TXT)
+        html_body = template_builder.get_body(TemplateFormats.HTML)
+        util.send_mail(
+            frm=self.config.email_from,
+            to=user.email,
+            subject=subject,
+            body=text_body,
+            config=self.config,
+            html=html_body,
+            **({"timeout": timeout} if timeout is not None else {}),
+        )

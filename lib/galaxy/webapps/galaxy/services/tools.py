@@ -426,6 +426,7 @@ class ToolsService(ServiceBase):
             credentials_context=CredentialsContext(root=credentials_context) if credentials_context else None,
             tags=tags,
             send_email_notification=inputs.get("send_email_notification", False),
+            send_notification=inputs.get("send_notification", False),
         )
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 

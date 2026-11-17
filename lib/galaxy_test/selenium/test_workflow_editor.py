@@ -1737,10 +1737,10 @@ steps:
         editor.configure_output(output="output").wait_for_visible()
         editor.email_notification.assert_absent()
         editor.output_cleanup.assert_absent()
-        # A tool step does run a job, so it still gets both.
+        # Tool steps still offer cleanup, but email actions have been retired.
         editor.node._(label="branch_a").wait_for_and_click()
-        editor.email_notification.wait_for_visible()
         editor.output_cleanup.wait_for_visible()
+        editor.email_notification.assert_absent()
 
     @selenium_test
     def test_pick_value_compact_on_disconnect(self):
