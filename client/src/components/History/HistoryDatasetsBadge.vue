@@ -25,7 +25,7 @@
 import { faDatabase, faSave, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { getHistoryCounts, type HistoryCounts } from "@/api/histories";
 import { Toast } from "@/composables/toast";
@@ -57,6 +57,12 @@ const niceSize = ref<HistoryCounts["nice_size"]>();
 const contentsActive = ref<HistoryCounts["contents_active"]>();
 /** Counts of datasets by processing state (running, queued, etc.) */
 const contentsStates = ref<HistoryCounts["contents_states"]>();
+const hoverDetail = ref("");
+const overviewTooltip = computed(() =>
+    hoverDetail.value
+        ? `<u>View history storage overview</u><br>${hoverDetail.value}`
+        : "<u>View history storage overview</u><br><i>(hover over a value for details)</i>",
+);
 
 /**
  * Fetches and sets the history counts data from the API
@@ -83,23 +89,33 @@ onMounted(async () => {
 
 <template>
     <BBadge
-        v-g-tooltip.hover.top
+        v-g-tooltip.hover.top.html.viewport="overviewTooltip"
         class="history-datasets d-flex flex-gapx-1 flex-gapy-1 align-items-center outline-badge cursor-pointer font-size-small"
         pill
-        :title="`View history storage overview`"
         variant="light"
-        :to="`/storage/history/${historyId}`">
+        :to="`/storage/history/${historyId}`"
+        @mouseleave="hoverDetail = ''">
         <FontAwesomeIcon v-if="loading" :icon="faSpinner" fixed-width spin />
         <template v-else>
-            <small v-if="props.count">
-                <FontAwesomeIcon :icon="faDatabase" fixed-width />
+            <small
+                v-if="props.count"
+                @mouseenter="hoverDetail = `Items count: ${props.count}`"
+                @mouseleave="hoverDetail = ''">
+                <span class="database-icon">
+                    <FontAwesomeIcon :icon="faDatabase" fixed-width />
+                </span>
                 <template v-if="props.count"> {{ props.count }} <span class="items">items</span> </template>
             </small>
 
             <template v-if="props.count && niceSize"> | </template>
 
-            <small v-if="niceSize">
-                <FontAwesomeIcon :icon="faSave" fixed-width />
+            <small
+                v-if="niceSize"
+                @mouseenter="hoverDetail = `Storage used: ${niceSize}`"
+                @mouseleave="hoverDetail = ''">
+                <span class="drive-icon">
+                    <FontAwesomeIcon :icon="faSave" fixed-width />
+                </span>
                 {{ niceSize }}
             </small>
 
@@ -111,20 +127,32 @@ onMounted(async () => {
                 |
             </template>
 
-            <span
-                v-for="(stateCount, state) of contentsStates"
-                :key="state"
-                class="stats px-1 rounded"
-                :class="`state-color-${state}`">
-                {{ stateCount }}
-            </span>
+            <span class="d-inline-flex flex-gapx-1 stats">
+                <span
+                    v-for="(stateCount, state) of contentsStates"
+                    :key="state"
+                    class="stat px-1 rounded"
+                    :class="`state-color-${state}`"
+                    @mouseenter="hoverDetail = `Status: ${stateCount} '${state}' items`"
+                    @mouseleave="hoverDetail = ''">
+                    {{ stateCount }}
+                </span>
 
-            <span v-if="contentsActive?.deleted" class="stats px-1 rounded state-color-deleted">
-                {{ contentsActive.deleted }}
-            </span>
+                <span
+                    v-if="contentsActive?.deleted"
+                    class="stat px-1 rounded state-color-deleted"
+                    @mouseenter="hoverDetail = `Status: ${contentsActive.deleted} 'deleted' items`"
+                    @mouseleave="hoverDetail = ''">
+                    {{ contentsActive.deleted }}
+                </span>
 
-            <span v-if="contentsActive?.hidden" class="stats px-1 rounded state-color-hidden">
-                {{ contentsActive.hidden }}
+                <span
+                    v-if="contentsActive?.hidden"
+                    class="stat px-1 rounded state-color-hidden"
+                    @mouseenter="hoverDetail = `Status: ${contentsActive.hidden} 'hidden' items`"
+                    @mouseleave="hoverDetail = ''">
+                    {{ contentsActive.hidden }}
+                </span>
             </span>
         </template>
     </BBadge>
@@ -143,8 +171,14 @@ onMounted(async () => {
     }
 
     .stats {
-        border-width: 1px;
-        border-style: solid;
+        .stat {
+            border-width: 1px;
+            border-style: solid;
+        }
+    }
+
+    &:hover .stats .stat {
+        background-color: initial;
     }
 }
 </style>
