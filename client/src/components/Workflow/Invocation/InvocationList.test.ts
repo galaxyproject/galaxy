@@ -9,6 +9,7 @@ import type { AnyHistory } from "@/api";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import type * as InvocationFilters from "@/components/Workflow/Invocation/invocationFilters";
 import { fetchInvocations } from "@/components/Workflow/Invocation/invocationsIndex";
+import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
@@ -23,6 +24,7 @@ const router = createTestRouter();
 const push = vi.spyOn(router, "push").mockResolvedValue(undefined);
 
 const { confirm } = vi.hoisted(() => ({ confirm: vi.fn() }));
+vi.mock("@/composables/toast");
 vi.mock("@/composables/confirmDialog", () => ({ useConfirmDialog: () => ({ confirm }) }));
 // the list remembers an expanded invocation in local storage across visits
 vi.unmock("@/composables/userLocalStorage");
@@ -107,6 +109,7 @@ async function clickRowAction(wrapper: ReturnType<typeof mountTarget>, actionId:
 
 describe("InvocationList", () => {
     beforeEach(() => {
+        vi.clearAllMocks();
         vi.mocked(fetchInvocations).mockReset();
         vi.mocked(fetchInvocations).mockResolvedValue([INVOCATIONS, 2] as unknown as InvocationsPage);
         // the expanded invocation acted on is remembered in local storage
@@ -341,6 +344,24 @@ describe("InvocationList", () => {
         const expanded = reopened.findAll("[data-description='grid expanded row']");
         expect(expanded).toHaveLength(1);
         expect(expanded[0]!.find("[data-invocation-id='inv-2']").exists()).toBe(true);
+    });
+
+    it("collapses the earliest expanded invocation when a fourth is expanded", async () => {
+        const invocations = ["inv-1", "inv-2", "inv-3", "inv-4"].map((id) => ({ ...INVOCATIONS[1], id }));
+        vi.mocked(fetchInvocations).mockResolvedValue([invocations, 4] as unknown as InvocationsPage);
+        const wrapper = mountTarget();
+        await flushPromises();
+        for (const toggle of wrapper.findAll("[data-description='toggle row details']")) {
+            await toggle.trigger("click");
+        }
+
+        const expanded = wrapper.findAll("[data-description='grid expanded row'] [data-invocation-id]");
+        expect([...new Set(expanded.map((element) => element.attributes("data-invocation-id")))]).toEqual([
+            "inv-2",
+            "inv-3",
+            "inv-4",
+        ]);
+        expect(Toast.info).toHaveBeenCalledOnce();
     });
 
     it("renders a new expanded view when a reload moves another expanded invocation into a row", async () => {

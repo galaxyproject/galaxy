@@ -36,6 +36,7 @@ import {
 import { fetchInvocations, type InvocationsQuery } from "@/components/Workflow/Invocation/invocationsIndex";
 import { useInvocationListItemActions } from "@/components/Workflow/Invocation/useInvocationListItemActions";
 import { useFilterTextValidation } from "@/composables/filterTextValidation";
+import { Toast } from "@/composables/toast";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -72,6 +73,8 @@ const TITLE = "Workflow Invocations";
 const HEADER_MESSAGE_SECONDS = 5;
 /** Narrower than this, the column filter chips get their own row under the filter bar */
 const INLINE_CHIPS_MIN_WIDTH = 768;
+/** At most this many rows stay expanded, since each expanded invocation polls while it runs */
+const MAX_EXPANDED = 3;
 
 /** The status buttons, one per `INVOCATION_STATE_GROUPS` key, in display order */
 const STATUS_GROUPS = [
@@ -304,11 +307,18 @@ const anyListedExpanded = computed(() =>
     listedInvocations.value.some((invocation) => expandedIds.value.includes(invocation.id)),
 );
 
-/** Expands or collapses the invocation's row */
+/** Expands or collapses the invocation's row, collapsing the earliest expanded one past `MAX_EXPANDED` */
 function onShowDetails(invocation: WorkflowInvocation) {
     const others = expandedIds.value.filter((id) => id !== invocation.id);
     if (others.length === expandedIds.value.length) {
-        expandedIds.value = [...others, invocation.id];
+        const kept = others.slice(-(MAX_EXPANDED - 1));
+        if (kept.length < others.length) {
+            if (!kept.includes(rememberedExpandedId.value)) {
+                rememberedExpandedId.value = "";
+            }
+            Toast.info(`Only ${MAX_EXPANDED} invocations can be expanded at once, so the earliest one was collapsed.`);
+        }
+        expandedIds.value = [...kept, invocation.id];
     } else {
         expandedIds.value = others;
         if (rememberedExpandedId.value === invocation.id) {
