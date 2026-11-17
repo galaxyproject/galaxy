@@ -6,6 +6,20 @@ from galaxy_test.base.populators import (
 from galaxy_test.driver import integration_util
 
 
+def pin_directory_metadata(config):
+    # Extended metadata can't store discovered outputs by id, they only get their id when Galaxy
+    # imports them. A destination metadata_strategy wins over GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY,
+    # which the weekly scheduled CI run sets to extended.
+    config.pop("job_config_file", None)
+    config["job_config"] = {
+        "runners": {"local": {"load": "galaxy.jobs.runners.local:LocalJobRunner"}},
+        "execution": {
+            "default": "local",
+            "environments": {"local": {"runner": "local", "metadata_strategy": "directory"}},
+        },
+    }
+
+
 class TestChangeDatatypeStoreByIdIntegration(integration_util.IntegrationTestCase, ChangeDatatypeTests):
     """Test changing datatype with object_store_store_by: id."""
 
@@ -16,6 +30,7 @@ class TestChangeDatatypeStoreByIdIntegration(integration_util.IntegrationTestCas
     def handle_galaxy_config_kwds(cls, config):
         config["object_store_store_by"] = "id"
         config["retry_metadata_internally"] = False
+        pin_directory_metadata(config)
 
     def setUp(self):
         super().setUp()
@@ -30,6 +45,7 @@ class StoreByIdIntegrationInstance(integration_util.IntegrationInstance):
     def handle_galaxy_config_kwds(cls, config):
         config["object_store_store_by"] = "id"
         config["outputs_to_working_directory"] = True
+        pin_directory_metadata(config)
 
 
 instance = integration_util.integration_module_instance(StoreByIdIntegrationInstance)
