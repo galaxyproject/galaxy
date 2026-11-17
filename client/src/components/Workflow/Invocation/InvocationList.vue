@@ -38,6 +38,7 @@ import { useInvocationListItemActions } from "@/components/Workflow/Invocation/u
 import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import { Toast } from "@/composables/toast";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
@@ -301,6 +302,25 @@ function onSort(newSortBy: string, newSortDesc: boolean) {
     sortBy.value = newSortBy;
     sortDesc.value = newSortDesc;
 }
+
+const invocationStore = useInvocationStore();
+
+/** Expanded rows take the state their expanded view polls when it's newer, so the row stays current */
+watch(
+    () =>
+        listedInvocations.value
+            .filter((invocation) => expandedIds.value.includes(invocation.id))
+            .map((invocation) => [invocation, invocationStore.getInvocationById(invocation.id)] as const),
+    (rows) => {
+        for (const [row, polled] of rows) {
+            // the store can still hold an older copy from an earlier visit
+            if (polled && polled.update_time > row.update_time) {
+                row.state = polled.state;
+                row.update_time = polled.update_time;
+            }
+        }
+    },
+);
 
 /** Whether any listed invocation is expanded */
 const anyListedExpanded = computed(() =>

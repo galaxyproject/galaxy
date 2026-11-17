@@ -346,6 +346,28 @@ describe("InvocationList", () => {
         expect(expanded[0]!.find("[data-invocation-id='inv-2']").exists()).toBe(true);
     });
 
+    it.each([
+        ["newer", "2026-01-02T00:00:00", "completed"],
+        ["older", "2025-12-31T00:00:00", "scheduled"],
+    ])("shows the state its expanded view polls in an expanded row only when %s", async (_, updateTime, shown) => {
+        vi.mocked(fetchInvocations).mockResolvedValue([
+            [{ ...INVOCATIONS[0], update_time: "2026-01-01T00:00:00" }, INVOCATIONS[1]],
+            2,
+        ] as unknown as InvocationsPage);
+        const wrapper = mountTarget();
+        await flushPromises();
+        const polled = { inputs: {}, input_step_parameters: {}, outputs: {}, output_collections: {}, steps: [] };
+        useInvocationStore().updateInvocation("inv-1", {
+            ...INVOCATIONS[0],
+            ...polled,
+            state: "completed",
+            update_time: updateTime,
+        });
+        await wrapper.find("[data-description='toggle row details']").trigger("click");
+
+        expect(wrapper.find("help-text-stub").attributes("text")).toBe(shown);
+    });
+
     it("collapses the earliest expanded invocation when a fourth is expanded", async () => {
         const invocations = ["inv-1", "inv-2", "inv-3", "inv-4"].map((id) => ({ ...INVOCATIONS[1], id }));
         vi.mocked(fetchInvocations).mockResolvedValue([invocations, 4] as unknown as InvocationsPage);
