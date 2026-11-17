@@ -18,9 +18,8 @@ describe("legacy-libraries marker", () => {
         }
     });
 
-    // compat-config.js turns COMPONENT_V_MODEL and ATTR_FALSE_VALUE off, so
-    // without the marker BFormTextarea's v-model would bind modelValue against
-    // its value/input model and BButton would render disabled="false". The
+    // Without the marker, bootstrap-vue runs under Galaxy's MODE 3 and throws as
+    // soon as it touches a Vue 2 API that's off (its listeners mixin first). The
     // FormText next to them checks that Galaxy's own components still get the
     // Vue 3 modelValue contract, i.e. the marker stays on bootstrap-vue.
     it("keeps bootstrap-vue's v-model and attributes working with Galaxy's flags off", async () => {
@@ -53,5 +52,19 @@ describe("legacy-libraries marker", () => {
         await input.setValue("galaxy typed");
         expect(formText.emitted("update:modelValue")?.at(-1)).toEqual(["galaxy typed"]);
         expect((wrapper.vm as any).galaxyText).toBe("galaxy typed");
+    });
+
+    // Compat checks COMPONENT_FUNCTIONAL on the rendering parent, not on the
+    // functional component, so this is what the global flag keeps working.
+    it("renders bootstrap-vue's functional components from a Galaxy parent", () => {
+        const Parent = defineComponent({
+            components: { BCol, BRow },
+            template: `<BRow><BCol data-test="col">content</BCol></BRow>`,
+        });
+        const wrapper = mount(Parent);
+        const col = wrapper.find("[data-test='col']");
+        expect(col.classes()).toContain("col");
+        expect(col.text()).toBe("content");
+        expect(wrapper.classes()).toContain("row");
     });
 });
