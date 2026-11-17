@@ -35,6 +35,7 @@ def test_icon_served_with_validators(controller):
     assert response.status_code == 200
     assert response.headers["ETag"].startswith('"')
     assert "Last-Modified" in response.headers
+    assert response.headers["Cache-Control"] == "public, max-age=86400"
     assert "immutable" not in response.headers["Cache-Control"]
 
 
@@ -52,7 +53,7 @@ def test_if_none_match_returns_304(controller, if_none_match):
     response = _get_icon(controller, {"If-None-Match": if_none_match.format(etag=etag)})
     assert response.status_code == 304
     assert response.headers["ETag"] == etag
-    assert "Cache-Control" in response.headers
+    assert response.headers["Cache-Control"] == "public, max-age=86400"
 
 
 def test_if_none_match_mismatch_returns_200(controller):
