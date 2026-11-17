@@ -95,6 +95,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
         tool=None,
         job: galaxy.model.Job | None = None,
         link_data_only: bool = False,
+        protection_plan: str | None = None,
         kwds=None,
     ):
         """Setup files needed for external metadata collection.
@@ -182,6 +183,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         tool=None,
         job: galaxy.model.Job | None = None,
         link_data_only: bool = False,
+        protection_plan: str | None = None,
         kwds=None,
     ):
         assert job_metadata, "setup_external_metadata must be supplied with job_metadata path"
@@ -241,6 +243,8 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             "max_discovered_files": max_discovered_files,
             "outputs": outputs,
             "change_datatype_actions": job.get_change_datatype_actions(),
+            # Path of the plan of protected jobs on the compute host, their outputs must be encrypted.
+            "protection_plan": protection_plan,
         }
 
         # export model objects and object store configuration for extended metadata also.

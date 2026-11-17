@@ -67,6 +67,7 @@ class MockJobWrapper:
         self.user = None
         # Read by BaseJobRunner._ensure_db_session() when a worker thread runs the job.
         self._job_io = None
+        self.protection_plan_path = None
 
         self.external_output_metadata: bunch.Bunch | None = bunch.Bunch()
         self.app.datatypes_registry.set_external_metadata_tool = bunch.Bunch(

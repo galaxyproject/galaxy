@@ -45,6 +45,12 @@ from galaxy.job_execution.output_collect import (
     SessionlessJobContext,
     validate_unnamed_outputs,
 )
+from galaxy.job_execution.protection import (
+    ProtectionError,
+    user_traceback,
+    UserTracebackFilter,
+)
+from galaxy.job_execution.protection.outputs import OutputProtector
 from galaxy.job_execution.setup import TOOL_PROVIDED_JOB_METADATA_KEYS
 from galaxy.metadata import job_metadata_directory
 from galaxy.model import (
@@ -66,6 +72,7 @@ from galaxy.model.store.discover import (
 from galaxy.objectstore import (
     build_object_store_from_config,
     ObjectStore,
+    persist_extra_files,
 )
 from galaxy.tool_util.output_checker import (
     AnyJobMessage,
@@ -115,6 +122,15 @@ def push_if_necessary(object_store: ObjectStore, dataset: DatasetInstance, exter
     assert dataset.dataset is not None
     if not dataset.dataset.purged and os.path.getsize(external_filename):
         object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
+
+
+def _format_exc(output_protector: OutputProtector | None) -> str:
+    """The traceback of the error being handled, as users may see it for protected jobs."""
+    if output_protector:
+        error = sys.exc_info()[1]
+        assert error
+        return user_traceback(error, output_protector.verbose_errors)
+    return traceback.format_exc()
 
 
 def set_validated_state(dataset_instance):
@@ -358,6 +374,15 @@ def set_metadata_portable(
         max_discovered_files=max_discovered_files,
         job=job,
     )
+    output_protector = OutputProtector.for_job(metadata_params, datatypes_registry)
+    if output_protector and not extended_metadata_collection:
+        raise ProtectionError("Outputs of protected jobs can only be protected with extended metadata collection.")
+    if output_protector:
+        # The job's stderr is shown to users, and error messages may quote decrypted data. Protected jobs
+        # collect metadata in a process of their own (the 'extended' strategy), the filter goes away with it.
+        for handler in logging.getLogger().handlers:
+            handler.addFilter(UserTracebackFilter(output_protector.verbose_errors))
+    job_context.output_protector = output_protector
 
     output_collection_security_error = None
     try:
@@ -365,6 +390,10 @@ def set_metadata_portable(
     except OutputCollectionSecurityError as e:
         output_collection_security_error = e
         unnamed_outputs = []
+    if output_protector and unnamed_outputs:
+        raise output_protector.fail(
+            str(tool_job_working_directory), "Tools writing unnamed outputs can't be used with encrypted datasets."
+        )
 
     if extended_metadata_collection:
         if not export_store:
@@ -423,10 +452,13 @@ def set_metadata_portable(
             discovery_failed = True
             final_job_state = Job.states.ERROR
             if job:
-                job.traceback = unicodify(traceback.format_exc(), strip_null=True)
+                job.traceback = unicodify(_format_exc(output_protector), strip_null=True)
             job_messages.append(output_discovery_job_message())
 
         if job:
+            if output_protector:
+                # Exported jobs don't record it, Job.set_streams keeps decrypted data out of protected jobs.
+                job.protection_scheme = output_protector.scheme
             job.set_streams(tool_stdout=tool_stdout, tool_stderr=tool_stderr, job_messages=job_messages)
             job.state = final_job_state
             if os.path.exists(tool_script_file):
@@ -540,15 +572,27 @@ def set_metadata_portable(
                 if MetadataTempFile.is_JSONified_value(metadata_file_override):
                     metadata_file_override = MetadataTempFile.from_JSON(metadata_file_override)
                 setattr(dataset.metadata, metadata_name, metadata_file_override)
-            if output_dict.get("validate", False):
+            # Validating protected outputs reads the decrypted data, and errors may quote it.
+            if output_dict.get("validate", False) and not output_protector:
                 set_validated_state(dataset)
+            # Outputs assigned a discovered file (assign_primary_output) are stored already, the declared file
+            # isn't their content and may hold plaintext.
+            stored_from_discovery = False
+            if output_protector:
+                stored_from_discovery = output_protector.protect_declared(
+                    dataset,
+                    # Unset for deferred outputs.
+                    external_filename=None if is_deferred else external_filename,
+                    link_data_only=not is_deferred and bool(link_data_only),
+                )
+                file_dict = output_protector.without_tool_metadata(file_dict)
 
             if extended_metadata_collection:
                 if not object_store or not export_store:
                     # Can't happen, but type system doesn't know
                     raise Exception("object_store not built")
                 if not is_deferred and not link_data_only:
-                    if dataset_instance_id not in unnamed_id_to_path:
+                    if dataset_instance_id not in unnamed_id_to_path and not stored_from_discovery:
                         object_store_update_actions.append(
                             partial(push_if_necessary, object_store, dataset, external_filename)
                         )
@@ -556,7 +600,14 @@ def set_metadata_portable(
                 object_store_update_actions.append(partial(dataset.set_total_size))
                 object_store_update_actions.append(partial(export_store.add_dataset, dataset))
                 if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
-                    object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
+                    if not output_protector:
+                        object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
+                    elif extra_files_path := dataset.dataset.external_extra_files_path:
+                        # Store exactly the extra files that were protected, not whatever directory
+                        # collect_extra_files() would find.
+                        object_store_update_actions.append(
+                            partial(persist_extra_files, object_store, extra_files_path, dataset)
+                        )
                     dataset_state = "deferred" if (is_deferred and final_job_state == "ok") else final_job_state
                     if not dataset.state == dataset.states.ERROR:
                         # Don't overwrite failed state (for invalid content) here
@@ -566,18 +617,18 @@ def set_metadata_portable(
                     if not dataset.dataset.purged:
                         set_meta(dataset, file_dict, groom_directory_content)
                 # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
-                meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
-                if meta:
-                    context = ExpressionContext(meta, expression_context)
+                if file_dict:
+                    context = ExpressionContext(file_dict, expression_context)
                 else:
                     context = expression_context
                 dataset.blurb = "done"
                 dataset.peek = "no peek"
                 dataset.info = dataset.info or ""
-                if context["stdout"].strip():
+                # Tool output of protected jobs may contain decrypted data, keep it out of the dataset info.
+                if not output_protector and context["stdout"].strip():
                     # Ensure white space between entries
                     dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
-                if context["stderr"].strip():
+                if not output_protector and context["stderr"].strip():
                     # Ensure white space between entries
                     dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
                 dataset.tool_version = version_string
@@ -599,11 +650,18 @@ def set_metadata_portable(
                 json.dump((True, "Metadata has been set successfully"), tf)  # setting metadata has succeeded
         except Exception:
             with open(filename_results_code, "w+") as tf:
-                json.dump((False, traceback.format_exc()), tf)  # setting metadata has failed somehow
+                json.dump((False, _format_exc(output_protector)), tf)  # setting metadata has failed somehow
         finally:
             for action in object_store_update_actions:
                 action()
 
+    if output_protector:
+        assert export_store
+        all_protected = output_protector.finish(
+            [*output_instances.values(), *export_store.included_datasets], str(tool_job_working_directory)
+        )
+        if not all_protected and job:
+            job.state = Job.states.ERROR
     if export_store:
         export_store.push_metadata_files()
         export_store._finalize()
@@ -617,7 +675,9 @@ def set_metadata_portable(
             # once here so perform_import on the host side picks it up from
             # the jobs attrs file.
             export_store.export_job(job, include_job_data=False)
-    write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
+    if not output_protector:
+        # This would read outputs as their inner datatype, protected outputs are encrypted by now.
+        write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
 
 def validate_and_load_datatypes_config(datatypes_config):

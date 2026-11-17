@@ -30,6 +30,13 @@ from galaxy.util import (
     RW_R__R__,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.crypt4gh import (
+    CRYPT4GH_FILE_EXT,
+    is_crypt4gh_file_ext,
+    preserve_crypt4gh_inner_file_ext,
+    unwrap_crypt4gh_file_ext,
+    wrap_crypt4gh_file_ext,
+)
 from galaxy.util.path import StrPath
 from . import (
     binary,
@@ -39,10 +46,15 @@ from . import (
     interval,
     qualityscore,
     sequence,
+    sniff,
     tabular,
     text,
     tracks,
     xml,
+)
+from .crypt4gh import (
+    build_crypt4gh_datatype,
+    Crypt4GH,
 )
 from .display_applications.application import DisplayApplication
 
@@ -124,6 +136,9 @@ class Registry:
         self.build_sites = {}
         self.display_sites = {}
         self.legacy_build_sites = {}
+        self.crypt4gh_enabled = (
+            galaxy.util.asbool(config.get("crypt4gh_enabled", False)) if config is not None else False
+        )
 
     def load_datatypes(
         self,
@@ -161,6 +176,9 @@ class Registry:
                 root = config
             registration = root.find("registration")
             assert registration is not None
+            crypt4gh_enabled_attr = registration.get("crypt4gh_enabled")
+            if crypt4gh_enabled_attr is not None:
+                self.crypt4gh_enabled = galaxy.util.string_as_bool(crypt4gh_enabled_attr)
             # Set default paths defined in local datatypes_conf.xml.
             if use_converters:
                 if not self.converters_path:
@@ -459,6 +477,8 @@ class Registry:
                 self._load_build_sites(root)
 
         self.set_default_values()
+        if self.crypt4gh_enabled:
+            self._register_crypt4gh_datatypes()
 
         def append_to_sniff_order() -> None:
             sniff_order_classes = {type(_) for _ in self.sniff_order}
@@ -472,10 +492,33 @@ class Registry:
                     and hasattr(datatype, "sniff")
                     and not datatype.is_subclass
                     and not hasattr(datatype, "uncompressed_datatype_instance")
+                    # Typed Crypt4GH wrappers can't be told apart by content, only the generic one sniffs.
+                    and getattr(datatype, "crypt4gh_inner_datatype", None) is None
                 ):
                     self.sniff_order.append(datatype)
 
         append_to_sniff_order()
+
+    def _register_crypt4gh_datatypes(self) -> None:
+        """Dynamically register ``inner_ext.c4gh`` wrapper datatypes.
+
+        For every datatype already in the registry (except existing
+        Crypt4GH wrappers), create a typed wrapper via
+        :func:`build_crypt4gh_datatype`.  Also ensure the generic
+        ``c4gh`` datatype is available.
+        """
+        for extension, inner_datatype in list(self.datatypes_by_extension.items()):
+            wrapped_extension = wrap_crypt4gh_file_ext(extension)
+            if not is_crypt4gh_file_ext(extension) and wrapped_extension not in self.datatypes_by_extension:
+                self._register_crypt4gh_datatype(wrapped_extension, build_crypt4gh_datatype(inner_datatype))
+        if CRYPT4GH_FILE_EXT not in self.datatypes_by_extension:
+            self._register_crypt4gh_datatype(CRYPT4GH_FILE_EXT, Crypt4GH())
+
+    def _register_crypt4gh_datatype(self, extension: str, datatype: Crypt4GH) -> None:
+        self.datatypes_by_extension[extension] = datatype
+        self.datatypes_by_suffix_inferences[extension] = datatype
+        self.mimetypes_by_extension[extension] = datatype.get_mime()
+        self.log.debug("Dynamically registered crypt4gh datatype: %s", extension)
 
     def _load_build_sites(self, root):
         def load_build_site(build_site_config):
@@ -604,9 +647,22 @@ class Registry:
                                 if sniffer_class is not None and sniffer_class not in sniffer_elem_classes:
                                     self.sniffer_elems.append(elem)
 
+    def _crypt4gh_inner_ext(self, ext: str) -> str | None:
+        """The inner extension of a typed Crypt4GH wrapper, None for anything else or when Crypt4GH is disabled."""
+        return unwrap_crypt4gh_file_ext(ext) if self.crypt4gh_enabled else None
+
     def get_datatype_from_filename(self, name):
-        max_extension_parts = 3
         generic_datatype_instance = self.get_datatype_by_extension("data")
+        # Check for Crypt4GH wrapper suffix first (e.g. "reads.fastq.c4gh").
+        if (inner_name := self._crypt4gh_inner_ext(name)) is not None:
+            inner_datatype = self.get_datatype_from_filename(inner_name)
+            if inner_datatype is not generic_datatype_instance:
+                wrapped_extension = wrap_crypt4gh_file_ext(inner_datatype.file_ext)
+                if wrapped_extension in self.datatypes_by_extension:
+                    return self.datatypes_by_extension[wrapped_extension]
+            return self.get_datatype_by_extension(CRYPT4GH_FILE_EXT) or generic_datatype_instance
+
+        max_extension_parts = 3
         if "." not in name:
             return generic_datatype_instance
         extension_parts = name.rsplit(".", max_extension_parts)[1:]
@@ -687,6 +743,24 @@ class Registry:
             return data.Directory.file_ext
         best = max(matches, key=lambda datatype: len(type(datatype).__mro__))
         return best.file_ext
+
+    def redetect_ext(self, data) -> str:
+        """Sniff the extension of an existing dataset instance from its file contents.
+
+        Re-detection can't see the original filename, so Crypt4GH files only sniff
+        as the generic wrapper; keep the more specific wrapper when it is known.
+        """
+        ext: str = sniff.guess_ext(data.dataset.get_file_name(), self.sniff_order)
+        if self.crypt4gh_enabled:
+            preserved_ext = preserve_crypt4gh_inner_file_ext(
+                ext,
+                current_ext=data.extension,
+                metadata_inner_ext=getattr(data.metadata, "crypt4gh_inner_ext", None),
+            )
+            # The inner extension may come from a filename, only keep wrappers Galaxy knows.
+            if preserved_ext in self.datatypes_by_extension:
+                ext = preserved_ext
+        return ext
 
     def change_datatype(self, data, ext):
         if data.extension != ext:
@@ -944,16 +1018,40 @@ class Registry:
         """Returns available converters by source type"""
         if ext not in self._converters_by_datatype:
             converters = {}
-            source_datatype = type(self.get_datatype_by_extension(ext))
-            for ext2, converters_dict in self.datatype_converters.items():
-                converter_datatype = type(self.get_datatype_by_extension(ext2))
-                if issubclass(source_datatype, converter_datatype):
-                    converters.update({k: v for k, v in converters_dict.items() if k != ext})
+            inner_ext = self._crypt4gh_inner_ext(ext)
+            if inner_ext is not None:
+                # Converters of the inner datatype (e.g. sam -> bam) also serve the Crypt4GH-wrapped
+                # variant, their outputs get encrypted (sam.c4gh -> bam.c4gh).
+                for target_ext, converter in self.get_converters_by_datatype(inner_ext).items():
+                    wrapped_target = wrap_crypt4gh_file_ext(target_ext)
+                    if wrapped_target != ext and wrapped_target in self.datatypes_by_extension:
+                        converters[wrapped_target] = converter
+            else:
+                source_datatype = type(self.get_datatype_by_extension(ext))
+                for ext2, converters_dict in self.datatype_converters.items():
+                    converter_datatype = type(self.get_datatype_by_extension(ext2))
+                    if issubclass(source_datatype, converter_datatype):
+                        converters.update({k: v for k, v in converters_dict.items() if k != ext})
             # Ensure ext-level converters are present
             if ext in self.datatype_converters.keys():
                 converters.update(self.datatype_converters[ext])
             self._converters_by_datatype[ext] = converters
         return self._converters_by_datatype[ext]
+
+    def get_converter_deps(self, source_ext: str, target_ext: str) -> dict[str, str]:
+        """The datatypes a converter from ``source_ext`` to ``target_ext`` needs converted first.
+
+        Maps each dependency (the converter parameter name) to the extension to convert to.
+        """
+        inner_source_ext = self._crypt4gh_inner_ext(source_ext)
+        inner_target_ext = unwrap_crypt4gh_file_ext(target_ext) if inner_source_ext is not None else None
+        if inner_source_ext is not None and inner_target_ext is not None:
+            # Wrapped converters are the inner ones, their dependencies get encrypted too.
+            return {
+                dep: wrap_crypt4gh_file_ext(dep_ext)
+                for dep, dep_ext in self.get_converter_deps(inner_source_ext, inner_target_ext).items()
+            }
+        return {dep: dep for dep in self.converter_deps.get(source_ext, {}).get(target_ext, [])}
 
     def get_converter_by_target_type(self, source_ext, target_ext):
         """Returns a converter based on source and target datatypes"""
@@ -1062,7 +1160,7 @@ class Registry:
         if not self._registry_xml_string:
             registry_string_template = Template("""<?xml version="1.0"?>
             <datatypes>
-              <registration converters_path="$converters_path" display_path="$display_path">
+              <registration converters_path="$converters_path" display_path="$display_path" crypt4gh_enabled="$crypt4gh_enabled">
                 $datatype_elems
               </registration>
               <sniffers>
@@ -1077,6 +1175,7 @@ class Registry:
             self._registry_xml_string = registry_string_template.substitute(
                 converters_path=converters_path,
                 display_path=display_path,
+                crypt4gh_enabled=str(self.crypt4gh_enabled).lower(),
                 datatype_elems=datatype_elems,
                 sniffer_elems=sniffer_elems,
             )
@@ -1125,10 +1224,16 @@ def upload_warning(template: Template | None, auto_compressed_type: str | None =
     return template.safe_substitute(template_args)
 
 
-def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):
+def example_datatype_registry_for_sample(
+    sniff_compressed_dynamic_datatypes_default=True,
+    crypt4gh_enabled=False,
+):
     galaxy_dir = galaxy.util.galaxy_directory()
     sample_conf = os.path.join(galaxy_dir, "lib", "galaxy", "config", "sample", "datatypes_conf.xml.sample")
-    config = Bunch(sniff_compressed_dynamic_datatypes_default=sniff_compressed_dynamic_datatypes_default)
+    config = Bunch(
+        sniff_compressed_dynamic_datatypes_default=sniff_compressed_dynamic_datatypes_default,
+        crypt4gh_enabled=crypt4gh_enabled,
+    )
     datatypes_registry = Registry(config)
     datatypes_registry.load_datatypes(root_dir=galaxy_dir, config=sample_conf)
     return datatypes_registry

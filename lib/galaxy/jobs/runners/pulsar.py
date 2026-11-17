@@ -48,6 +48,7 @@ from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
 )
+from galaxy.job_execution.protection import ProtectionError
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
@@ -618,6 +619,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             except Exception as e:
                 if isinstance(e, ParameterValueError):
                     log.info("parameter validation error preparing job %d: %s", job_wrapper.job_id, unicodify(e))
+                elif isinstance(e, ProtectionError):
+                    log.info("job %d rejected while preparing: %s", job_wrapper.job_id, unicodify(e))
                 else:
                     log.exception("failure preparing job %d", job_wrapper.job_id)
                 job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
@@ -702,6 +705,11 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             fail_or_resubmit = True
         except ContainerRequiredException as e:
             log.info("failure running job %d: %s", job_wrapper.job_id, e)
+            fail_message = str(e)
+            fail_or_resubmit = True
+        except ProtectionError as e:
+            # The destination can't run jobs decrypting data, tell the user why.
+            log.info("protected job %d refused: %s", job_wrapper.job_id, unicodify(e))
             fail_message = str(e)
             fail_or_resubmit = True
         except Exception:
