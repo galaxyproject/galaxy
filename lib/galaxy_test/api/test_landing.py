@@ -22,6 +22,7 @@ from galaxy_test.base.api_asserts import (
 )
 from galaxy_test.base.populators import (
     DatasetPopulator,
+    LibraryPopulator,
     skip_without_tool,
     WorkflowPopulator,
 )
@@ -36,6 +37,7 @@ class TestLandingApi(ApiTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     @skip_without_tool("cat")
     def test_tool_landing(self):
@@ -97,6 +99,33 @@ class TestLandingApi(ApiTestCase):
         target = targets[0]
         assert "elements" in target
         assert target["elements"]
+        assert len(target["elements"]) == 1
+
+    @skip_without_tool("cat")
+    def test_data_landing_library_folder_destination(self):
+        library = self.library_populator.new_private_library("data_landing_library_folder")
+        folder_id = library["root_folder_id"][1:]
+        data_landing_request_state = DataLandingRequestState(
+            targets=[
+                {
+                    "destination": {"type": "library_folder", "library_folder_id": folder_id},
+                    "items": [
+                        {
+                            "src": "url",
+                            "url": "base64://eyJ0ZXN0IjogInRlc3QifQ==",
+                            "ext": "txt",
+                        }
+                    ],
+                }
+            ],
+        )
+        payload = CreateDataLandingPayload(request_state=data_landing_request_state, public=True)
+        response = self.dataset_populator.create_data_landing(payload)
+
+        tool_landing = self.dataset_populator.use_tool_landing(response.uuid)
+        assert tool_landing.request_state
+        target = tool_landing.request_state["request_json"]["targets"][0]
+        assert target["destination"]["type"] == "library_folder"
         assert len(target["elements"]) == 1
 
     def test_file_landing(self):

@@ -222,10 +222,9 @@ class ToolsService(ServiceBase):
         request_version = "1"
         payload = data_landing_payload.model_dump(exclude_unset=True)["request_state"]
         validate_and_normalize_targets(trans, payload, set_internal_fields=False)
-        validated_back_to_model = TargetsAdapter.validate_python(payload["targets"])
         request_state = {
             "request_version": request_version,
-            "request_json": {"targets": TargetsAdapter.dump_python(validated_back_to_model, exclude_unset=True)},
+            "request_json": {"targets": payload["targets"]},
             "file_count": "0",
         }
         return CreateToolLandingRequestPayload(

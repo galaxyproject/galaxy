@@ -830,11 +830,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 and self.import_options.allow_edit
             ):
                 folder_id = library_attrs["id"]
-                if isinstance(folder_id, str):
-                    # Fetch requests may target library folders by encoded id, decode it like
-                    # galaxy.tools.JobContext.get_library_folder does without extended metadata.
-                    assert self.app
-                    folder_id = self.app.security.decode_id(folder_id)
                 library_folder = self.sa_session.get(model.LibraryFolder, folder_id)
                 if library_folder is None:
                     raise ObjectNotFound(f"Failed to find library folder with id [{folder_id}]")
