@@ -211,7 +211,9 @@ interface Props {
     selectedItems?: number[];
 
     /**
-     * Field on each item used as a stable row identity (e.g. for expanded rows after reload)
+     * Item field used as a stable row identity, so expanded rows stay with their item
+     * when items are sorted, added or removed. When unset, rows are tracked by their
+     * position in `items`.
      * @default ""
      */
     primaryKey?: string;
@@ -509,11 +511,7 @@ const indeterminateSelected = computed(() => {
     return selectedVisibleCount > 0 && selectedVisibleCount < localItems.value.length;
 });
 const allSelected = computed(() => {
-    return (
-        props.selectable &&
-        localItems.value.length > 0 &&
-        localItems.value.every((item) => isRowSelected(item))
-    );
+    return props.selectable && localItems.value.length > 0 && localItems.value.every((item) => isRowSelected(item));
 });
 
 /**

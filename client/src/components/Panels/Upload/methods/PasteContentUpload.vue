@@ -311,7 +311,15 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
             </div>
 
             <div ref="tableContainerRef" class="paste-table-container">
-                <GTable hover compact fixed stripped :items="pasteItems" :fields="tableFields" class="paste-table">
+                <GTable
+                    hover
+                    compact
+                    fixed
+                    stripped
+                    primary-key="id"
+                    :items="pasteItems"
+                    :fields="tableFields"
+                    class="paste-table">
                     <!-- Expand toggle column header -->
                     <template v-slot:head(expand)>
                         <button
