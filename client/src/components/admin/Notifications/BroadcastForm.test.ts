@@ -166,8 +166,12 @@ describe("BroadcastForm.vue", () => {
         expect((wrapper.find(MESSAGE_INPUT_SELECTOR).element as HTMLInputElement).value).toBe(
             FAKE_BROADCAST.content.message,
         );
-        expect(wrapper.find("#broadcast-action-link-name-0").exists()).toBeTruthy();
-        expect(wrapper.find("#broadcast-action-link-link-0").exists()).toBeTruthy();
+        expect((wrapper.find("#broadcast-action-link-name-0").element as HTMLInputElement).value).toBe(
+            FAKE_BROADCAST.content.action_links![0]!.action_name,
+        );
+        expect((wrapper.find("#broadcast-action-link-link-0").element as HTMLInputElement).value).toBe(
+            FAKE_BROADCAST.content.action_links![0]!.link,
+        );
     });
 
     it("should update broadcast when id is defined and all inputs are defined", async () => {
