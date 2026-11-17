@@ -403,6 +403,7 @@ def set_metadata_portable(
             json.load(open(filename_kwds))
         )  # load kwds; need to ensure our keywords are not unicode
         object_store_update_actions = []
+        extra_files_dir_name = None
         try:
             is_deferred = bool(unnamed_is_deferred.get(dataset_instance_id))
             dataset.metadata_deferred = is_deferred
@@ -484,7 +485,15 @@ def set_metadata_portable(
                 object_store_update_actions.append(partial(dataset.set_total_size))
                 object_store_update_actions.append(partial(export_store.add_dataset, dataset))
                 if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
-                    object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
+                    object_store_update_actions.append(
+                        partial(
+                            collect_extra_files,
+                            object_store,
+                            dataset,
+                            ".",
+                            working_extra_files_name=extra_files_dir_name,
+                        )
+                    )
                     dataset_state = "deferred" if (is_deferred and final_job_state == "ok") else final_job_state
                     if not dataset.state == dataset.states.ERROR:
                         # Don't overwrite failed state (for invalid content) here

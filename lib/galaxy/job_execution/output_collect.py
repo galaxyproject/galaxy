@@ -609,11 +609,15 @@ def collect_extra_files(
     dataset: "DatasetInstance",
     job_working_directory: str,
     outputs_to_working_directory: bool = False,
+    working_extra_files_name: Optional[str] = None,
 ):
     # TODO: should this use compute_environment to determine the extra files path ?
     assert dataset.dataset
     real_file_name = file_name = dataset.dataset.extra_files_path_name_from(object_store)
-    if outputs_to_working_directory:
+    if working_extra_files_name:
+        # Caller knows the name the job wrote extra files to (derived from the rewritten output path)
+        file_name = working_extra_files_name
+    elif outputs_to_working_directory:
         # OutputsToWorkingDirectoryPathRewriter always rewrites extra files to uuid path,
         # so we have to collect from that path even if the real extra files path is dataset_N_files
         file_name = f"dataset_{dataset.dataset.uuid}_files"
