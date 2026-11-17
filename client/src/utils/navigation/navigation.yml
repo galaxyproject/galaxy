@@ -1383,6 +1383,8 @@ workflow_editor:
     save_button: '#workflow-save-button'
     state_upgrade_modal: '[data-description="workflow state upgrade modal"]'
     state_upgrade_modal_close: '[data-description="workflow state upgrade modal"] .g-modal-close-button'
+    state_upgrade_modal_ok: '[data-description="workflow state upgrade modal ok"]'
+    state_upgrade_filled_defaults_toggle: '[data-description="workflow state upgrade filled defaults toggle"]'
     save_as_modal_close: '[data-description="save-as-modal"] .g-modal-close-button'
     workflow_activity: '#activity-workflow-editor-workflows'
     workflow_activity_panel: ".activity-panel[data-description='Workflows']"
