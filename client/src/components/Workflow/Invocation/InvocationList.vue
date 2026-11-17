@@ -72,8 +72,6 @@ const TITLE = "Workflow Invocations";
 const HEADER_MESSAGE_SECONDS = 5;
 /** Narrower than this, the column filter chips get their own row under the filter bar */
 const INLINE_CHIPS_MIN_WIDTH = 768;
-/** How many expanded invocations are remembered, keeping the most recent */
-const MAX_SAVED_EXPANDED = 20;
 
 /** The status buttons, one per `INVOCATION_STATE_GROUPS` key, in display order */
 const STATUS_GROUPS = [
@@ -158,8 +156,19 @@ const errorMessage = ref("");
 const initDataLoading = ref(true);
 const resultsLoading = ref(false);
 
-/** Invocations the user left expanded, expanded again whenever they're listed */
-const expandedIds = useUserLocalStorage<string[]>("invocation-list-expanded-ids", []);
+/** The invocations expanded in this visit */
+const expandedIds = ref<string[]>([]);
+/** The expanded invocation the user last acted on, expanded again when they come back; empty for none */
+const rememberedExpandedId = useUserLocalStorage("invocation-list-remembered-expanded-id", "");
+watch(
+    rememberedExpandedId,
+    (id) => {
+        if (id && !expandedIds.value.includes(id)) {
+            expandedIds.value = [...expandedIds.value, id];
+        }
+    },
+    { immediate: true },
+);
 
 const filterText = ref("");
 const showAdvanced = ref(false);
@@ -298,8 +307,24 @@ const anyListedExpanded = computed(() =>
 /** Expands or collapses the invocation's row */
 function onShowDetails(invocation: WorkflowInvocation) {
     const others = expandedIds.value.filter((id) => id !== invocation.id);
-    expandedIds.value =
-        others.length === expandedIds.value.length ? [...others, invocation.id].slice(-MAX_SAVED_EXPANDED) : others;
+    if (others.length === expandedIds.value.length) {
+        expandedIds.value = [...others, invocation.id];
+    } else {
+        expandedIds.value = others;
+        if (rememberedExpandedId.value === invocation.id) {
+            rememberedExpandedId.value = "";
+        }
+    }
+}
+
+function collapseAll() {
+    expandedIds.value = [];
+    rememberedExpandedId.value = "";
+}
+
+/** Remembers the invocation acted on if its row is expanded, and otherwise forgets the remembered one */
+function rememberActedOn(invocation: WorkflowInvocation) {
+    rememberedExpandedId.value = expandedIds.value.includes(invocation.id) ? invocation.id : "";
 }
 
 /** The invocation's workflow version as the editor numbers it (from 1), once its workflow has loaded */
@@ -331,6 +356,17 @@ const {
     viewInvocation,
     refreshList: load,
 });
+
+/** The row menu's actions, each also counting as acting on its invocation */
+const rowActions = invocationListItemActions.map((action) => ({
+    ...action,
+    handler:
+        action.handler &&
+        ((invocation: WorkflowInvocation, index: number) => {
+            rememberActedOn(invocation);
+            action.handler!(invocation, index);
+        }),
+}));
 
 /** Ids of the selected invocations; cleared whenever the list's rows change */
 const selectedIds = ref<string[]>([]);
@@ -496,7 +532,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 :sort-desc="sortDesc"
                 :local-sorting="false"
                 :overlay-loading="resultsLoading"
-                :actions="invocationListItemActions"
+                :actions="rowActions"
                 :row-details-shown="(item) => expandedIds.includes(item.id)"
                 selectable
                 no-select-on-click
@@ -531,7 +567,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                         tooltip
                         title="Collapse all invocations"
                         data-description="collapse all invocations"
-                        @click="expandedIds = []">
+                        @click="collapseAll">
                         <FontAwesomeIcon :icon="faCompress" />
                     </GLink>
                 </template>
@@ -548,7 +584,8 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                         <GLink
                             class="invocation-workflow-name"
                             :to="`/workflows/invocations/${item.id}`"
-                            :title="localize('View this invocation')">
+                            :title="localize('View this invocation')"
+                            @click="rememberActedOn(item)">
                             {{ workflowStore.getStoredWorkflowNameByInstanceId(item.workflow_id) }}
                         </GLink>
                         <GBadge
@@ -575,7 +612,12 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 </template>
 
                 <template v-slot:row-details="{ item }">
-                    <div :key="item.id" class="card p-2 invocation-row-details" data-description="grid expanded row">
+                    <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+                    <div
+                        :key="item.id"
+                        class="card p-2 invocation-row-details"
+                        data-description="grid expanded row"
+                        @click.capture="rememberActedOn(item)">
                         <div class="invocation-row-layout">
                             <InvocationRowSummary :invocation="item">
                                 <template v-slot:actions>
