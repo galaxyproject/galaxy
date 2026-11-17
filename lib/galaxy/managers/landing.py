@@ -23,6 +23,7 @@ from galaxy.model import (
     WorkflowLandingRequest as WorkflowLandingRequestModel,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.fetch_data import encode_fetch_request_ids
 from galaxy.schema.schema import (
     ClaimLandingPayload,
     CreateToolLandingRequestPayload,
@@ -38,6 +39,7 @@ from galaxy.structured_app import (
 )
 from galaxy.tool_util.parameters import (
     landing_decode,
+    landing_encode,
     LandingRequestInternalToolState,
     LandingRequestToolState,
 )
@@ -210,12 +212,23 @@ class LandingRequestManager:
         response_model = ToolLandingRequest(
             tool_id=model.tool_id,
             tool_version=model.tool_version,
-            request_state=model.request_state,
+            request_state=self._encode_tool_request_state(model),
             uuid=model.uuid,
             state=self._state(model),
             origin=model.origin,
         )
         return response_model
+
+    def _encode_tool_request_state(self, model: ToolLandingRequestModel) -> Optional[dict]:
+        # The request state is stored with decoded ids (see create_tool_landing_request).
+        if model.request_state is None:
+            return None
+        ref = ToolRunReference(tool_id=model.tool_id, tool_version=model.tool_version, tool_uuid=None)
+        tool = get_tool_from_toolbox(self.app.toolbox, ref, user=None)
+        if hasattr(tool, "parameters"):
+            internal_state = LandingRequestInternalToolState(model.request_state)
+            return landing_encode(internal_state, tool, self.security.encode_id).input_state
+        return encode_fetch_request_ids(model.request_state, self.security.encode_id)
 
     def _workflow_response(self, model: WorkflowLandingRequestModel) -> WorkflowLandingRequest:
 

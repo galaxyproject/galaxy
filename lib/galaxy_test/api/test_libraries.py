@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from galaxy.model.unittest_utils.store_fixtures import (
@@ -302,6 +303,24 @@ class TestLibrariesApi(ApiTestCase):
             targets = [{"destination": destination, "items": [{"src": "pasted", "paste_content": "1 2 3"}]}]
             response = self.dataset_populator.fetch({"history_id": history_id, "targets": targets}, assert_ok=False)
             self._assert_status_code_is(response, 403)
+
+    @requires_new_library
+    def test_fetch_job_parameters_encode_ids(self):
+        history_id, library, destination = self._setup_fetch_to_folder("fetch_job_parameters")
+        item = {"src": "pasted", "paste_content": "1 2 3", "ext": "txt"}
+        targets = [{"destination": destination, "items": [item]}, {"destination": {"type": "hdas"}, "items": [item]}]
+        response = self.dataset_populator.fetch({"history_id": history_id, "targets": targets})
+        job_id = response.json()["jobs"][0]["id"]
+        hda_id = response.json()["outputs"][0]["id"]
+
+        job = self._get(f"jobs/{job_id}").json()
+        request = json.loads(json.loads(job["params"]["request_json"]))
+        parameters = self._get(f"jobs/{job_id}/parameters_display").json()["parameters"]
+        displayed = json.loads(next(p["value"] for p in parameters if p["text"] == "request_json"))
+        for stored_request in (request, displayed):
+            folder_target, hdas_target = stored_request["targets"]
+            assert folder_target["destination"]["library_folder_id"] == destination["library_folder_id"]
+            assert hdas_target["elements"][0]["object_id"] == hda_id
 
     @requires_new_library
     def test_fetch_single_url_with_invalid_datatype(self):

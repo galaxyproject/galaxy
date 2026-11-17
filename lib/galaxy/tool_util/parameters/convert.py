@@ -356,6 +356,8 @@ def _encode_callback_for(encode_id: EncodeFunctionT) -> Callback:
 
     def encode_callback(parameter: ToolParameterT, value: Any):
         if parameter.parameter_type == "gx_data":
+            if value is None:
+                return VISITOR_NO_REPLACEMENT
             if parameter.multiple:
                 assert isinstance(value, list), str(value)
                 return list(map(encode_src_dict, value))
@@ -363,6 +365,8 @@ def _encode_callback_for(encode_id: EncodeFunctionT) -> Callback:
                 assert isinstance(value, dict), str(value)
                 return encode_src_dict(value)
         elif parameter.parameter_type == "gx_data_collection":
+            if value is None:
+                return VISITOR_NO_REPLACEMENT
             assert isinstance(value, dict), str(value)
             return encode_src_dict(value)
         else:

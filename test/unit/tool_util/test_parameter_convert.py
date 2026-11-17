@@ -14,6 +14,7 @@ from galaxy.tool_util.parameters import (
     input_models_for_tool_source,
     landing_decode,
     landing_encode,
+    LandingRequestInternalToolState,
     LandingRequestToolState,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
@@ -117,6 +118,14 @@ def test_landing_encode_data():
     encoded_state = landing_encode(decoded_state, bundle, _fake_encode)
     assert encoded_state.input_state["parameter"]["src"] == "hda"
     assert encoded_state.input_state["parameter"]["id"] == EXAMPLE_ID_1_ENCODED
+
+
+def test_landing_encode_unset_optional_data():
+    for tool_name in ["gx_data_optional", "gx_data_collection_optional"]:
+        bundle = input_models_for_tool_source(tool_source_for(f"parameters/{tool_name}"))
+        decoded_state = LandingRequestInternalToolState({"parameter": None})
+        encoded_state = landing_encode(decoded_state, bundle, _fake_encode)
+        assert encoded_state.input_state["parameter"] is None
 
 
 def test_dereference():

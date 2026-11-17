@@ -56,6 +56,21 @@ class TestLandingApi(ApiTestCase):
         assert response.state == "claimed"
         assert str(response.origin) == "http://example.localhost/"
 
+    @skip_without_tool("cat1")
+    def test_tool_landing_encodes_dataset_ids(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id)
+        request = CreateToolLandingRequestPayload(
+            tool_id="cat1",
+            tool_version=None,
+            request_state={"input1": {"src": "hda", "id": hda["id"]}},
+            public=True,
+        )
+        response = self.dataset_populator.create_tool_landing(request)
+        assert response.request_state == {"input1": {"src": "hda", "id": hda["id"]}}
+        response = self.dataset_populator.use_tool_landing(response.uuid)
+        assert response.request_state == {"input1": {"src": "hda", "id": hda["id"]}}
+
     @skip_without_tool("gx_int")
     def test_tool_landing_invalid(self):
         request = CreateToolLandingRequestPayload(
