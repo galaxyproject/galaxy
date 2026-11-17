@@ -174,6 +174,8 @@ class CgroupPlugin(InstrumentPlugin):
     def __read_metrics(self, path):
         metrics: dict[str, str] = {}
         key = None
+        hierarchical_memory_limit = None
+        hierarchical_memsw_limit = None
         with open(path) as infile:
             for line in infile:
                 try:
@@ -183,7 +185,17 @@ class CgroupPlugin(InstrumentPlugin):
                     metric = None
                 if not metric:
                     continue
+                if metric.subkey == "memory.stat.hierarchical_memory_limit" and isinstance(metric.value, int):
+                    hierarchical_memory_limit = metric.value
+                elif metric.subkey == "memory.stat.hierarchical_memsw_limit" and isinstance(metric.value, int):
+                    hierarchical_memsw_limit = metric.value
                 self.__add_metric(metrics, metric)
+        if hierarchical_memory_limit is not None:
+            for mem_key in ("memory.limit_in_bytes", "memory.soft_limit_in_bytes"):
+                if isinstance(metrics.get(mem_key), int):
+                    metrics[mem_key] = min(metrics[mem_key], hierarchical_memory_limit)
+        if hierarchical_memsw_limit is not None and isinstance(metrics.get("memory.memsw.limit_in_bytes"), int):
+            metrics["memory.memsw.limit_in_bytes"] = min(metrics["memory.memsw.limit_in_bytes"], hierarchical_memsw_limit)
         return metrics
 
     def __add_metric(self, metrics, metric):

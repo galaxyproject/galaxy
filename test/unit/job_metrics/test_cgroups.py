@@ -259,7 +259,30 @@ def test_cgroupv1_collection(tmpdir):
     assert "cpuacct.usage" in properties
     assert properties["cpuacct.usage"] == 7265342042
     assert "memory.limit_in_bytes" in properties
-    assert properties["memory.limit_in_bytes"] == 9223372036854771712
+    assert properties["memory.limit_in_bytes"] == 7853834240
+    assert properties["memory.soft_limit_in_bytes"] == 7853834240
+    assert properties["memory.memsw.limit_in_bytes"] == 7853834240
+
+
+def test_cgroupv1_hierarchical_limit_clamping(tmpdir):
+    plugin = CgroupPlugin()
+    job_dir = tmpdir.mkdir("job")
+    job_dir.join("__instrument_cgroup__metrics").write(
+        """__memory.limit_in_bytes__
+1000
+__memory.soft_limit_in_bytes__
+20000
+__memory.memsw.limit_in_bytes__
+30000
+__memory.stat__
+hierarchical_memory_limit 5000
+hierarchical_memsw_limit 15000
+"""
+    )
+    properties = plugin.job_properties(1, job_dir)
+    assert properties["memory.limit_in_bytes"] == 1000
+    assert properties["memory.soft_limit_in_bytes"] == 5000
+    assert properties["memory.memsw.limit_in_bytes"] == 15000
 
 
 def test_cgroupv2_collection(tmpdir):
