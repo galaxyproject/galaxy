@@ -12,6 +12,7 @@ import pytest
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.workflows import WorkflowContentsManager
+from galaxy.objectstore.unittest_utils import Config as ObjectStoreConfig
 from galaxy.schema.invocation import FailureReason
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.parameters import populate_state
@@ -445,6 +446,16 @@ def test_subworkflow_new_outputs():
     assert output2["name"] == "4:out_file1", output2["name"]
 
 
+@pytest.fixture
+def uuid_object_store(monkeypatch):
+    # to_cwl resolves file names through the global Dataset.object_store. Pin one that works for
+    # unflushed datasets (no id) instead of inheriting whatever an earlier test on this worker set.
+    with ObjectStoreConfig(store_by="uuid") as (_, object_store):
+        monkeypatch.setattr(model.Dataset, "object_store", object_store)
+        yield
+
+
+@pytest.mark.usefixtures("uuid_object_store")
 def test_to_cwl():
     hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
     hda.dataset.state = model.Dataset.states.OK
@@ -468,6 +479,7 @@ def test_to_cwl_purged_dataset():
         modules.to_cwl(hda, [], step)
 
 
+@pytest.mark.usefixtures("uuid_object_store")
 def test_to_cwl_nested_collection():
     hda = model.HistoryDatasetAssociation(name="reads.fq", create_dataset=True, flush=False)
     hda.dataset.state = model.Dataset.states.OK
@@ -482,6 +494,7 @@ def test_to_cwl_nested_collection():
     assert result["outer"][0]["element_identifier"] == "inner"
 
 
+@pytest.mark.usefixtures("uuid_object_store")
 def test_to_cwl_dataset_collection_element():
     hda = model.HistoryDatasetAssociation(name="reads.fq", create_dataset=True, flush=False)
     hda.dataset.state = model.Dataset.states.OK
@@ -495,6 +508,7 @@ def test_to_cwl_dataset_collection_element():
     assert result[0]["element_identifier"] == "inner"
 
 
+@pytest.mark.usefixtures("uuid_object_store")
 def test_to_cwl_record_collection():
     dc = model.DatasetCollection(collection_type="paired")
     for identifier, name in (("forward", "r1.fq"), ("reverse", "r2.fq")):
