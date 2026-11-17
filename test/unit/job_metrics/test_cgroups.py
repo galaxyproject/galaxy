@@ -267,8 +267,7 @@ def test_cgroupv1_collection(tmpdir):
 def test_cgroupv1_hierarchical_limit_clamping(tmpdir):
     plugin = CgroupPlugin()
     job_dir = tmpdir.mkdir("job")
-    job_dir.join("__instrument_cgroup__metrics").write(
-        """__memory.limit_in_bytes__
+    job_dir.join("__instrument_cgroup__metrics").write("""__memory.limit_in_bytes__
 1000
 __memory.soft_limit_in_bytes__
 20000
@@ -277,8 +276,7 @@ __memory.memsw.limit_in_bytes__
 __memory.stat__
 hierarchical_memory_limit 5000
 hierarchical_memsw_limit 15000
-"""
-    )
+""")
     properties = plugin.job_properties(1, job_dir)
     assert properties["memory.limit_in_bytes"] == 1000
     assert properties["memory.soft_limit_in_bytes"] == 5000
