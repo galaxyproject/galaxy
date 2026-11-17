@@ -832,7 +832,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 folder_id = library_attrs["id"]
                 library_folder = self.sa_session.get(model.LibraryFolder, folder_id)
                 if library_folder is None:
-                    raise ObjectNotFound(f"Failed to find library folder with id [{folder_id}]")
+                    raise ObjectNotFound("Failed to find library folder")
                 import_folder(library_attrs, root_folder=library_folder)
             else:
                 assert self.import_options.allow_library_creation

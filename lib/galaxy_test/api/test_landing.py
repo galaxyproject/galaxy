@@ -101,32 +101,26 @@ class TestLandingApi(ApiTestCase):
         assert target["elements"]
         assert len(target["elements"]) == 1
 
-    @skip_without_tool("cat")
-    def test_data_landing_library_folder_destination(self):
+    def test_data_landing_library_destinations_rejected(self):
         library = self.library_populator.new_private_library("data_landing_library_folder")
-        folder_id = library["root_folder_id"][1:]
-        data_landing_request_state = DataLandingRequestState(
-            targets=[
-                {
-                    "destination": {"type": "library_folder", "library_folder_id": folder_id},
-                    "items": [
+        for destination in (
+            self.library_populator.fetch_destination_for_library(library),
+            {"type": "library", "name": "data_landing_library"},
+        ):
+            payload = {
+                "request_state": {
+                    "targets": [
                         {
-                            "src": "url",
-                            "url": "base64://eyJ0ZXN0IjogInRlc3QifQ==",
-                            "ext": "txt",
+                            "destination": destination,
+                            "items": [{"src": "url", "url": "base64://eyJ0ZXN0IjogInRlc3QifQ==", "ext": "txt"}],
                         }
-                    ],
-                }
-            ],
-        )
-        payload = CreateDataLandingPayload(request_state=data_landing_request_state, public=True)
-        response = self.dataset_populator.create_data_landing(payload)
-
-        tool_landing = self.dataset_populator.use_tool_landing(response.uuid)
-        assert tool_landing.request_state
-        target = tool_landing.request_state["request_json"]["targets"][0]
-        assert target["destination"]["type"] == "library_folder"
-        assert len(target["elements"]) == 1
+                    ]
+                },
+                "public": True,
+            }
+            response = self._post("data_landings", payload, json=True, anon=True)
+            assert_status_code_is(response, 400)
+            assert "Data landings cannot target libraries" in response.json()["err_msg"]
 
     def test_file_landing(self):
         file_landing_request_state = FileOrCollectionRequestsAdapter.validate_python(
