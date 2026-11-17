@@ -17,6 +17,11 @@ from sqlalchemy import (
 )
 
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.run_notification_queries import (
+    eligible_run_notifications_stmt,
+    FINISHED_INVOCATION_STATES,
+    FINISHED_JOB_STATES,
+)
 from galaxy.model import (
     ImplicitCollectionJobs,
     ImplicitCollectionJobsJobAssociation,
@@ -39,15 +44,6 @@ from galaxy.structured_app import MinimalManagerApp
 from galaxy.util.task import IntervalTask
 
 log = logging.getLogger(__name__)
-
-# A pause needs intervention but does not consume the final notification.
-FINISHED_JOB_STATES = tuple(state for state in Job.settled_states if state != Job.states.PAUSED)
-FINISHED_INVOCATION_STATES = (
-    WorkflowInvocation.states.SCHEDULED,
-    WorkflowInvocation.states.COMPLETED,
-    WorkflowInvocation.states.FAILED,
-    WorkflowInvocation.states.CANCELLED,
-)
 
 
 @dataclass
@@ -82,13 +78,7 @@ class RunNotificationManager:
     def poll_pending_notifications(self, after_id: int = 0, limit: int = 100) -> list[int]:
         if not (self.app.config.enable_notification_system or self.app.config.smtp_server):
             return []
-        stmt = (
-            select(RunNotificationRequest.id)
-            .where(RunNotificationRequest.completed.is_(False), RunNotificationRequest.id > after_id)
-            .order_by(RunNotificationRequest.id)
-            .limit(limit)
-        )
-        return list(self.app.model.context.scalars(stmt))
+        return list(self.app.model.context.scalars(eligible_run_notifications_stmt(after_id, limit)))
 
     def check_and_notify(self, request_id: int) -> bool:
         session = self.app.model.context
