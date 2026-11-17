@@ -151,11 +151,16 @@ class ExtraPreferencesManager:
                 form_input = field.model_dump(exclude_none=True)
                 required = "Required" if field.required else ""
                 form_input["help"] = f"{field.help} {required}" if field.help else required
+                value = values[section.name][field.name]
                 if field.sensitive:
-                    form_input["value"] = LEGACY_SECRET_PLACEHOLDER
+                    # Never send a sensitive value, not even one from the definition. Only a
+                    # stored secret gets the placeholder, so an unset one shows as empty.
+                    form_input.pop("value", None)
+                    if isinstance(value, ExtraPreferenceSecretState) and value.is_set:
+                        form_input["value"] = LEGACY_SECRET_PLACEHOLDER
                     # the generic form masks password inputs
                     form_input["type"] = "password"
-                elif (value := values[section.name][field.name]) is not None:
+                elif value is not None:
                     form_input["value"] = value
                 form_inputs.append(form_input)
             form_sections.append(
