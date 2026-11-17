@@ -575,7 +575,7 @@ watch([currentPage, filterText, sortBy, sortDesc], load);
                 </template>
 
                 <template v-slot:row-details="{ item }">
-                    <div class="card p-2 invocation-row-details" data-description="grid expanded row">
+                    <div :key="item.id" class="card p-2 invocation-row-details" data-description="grid expanded row">
                         <div class="invocation-row-layout">
                             <InvocationRowSummary :invocation="item">
                                 <template v-slot:actions>

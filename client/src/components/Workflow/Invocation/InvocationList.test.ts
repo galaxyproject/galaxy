@@ -320,6 +320,24 @@ describe("InvocationList", () => {
         expect(wrapper.find("[data-description='grid expanded row']").exists()).toBe(true);
     });
 
+    it("renders a new expanded view when a reload moves another expanded invocation into a row", async () => {
+        const wrapper = mountTarget();
+        await flushPromises();
+        for (const toggle of wrapper.findAll("[data-description='toggle row details']")) {
+            await toggle.trigger("click");
+        }
+        await flushPromises();
+        const before = wrapper.find("[data-description='invocation state stub']").element;
+
+        // inv-2 now lands in the row inv-1's expanded view was in
+        vi.mocked(fetchInvocations).mockResolvedValue([[INVOCATIONS[1]], 1] as unknown as InvocationsPage);
+        await wrapper.find("[data-description='filter text input']").setValue("workflow:rna");
+        vi.runAllTimers();
+        await flushPromises();
+
+        expect(wrapper.find("[data-description='invocation state stub']").element).not.toBe(before);
+    });
+
     describe("admin mode", () => {
         const ADMIN_PROPS = {
             admin: true,
