@@ -548,15 +548,6 @@ watch([currentPage, filterText, sortBy, sortDesc], ([page], [oldPage]) => {
                     <a href="javascript:void(0)" class="ui-link" @click="filterText = validatedFilterText()">
                         Remove invalid filters from query
                     </a>
-                    or
-                    <a
-                        v-g-tooltip.hover
-                        title="Note that this might produce inaccurate results"
-                        href="javascript:void(0)"
-                        class="ui-link"
-                        @click="filterText = `'${filterText}'`">
-                        Match the exact query provided
-                    </a>
                 </GAlert>
             </span>
 
