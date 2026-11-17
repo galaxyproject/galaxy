@@ -129,11 +129,15 @@ export default {
         },
     },
     watch: {
-        value(newValue) {
-            // Only update localValue from prop when not focused
-            if (!this.isFocused) {
-                this.localValue = this.valueToString(newValue);
-            }
+        value: {
+            // Deep, so an array value changed in place still refreshes localValue.
+            deep: true,
+            handler(newValue) {
+                // Only update localValue from prop when not focused
+                if (!this.isFocused) {
+                    this.localValue = this.valueToString(newValue);
+                }
+            },
         },
     },
     mounted() {

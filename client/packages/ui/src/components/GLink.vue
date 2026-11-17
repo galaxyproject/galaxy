@@ -79,7 +79,7 @@ const linkElementRef = useResolveElement(linkRef);
 <template>
     <component
         :is="baseComponent"
-        v-bind="{ ...anchorAttributes, ...$attrs }"
+        v-bind="anchorAttributes"
         ref="linkRef"
         class="g-link"
         :class="styleClasses"

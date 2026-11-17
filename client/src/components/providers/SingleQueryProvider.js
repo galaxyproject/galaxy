@@ -20,6 +20,8 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
         // Renders the slot as a fragment, and its attributes are lookup parameters, not DOM attributes.
         inheritAttrs: false,
         mixins: [HasAttributesMixin],
+        // Declared so the listeners stay out of $attrs, which become the lookup parameters.
+        emits: ["update:result", "error"],
         props: {
             useCache: {
                 type: Boolean,
@@ -49,7 +51,7 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
                 return this.result === null;
             },
             cacheKey() {
-                return hash(this.$attrs || {});
+                return hash(this.queryAttributes);
             },
         },
         mounted() {
@@ -60,9 +62,10 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
                 clearTimeout(this.timeoutId);
             }
         },
+        // Compat RENDER_FUNCTION would make `$slots.default` an invoked vnode array instead of the slot function.
+        compatConfig: { RENDER_FUNCTION: false },
         render() {
-            // Use $scopedSlots for Vue 3 compat mode
-            const slotFn = this.$scopedSlots?.default || this.$slots?.default;
+            const slotFn = this.$slots.default;
             if (slotFn) {
                 return slotFn({
                     loading: this.loading,
@@ -84,7 +87,7 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
                 if (this.useCache) {
                     lookupPromise = promiseCache.get(this.cacheKey);
                     if (!lookupPromise) {
-                        lookupPromise = lookup(this.$attrs);
+                        lookupPromise = lookup(this.queryAttributes);
                         promiseCache.set(this.cacheKey, lookupPromise);
                     }
                 } else {

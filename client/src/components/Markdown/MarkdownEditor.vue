@@ -34,8 +34,8 @@
                     :steps="steps"
                     :mode="mode"
                     :hide-toolbox="hideToolbox"
-                    @update="$emit('update', $event)" />
-                <CellEditor v-else :markdown-text="markdownText" :labels="labels" @update="$emit('update', $event)" />
+                    @update="emit('update', $event)" />
+                <CellEditor v-else :markdown-text="markdownText" :labels="labels" @update="emit('update', $event)" />
             </div>
         </div>
         <GModal
@@ -74,6 +74,10 @@ const props = defineProps<{
     steps?: Record<string, any>;
     title: string;
     hideToolbox?: boolean;
+}>();
+
+const emit = defineEmits<{
+    (e: "update", markdownText: string): void;
 }>();
 
 const showHelpModal = ref<boolean>(false);

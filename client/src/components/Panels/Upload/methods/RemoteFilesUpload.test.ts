@@ -71,6 +71,22 @@ function rowStates(wrapper: Awaited<ReturnType<typeof mountInSource>>) {
     return wrapper.findAll(ROW_BOX).map((box) => (box.element as HTMLInputElement).checked);
 }
 
+describe("RemoteFilesUpload search bar", () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+    });
+
+    // Selenium waits on `.search-bar-container:not([data-busy])`, so the
+    // attribute has to be absent, not "false", once loading finishes.
+    it("drops data-busy once the listing has loaded", async () => {
+        const wrapper = await mountInSource();
+        const container = wrapper.find(".search-bar-container");
+        expect(container.exists()).toBe(true);
+        expect(container.attributes("data-busy")).toBeUndefined();
+        expect(wrapper.find(".search-bar-container:not([data-busy])").exists()).toBe(true);
+    });
+});
+
 describe("RemoteFilesUpload select all", () => {
     beforeEach(() => {
         setActivePinia(createPinia());

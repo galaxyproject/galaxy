@@ -1,7 +1,8 @@
 const MockCurrentHistory = (currentHistory = { id: "xyz" }) => ({
+    // Compat RENDER_FUNCTION would make `$slots.default` an invoked vnode array instead of the slot function.
+    compatConfig: { RENDER_FUNCTION: false },
     render() {
-        // Use $scopedSlots for Vue 3 compat mode
-        const slotFn = this.$scopedSlots?.default || this.$slots?.default;
+        const slotFn = this.$slots.default;
         if (slotFn) {
             return slotFn({
                 currentHistory: currentHistory,

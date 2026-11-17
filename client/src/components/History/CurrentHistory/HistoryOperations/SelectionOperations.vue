@@ -226,6 +226,7 @@ export default {
         isMultiViewItem: { type: Boolean, required: true },
         totalItemsInQuery: { type: Number, default: 0 },
     },
+    emits: ["update:show-selection", "update:operation-running", "operation-error"],
     setup() {
         const { config, isConfigLoaded } = useConfig();
         const { confirm } = useConfirmDialog();

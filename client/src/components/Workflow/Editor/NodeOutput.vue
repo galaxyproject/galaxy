@@ -390,7 +390,7 @@ const removeTagsAction = computed(() => {
                         :title="labelToolTipTitle"
                         class="d-inline-block rounded"
                         :class="labelClass"
-                        :disabled="!isDuplicateLabel">
+                        :disabled="!isDuplicateLabel || undefined">
                         {{ label }}
                     </span>
                     <span> ({{ extensions.join(", ") }}) </span>

@@ -2,8 +2,8 @@
 import "vue-json-pretty/lib/styles.css";
 
 import { computed } from "vue";
-import VueJsonPretty from "vue-json-pretty";
 
+import VueJsonPretty from "@/components/Common/legacy/VueJsonPretty";
 import { useHelpTermsStore } from "@/stores/helpTermsStore";
 
 import HelpText from "@/components/Help/HelpText.vue";

@@ -48,6 +48,7 @@ export default {
             required: true,
         },
     },
+    emits: ["onQuery"],
     data() {
         return {
             toolshedUrl: null,

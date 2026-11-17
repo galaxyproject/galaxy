@@ -45,9 +45,10 @@ export const SimpleProviderMixin = {
             this.loading = false;
         },
     },
+    // No RENDER_FUNCTION marker needed: compat only wraps a render declared on the component
+    // itself, so this mixin's render already gets slot functions in `$slots`.
     render() {
-        // Use $scopedSlots for Vue 3 compat mode
-        const slotFn = this.$scopedSlots?.default || this.$slots?.default;
+        const slotFn = this.$slots.default;
         if (slotFn) {
             return slotFn({
                 loading: this.loading,

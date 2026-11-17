@@ -20,6 +20,7 @@ export default {
             required: true,
         },
     },
+    emits: ["addNewRule"],
     computed: {
         linkClassName() {
             return "rule-link-" + this.ruleType.replace(/_/g, "-");

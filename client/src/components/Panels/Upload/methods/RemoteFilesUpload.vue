@@ -633,7 +633,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
             </div>
 
             <!-- Search bar -->
-            <div class="search-bar-container mb-2" :data-search-query="searchQuery" :data-busy="isBusy">
+            <div class="search-bar-container mb-2" :data-search-query="searchQuery" :data-busy="isBusy || undefined">
                 <DataDialogSearch
                     :value="searchQuery"
                     :title="urlTracker.isAtRoot.value ? 'file sources' : 'files and folders'"

@@ -1,6 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
+import { nextTick, reactive } from "vue";
 
 import FormText from "./FormText.vue";
 
@@ -78,6 +79,18 @@ describe("FormText", () => {
         await wrapper.setProps({ multiple: true });
         const elMultiple = wrapper.find("textarea");
         expect(elMultiple.element.value).toEqual("field_1\nfield_2\nfield_3");
+    });
+
+    it("should pick up an array value that is changed in place", async () => {
+        const v = reactive(["field_1", "field_2"]);
+        const wrapper = await mountFormText({ value: v });
+        const el = wrapper.find("input");
+        v.splice(0, 1, "changed");
+        await nextTick();
+        // Focusing switches the input over to the locally held value, which
+        // has to have followed the in-place change.
+        await el.trigger("focus");
+        expect(el.element.value).toEqual("changed");
     });
 
     it("should be able to accept an empty array as value", async () => {

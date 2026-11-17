@@ -269,19 +269,22 @@ describe("WorkflowInvocationState check 'Report' and 'Export' tab disabled state
     });
     it("for non-terminal invocation", async () => {
         const wrapper = await mountWorkflowInvocationState("non-terminal-id", true);
-        const reportTab = wrapper.find(selectors.invocationReportTab);
-        expect(reportTab.attributes("disabled")).toBe("true");
-        const exportTab = wrapper.find(selectors.invocationExportTab);
-        expect(exportTab.attributes("disabled")).toBe("true");
+        expect(tabDisabledProp(wrapper, selectors.invocationReportTab)).toBe(true);
+        expect(tabDisabledProp(wrapper, selectors.invocationExportTab)).toBe(true);
     });
     it("for terminal invocation", async () => {
         const wrapper = await mountWorkflowInvocationState(invocationData.id, true);
-        const reportTab = wrapper.find(selectors.invocationReportTab);
-        expect(reportTab.attributes("disabled")).toBeUndefined();
-        const exportTab = wrapper.find(selectors.invocationExportTab);
-        expect(exportTab.attributes("disabled")).toBeUndefined();
+        expect(tabDisabledProp(wrapper, selectors.invocationReportTab)).toBe(false);
+        expect(tabDisabledProp(wrapper, selectors.invocationExportTab)).toBe(false);
     });
 });
+
+/** The BNavItem stub echoes `disabled` as an attribute, which reads "false" under Vue 3, so check the prop.
+ * BNavItem only has Vue 2 typings, hence the plain record. */
+function tabDisabledProp(wrapper: VueWrapper, selector: string): unknown {
+    const tab = wrapper.findComponent(selector) as VueWrapper;
+    return (tab.props() as Record<string, unknown>).disabled;
+}
 
 describe("WorkflowInvocationState check 'Debug' tab", () => {
     it("does not exist for non-terminal invocation", async () => {

@@ -231,7 +231,7 @@ function togglePreferences() {
     transition: all 0.3s ease;
 }
 
-.notifications-list-enter {
+.notifications-list-enter-from {
     opacity: 0;
     transform: translateY(-2rem);
 }

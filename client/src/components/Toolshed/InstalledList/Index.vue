@@ -91,6 +91,7 @@ export default {
             required: true,
         },
     },
+    emits: ["onQuery"],
     data() {
         return {
             faAngleDoubleDown,

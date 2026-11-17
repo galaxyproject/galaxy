@@ -104,6 +104,7 @@ export default {
             default: null,
         },
     },
+    emits: ["insert", "close-panel"],
     data() {
         return {
             faChevronLeft,
