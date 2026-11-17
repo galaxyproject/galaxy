@@ -20,9 +20,9 @@ defineProps<Props>();
 <template>
     <div>
         <ConfigurationTestSummaryModal
-            :value="showTestResults"
+            :model-value="showTestResults"
             :test-results="testResults"
-            @input="(v: boolean) => (showTestResults = v)" />
+            @update:model-value="(v: boolean) => (showTestResults = v)" />
         <GAlert v-if="error" variant="danger" class="configuration-instance-error" show>
             <span :data-description="errorDataDescription">
                 {{ error }}

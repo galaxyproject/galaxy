@@ -66,14 +66,14 @@ describe("FormText", () => {
 
     it("should be able to accept a default value", async () => {
         const v = "something";
-        const wrapper = await mountFormText({ value: v });
+        const wrapper = await mountFormText({ modelValue: v });
         const el = wrapper.find("input");
         expect(el.element.value).toEqual(v);
     });
 
     it("should be able to accept an array as value", async () => {
         const v = ["field_1", "field_2", "field_3"];
-        const wrapper = await mountFormText({ value: v });
+        const wrapper = await mountFormText({ modelValue: v });
         const el = wrapper.find("input");
         expect(el.element.value).toEqual("field_1");
         await wrapper.setProps({ multiple: true });
@@ -83,7 +83,7 @@ describe("FormText", () => {
 
     it("should pick up an array value that is changed in place", async () => {
         const v = reactive(["field_1", "field_2"]);
-        const wrapper = await mountFormText({ value: v });
+        const wrapper = await mountFormText({ modelValue: v });
         const el = wrapper.find("input");
         v.splice(0, 1, "changed");
         await nextTick();
@@ -95,7 +95,7 @@ describe("FormText", () => {
 
     it("should be able to accept an empty array as value", async () => {
         const v = [];
-        const wrapper = await mountFormText({ value: v });
+        const wrapper = await mountFormText({ modelValue: v });
         const el = wrapper.find("input");
         expect(el.element.value).toEqual("");
     });

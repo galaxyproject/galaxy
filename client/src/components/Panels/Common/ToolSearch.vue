@@ -279,7 +279,7 @@ function post(message: object) {
     <div v-if="searchWorker || !props.useWorker">
         <DelayedInput
             class="mb-3"
-            :value="props.query"
+            :model-value="props.query"
             :delay="200"
             :loading="queryPending"
             :placeholder="placeholder"

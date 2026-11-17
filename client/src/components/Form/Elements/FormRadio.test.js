@@ -12,7 +12,7 @@ describe("FormRadio", () => {
     beforeEach(() => {
         wrapper = mount(MountTarget, {
             props: {
-                value: false,
+                modelValue: false,
                 options: [],
             },
             global: localVue,
@@ -36,7 +36,7 @@ describe("FormRadio", () => {
             await inputs.at(i).setValue(true);
             expect(labels.at(i).text()).toBe(`label_${i}`);
             expect(inputs.at(i).attributes("value")).toBe(`value_${i}`);
-            expect(emittedArg(wrapper, "input", i)).toBe(`value_${i}`);
+            expect(emittedArg(wrapper, "update:modelValue", i)).toBe(`value_${i}`);
         }
     });
 

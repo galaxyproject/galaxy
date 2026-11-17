@@ -17,11 +17,6 @@ import { type RadioButtonVariant, radioGroupKey, type RadioGroupOption } from ".
 
 import GRadio from "./GRadio.vue";
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 interface Props {
     /**
      * Render the radios as a row of joined buttons

@@ -201,46 +201,46 @@ watch(defaultString, setDefaultByType);
     <div>
         <FormElement
             :id="prefix + '_name'"
-            :value="value.name"
+            :model-value="value.name"
             title="Name"
             type="text"
             :error="nameError"
             help="Provide a short, unique name to describe this column."
-            @input="onName" />
+            @update:model-value="onName" />
         <FormColumnDefinitionType :value="value.type" :prefix="prefix" @onChange="onType" />
         <FormElement
             :id="prefix + '_description'"
-            :value="value.description"
+            :model-value="value.description"
             :attributes="{ area: true }"
             title="Description"
             type="text"
             help="Provide a longer description to help people running this workflow under what is expected to be entered in this column."
-            @input="onDescription" />
+            @update:model-value="onDescription" />
         <FormElement
             v-if="value.type == 'string'"
             :id="prefix + '_enumerate_type'"
-            :value="enumerateType"
+            :model-value="enumerateType"
             :attributes="{ data: enumerateTypes }"
             title="Restrict or Suggest Text Values?"
             :optional="false"
             type="select"
-            @input="onEnumerateType" />
+            @update:model-value="onEnumerateType" />
         <FormElement
             v-if="value.type == 'string' && enumerateType == 'staticRestrictions'"
             :id="prefix + '_restrictions'"
-            :value="restrictionsAsString"
+            :model-value="restrictionsAsString"
             title="Restricted Values"
             type="text"
             help="Comma-separated list of all permitted values"
-            @input="onRestrictions" />
+            @update:model-value="onRestrictions" />
         <FormElement
             v-if="value.type == 'string' && enumerateType == 'staticSuggestions'"
             :id="prefix + '_suggestions'"
-            :value="suggestionsAsString"
+            :model-value="suggestionsAsString"
             title="Suggested Values"
             type="text"
             help="Comma-separated list of all suggested values"
-            @input="onSuggestions" />
+            @update:model-value="onSuggestions" />
         <GCheckbox :id="prefix + '_optional'" v-model="isOptional"> Is this input optional? </GCheckbox>
         <div class="ui-form-title">
             <span class="ui-form-title-text"> Default Value </span>

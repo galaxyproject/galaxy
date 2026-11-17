@@ -75,7 +75,7 @@ describe("FormInputCollection", () => {
             stubs: { FormCollectionType: false },
         });
         const select = wrapper.findAllComponents(FormElement).find((field) => field.props("id") === "collection_type");
-        select!.vm.$emit("input", null);
+        select!.vm.$emit("update:modelValue", null);
         await wrapper.vm.$nextTick();
 
         // the state is sent as JSON; a dropped key makes the server default to "list"
@@ -92,7 +92,7 @@ describe("FormInputCollection", () => {
         const optionalField = wrapper.findAllComponents(FormElement).find((field) => field.props("id") === "optional");
         expect(optionalField).toBeDefined();
         const emittedCount = wrapper.emitted("onChange")!.length;
-        optionalField!.vm.$emit("input", true);
+        optionalField!.vm.$emit("update:modelValue", true);
         expect(wrapper.emitted("onChange")).toHaveLength(emittedCount + 1);
         expect(lastEmittedState(wrapper)).toMatchObject({
             collection_type: "sample_sheet:paired",

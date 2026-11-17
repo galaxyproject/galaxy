@@ -12,25 +12,25 @@ import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 interface LabelSelectorProps {
     hasLabels: boolean;
     labels: Array<WorkflowLabel>;
-    value?: WorkflowLabel;
+    modelValue?: WorkflowLabel;
     labelTitle: string;
 }
 
 const props = withDefaults(defineProps<LabelSelectorProps>(), {
-    value: undefined,
+    modelValue: undefined,
 });
 
 const emit = defineEmits<{
-    (e: "input", value: WorkflowLabel | undefined): void;
+    (e: "update:modelValue", value: WorkflowLabel | undefined): void;
 }>();
 
 const headingId = useUid("label-selector-heading-");
 
-const selectedIndex = computed(() => (props.value ? props.labels.indexOf(props.value) : undefined));
+const selectedIndex = computed(() => (props.modelValue ? props.labels.indexOf(props.modelValue) : undefined));
 
 function update(index: number) {
     const label: WorkflowLabel | undefined = props.labels[index] || undefined;
-    emit("input", label);
+    emit("update:modelValue", label);
 }
 </script>
 

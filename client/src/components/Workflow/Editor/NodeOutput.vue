@@ -403,7 +403,7 @@ const removeTagsAction = computed(() => {
                 class="d-flex align-items-center overflow-x-hidden"
                 title="These tags will be added to the output dataset">
                 <FontAwesomeIcon :icon="faPlus" class="mr-1" />
-                <StatelessTags disabled no-padding :value="addTagsAction" />
+                <StatelessTags disabled no-padding :model-value="addTagsAction" />
             </div>
 
             <div
@@ -412,7 +412,7 @@ const removeTagsAction = computed(() => {
                 class="d-flex align-items-center overflow-x-hidden"
                 title="These tags will be removed from the output dataset">
                 <FontAwesomeIcon :icon="faMinus" class="mr-1" />
-                <StatelessTags disabled no-padding :value="removeTagsAction" />
+                <StatelessTags disabled no-padding :model-value="removeTagsAction" />
             </div>
         </div>
 

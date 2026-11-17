@@ -5,21 +5,21 @@ import { BFormFile } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 const props = defineProps({
-    value: {
+    modelValue: {
         required: true,
     },
 });
 const file = ref(null);
 const waiting = ref(false);
 
-const emit = defineEmits(["input"]);
+const emit = defineEmits(["update:modelValue"]);
 
 const currentValue = computed({
     get() {
-        return props.value;
+        return props.modelValue;
     },
     set(newValue) {
-        emit("input", newValue);
+        emit("update:modelValue", newValue);
     },
 });
 

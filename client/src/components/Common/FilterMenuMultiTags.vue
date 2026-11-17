@@ -48,9 +48,9 @@ watch(
 
         <BInputGroup :id="`${identifier}-advanced-filter-${props.name}`">
             <StatelessTags
-                :value="localValue"
+                :model-value="localValue"
                 :placeholder="`any ${props.filter.placeholder}`"
-                @input="(tags: string[]) => (localValue = tags)" />
+                @update:model-value="(tags: string[]) => (localValue = tags)" />
         </BInputGroup>
     </div>
 </template>

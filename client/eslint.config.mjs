@@ -59,6 +59,8 @@ const baseRules = {
     "vue/no-deprecated-vue-config-keycodes": "error",
     "vue/no-deprecated-v-on-native-modifier": "error",
     "vue/no-deprecated-html-element-is": "error",
+    // COMPONENT_V_MODEL is off: v-model is modelValue/update:modelValue.
+    "vue/no-deprecated-model-definition": "error",
     "vue/no-use-v-if-with-v-for": "error",
     // A bare <template> renders as a native <template> element under Vue 3.
     "vue/no-lone-template": "error",
@@ -222,19 +224,6 @@ export default defineConfig(
             },
         },
         rules: baseRules,
-    },
-    {
-        // Still waiting on Phase 3, which rewrites the Form/Elements emits.
-        // Drop each entry as it lands.
-        files: [
-            "src/components/Form/Elements/FormDirectory.vue",
-            "src/components/Form/Elements/FormInput.vue",
-            "src/components/Form/Elements/FormNumber.vue",
-            "src/components/Form/Elements/FormText.vue",
-        ],
-        rules: {
-            "vue/require-explicit-emits": "warn",
-        },
     },
     {
         files: ["**/*.test.js", "**/*.test.ts", "**/tests/vitest/**"],

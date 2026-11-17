@@ -78,6 +78,9 @@ const activityBarStub = defineComponent({
 function editorStubs() {
     return {
         ActivityBar: activityBarStub,
+        // The real textarea, so the save-as tests go through bootstrap-vue's value/update v-model.
+        // An auto-stub wouldn't carry its legacy compatConfig and would take modelValue instead.
+        BFormTextarea: false,
         WorkflowGraph: {
             template: "<div />",
             props: ["datatypesMapper"],
@@ -410,10 +413,7 @@ describe("Index", () => {
             mockSaveWorkflow.mockResolvedValue({ version: 1 });
 
             wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
-            // vue-test-utils' auto-stub for `BFormTextarea` declares its own v-model
-            // config (`{ prop: "value", event: "update" }`), so the emit event to
-            // drive `v-model="saveAsAnnotation"` is "update", not "input".
-            wrapper.findComponent(BFormTextarea).vm.$emit("update", "A description");
+            await wrapper.findComponent(BFormTextarea).find("textarea").setValue("A description");
             await nextTick();
 
             wrapper.findComponent<typeof GModal>("[data-description='save-as-modal']").vm.$emit("ok");
@@ -447,8 +447,7 @@ describe("Index", () => {
 
         it("resets save-as fields when the modal is cancelled", async () => {
             wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
-            wrapper.findComponent(BFormTextarea).vm.$emit("update", "A description");
-            await nextTick();
+            await wrapper.findComponent(BFormTextarea).find("textarea").setValue("A description");
 
             expect(wrapper.findComponent(GFormInput).props("modelValue")).toBe("My New Workflow");
 
@@ -456,7 +455,7 @@ describe("Index", () => {
             await nextTick();
 
             expect(wrapper.findComponent(GFormInput).props("modelValue")).toBeNull();
-            expect(wrapper.findComponent({ name: "BFormTextarea" }).props("value")).toBeNull();
+            expect(wrapper.findComponent(BFormTextarea).find("textarea").element.value).toBe("");
         });
 
         it("prevents navigation only if hasChanges", async () => {

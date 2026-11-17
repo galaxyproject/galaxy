@@ -10,7 +10,7 @@ const localVue = getLocalVue();
 
 function mountList(value: unknown, type = "integer", extraProps = {}) {
     return mount(FormValueList as object, {
-        propsData: { value, type, ...extraProps },
+        propsData: { modelValue: value, type, ...extraProps },
         localVue,
     });
 }
@@ -34,20 +34,20 @@ describe("FormValueList", () => {
         const wrapper = mountList([1]);
         await wrapper.find("[data-description='add value']").trigger("click");
         await wrapper.findAll("input.ui-input").at(1)!.setValue("3");
-        expect(wrapper.emitted("input")!.at(-1)).toEqual([[1, 3]]);
+        expect(wrapper.emitted("update:modelValue")!.at(-1)).toEqual([[1, 3]]);
     });
 
     it("removes a value", async () => {
         const wrapper = mountList([1, 2]);
         await wrapper.findAll("[data-description='remove value']").at(0)!.trigger("click");
-        expect(wrapper.emitted("input")!.at(-1)).toEqual([[2]]);
+        expect(wrapper.emitted("update:modelValue")!.at(-1)).toEqual([[2]]);
         expect(wrapper.findAllComponents(FormNumber).length).toBe(1);
     });
 
     it("emits null once every field is empty", async () => {
         const wrapper = mountList([1]);
         await wrapper.find("input.ui-input").setValue("");
-        expect(wrapper.emitted("input")!.at(-1)).toEqual([null]);
+        expect(wrapper.emitted("update:modelValue")!.at(-1)).toEqual([null]);
     });
 
     it("renders a text field per text value", () => {
@@ -72,7 +72,7 @@ describe("FormValueList", () => {
             expect((inputs.at(0)!.element as HTMLInputElement).value).toBe(" a,b");
             expect((inputs.at(1)!.element as HTMLInputElement).value).toBe("c ");
             await inputs.at(1)!.setValue("d");
-            expect(wrapper.emitted("input")!.at(-1)).toEqual([[" a,b", "d"]]);
+            expect(wrapper.emitted("update:modelValue")!.at(-1)).toEqual([[" a,b", "d"]]);
         },
     );
 
@@ -80,7 +80,7 @@ describe("FormValueList", () => {
         const wrapper = mountList("a", "text");
         await wrapper.find("[data-description='add value']").trigger("click");
         await wrapper.findAll("input.ui-input").at(1)!.setValue("2");
-        expect(wrapper.emitted("input")!.at(-1)).toEqual([["a", "2"]]);
+        expect(wrapper.emitted("update:modelValue")!.at(-1)).toEqual([["a", "2"]]);
     });
 
     it("offers text suggestions on every row", () => {

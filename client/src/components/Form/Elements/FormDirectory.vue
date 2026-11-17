@@ -40,9 +40,9 @@
             </BBreadcrumbItem>
         </BBreadcrumb>
 
-        <div v-if="value" class="px-2" data-description="directory full path">
+        <div v-if="modelValue" class="px-2" data-description="directory full path">
             <span v-localize>Directory Path:</span>
-            <code>{{ value }}</code>
+            <code>{{ modelValue }}</code>
         </div>
     </div>
 </template>
@@ -76,11 +76,12 @@ export default {
         GButton,
     },
     props: {
-        value: {
+        modelValue: {
             type: String,
             default: null,
         },
     },
+    emits: ["update:modelValue"],
     data() {
         return {
             ...getDefaultValues(),
@@ -180,7 +181,7 @@ export default {
                 );
                 url = decodeURI(url);
             }
-            this.$emit("input", url);
+            this.$emit("update:modelValue", url);
         },
     },
 };

@@ -10,7 +10,7 @@ import MentionDropdown from "./MentionDropdown.vue";
 
 const props = withDefaults(
     defineProps<{
-        value: string;
+        modelValue: string;
         busy: boolean;
         placeholder?: string;
         disabled?: boolean;
@@ -22,7 +22,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-    (e: "input", value: string): void;
+    (e: "update:modelValue", value: string): void;
     (e: "submit"): void;
 }>();
 
@@ -47,23 +47,23 @@ function resize() {
     textarea.style.height = `${textarea.scrollHeight}px`;
 }
 
-// props.value is the single funnel for every value change -- user typing
+// props.modelValue is the single funnel for every value change -- user typing
 // (round-trips through the parent), programmatic @-mention inserts, and the
 // parent clearing the field after submit. nextTick lets the DOM update first.
 watch(
-    () => props.value,
+    () => props.modelValue,
     () => nextTick(resize),
 );
 
 onMounted(() => {
-    if (props.value) {
+    if (props.modelValue) {
         resize();
     }
 });
 
 function onInput(event: Event) {
     const textarea = event.target as HTMLTextAreaElement;
-    emit("input", textarea.value);
+    emit("update:modelValue", textarea.value);
     updateMentionTrigger(textarea);
 }
 
@@ -94,7 +94,7 @@ function onMentionSelect(entityType: EntityType, identifier: string, displayText
         return;
     }
 
-    const text = props.value;
+    const text = props.modelValue;
     const start = mentionTrigger.value.startIndex;
     const end = mentionTrigger.value.endIndex;
 
@@ -102,7 +102,7 @@ function onMentionSelect(entityType: EntityType, identifier: string, displayText
     // and keep the dropdown open for the entity list
     if (!identifier) {
         const newText = text.slice(0, start) + displayText + text.slice(end);
-        emit("input", newText);
+        emit("update:modelValue", newText);
 
         // Set cursor after the inserted text
         const cursorPos = start + displayText.length;
@@ -119,7 +119,7 @@ function onMentionSelect(entityType: EntityType, identifier: string, displayText
     // Full mention selected — insert and add a trailing space
     const insertion = displayText + " ";
     const newText = text.slice(0, start) + insertion + text.slice(end);
-    emit("input", newText);
+    emit("update:modelValue", newText);
     mentionTrigger.value = null;
 
     const cursorPos = start + insertion.length;
@@ -143,7 +143,7 @@ function closeMention() {
         <textarea
             id="chat-input"
             ref="textareaEl"
-            :value="props.value"
+            :value="props.modelValue"
             :disabled="busy || disabled"
             :placeholder="placeholder"
             rows="1"
@@ -151,7 +151,7 @@ function closeMention() {
             @input="onInput"
             @keydown="onKeydown" />
         <GButton
-            :disabled="busy || disabled || !props.value.trim()"
+            :disabled="busy || disabled || !props.modelValue.trim()"
             aria-label="Send message"
             class="send-button"
             color="blue"

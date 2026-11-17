@@ -20,7 +20,7 @@ const OPTIONS = [
 
 function mountDrilldown(multiple, value) {
     return mount(FormDrilldown, {
-        propsData: { id: "dd", value, options: OPTIONS, multiple },
+        propsData: { id: "dd", modelValue: value, options: OPTIONS, multiple },
         localVue,
     });
 }
@@ -34,25 +34,25 @@ describe("FormDrilldown", () => {
     it("submits only the chosen option when it has descendants", async () => {
         const wrapper = mountDrilldown(true, []);
         await toggle(wrapper, "a", true);
-        expect(emittedArg(wrapper, "input")).toEqual(["a"]);
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual(["a"]);
     });
 
     it("keeps other selections when adding one", async () => {
         const wrapper = mountDrilldown(true, ["ba"]);
         await toggle(wrapper, "ab", true);
-        expect(emittedArg(wrapper, "input")).toEqual(["ba", "ab"]);
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual(["ba", "ab"]);
     });
 
     it("removes only the deselected option", async () => {
         const wrapper = mountDrilldown(true, ["a", "aa"]);
         await toggle(wrapper, "a", false);
-        expect(emittedArg(wrapper, "input")).toEqual(["aa"]);
+        expect(emittedArg(wrapper, "update:modelValue")).toEqual(["aa"]);
     });
 
     it("emits a bare value when not multiple", async () => {
         const wrapper = mountDrilldown(false, null);
         await toggle(wrapper, "aba", true);
-        expect(emittedArg(wrapper, "input")).toBe("aba");
+        expect(emittedArg(wrapper, "update:modelValue")).toBe("aba");
     });
 
     it("checks the options in the current value", () => {
@@ -65,7 +65,7 @@ describe("FormDrilldown", () => {
     it("selects every value from select all", async () => {
         const wrapper = mountDrilldown(true, []);
         await wrapper.find(".select-all-checkbox input").setValue(true);
-        expect([...emittedArg(wrapper, "input")].sort()).toEqual(["a", "aa", "ab", "aba", "b", "ba"]);
+        expect([...emittedArg(wrapper, "update:modelValue")].sort()).toEqual(["a", "aa", "ab", "aba", "b", "ba"]);
     });
 
     it("clears the value from select all", async () => {
@@ -73,7 +73,7 @@ describe("FormDrilldown", () => {
         const selectAll = wrapper.find(".select-all-checkbox input");
         expect(selectAll.element.checked).toBe(true);
         await selectAll.setValue(false);
-        expect(emittedArg(wrapper, "input")).toBeNull();
+        expect(emittedArg(wrapper, "update:modelValue")).toBeNull();
     });
 
     it("marks select all as partly checked when some values are selected", () => {
@@ -95,7 +95,7 @@ describe("FormDrilldown", () => {
     it("keeps the radios of two drilldowns with the same id in separate groups", async () => {
         const mountSingle = (value) =>
             mount(FormDrilldown, {
-                props: { id: "dd", value, options: OPTIONS, multiple: false },
+                props: { id: "dd", modelValue: value, options: OPTIONS, multiple: false },
                 global: localVue,
                 attachTo: document.body,
             });

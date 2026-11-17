@@ -425,22 +425,22 @@ defineExpose({ attemptCreate });
                 <span class="upload-footer-title">Type</span>
                 <UploadSelectExtension
                     class="upload-footer-extension"
-                    :value="extension"
+                    :model-value="extension"
                     :disabled="busy"
                     :list-extensions="listExtensions"
-                    @input="extension = $event">
+                    @update:model-value="extension = $event">
                 </UploadSelectExtension>
             </BCol>
             <BCol v-if="mode === 'uris'" cols="4">
                 <span class="upload-footer-title">Reference</span>
                 <UploadSelect
                     class="upload-footer-genome"
-                    :value="dbKey"
+                    :model-value="dbKey"
                     :disabled="busy"
                     :options="listDbKeys"
                     what="reference"
                     placeholder="Select Reference"
-                    @input="dbKey = $event" />
+                    @update:model-value="dbKey = $event" />
             </BCol>
             <BCol cols="4">
                 <BInputGroup prepend="Collection Name" class="mb-2" size="sm">

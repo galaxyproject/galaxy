@@ -54,8 +54,8 @@ describe("FormSelect", () => {
         await testDefaultOptions(wrapper);
         const noValue = wrapper.find(".multiselect__option--selected");
         expect(noValue.exists()).toBe(false);
-        expect(emittedArg(wrapper, "input")).toBe("value_1");
-        await wrapper.setProps({ value: "value_1" });
+        expect(emittedArg(wrapper, "update:modelValue")).toBe("value_1");
+        await wrapper.setProps({ modelValue: "value_1" });
         const selectedValue = wrapper.find(".multiselect__option--selected");
         expect(selectedValue.text()).toBe("label_1");
     });
@@ -72,13 +72,13 @@ describe("FormSelect", () => {
         expect(options.at(0).text()).toBe("Nothing selected");
         const selectedDefault = wrapper.find(".multiselect__option--selected");
         expect(selectedDefault.text()).toBe("Nothing selected");
-        await wrapper.setProps({ value: "value_1" });
+        await wrapper.setProps({ modelValue: "value_1" });
         const selectedValue = wrapper.find(".multiselect__option--selected");
         expect(selectedValue.text()).toBe("label_1");
         options.at(0).trigger("click");
-        const nullValue = emittedArg(wrapper, "input");
+        const nullValue = emittedArg(wrapper, "update:modelValue");
         expect(nullValue).toBe(null);
-        await wrapper.setProps({ value: null });
+        await wrapper.setProps({ modelValue: null });
         // Picking an option closes the dropdown, which removes the option list.
         await openMultiselect(wrapper);
         const unselectDefault = wrapper.find(".multiselect__option--selected");
@@ -90,13 +90,13 @@ describe("FormSelect", () => {
             optional: false,
             multiple: true,
             options: defaultOptions,
-            value: ["value_1"],
+            modelValue: ["value_1"],
         });
         await openMultiselect(wrapper);
         const selected = wrapper.findAll(".multiselect__option--selected");
         expect(selected.length).toBe(1);
         selected.at(0).trigger("click");
-        const emitted = emittedArg(wrapper, "input");
+        const emitted = emittedArg(wrapper, "update:modelValue");
         expect(emitted).toBe(null);
     });
 
@@ -105,7 +105,7 @@ describe("FormSelect", () => {
             optional: true,
             multiple: true,
             options: defaultOptions,
-            value: ["value_1", "", 99],
+            modelValue: ["value_1", "", 99],
         });
         await testDefaultOptions(wrapper);
         const selectedValue = wrapper.findAll(".multiselect__option--selected");
@@ -114,19 +114,19 @@ describe("FormSelect", () => {
         expect(selectedValue.at(1).text()).toBe("label_3");
         expect(selectedValue.at(2).text()).toBe("label_4");
         selectedValue.at(0).trigger("click");
-        const newValue = emittedArg(wrapper, "input");
+        const newValue = emittedArg(wrapper, "update:modelValue");
         expect(newValue).toEqual(["", 99]);
-        await wrapper.setProps({ value: newValue });
+        await wrapper.setProps({ modelValue: newValue });
         selectedValue.at(1).trigger("click");
-        const numericValue = emittedArg(wrapper, "input", 1);
+        const numericValue = emittedArg(wrapper, "update:modelValue", 1);
         expect(numericValue).toEqual([99]);
-        await wrapper.setProps({ value: numericValue });
+        await wrapper.setProps({ modelValue: numericValue });
         selectedValue.at(2).trigger("click");
-        const nullValue = emittedArg(wrapper, "input", 2);
+        const nullValue = emittedArg(wrapper, "update:modelValue", 2);
         expect(nullValue).toBe(null);
-        await wrapper.setProps({ value: nullValue });
+        await wrapper.setProps({ modelValue: nullValue });
         selectedValue.at(0).trigger("click");
-        const finalValue = emittedArg(wrapper, "input", 3);
+        const finalValue = emittedArg(wrapper, "update:modelValue", 3);
         expect(finalValue).toEqual(["value_1"]);
     });
 });

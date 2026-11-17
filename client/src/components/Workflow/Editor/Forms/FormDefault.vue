@@ -25,18 +25,18 @@
         <template v-slot:body>
             <FormElement
                 id="__label"
-                :value="label"
+                :model-value="label"
                 title="Label"
                 help="Add a step label."
                 :error="uniqueErrorLabel ?? undefined"
-                @input="onLabel" />
+                @update:model-value="onLabel" />
             <FormElement
                 id="__annotation"
-                :value="annotation"
+                :model-value="annotation"
                 title="Step Annotation"
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-                @input="onAnnotation" />
+                @update:model-value="onAnnotation" />
             <FormConditional
                 v-if="isSubworkflow"
                 :step="step"

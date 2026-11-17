@@ -16,11 +16,6 @@ import { computed, nextTick, ref, watch } from "vue";
 import { pageWindow } from "../utils/pageWindow";
 import { type ComponentSize, prefix } from "./componentVariants";
 
-defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
-});
-
 type ItemClass = string | string[] | Record<string, boolean>;
 
 interface Props {

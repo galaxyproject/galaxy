@@ -7,9 +7,9 @@ import GPagination from "./GPagination.vue";
 import GTab from "./GTab.vue";
 import GTabs from "./GTabs.vue";
 
-// v-model has to mean modelValue/update:modelValue in both consumers. Compat would also map it onto Vue 2's
-// value/input, so these guard the client side (the compat opt-out, the modelValue prop); the Tool Shed's
-// galaxyUi.test.ts covers plain Vue 3, where value/input silently does nothing.
+// v-model has to mean modelValue/update:modelValue in both consumers. These guard the client side, which runs
+// @vue/compat with COMPONENT_V_MODEL off; the Tool Shed's galaxyUi.test.ts covers plain Vue 3. In neither does
+// compat map v-model onto Vue 2's value/input for galaxy-ui, so a component on value/input silently does nothing.
 describe("galaxy-ui v-model", () => {
     it("binds the active tab both ways on GTabs", async () => {
         const Parent = defineComponent({

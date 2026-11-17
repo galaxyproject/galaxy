@@ -35,11 +35,11 @@ function onType(newType: FieldType) {
     <div>
         <FormElement
             :id="prefix + '_name'"
-            :value="value.name"
+            :model-value="value.name"
             title="Name"
             type="text"
             help="Provide a short, unique name to describe this field."
-            @input="onName" />
+            @update:model-value="onName" />
         <FormFieldType :prefix="prefix" :value="value.type" @onChange="onType" />
     </div>
 </template>

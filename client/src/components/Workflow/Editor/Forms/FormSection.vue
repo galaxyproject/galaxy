@@ -3,19 +3,19 @@
         <FormElement
             v-if="supportsJobBasedActions"
             :id="emailActionKey"
-            :value="emailActionValue"
+            :model-value="emailActionValue"
             title="Email notification"
             type="boolean"
             help="An email notification will be sent when the job has completed."
-            @input="onInput" />
+            @update:model-value="onInput" />
         <FormElement
             v-if="supportsJobBasedActions"
             :id="deleteActionKey"
-            :value="deleteActionValue"
+            :model-value="deleteActionValue"
             title="Output cleanup"
             type="boolean"
             help="Upon completion of this step, delete unchecked outputs from completed workflow steps if they are no longer required as inputs."
-            @input="onInput" />
+            @update:model-value="onInput" />
         <FormOutput
             v-for="(output, index) in outputs"
             :key="index"
