@@ -341,7 +341,7 @@ function getHistoryTitleBadges(history: HistorySummary) {
                 :active="isActiveItem(history)"
                 :selectable="props.multiple"
                 :selected="isActiveItem(history)"
-                :select-title="isMultiviewPanel ? 'Pin history' : 'Add/remove history from selection'"
+                :select-title="isMultiviewPanel ? `Pin ${history.name}` : `Add/remove ${history.name} from selection`"
                 :badges="getHistoryBadges(history)"
                 :secondary-actions="getHistorySecondaryActions(history)"
                 :tags="history.tags"

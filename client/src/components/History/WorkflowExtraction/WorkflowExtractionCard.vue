@@ -210,7 +210,7 @@ function displayLabel(output: ExtractionOutput): string {
         clear-title-tooltip="Remove this workflow step's label"
         selectable
         :selected="props.job.checked"
-        select-title="Include as a step in the workflow"
+        :select-title="`Include ${cardTitle} as a step in the workflow`"
         dim-when-unselected
         @rename="onTitleRename"
         @clearTitle="emit('clear-step-label')"
