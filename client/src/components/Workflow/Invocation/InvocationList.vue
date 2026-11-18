@@ -20,6 +20,7 @@ import type { WorkflowInvocation } from "@/api/invocations";
 import type { TableField } from "@/components/Common/GTable.types";
 import {
     type AppliedTimeRange,
+    CUSTOM_TIME_RANGE,
     getActiveTimeRange,
     setActiveTimeRange as applyTimeRangeFilter,
     type TimeRange,
@@ -225,7 +226,9 @@ let lastAppliedTimeRange: AppliedTimeRange | undefined;
  * `undefined` for "Anytime".
  */
 const activeTimeRange = computed(() =>
-    getActiveTimeRange(invocationsFiltering, "create_time", filterText.value, lastAppliedTimeRange),
+    invocationsFiltering.getFilterValue(filterText.value, "create_time")
+        ? CUSTOM_TIME_RANGE
+        : getActiveTimeRange(invocationsFiltering, "create_time", filterText.value, lastAppliedTimeRange),
 );
 
 /**
@@ -234,7 +237,9 @@ const activeTimeRange = computed(() =>
  */
 function setActiveTimeRange(range: string | undefined) {
     const timeRange = TIME_RANGES.find(({ key }) => key === range);
-    const result = applyTimeRangeFilter(invocationsFiltering, "create_time", filterText.value, timeRange);
+    // a quick pick replaces a typed `create_time:<date>` day (as opposed to a `create_time_*` range)
+    const withoutDay = invocationsFiltering.applyFiltersToText({ create_time: "" }, filterText.value, true);
+    const result = applyTimeRangeFilter(invocationsFiltering, "create_time", withoutDay, timeRange);
     filterText.value = result.filterText;
     lastAppliedTimeRange = result.appliedRange;
 }
@@ -479,6 +484,8 @@ watch([currentPage, filterText, sortBy, sortDesc], ([page], [oldPage]) => {
                         <dd>
                             Invocations in one state, e.g. <code>state:failed</code> or <code>state:scheduled</code>.
                         </dd>
+                        <dt><code>create_time:____</code></dt>
+                        <dd>Invocations invoked on a day, e.g. <code>create_time:2026-01-31</code>.</dd>
                         <dt><code>create_time&gt;____</code>, <code>create_time&lt;____</code></dt>
                         <dd>
                             Invocations invoked after or before a date, e.g. <code>create_time&gt;2026-01-31</code>.

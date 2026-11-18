@@ -86,6 +86,11 @@ describe("invocationFilterParams", () => {
             "create_time>2026-11-01 create_time<2026-11-02",
             { date_range_min: "2026-11-01", date_range_max: "2026-11-02" },
         ],
+        ["create_time:2026-11-01", { date_range_min: "2026-11-01", date_range_max: "2026-11-01T23:59:59.999999" }],
+        [
+            "create_time:2026-11-01 create_time>2026-11-01T12:00",
+            { date_range_min: "2026-11-01T12:00", date_range_max: "2026-11-01T23:59:59.999999" },
+        ],
         ["rna state:completed", { search: "workflow:rna", state: ["completed"] }],
     ])("turns %j into %j", (text, params) => {
         expect(invocationFilterParams(text)).toEqual(params);

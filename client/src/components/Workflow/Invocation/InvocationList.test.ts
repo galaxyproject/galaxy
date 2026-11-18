@@ -243,17 +243,36 @@ describe("InvocationList", () => {
         expect(lastQuery().date_range_min).toBeUndefined();
     });
 
-    it("shows a typed Invoked time range as a custom range", async () => {
+    it("replaces a typed Invoked day with a time range pick", async () => {
+        vi.setSystemTime(new Date("2026-11-11T12:00:00.000Z"));
         const wrapper = mountTarget();
         await flushPromises();
-        await wrapper.find("[data-description='filter text input']").setValue("create_time>2026-01-01");
+        await wrapper.find("[data-description='filter text input']").setValue("create_time:2026-01-01");
         vi.runAllTimers();
         await flushPromises();
 
-        const options = wrapper.findAll("select[aria-label='Filter invocations by time range'] option");
-        expect(options[0]!.text()).toBe("Custom range");
-        expect((options[0]!.element as HTMLOptionElement).selected).toBe(true);
+        await wrapper.find("select[aria-label='Filter invocations by time range']").setValue("7d");
+        vi.runAllTimers();
+        await flushPromises();
+
+        expect(lastQuery().date_range_min).toMatch(/^2026-11-04T12:00/);
+        expect(lastQuery().date_range_max).toBeUndefined();
     });
+
+    it.each(["create_time>2026-01-01", "create_time:2026-01-01"])(
+        "shows a typed %s as a custom range",
+        async (text) => {
+            const wrapper = mountTarget();
+            await flushPromises();
+            await wrapper.find("[data-description='filter text input']").setValue(text);
+            vi.runAllTimers();
+            await flushPromises();
+
+            const options = wrapper.findAll("select[aria-label='Filter invocations by time range'] option");
+            expect(options[0]!.text()).toBe("Custom range");
+            expect((options[0]!.element as HTMLOptionElement).selected).toBe(true);
+        },
+    );
 
     it("sorts by invocation time when the Invoked header is clicked", async () => {
         const wrapper = mountTarget();

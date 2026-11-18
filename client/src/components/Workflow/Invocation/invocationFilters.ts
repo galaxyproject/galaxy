@@ -79,7 +79,7 @@ const validFilters: Record<string, ValidFilter<string>> = {
         datalist: Object.keys(INVOCATION_STATE_GROUPS),
         menuItem: false,
     },
-    // the Invoked column; only its `create_time_gt` / `create_time_lt` range is sent to the server
+    // the Invoked column, sent to the server as a range: `create_time_gt` / `create_time_lt`, or a plain date's whole day
     create_time: {
         placeholder: "invoked time",
         type: Date,
@@ -181,11 +181,15 @@ export function invocationFilterParams(
             : state
               ? [state.toLowerCase() as InvocationState]
               : undefined;
+    // a plain `create_time:<date>` is that whole day
+    const day = value("create_time")?.slice(0, 10);
+    /** The day's last moment, since the server's `date_range_max` expects an exact timestamp. */
+    const dayEnd = day && `${day}T23:59:59.999999`;
     return {
         search: invocationSearch(text),
         state: states,
-        date_range_min: value("create_time_gt"),
-        date_range_max: value("create_time_lt"),
+        date_range_min: value("create_time_gt") ?? day,
+        date_range_max: value("create_time_lt") ?? dayEnd,
     };
 }
 
