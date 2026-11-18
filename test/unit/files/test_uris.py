@@ -3,15 +3,19 @@ import ipaddress
 import pytest
 import requests
 import responses
+from urllib3.exceptions import ProtocolError
 
 from galaxy.exceptions import (
     AdminRequiredException,
+    AuthenticationRequired,
     ConfigDoesNotAllowException,
     MessageException,
+    ObjectNotFound,
     RequestParameterInvalidException,
 )
 from galaxy.files.uris import (
     get_checking_every_redirect,
+    open_checking_every_redirect,
     refuse_a_private_address,
     validate_non_local,
     validate_uri_access,
@@ -109,6 +113,31 @@ def test_get_checking_every_redirect_checks_each_hop_before_requesting_it():
     assert len(responses.calls) == 4
     with pytest.raises(requests.exceptions.TooManyRedirects):
         with get_checking_every_redirect("http://a.test/start", checked.append, headers_for, max_redirects=1):
+            pass
+
+
+@pytest.mark.parametrize(
+    "status, error",
+    [
+        (422, RequestParameterInvalidException),
+        (404, ObjectNotFound),
+        (403, AuthenticationRequired),
+        (500, MessageException),
+    ],
+)
+@responses.activate
+def test_open_checking_every_redirect_names_the_service_in_errors(status, error):
+    responses.get("http://a.test/x", status=status)
+    with pytest.raises(error, match="Repo"):
+        with open_checking_every_redirect("http://a.test/x", "Repo", lambda url: None, lambda url: {}):
+            pass
+
+
+@responses.activate
+def test_open_checking_every_redirect_reports_a_dropped_connection():
+    responses.get("http://a.test/x", body=ProtocolError("Connection broken"))
+    with pytest.raises(MessageException, match="Could not get http://a.test/x from Repo"):
+        with open_checking_every_redirect("http://a.test/x", "Repo", lambda url: None, lambda url: {}):
             pass
 
 

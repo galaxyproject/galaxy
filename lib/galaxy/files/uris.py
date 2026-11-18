@@ -22,13 +22,18 @@ from urllib.parse import (
 
 import requests
 from requests import HTTPError as RequestsHTTPError
-from urllib3.exceptions import LocationParseError
+from urllib3.exceptions import (
+    HTTPError as Urllib3HTTPError,
+    LocationParseError,
+)
 from urllib3.util import parse_url
 
 from galaxy.exceptions import (
     AdminRequiredException,
+    AuthenticationRequired,
     ConfigDoesNotAllowException,
     MessageException,
+    ObjectNotFound,
     RequestParameterInvalidException,
 )
 from galaxy.files import (
@@ -401,3 +406,35 @@ def get_checking_every_redirect(
         raise requests.exceptions.TooManyRedirects(f"More than {max_redirects} redirects, the last to {url}.")
     with response:
         yield response
+
+
+@contextmanager
+def open_checking_every_redirect(
+    url: str,
+    service: str,
+    check_url: Callable[[str], None],
+    headers_for: Callable[[str], dict[str, str]],
+    params: dict[str, str] | None = None,
+    max_redirects: int = 5,
+    check_status: Callable[[requests.Response], None] | None = None,
+) -> Iterator[requests.Response]:
+    """``get_checking_every_redirect`` for a file source, with error statuses and dropped connections turned
+    into Galaxy errors that name ``service``.
+
+    ``check_status`` sees the response first, to raise a more specific error for the service.
+    """
+    try:
+        with get_checking_every_redirect(url, check_url, headers_for, params, max_redirects) as response:
+            if check_status:
+                check_status(response)
+            if response.status_code in (400, 422):
+                raise RequestParameterInvalidException(f"{service} could not process the request [{response.url}].")
+            if response.status_code == 404:
+                raise ObjectNotFound(f"{service} object not found [{response.url}].")
+            if response.status_code in (401, 403):
+                raise AuthenticationRequired(f"{service} refused access to {response.url}.")
+            response.raise_for_status()
+            yield response
+    # urllib3 raises its own errors when a connection drops while the body is read
+    except (requests.exceptions.RequestException, Urllib3HTTPError) as e:
+        raise MessageException(f"Could not get {url} from {service}. Reason: {e}") from e

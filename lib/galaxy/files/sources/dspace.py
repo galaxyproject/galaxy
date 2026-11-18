@@ -14,6 +14,7 @@ from pydantic import (
     Field,
     field_validator,
 )
+from requests import Response
 from urllib3.util import parse_url
 
 from galaxy.exceptions import (
@@ -32,13 +33,10 @@ from galaxy.files.models import (
     RemoteFileHash,
 )
 from galaxy.files.uris import (
-    get_checking_every_redirect,
+    open_checking_every_redirect,
     refuse_a_private_address,
 )
-from galaxy.util import (
-    requests,
-    stream_to_path,
-)
+from galaxy.util import stream_to_path
 from galaxy.util.config_templates import TemplateExpansion
 from . import BaseFilesSource
 
@@ -279,23 +277,19 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
                 headers["Authorization"] = f"Bearer {token}"
             return headers
 
-        try:
-            with get_checking_every_redirect(url, check_url, headers_for, params, MAX_REDIRECTS) as response:
-                if response.status_code == 400 and "Authorization" in headers_for(response.url):
-                    # DSpace answers 400 to a login token it no longer accepts
-                    raise self._token_not_accepted()
-                if response.status_code == 422:
-                    raise RequestParameterInvalidException(f"DSpace could not process the request [{response.url}].")
-                if response.status_code == 404:
-                    raise ObjectNotFound(f"DSpace object not found [{response.url}].")
-                if response.status_code in (401, 403):
-                    hint = "Check the token of" if token else "It is not public, and there is no token in"
-                    raise AuthenticationRequired(f"DSpace refused access to {response.url}. {hint} {self.label}.")
-                response.raise_for_status()
-                response.raw.decode_content = True
-                yield response.raw
-        except requests.exceptions.RequestException as e:
-            raise MessageException(f"Could not get {url} from DSpace. Reason: {e}") from e
+        def check_status(response: Response) -> None:
+            if response.status_code == 400 and "Authorization" in headers_for(response.url):
+                # DSpace answers 400 to a login token it no longer accepts
+                raise self._token_not_accepted()
+            if response.status_code in (401, 403):
+                hint = "Check the token of" if token else "It is not public, and there is no token in"
+                raise AuthenticationRequired(f"DSpace refused access to {response.url}. {hint} {self.label}.")
+
+        with open_checking_every_redirect(
+            url, "DSpace", check_url, headers_for, params, MAX_REDIRECTS, check_status
+        ) as response:
+            response.raw.decode_content = True
+            yield response.raw
 
     def _token_not_accepted(self) -> AuthenticationRequired:
         return AuthenticationRequired(
