@@ -2770,6 +2770,33 @@ steps:
             assert job["state"] == "error"
             assert job["command_line"] is None
 
+    @skip_without_tool("column_param")
+    def test_data_column_label_resolved_to_column_number(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  tabular_input: data
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: tabular_input
+  column_param:
+    tool_id: column_param
+    in:
+      input1: cat1/out_file1
+    state:
+      col: 1
+      col_names: 'c2: B'
+""",
+                test_data={"tabular_input": {"type": "File", "file_type": "tabular", "content": "A\tB\n1\t2\n"}},
+                history_id=history_id,
+            )
+            column_param_job = next(job for job in summary.jobs if job["tool_id"] == "column_param")
+            job = self.dataset_populator.get_job_details(column_param_job["id"], full=True).json()
+            assert 'echo "col_names 2" >>' in job["command_line"]
+
     @skip_without_tool("column_param_list")
     def test_comma_separated_columns(self):
         # Regression test for https://github.com/galaxyproject/galaxy/pull/10981
