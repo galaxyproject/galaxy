@@ -107,10 +107,11 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
                 break
 
         assert matching_index is not None, "Expected Get Data autocomplete suggestion to be present."
-        # The unfiltered list starts with the Get Data section, so waiting for the search
-        # response keeps the checks below from passing on the list as it was before the pick.
-        with self.page.expect_response(is_get_data_tag_search):
+        # The unfiltered list starts with the Get Data section, so the checks below compare
+        # the rendered cards with the hits of the search the pick triggers.
+        with self.page.expect_response(is_get_data_tag_search) as response_info:
             suggestions.nth(matching_index).click()
+        hit_ids = response_info.value.json()
 
         search_input = self.page.locator('.tools-list [data-description="filter text input"]')
         self._wait_on(
@@ -120,16 +121,23 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
 
         # Hits for a tag-only query all score the same, so their order is the order the
         # server indexed them in, which changes between server processes. The list renders
-        # only its first few cards, so check the cards it does render rather than one tool.
+        # only its first few cards, so check the cards it does render rather than one tool:
+        # they are hits of the search, in the order of the hits, and tagged Get Data.
         tool_cards = self.page.locator('.tools-list [id^="g-card-content-"]')
 
-        def only_get_data_tools_rendered():
-            card_tags = tool_cards.evaluate_all(
-                "cards => cards.map(card => [...card.querySelectorAll('.curated-tag')].map(tag => tag.textContent.trim()))"
+        def search_hits_rendered():
+            cards = tool_cards.evaluate_all("""cards => cards.map(card => ({
+                    id: card.id.slice("g-card-content-".length),
+                    tags: [...card.querySelectorAll(".curated-tag")].map(tag => tag.textContent.trim()),
+                }))""")
+            remaining_hit_ids = iter(hit_ids)
+            return (
+                bool(cards)
+                and all(card["id"] in remaining_hit_ids for card in cards)
+                and all("Get Data" in card["tags"] for card in cards)
             )
-            return bool(card_tags) and all("Get Data" in tags for tags in card_tags)
 
-        self._wait_on(only_get_data_tools_rendered, "tools/list to render only tools tagged Get Data")
+        self._wait_on(search_hits_rendered, "tools/list to render the Get Data tag search hits")
 
 
 def is_get_data_tag_search(response) -> bool:
