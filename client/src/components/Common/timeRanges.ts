@@ -56,6 +56,16 @@ export function currentTimeRangeCutoff(range: TimeRange): string {
 }
 
 /**
+ * A quick-pick range's `<filter>_gt` is otherwise the fixed cutoff written into the filter text at pick
+ * time; recompute it here so a query keeps using a true sliding window instead of a window that only
+ * grows for as long as the list stays open. `undefined` for "Anytime" or a custom range.
+ */
+export function activeTimeRangeCutoff(ranges: readonly TimeRange[], activeRange: string | undefined) {
+    const range = ranges.find(({ key }) => key === activeRange);
+    return range && currentTimeRangeCutoff(range);
+}
+
+/**
  * Derives the active `TimeRangeFilter` quick-pick from filter text: "custom" for a
  * manually-entered `<filterName>` filter, or `undefined` for "Anytime".
  * @param lastApplied The range `setActiveTimeRange` itself last applied (its own return value),

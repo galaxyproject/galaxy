@@ -243,6 +243,21 @@ describe("InvocationList", () => {
         expect(lastQuery().date_range_min).toBeUndefined();
     });
 
+    it("slides a time range pick's window to the time of each load", async () => {
+        vi.setSystemTime(new Date("2026-11-11T12:00:00.000Z"));
+        const wrapper = mountTarget();
+        await flushPromises();
+        await wrapper.find("select[aria-label='Filter invocations by time range']").setValue("24h");
+        vi.runAllTimers();
+        await flushPromises();
+
+        vi.setSystemTime(new Date("2026-11-12T12:00:00.000Z"));
+        await wrapper.find("th.g-table-sortable").trigger("click");
+        await flushPromises();
+
+        expect(lastQuery().date_range_min).toBe("2026-11-11T12:00:00.000Z");
+    });
+
     it("replaces a typed Invoked day with a time range pick", async () => {
         vi.setSystemTime(new Date("2026-11-11T12:00:00.000Z"));
         const wrapper = mountTarget();

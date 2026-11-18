@@ -19,6 +19,7 @@ import { isRegisteredUser } from "@/api";
 import type { WorkflowInvocation } from "@/api/invocations";
 import type { TableField } from "@/components/Common/GTable.types";
 import {
+    activeTimeRangeCutoff,
     type AppliedTimeRange,
     CUSTOM_TIME_RANGE,
     getActiveTimeRange,
@@ -279,6 +280,8 @@ async function load() {
             history_id: props.historyId,
             workflow_id: props.workflowId,
         };
+        // a quick pick's window slides with the time of each load, not the time it was picked
+        query.date_range_min = activeTimeRangeCutoff(TIME_RANGES, activeTimeRange.value) ?? query.date_range_min;
         if (props.admin) {
             query.include_terminal = false;
         } else if (isRegisteredUser(currentUser.value)) {
