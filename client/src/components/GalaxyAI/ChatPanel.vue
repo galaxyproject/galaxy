@@ -6,7 +6,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useChatStore } from "@/stores/chatStore";
 
 import ChatActions from "./ChatActions.vue";
-import GalaxyAI from "@/components/GalaxyAI.vue";
+import GalaxyAIChat from "./GalaxyAIChat.vue";
 
 const chatStore = useChatStore();
 const { activeChatId } = storeToRefs(chatStore);
@@ -42,7 +42,7 @@ watch(
             <ChatActions v-model:collapsed="collapsed" source="panel" @dock-to="dockTo" />
         </div>
         <div v-show="!collapsed" class="chat-panel-body">
-            <GalaxyAI :exchange-id="activeChatId || undefined" panel />
+            <GalaxyAIChat source="panel" :exchange-id="activeChatId || undefined" />
         </div>
     </div>
 </template>

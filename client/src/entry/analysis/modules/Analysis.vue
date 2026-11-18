@@ -13,8 +13,8 @@ import { eventBus } from "@/utils/eventBus";
 import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
-import GalaxyAI from "@/components/GalaxyAI.vue";
 import ChatPanel from "@/components/GalaxyAI/ChatPanel.vue";
+import GalaxyAIChat from "@/components/GalaxyAI/GalaxyAIChat.vue";
 import HistoryIndex from "@/components/History/Index.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
@@ -48,7 +48,7 @@ const isNoPaddingPath = computed(() => {
 });
 
 /**
- * Every `/galaxyai` route renders one and the same GalaxyAI instance: it rewrites its own route as a
+ * Every `/galaxyai` route renders one and the same chat instance: it rewrites its own route as a
  * conversation is created (`/galaxyai` to `/galaxyai/<id>`) or reset (`/galaxyai/new`) and follows
  * those changes through its `exchangeId` prop, so the live conversation stays in place. The tools
  * list follows its own query, so its search field and open pickers stay in place as the search
@@ -123,7 +123,7 @@ onUnmounted(() => {
             panel-id="chat-panel"
             side="right"
             @close="chatStore.hideChat()">
-            <GalaxyAI :exchange-id="activeChatId || undefined" docked />
+            <GalaxyAIChat source="docked" :exchange-id="activeChatId || undefined" />
         </FlexPanel>
         <DragAndDropModal />
     </div>
