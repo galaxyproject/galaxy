@@ -5,7 +5,6 @@ import { useRouter } from "vue-router";
 
 import { userOwnsHistory } from "@/api";
 import type { WorkflowInvocation } from "@/api/invocations";
-import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getFullAppUrl } from "@/app/utils";
 import type { TableAction } from "@/components/Common/GTable.types";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -19,7 +18,7 @@ import localize from "@/utils/localization";
 import { describeFailures, settleEach } from "@/utils/settleEach";
 import { pluralize } from "@/utils/strings";
 
-import { INVOCATION_STATE_GROUPS } from "./invocationFilters";
+import { INVOCATION_STATE_GROUP } from "./invocationFilters";
 
 interface Options {
     /** Opens an invocation, as the list does (e.g. in a new tab for a batch run) */
@@ -44,9 +43,7 @@ export function useInvocationListItemActions({ viewInvocation, refreshList, admi
 
     /** The workflow version the invocation ran, once the list has loaded it */
     function storedWorkflow(invocation: WorkflowInvocation) {
-        return workflowStore.getStoredWorkflowByInstanceId(invocation.workflow_id) as
-            | StoredWorkflowDetailed
-            | undefined;
+        return workflowStore.getStoredWorkflowByInstanceId(invocation.workflow_id);
     }
 
     /**
@@ -60,7 +57,7 @@ export function useInvocationListItemActions({ viewInvocation, refreshList, admi
             return "This workflow isn't available to you, so it can't be run again";
         } else if (workflow.deleted) {
             return "This workflow has been deleted, so it can't be run again";
-        } else if (!history || !currentUser.value || !userOwnsHistory(currentUser.value, history)) {
+        } else if (!history || !ownsHistory(invocation)) {
             return "Rerunning switches to this invocation's history, which isn't yours";
         } else if (history.purged || history.archived) {
             return `Rerunning switches to this invocation's history, which is ${history.purged ? "purged" : "archived"}`;
@@ -78,8 +75,10 @@ export function useInvocationListItemActions({ viewInvocation, refreshList, admi
 
     /** Previews the exact workflow version the invocation ran, read-only */
     function viewWorkflow(invocation: WorkflowInvocation) {
-        const workflow = storedWorkflow(invocation)!;
-        workflowPreview.value = { id: workflow.id, version: workflow.version ?? undefined };
+        const workflow = storedWorkflow(invocation);
+        if (workflow) {
+            workflowPreview.value = { id: workflow.id, version: workflow.version ?? undefined };
+        }
     }
 
     /**
@@ -87,10 +86,7 @@ export function useInvocationListItemActions({ viewInvocation, refreshList, admi
      * invocation may have nothing left to cancel, which only its own page can tell from its jobs.
      */
     function isCancellableInvocation(invocation: WorkflowInvocation) {
-        return (
-            invocation.state !== "scheduled" &&
-            (INVOCATION_STATE_GROUPS.active as readonly string[]).includes(invocation.state)
-        );
+        return invocation.state !== "scheduled" && INVOCATION_STATE_GROUP[invocation.state] === "active";
     }
 
     /**

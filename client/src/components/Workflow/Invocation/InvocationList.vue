@@ -22,10 +22,10 @@ import { CUSTOM_TIME_RANGE } from "@/components/Common/TimeRangeFilter.types";
 import { type ColumnFilterField, useColumnFilters } from "@/components/Grid/useColumnFilters";
 import {
     historyColumnFilter,
-    type INVOCATION_STATE_GROUPS,
     INVOCATION_TIME_RANGES,
     invocationFilterParams,
     invocationsFiltering,
+    type InvocationStateGroup,
     MAX_COLUMN_FILTER_PICKS,
     workflowColumnFilter,
 } from "@/components/Workflow/Invocation/invocationFilters";
@@ -77,13 +77,13 @@ const INLINE_CHIPS_MIN_WIDTH = 768;
 /** At most this many rows stay expanded, since each expanded invocation polls while it runs */
 const MAX_EXPANDED = 3;
 
-/** The status buttons, one per `INVOCATION_STATE_GROUPS` key, in display order */
+/** The status buttons, one per `InvocationStateGroup`, in display order */
 const STATUS_GROUPS = [
     { key: "active", label: "Active", icon: faSpinner, color: "yellow" },
     { key: "finished", label: "Finished", icon: faCheckCircle, color: "green" },
     { key: "problem", label: "Problem", icon: faExclamationTriangle, color: "red" },
     { key: "inactive", label: "Inactive", icon: faStopCircle, color: "grey" },
-] as const satisfies (StatusGroup & { key: keyof typeof INVOCATION_STATE_GROUPS })[];
+] as const satisfies (StatusGroup & { key: InvocationStateGroup })[];
 
 /** Typed Invoked time filters, which make the time range picker show "Custom range" */
 const TYPED_TIME_FILTERS = ["create_time", "create_time_gt", "create_time_lt"];

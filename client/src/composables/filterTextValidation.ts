@@ -40,5 +40,5 @@ export function useFilterTextValidation<T>(
         return toValue(filterClass)?.getFilterText(validFilters.value, backendFormatted, filterText.value) || "";
     }
 
-    return { rawFilters, validFilters, invalidFilters, isSurroundedByQuotes, hasInvalidFilters, validatedFilterText };
+    return { rawFilters, invalidFilters, isSurroundedByQuotes, hasInvalidFilters, validatedFilterText };
 }

@@ -23,28 +23,38 @@ export const MAX_COLUMN_FILTER_PICKS = 10;
 /** Number of most recently updated items a column filter lists before anything is typed. */
 export const RECENT_LIMIT = 20;
 
-/** Every invocation state, for the `state` filter's dropdown. */
-export const INVOCATION_STATES = [
-    "new",
-    "requires_materialization",
-    "ready",
-    "scheduled",
-    "completed",
-    "failed",
-    "cancelling",
-    "cancelled",
-] as const satisfies readonly InvocationState[];
+/** The status buttons' groups of invocation states */
+export type InvocationStateGroup = "active" | "finished" | "problem" | "inactive";
 
 /**
- * Quick-toggle groups of invocation states for the status buttons; each state is in one group.
+ * Each invocation state's status group; a `Record` over every state, so a new state can't be left out.
  * `scheduled` invocations can still have jobs running, so they are active.
  */
-export const INVOCATION_STATE_GROUPS = {
-    active: ["new", "requires_materialization", "ready", "scheduled"],
-    finished: ["completed"],
-    problem: ["failed"],
-    inactive: ["cancelling", "cancelled"],
-} as const satisfies Record<string, readonly InvocationState[]>;
+export const INVOCATION_STATE_GROUP: Record<InvocationState, InvocationStateGroup> = {
+    new: "active",
+    requires_materialization: "active",
+    ready: "active",
+    scheduled: "active",
+    completed: "finished",
+    failed: "problem",
+    cancelling: "inactive",
+    cancelled: "inactive",
+};
+
+/** Every invocation state, for the `state` filter's dropdown. */
+export const INVOCATION_STATES = Object.keys(INVOCATION_STATE_GROUP) as InvocationState[];
+
+function statesIn(group: InvocationStateGroup) {
+    return INVOCATION_STATES.filter((state) => INVOCATION_STATE_GROUP[state] === group);
+}
+
+/** The states in each status group, as the status buttons filter them */
+export const INVOCATION_STATE_GROUPS: Record<InvocationStateGroup, InvocationState[]> = {
+    active: statesIn("active"),
+    finished: statesIn("finished"),
+    problem: statesIn("problem"),
+    inactive: statesIn("inactive"),
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -219,7 +229,7 @@ export function invocationFilterParams(
     const state = value("state");
     const states =
         status && status in INVOCATION_STATE_GROUPS
-            ? [...INVOCATION_STATE_GROUPS[status as keyof typeof INVOCATION_STATE_GROUPS]]
+            ? [...INVOCATION_STATE_GROUPS[status as InvocationStateGroup]]
             : state
               ? [state.toLowerCase() as InvocationState]
               : undefined;
