@@ -115,7 +115,8 @@ jobs:
     steps:
       - if: github.event_name == 'schedule'
         run: |
-          echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
+          # A default for tests that don't set a metadata strategy themselves.
+          echo "GALAXY_TEST_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           # --cov=lib line-traces a live Galaxy for the whole job, so integration
           # coverage is collected on this weekly run only.
           echo "GALAXY_TEST_COVERAGE=1" >> $GITHUB_ENV
