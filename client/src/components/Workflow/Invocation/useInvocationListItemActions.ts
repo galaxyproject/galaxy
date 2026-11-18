@@ -135,15 +135,14 @@ export function useInvocationListItemActions({ viewInvocation, refreshList, admi
         await refreshList();
     }
 
-    const invocationListItemActions: TableAction[] = [
+    const invocationListItemActions: TableAction<WorkflowInvocation>[] = [
         {
             id: "rerun-invocation",
             groupId: "invocation",
             label: "Rerun",
-            title: (invocation: WorkflowInvocation) =>
-                rerunBlockedReason(invocation) ?? "Rerun this workflow with the same inputs",
+            title: (invocation) => rerunBlockedReason(invocation) ?? "Rerun this workflow with the same inputs",
             icon: faRedo,
-            disabled: (invocation: WorkflowInvocation) => !!rerunBlockedReason(invocation),
+            disabled: (invocation) => !!rerunBlockedReason(invocation),
             handler: rerunInvocation,
         },
         {
@@ -160,7 +159,7 @@ export function useInvocationListItemActions({ viewInvocation, refreshList, admi
             label: "Copy link",
             title: "Copy a link to this invocation",
             icon: faLink,
-            handler: (invocation: WorkflowInvocation) =>
+            handler: (invocation) =>
                 copy(getFullAppUrl(`workflows/invocations/${invocation.id}`), "Link to invocation copied"),
         },
         {
@@ -169,7 +168,7 @@ export function useInvocationListItemActions({ viewInvocation, refreshList, admi
             label: "View workflow",
             title: "View the workflow version this invocation ran",
             icon: faSitemap,
-            visible: (invocation: WorkflowInvocation) => !!storedWorkflow(invocation),
+            visible: (invocation) => !!storedWorkflow(invocation),
             handler: viewWorkflow,
         },
         {
@@ -179,7 +178,7 @@ export function useInvocationListItemActions({ viewInvocation, refreshList, admi
             title: "View this invocation's history without switching to it",
             icon: faHdd,
             visible: ownsHistory,
-            handler: (invocation: WorkflowInvocation) => router.push(`/histories/view?id=${invocation.history_id}`),
+            handler: (invocation) => router.push(`/histories/view?id=${invocation.history_id}`),
         },
         {
             id: "cancel-invocation",
@@ -189,7 +188,7 @@ export function useInvocationListItemActions({ viewInvocation, refreshList, admi
             icon: faStopCircle,
             visible: isCancellableInvocation,
             // confirms first, like the bulk Cancel
-            handler: (invocation: WorkflowInvocation) => cancelInvocations([invocation]),
+            handler: (invocation) => cancelInvocations([invocation]),
         },
     ];
 
