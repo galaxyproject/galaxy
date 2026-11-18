@@ -12,6 +12,7 @@ from sqlalchemy import (
     func,
     or_,
     select,
+    text,
     union_all,
     update,
 )
@@ -78,7 +79,20 @@ class RunNotificationManager:
     def poll_pending_notifications(self, after_id: int = 0, limit: int = 100) -> list[int]:
         if not (self.app.config.enable_notification_system or self.app.config.smtp_server):
             return []
-        return list(self.app.model.context.scalars(eligible_run_notifications_stmt(after_id, limit)))
+        session = self.app.model.context
+        # Most polls find nothing pending, so skip the eligibility query for them.
+        pending = session.scalar(
+            select(RunNotificationRequest.id)
+            .where(RunNotificationRequest.completed.is_(False), RunNotificationRequest.id > after_id)
+            .limit(1)
+        )
+        if pending is None:
+            return []
+        if session.get_bind().dialect.name == "postgresql":
+            # The planner overestimates this query by orders of magnitude, so PostgreSQL JIT-compiles it on
+            # every poll. Compiling takes seconds of database CPU; the query itself runs in about a millisecond.
+            session.execute(text("SET LOCAL jit = off"))
+        return list(session.scalars(eligible_run_notifications_stmt(after_id, limit)))
 
     def check_and_notify(self, request_id: int) -> bool:
         session = self.app.model.context
