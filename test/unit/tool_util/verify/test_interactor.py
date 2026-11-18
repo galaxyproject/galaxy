@@ -320,6 +320,20 @@ def test_test_data_path_keeps_plus_in_tool_version(interactor, mocked):
     assert query == {"filename": ["out.txt"], "tool_version": ["0.39+galaxy4"]}
 
 
+def test_verify_output_dataset_keeps_plus_in_extra_file_name(interactor, mocked):
+    display = f"{API}/histories/hist1/contents/hda1/display"
+    mocked.get(display, body=b"payload")
+    mocked.get(display, body=b"expected")
+    _mock_test_data_download(mocked, body=b"expected")
+    extra_file = {"type": "file", "name": "part 1+2.txt", "value": "expected.txt", "attributes": {}}
+    attributes = {"assert_list": [], "extra_files": [extra_file]}
+    interactor.verify_output_dataset("hist1", "hda1", None, attributes, "some_tool")
+    queries = [
+        _query_as_server_decodes_it(call.request) for call in mocked.calls if "/display" in (call.request.url or "")
+    ]
+    assert queries == [{"raw": ["true"]}, {"raw": ["true"], "filename": ["part 1+2.txt"]}]
+
+
 def test_requests_reuse_one_connection_per_thread():
     """Polling should not open a fresh TCP connection every time."""
     connects = []

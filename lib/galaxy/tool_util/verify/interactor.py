@@ -1382,12 +1382,13 @@ class GalaxyInteractorApi:
 
     def __dataset_fetcher(self, history_id):
         def fetcher(hda_id, base_name=None):
-            url = f"histories/{history_id}/contents/{hda_id}/display?raw=true"
+            url = f"histories/{history_id}/contents/{hda_id}/display"
+            params = {"raw": "true"}
             if base_name:
-                url += f"&filename={base_name}"
+                params["filename"] = base_name
             response = None
             for _ in range(self.download_attempts):
-                response = self._get(url)
+                response = self._get(url, data=params)
                 if response.status_code in (409, 500):
                     print(f"Retrying failed download with status code {response.status_code}")
                     time.sleep(self.download_sleep)
