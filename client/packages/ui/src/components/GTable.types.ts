@@ -90,8 +90,8 @@ export interface RowSelectEvent<T> {
     selected: boolean;
 }
 
-/** Table action button configuration */
-export interface TableAction {
+/** Table action button configuration, for rows of type `T` */
+export interface TableAction<T = any> {
     /** Unique identifier for the action */
     id: string;
     /** Actions with different groups are separated by a divider in the row's menu; without groups the menu is one list */
@@ -99,15 +99,15 @@ export interface TableAction {
     /** Display label for the action */
     label: string;
     /** Tooltip text, for every row or per row (e.g. why the action is disabled) */
-    title: string | ((item: any) => string);
+    title: string | ((item: T) => string);
     /** FontAwesome icon */
     icon?: IconDefinition;
     /** Bootstrap variant */
     variant?: BootstrapVariant;
     /** Whether the action is disabled, for every row or per row */
-    disabled?: boolean | ((item: any) => boolean);
+    disabled?: boolean | ((item: T) => boolean);
     /** Whether the action is visible, for every row or per row */
-    visible?: boolean | ((item: any) => boolean);
+    visible?: boolean | ((item: T) => boolean);
     /** Bootstrap component size */
     size?: BootstrapSize;
     /** Vue Router route to navigate to */
@@ -119,7 +119,7 @@ export interface TableAction {
     /** Whether link opens in new tab/window */
     externalLink?: boolean;
     /** Click handler function */
-    handler?: (item: any, index: number) => void;
+    handler?: (item: T, index: number) => void;
 }
 
 /** Empty state configuration */

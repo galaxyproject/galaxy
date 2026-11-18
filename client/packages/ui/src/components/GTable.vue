@@ -35,7 +35,7 @@ interface Props {
      * Table actions displayed above the table
      * @default []
      */
-    actions?: TableAction[];
+    actions?: TableAction<T>[];
 
     /**
      * Whether to show borders
@@ -512,12 +512,12 @@ const allSelected = computed(() => {
 });
 
 /** An action's `title`, `visible` or `disabled` for one row, which may be set per row */
-function actionValue<T>(value: T | ((item: any) => T) | undefined, item: any, fallback: T): T {
-    return typeof value === "function" ? (value as (item: any) => T)(item) : (value ?? fallback);
+function actionValue<V>(value: V | ((item: T) => V) | undefined, item: T, fallback: V): V {
+    return typeof value === "function" ? (value as (item: T) => V)(item) : (value ?? fallback);
 }
 
 /** The actions shown in a row's menu, each marking whether a divider goes before it (a new group) */
-function rowActions(item: any): { action: TableAction; divided: boolean }[] {
+function rowActions(item: T): { action: TableAction<T>; divided: boolean }[] {
     const visible = (props.actions ?? []).filter((action) => actionValue(action.visible, item, true));
     return visible.map((action, index) => ({
         action,
