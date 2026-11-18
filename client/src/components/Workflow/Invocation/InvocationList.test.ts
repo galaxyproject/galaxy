@@ -185,8 +185,9 @@ describe("InvocationList", () => {
         expect(lastQuery()).toMatchObject({
             search: "workflow:rna",
             state: ["failed"],
-            date_range_min: "2026-11-01",
-            date_range_max: "2026-11-02",
+            // typed dates are the user's own midnight
+            date_range_min: new Date(2026, 10, 1).toISOString(),
+            date_range_max: new Date(2026, 10, 2).toISOString(),
         });
     });
 

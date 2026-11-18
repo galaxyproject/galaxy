@@ -168,6 +168,28 @@ export function invocationSearch(text: string): string | undefined {
     return terms.join(" ") || undefined;
 }
 
+/**
+ * A typed date or time read in the user's time zone, as the list shows times, sent as a UTC timestamp.
+ * A date without a time is that day's start, or with `endOfDay` its last moment. Text that isn't a date
+ * is sent as typed, for the server to reject.
+ */
+function userTime(value: string | undefined, endOfDay = false) {
+    if (!value) {
+        return undefined;
+    }
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+    const time = new Date(dateOnly ? `${value}T00:00` : value);
+    if (Number.isNaN(time.getTime())) {
+        return value;
+    }
+    if (dateOnly && endOfDay) {
+        // the next day's start, less a millisecond
+        time.setDate(time.getDate() + 1);
+        time.setMilliseconds(-1);
+    }
+    return time.toISOString();
+}
+
 /** Translate the grid's filter text into the filter parameters of `/api/invocations`. */
 export function invocationFilterParams(
     text: string,
@@ -183,13 +205,11 @@ export function invocationFilterParams(
               : undefined;
     // a plain `create_time:<date>` is that whole day
     const day = value("create_time")?.slice(0, 10);
-    /** The day's last moment, since the server's `date_range_max` expects an exact timestamp. */
-    const dayEnd = day && `${day}T23:59:59.999999`;
     return {
         search: invocationSearch(text),
         state: states,
-        date_range_min: value("create_time_gt") ?? day,
-        date_range_max: value("create_time_lt") ?? dayEnd,
+        date_range_min: userTime(value("create_time_gt") ?? day),
+        date_range_max: userTime(value("create_time_lt")) ?? userTime(day, true),
     };
 }
 

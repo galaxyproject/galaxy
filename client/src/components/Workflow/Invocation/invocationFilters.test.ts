@@ -76,21 +76,6 @@ describe("invocationFilterParams", () => {
         ["status:active", { state: ["new", "requires_materialization", "ready", "scheduled"] }],
         ["status:finished", { state: ["completed"] }],
         ["status:inactive", { state: ["cancelling", "cancelled"] }],
-        ["create_time_gt:2026-11-01", { date_range_min: "2026-11-01" }],
-        ["create_time_lt:2026-11-02", { date_range_max: "2026-11-02" }],
-        [
-            "create_time_gt:2026-11-01 create_time_lt:2026-11-02",
-            { date_range_min: "2026-11-01", date_range_max: "2026-11-02" },
-        ],
-        [
-            "create_time>2026-11-01 create_time<2026-11-02",
-            { date_range_min: "2026-11-01", date_range_max: "2026-11-02" },
-        ],
-        ["create_time:2026-11-01", { date_range_min: "2026-11-01", date_range_max: "2026-11-01T23:59:59.999999" }],
-        [
-            "create_time:2026-11-01 create_time>2026-11-01T12:00",
-            { date_range_min: "2026-11-01T12:00", date_range_max: "2026-11-01T23:59:59.999999" },
-        ],
         ["rna state:completed", { search: "workflow:rna", state: ["completed"] }],
     ])("turns %j into %j", (text, params) => {
         expect(invocationFilterParams(text)).toEqual(params);
@@ -98,6 +83,30 @@ describe("invocationFilterParams", () => {
 
     it("uses the status group when a state is also given, as the job list does", () => {
         expect(invocationFilterParams("status:inactive state:failed")).toEqual({ state: ["cancelling", "cancelled"] });
+    });
+});
+
+describe("invocationFilterParams dates", () => {
+    // typed dates are the user's own days, as the list shows times, sent as UTC timestamps
+    const local = (...parts: [number, number, number, number?, number?, number?, number?]) =>
+        new Date(...parts).toISOString();
+    const dayStart = local(2026, 0, 31);
+    const dayEnd = local(2026, 0, 31, 23, 59, 59, 999);
+
+    it.each([
+        ["create_time>2026-01-31", { date_range_min: dayStart }],
+        ["create_time<2026-01-31", { date_range_max: dayStart }],
+        ["create_time_gt:2026-01-31T12:00", { date_range_min: local(2026, 0, 31, 12) }],
+        ["create_time:2026-01-31", { date_range_min: dayStart, date_range_max: dayEnd }],
+        [
+            "create_time:2026-01-31 create_time>2026-01-31T12:00",
+            { date_range_min: local(2026, 0, 31, 12), date_range_max: dayEnd },
+        ],
+        // a quick pick's cutoff is already UTC, and text that isn't a date is left for the server to reject
+        ["create_time>2026-01-31T12:00:00.000Z", { date_range_min: "2026-01-31T12:00:00.000Z" }],
+        ["create_time>yesterday", { date_range_min: "yesterday" }],
+    ])("turns %j into the user's own times", (text, params) => {
+        expect(invocationFilterParams(text)).toMatchObject(params);
     });
 });
 
