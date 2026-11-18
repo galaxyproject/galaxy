@@ -65,6 +65,16 @@ def test_base_config_if_running_not_from_source(monkeypatch):
     assert appconfig.managed_config_dir == os.path.join(appconfig.data_dir, "config")
 
 
+def test_browser_plugin_package_store_defaults_to_managed_config_dir():
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
+    assert appconfig.browser_plugin_packages_dir == os.path.join(
+        appconfig.managed_config_dir, "browser_plugin_packages"
+    )
+    assert appconfig.browser_plugin_packages_config_file == os.path.join(
+        appconfig.managed_config_dir, "browser_plugin_packages.yml"
+    )
+
+
 def test_subdomain_switcher_defaults_to_empty_list():
     appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
 
