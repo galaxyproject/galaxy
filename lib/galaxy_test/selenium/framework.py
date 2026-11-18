@@ -533,7 +533,11 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def setup_driver_and_session(self):
         virtual_display_enabled = use_virtual_display()
         self.display = driver_factory.virtual_display_if_enabled(virtual_display_enabled)
-        self.configured_driver = get_configured_driver()
+        try:
+            self.configured_driver = get_configured_driver()
+        except Exception:
+            self.display.stop()
+            raise
         self._driver_allocated = True
         with self._tear_down_driver_on_error():
             self._setup_galaxy_logging()
