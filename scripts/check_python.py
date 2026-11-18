@@ -3,9 +3,11 @@ If the current installed Python version is not supported, prints an error
 message to stderr and returns 1
 """
 
+from __future__ import print_function  # noqa: UP010
+
 import sys
 
-MIN_VERSION_TUPLE = (3, 10)
+MIN_VERSION_TUPLE = (3, 11)
 
 
 def check_python():
@@ -15,12 +17,15 @@ def check_python():
     else:
         version_string = ".".join(str(_) for _ in sys.version_info[:3])
         min_version_string = ".".join(str(_) for _ in MIN_VERSION_TUPLE)
-        msg = f"""ERROR: Your Python version is: {version_string}
-Galaxy is currently supported on Python >={min_version_string} .
+        msg = """ERROR: Your Python version is: {}
+Galaxy is currently supported on Python >={} .
 To run Galaxy, please install a supported Python version.
 If a supported version is already installed but is not your default,
 https://docs.galaxyproject.org/en/latest/admin/python.html contains instructions
-on how to force Galaxy to use a different version."""
+on how to force Galaxy to use a different version.""".format(  # noqa: UP032
+            version_string,
+            min_version_string,
+        )
         print(msg, file=sys.stderr)
         raise Exception(msg)
 

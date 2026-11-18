@@ -7,7 +7,7 @@ dynamic = ["readme"]
 name = "galaxy-app"
 version = "26.2.0rc1"
 description = "Galaxy application (backend)"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "MIT"
 license-files = [
     "LICENSE",
@@ -56,7 +56,7 @@ dependencies = [
     "python-slugify",
     "PyJWT",
     "PyYAML",
-    "quickjs-ng>=0.16.2.1; python_version >= '3.10'",
+    "quickjs-ng>=0.16.2.1",
     "refgenconf>=0.13.0",
     "regex",
     "requests",
@@ -74,7 +74,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",

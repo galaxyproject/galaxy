@@ -23,13 +23,13 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
+    NotRequired,
 )
 
 from packaging.version import Version
 from requests import Response
 from requests.cookies import RequestsCookieJar
 from typing_extensions import (
-    NotRequired,
     Protocol,
     TypedDict,
 )

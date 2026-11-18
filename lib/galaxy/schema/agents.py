@@ -2,7 +2,7 @@
 Pydantic schemas for AI agent responses and requests.
 """
 
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
 )
@@ -14,7 +14,7 @@ from pydantic import (
 )
 
 
-class ConfidenceLevel(str, Enum):
+class ConfidenceLevel(StrEnum):
     """Confidence levels for agent responses."""
 
     LOW = "low"
@@ -22,7 +22,7 @@ class ConfidenceLevel(str, Enum):
     HIGH = "high"
 
 
-class ActionType(str, Enum):
+class ActionType(StrEnum):
     """Types of actions agents can suggest."""
 
     TOOL_RUN = "tool_run"

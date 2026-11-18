@@ -16,7 +16,7 @@ from collections.abc import (
     Mapping,
 )
 from contextlib import contextmanager
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
     cast,
@@ -91,7 +91,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class MaterializationReason(str, Enum):
+class MaterializationReason(StrEnum):
     DETAIL = "detail"
     DEPENDENCY = "dependency"
     EXECUTION = "execution"
@@ -702,8 +702,7 @@ class CachedToolBox(ToolBox):
         # ``_index_panel_items`` only returns placements when the index is
         # populated, so it is non-None here.
         assert self._tool_index is not None
-        missing = self._panel_ids_missing_from_index(placements)
-        if missing:
+        if missing := self._panel_ids_missing_from_index(placements):
             log.info(
                 "CachedToolBox fast panel init found %d panel ids missing from index; running populator",
                 len(missing),

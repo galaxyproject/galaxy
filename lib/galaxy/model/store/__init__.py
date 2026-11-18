@@ -3246,8 +3246,7 @@ def source_to_import_store(
     else:
         source_uri: str = str(source)
         delete = False
-        if source_uri.startswith("file://"):
-            source_uri = source_uri[len("file://") :]
+        source_uri = source_uri.removeprefix("file://")
         if "://" in source_uri:
             user_context = ProvidesFileSourcesUserContext(user_context)
             source_uri = stream_url_to_file(

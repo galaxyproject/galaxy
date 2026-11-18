@@ -332,8 +332,7 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Res
 
 def validate_rate_limit_options(config) -> None:
     """Reject a rate limit option slowapi cannot parse at startup rather than on the first request."""
-    value = config.send_notification_rate_limit
-    if value:
+    if value := config.send_notification_rate_limit:
         try:
             parse_many(value)
         except ValueError as e:

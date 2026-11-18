@@ -93,7 +93,7 @@ def test_readmes_renders_rst_readme_of_each_downloadable_revision(
     _upload_revision(provides_repositories, new_repository, tmp_path, "1", "Old")
     _upload_revision(provides_repositories, new_repository, tmp_path, "2", "New")
     latest = get_latest_downloadable_changeset_revision(app, new_repository)
-    (old,) = [m.changeset_revision for m in new_repository.downloadable_revisions if m.changeset_revision != latest]
+    (old,) = (m.changeset_revision for m in new_repository.downloadable_revisions if m.changeset_revision != latest)
     changeset_revision = old if label == "Old" else latest
     assert changeset_revision
 
@@ -139,7 +139,7 @@ def test_readmes_keeps_crlf_readme_images_on_old_revision(
     _upload_revision(provides_repositories, new_repository, tmp_path, "1", "Old", newline="\r\n")
     _upload_revision(provides_repositories, new_repository, tmp_path, "2", "New")
     latest = get_latest_downloadable_changeset_revision(app, new_repository)
-    (old,) = [m.changeset_revision for m in new_repository.downloadable_revisions if m.changeset_revision != latest]
+    (old,) = (m.changeset_revision for m in new_repository.downloadable_revisions if m.changeset_revision != latest)
     assert old
 
     html = readmes(app, new_repository, old)["README.rst"]
@@ -165,7 +165,7 @@ def test_readmes_reads_old_revision_readme_at_its_own_path(
             (revision_dir / subdir / "README.rst").write_text(f"{label} {subdir} readme.\n")
         upload(provides_repositories, new_repository, revision_dir, arcname="readme_repo")
     latest = get_latest_downloadable_changeset_revision(app, new_repository)
-    (old_metadata,) = [m for m in new_repository.downloadable_revisions if m.changeset_revision != latest]
+    (old_metadata,) = (m for m in new_repository.downloadable_revisions if m.changeset_revision != latest)
     assert old_metadata.metadata is not None
     assert old_metadata.changeset_revision
     readme_paths = old_metadata.metadata["readme_files"]

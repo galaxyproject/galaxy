@@ -3,7 +3,7 @@ import tempfile
 from datetime import (
     datetime,
     timedelta,
-    timezone,
+    UTC,
 )
 from typing import Any
 
@@ -88,7 +88,7 @@ def test_posix_list_ctime_is_utc(non_utc_local_time):
     st_ctime = os.stat(os.path.join(root, "a")).st_ctime
     assert file_a.ctime
     assert file_a.ctime.utcoffset() == timedelta(0)
-    assert abs(file_a.ctime - datetime.fromtimestamp(st_ctime, tz=timezone.utc)) <= timedelta(microseconds=1)
+    assert abs(file_a.ctime - datetime.fromtimestamp(st_ctime, tz=UTC)) <= timedelta(microseconds=1)
 
 
 def test_posix_link_security():
