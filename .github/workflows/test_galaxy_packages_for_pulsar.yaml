@@ -36,6 +36,7 @@ jobs:
         with:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Install Apptainer's singularity
         uses: './galaxy root/.github/actions/install_apptainer'
       - name: Install ffmpeg

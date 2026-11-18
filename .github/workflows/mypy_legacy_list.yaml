@@ -17,6 +17,7 @@ jobs:
         uses: astral-sh/setup-uv@v10.2.0
         with:
           version-file: .tool-versions
+          prune-cache: true
       - name: Create mypy environments
         # One per Python version the mypy job in lint.yaml uses
         env:

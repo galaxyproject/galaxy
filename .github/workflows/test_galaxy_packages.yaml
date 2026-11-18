@@ -41,6 +41,7 @@ jobs:
         with:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get -y install ffmpeg
       - name: Install tox

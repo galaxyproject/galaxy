@@ -61,6 +61,7 @@ jobs:
         with:
           version-file: galaxy cache source/.tool-versions
           python-version: '3.11'
+          prune-cache: true
       - name: Fetch Biocontainers repository index
         id: fetch-mulled-cache
         if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
@@ -180,6 +181,7 @@ jobs:
         with:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Install Python
         run: uv python install
       - name: Download mulled resolution cache seed

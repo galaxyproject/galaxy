@@ -30,5 +30,6 @@ jobs:
         with:
           version-file: .tool-versions
           python-version: '3.11'
+          prune-cache: true
       - name: Check lock and requirements exports
         run: sh lib/galaxy/dependencies/update.sh --check
