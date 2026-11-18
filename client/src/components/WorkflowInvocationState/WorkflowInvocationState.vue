@@ -245,6 +245,12 @@ const jobStatesStr = computed(() => {
 watch(
     () => props.invocationId,
     async (id) => {
+        // Drop the previous invocation's polling, so it isn't run against this one too
+        clearTimeout(stepStatesInterval.value);
+        clearTimeout(jobStatesInterval.value);
+        completionWatcher.stopWatchingResource();
+        sawRunning = false;
+
         // Prevent the page from reloading when you switch tabs. We set the boolean as soon as we know that
         // the invocation exists in the store, and with this, when we change tabs there isn't a refresh every time.
         const storedInvocation = invocationStore.getInvocationById(id);

@@ -273,6 +273,16 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         assertJobsSummaryFetched(3);
     });
 
+    it("doesn't carry over having seen the previous invocation running when switching to another", async () => {
+        vi.useFakeTimers();
+        const wrapper = await mountWorkflowInvocationState("finishing-jobs");
+        await wrapper.setProps({ invocationId: invocationData.id });
+        await vi.runAllTimersAsync();
+
+        // the first fetch of each invocation, with no checks for the one that had already finished
+        assertInvocationFetched(2);
+    });
+
     it("doesn't check an invocation whose jobs had already finished, which may never be marked completed", async () => {
         vi.useFakeTimers();
         await mountWorkflowInvocationState(invocationData.id);
