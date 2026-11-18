@@ -1712,6 +1712,8 @@ class CachedToolBox(ToolBox):
                     self._remove_tool_in_memory(tool_id)
                 except Exception as e:
                     log.warning("Reconciling peer-removed index entry %s raised: %s", tool_id, e)
+            # Stubs took new entries in place, bypassing register_tool; their payloads rebuild without parsing.
+            self._invalidate_tool_caches()
 
     def _register_new_index_entries_as_stubs(self) -> None:
         """For every index entry not yet in ``_tools_by_id``, build a
