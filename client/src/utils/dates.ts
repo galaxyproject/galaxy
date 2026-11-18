@@ -78,3 +78,13 @@ export function shortDateLabel(galaxyTime?: string | null): string | undefined {
 export function isoTimeAgo(durationMs: number): string {
     return new Date(Date.now() - durationMs).toISOString();
 }
+
+/**
+ * Whether text is an ISO date or time the server can read, e.g. `2026-01-31` or `2026-01-31T12:00`.
+ * @param {string} value - The text to check.
+ * @returns {boolean} Whether it's a valid ISO date or time.
+ */
+export function isIsoDateTime(value: string): boolean {
+    const iso = /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/;
+    return iso.test(value) && !Number.isNaN(new Date(value).getTime());
+}

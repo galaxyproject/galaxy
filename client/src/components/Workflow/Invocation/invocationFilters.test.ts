@@ -76,6 +76,9 @@ describe("invocationFilterParams", () => {
         ["status:active", { state: ["new", "requires_materialization", "ready", "scheduled"] }],
         ["status:finished", { state: ["completed"] }],
         ["status:inactive", { state: ["cancelling", "cancelled"] }],
+        // only the status buttons' own groups, not other keys an object has (`toString` used to throw)
+        ["status:toString", {}],
+        ["status:bogus", {}],
         ["rna state:completed", { search: "workflow:rna", state: ["completed"] }],
     ])("turns %j into %j", (text, params) => {
         expect(invocationFilterParams(text)).toEqual(params);
@@ -83,6 +86,26 @@ describe("invocationFilterParams", () => {
 
     it("uses the status group when a state is also given, as the job list does", () => {
         expect(invocationFilterParams("status:inactive state:failed")).toEqual({ state: ["cancelling", "cancelled"] });
+    });
+});
+
+describe("invocationsFiltering", () => {
+    const invalidKeys = (text: string) => {
+        const filters = Object.fromEntries(invocationsFiltering.getFiltersForText(text, true, false));
+        return Object.keys(invocationsFiltering.getValidFilters(filters, true).invalidFilters);
+    };
+
+    it("flags values the server or the list can't use as invalid filters", () => {
+        expect(invalidKeys("state:runing status:toString invoked:bogus create_time>yesterday")).toEqual([
+            "state",
+            "status",
+            "invoked",
+            "create_time_gt",
+        ]);
+    });
+
+    it("accepts the values it offers", () => {
+        expect(invalidKeys("state:FAILED status:active invoked:24h create_time>2026-01-31T12:00")).toEqual([]);
     });
 });
 
@@ -100,6 +123,7 @@ describe("invocationFilterParams time range picks", () => {
         ["invoked:24h", "2026-11-10T12:00:00.000Z"],
         ["invoked:7d", "2026-11-04T12:00:00.000Z"],
         ["invoked:bogus", undefined],
+        ["invoked:toString", undefined],
     ])("starts %j from now", (text, start) => {
         expect(invocationFilterParams(text).date_range_min).toBe(start);
     });
@@ -128,9 +152,8 @@ describe("invocationFilterParams dates", () => {
             "create_time:2026-01-31 create_time>2026-01-31T12:00",
             { date_range_min: local(2026, 0, 31, 12), date_range_max: dayEnd },
         ],
-        // a quick pick's cutoff is already UTC, and text that isn't a date is left for the server to reject
+        // a quick pick's cutoff is already UTC
         ["create_time>2026-01-31T12:00:00.000Z", { date_range_min: "2026-01-31T12:00:00.000Z" }],
-        ["create_time>yesterday", { date_range_min: "yesterday" }],
     ])("turns %j into the user's own times", (text, params) => {
         expect(invocationFilterParams(text)).toMatchObject(params);
     });

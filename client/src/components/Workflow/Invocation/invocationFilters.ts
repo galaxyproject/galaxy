@@ -8,8 +8,8 @@ import type { TimeRange } from "@/components/Common/TimeRangeFilter.types";
 import type { FieldFilter, FilterOption } from "@/components/Grid/configs/types";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
-import { isoTimeAgo } from "@/utils/dates";
-import Filtering, { compare, equals, isQuoted, type ValidFilter } from "@/utils/filtering";
+import { isIsoDateTime, isoTimeAgo } from "@/utils/dates";
+import Filtering, { compare, equals, isOneOf, isQuoted, type ValidFilter } from "@/utils/filtering";
 import { pluralize } from "@/utils/strings";
 
 import type { InvocationsQuery } from "./invocationsIndex";
@@ -91,6 +91,7 @@ const validFilters: Record<string, ValidFilter<string>> = {
         type: "Dropdown",
         handler: equals("state", "state"),
         datalist: [...INVOCATION_STATES],
+        isValid: isOneOf(INVOCATION_STATES),
         menuItem: true,
         disablesFilters: { status: null },
     },
@@ -99,6 +100,7 @@ const validFilters: Record<string, ValidFilter<string>> = {
         type: "Dropdown",
         handler: equals("status", "status"),
         datalist: Object.keys(INVOCATION_STATE_GROUPS),
+        isValid: isOneOf(Object.keys(INVOCATION_STATE_GROUPS)),
         menuItem: false,
     },
     // set only by the time range picker; see `INVOCATION_TIME_RANGES`
@@ -106,6 +108,7 @@ const validFilters: Record<string, ValidFilter<string>> = {
         type: "Dropdown",
         handler: equals("invoked", "invoked"),
         datalist: INVOCATION_TIME_RANGES.map(({ key }) => key),
+        isValid: isOneOf(INVOCATION_TIME_RANGES.map(({ key }) => key)),
         menuItem: false,
     },
     // the Invoked column, sent to the server as a range: `create_time_gt` / `create_time_lt`, or a plain date's whole day
@@ -114,6 +117,7 @@ const validFilters: Record<string, ValidFilter<string>> = {
         type: Date,
         handler: compare("create_time", "le"),
         isRangeInput: true,
+        isValid: isIsoDateTime,
         menuItem: true,
         disablesFilters: { invoked: null },
     },
@@ -200,8 +204,7 @@ export function invocationSearch(text: string): string | undefined {
 
 /**
  * A typed date or time read in the user's time zone, as the list shows times, sent as a UTC timestamp.
- * A date without a time is that day's start, or with `endOfDay` its last moment. Text that isn't a date
- * is sent as typed, for the server to reject.
+ * A date without a time is that day's start, or with `endOfDay` its last moment.
  */
 function userTime(value: string | undefined, endOfDay = false) {
     if (!value) {
@@ -209,8 +212,9 @@ function userTime(value: string | undefined, endOfDay = false) {
     }
     const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
     const time = new Date(dateOnly ? `${value}T00:00` : value);
+    // the filter's `isValid` already flags text that isn't a date
     if (Number.isNaN(time.getTime())) {
-        return value;
+        return undefined;
     }
     if (dateOnly && endOfDay) {
         // the next day's start, less a millisecond
@@ -228,7 +232,7 @@ export function invocationFilterParams(
     const status = value("status");
     const state = value("state");
     const states =
-        status && status in INVOCATION_STATE_GROUPS
+        status && Object.hasOwn(INVOCATION_STATE_GROUPS, status)
             ? [...INVOCATION_STATE_GROUPS[status as InvocationStateGroup]]
             : state
               ? [state.toLowerCase() as InvocationState]

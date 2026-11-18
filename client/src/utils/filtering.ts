@@ -85,6 +85,8 @@ export type ValidFilter<T> = {
     helpInfo?: DefineComponent | string;
     /** A default value (will make this a default filter for an empty `filterText`) */
     default?: T;
+    /** Values this rejects make the filter invalid, so a list can flag them instead of sending them on */
+    isValid?: (value: T) => boolean;
     /** A dict of filters and corresponding values for this filter that disable them.
      * Note: if value is null, the filter is disabled for any value of this filter.
      */
@@ -115,6 +117,14 @@ export function toLower<T>(value: T): string {
  * */
 export function toBool<T>(value: T): boolean | undefined {
     return value !== null ? toLower(value) === "true" : undefined;
+}
+
+/** An `isValid` check that a filter value is one of `values`, ignoring case
+ * @param values The values the filter accepts
+ * @returns Whether a value is one of them
+ * */
+export function isOneOf(values: readonly string[]) {
+    return <T>(value: T) => values.includes(String(value).toLowerCase());
 }
 
 /** Converts user input to lower case and strips quotation marks
@@ -811,6 +821,9 @@ export default class Filtering<T> {
             filterValue !== undefined &&
             filterValue !== ""
         ) {
+            if (this.validFilters[filterName]?.isValid?.(filterValue) === false) {
+                return undefined;
+            }
             const { converter } = this.validFilters[filterName]?.handler as HandlerReturn<T>;
             if (converter) {
                 if (
