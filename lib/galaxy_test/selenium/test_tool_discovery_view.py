@@ -1,3 +1,8 @@
+from urllib.parse import (
+    parse_qs,
+    urlparse,
+)
+
 from galaxy.util.unittest_utils import transient_failure
 from .framework import (
     playwright_only,
@@ -102,7 +107,10 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
                 break
 
         assert matching_index is not None, "Expected Get Data autocomplete suggestion to be present."
-        suggestions.nth(matching_index).click()
+        # The unfiltered list starts with the Get Data section, so waiting for the search
+        # response keeps the checks below from passing on the list as it was before the pick.
+        with self.page.expect_response(is_get_data_tag_search):
+            suggestions.nth(matching_index).click()
 
         search_input = self.page.locator('.tools-list [data-description="filter text input"]')
         self._wait_on(
@@ -110,7 +118,24 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
             'tools/list search input to contain tag:"Get Data"',
         )
 
-        tools_list.tool_card(tool_id="upload1").wait_for_visible()
+        # Hits for a tag-only query all score the same, so their order is the order the
+        # server indexed them in, which changes between server processes. The list renders
+        # only its first few cards, so check the cards it does render rather than one tool.
+        tool_cards = self.page.locator('.tools-list [id^="g-card-content-"]')
+
+        def only_get_data_tools_rendered():
+            card_tags = tool_cards.evaluate_all(
+                "cards => cards.map(card => [...card.querySelectorAll('.curated-tag')].map(tag => tag.textContent.trim()))"
+            )
+            return bool(card_tags) and all("Get Data" in tags for tags in card_tags)
+
+        self._wait_on(only_get_data_tools_rendered, "tools/list to render only tools tagged Get Data")
+
+
+def is_get_data_tag_search(response) -> bool:
+    url = urlparse(response.url)
+    queries = parse_qs(url.query).get("q", [])
+    return url.path.endswith("/api/tools") and any('tool_tags:("get data")' in query for query in queries)
 
 
 class TestToolDiscoveryViewLoggedIn(SeleniumTestCase):
