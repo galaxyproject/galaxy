@@ -16,13 +16,17 @@ const SERVICE_DEFINITION: ServiceCredentialsDefinition = {
     description: "A service used for testing",
     optional: false,
     variables: [
-        { name: "server", label: "Server", description: "Server URL", optional: false },
+        { name: "token", label: "Token name", description: "Token name", optional: false },
         { name: "port", label: "Port", description: "Server port", optional: true },
     ],
-    secrets: [{ name: "password", label: "Password", description: "Account password", optional: false }],
+    secrets: [{ name: "token", label: "Token", description: "Token value", optional: false }],
 };
 
-function mountComponent(values: { server?: string; port?: string; password?: string } = {}) {
+const NEUTRAL = { ariaInvalid: undefined, stateClasses: [] };
+const INVALID = { ariaInvalid: "true", stateClasses: ["is-invalid"] };
+const VALID = { ariaInvalid: undefined, stateClasses: ["is-valid"] };
+
+function mountComponent(value: string) {
     return mount(CredentialsGroupForm as object, {
         localVue,
         propsData: {
@@ -31,11 +35,8 @@ function mountComponent(values: { server?: string; port?: string; password?: str
                 isNewGroup: true,
                 groupPayload: {
                     name: "My Group",
-                    variables: [
-                        { name: "server", value: values.server ?? "" },
-                        { name: "port", value: values.port ?? "" },
-                    ],
-                    secrets: [{ name: "password", value: values.password ?? "" }],
+                    variables: SERVICE_DEFINITION.variables.map(({ name }) => ({ name, value })),
+                    secrets: SERVICE_DEFINITION.secrets.map(({ name }) => ({ name, value })),
                 },
             },
             serviceDefinition: SERVICE_DEFINITION,
@@ -43,93 +44,38 @@ function mountComponent(values: { server?: string; port?: string; password?: str
     });
 }
 
-function findInput(wrapper: Wrapper<Vue>, name: string, type: "variable" | "secret") {
+function findInput(wrapper: Wrapper<Vue>, name: string, type: string) {
     return wrapper.find(`#${GROUP_ID}-${name}-${type}-input`);
 }
 
-function expectNeutral(input: ReturnType<typeof findInput>) {
-    expect(input.attributes("aria-invalid")).toBeUndefined();
-    expect(input.classes()).not.toContain("is-invalid");
-    expect(input.classes()).not.toContain("is-valid");
-}
-
-function expectInvalid(input: ReturnType<typeof findInput>) {
-    expect(input.attributes("aria-invalid")).toBe("true");
-    expect(input.classes()).toContain("is-invalid");
-}
-
-function expectValid(input: ReturnType<typeof findInput>) {
-    expect(input.attributes("aria-invalid")).toBeUndefined();
-    expect(input.classes()).toContain("is-valid");
+function validationState(input: ReturnType<typeof findInput>) {
+    return {
+        ariaInvalid: input.attributes("aria-invalid"),
+        stateClasses: input.classes().filter((cls) => cls === "is-invalid" || cls === "is-valid"),
+    };
 }
 
 describe("CredentialsGroupForm", () => {
-    it("marks an empty required variable invalid once it loses focus", async () => {
-        const wrapper = mountComponent();
-        const input = findInput(wrapper, "server", "variable");
+    it.each([
+        ["an empty required variable", "token", "variable", "", INVALID],
+        ["an empty optional variable", "port", "variable", "", NEUTRAL],
+        ["a filled required variable", "token", "variable", "my-token", VALID],
+        ["an empty required secret", "token", "secret", "", INVALID],
+    ])("validates %s once it loses focus", async (_case, name, type, value, expected) => {
+        const input = findInput(mountComponent(value), name, type);
 
-        expectNeutral(input);
-
-        await input.trigger("blur");
-
-        expectInvalid(input);
-    });
-
-    it("keeps an empty optional variable neutral after it loses focus", async () => {
-        const wrapper = mountComponent();
-        const input = findInput(wrapper, "port", "variable");
+        expect(validationState(input)).toEqual(NEUTRAL);
 
         await input.trigger("blur");
 
-        expectNeutral(input);
+        expect(validationState(input)).toEqual(expected);
     });
 
-    it("marks a filled required variable valid once it loses focus", async () => {
-        const wrapper = mountComponent({ server: "https://example.org" });
-        const input = findInput(wrapper, "server", "variable");
-
-        expectNeutral(input);
-
-        await input.trigger("blur");
-
-        expectValid(input);
-    });
-
-    it("marks an empty required secret invalid once it loses focus", async () => {
-        const wrapper = mountComponent();
-        const input = findInput(wrapper, "password", "secret");
-
-        expectNeutral(input);
-
-        await input.trigger("blur");
-
-        expectInvalid(input);
-    });
-
-    it("tracks variables and secrets of the same name separately", async () => {
-        const wrapper = mount(CredentialsGroupForm as object, {
-            localVue,
-            propsData: {
-                groupData: {
-                    groupId: GROUP_ID,
-                    isNewGroup: true,
-                    groupPayload: {
-                        name: "My Group",
-                        variables: [{ name: "token", value: "" }],
-                        secrets: [{ name: "token", value: "" }],
-                    },
-                },
-                serviceDefinition: {
-                    ...SERVICE_DEFINITION,
-                    variables: [{ name: "token", label: "Token", description: "Token name", optional: false }],
-                    secrets: [{ name: "token", label: "Token", description: "Token value", optional: false }],
-                },
-            },
-        });
+    it("tracks a variable and a secret of the same name separately", async () => {
+        const wrapper = mountComponent("");
 
         await findInput(wrapper, "token", "secret").trigger("blur");
 
-        expectInvalid(findInput(wrapper, "token", "secret"));
-        expectNeutral(findInput(wrapper, "token", "variable"));
+        expect(validationState(findInput(wrapper, "token", "variable"))).toEqual(NEUTRAL);
     });
 });
