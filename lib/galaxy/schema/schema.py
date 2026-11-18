@@ -2017,15 +2017,26 @@ class InvocationIndexQueryPayload(Model):
     date_range_min: OffsetNaiveDatetime | date | None = Field(
         None,
         title="Date Range Minimum",
-        description="Return only invocations created after this date (e.g. '2014-01-01')",
+        description=(
+            "Return only invocations created on or after this date or time (e.g. '2014-01-01'). "
+            "A date without a time means 00:00 UTC on that day."
+        ),
     )
     date_range_max: OffsetNaiveDatetime | date | None = Field(
         None,
         title="Date Range Maximum",
-        description="Return only invocations created before this date (e.g. '2014-01-01')",
+        description=(
+            "Return only invocations created on or before this date or time (e.g. '2014-01-31T23:59:59'). "
+            "A date without a time means 00:00 UTC on that day, so the rest of that day is left out."
+        ),
     )
     state: list[InvocationState] | None = Field(
-        None, title="States", description="Return only invocations in one of these states"
+        None,
+        title="States",
+        description=(
+            "Return only invocations in one of these states. "
+            "With `include_terminal=false`, only the non-terminal states given here can match."
+        ),
     )
     sort_by: InvocationSortByEnum | None = Field(
         None, title="Sort By", description="Sort Workflow Invocations by this attribute"
