@@ -24,7 +24,7 @@ export async function fetchInvocations(query: InvocationsQuery) {
  * Fetch histories and workflows for the given invocations, if not already loaded,
  * so that they are cached and names are available for display in the grid
  */
-function fetchHistoriesAndWorkflows(invocations: Array<WorkflowInvocation>) {
+export function fetchHistoriesAndWorkflows(invocations: Array<WorkflowInvocation>) {
     const historyStore = useHistoryStore();
     const workflowStore = useWorkflowStore();
 

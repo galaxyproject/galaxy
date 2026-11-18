@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AnyHistory } from "@/api";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import type * as InvocationFilters from "@/components/Workflow/Invocation/invocationFilters";
-import { fetchInvocations } from "@/components/Workflow/Invocation/invocationsIndex";
+import { fetchHistoriesAndWorkflows, fetchInvocations } from "@/components/Workflow/Invocation/invocationsIndex";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useInvocationStore } from "@/stores/invocationStore";
@@ -31,6 +31,7 @@ vi.unmock("@/composables/userLocalStorage");
 
 vi.mock("@/components/Workflow/Invocation/invocationsIndex", () => ({
     fetchInvocations: vi.fn(),
+    fetchHistoriesAndWorkflows: vi.fn(),
 }));
 
 vi.mock("@/components/Workflow/Invocation/invocationFilters", async (importOriginal) => {
@@ -577,6 +578,31 @@ describe("InvocationList", () => {
             expect(wrapper.find("[data-description='filter text input']").exists()).toBe(false);
             expect(wrapper.find("th.g-table-sortable").exists()).toBe(false);
             expect(wrapper.find("[data-description='invocation list pager']").exists()).toBe(false);
+        });
+
+        it("loads the workflows and histories of the given invocations", async () => {
+            mountTarget({ invocations: INVOCATIONS });
+            await flushPromises();
+
+            expect(fetchHistoriesAndWorkflows).toHaveBeenCalledWith(INVOCATIONS);
+        });
+
+        it("shows a cancelled invocation's new state without changing the run's own invocations", async () => {
+            const invocations = [{ ...INVOCATIONS[0], state: "new" }];
+            const wrapper = mountTarget({ invocations });
+            await flushPromises();
+            vi.spyOn(useInvocationStore(), "cancelWorkflowScheduling").mockResolvedValue({
+                ...invocations[0],
+                state: "cancelling",
+            } as never);
+            confirm.mockResolvedValue(true);
+
+            await clickRowAction(wrapper, "cancel-invocation");
+            await flushPromises();
+
+            expect(wrapper.find("help-text-stub").attributes("text")).toBe("cancelling");
+            expect(wrapper.find("tbody #cancel-invocation").exists()).toBe(false);
+            expect(invocations[0]!.state).toBe("new");
         });
 
         it("opens an invocation in a new tab, keeping the run's results page", async () => {

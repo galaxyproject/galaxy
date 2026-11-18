@@ -114,9 +114,12 @@ export function useInvocationListItemActions({ viewInvocation, refreshList, admi
             return;
         }
         const invocationStore = useInvocationStore();
-        const failures = await settleEach(active, (invocation) =>
-            invocationStore.cancelWorkflowScheduling(invocation.id),
-        );
+        const failures = await settleEach(active, async (invocation) => {
+            const updated = await invocationStore.cancelWorkflowScheduling(invocation.id);
+            // the row shows its new state right away, also in a batch list that has nothing to reload
+            invocation.state = updated.state;
+            invocation.update_time = updated.update_time;
+        });
         const cancelled = count - failures.length;
         if (cancelled > 0) {
             Toast.success(`Cancelling ${cancelled} ${pluralize(cancelled, "invocation")}.`);

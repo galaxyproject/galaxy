@@ -35,7 +35,11 @@ import {
     MAX_COLUMN_FILTER_PICKS,
     workflowColumnFilter,
 } from "@/components/Workflow/Invocation/invocationFilters";
-import { fetchInvocations, type InvocationsQuery } from "@/components/Workflow/Invocation/invocationsIndex";
+import {
+    fetchHistoriesAndWorkflows,
+    fetchInvocations,
+    type InvocationsQuery,
+} from "@/components/Workflow/Invocation/invocationsIndex";
 import { useInvocationListItemActions } from "@/components/Workflow/Invocation/useInvocationListItemActions";
 import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import { Toast } from "@/composables/toast";
@@ -153,7 +157,8 @@ const listColumns: (ColumnFilterField & { sortable?: boolean })[] = [
 const columns = batch ? batchColumns : listColumns;
 const fields: TableField[] = columns.map(({ key, title, sortable }) => ({ key, label: title ?? "", sortable }));
 
-const listedInvocations = ref<WorkflowInvocation[]>([]);
+/** The listed invocations; a batch run's are copies, so updating their state leaves the run's page as it was */
+const listedInvocations = ref<WorkflowInvocation[]>(props.invocations?.map((invocation) => ({ ...invocation })) ?? []);
 const totalRows = ref(0);
 const currentPage = ref(1);
 const sortBy = ref("create_time");
@@ -256,8 +261,10 @@ let latestRequest = 0;
 
 async function load() {
     if (props.invocations) {
-        listedInvocations.value = props.invocations;
-        totalRows.value = props.invocations.length;
+        // a batch run's invocations are given, so only their workflows and histories need loading
+        fetchHistoriesAndWorkflows(listedInvocations.value);
+        totalRows.value = listedInvocations.value.length;
+        selectedIds.value = [];
         initDataLoading.value = false;
         return;
     }
