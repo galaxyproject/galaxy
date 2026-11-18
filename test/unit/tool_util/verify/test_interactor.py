@@ -12,6 +12,10 @@ from typing import (
     Any,
     Literal,
 )
+from urllib.parse import (
+    parse_qs,
+    urlsplit,
+)
 
 import pytest
 import requests
@@ -295,6 +299,39 @@ def test_wait_for_job_surfaces_http_status(interactor, mocked):
 def test_wait_for_job_returns_when_job_is_ok(interactor, mocked):
     mocked.get(f"{API}/jobs/job1", json={"state": "ok"})
     interactor.wait_for_job("job1")
+
+
+def _query_as_server_decodes_it(request: requests.PreparedRequest) -> dict[str, list[str]]:
+    assert request.url
+    return parse_qs(urlsplit(request.url).query)
+
+
+def test_test_data_download_keeps_plus_in_tool_version(interactor, mocked):
+    _mock_test_data_download(mocked, body=b"expected")
+    interactor.test_data_download("some_tool", "out 1+2.txt", tool_version="0.39+galaxy4")
+    query = _query_as_server_decodes_it(mocked.calls[-1].request)
+    assert query == {"filename": ["out 1+2.txt"], "tool_version": ["0.39+galaxy4"]}
+
+
+def test_test_data_path_keeps_plus_in_tool_version(interactor, mocked):
+    mocked.get(f"{API}/tools/some_tool/test_data_path", json="/data/out.txt")
+    assert interactor.test_data_path("some_tool", "out.txt", tool_version="0.39+galaxy4") == "/data/out.txt"
+    query = _query_as_server_decodes_it(mocked.calls[-1].request)
+    assert query == {"filename": ["out.txt"], "tool_version": ["0.39+galaxy4"]}
+
+
+def test_verify_output_dataset_keeps_plus_in_extra_file_name(interactor, mocked):
+    display = f"{API}/histories/hist1/contents/hda1/display"
+    mocked.get(display, body=b"payload")
+    mocked.get(display, body=b"expected")
+    _mock_test_data_download(mocked, body=b"expected")
+    extra_file = {"type": "file", "name": "part 1+2.txt", "value": "expected.txt", "attributes": {}}
+    attributes = {"assert_list": [], "extra_files": [extra_file]}
+    interactor.verify_output_dataset("hist1", "hda1", None, attributes, "some_tool")
+    queries = [
+        _query_as_server_decodes_it(call.request) for call in mocked.calls if "/display" in (call.request.url or "")
+    ]
+    assert queries == [{"raw": ["true"]}, {"raw": ["true"], "filename": ["part 1+2.txt"]}]
 
 
 def test_requests_reuse_one_connection_per_thread():
