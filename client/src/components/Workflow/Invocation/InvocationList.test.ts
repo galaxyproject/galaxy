@@ -319,6 +319,11 @@ describe("InvocationList", () => {
     });
 
     it("cancels from the row menu or the selection only after confirming", async () => {
+        const newInvocation = { ...INVOCATIONS[0], id: "inv-3", state: "new" };
+        vi.mocked(fetchInvocations).mockResolvedValue([
+            [newInvocation, ...INVOCATIONS],
+            3,
+        ] as unknown as InvocationsPage);
         const wrapper = mountTarget();
         await flushPromises();
         const cancel = vi.spyOn(useInvocationStore(), "cancelWorkflowScheduling").mockResolvedValue(undefined as never);
@@ -332,13 +337,13 @@ describe("InvocationList", () => {
 
         await wrapper.find("thead input[type='checkbox']").setValue(true);
         const bulkCancel = wrapper.find("#invocation-list-footer-bulk-cancel-button");
-        // only inv-1 is still active
+        // only inv-3 is still being scheduled; scheduled inv-1 and completed inv-2 aren't offered
         expect(bulkCancel.text()).toContain("Cancel Selected (1)");
 
         await bulkCancel.trigger("click");
         await flushPromises();
         expect(confirm).toHaveBeenCalledOnce();
-        expect(cancel.mock.calls.map(([id]) => id)).toEqual(["inv-1"]);
+        expect(cancel.mock.calls.map(([id]) => id)).toEqual(["inv-3"]);
     });
 
     it("keeps the column filters available when the filters match nothing", async () => {

@@ -386,7 +386,7 @@ const {
     invocationListItemActions,
     storedWorkflow,
     workflowPreview,
-    isActiveInvocation,
+    isCancellableInvocation,
     cancelInvocations,
     rerunBlockedReason,
     rerunInvocation,
@@ -411,9 +411,9 @@ const selectedIds = ref<string[]>([]);
 const selectedIndices = computed(() =>
     listedInvocations.value.flatMap((invocation, index) => (selectedIds.value.includes(invocation.id) ? [index] : [])),
 );
-const selectedActive = computed(() =>
+const selectedCancellable = computed(() =>
     listedInvocations.value.filter(
-        (invocation) => selectedIds.value.includes(invocation.id) && isActiveInvocation(invocation),
+        (invocation) => selectedIds.value.includes(invocation.id) && isCancellableInvocation(invocation),
     ),
 );
 const bulkCancelling = ref(false);
@@ -429,7 +429,7 @@ function onSelectAll(selected: boolean) {
 async function onBulkCancel() {
     bulkCancelling.value = true;
     try {
-        await cancelInvocations(selectedActive.value);
+        await cancelInvocations(selectedCancellable.value);
     } finally {
         bulkCancelling.value = false;
     }
@@ -496,9 +496,9 @@ watch([currentPage, filterText, sortBy, sortDesc], ([page], [oldPage]) => {
                     </dl>
                     <GAlert variant="warning">
                         <strong>Note:</strong>
-                        A <code>scheduled</code> invocation can still have jobs running, so it is listed as active.
-                        Invocations run before Galaxy 26.0 may show as <code>scheduled</code> even if all their jobs
-                        have finished.
+                        A <code>scheduled</code> invocation can still have jobs running, so it is listed as active;
+                        cancel it from its own page, which shows whether any jobs are left. Invocations run before
+                        Galaxy 26.0 may show as <code>scheduled</code> even if all their jobs have finished.
                     </GAlert>
                 </template>
             </FilterMenu>
@@ -695,15 +695,15 @@ watch([currentPage, filterText, sortBy, sortDesc], ([page], [oldPage]) => {
                     tooltip
                     size="small"
                     color="blue"
-                    :disabled="!selectedActive.length || bulkCancelling"
+                    :disabled="!selectedCancellable.length || bulkCancelling"
                     :title="
-                        selectedActive.length
-                            ? 'Cancel the selected invocations that are still active'
-                            : 'None of the selected invocations are still active'
+                        selectedCancellable.length
+                            ? 'Cancel the selected invocations that are still being scheduled'
+                            : 'None of the selected invocations are still being scheduled'
                     "
                     @click="onBulkCancel">
                     <FontAwesomeIcon :icon="faStopCircle" />
-                    {{ localize("Cancel Selected") }} ({{ selectedActive.length }})
+                    {{ localize("Cancel Selected") }} ({{ selectedCancellable.length }})
                 </GButton>
                 <GPagination
                     v-if="isAvailable && !batch"

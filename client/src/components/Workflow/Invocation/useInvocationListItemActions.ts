@@ -80,17 +80,23 @@ export function useInvocationListItemActions({ viewInvocation, refreshList }: Op
         workflowPreview.value = { id: workflow.id, version: workflow.version ?? undefined };
     }
 
-    /** Whether the invocation can still be cancelled */
-    function isActiveInvocation(invocation: WorkflowInvocation) {
-        return (INVOCATION_STATE_GROUPS.active as readonly string[]).includes(invocation.state);
+    /**
+     * Whether the list offers to cancel the invocation: only while it's still being scheduled. A `scheduled`
+     * invocation may have nothing left to cancel, which only its own page can tell from its jobs.
+     */
+    function isCancellableInvocation(invocation: WorkflowInvocation) {
+        return (
+            invocation.state !== "scheduled" &&
+            (INVOCATION_STATE_GROUPS.active as readonly string[]).includes(invocation.state)
+        );
     }
 
     /**
-     * Cancels the given invocations that are still active, after confirming, then reloads the list.
+     * Cancels the given invocations that can still be cancelled, after confirming, then reloads the list.
      * Cancels them one by one, so one failure doesn't stop the rest.
      */
     async function cancelInvocations(invocations: WorkflowInvocation[]) {
-        const active = invocations.filter(isActiveInvocation);
+        const active = invocations.filter(isCancellableInvocation);
         const count = active.length;
         const noun = pluralize(count, "invocation");
         const confirmed = await confirm(`Cancel ${count} ${noun}? Their jobs that haven't finished are stopped too.`, {
@@ -173,7 +179,7 @@ export function useInvocationListItemActions({ viewInvocation, refreshList }: Op
             label: "Cancel",
             title: "Cancel this invocation",
             icon: faStopCircle,
-            visible: isActiveInvocation,
+            visible: isCancellableInvocation,
             // confirms first, like the bulk Cancel
             handler: (invocation: WorkflowInvocation) => cancelInvocations([invocation]),
         },
@@ -188,7 +194,7 @@ export function useInvocationListItemActions({ viewInvocation, refreshList }: Op
         invocationListItemActions,
         storedWorkflow,
         workflowPreview,
-        isActiveInvocation,
+        isCancellableInvocation,
         cancelInvocations,
         rerunBlockedReason,
         rerunInvocation,
