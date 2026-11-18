@@ -80,7 +80,7 @@ class TestVisualizationPackagesStaticRoute(IntegrationTestCase):
         assert int(response.headers["content-length"]) == len(SEEDED_JS)
 
     def test_disabled_package_is_not_served(self):
-        toggle = "admin/visualizations/seeded/toggle"
+        toggle = "admin/plugins/seeded/toggle"
         self._assert_status_code_is(self._put(toggle, {"enabled": False}, admin=True, json=True), 200)
         try:
             self._assert_status_code_is(self._static("index.js"), 404)

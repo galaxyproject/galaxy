@@ -39,7 +39,7 @@ from galaxy.webapps.galaxy.services.admin_visualizations import (
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=["admin_visualizations"])
+router = Router(tags=["admin_plugins"])
 
 VisualizationIdPathParam = Annotated[
     str,
@@ -58,7 +58,7 @@ class FastAPIAdminVisualizations:
     # --- Static-segment routes (must be declared before {viz_id} routes) ---
 
     @router.get(
-        "/api/admin/visualizations",
+        "/api/admin/plugins",
         summary="List all installed visualization packages.",
         require_admin=True,
     )
@@ -75,7 +75,7 @@ class FastAPIAdminVisualizations:
         return self.service.index(trans, include_disabled=include_disabled)
 
     @router.post(
-        "/api/admin/visualizations",
+        "/api/admin/plugins",
         summary="Install a visualization package.",
         require_admin=True,
         status_code=status.HTTP_201_CREATED,
@@ -89,7 +89,7 @@ class FastAPIAdminVisualizations:
         return self.service.install_package(trans, request.package, request.version)
 
     @router.get(
-        "/api/admin/visualizations/available",
+        "/api/admin/plugins/available",
         summary="List available visualization packages from npm registry.",
         require_admin=True,
     )
@@ -106,7 +106,7 @@ class FastAPIAdminVisualizations:
         return self.service.get_available_packages(trans, search=search)
 
     @router.get(
-        "/api/admin/visualizations/versions/{package_name:path}",
+        "/api/admin/plugins/versions/{package_name:path}",
         summary="Get available versions for an npm package.",
         require_admin=True,
     )
@@ -123,7 +123,7 @@ class FastAPIAdminVisualizations:
         return self.service.get_package_versions(trans, package_name)
 
     @router.post(
-        "/api/admin/visualizations/reload",
+        "/api/admin/plugins/reload",
         summary="Reload the visualization registry.",
         require_admin=True,
     )
@@ -135,7 +135,7 @@ class FastAPIAdminVisualizations:
         return self.service.reload_registry(trans)
 
     @router.get(
-        "/api/admin/visualizations/{viz_id}",
+        "/api/admin/plugins/{viz_id}",
         summary="Get details for a specific visualization package.",
         require_admin=True,
     )
@@ -148,7 +148,7 @@ class FastAPIAdminVisualizations:
         return self.service.show(trans, viz_id)
 
     @router.put(
-        "/api/admin/visualizations/{viz_id}/update",
+        "/api/admin/plugins/{viz_id}/update",
         summary="Update a visualization package to a new version.",
         require_admin=True,
     )
@@ -162,7 +162,7 @@ class FastAPIAdminVisualizations:
         return self.service.update_package(trans, viz_id, request.version)
 
     @router.delete(
-        "/api/admin/visualizations/{viz_id}",
+        "/api/admin/plugins/{viz_id}",
         summary="Uninstall a visualization package.",
         require_admin=True,
         status_code=status.HTTP_204_NO_CONTENT,
@@ -176,7 +176,7 @@ class FastAPIAdminVisualizations:
         self.service.uninstall_package(trans, viz_id)
 
     @router.put(
-        "/api/admin/visualizations/{viz_id}/toggle",
+        "/api/admin/plugins/{viz_id}/toggle",
         summary="Enable or disable a visualization package.",
         require_admin=True,
     )
