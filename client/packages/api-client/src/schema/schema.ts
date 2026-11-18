@@ -24,7 +24,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/visualizations": {
+    "/api/admin/plugins": {
         parameters: {
             query?: never;
             header?: never;
@@ -35,20 +35,20 @@ export interface paths {
          * List all installed visualization packages.
          * @description Return a list of all installed visualization packages with their status.
          */
-        get: operations["index_api_admin_visualizations_get"];
+        get: operations["index_api_admin_plugins_get"];
         put?: never;
         /**
          * Install a visualization package.
          * @description Install a visualization package from the npm registry, under its unscoped package name.
          */
-        post: operations["install_api_admin_visualizations_post"];
+        post: operations["install_api_admin_plugins_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/admin/visualizations/available": {
+    "/api/admin/plugins/available": {
         parameters: {
             query?: never;
             header?: never;
@@ -59,7 +59,7 @@ export interface paths {
          * List available visualization packages from npm registry.
          * @description Return a list of available @galaxyproject visualization packages from npm registry.
          */
-        get: operations["available_api_admin_visualizations_available_get"];
+        get: operations["available_api_admin_plugins_available_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -68,7 +68,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/visualizations/reload": {
+    "/api/admin/plugins/reload": {
         parameters: {
             query?: never;
             header?: never;
@@ -81,14 +81,14 @@ export interface paths {
          * Reload the visualization registry.
          * @description Reload the visualization registry to pick up configuration changes.
          */
-        post: operations["reload_api_admin_visualizations_reload_post"];
+        post: operations["reload_api_admin_plugins_reload_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/admin/visualizations/versions/{package_name}": {
+    "/api/admin/plugins/versions/{package_name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -99,7 +99,7 @@ export interface paths {
          * Get available versions for an npm package.
          * @description Return available versions for a specific npm package.
          */
-        get: operations["package_versions_api_admin_visualizations_versions__package_name__get"];
+        get: operations["package_versions_api_admin_plugins_versions__package_name__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -108,7 +108,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/visualizations/{viz_id}": {
+    "/api/admin/plugins/{viz_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -119,20 +119,20 @@ export interface paths {
          * Get details for a specific visualization package.
          * @description Return detailed information about a specific visualization package.
          */
-        get: operations["show_api_admin_visualizations__viz_id__get"];
+        get: operations["show_api_admin_plugins__viz_id__get"];
         put?: never;
         post?: never;
         /**
          * Uninstall a visualization package.
          * @description Uninstall a visualization package and clean up its assets.
          */
-        delete: operations["uninstall_api_admin_visualizations__viz_id__delete"];
+        delete: operations["uninstall_api_admin_plugins__viz_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/admin/visualizations/{viz_id}/toggle": {
+    "/api/admin/plugins/{viz_id}/toggle": {
         parameters: {
             query?: never;
             header?: never;
@@ -144,7 +144,7 @@ export interface paths {
          * Enable or disable a visualization package.
          * @description Enable or disable a visualization package without uninstalling it.
          */
-        put: operations["toggle_api_admin_visualizations__viz_id__toggle_put"];
+        put: operations["toggle_api_admin_plugins__viz_id__toggle_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -152,7 +152,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/visualizations/{viz_id}/update": {
+    "/api/admin/plugins/{viz_id}/update": {
         parameters: {
             query?: never;
             header?: never;
@@ -164,7 +164,7 @@ export interface paths {
          * Update a visualization package to a new version.
          * @description Update an installed visualization package to a new version.
          */
-        put: operations["update_api_admin_visualizations__viz_id__update_put"];
+        put: operations["update_api_admin_plugins__viz_id__update_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -34411,7 +34411,7 @@ export interface operations {
             };
         };
     };
-    index_api_admin_visualizations_get: {
+    index_api_admin_plugins_get: {
         parameters: {
             query?: {
                 /** @description Whether to include disabled visualizations in the result. */
@@ -34455,7 +34455,7 @@ export interface operations {
             };
         };
     };
-    install_api_admin_visualizations_post: {
+    install_api_admin_plugins_post: {
         parameters: {
             query?: never;
             header?: {
@@ -34500,7 +34500,7 @@ export interface operations {
             };
         };
     };
-    available_api_admin_visualizations_available_get: {
+    available_api_admin_plugins_available_get: {
         parameters: {
             query?: {
                 /** @description Filter available packages by name or description. */
@@ -34544,7 +34544,7 @@ export interface operations {
             };
         };
     };
-    reload_api_admin_visualizations_reload_post: {
+    reload_api_admin_plugins_reload_post: {
         parameters: {
             query?: never;
             header?: {
@@ -34585,7 +34585,7 @@ export interface operations {
             };
         };
     };
-    package_versions_api_admin_visualizations_versions__package_name__get: {
+    package_versions_api_admin_plugins_versions__package_name__get: {
         parameters: {
             query?: never;
             header?: {
@@ -34629,7 +34629,7 @@ export interface operations {
             };
         };
     };
-    show_api_admin_visualizations__viz_id__get: {
+    show_api_admin_plugins__viz_id__get: {
         parameters: {
             query?: never;
             header?: {
@@ -34673,7 +34673,7 @@ export interface operations {
             };
         };
     };
-    uninstall_api_admin_visualizations__viz_id__delete: {
+    uninstall_api_admin_plugins__viz_id__delete: {
         parameters: {
             query?: never;
             header?: {
@@ -34715,7 +34715,7 @@ export interface operations {
             };
         };
     };
-    toggle_api_admin_visualizations__viz_id__toggle_put: {
+    toggle_api_admin_plugins__viz_id__toggle_put: {
         parameters: {
             query?: never;
             header?: {
@@ -34763,7 +34763,7 @@ export interface operations {
             };
         };
     };
-    update_api_admin_visualizations__viz_id__update_put: {
+    update_api_admin_plugins__viz_id__update_put: {
         parameters: {
             query?: never;
             header?: {

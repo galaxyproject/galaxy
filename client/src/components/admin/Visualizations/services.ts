@@ -9,7 +9,7 @@ export type Visualization = components["schemas"]["InstalledVisualizationRespons
 export type AvailableVisualization = components["schemas"]["AvailableVisualizationResponse"];
 
 export async function getInstalledVisualizations(includeDisabled = true) {
-    const { data, error } = await GalaxyApi().GET("/api/admin/visualizations", {
+    const { data, error } = await GalaxyApi().GET("/api/admin/plugins", {
         params: { query: { include_disabled: includeDisabled } },
     });
 
@@ -21,7 +21,7 @@ export async function getInstalledVisualizations(includeDisabled = true) {
 }
 
 export async function getAvailableVisualizations(search?: string) {
-    const { data, error } = await GalaxyApi().GET("/api/admin/visualizations/available", {
+    const { data, error } = await GalaxyApi().GET("/api/admin/plugins/available", {
         params: { query: { search: search ?? null } },
     });
 
@@ -33,7 +33,7 @@ export async function getAvailableVisualizations(search?: string) {
 }
 
 export async function getPackageVersions(packageName: string) {
-    const { data, error } = await GalaxyApi().GET("/api/admin/visualizations/versions/{package_name}", {
+    const { data, error } = await GalaxyApi().GET("/api/admin/plugins/versions/{package_name}", {
         params: { path: { package_name: packageName } },
     });
 
@@ -45,7 +45,7 @@ export async function getPackageVersions(packageName: string) {
 }
 
 export async function installVisualization(packageName: string, version: string) {
-    const { data, error } = await GalaxyApi().POST("/api/admin/visualizations", {
+    const { data, error } = await GalaxyApi().POST("/api/admin/plugins", {
         body: { package: packageName, version },
     });
 
@@ -57,7 +57,7 @@ export async function installVisualization(packageName: string, version: string)
 }
 
 export async function updateVisualization(vizId: string, version: string) {
-    const { data, error } = await GalaxyApi().PUT("/api/admin/visualizations/{viz_id}/update", {
+    const { data, error } = await GalaxyApi().PUT("/api/admin/plugins/{viz_id}/update", {
         params: { path: { viz_id: vizId } },
         body: { version },
     });
@@ -70,7 +70,7 @@ export async function updateVisualization(vizId: string, version: string) {
 }
 
 export async function uninstallVisualization(vizId: string) {
-    const { error } = await GalaxyApi().DELETE("/api/admin/visualizations/{viz_id}", {
+    const { error } = await GalaxyApi().DELETE("/api/admin/plugins/{viz_id}", {
         params: { path: { viz_id: vizId } },
     });
 
@@ -80,7 +80,7 @@ export async function uninstallVisualization(vizId: string) {
 }
 
 export async function toggleVisualization(vizId: string, enabled: boolean) {
-    const { data, error } = await GalaxyApi().PUT("/api/admin/visualizations/{viz_id}/toggle", {
+    const { data, error } = await GalaxyApi().PUT("/api/admin/plugins/{viz_id}/toggle", {
         params: { path: { viz_id: vizId } },
         body: { enabled },
     });
@@ -93,7 +93,7 @@ export async function toggleVisualization(vizId: string, enabled: boolean) {
 }
 
 export async function reloadVisualizationRegistry() {
-    const { data, error } = await GalaxyApi().POST("/api/admin/visualizations/reload");
+    const { data, error } = await GalaxyApi().POST("/api/admin/plugins/reload");
 
     if (error) {
         rethrowSimple(error);
