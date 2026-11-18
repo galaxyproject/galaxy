@@ -21,6 +21,7 @@ function makeStep(overrides: Partial<Step> = {}): Step {
         label: "my label",
         annotation: "my annotation",
         config_form: undefined,
+        errors: "Tool is not installed" as unknown as string[],
         input_connections: {},
         inputs: [],
         outputs: [],
@@ -30,14 +31,18 @@ function makeStep(overrides: Partial<Step> = {}): Step {
     };
 }
 
-function mountTarget(step: Step = makeStep(), otherStep: Partial<Step> = {}): VueWrapper {
+function mountTarget(
+    step: Step = makeStep(),
+    otherStep: Partial<Step> = {},
+    error = "Tool is not installed",
+): VueWrapper {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     useWorkflowStepStore("mock-workflow").steps = {
         "1": makeStep({ id: 1, label: "other step", ...otherStep }),
         [step.id]: step,
     };
     return mount(MissingToolForm as object, {
-        props: { step, error: "Tool is not installed" },
+        props: { step, error },
         global: { ...withPlugins(localVue, pinia), provide: { workflowId: "mock-workflow" } },
     });
 }
@@ -51,7 +56,16 @@ describe("MissingToolForm", () => {
         expect(alert.text()).toContain("Tool is not installed");
         expect(alert.text()).toContain(TOOL_ID);
         expect(alert.text()).toContain("Version: 1.0.0");
+        expect(alert.text()).toContain("until the tool is installed on this Galaxy");
         expect(wrapper.find(".portlet-title-text").text()).toBe("missing_tool");
+    });
+
+    it("reports a failed request to load an installed tool as a loading problem", () => {
+        const wrapper = mountTarget(makeStep({ errors: null }), {}, "Request failed with status code 500");
+        const alert = wrapper.find("[data-description='missing tool alert']");
+        expect(alert.text()).toContain("Request failed with status code 500");
+        expect(alert.text()).toContain("The tool could not be loaded");
+        expect(alert.text()).not.toContain("installed on this Galaxy");
     });
 
     it("prefers the step's tool version", () => {

@@ -33,6 +33,8 @@ const toolId = computed(() => contentId?.value || name.value);
 const toolParts = computed(() => parseRequestedToolParts(toolId.value));
 // tool shed ids carry the version as their last segment
 const toolVersion = computed(() => props.step.tool_version || toolParts.value.requested_version);
+// the server reports a tool that is not installed in the step's errors, a failed request to load the tool leaves them empty
+const isMissing = computed(() => Boolean(props.step.errors));
 
 function onAnnotation(newAnnotation: string) {
     emit("onAnnotation", stepId.value, newAnnotation);
@@ -52,9 +54,13 @@ function onLabel(newLabel: string) {
                     Tool ID: <code>{{ toolId }}</code>
                 </div>
                 <div v-if="toolVersion">Version: {{ toolVersion }}</div>
-                <p class="mt-2 mb-0">
+                <p v-if="isMissing" class="mt-2 mb-0">
                     Its parameters cannot be shown or edited, and the workflow cannot be saved until the tool is
                     installed on this Galaxy or this step is removed.
+                </p>
+                <p v-else class="mt-2 mb-0">
+                    The tool could not be loaded, so its parameters cannot be shown or edited. Remove this step and add
+                    the tool again.
                 </p>
             </GAlert>
             <FormElement
