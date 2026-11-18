@@ -1,4 +1,7 @@
-from galaxy_test.base.workflow_fixtures import WORKFLOW_RENAME_ON_INPUT
+from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_RENAME_ON_INPUT,
+    WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
+)
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -163,6 +166,48 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
         invocations.state_details.wait_for_visible()
         self.execute_script("window.history.back();")
         invocations.expanded_row_summary.wait_for_visible()
+
+    @selenium_test
+    def test_cancel_from_list(self):
+        history_id = self.dataset_populator.new_history()
+        # each waits at its pause step, so it stays active until cancelled
+        for _ in range(2):
+            self.workflow_populator.run_workflow(
+                WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
+                history_id=history_id,
+                test_data={"input1": "1 2 3"},
+                wait=False,
+            )
+        self.navigate_to_invocations_grid()
+        invocations = self.components.invocations
+        self._assert_showing_n_invocations(2)
+
+        invocations.row_actions_toggle(index=0).wait_for_and_click()
+        invocations.row_action(index=0, action="cancel-invocation").wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        self._assert_row_contains(0, "cancel")
+
+        invocations.row_select(index=1).wait_for_and_click()
+        invocations.bulk_cancel_button.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        self._assert_row_contains(1, "cancel")
+        self.screenshot("invocations_cancelled_from_list")
+
+    @selenium_test
+    def test_rerun_from_list(self):
+        history_id = self.dataset_populator.new_history()
+        self.workflow_populator.run_workflow(WORKFLOW_RENAME_ON_INPUT, history_id=history_id, wait=True)
+        self.navigate_to_invocations_grid()
+        invocations = self.components.invocations
+        self._assert_showing_n_invocations(1)
+
+        invocations.row_actions_toggle(index=0).wait_for_and_click()
+        invocations.row_action(index=0, action="rerun-invocation").wait_for_and_click()
+        self.components.workflow_run.form_element._(index=0).wait_for_visible()
+
+    @retry_assertion_during_transitions
+    def _assert_row_contains(self, index, text):
+        assert text in self.components.invocations.row(index=index).wait_for_visible().text
 
     @retry_assertion_during_transitions
     def _assert_expanded_row_summary_contains(self, text):
