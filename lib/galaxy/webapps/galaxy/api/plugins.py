@@ -402,10 +402,12 @@ class FastAPIPlugins:
     @router.get(
         "/api/plugins/{plugin_name}/static/{file_path:path}",
         summary="Serve a static file from a runtime-installed visualization package.",
+        public=True,
     )
     @router.head(
         "/api/plugins/{plugin_name}/static/{file_path:path}",
         summary="Check a static file from a runtime-installed visualization package.",
+        public=True,
     )
     def static_file(
         self,

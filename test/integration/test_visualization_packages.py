@@ -58,6 +58,14 @@ class TestVisualizationPackagesStaticRoute(IntegrationTestCase):
         assert response.text == SEEDED_JS
         assert response.headers["cache-control"] == "no-cache"
 
+    def test_files_are_public_with_script_content_type(self):
+        # the browser loads these as <script> tags, often before anyone has logged in
+        with self._different_user(anon=True):
+            response = self._static("index.js")
+        self._assert_status_code_is(response, 200)
+        assert response.text == SEEDED_JS
+        assert "javascript" in response.headers["content-type"]
+
     def test_refuses_paths_outside_static_and_builtin_plugins(self):
         self._assert_status_code_is(self._static("..%2Fpackage.json"), 404)
         self._assert_status_code_is(self._static("%2Fetc%2Fpasswd"), 404)
