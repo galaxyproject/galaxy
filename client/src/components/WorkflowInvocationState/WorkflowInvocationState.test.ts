@@ -31,8 +31,8 @@ const selectors = {
     cancelButton: "[data-description='cancel invocation button']",
 };
 
-/** Invocation data to be expected in the store */
-const invocationById = {
+/** Invocation data to be expected in the store; reactive, so a test can have the server mark one completed */
+const invocationById: Record<string, any> = reactive({
     [invocationData.id]: invocationData,
     "not-fetched-invocation": null,
     "retrying-invocation": null,
@@ -61,7 +61,7 @@ const invocationById = {
         ...invocationData,
         id: "finishing-jobs",
     },
-};
+});
 
 // Jobs summary constants
 const invocationDataJobsSummary = {
@@ -198,6 +198,7 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
     afterEach(() => {
         vi.useRealTimers();
         invocationJobsSummaryById["finishing-jobs"] = runningJobsSummary();
+        invocationById["finishing-jobs"].state = "scheduled";
     });
 
     it("determines that invocation and job states are terminal with terminal invocation", async () => {
@@ -217,6 +218,19 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
 
         // the first fetch, then 4 checks, after which it stays scheduled and polling stops
         assertInvocationFetched(5);
+    });
+
+    it("stops checking once the server marks the invocation completed", async () => {
+        vi.useFakeTimers();
+        await mountWorkflowInvocationState("finishing-jobs");
+        mockFetchInvocationById.mockImplementationOnce(() => {
+            invocationById["finishing-jobs"].state = "completed";
+        });
+        invocationJobsSummaryById["finishing-jobs"].states = { ok: 1 };
+        await vi.runAllTimersAsync();
+
+        // the first fetch, then the check that sees it completed
+        assertInvocationFetched(2);
     });
 
     it("doesn't check an invocation whose jobs had already finished, which may never be marked completed", async () => {
