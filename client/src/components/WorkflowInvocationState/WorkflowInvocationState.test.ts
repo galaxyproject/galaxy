@@ -3,7 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { reactive } from "vue";
 
 import invocationData from "../Workflow/test/json/invocation.json";
@@ -69,6 +69,10 @@ const invocationDataJobsSummary = {
     states: {},
     populated_state: "ok",
 };
+/** A jobs summary with a running job, which a test can then finish */
+function runningJobsSummary() {
+    return { ...invocationDataJobsSummary, states: { running: 1 } };
+}
 // reactive, so a test can finish an invocation's jobs while it's shown
 const invocationJobsSummaryById: Record<string, any> = reactive({
     [invocationData.id]: invocationDataJobsSummary,
@@ -99,12 +103,7 @@ const invocationJobsSummaryById: Record<string, any> = reactive({
             error: 1,
         },
     },
-    "finishing-jobs": {
-        ...invocationDataJobsSummary,
-        states: {
-            running: 1,
-        },
-    },
+    "finishing-jobs": runningJobsSummary(),
 });
 
 // Mock functions that we'll export for assertions
@@ -196,6 +195,11 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         mockFetchInvocationJobsSummaryForId.mockClear();
     });
 
+    afterEach(() => {
+        vi.useRealTimers();
+        invocationJobsSummaryById["finishing-jobs"] = runningJobsSummary();
+    });
+
     it("determines that invocation and job states are terminal with terminal invocation", async () => {
         const wrapper = await mountWorkflowInvocationState(invocationData.id, true, true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
@@ -210,8 +214,6 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         await mountWorkflowInvocationState("finishing-jobs");
         invocationJobsSummaryById["finishing-jobs"].states = { ok: 1 };
         await vi.runAllTimersAsync();
-        vi.useRealTimers();
-        invocationJobsSummaryById["finishing-jobs"].states = { running: 1 };
 
         // the first fetch, then 4 checks, after which it stays scheduled and polling stops
         assertInvocationFetched(5);
@@ -221,7 +223,6 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         vi.useFakeTimers();
         await mountWorkflowInvocationState(invocationData.id);
         await vi.runAllTimersAsync();
-        vi.useRealTimers();
 
         assertInvocationFetched(1);
     });
