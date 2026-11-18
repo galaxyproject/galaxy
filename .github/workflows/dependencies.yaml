@@ -18,6 +18,7 @@ jobs:
         with:
           version-file: .tool-versions
           python-version: '3.11'
+          prune-cache: true
       - name: Update dependencies
         run: make update-dependencies
       - name: Check lock and requirements exports

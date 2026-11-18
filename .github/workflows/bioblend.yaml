@@ -54,6 +54,7 @@ jobs:
         uses: astral-sh/setup-uv@v10.2.0
         with:
           version-file: galaxy/.tool-versions
+          prune-cache: true
       - name: Install tox
         run: uv tool install --python ${BIOBLEND_PYTHON_VERSION} tox --with tox-uv
         env:

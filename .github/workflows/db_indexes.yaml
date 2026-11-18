@@ -61,6 +61,7 @@ jobs:
         with:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Set database connection on PostgreSQL

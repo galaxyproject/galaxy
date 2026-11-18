@@ -49,6 +49,7 @@ jobs:
         with:
           version-file: .tool-versions
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Install Python dependencies
         run: |
           uv venv .venv

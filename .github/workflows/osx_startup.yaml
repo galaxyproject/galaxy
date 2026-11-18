@@ -66,6 +66,7 @@ jobs:
         uses: astral-sh/setup-uv@v10.2.0
         with:
           version-file: galaxy root/.tool-versions
+          prune-cache: true
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run tests

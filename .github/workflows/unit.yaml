@@ -45,6 +45,7 @@ jobs:
         with:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Install ffmpeg and bubblewrap
         # bubblewrap: exercises the expression-evaluation isolation sandbox tests.
         # Ubuntu >=24.04 restricts unprivileged user namespaces (which bwrap needs);

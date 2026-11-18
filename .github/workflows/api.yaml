@@ -76,6 +76,7 @@ jobs:
         with:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Install Python
         run: uv python install
       - name: Run tests
