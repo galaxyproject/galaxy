@@ -64,6 +64,7 @@ const paletteContext = computed<PaletteContext>(() => ({
         enable_notification_system: config.value?.enable_notification_system,
         interactivetools_enable: config.value?.interactivetools_enable,
         llm_api_configured: config.value?.llm_api_configured,
+        ai_chat_plugin: config.value?.ai_chat_plugin,
     },
     isAnonymous: userStore.isAnonymous,
     navigate: (to: string) => {
