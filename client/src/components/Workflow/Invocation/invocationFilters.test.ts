@@ -1,7 +1,7 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
@@ -83,6 +83,32 @@ describe("invocationFilterParams", () => {
 
     it("uses the status group when a state is also given, as the job list does", () => {
         expect(invocationFilterParams("status:inactive state:failed")).toEqual({ state: ["cancelling", "cancelled"] });
+    });
+});
+
+describe("invocationFilterParams time range picks", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date("2026-11-11T12:00:00.000Z"));
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it.each([
+        ["invoked:24h", "2026-11-10T12:00:00.000Z"],
+        ["invoked:7d", "2026-11-04T12:00:00.000Z"],
+        ["invoked:bogus", undefined],
+    ])("starts %j from now", (text, start) => {
+        expect(invocationFilterParams(text).date_range_min).toBe(start);
+    });
+
+    it.each([
+        ["invoked:24h create_time>2026-11-11T08:00:00.000Z", "2026-11-11T08:00:00.000Z"],
+        ["invoked:24h create_time<2026-11-11T08:00:00.000Z", undefined],
+    ])("lets any typed time replace a pick in %j", (text, start) => {
+        expect(invocationFilterParams(text).date_range_min).toBe(start);
     });
 });
 

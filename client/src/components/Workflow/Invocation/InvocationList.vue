@@ -18,18 +18,12 @@ import { useRouter } from "vue-router";
 import { isRegisteredUser } from "@/api";
 import type { WorkflowInvocation } from "@/api/invocations";
 import type { TableField } from "@/components/Common/GTable.types";
-import {
-    activeTimeRangeCutoff,
-    type AppliedTimeRange,
-    CUSTOM_TIME_RANGE,
-    getActiveTimeRange,
-    setActiveTimeRange as applyTimeRangeFilter,
-    type TimeRange,
-} from "@/components/Common/timeRanges";
+import { CUSTOM_TIME_RANGE } from "@/components/Common/TimeRangeFilter.types";
 import { type ColumnFilterField, useColumnFilters } from "@/components/Grid/useColumnFilters";
 import {
     historyColumnFilter,
     type INVOCATION_STATE_GROUPS,
+    INVOCATION_TIME_RANGES,
     invocationFilterParams,
     invocationsFiltering,
     MAX_COLUMN_FILTER_PICKS,
@@ -91,14 +85,8 @@ const STATUS_GROUPS = [
     { key: "inactive", label: "Inactive", icon: faStopCircle, color: "grey" },
 ] as const satisfies (StatusGroup & { key: keyof typeof INVOCATION_STATE_GROUPS })[];
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-/** The time range picks, as the Invoked time's `create_time` range */
-const TIME_RANGES: TimeRange[] = [
-    { key: "24h", label: "Last 24 hours", durationMs: DAY_MS },
-    { key: "7d", label: "Last week", durationMs: 7 * DAY_MS },
-    { key: "30d", label: "Last 30 days", durationMs: 30 * DAY_MS },
-    { key: "90d", label: "Last 90 days", durationMs: 90 * DAY_MS },
-];
+/** Typed Invoked time filters, which make the time range picker show "Custom range" */
+const TYPED_TIME_FILTERS = ["create_time", "create_time_gt", "create_time_lt"];
 
 interface Props {
     /** List every user's invocations that are still being scheduled, without search or column filters */
@@ -222,32 +210,21 @@ function setActiveStatusFilter(group: string | undefined) {
 }
 
 /**
- * The range `setActiveTimeRange` itself last applied, so `activeTimeRange` can tell a quick-pick
- * range apart from a manually-entered `create_time` filter ("custom").
+ * The active quick-pick time range, "custom" for a typed `create_time` filter, or `undefined` for "Anytime".
  */
-let lastAppliedTimeRange: AppliedTimeRange | undefined;
+const activeTimeRange = computed(() => {
+    if (TYPED_TIME_FILTERS.some((key) => invocationsFiltering.getFilterValue(filterText.value, key))) {
+        return CUSTOM_TIME_RANGE;
+    }
+    const invoked = invocationsFiltering.getFilterValue(filterText.value, "invoked");
+    return INVOCATION_TIME_RANGES.find(({ key }) => key === invoked)?.key;
+});
 
-/**
- * The active quick-pick time range, "custom" for a manually-entered `create_time` filter, or
- * `undefined` for "Anytime".
- */
-const activeTimeRange = computed(() =>
-    invocationsFiltering.getFilterValue(filterText.value, "create_time")
-        ? CUSTOM_TIME_RANGE
-        : getActiveTimeRange(invocationsFiltering, "create_time", filterText.value, lastAppliedTimeRange),
-);
-
-/**
- * Sets or clears the `TimeRangeFilter` quick-pick, overloading the existing `create_time_gt`
- * filter instead of introducing a new one.
- */
+/** Sets the `TimeRangeFilter` quick pick as the `invoked` filter, replacing any typed time filter */
 function setActiveTimeRange(range: string | undefined) {
-    const timeRange = TIME_RANGES.find(({ key }) => key === range);
-    // a quick pick replaces a typed `create_time:<date>` day (as opposed to a `create_time_*` range)
-    const withoutDay = invocationsFiltering.applyFiltersToText({ create_time: "" }, filterText.value, true);
-    const result = applyTimeRangeFilter(invocationsFiltering, "create_time", withoutDay, timeRange);
-    filterText.value = result.filterText;
-    lastAppliedTimeRange = result.appliedRange;
+    const cleared = Object.fromEntries([...TYPED_TIME_FILTERS, "invoked"].map((key) => [key, ""]));
+    const newText = invocationsFiltering.applyFiltersToText(cleared, filterText.value, true);
+    filterText.value = range ? invocationsFiltering.applyFiltersToText({ invoked: range }, newText) : newText;
 }
 
 const isAvailable = computed(() => !initDataLoading.value && totalRows.value > 0);
@@ -288,7 +265,6 @@ async function load() {
             workflow_id: props.workflowId,
         };
         // a quick pick's window slides with the time of each load, not the time it was picked
-        query.date_range_min = activeTimeRangeCutoff(TIME_RANGES, activeTimeRange.value) ?? query.date_range_min;
         if (props.admin) {
             query.include_terminal = false;
         } else if (isRegisteredUser(currentUser.value)) {
@@ -531,7 +507,7 @@ watch([currentPage, filterText, sortBy, sortDesc], ([page], [oldPage]) => {
                     @clear="clearColumnFilters" />
                 <TimeRangeFilter
                     class="ml-auto"
-                    :ranges="TIME_RANGES"
+                    :ranges="INVOCATION_TIME_RANGES"
                     noun="invocations"
                     :active-range="activeTimeRange"
                     @update:active-range="setActiveTimeRange" />

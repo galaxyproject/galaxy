@@ -4,9 +4,11 @@ import { uniqBy } from "lodash";
 import { type AnyHistoryEntry, getHistories } from "@/api/histories";
 import type { InvocationState } from "@/api/invocations";
 import { loadWorkflows, type WorkflowSummary } from "@/api/workflows";
+import type { TimeRange } from "@/components/Common/TimeRangeFilter.types";
 import type { FieldFilter, FilterOption } from "@/components/Grid/configs/types";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
+import { isoTimeAgo } from "@/utils/dates";
 import Filtering, { compare, equals, isQuoted, type ValidFilter } from "@/utils/filtering";
 import { pluralize } from "@/utils/strings";
 
@@ -44,6 +46,16 @@ export const INVOCATION_STATE_GROUPS = {
     inactive: ["cancelling", "cancelled"],
 } as const satisfies Record<string, readonly InvocationState[]>;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The time range picker's quick picks for the Invoked time, each as an `invoked` filter value. */
+export const INVOCATION_TIME_RANGES: TimeRange[] = [
+    { key: "24h", label: "Last 24 hours", durationMs: DAY_MS },
+    { key: "7d", label: "Last week", durationMs: 7 * DAY_MS },
+    { key: "30d", label: "Last 30 days", durationMs: 30 * DAY_MS },
+    { key: "90d", label: "Last 90 days", durationMs: 90 * DAY_MS },
+];
+
 /**
  * `workflow` and `history` match by name (substring, or exact when quoted). `workflow_id` and
  * `history_id` can repeat, one id per term; the column filters set those. Unkeyed text is a
@@ -79,6 +91,13 @@ const validFilters: Record<string, ValidFilter<string>> = {
         datalist: Object.keys(INVOCATION_STATE_GROUPS),
         menuItem: false,
     },
+    // set only by the time range picker; see `INVOCATION_TIME_RANGES`
+    invoked: {
+        type: "Dropdown",
+        handler: equals("invoked", "invoked"),
+        datalist: INVOCATION_TIME_RANGES.map(({ key }) => key),
+        menuItem: false,
+    },
     // the Invoked column, sent to the server as a range: `create_time_gt` / `create_time_lt`, or a plain date's whole day
     create_time: {
         placeholder: "invoked time",
@@ -86,6 +105,7 @@ const validFilters: Record<string, ValidFilter<string>> = {
         handler: compare("create_time", "le"),
         isRangeInput: true,
         menuItem: true,
+        disablesFilters: { invoked: null },
     },
 };
 
@@ -205,10 +225,13 @@ export function invocationFilterParams(
               : undefined;
     // a plain `create_time:<date>` is that whole day
     const day = value("create_time")?.slice(0, 10);
+    // a quick pick starts from now on every load, so its window slides; any typed time replaces it
+    const typedTime = value("create_time") ?? value("create_time_gt") ?? value("create_time_lt");
+    const range = typedTime ? undefined : INVOCATION_TIME_RANGES.find(({ key }) => key === value("invoked"));
     return {
         search: invocationSearch(text),
         state: states,
-        date_range_min: userTime(value("create_time_gt") ?? day),
+        date_range_min: userTime(value("create_time_gt") ?? day) ?? (range && isoTimeAgo(range.durationMs)),
         date_range_max: userTime(value("create_time_lt")) ?? userTime(day, true),
     };
 }

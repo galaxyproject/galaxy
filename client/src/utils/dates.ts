@@ -69,3 +69,12 @@ export function shortDateLabel(galaxyTime?: string | null): string | undefined {
         return undefined;
     }
 }
+
+/**
+ * The time a duration ago, e.g. the start of a "Last 24 hours" range.
+ * @param {number} durationMs - How long ago, in milliseconds.
+ * @returns {string} That time as an ISO timestamp.
+ */
+export function isoTimeAgo(durationMs: number): string {
+    return new Date(Date.now() - durationMs).toISOString();
+}

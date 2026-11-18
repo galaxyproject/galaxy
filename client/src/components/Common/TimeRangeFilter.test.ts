@@ -2,7 +2,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
-import type { TimeRange } from "./timeRanges";
+import type { TimeRange } from "./TimeRangeFilter.types";
 
 import TimeRangeFilter from "./TimeRangeFilter.vue";
 
