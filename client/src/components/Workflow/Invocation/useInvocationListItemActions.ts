@@ -17,7 +17,6 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import { copy } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 import { describeFailures, settleEach } from "@/utils/settleEach";
-import { errorMessageAsString } from "@/utils/simple-error";
 import { pluralize } from "@/utils/strings";
 
 import { INVOCATION_STATE_GROUPS } from "./invocationFilters";
@@ -93,15 +92,13 @@ export function useInvocationListItemActions({ viewInvocation, refreshList }: Op
     async function cancelInvocations(invocations: WorkflowInvocation[]) {
         const active = invocations.filter(isActiveInvocation);
         const count = active.length;
-        const confirmed = await confirm(
-            `Cancel ${count} ${pluralize(count, "invocation")}? Their jobs that haven't finished are stopped too.`,
-            {
-                title: "Cancel invocations",
-                okText: "Cancel invocations",
-                okColor: "red",
-                okIcon: faStopCircle,
-            },
-        );
+        const noun = pluralize(count, "invocation");
+        const confirmed = await confirm(`Cancel ${count} ${noun}? Their jobs that haven't finished are stopped too.`, {
+            title: `Cancel ${noun}`,
+            okText: `Cancel ${noun}`,
+            okColor: "red",
+            okIcon: faStopCircle,
+        });
         if (!confirmed) {
             return;
         }
@@ -120,17 +117,6 @@ export function useInvocationListItemActions({ viewInvocation, refreshList }: Op
                 ),
                 localize(`Failed to cancel ${failures.length} ${pluralize(failures.length, "invocation")}`),
             );
-        }
-        await refreshList();
-    }
-
-    /** Cancels an invocation that is still active, then reloads the list to show its new state */
-    async function cancelInvocation(invocation: WorkflowInvocation) {
-        try {
-            await useInvocationStore().cancelWorkflowScheduling(invocation.id);
-            Toast.success("Cancelling the invocation.");
-        } catch (e) {
-            Toast.error(errorMessageAsString(e), localize("Failed to cancel the invocation"));
         }
         await refreshList();
     }
@@ -188,7 +174,8 @@ export function useInvocationListItemActions({ viewInvocation, refreshList }: Op
             title: "Cancel this invocation",
             icon: faStopCircle,
             visible: isActiveInvocation,
-            handler: cancelInvocation,
+            // confirms first, like the bulk Cancel
+            handler: (invocation: WorkflowInvocation) => cancelInvocations([invocation]),
         },
     ];
 

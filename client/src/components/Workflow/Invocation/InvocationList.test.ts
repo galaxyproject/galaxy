@@ -318,10 +318,16 @@ describe("InvocationList", () => {
         expect(filterInput(wrapper).value).toBe("");
     });
 
-    it("cancels the selected invocations that are still active, after confirming", async () => {
+    it("cancels from the row menu or the selection only after confirming", async () => {
         const wrapper = mountTarget();
         await flushPromises();
         const cancel = vi.spyOn(useInvocationStore(), "cancelWorkflowScheduling").mockResolvedValue(undefined as never);
+
+        confirm.mockResolvedValue(false);
+        await clickRowAction(wrapper, "cancel-invocation");
+        expect(cancel).not.toHaveBeenCalled();
+
+        confirm.mockClear();
         confirm.mockResolvedValue(true);
 
         await wrapper.find("thead input[type='checkbox']").setValue(true);
