@@ -47,7 +47,6 @@ const hideDropdown = inject(dropdownHideKey, () => {});
 
 const isCheckbox = computed(() => props.checked !== undefined);
 const role = computed(() => (isCheckbox.value ? "menuitemcheckbox" : "menuitem"));
-// A string, since compat mode drops attributes bound to boolean false
 const ariaChecked = computed(() => (isCheckbox.value ? (props.checked ? "true" : "false") : undefined));
 
 const classes = computed(() => ({
