@@ -1,0 +1,19 @@
+- id: radar
+  version: 0
+  name: RADAR
+  description: |
+    Browse and import the files of published datasets in a [RADAR](https://radar.products.fiz-karlsruhe.de)
+    research data repository. Downloads are subject to the
+    [RADAR Terms for Data Users](https://radar.products.fiz-karlsruhe.de/sites/default/files/radar/docs/terms/RADAR_Terms_for_Data_Users.pdf)
+    (or those of your institution's RADAR) and to each dataset's licence.
+  variables:
+    base_url:
+      label: RADAR address
+      type: string
+      help: |
+        The address of the RADAR Cloud, https://www.radar-service.eu, or of your institution's RADAR, e.g.
+        https://kondata.uni-konstanz.de. Datasets the RADAR Cloud lists from other RADAR instances are not
+        shown; add their own instance for those.
+  configuration:
+    type: radar
+    base_url: "{{ variables.base_url }}"

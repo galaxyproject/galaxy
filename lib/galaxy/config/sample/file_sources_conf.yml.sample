@@ -347,6 +347,14 @@
   # The public demo resets its content, so point this at your repository.
   api_url: https://demo.dspace.org/server/api
 
+# RADAR (https://radar.products.fiz-karlsruhe.de) research data repository, read-only and published datasets only.
+- type: radar
+  id: radar
+  label: RADAR
+  doc: Published datasets of a RADAR instance.
+  # The RADAR Cloud; a RADAR Local instance of a university has its own address.
+  base_url: https://www.radar-service.eu
+
 # IIIF (International Image Interoperability Framework) file source
 # For examples and to find public IIIF resources, visit: [https://iiif.io/guides/finding_resources/](https://iiif.io/guides/finding_resources/)
 - type: iiif

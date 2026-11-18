@@ -157,6 +157,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faBuildingColumns,
         message: "This is a read-only file repository plugin that connects with a DSpace repository.",
     },
+    radar: {
+        icon: faBuildingColumns,
+        message: "This is a read-only file repository plugin that connects with a RADAR research data repository.",
+    },
 };
 
 export const FileSourcesValidFilters = {

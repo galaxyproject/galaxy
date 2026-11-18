@@ -14055,7 +14055,8 @@ export interface components {
                 | "gitlab"
                 | "arc"
                 | "nomad"
-                | "dspace";
+                | "dspace"
+                | "radar";
             /** Variables */
             variables?:
                 | (
@@ -27554,7 +27555,8 @@ export interface components {
                 | "gitlab"
                 | "arc"
                 | "nomad"
-                | "dspace";
+                | "dspace"
+                | "radar";
             /** Uri Root */
             uri_root: string;
             /**

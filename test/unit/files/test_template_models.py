@@ -12,6 +12,7 @@ from galaxy.files.templates.models import (
     GithubFileSourceConfiguration,
     HALFileSourceConfiguration,
     PosixFileSourceConfiguration,
+    RadarFileSourceConfiguration,
     S3FSFileSourceConfiguration,
     template_to_configuration,
 )
@@ -327,6 +328,18 @@ def test_production_dspace():
         assert isinstance(configuration_obj, DSpaceFileSourceConfiguration)
         assert configuration_obj.api_url == "https://demo.dspace.org/server/api"
         assert configuration_obj.token == token
+
+
+def test_production_radar():
+    configuration_obj = template_to_configuration(
+        _get_example_template("production_radar.yml"),
+        {"base_url": "https://kondata.uni-konstanz.de"},
+        {},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, RadarFileSourceConfiguration)
+    assert configuration_obj.base_url == "https://kondata.uni-konstanz.de"
 
 
 def test_production_github_oauth():
