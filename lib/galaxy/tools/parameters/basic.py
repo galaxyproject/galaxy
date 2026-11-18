@@ -1465,7 +1465,22 @@ class ColumnListParameter(SelectToolParameter):
         if not value and self.accept_default:
             value = self.default_value or "1"
             return [value] if self.multiple else value
+        value = self._labels_to_columns(value, trans, other_values)
         return super().from_json(value, trans, other_values)
+
+    _column_label = re.compile(r"c([0-9]+): ")
+
+    def _labels_to_columns(self, value, trans, other_values):
+        """
+        Replace option labels ("c2: name") by their column number when the referenced
+        dataset has no columns to match the label against.
+        """
+        values = value if isinstance(value, list) else [value]
+        matches = [self._column_label.match(v) if isinstance(v, str) else None for v in values]
+        if not any(matches) or self.data_ref not in other_values or not self.is_file_empty(trans, other_values):
+            return value
+        columns = [m.group(1) if m else v for m, v in zip(matches, values)]
+        return columns if isinstance(value, list) else columns[0]
 
     @staticmethod
     def _strip_c(column):

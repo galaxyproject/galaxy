@@ -57,6 +57,20 @@ class TestDataColumnParameter(BaseParameterTestCase):
             with pytest.raises(ParameterValueError):
                 self.param.from_json(value, self.trans, {"input_tsv": self.build_ready_hda()})
 
+    def test_from_json_resolves_label_for_empty_dataset(self):
+        value = self.param.from_json("c3: header", self.trans, {"input_tsv": self.build_ready_hda()})
+        assert value == "3"
+
+    def test_multiple_from_json_resolves_labels_for_empty_dataset(self):
+        self.multiple = True
+        value = self.param.from_json(["c1: a b", "3", "c2: $(id)"], self.trans, {"input_tsv": self.build_ready_hda()})
+        assert value == ["1", "3", "2"]
+
+    def test_from_json_rejects_malformed_label_for_empty_dataset(self):
+        for value in ["c: header", "c1:header", "x1: header", "c1;id: header"]:
+            with pytest.raises(ParameterValueError):
+                self.param.from_json(value, self.trans, {"input_tsv": self.build_ready_hda()})
+
     def test_multiple_from_json_newline_separated(self):
         self.multiple = True
         value = self.param.from_json("c1\n3", self.trans, {"input_tsv": self.build_ready_hda()})

@@ -1766,6 +1766,16 @@ class TestToolsApi(ApiTestCase, TestsTools):
             response = self._run("column_param", history_id, {"input1": input1, "col": col, "col_names": "1"})
             self._assert_status_code_is(response, 200)
 
+    @skip_without_tool("column_param")
+    def test_column_label_resolved_for_empty_dataset(self, history_id):
+        input1 = self._empty_tabular_dataset_param(history_id)
+        response = self._run("column_param", history_id, {"input1": input1, "col": "1", "col_names": "c2: $(id)"})
+        self._assert_status_code_is(response, 200)
+        job_id = response.json()["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id)
+        job = self.dataset_populator.get_job_details(job_id, full=True).json()
+        assert 'echo "col_names 2" >>' in job["command_line"]
+
     @skip_without_tool("column_param_list")
     def test_multiple_column_legal_values_empty_dataset(self, history_id):
         input1 = self._empty_tabular_dataset_param(history_id)
