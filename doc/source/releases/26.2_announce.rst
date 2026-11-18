@@ -5,6 +5,29 @@
 26.2 Galaxy Release
 ===========================================================
 
+Completion notifications
+========================
+
+Saved email post-job actions no longer send mail. Users can request a completion
+notification through the bell beside Run in the tool and workflow forms.
+Paused runs send one message asking for attention, then a final summary after
+they finish. Further pauses do not send more attention messages.
+The run choice resets for each run. Email delivery is a saved preference for
+each notification category and defaults to off for tool and workflow completion.
+
+When SMTP is configured and notifications are disabled, the bell offers
+"Email me" for each run. This mode needs no Celery worker and
+keeps other notification categories disabled. Galaxy queues completion emails
+in the database. Failed sends are logged without retries.
+
+With ``enable_notification_system`` enabled, email delivery uses Celery. Run Celery Beat for fallback delivery and scheduled cleanup.
+The legacy tool API option ``send_email_notification`` is an alias for
+``send_notification``. It requests an email in SMTP-only mode, or a notification
+with the user's saved delivery preferences when notifications are enabled.
+
+See :doc:`Completion notifications </admin/completion_notifications>` for
+configuration and upgrade guidance.
+
 Workflow expression compatibility
 =================================
 

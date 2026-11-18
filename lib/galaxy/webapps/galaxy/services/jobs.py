@@ -89,7 +89,14 @@ class JobRequest(BaseModel):
     rerun_remap_job_id: DecodedDatabaseIdField | None = Field(
         default=None, title="rerun_remap_job_id", description="TODO"
     )
-    send_email_notification: bool = Field(default=False, title="Send Email Notification", description="TODO")
+    send_notification: bool = Field(
+        default=False, description="Notify on completion using the user's channel preferences."
+    )
+    send_email_notification: bool = Field(
+        default=False,
+        deprecated=True,
+        description="Legacy alias for send_notification. Delivery follows the user's tool notification preferences.",
+    )
     preferred_object_store_id: str | None = Field(default=None, title="Preferred Object Store ID")
     tags: list[str] | None = Field(default=None, title="Tags")
     data_manager_mode: str | None = Field(default=None, title="Data Manager Mode")
@@ -300,6 +307,7 @@ class JobsService(ServiceBase):
             tags=job_request.tags,
             data_manager_mode=job_request.data_manager_mode,
             send_email_notification=job_request.send_email_notification,
+            send_notification=job_request.send_notification,
             credentials_context=job_request.credentials_context,
             dynamic_tool_id=tool.dynamic_tool_id,
         )

@@ -38,7 +38,9 @@ class WorkflowCompletionManager:
     def sa_session(self) -> scoped_session:
         return self.app.model.context
 
-    def check_and_record_completion(self, invocation_id: int) -> WorkflowInvocationCompletion | None:
+    def check_and_record_completion(
+        self, invocation_id: int, *, commit: bool = True
+    ) -> WorkflowInvocationCompletion | None:
         """
         Check if invocation is complete and record completion if so.
 
@@ -47,6 +49,7 @@ class WorkflowCompletionManager:
 
         Args:
             invocation_id: The ID of the workflow invocation to check.
+            commit: If false, the caller commits completion together with any related work.
 
         Returns:
             The WorkflowInvocationCompletion record if newly completed,
@@ -80,12 +83,15 @@ class WorkflowCompletionManager:
         invocation.state = InvocationState.COMPLETED.value
 
         session.add(completion)
-        session.commit()
+        if commit:
+            session.commit()
+        else:
+            session.flush()
         log.info("Recorded completion for invocation %d, job_summary=%s", invocation_id, job_summary)
 
         return completion
 
-    def poll_pending_completions(self, limit: int = 100, handler: str | None = None) -> list[int]:
+    def poll_pending_completions(self, limit: int = 100, handler: str | None = None, after_id: int = 0) -> list[int]:
         """
         Find invocations that are SCHEDULED but not yet recorded as complete.
 
@@ -96,6 +102,7 @@ class WorkflowCompletionManager:
         Args:
             limit: Maximum number of invocation IDs to return.
             handler: If provided, only return invocations assigned to this handler.
+            after_id: Resume polling after this invocation ID.
 
         Returns:
             List of invocation IDs to check for completion.
@@ -107,6 +114,7 @@ class WorkflowCompletionManager:
                 WorkflowInvocation.id == WorkflowInvocationCompletion.workflow_invocation_id,
             )
             .where(WorkflowInvocation.state == InvocationState.SCHEDULED.value)
+            .where(WorkflowInvocation.id > after_id)
             .where(WorkflowInvocationCompletion.id.is_(None))
             # Waiting parents must not fill the batch and prevent their children from being checked.
             .where(
@@ -119,7 +127,7 @@ class WorkflowCompletionManager:
         )
         if handler is not None:
             stmt = stmt.where(WorkflowInvocation.handler == handler)
-        stmt = stmt.limit(limit)
+        stmt = stmt.order_by(WorkflowInvocation.id).limit(limit)
         session = self.sa_session
         return list(session.execute(stmt).scalars())
 

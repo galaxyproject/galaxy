@@ -156,6 +156,8 @@ def queue_invoke(
         )
     workflow_invocation = workflow_run_config_to_request(trans, workflow_run_config, workflow)
     workflow_invocation.workflow = workflow
+    if trans.app.config.enable_notification_system or trans.app.config.smtp_server:
+        workflow_invocation.request_notifications()
     initial_state = model.WorkflowInvocation.states.NEW
     if workflow_run_config.requires_materialization:
         initial_state = model.WorkflowInvocation.states.REQUIRES_MATERIALIZATION

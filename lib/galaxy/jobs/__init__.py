@@ -1149,8 +1149,6 @@ class MinimalJobWrapper(HasResourceParameters):
         self.tool_provided_job_metadata = None
         self.params = None  # unused
         self.runner_command_line = None
-        # Settled jobs whose after-commit post job actions run once their state is committed.
-        self._after_commit_jobs: list[Job] = []
 
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.__external_output_metadata = None
@@ -1503,13 +1501,11 @@ class MinimalJobWrapper(HasResourceParameters):
                     job.history.charge_added_datasets(job.output_hdas())
                 # The copied job never reaches finish(), so run its post job actions here.
                 for pjaa in job.post_job_actions:
-                    if pjaa.post_job_action.action_type not in ActionBox.deferred_actions:
+                    if pjaa.post_job_action.action_type not in ActionBox.immediate_actions:
                         ActionBox.execute(
                             self.app, self.sa_session, pjaa.post_job_action, job, final_job_state=job.state
                         )
-                self.queue_after_commit_actions(job)
                 self.sa_session.commit()
-                self.run_after_commit_actions()
                 return False
         job.command_line = self.command_line
 
@@ -1676,7 +1672,6 @@ class MinimalJobWrapper(HasResourceParameters):
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
 
-        self.queue_after_commit_actions(job)
         # if the job was deleted, don't fail it
         if not job.state == job.states.DELETED:
             # Check if the failure is due to an exception
@@ -1754,8 +1749,6 @@ class MinimalJobWrapper(HasResourceParameters):
         if working_directory_exists:
             self._fix_output_permissions()
         self._report_error()
-        # Perform email action even on failure.
-        self.run_after_commit_actions()
 
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
@@ -1780,21 +1773,8 @@ class MinimalJobWrapper(HasResourceParameters):
             log.debug("Pausing Job '%d', %s", job.id, message)
             job.set_state(job.states.PAUSED)
             self.sa_session.add(job)
-            self.queue_after_commit_actions(job)
             return True
         return False
-
-    def queue_after_commit_actions(self, job: Job) -> None:
-        """Queue the after-commit post job actions of ``job``; call it before the commit that settles it."""
-        # A job may be queued twice, e.g. by finish() and then by fail() when finishing raises.
-        if job not in self._after_commit_jobs and ActionBox.has_after_commit_actions(job):
-            self._after_commit_jobs.append(job)
-
-    def run_after_commit_actions(self) -> None:
-        """Run the queued after-commit post job actions; call it after the commit that settles their jobs."""
-        jobs, self._after_commit_jobs = self._after_commit_jobs, []
-        if jobs:
-            ActionBox.execute_after_commit(self.app, self.sa_session, jobs)
 
     def is_ready_for_resubmission(self, job=None):
         if job is None:
@@ -1992,7 +1972,6 @@ class MinimalJobWrapper(HasResourceParameters):
         self._pause_job_if_over_quota(job)
         self.sa_session.commit()
         if job.state == model.Job.states.PAUSED:
-            self.run_after_commit_actions()
             return False
         return True
 
@@ -2557,9 +2536,8 @@ class MinimalJobWrapper(HasResourceParameters):
                     )
 
         for pja in job.post_job_actions:
-            if pja.post_job_action.action_type not in ActionBox.deferred_actions:
+            if pja.post_job_action.action_type not in ActionBox.immediate_actions:
                 ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job, final_job_state=final_job_state)
-        self.queue_after_commit_actions(job)
 
         # The exit code will be null if there is no exit code to be set.
         # This is so that we don't assign an exit code, such as 0, that
@@ -2645,7 +2623,6 @@ class MinimalJobWrapper(HasResourceParameters):
         job.touch_collections_update_time()
         job.set_state(final_job_state)
         self.sa_session.commit()
-        self.run_after_commit_actions()
 
         # The hash tasks load the datasets, which may have been created in the commit above.
         if hash_requests:

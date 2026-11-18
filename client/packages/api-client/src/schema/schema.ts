@@ -19241,10 +19241,17 @@ export interface components {
             rerun_remap_job_id?: string | null;
             /**
              * Send Email Notification
-             * @description TODO
+             * @deprecated
+             * @description Legacy alias for send_notification. Delivery follows the user's tool notification preferences.
              * @default false
              */
             send_email_notification: boolean;
+            /**
+             * Send Notification
+             * @description Notify on completion using the user's channel preferences.
+             * @default false
+             */
+            send_notification: boolean;
             /**
              * Strict
              * @description Turn on strict validation of the inputs that drops support for some inconsistent legacy behavior.
@@ -20902,6 +20909,8 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
+                | components["schemas"]["ToolCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestCreateContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
@@ -20992,6 +21001,8 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
+                | components["schemas"]["ToolCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
@@ -22226,7 +22237,13 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_installation_request";
+        PersonalNotificationCategory:
+            | "message"
+            | "new_shared_item"
+            | "storage_operation"
+            | "tool_installation_request"
+            | "workflow_execution_completed"
+            | "tool_execution_completed";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -26032,6 +26049,40 @@ export interface components {
             /** Value */
             value?: string | null;
         };
+        /** ToolCompletionNotificationContent */
+        ToolCompletionNotificationContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_execution_completed";
+            /**
+             * Event
+             * @default completed
+             * @enum {string}
+             */
+            event: "needs_attention" | "completed";
+            /**
+             * Implicit Collection Jobs Id
+             * @description The encoded job group ID for a collection map-over.
+             */
+            implicit_collection_jobs_id?: string | null;
+            /**
+             * Job Id
+             * @description The encoded job ID for a single tool execution.
+             */
+            job_id?: string | null;
+            /**
+             * Message
+             * @description The message of the notification (supports Markdown).
+             */
+            message: string;
+            /**
+             * Subject
+             * @description The subject of the notification.
+             */
+            subject: string;
+        };
         /** ToolDataDetails */
         ToolDataDetails: {
             /**
@@ -27266,9 +27317,23 @@ export interface components {
          *           },
          *           "enabled": true
          *         },
+         *         "tool_execution_completed": {
+         *           "channels": {
+         *             "email": false,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
          *         "tool_installation_request": {
          *           "channels": {
          *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "workflow_execution_completed": {
+         *           "channels": {
+         *             "email": false,
          *             "push": true
          *           },
          *           "enabled": true
@@ -27735,9 +27800,23 @@ export interface components {
          *           },
          *           "enabled": true
          *         },
+         *         "tool_execution_completed": {
+         *           "channels": {
+         *             "email": false,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
          *         "tool_installation_request": {
          *           "channels": {
          *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "workflow_execution_completed": {
+         *           "channels": {
+         *             "email": false,
          *             "push": true
          *           },
          *           "enabled": true
@@ -27772,6 +27851,8 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["WorkflowCompletionNotificationContent"]
+                | components["schemas"]["ToolCompletionNotificationContent"]
                 | components["schemas"]["ToolInstallationRequestNotificationContent"];
             /**
              * Create time
@@ -28746,6 +28827,35 @@ export interface components {
              * @description Path template relative to `<galaxy root>/widgets/`, with path parameters in braces.
              */
             path: string;
+        };
+        /** WorkflowCompletionNotificationContent */
+        WorkflowCompletionNotificationContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "workflow_execution_completed";
+            /**
+             * Event
+             * @default completed
+             * @enum {string}
+             */
+            event: "needs_attention" | "completed";
+            /**
+             * Invocation Id
+             * @description The encoded workflow invocation ID.
+             */
+            invocation_id?: string | null;
+            /**
+             * Message
+             * @description The message of the notification (supports Markdown).
+             */
+            message: string;
+            /**
+             * Subject
+             * @description The subject of the notification.
+             */
+            subject: string;
         };
         /** WorkflowEngineVersion */
         WorkflowEngineVersion: {
