@@ -27,8 +27,8 @@ def _fake_npm_install(package_spec: str, prefix: str) -> None:
 def manager(tmp_path, monkeypatch):
     config = MagicMock()
     config.root = str(tmp_path / "galaxy")
-    config.visualization_packages_config_file = str(tmp_path / "managed" / "visualization_packages.yml")
-    config.visualization_packages_dir = str(tmp_path / "managed" / "visualization_packages")
+    config.browser_plugin_packages_config_file = str(tmp_path / "managed" / "browser_plugin_packages.yml")
+    config.browser_plugin_packages_dir = str(tmp_path / "managed" / "browser_plugin_packages")
     manager = VisualizationPackageManager(config)
     monkeypatch.setattr(manager, "_run_npm_install", _fake_npm_install)
     return manager

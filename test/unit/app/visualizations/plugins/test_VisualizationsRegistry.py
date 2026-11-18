@@ -275,7 +275,7 @@ class BrokenConfigPackageManager:
 
 
 def test_unreadable_package_config_still_loads_builtins():
-    # a bad visualization_packages.yml shouldn't keep Galaxy from booting
+    # a bad browser_plugin_packages.yml shouldn't keep Galaxy from booting
     mock_app_dir = galaxy_mock.MockDir({"plugins": {"builtin": {"static": {"builtin.xml": config1}}}})
     try:
         mock_app = cast("StructuredApp", galaxy_mock.MockApp(root=mock_app_dir.root_path))

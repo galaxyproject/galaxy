@@ -4,7 +4,7 @@ Galaxy can manage visualization plugins at runtime through the admin interface i
 
 ## Storage model
 
-Runtime-installed visualization packages are stored in the directory set by `visualization_packages_dir`, and the list of installed packages is recorded in `visualization_packages_config_file`. Both are relative to `managed_config_dir`, so when running Galaxy from source they default to `config/visualization_packages/` and `config/visualization_packages.yml`.
+Runtime-installed visualization packages are stored in the directory set by `browser_plugin_packages_dir`, and the list of installed packages is recorded in `browser_plugin_packages_config_file`. Both are relative to `managed_config_dir`, so when running Galaxy from source they default to `config/browser_plugin_packages/` and `config/browser_plugin_packages.yml`. (Visualizations are what Galaxy calls browser plugins, which is where the option names come from.)
 
 This is the managed package store. Galaxy loads installed packages straight from it and serves their files through `/api/plugins/<name>/static/...`; nothing is copied into Galaxy's own `static/` directory. If several Galaxy servers share a database, they should share this directory too (and the config file next to it), so they all see the same packages.
 
@@ -14,9 +14,9 @@ An installed package with the same ID as a built-in visualization replaces it wh
 
 ## Read-only Galaxy installs (CVMFS)
 
-Because runtime packages never touch `static/`, this works when the Galaxy tree is read-only, for example served from CVMFS with `static_enabled: false` and `/static` served by nginx. Only `managed_config_dir` (or wherever `visualization_packages_dir` and `visualization_packages_config_file` point) needs to be writable.
+Because runtime packages never touch `static/`, this works when the Galaxy tree is read-only, for example served from CVMFS with `static_enabled: false` and `/static` served by nginx. Only `managed_config_dir` (or wherever `browser_plugin_packages_dir` and `browser_plugin_packages_config_file` point) needs to be writable.
 
-No web server changes are needed: package files are served under `/api/`, which is already proxied to Galaxy. If you've set up `nginx_x_accel_redirect_base`, Galaxy hands the file transfer off to nginx the same way it does for dataset downloads. In that case the nginx worker user needs read access to `visualization_packages_dir`, just as it does to your dataset files.
+No web server changes are needed: package files are served under `/api/`, which is already proxied to Galaxy. If you've set up `nginx_x_accel_redirect_base`, Galaxy hands the file transfer off to nginx the same way it does for dataset downloads. In that case the nginx worker user needs read access to `browser_plugin_packages_dir`, just as it does to your dataset files.
 
 ## Package requirements
 

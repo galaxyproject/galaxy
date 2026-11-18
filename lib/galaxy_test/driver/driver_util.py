@@ -236,6 +236,8 @@ def setup_galaxy_config(
         allow_user_deletion=True,
         api_allow_run_as="test@bx.psu.edu",
         auto_configure_logging=logging_config_file is None,
+        browser_plugin_packages_config_file=os.path.join(tmpdir, "browser_plugin_packages.yml"),
+        browser_plugin_packages_dir=os.path.join(tmpdir, "browser_plugin_packages"),
         chunk_upload_size=1048576,
         conda_prefix=conda_prefix,
         conda_auto_init=conda_auto_init,
@@ -273,8 +275,6 @@ def setup_galaxy_config(
         user_library_import_dir=user_library_import_dir,
         # Test user defined tools use images from anywhere (busybox, python, ...).
         user_defined_tool_allowed_containers=["*"],
-        visualization_packages_config_file=os.path.join(tmpdir, "visualization_packages.yml"),
-        visualization_packages_dir=os.path.join(tmpdir, "visualization_packages"),
         webhooks_dir=webhooks_dir,
         logging=logging,
         monitor_thread_join_timeout=5,

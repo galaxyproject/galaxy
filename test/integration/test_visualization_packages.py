@@ -29,7 +29,7 @@ class TestVisualizationPackagesStaticRoute(IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         managed = cls._test_driver.mkdtemp()
-        store = os.path.join(managed, "visualization_packages")
+        store = os.path.join(managed, "browser_plugin_packages")
         static = os.path.join(store, "seeded", "static")
         os.makedirs(static)
         with open(os.path.join(static, "seeded.xml"), "w") as f:
@@ -38,11 +38,11 @@ class TestVisualizationPackagesStaticRoute(IntegrationTestCase):
             f.write(SEEDED_JS)
         with open(os.path.join(store, "seeded", "package.json"), "w") as f:
             f.write('{"name": "@galaxyproject/seeded", "version": "1.0.0"}')
-        config_file = os.path.join(managed, "visualization_packages.yml")
+        config_file = os.path.join(managed, "browser_plugin_packages.yml")
         with open(config_file, "w") as f:
             yaml.safe_dump({"seeded": {"package": "@galaxyproject/seeded", "version": "1.0.0", "enabled": True}}, f)
-        config["visualization_packages_dir"] = store
-        config["visualization_packages_config_file"] = config_file
+        config["browser_plugin_packages_dir"] = store
+        config["browser_plugin_packages_config_file"] = config_file
         # gives the registry a built-in plugin to check the route refuses
         config["visualization_plugins_directory"] = TEST_VISUALIZATION_PLUGINS_DIR
 

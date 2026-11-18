@@ -20,8 +20,8 @@ def manager(tmp_path):
     """Create a VisualizationPackageManager whose managed store lives outside the Galaxy root."""
     config = MagicMock()
     config.root = str(tmp_path / "galaxy")
-    config.visualization_packages_config_file = str(tmp_path / "managed" / "visualization_packages.yml")
-    config.visualization_packages_dir = str(tmp_path / "managed" / "visualization_packages")
+    config.browser_plugin_packages_config_file = str(tmp_path / "managed" / "browser_plugin_packages.yml")
+    config.browser_plugin_packages_dir = str(tmp_path / "managed" / "browser_plugin_packages")
     return VisualizationPackageManager(config)
 
 
@@ -155,7 +155,7 @@ class TestConfigManagement:
         assert manager.load_config() == {
             "circster": {"package": "@galaxyproject/circster", "version": "1.0.0", "enabled": True}
         }
-        assert os.listdir(os.path.dirname(manager.config_path)) == ["visualization_packages.yml"]
+        assert os.listdir(os.path.dirname(manager.config_path)) == ["browser_plugin_packages.yml"]
 
 
 # --- Package info ---
@@ -506,8 +506,8 @@ class TestStoreCreation:
     def _fresh_manager(self, tmp_path):
         config = MagicMock()
         config.root = str(tmp_path / "galaxy")
-        config.visualization_packages_config_file = str(tmp_path / "fresh" / "visualization_packages.yml")
-        config.visualization_packages_dir = str(tmp_path / "fresh" / "visualization_packages")
+        config.browser_plugin_packages_config_file = str(tmp_path / "fresh" / "browser_plugin_packages.yml")
+        config.browser_plugin_packages_dir = str(tmp_path / "fresh" / "browser_plugin_packages")
         return VisualizationPackageManager(config)
 
     def test_constructing_the_manager_writes_nothing(self, tmp_path):

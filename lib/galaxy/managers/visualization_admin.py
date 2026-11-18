@@ -42,8 +42,8 @@ class VisualizationPackageManager:
     """Manager for visualization package operations."""
 
     def __init__(self, config: GalaxyAppConfiguration) -> None:
-        self.config_path = config.visualization_packages_config_file
-        self.package_store_path = config.visualization_packages_dir
+        self.config_path = config.browser_plugin_packages_config_file
+        self.package_store_path = config.browser_plugin_packages_dir
         # Directories are created on first install, not here: this runs at startup, and Galaxy has to
         # boot even where managed_config_dir isn't writable and nobody installs packages.
 
