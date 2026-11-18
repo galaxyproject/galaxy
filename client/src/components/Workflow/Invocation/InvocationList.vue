@@ -393,6 +393,7 @@ const {
 } = useInvocationListItemActions({
     viewInvocation,
     refreshList: load,
+    admin: props.admin,
 });
 
 /** The row menu's actions, each also counting as acting on its invocation */

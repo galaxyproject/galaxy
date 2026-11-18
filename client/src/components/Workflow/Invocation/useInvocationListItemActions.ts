@@ -26,13 +26,15 @@ interface Options {
     viewInvocation: (invocation: WorkflowInvocation) => void;
     /** Reloads the list, e.g. to show a cancelled invocation's new state */
     refreshList: () => Promise<void>;
+    /** Lists every user's invocations, so cancelling may stop other users' runs */
+    admin?: boolean;
 }
 
 /**
  * The options at the end of each `InvocationList` row, grouped by what they act on, with Cancel apart.
  * They only read workflows and histories the list has already loaded.
  */
-export function useInvocationListItemActions({ viewInvocation, refreshList }: Options) {
+export function useInvocationListItemActions({ viewInvocation, refreshList, admin = false }: Options) {
     const router = useRouter();
     const { confirm } = useConfirmDialog();
     const workflowStore = useWorkflowStore();
@@ -99,7 +101,10 @@ export function useInvocationListItemActions({ viewInvocation, refreshList }: Op
         const active = invocations.filter(isCancellableInvocation);
         const count = active.length;
         const noun = pluralize(count, "invocation");
-        const confirmed = await confirm(`Cancel ${count} ${noun}? Their jobs that haven't finished are stopped too.`, {
+        const message = admin
+            ? `Cancel ${count} ${noun}? They may belong to other users, and their jobs that haven't finished are stopped too.`
+            : `Cancel ${count} ${noun}? Their jobs that haven't finished are stopped too.`;
+        const confirmed = await confirm(message, {
             title: `Cancel ${noun}`,
             okText: `Cancel ${noun}`,
             okColor: "red",
