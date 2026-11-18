@@ -30,17 +30,12 @@ function makeStep(overrides: Partial<Step> = {}): Step {
     };
 }
 
-function mountTarget(step: Step = makeStep(), workflowOutputLabels: string[] = []): VueWrapper {
+function mountTarget(step: Step = makeStep(), otherStep: Partial<Step> = {}): VueWrapper {
     const pinia = createTestingPinia({ createSpy: vi.fn });
-    if (workflowOutputLabels.length) {
-        useWorkflowStepStore("mock-workflow").steps = {
-            "1": makeStep({
-                id: 1,
-                label: "other step",
-                workflow_outputs: workflowOutputLabels.map((label) => ({ label, output_name: "out_file1" })),
-            }),
-        };
-    }
+    useWorkflowStepStore("mock-workflow").steps = {
+        "1": makeStep({ id: 1, label: "other step", ...otherStep }),
+        [step.id]: step,
+    };
     return mount(MissingToolForm as object, {
         props: { step, error: "Tool is not installed" },
         global: { ...withPlugins(localVue, pinia), provide: { workflowId: "mock-workflow" } },
@@ -84,13 +79,13 @@ describe("MissingToolForm", () => {
         expect(nth(wrapper.emitted("onAnnotation"), -1)).toEqual([3, "new annotation"]);
     });
 
-    it("flags a label that is already used as a workflow output label", () => {
-        const wrapper = mountTarget(makeStep(), ["my label"]);
+    it("flags a label that another step already uses", () => {
+        const wrapper = mountTarget(makeStep(), { label: "my label" });
         expect(wrapper.text()).toContain("Duplicate label my label. Please fix this before saving the workflow.");
     });
 
     it("updates the duplicate label error when the label changes", async () => {
-        const wrapper = mountTarget(makeStep(), ["used label"]);
+        const wrapper = mountTarget(makeStep(), { label: "used label" });
         expect(wrapper.text()).not.toContain("Duplicate label");
         await wrapper.setProps({ step: makeStep({ label: "used label" }) });
         expect(wrapper.text()).toContain("Duplicate label used label.");
@@ -98,8 +93,11 @@ describe("MissingToolForm", () => {
         expect(wrapper.text()).not.toContain("Duplicate label");
     });
 
-    it("does not flag a unique label", () => {
-        const wrapper = mountTarget(makeStep(), ["another label"]);
+    it("accepts a label that matches a workflow output label", () => {
+        const ownOutput = { workflow_outputs: [{ label: "my label", output_name: "out_file1" }] };
+        const wrapper = mountTarget(makeStep(ownOutput), {
+            workflow_outputs: [{ label: "my label", output_name: "out" }],
+        });
         expect(wrapper.text()).not.toContain("Duplicate label");
     });
 
