@@ -225,13 +225,19 @@ class OIDC(BaseUIController):
     @web.json
     @web.expose
     def logout(self, trans, provider, **kwargs):
+        logged_in = trans.user is not None
+        if logged_in and (message := trans.check_csrf_token(kwargs)):
+            trans.response.status = 403
+            return {"err_msg": message}
         post_user_logout_href = trans.app.config.post_user_logout_href
         if post_user_logout_href is not None:
             post_user_logout_href = trans.request.base + url_for(post_user_logout_href)
         success, message, redirect_uri = trans.app.authnz_manager.logout(
             provider, trans, post_user_logout_href=post_user_logout_href
         )
-        trans.handle_user_logout()
+        # The client ends the Galaxy session via /user/logout first; only the IdP URL is needed then.
+        if logged_in:
+            trans.handle_user_logout()
         if success:
             return {"redirect_uri": redirect_uri}
         else:
@@ -241,7 +247,10 @@ class OIDC(BaseUIController):
     def get_logout_url(self, trans, provider=None, **kwargs):
         idp_provider = provider if provider else trans.get_cookie(name=PROVIDER_COOKIE_NAME)
         if idp_provider:
-            return trans.response.send_redirect(url_for(controller="authnz", action="logout", provider=idp_provider))
+            params = {"controller": "authnz", "action": "logout", "provider": idp_provider}
+            if session_csrf_token := kwargs.get("session_csrf_token"):
+                params["session_csrf_token"] = session_csrf_token
+            return trans.response.send_redirect(url_for(**params))
 
     @web.expose
     @web.json
