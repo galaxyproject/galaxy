@@ -121,6 +121,35 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
         invocations.column_filter_toggle(key="workflow_id").wait_for_visible()
 
     @selenium_test
+    def test_column_filter_chip_overflow(self):
+        history_ids = [
+            self.dataset_populator.new_history(name=self._get_random_name(prefix="a long history name to overflow "))
+            for _ in range(6)
+        ]
+        # a listed invocation, so the list and its column filters show
+        self.workflow_populator.run_workflow(WORKFLOW_RENAME_ON_INPUT, history_id=history_ids[0], wait=True)
+        self.navigate_to_invocations_grid()
+        invocations = self.components.invocations
+        # chips only overflow into a menu while they sit inline, which needs a wide list, so close the activity panel
+        invocations.activity.wait_for_and_click()
+        self._assert_showing_n_invocations(1)
+
+        invocations.column_filter_toggle(key="history_id").wait_for_and_click()
+        for history_id in history_ids:
+            invocations.column_filter_option(key="history_id", id=history_id).wait_for_and_click()
+        self.send_escape()
+
+        # the chips that don't fit on the filter bar's line move to a "+N more" menu
+        invocations.hidden_column_filters_toggle.wait_for_and_click()
+        hidden = invocations.hidden_column_filters(key="history_id").all()
+        assert hidden, "expected some history chips in the overflow menu"
+        self.screenshot("invocations_column_filter_chip_overflow")
+        removed_id = hidden[0].get_attribute("data-option-id")
+        hidden[0].click()
+        self._assert_filter_text_excludes(f"history_id:{removed_id}")
+        self._assert_n_chips("history_id", 5)
+
+    @selenium_test
     def test_filter_by_status(self):
         history_id = self.dataset_populator.new_history()
         self.workflow_populator.run_workflow(WORKFLOW_RENAME_ON_INPUT, history_id=history_id, wait=True)
@@ -212,6 +241,16 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
     @retry_assertion_during_transitions
     def _assert_expanded_row_summary_contains(self, text):
         assert text in self.components.invocations.expanded_row_summary.wait_for_visible().text
+
+    @retry_assertion_during_transitions
+    def _assert_filter_text_excludes(self, text):
+        assert text not in self.components.grids.free_text_search.wait_for_visible().get_attribute("value")
+
+    def _assert_n_chips(self, key, n):
+        invocations = self.components.invocations
+        shown = len(invocations.active_column_filters(key=key).all())
+        hidden = len(invocations.hidden_column_filters(key=key).all())
+        assert shown + hidden == n
 
     @retry_assertion_during_transitions
     def _assert_n_elements(self, component, n):

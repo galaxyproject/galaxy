@@ -1493,6 +1493,8 @@ invocations:
     column_filter_option: '#invocations-grid [data-description="grid column filter ${key}"] input[data-description="grid column filter option ${id}"]'
     active_column_filters: '#invocations-grid [data-description="grid active column filter ${key}"]'
     active_column_filter: '#invocations-grid [data-description="grid active column filter ${key}"][data-option-id="${id}"]'
+    hidden_column_filters_toggle: '#invocations-grid [data-description="grid hidden column filters"] [aria-haspopup="menu"]'
+    hidden_column_filters: '#invocations-grid [data-description="grid hidden column filter ${key}"]'
     invocations_panel_list: '[data-description="Workflow Invocations"] .scroll-list'
     invocations_panel_list_items: '[data-description="Workflow Invocations"] .scroll-list .g-card[id^="g-card-invocation-"]'
     status_group_button: '#invocations-grid [data-status-group="${group}"]'
