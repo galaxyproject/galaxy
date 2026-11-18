@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { BFormInput, BInputGroup } from "bootstrap-vue";
+import { BInputGroup } from "bootstrap-vue";
 import type { Tuple } from "types/utilityTypes";
 import { computed } from "vue";
+
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 const props = defineProps<{
     modelValue: Date;
@@ -26,8 +28,8 @@ const time = computed(() => {
     return `${hours}:${minutes}`;
 });
 
-function updateDate(newDate: string) {
-    const matches = newDate.match(/(\d{4})-(\d{2})-(\d{2})/);
+function updateDate(newDate: string | null) {
+    const matches = newDate?.match(/(\d{4})-(\d{2})-(\d{2})/);
 
     if (matches?.length && matches.length >= 4) {
         const [_v, year, month, day] = matches as Tuple<4, string>;
@@ -46,8 +48,8 @@ function updateDate(newDate: string) {
     }
 }
 
-function updateTime(newTime: string) {
-    const matches = newTime.match(/(\d{2}):(\d{2})/);
+function updateTime(newTime: string | null) {
+    const matches = newTime?.match(/(\d{2}):(\d{2})/);
 
     if (matches?.length && matches.length >= 3) {
         const [_v, hours, minutes] = matches as Tuple<3, string>;
@@ -65,7 +67,7 @@ function updateTime(newTime: string) {
 
 <template>
     <BInputGroup>
-        <BFormInput :value="date" type="date" @input="updateDate" />
-        <BFormInput :value="time" type="time" @input="updateTime" />
+        <GFormInput :model-value="date" type="date" @update:model-value="updateDate" />
+        <GFormInput :model-value="time" type="time" @update:model-value="updateTime" />
     </BInputGroup>
 </template>

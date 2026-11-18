@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faPlus, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
+import { BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -10,6 +10,7 @@ import { createBroadcast, updateBroadcast } from "@/api/notifications.broadcast"
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
@@ -199,7 +200,7 @@ if (props.id) {
             <BFormGroup id="broadcast-action-link-group" label="Action Links" label-for="broadcast-action-link">
                 <BRow v-for="(actionLink, index) in broadcastData.content.action_links" :key="index" class="my-2">
                     <BCol cols="auto">
-                        <BFormInput
+                        <GFormInput
                             :id="`broadcast-action-link-name-${index}`"
                             v-model="actionLink.action_name"
                             type="text"
@@ -207,7 +208,7 @@ if (props.id) {
                             required />
                     </BCol>
                     <BCol>
-                        <BFormInput
+                        <GFormInput
                             :id="`broadcast-action-link-link-${index}`"
                             v-model="actionLink.link"
                             type="url"
