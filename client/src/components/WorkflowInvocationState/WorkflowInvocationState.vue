@@ -269,6 +269,16 @@ watch(
     { immediate: true },
 );
 
+// Whichever poll sees it last, start the completion checks once the invocation is scheduled and its jobs are done
+watch(
+    () => invocationState.value === "scheduled" && jobStatesTerminal.value,
+    (awaitingCompletion) => {
+        if (awaitingCompletion) {
+            startCompletionChecks();
+        }
+    },
+);
+
 watch(
     () => invocationSchedulingTerminal.value,
     async (newVal, oldVal) => {
@@ -305,8 +315,9 @@ async function pollStepStatesUntilTerminal() {
         stepStatesInterval.value = setTimeout(pollStepStatesUntilTerminal, 3000);
     }
 }
+/** Polls jobs until they and scheduling are done, since scheduling can still add jobs */
 async function pollJobStatesUntilTerminal() {
-    if (!jobStatesTerminal.value && invocation.value) {
+    if (!invocationAndJobTerminal.value && invocation.value) {
         isPolling.value = true;
         await invocationStore.fetchInvocationJobsSummaryForId({ id: props.invocationId });
         await invocationStore.fetchInvocationStepJobsSummaryForId({ id: props.invocationId });
@@ -316,7 +327,6 @@ async function pollJobStatesUntilTerminal() {
         jobStatesInterval.value = setTimeout(pollJobStatesUntilTerminal, 3000);
     } else {
         isPolling.value = false;
-        startCompletionChecks();
     }
 }
 /** The server marks a scheduled invocation `completed` a few seconds after its jobs finish, so check a few times. */

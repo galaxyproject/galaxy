@@ -61,6 +61,11 @@ const invocationById: Record<string, any> = reactive({
         ...invocationData,
         id: "finishing-jobs",
     },
+    "scheduling-invocation": {
+        ...invocationData,
+        id: "scheduling-invocation",
+        state: "ready",
+    },
 });
 
 // Jobs summary constants
@@ -104,6 +109,7 @@ const invocationJobsSummaryById: Record<string, any> = reactive({
         },
     },
     "finishing-jobs": runningJobsSummary(),
+    "scheduling-invocation": runningJobsSummary(),
 });
 
 // Mock functions that we'll export for assertions
@@ -164,6 +170,12 @@ vi.mock("@/stores/workflowStore", async () => {
     };
 });
 
+/** Wrappers mounted by the current test, unmounted after it so their polling can't react to later tests' fixtures */
+const mountedWrappers: VueWrapper[] = [];
+afterEach(() => {
+    mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount());
+});
+
 /** Mount the WorkflowInvocationState component with the given invocation ID
  * @param invocationId The invocation ID to be passed as a prop
  * @param shallow Whether to use shallowMount or mount
@@ -185,6 +197,7 @@ async function mountWorkflowInvocationState(invocationId: string, isFullPage = f
             stubs: renderNavigation ? { BNav: false, BNavItem: false } : {},
         },
     });
+    mountedWrappers.push(wrapper);
     await flushPromises();
     return wrapper;
 }
@@ -199,6 +212,8 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         vi.useRealTimers();
         invocationJobsSummaryById["finishing-jobs"] = runningJobsSummary();
         invocationById["finishing-jobs"].state = "scheduled";
+        invocationJobsSummaryById["scheduling-invocation"] = runningJobsSummary();
+        invocationById["scheduling-invocation"].state = "ready";
     });
 
     it("determines that invocation and job states are terminal with terminal invocation", async () => {
@@ -233,6 +248,31 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         assertInvocationFetched(2);
     });
 
+    it("checks once the invocation is scheduled, even if its jobs finished while it was still scheduling", async () => {
+        vi.useFakeTimers();
+        await mountWorkflowInvocationState("scheduling-invocation");
+        invocationJobsSummaryById["scheduling-invocation"].states = { ok: 1 };
+        // the jobs finish while it is scheduling; the step poll at 6s then sees it scheduled
+        mockFetchInvocationById
+            .mockImplementationOnce(() => {})
+            .mockImplementationOnce(() => {
+                invocationById["scheduling-invocation"].state = "scheduled";
+            });
+        await vi.runAllTimersAsync();
+
+        // the first fetch, the step polls at 0s, 3s and 6s, then 4 checks
+        assertInvocationFetched(8);
+    });
+
+    it("keeps polling jobs while the invocation is still scheduling, even if they're all done so far", async () => {
+        vi.useFakeTimers();
+        invocationJobsSummaryById["scheduling-invocation"].states = { ok: 1 };
+        await mountWorkflowInvocationState("scheduling-invocation");
+        await vi.advanceTimersByTimeAsync(6000);
+
+        assertJobsSummaryFetched(3);
+    });
+
     it("doesn't check an invocation whose jobs had already finished, which may never be marked completed", async () => {
         vi.useFakeTimers();
         await mountWorkflowInvocationState(invocationData.id);
@@ -260,9 +300,9 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         const wrapper = await mountWorkflowInvocationState("non-terminal-id", true, true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
-        // Only the invocation is fetched for non-terminal invocations; once for the initial fetch and then for the polling
+        // The invocation is fetched once initially and then polled; the jobs summary is polled while scheduling can add jobs
         assertInvocationFetched(2);
-        assertJobsSummaryFetched(0);
+        assertJobsSummaryFetched(1);
     });
 
     it("determines that job states are not terminal with non-terminal jobs but scheduled invocation", async () => {
