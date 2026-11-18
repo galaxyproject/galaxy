@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<visualization name="Chat Fixture" hidden="true">
+    <description>A chat agent for Galaxy AI's tests</description>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext">txt</test>
+        </data_source>
+    </data_sources>
+    <entry_point entry_point_type="script" src="index.js" webcomponent="chat-fixture" />
+</visualization>
