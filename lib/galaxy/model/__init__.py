@@ -73,6 +73,7 @@ from sqlalchemy import (
     Boolean,
     case,
     Cast,
+    CheckConstraint,
     Column,
     column,
     ColumnElement,
@@ -3243,6 +3244,10 @@ class ImplicitCollectionJobs(Base, Serializable):
         stmt = select(self._job_states_stmt().where(Job.state.not_in(states)).exists())
         return bool(required_object_session(self).scalar(stmt))
 
+    def has_job_in_states(self, states: Iterable[str]) -> bool:
+        stmt = select(self._job_states_stmt().where(Job.state.in_(states)).exists())
+        return bool(required_object_session(self).scalar(stmt))
+
     def job_state_counts(self) -> dict[str, int]:
         """Number of these jobs in each state."""
         stmt = self._job_states_stmt().add_columns(func.count()).group_by(Job.state)
@@ -3341,6 +3346,40 @@ class ImplicitCollectionJobsJobAssociation(Base, RepresentById):
     order_index: Mapped[int]
     implicit_collection_jobs = relationship("ImplicitCollectionJobs", back_populates="jobs")
     job: Mapped["Job"] = relationship(back_populates="implicit_collection_jobs_association")
+
+
+class RunNotificationRequest(Base):
+    """A durable notification request for one tool run or workflow invocation."""
+
+    __tablename__ = "run_notification_request"
+    __table_args__ = (
+        CheckConstraint(
+            "(job_id IS NOT NULL AND implicit_collection_jobs_id IS NULL AND workflow_invocation_id IS NULL) OR "
+            "(job_id IS NULL AND implicit_collection_jobs_id IS NOT NULL AND workflow_invocation_id IS NULL) OR "
+            "(job_id IS NULL AND implicit_collection_jobs_id IS NULL AND workflow_invocation_id IS NOT NULL)",
+            name="ck_run_notification_request_target",
+        ),
+        Index("ix_run_notification_request_pending", "completed", "id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
+    # Empty maps can have no job from which to recover the destination history.
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id", ondelete="CASCADE"), index=True)
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id", ondelete="CASCADE"), unique=True)
+    implicit_collection_jobs_id: Mapped[int | None] = mapped_column(
+        ForeignKey("implicit_collection_jobs.id", ondelete="CASCADE"), unique=True
+    )
+    workflow_invocation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("workflow_invocation.id", ondelete="CASCADE"), unique=True
+    )
+    attention_sent: Mapped[bool] = mapped_column(default=False)
+    completed: Mapped[bool] = mapped_column(default=False)
+    workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="notification_request")
+    user: Mapped["User"] = relationship()
+    history: Mapped["History"] = relationship()
+    job: Mapped[Optional["Job"]] = relationship()
+    implicit_collection_jobs: Mapped[Optional["ImplicitCollectionJobs"]] = relationship()
 
 
 class PostJobAction(Base, RepresentById):
@@ -3780,6 +3819,10 @@ class Notification(Base, Dictifiable, RepresentById):
     dispatched: Mapped[bool] = mapped_column(
         Boolean, index=True, default=False
     )  # Whether the notification has been dispatched to users via other channels
+    # Explicit completion emails queued while the notification system is disabled.
+    email_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    __table_args__ = (Index("ix_notification_completion_email", "email_only", "dispatched", "id"),)
+
     galaxy_url: Mapped[str | None] = mapped_column(
         String(255)
     )  # The URL to the Galaxy instance, used for generating links in the notification
@@ -9798,6 +9841,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         self.module: WorkflowModule | None
         self.state: DefaultToolState | None
         self.upgrade_messages: dict | None
+        self.filled_defaults: dict
 
     @reconstructor
     def init_on_load(self):
@@ -10387,6 +10431,9 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         back_populates="workflow_invocation",
         uselist=False,
     )
+    notification_request: Mapped[Optional["RunNotificationRequest"]] = relationship(
+        back_populates="workflow_invocation", uselist=False
+    )
     completion: Mapped[Optional["WorkflowInvocationCompletion"]] = relationship(
         "WorkflowInvocationCompletion",
         back_populates="workflow_invocation",
@@ -10418,6 +10465,16 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     def __strict_check_before_flush__(self):
         if self.state is None:
             raise Exception("Workflow invocation without state, this should not happen")
+
+    def request_notifications(self) -> None:
+        """Register once, independently of completion hooks and invocation state."""
+        if not self.history or not self.history.user:
+            return
+        if not any(isinstance(action, dict) and "send_notification" in action for action in self.on_complete or []):
+            return
+        if self.notification_request is None:
+            request = RunNotificationRequest(user=self.history.user, history=self.history, workflow_invocation=self)
+            required_object_session(self).add(request)
 
     def get_last_workflow_invocation_step_update_time(self) -> datetime | None:
         session = required_object_session(self)
@@ -10501,11 +10558,12 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                     )
                     if subworkflow_assoc:
                         collect_jobs(subworkflow_assoc.subworkflow_invocation)
-                else:
-                    # Collect job states from this step
-                    for job in step.jobs:
-                        state = str(job.state)
-                        summary[state] = summary.get(state, 0) + 1
+                elif step.implicit_collection_jobs:
+                    for state, count in step.implicit_collection_jobs.job_state_counts().items():
+                        summary[state] = summary.get(state, 0) + count
+                elif step.job:
+                    state = str(step.job.state)
+                    summary[state] = summary.get(state, 0) + 1
 
         collect_jobs(self)
         return summary
@@ -11284,14 +11342,18 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         if self.workflow_step.type == "subworkflow":
             return self._is_subworkflow_step_complete()
 
-        # Tool/module step - check job states
-        jobs = self.jobs
-        if not jobs:
-            # Steps without jobs (e.g., input steps, pause steps, parameter steps)
-            # are considered complete once they're in SCHEDULED state
-            return self.state == self.states.SCHEDULED
-
-        return all(job.is_terminal for job in jobs)
+        if self.implicit_collection_jobs:
+            # Check once per monitor poll without materializing mapped Job objects.
+            collection_jobs = self.implicit_collection_jobs
+            return (
+                collection_jobs.populated_state != collection_jobs.populated_states.NEW
+                and self.state == self.states.SCHEDULED
+                and not collection_jobs.has_job_not_in_states(Job.settled_states)
+            )
+        if self.job:
+            return self.job.is_terminal
+        # Input, pause and parameter steps have no jobs.
+        return self.state == self.states.SCHEDULED
 
     def _is_subworkflow_step_complete(self) -> bool:
         """Check if a subworkflow step is complete."""

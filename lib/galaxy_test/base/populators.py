@@ -1330,6 +1330,7 @@ class BaseDatasetPopulator(BasePopulator):
         strict: bool = True,
         preferred_object_store_id: str | None = None,
         tool_uuid: str | None = None,
+        send_notification: bool = False,
     ) -> Response:
         payload: dict[str, Any] = {
             "history_id": history_id,
@@ -1340,6 +1341,8 @@ class BaseDatasetPopulator(BasePopulator):
             payload["tool_id"] = tool_id
         if tool_uuid is not None:
             payload["tool_uuid"] = tool_uuid
+        if send_notification:
+            payload["send_notification"] = True
         if preferred_object_store_id is not None:
             payload["preferred_object_store_id"] = preferred_object_store_id
         response = self._post("jobs", data=payload, json=True)

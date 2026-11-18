@@ -233,7 +233,10 @@ from galaxy.tools.parameters.meta import (
 )
 from galaxy.tools.parameters.pagination import OptionsPaginationT
 from galaxy.tools.parameters.populate_model import populate_model
-from galaxy.tools.parameters.workflow_utils import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import (
+    RuntimeValue,
+    workflow_building_modes,
+)
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.util import (
     asbool,
@@ -496,6 +499,13 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "sqlite_to_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "sucos_max_score": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
 }
+
+
+def _describe_default(value: Any) -> str:
+    """How a parameter's default reads in an upgrade message; runtime markers have no useful repr."""
+    if isinstance(value, RuntimeValue):
+        return "a value set at runtime"
+    return f"'{value}'"
 
 
 def get_safe_version(tool: "Tool", requested_tool_version: str) -> str | None:
@@ -2432,6 +2442,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         input_format: InputFormatT = "legacy",
         tags: list[str] | None = None,
         send_email_notification: bool = False,
+        send_notification: bool = False,
     ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
@@ -2466,8 +2477,9 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         if tags:
             execution_tracker.apply_tags(trans.tag_handler, trans.user, tags)
             trans.sa_session.commit()
-        if send_email_notification:
-            execution_tracker.apply_email_action(trans.user)
+        # Completion requests are recorded only when notifications or SMTP are configured.
+        if send_notification or send_email_notification:
+            execution_tracker.request_completion_notification(trans.user, request_context.history)
             trans.sa_session.commit()
 
         # Raise an exception if there were jobs to execute and none of them were submitted,
@@ -2724,12 +2736,20 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         return self.params_from_strings(param_dict, ignore_errors=ignore_errors)
 
     def check_and_update_param_values(
-        self, values, trans: "ProvidesHistoryContext", update_values: bool = True, workflow_building_mode: bool = False
+        self,
+        values,
+        trans: "ProvidesHistoryContext",
+        update_values: bool = True,
+        workflow_building_mode: bool = False,
+        filled_defaults: dict[str, str] | None = None,
     ):
         """
         Check that all parameters have values, and fill in with default
         values where necessary. This could be called after loading values
         from a database in case new parameters have been added.
+
+        If ``filled_defaults`` is given, parameters that had no value and got their default are reported
+        there instead of in the returned messages, which then only hold values that had to be replaced.
         """
         messages: dict[str, Any] = {}
         request_context = proxy_work_context_for_history(trans, workflow_building_mode=workflow_building_mode)
@@ -2743,9 +2763,18 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                         previous_value = value
                         value = input.get_initial_value(request_context, context)
                         if not prefixed_name.startswith("__"):
-                            messages[prefixed_name] = (
-                                error if previous_value == value else f"{error} Using default: '{value}'."
+                            message = (
+                                error
+                                if previous_value == value
+                                else f"{error} Using default: {_describe_default(value)}."
                             )
+                            # a required parameter whose default lookup gave None was not filled; it stays a problem
+                            missing = input.name not in parent
+                            if missing and filled_defaults is not None and (value is not None or input.optional):
+                                default = "no value" if value is None else _describe_default(value)
+                                filled_defaults[prefixed_name] = f"Default for '{prefixed_label}': {default}."
+                            else:
+                                messages[prefixed_name] = message
                         parent[input.name] = value
                     except Exception:
                         messages[prefixed_name] = f"Attempt to replace invalid value for '{prefixed_label}' failed."

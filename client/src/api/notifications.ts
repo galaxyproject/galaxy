@@ -12,6 +12,16 @@ export interface MessageNotification extends BaseUserNotification {
     content: components["schemas"]["MessageNotificationContent"];
 }
 
+export interface WorkflowCompletionNotification extends BaseUserNotification {
+    category: "workflow_execution_completed";
+    content: components["schemas"]["WorkflowCompletionNotificationContent"];
+}
+
+export interface ToolCompletionNotification extends BaseUserNotification {
+    category: "tool_execution_completed";
+    content: components["schemas"]["ToolCompletionNotificationContent"];
+}
+
 export interface SharedItemNotification extends BaseUserNotification {
     category: "new_shared_item";
     content: components["schemas"]["NewSharedItemNotificationContent"];
@@ -59,6 +69,8 @@ export type ToolInstallationRequestInput = Omit<ToolInstallationRequestCreateCon
 
 export type UserNotification =
     | MessageNotification
+    | WorkflowCompletionNotification
+    | ToolCompletionNotification
     | SharedItemNotification
     | StorageOperationNotification
     | ToolInstallationRequestNotification;

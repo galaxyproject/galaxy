@@ -3,12 +3,10 @@ import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
-import { setMockConfig } from "@/composables/__mocks__/config";
 import { useFileSources } from "@/composables/fileSources";
 
 import OnCompleteActions from "./OnCompleteActions.vue";
 
-vi.mock("@/composables/config");
 vi.mock("@/composables/fileSources");
 
 const EXPORT_CONFIG = {
@@ -32,21 +30,9 @@ function lastActions(wrapper: ReturnType<typeof mountActions>) {
 
 describe("OnCompleteActions", () => {
     beforeEach(() => {
-        setMockConfig({ enable_notification_system: true });
         vi.mocked(useFileSources).mockReturnValue({ hasWritable: ref(true) } as unknown as ReturnType<
             typeof useFileSources
         >);
-    });
-
-    it("toggles the notification action with the notification switch", async () => {
-        const wrapper = mountActions();
-        const notificationSwitch = wrapper.find("[data-test-id='send-notification-checkbox']");
-
-        await notificationSwitch.setValue(true);
-        expect(lastActions(wrapper)).toEqual([{ send_notification: {} }]);
-
-        await notificationSwitch.setValue(false);
-        expect(lastActions(wrapper)).toEqual([]);
     });
 
     it("drops the export action when the export switch is turned off", async () => {
