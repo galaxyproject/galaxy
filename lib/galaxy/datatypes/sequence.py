@@ -563,6 +563,115 @@ class Fasta(Sequence):
 
 
 @build_sniff_from_prefix
+class PearsonFasta(Sequence):
+    """
+    Class representing FASTA with a leading block of ';' comment lines.
+
+    Lines starting with ';' were comments in the FASTA format of Pearson & Lipman
+    (1988, https://doi.org/10.1073/pnas.85.8.2444). FAIR-bioHeaders files use such a
+    block (written as ';~' lines) for YAML metadata. htslib and Biopython's "fasta"
+    parser reject these lines, so this is a separate datatype rather than a ``Fasta``
+    subclass. Tools that expect ``fasta`` get an implicitly converted copy with the
+    lines before the first '>' header removed.
+    """
+
+    edam_format = "format_1954"
+    file_ext = "pearson_fasta"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        """
+        Set the number of sequences and the number of data lines, ignoring the lines
+        before the first '>' header. The values match those of the converted ``fasta``.
+        """
+        data_lines = 0
+        sequences = 0
+        in_records = False
+        with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
+            for line in iter_start_of_line(fh, 1):
+                if not line:
+                    continue
+                elif line[0] == ">":
+                    in_records = True
+                    sequences += 1
+                    data_lines += 1
+                elif in_records:
+                    data_lines += 1
+            dataset.metadata.data_lines = data_lines
+            dataset.metadata.sequences = sequences
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is FASTA preceded by a block of ';' comment lines.
+
+        Rules for sniffing as True:
+
+            The first non-empty line starts with ';' in the first column.
+
+            It is followed by any number of lines that start with ';' or are empty, and
+            then by a line that starts with '>' in the first column (the first header).
+
+            The checks from that header on are those of the fasta sniffer: the next
+            line must have sequence data and not be a header, and if there is a third
+            line that is not a header, it must not contain chars like '()[].' (DotBracket).
+
+            In addition, the first sequence line must not consist of numbers only
+            (quality scores, as in qual454 and qualsolid files) or look like
+            color-space data (csfasta). Those files stay unrecognised, as without
+            the comment block.
+
+            The header must be within the sniffed prefix, so a file with only ';'
+            lines, or with a comment block larger than the prefix, is not detected.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('sequence.pearson_fasta')
+        >>> PearsonFasta().sniff(fname)
+        True
+        >>> fname = get_test_fname('sequence.fasta')
+        >>> PearsonFasta().sniff(fname)
+        False
+        >>> fname = get_test_fname('sequence_comment_only.txt')
+        >>> PearsonFasta().sniff(fname)
+        False
+        >>> fname = get_test_fname('sequence_comment_not_fasta.txt')
+        >>> PearsonFasta().sniff(fname)
+        False
+        >>> fname = get_test_fname('sequence_comment_qual454.txt')
+        >>> PearsonFasta().sniff(fname)
+        False
+        >>> fname = get_test_fname('sequence_comment_csfasta.txt')
+        >>> PearsonFasta().sniff(fname)
+        False
+        """
+        fh = file_prefix.string_io()
+        seen_comment = False
+        for line in fh:
+            if line.startswith(";"):
+                seen_comment = True
+            elif not line.strip():
+                continue
+            elif not seen_comment or not line.startswith(">"):
+                return False
+            else:
+                # The next line.strip() must not be '', nor startwith '>'
+                line = fh.readline().strip()
+                if line == "" or line.startswith(">"):
+                    return False
+                # Quality scores (qual454, qualsolid) or color-space sequence (csfasta)
+                if re.fullmatch(r"[\d.\s-]+", line) and re.search(r"\d", line):
+                    return False
+                if re.fullmatch(r"[A-Z][\d.]+", line):
+                    return False
+                # If there is a third line, and it isn't a header line, it may not contain chars like '()[].' otherwise it's most likely a DotBracket file
+                line = fh.readline()
+                if not line:
+                    return True
+                if not line.startswith(">") and re.search(r"[\(\)\[\]\.]", line):
+                    return False
+                return True
+        return False
+
+
+@build_sniff_from_prefix
 class csFasta(Sequence):
     """Class representing the SOLID Color-Space sequence ( csfasta )"""
 
