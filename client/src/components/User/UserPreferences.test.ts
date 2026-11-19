@@ -193,4 +193,40 @@ describe("UserPreferences.vue", () => {
 
         expect(wrapper.find("#edit-preferences-password").exists()).toBe(true);
     });
+
+    it.each([
+        [true, true],
+        [false, false],
+        [undefined, false],
+    ])("shows the Extra Configurations card when has_user_preferences_extra is %s: %s", async (flag, shown) => {
+        vi.mocked(useConfig).mockReturnValue({
+            config: computed(() => ({
+                has_user_preferences_extra: flag,
+                themes: {},
+            })),
+            isConfigLoaded: computed(() => true),
+        });
+        const wrapper = shallowMount(UserPreferences, {
+            localVue,
+            router: createRouter({ history: createMemoryHistory(), routes: [] }),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+            stubs: {
+                BreadcrumbHeading: true,
+                UserDetailsElement: true,
+                UserPreferencesElement: true,
+                Heading: true,
+                GAlert: true,
+                UserPickTheme: true,
+                UserBeaconSettings: true,
+                UserPreferredObjectStore: true,
+                UserDeletion: true,
+            },
+        });
+
+        const card = wrapper.find("#edit-preferences-extra");
+        expect(card.exists()).toBe(shown);
+        if (shown) {
+            expect(card.attributes("to")).toBe("/user/extra_preferences");
+        }
+    });
 });
