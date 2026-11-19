@@ -48,6 +48,7 @@ def _job_wrapper(home_target, environment_variables=(), tool_env_names=()):
         guest_ports=None,
         working_directory="/galaxy/jobs/1",
         tool_working_directory="/galaxy/jobs/1/working",
+        protection_plan_path=None,
         tmp_directory=lambda: None,
         home_directory=lambda: local_homes[home_target],
         job_destination=SimpleNamespace(params=destination_params, tool_env_names=list(tool_env_names)),

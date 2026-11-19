@@ -644,6 +644,31 @@ class TestCrypt4GHRemoteToolEvaluationIntegration(BaseCrypt4GHExecutionIntegrati
         self._check_tools_read_bam_indexes(history_id)
 
 
+@integration_util.skip_unless_docker()
+class TestCrypt4GHContainerizedToolIntegration(BaseCrypt4GHExecutionIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        job_config = cls._job_config()
+        job_config["execution"]["environments"]["local_docker"] = {
+            **job_config["execution"]["environments"]["local"],
+            "docker_enabled": True,
+            "require_container": True,
+            "container_resolvers": [{"type": "fallback", "identifier": "quay.io/biocontainers/bwa:0.7.15--0"}],
+            # Otherwise the container mounts the host's $TMPDIR, which holds the test's job directories.
+            "tmp_dir": True,
+        }
+        # Uploads stay on the host, only the tool runs in a container.
+        job_config["tools"] = [{"id": "cat", "environment": "local_docker"}]
+        config["job_config"] = job_config
+
+    def test_containerized_tool_reads_decrypted_inputs(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        job, output = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
+        assert job["state"] == "ok", job
+        assert self._decrypted_content(history_id, output) == PLAINTEXT_1
+
+
 class TestCrypt4GHUnsafeDestinationIntegration(BaseCrypt4GHExecutionIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):

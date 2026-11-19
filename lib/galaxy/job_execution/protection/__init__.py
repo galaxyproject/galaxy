@@ -35,6 +35,8 @@ from pydantic import (
 from galaxy.util import asbool
 
 PROTECTED_DIRECTORY_NAME = "_protected"
+# Relative to the job directory, tool containers mount it read-only.
+PROTECTED_INPUTS_SUBDIRECTORY = os.path.join(PROTECTED_DIRECTORY_NAME, "inputs")
 PLAN_FILENAME = "protection_plan.json"
 # Datatypes the compute host creates the metadata files of inputs with, next to the plan.
 DATATYPES_CONFIG_FILENAME = "protection_datatypes.xml"
@@ -156,7 +158,7 @@ def protected_directory(job_directory: str) -> str:
 
 def protected_inputs_directory(job_directory: str) -> str:
     """Where the inputs of a protected job are decrypted."""
-    return os.path.join(protected_directory(job_directory), "inputs")
+    return os.path.join(job_directory, PROTECTED_INPUTS_SUBDIRECTORY)
 
 
 class ProtectionError(Exception):

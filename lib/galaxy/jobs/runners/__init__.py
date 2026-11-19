@@ -39,7 +39,10 @@ from galaxy.job_execution.output_collect import (
     default_exit_code_file,
     read_exit_code_from,
 )
-from galaxy.job_execution.protection import ProtectionError
+from galaxy.job_execution.protection import (
+    PROTECTED_INPUTS_SUBDIRECTORY,
+    ProtectionError,
+)
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners.util import runner_states
@@ -692,6 +695,8 @@ class BaseJobRunner:
             tool_environment_sets_home=_tool_environment_sets_home(job_wrapper),
             job_directory_type=job_directory_type,
             output_paths=get_disk_paths(self.app.object_store) if job_directory_type == "galaxy" else set(),
+            # The stage-in command decrypts the inputs there before the container starts.
+            extra_job_subdirectories=(PROTECTED_INPUTS_SUBDIRECTORY,) if job_wrapper.protection_plan_path else (),
         )
 
         destination_info = job_wrapper.job_destination.params
