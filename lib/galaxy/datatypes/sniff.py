@@ -370,6 +370,9 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('sequence.fasta')
     >>> guess_ext(fname, sniff_order)
     'fasta'
+    >>> fname = get_test_fname('sequence.pearson_fasta')
+    >>> guess_ext(fname, sniff_order)
+    'pearson_fasta'
     >>> fname = get_test_fname('1.genbank')
     >>> guess_ext(fname, sniff_order)
     'genbank'
