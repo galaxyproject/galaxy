@@ -310,9 +310,9 @@ def _job_metadata_rewrite(
     compute_environment: Optional["ComputeEnvironment"],
     dataset: DatasetInstance,
     metadata_name: str,
-    metadata_file: MetadataFile,
+    metadata_file: MetadataFile | None,
 ) -> str | None:
-    """Where the job finds ``dataset``'s metadata file, if not at its Galaxy path."""
+    """Where the job finds ``dataset``'s metadata file, if not at its Galaxy path (``None`` if unset)."""
     if compute_environment:
         return compute_environment.input_metadata_rewrite(dataset, metadata_name, metadata_file)
     return None
@@ -350,8 +350,9 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                 metadata_param = self.metadata.spec[name].param
 
                 rewrite = None
-                if isinstance(metadata_param, FileParameter) and rval:
-                    rewrite = _job_metadata_rewrite(self.compute_environment, self.dataset, name, rval)
+                if isinstance(metadata_param, FileParameter):
+                    # Unset files too: a job may create a metadata file of its input (e.g. Crypt4GH inputs).
+                    rewrite = _job_metadata_rewrite(self.compute_environment, self.dataset, name, rval or None)
                 rval = metadata_param.to_safe_string(rval) if rewrite is None else rewrite
 
                 # Store this value, so we don't need to recalculate if needed

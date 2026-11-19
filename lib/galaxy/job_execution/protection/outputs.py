@@ -3,9 +3,11 @@
 Runs on the compute host while collecting outputs (``set_metadata``). Every output
 file is encrypted in place right before it would be pushed to the object store,
 whatever way the output was produced (declared, ``from_work_dir``, discovered,
-collection element, extra files). The result for every output is recorded in a
-sidecar file that Galaxy checks when finishing the job, and from which it creates
-the grants to use the outputs in further jobs.
+collection element, extra files). The metadata files of the output's format
+(e.g. BAM indexes) are created from the plaintext and encrypted as well. The
+result for every output is recorded in a sidecar file that Galaxy checks when
+finishing the job, and from which it creates the grants to use the outputs in
+further jobs.
 """
 
 import logging
@@ -26,7 +28,9 @@ from pydantic import (
 )
 
 from galaxy.datatypes import sniff
+from galaxy.datatypes.crypt4gh import metadata_file_names
 from galaxy.util.crypt4gh import (
+    check_crypt4gh,
     CRYPT4GH_FILE_EXT,
     iter_relpaths,
     unwrap_crypt4gh_file_ext,
@@ -40,6 +44,7 @@ from . import (
     write_private_file,
 )
 from .crypt4gh import Crypt4GHJobRuntime
+from .metadata_files import create_metadata_files
 
 if TYPE_CHECKING:
     from galaxy.datatypes.registry import Registry
@@ -69,6 +74,8 @@ class ProtectedOutput(BaseModel):
     compute_header: str | None
     # Compute headers of the extra files by relative path, None for copies of encrypted inputs.
     extra_files: dict[str, str | None] = Field(default_factory=dict)
+    # Compute headers of the metadata files (e.g. BAM indexes) by metadata name.
+    metadata_files: dict[str, str] = Field(default_factory=dict)
 
 
 class UnprotectedOutput(BaseModel):
@@ -119,6 +126,8 @@ class OutputProtector:
         self.datatypes_registry = datatypes_registry
         self.records: dict[str, OutputRecord] = {}
         self.errors: list[str] = []
+        # Encrypted metadata files by output UUID and metadata name, stored once the outputs are.
+        self.metadata_file_paths: dict[str, dict[str, str]] = {}
 
     @classmethod
     def for_job(cls, metadata_params: dict[str, Any], datatypes_registry: "Registry") -> "OutputProtector | None":
@@ -145,16 +154,20 @@ class OutputProtector:
         On failure the plaintext is removed, so nothing unprotected can be persisted afterwards.
         """
         uuid = self._uuid(dataset_instance)
+        metadata_files_directory = os.path.join(self.runtime.plan.protected_directory, "metadata_files", uuid)
         try:
             if link_data:
                 # Linked files stay where they are, they can't be encrypted in place.
                 raise ProtectionError("outputs of protected jobs can't be linked data")
             ext = self._protected_ext(dataset_instance.extension, path)
+            metadata_file_paths = self._create_metadata_files(ext, path, metadata_files_directory)
             result = self.runtime.protect_file(path)
             extra_files = self._protect_extra_files(extra_files_path)
+            metadata_files = {name: self._protect_created_file(path) for name, path in metadata_file_paths.items()}
         except Exception as e:
             if not link_data:
                 self._discard(path, extra_files_path)
+            shutil.rmtree(metadata_files_directory, ignore_errors=True)
             raise self._failed(dataset_instance, e) from e
         dataset_instance.extension = ext
         self.records[uuid] = ProtectedOutput(
@@ -162,7 +175,25 @@ class OutputProtector:
             header_sha256=result.header_sha256,
             compute_header=result.compute_header,
             extra_files=extra_files,
+            metadata_files=metadata_files,
         )
+        self.metadata_file_paths[uuid] = metadata_file_paths
+
+    def _protect_created_file(self, path: str) -> str:
+        """Encrypt a file created from the plaintext of an output, return its compute header."""
+        compute_header = self.runtime.protect_file(path).compute_header
+        # Only copies of encrypted inputs have none.
+        assert compute_header
+        return compute_header
+
+    def _create_metadata_files(self, ext: str, path: str, directory: str) -> dict[str, str]:
+        """Create the metadata files of the plaintext of an output, see :func:`create_metadata_files`."""
+        inner_ext = unwrap_crypt4gh_file_ext(ext)
+        inner_datatype = self.datatypes_registry.get_datatype_by_extension(inner_ext) if inner_ext else None
+        # Encrypted files (e.g. copies of encrypted inputs) have no plaintext to describe.
+        if inner_datatype is None or not metadata_file_names(inner_datatype) or check_crypt4gh(path):
+            return {}
+        return create_metadata_files(inner_datatype, path, directory)
 
     def protect_declared(
         self, dataset_instance: "DatasetInstance", external_filename: str | None, link_data_only: bool
@@ -260,9 +291,37 @@ class OutputProtector:
 
     def finish(self, dataset_instances: list["DatasetInstance"], job_directory: str) -> bool:
         """Report the protection of every output to Galaxy, return whether all of them were protected."""
+        self._store_metadata_files(dataset_instances)
         self._check_complete(dataset_instances)
         self._write_sidecar(job_directory)
         return not self.errors
+
+    def _store_metadata_files(self, dataset_instances: list["DatasetInstance"]) -> None:
+        """Give the protected outputs their encrypted metadata files, and no other.
+
+        Runs once the outputs are stored: their object store is settled. Metadata files set otherwise,
+        e.g. copied from an input, weren't created and protected by this job.
+        """
+        stored: set[str] = set()
+        for dataset_instance in dataset_instances:
+            uuid = self._uuid(dataset_instance)
+            # Outputs may be listed twice.
+            if uuid in stored or (protected_ext := self.protected_ext(dataset_instance)) is None:
+                continue
+            stored.add(uuid)
+            datatype = self.datatypes_registry.get_datatype_by_extension(protected_ext)
+            names = metadata_file_names(datatype) if datatype else []
+            paths = self.metadata_file_paths.get(uuid, {})
+            try:
+                for name in names:
+                    metadata_file = None
+                    if path := paths.get(name):
+                        metadata_file = dataset_instance.metadata.spec[name].param.new_file(dataset=dataset_instance)
+                        metadata_file.update_from_file(path)
+                    setattr(dataset_instance.metadata, name, metadata_file)
+            except Exception as e:
+                # Galaxy purges the output, the other outputs are still reported.
+                self._failed(dataset_instance, e)
 
     def _check_complete(self, dataset_instances: list["DatasetInstance"]) -> None:
         """Record an error for every output that went around the protection."""

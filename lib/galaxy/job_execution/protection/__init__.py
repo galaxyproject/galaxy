@@ -36,6 +36,8 @@ from galaxy.util import asbool
 
 PROTECTED_DIRECTORY_NAME = "_protected"
 PLAN_FILENAME = "protection_plan.json"
+# Datatypes the compute host creates the metadata files of inputs with, next to the plan.
+DATATYPES_CONFIG_FILENAME = "protection_datatypes.xml"
 STATE_FILENAME = "state.json"
 CRYPT4GH_SCHEME: Final = "crypt4gh"
 
@@ -82,6 +84,21 @@ class ProtectedInput(BaseModel):
     staged_extra_files_path: str
     source_extra_files_path: str | None = None
     extra_files: dict[str, ProtectedFile] = Field(default_factory=dict)
+    # Metadata files of the decrypted format (e.g. BAM indexes) by metadata name, where the tool reads them.
+    metadata_files: dict[str, ProtectedFile] = Field(
+        default_factory=dict, description="Metadata files stored encrypted with the dataset, decrypted like it."
+    )
+    created_metadata_files: dict[str, str] = Field(
+        default_factory=dict,
+        description="Paths of the metadata files created from the decrypted file, for datasets stored without them.",
+    )
+    ext: str = Field(description="Extension of the decrypted datatype.")
+
+    def staged_metadata_file(self, name: str) -> str | None:
+        """Where the tool reads the decrypted metadata file ``name``, ``None`` if the job has none."""
+        if metadata_file := self.metadata_files.get(name):
+            return metadata_file.staged_path
+        return self.created_metadata_files.get(name)
 
 
 class ProtectionPlan(BaseModel):
@@ -89,6 +106,9 @@ class ProtectionPlan(BaseModel):
     output_key_ref: str = Field(description="Compute keypair outputs get encrypted to.")
     recryptor: RecryptorSettings
     inputs: list[ProtectedInput]
+    datatypes_config: str | None = Field(
+        default=None, description="Datatypes registry for creating the metadata files of inputs, when needed."
+    )
     encrypted_inputs: list[str] = Field(
         default_factory=list,
         description="Paths of protected inputs passed to the tool encrypted, outputs copying them are kept as they are.",

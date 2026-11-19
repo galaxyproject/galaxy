@@ -372,6 +372,10 @@ class Crypt4GHJobRuntime:
                     wait(futures)
                     for future in futures:
                         future.result()
+                with _as_protection_error(
+                    "Failed to create the metadata files of a protected input", self.plan.recryptor.verbose_errors
+                ):
+                    self._create_metadata_files()
                 self._write_state(output_key)
         except ProtectionError:
             self.cleanup_inputs()
@@ -382,8 +386,8 @@ class Crypt4GHJobRuntime:
         for protected_input in self.plan.inputs:
             files.append((protected_input.primary, protected_input.key_ref))
             files.extend(
-                (extra_file, extra_file.key_ref or protected_input.key_ref)
-                for extra_file in protected_input.extra_files.values()
+                (protected_file, protected_file.key_ref or protected_input.key_ref)
+                for protected_file in [*protected_input.extra_files.values(), *protected_input.metadata_files.values()]
             )
             source_extra = protected_input.source_extra_files_path
             if source_extra and os.path.isdir(source_extra):
@@ -391,6 +395,32 @@ class Crypt4GHJobRuntime:
                     # Every file of a protected dataset must be protected, refuse to guess.
                     raise ProtectionError("A protected input has extra files that this job can't decrypt.")
         return files
+
+    def _create_metadata_files(self) -> None:
+        """Create the metadata files (e.g. BAM indexes) of decrypted inputs stored without them."""
+        to_create = [protected_input for protected_input in self.plan.inputs if protected_input.created_metadata_files]
+        if not to_create:
+            return
+        # Set whenever an input has metadata files to create.
+        assert self.plan.datatypes_config
+        # Imports the model, which would take every protection command of every job seconds longer.
+        from .metadata_files import (
+            create_metadata_files,
+            load_datatypes_registry,
+        )
+
+        registry = load_datatypes_registry(self.plan.datatypes_config)
+        for protected_input in to_create:
+            datatype = registry.get_datatype_by_extension(protected_input.ext)
+            if datatype is None:
+                continue
+            directory = os.path.join(os.path.dirname(protected_input.primary.staged_path), "created_metadata_files")
+            created = create_metadata_files(datatype, protected_input.primary.staged_path, directory)
+            for name, path in created.items():
+                staged_path = protected_input.created_metadata_files[name]
+                os.makedirs(os.path.dirname(staged_path), exist_ok=True)
+                os.replace(path, staged_path)
+            shutil.rmtree(directory, ignore_errors=True)
 
     def _check_responses(self, files: list[tuple[ProtectedFile, str]], responses: list[RecryptorResponse]) -> OutputKey:
         """Check the service answered for the requested keypairs, return the keypair outputs get encrypted to."""

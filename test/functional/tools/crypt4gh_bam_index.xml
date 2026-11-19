@@ -1,0 +1,15 @@
+<!-- Test tool for Crypt4GH support: reads the index of a BAM input without checking it is set, as many tools do. -->
+<tool id="crypt4gh_bam_index" name="crypt4gh_bam_index" version="1.0.0" profile="24.0">
+    <description>copies a BAM and its index</description>
+    <command><![CDATA[
+cp '${input1.metadata.bam_index}' '$index' &&
+cp '$input1' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" format="bam" label="BAM"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="bam"/>
+        <data name="index" format="data"/>
+    </outputs>
+</tool>

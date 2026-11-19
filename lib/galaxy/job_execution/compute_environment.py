@@ -55,8 +55,8 @@ class ComputeEnvironment(metaclass=ABCMeta):
         """Output extra files path rewrite for specified dataset."""
 
     @abstractmethod
-    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile) -> str | None:
-        """Path rewrite for the input dataset's metadata file of this name."""
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile | None) -> str | None:
+        """Path rewrite for the input dataset's metadata file of this name, ``metadata_file`` is ``None`` if unset."""
 
     @abstractmethod
     def unstructured_path_rewrite(self, path):
@@ -168,7 +168,7 @@ class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
         output_path_rewrite = self.output_path_rewrite(dataset)
         return dataset_path_to_extra_path(output_path_rewrite)
 
-    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile) -> str | None:
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile | None) -> str | None:
         return None
 
     def unstructured_path_rewrite(self, path):
@@ -236,7 +236,7 @@ class RemoteComputeEnvironment(SharedComputeEnvironment):
             return super().input_extra_files_rewrite(dataset)
         return path
 
-    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile) -> str | None:
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile | None) -> str | None:
         return self.paths["metadata_files"].get(metadata_file_key(dataset, metadata_name))
 
     def unstructured_path_rewrite(self, path):
@@ -323,8 +323,14 @@ class ProtectedInputsComputeEnvironment(ComputeEnvironment):
     def output_extra_files_rewrite(self, dataset):
         return self.base.output_extra_files_rewrite(dataset)
 
-    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile) -> str | None:
-        return self.base.input_metadata_rewrite(dataset, metadata_name, metadata_file)
+    def input_metadata_rewrite(self, dataset, metadata_name: str, metadata_file: MetadataFile | None) -> str | None:
+        # Unset optional inputs (NoneDataset) have no dataset id.
+        dataset_id = getattr(dataset.dataset, "id", None)
+        protected_input = self.plan.staged_input(dataset_id) if isinstance(dataset_id, int) else None
+        if protected_input is None:
+            return self.base.input_metadata_rewrite(dataset, metadata_name, metadata_file)
+        # The stored metadata files of decrypted inputs are encrypted, the tool reads the decrypted ones.
+        return protected_input.staged_metadata_file(metadata_name) or str(dataset.metadata.spec[metadata_name].no_value)
 
     def unstructured_path_rewrite(self, path):
         return self.base.unstructured_path_rewrite(path)

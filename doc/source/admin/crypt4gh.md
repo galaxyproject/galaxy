@@ -47,7 +47,9 @@ which runs in two modes:
    (`galaxy-protected-stage stage-in`) runs on the compute host, outside any tool
    container. It generates a per-job key in memory, asks the compute service to
    re-encrypt each input header to that key, and decrypts the inputs into
-   `<job directory>/_protected/inputs/`, with a `umask` of `077`. The tool's
+   `<job directory>/_protected/inputs/`, with a `umask` of `077`. Metadata files
+   of the inner format, such as BAM indexes, are decrypted with the input when it
+   has them (see below), and otherwise created there from the decrypted input. The tool's
    command line points at these plaintext copies. If this step fails, the tool
    does not run and the job fails with "Galaxy failed to prepare this job, so
    the tool was not run".
@@ -58,7 +60,9 @@ which runs in two modes:
    encrypts every output in place to the compute key, asks the compute service to
    re-encrypt its header to the user's key, and gives it the wrapper datatype of
    its format. This covers declared outputs, `from_work_dir` outputs, discovered
-   datasets, collection elements and extra files of composite outputs. Galaxy then
+   datasets, collection elements and extra files of composite outputs. Metadata
+   files of the output's format, such as BAM indexes, are created from the
+   plaintext first and encrypted the same way. Galaxy then
    checks, on the compute host, that every output starts with a Crypt4GH header,
    and records the result in the job's metadata directory.
 7. **Verification.** When the job finishes, Galaxy checks that every output it
@@ -396,10 +400,21 @@ Limitations:
   may quote it. Their validation state stays unknown.
 - Tools see the wrapper datatype in `$input.ext` (for example
   `fastqsanger.c4gh`). The decrypted file name carries the inner extension.
-- Encrypted datasets only have metadata about their encryption, never metadata
-  derived from their content. Tools reading the metadata of their decrypted
-  inputs, such as BAM indexes (`$input.metadata.bam_index`) or column counts, get
-  empty values and may fail.
+- Encrypted datasets only have metadata about their encryption, and the metadata
+  files of their format, such as BAM indexes (`$input.metadata.bam_index`),
+  encrypted. Other metadata derived from their content is never stored: tools
+  reading it from their decrypted inputs, such as column counts, get empty values
+  and may fail.
+- Metadata files are stored encrypted with outputs of protected jobs. Like their
+  extra files, they can only be decrypted by the job's user until the job's
+  compute key expires. Other jobs, and jobs on datasets uploaded encrypted,
+  create them from the decrypted input instead, each time. These jobs can't tell
+  which ones the format will get, so tools see a path for every metadata file of
+  the format, also for those that don't get created: for a BAM, `bam_csi_index`
+  never exists (Galaxy stores CSI indexes as `bam_index` too), and `bam_index`
+  doesn't exist when the BAM can't be indexed (e.g. it isn't sorted). Tools
+  checking whether such a file is set, to create it themselves otherwise, fail
+  instead.
 - Composite datasets uploaded by users can't be decrypted: the user service only
   authorizes the primary file. Composite outputs of protected jobs are supported,
   but their extra files are authorized by the job that wrote them: further jobs

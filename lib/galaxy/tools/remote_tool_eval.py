@@ -128,7 +128,7 @@ def evaluate_tool(tmpdir: str, working_directory: str, import_store_directory: s
             job_io=job_io, job=job_io.job, paths=json.load(f)
         )
     if job_io.protection_plan_path:
-        # As when the job was prepared: the tool reads the decrypted copies of protected inputs.
+        # compute_environment.json only has the metadata files inputs have, not the ones the job creates.
         compute_environment = ProtectedInputsComputeEnvironment(
             compute_environment, ProtectionPlan.read(job_io.protection_plan_path)
         )

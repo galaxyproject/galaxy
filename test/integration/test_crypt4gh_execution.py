@@ -1,6 +1,7 @@
 """Integration tests running jobs on Crypt4GH-encrypted datasets against a mock recryptor service."""
 
 import io
+import os
 from datetime import (
     datetime,
     timedelta,
@@ -13,6 +14,7 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     Job,
 )
+from galaxy.util import galaxy_directory
 from galaxy_test.base.crypt4gh import (
     decrypt,
     encrypt,
@@ -28,6 +30,8 @@ from galaxy_test.driver import integration_util
 
 PLAINTEXT_1 = b"@read1\nACGT\n+\nIIII\n"
 PLAINTEXT_2 = b"@read2\nTTTT\n+\nIIII\n"
+SORTED_BAM = os.path.join(galaxy_directory(), "test-data", "1.bam")
+BAI_MAGIC = b"BAI\x01"
 
 
 class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestCase):
@@ -161,6 +165,37 @@ class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestC
             grant.expires_at = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=1)
         self._app.model.session.commit()
 
+    def _check_tools_read_bam_indexes(self, history_id: str) -> None:
+        with open(SORTED_BAM, "rb") as f:
+            dataset = self._upload_authorized(history_id, f.read(), name="reads.bam.c4gh")
+
+        # Uploaded encrypted, the BAM has no index: the job creates one from the decrypted BAM.
+        job, outputs = self._run_bam_index(history_id, dataset)
+        assert job["state"] == "ok", job
+        assert self._decrypted_content(history_id, outputs["index"])[: len(BAI_MAGIC)] == BAI_MAGIC
+        assert outputs["output"]["extension"] == "bam.c4gh"
+
+        # The BAM output keeps an encrypted index, the next job decrypts it with the BAM.
+        self.service.requests.clear()
+        job, outputs = self._run_bam_index(history_id, outputs["output"])
+        assert job["state"] == "ok", job
+        assert self._decrypted_content(history_id, outputs["index"])[: len(BAI_MAGIC)] == BAI_MAGIC
+        # Decrypting the BAM and its index, then encrypting both outputs and the index of the BAM output.
+        assert self.service.routes_called() == ["recrypt_header_to_job_key"] * 2 + ["recrypt_header_to_user_key"] * 3
+
+    def _run_bam_index(self, history_id: str, input1: dict) -> tuple[dict, dict[str, dict]]:
+        response = self.dataset_populator.run_tool_raw(
+            "crypt4gh_bam_index", {"input1": {"src": "hda", "id": input1["id"]}}, history_id
+        )
+        job, _ = self._wait_for_job(history_id, response)
+        outputs = {
+            output["output_name"]: self.dataset_populator.get_history_dataset_details(
+                history_id=history_id, content_id=output["id"], assert_ok=False
+            )
+            for output in response.json()["outputs"]
+        }
+        return job, outputs
+
     def _job_directory_exists(self, encoded_job_id: str) -> bool:
         job = self._app.model.session.get(Job, self._app.security.decode_id(encoded_job_id))
         assert job
@@ -274,6 +309,9 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
         assert content == encrypted
         # Galaxy can't authorize it for the user, they do like for uploads.
         assert not self._ready(output["id"])
+
+    def test_tools_read_the_indexes_of_decrypted_bam_inputs(self, history_id):
+        self._check_tools_read_bam_indexes(history_id)
 
     def test_tools_writing_unnamed_outputs_are_refused(self, history_id):
         dataset = self._upload_authorized(history_id, PLAINTEXT_1)
@@ -601,6 +639,9 @@ class TestCrypt4GHRemoteToolEvaluationIntegration(BaseCrypt4GHExecutionIntegrati
         job, output = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
         assert job["state"] == "ok", job
         assert self._decrypted_content(history_id, output) == PLAINTEXT_1
+
+    def test_tools_read_the_indexes_of_decrypted_bam_inputs(self, history_id):
+        self._check_tools_read_bam_indexes(history_id)
 
 
 class TestCrypt4GHUnsafeDestinationIntegration(BaseCrypt4GHExecutionIntegrationTestCase):

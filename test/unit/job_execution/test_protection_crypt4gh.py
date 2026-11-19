@@ -4,13 +4,20 @@ import io
 import json
 import logging
 import os
+import shutil
 import uuid
 from datetime import timedelta
 
 import pytest
 from crypt4gh import SEGMENT_SIZE
 
+from galaxy.datatypes.data import Data
+from galaxy.datatypes.metadata import (
+    FileParameter,
+    MetadataElement,
+)
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
+from galaxy.job_execution.compute_environment import ProtectedInputsComputeEnvironment
 from galaxy.job_execution.protection import (
     ProtectedFile,
     ProtectedInput,
@@ -24,6 +31,7 @@ from galaxy.job_execution.protection.crypt4gh import (
     _decrypt_workers,
     Crypt4GHJobRuntime,
 )
+from galaxy.job_execution.protection.metadata_files import create_metadata_files
 from galaxy.job_execution.protection.outputs import (
     OutputProtector,
     SIDECAR_FILE,
@@ -33,6 +41,13 @@ from galaxy.job_execution.protection.stage import (
     PROTECTION_SETUP_FAILURE_FILE,
     run,
 )
+from galaxy.model import (
+    Dataset,
+    MetadataFile,
+    set_datatypes_registry,
+)
+from galaxy.model.none_like import NoneDataset
+from galaxy.util import galaxy_directory
 from galaxy.util.bunch import Bunch
 from galaxy_test.base.crypt4gh import (
     decrypt,
@@ -43,6 +58,10 @@ from galaxy_test.base.crypt4gh import (
 )
 
 PLAINTEXT = b"@read1\nACGT\n+\nIIII\n" * 1000
+SORTED_BAM = os.path.join(galaxy_directory(), "test-data", "1.bam")
+# Can't be indexed.
+UNSORTED_BAM = os.path.join(galaxy_directory(), "test-data", "3unsorted.bam")
+BAI_MAGIC = b"BAI\x01"
 
 
 @pytest.fixture
@@ -84,6 +103,7 @@ def _protected_input(tmp_path, service, user, key_ref, dataset_id=1, plaintext=P
         staged_extra_files_path=str(staged.parent / "plaintext_files"),
         source_extra_files_path=str(source_extra),
         extra_files=protected_extra_files,
+        ext="fastqsanger",
     )
 
 
@@ -128,6 +148,72 @@ def test_stage_inputs_decrypts_extra_files(tmp_path, service, user):
     staged_extra = protected_input.staged_extra_files_path
     assert open(os.path.join(staged_extra, "index.html"), "rb").read() == b"<html/>"
     assert open(os.path.join(staged_extra, "sub", "part.txt"), "rb").read() == b"part"
+
+
+def _staged_metadata_file(protected_input, name):
+    return os.path.join(os.path.dirname(protected_input.primary.staged_path), "metadata_files", name)
+
+
+def test_stage_inputs_decrypts_stored_metadata_files(tmp_path, service, user):
+    key_ref = service.get_compute_key_info(user.public)
+    protected_input = _protected_input(tmp_path, service, user, key_ref)
+    encrypted_index = encrypt(b"index", user.public)
+    (tmp_path / "metadata_1.dat").write_bytes(encrypted_index)
+    protected_input.metadata_files = {
+        "bam_index": ProtectedFile(
+            source_path=str(tmp_path / "metadata_1.dat"),
+            staged_path=_staged_metadata_file(protected_input, "bam_index"),
+            compute_header=service.user_recrypt(encrypted_index, user, key_ref)["crypt4gh_header"],
+        )
+    }
+
+    Crypt4GHJobRuntime(_plan(tmp_path, service, key_ref, [protected_input])).stage_inputs()
+
+    assert open(protected_input.staged_metadata_file("bam_index"), "rb").read() == b"index"
+
+
+def test_stage_inputs_creates_the_metadata_files_of_inputs_stored_without(tmp_path, service, user, registry):
+    key_ref = service.get_compute_key_info(user.public)
+    protected_input = _protected_input(tmp_path, service, user, key_ref, plaintext=open(SORTED_BAM, "rb").read())
+    protected_input.ext = "bam"
+    names = ("bam_index", "bam_csi_index")
+    protected_input.created_metadata_files = {name: _staged_metadata_file(protected_input, name) for name in names}
+    plan = _plan(tmp_path, service, key_ref, [protected_input])
+    plan.datatypes_config = str(tmp_path / "datatypes.xml")
+    registry.to_xml_file(path=plan.datatypes_config)
+
+    Crypt4GHJobRuntime(plan).stage_inputs()
+
+    staged_metadata_files = os.path.dirname(_staged_metadata_file(protected_input, "bam_index"))
+    # BAMs store any index, CSI included, as bam_index.
+    assert os.listdir(staged_metadata_files) == ["bam_index"]
+    assert open(protected_input.staged_metadata_file("bam_index"), "rb").read(len(BAI_MAGIC)) == BAI_MAGIC
+
+
+class _BaseComputeEnvironment:
+    def input_metadata_rewrite(self, dataset, metadata_name, metadata_file):
+        return "rewritten by the runner"
+
+
+def test_tools_read_the_decrypted_metadata_files_of_protected_inputs(tmp_path, service, user, registry):
+    key_ref = service.get_compute_key_info(user.public)
+    protected_input = _protected_input(tmp_path, service, user, key_ref)
+    protected_input.created_metadata_files = {"bam_index": _staged_metadata_file(protected_input, "bam_index")}
+    environment = ProtectedInputsComputeEnvironment(
+        _BaseComputeEnvironment(),  # type: ignore[arg-type]
+        _plan(tmp_path, service, key_ref, [protected_input]),
+    )
+    bam = registry.get_datatype_by_extension("bam.c4gh")
+    decrypted_input = Bunch(dataset=Bunch(id=1), metadata=Bunch(spec=bam.metadata_spec))
+    unset_optional_input = NoneDataset(datatypes_registry=registry, ext="bam")
+
+    stored_file = MetadataFile()
+
+    rewrite = environment.input_metadata_rewrite
+    assert rewrite(decrypted_input, "bam_index", stored_file) == _staged_metadata_file(protected_input, "bam_index")
+    # The stored file is encrypted, never pass it to the tool.
+    assert rewrite(decrypted_input, "bam_csi_index", stored_file) == "None"
+    assert rewrite(unset_optional_input, "bam_index", stored_file) == "rewritten by the runner"
 
 
 def test_extra_files_can_use_another_compute_key(tmp_path, service, user):
@@ -512,8 +598,16 @@ class _FakeDatasetInstance:
 
 
 @pytest.fixture(scope="module")
-def registry():
+def sample_registry():
     return example_datatype_registry_for_sample(crypt4gh_enabled=True)
+
+
+@pytest.fixture
+def registry(sample_registry):
+    # Datatypes create their metadata files on dataset instances, which find their datatype there. Stage-in
+    # loads another registry.
+    set_datatypes_registry(sample_registry)
+    return sample_registry
 
 
 @pytest.mark.parametrize(
@@ -555,6 +649,113 @@ def test_output_protector_protects_extra_files_and_reports_gaps(tmp_path, servic
     assert sidecar["datasets"][str(bypassed.dataset.uuid)] == {"outcome": "failed"}
     assert sidecar["errors"] == ["Output 'output' was not protected."]
     assert os.stat(tmp_path / SIDECAR_FILE).st_mode & 0o777 == 0o600
+
+
+@pytest.mark.parametrize(
+    "bam,metadata_files",
+    [(SORTED_BAM, {"bam_index": BAI_MAGIC}), (UNSORTED_BAM, {})],
+    ids=["indexable", "not_indexable"],
+)
+def test_output_protector_encrypts_the_metadata_files_of_outputs(
+    tmp_path, service, user, registry, bam, metadata_files
+):
+    runtime, _ = _staged_runtime(tmp_path, service, user)
+    protector = OutputProtector(runtime, registry)
+    path = tmp_path / "out.dat"
+    shutil.copy(bam, path)
+    output = _FakeDatasetInstance("bam")
+
+    protector.protect(output, str(path))  # type: ignore[arg-type]
+
+    assert output.extension == "bam.c4gh"
+    output_uuid = str(output.dataset.uuid)
+    assert protector.records[output_uuid].metadata_files.keys() == metadata_files.keys()  # type: ignore[union-attr]
+    decrypted_prefixes = {
+        name: decrypt(open(metadata_file, "rb").read(), user.secret)[: len(BAI_MAGIC)]
+        for name, metadata_file in protector.metadata_file_paths[output_uuid].items()
+    }
+    assert decrypted_prefixes == metadata_files
+
+
+def test_creating_metadata_files_keeps_files_derived_from_the_plaintext_in_their_directory(tmp_path, registry):
+    data_directory = tmp_path / "outputs"
+    data_directory.mkdir()
+    # Not compressed: pysam writes a compressed copy next to the data it indexes.
+    plaintext = data_directory / "out.dat"
+    plaintext.write_text(
+        "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\nchr1\t1\t.\tA\tC\t.\t.\t.\n"
+    )
+    metadata_directory = tmp_path / "metadata_files"
+
+    files = create_metadata_files(
+        registry.get_datatype_by_extension("vcf_bgzip"), str(plaintext), str(metadata_directory)
+    )
+
+    assert list(files) == ["tabix_index"]
+    assert os.listdir(data_directory) == ["out.dat"]
+    assert os.listdir(metadata_directory) == [os.path.basename(files["tabix_index"])]
+
+
+class _LegacyIndexed(Data):
+    """Like Tool Shed datatypes not passing ``metadata_tmp_files_dir`` on: creates its index where ``new_file`` says."""
+
+    file_ext = "legacy_indexed"
+    MetadataElement(name="legacy_index", param=FileParameter, readonly=True, visible=False, optional=True)
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        index_file = dataset.metadata.spec["legacy_index"].param.new_file(dataset=dataset)
+        with open(index_file.get_file_name(), "w") as f:
+            f.write("index derived from the plaintext")
+        dataset.metadata.legacy_index = index_file
+
+
+class _UnusableObjectStore:
+    def __getattr__(self, name):
+        raise AssertionError(f"Plaintext metadata files must not reach the object store ({name}).")
+
+
+def test_creating_metadata_files_keeps_datatypes_ignoring_the_temp_directory_out_of_the_object_store(
+    tmp_path, registry, monkeypatch
+):
+    datatype = _LegacyIndexed()
+    monkeypatch.setitem(registry.datatypes_by_extension, datatype.file_ext, datatype)
+    # As in the metadata step of jobs with extended metadata.
+    monkeypatch.setattr(Dataset, "object_store", _UnusableObjectStore())
+    plaintext = tmp_path / "out.dat"
+    plaintext.write_text("plaintext")
+    metadata_directory = tmp_path / "metadata_files"
+
+    files = create_metadata_files(datatype, str(plaintext), str(metadata_directory))
+
+    assert list(files) == ["legacy_index"]
+    assert os.listdir(metadata_directory) == [os.path.basename(files["legacy_index"])]
+
+
+class _Chatty(_LegacyIndexed):
+    """Prints what it reads, as C libraries indexing data may do, bypassing Python's streams."""
+
+    file_ext = "chatty"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        with open(dataset.get_file_name(), "rb") as f:
+            plaintext = f.read()
+        os.write(1, plaintext)
+        os.write(2, plaintext)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+
+
+def test_creating_metadata_files_keeps_what_datatypes_print_out_of_the_job_output(
+    tmp_path, registry, monkeypatch, capfd
+):
+    datatype = _Chatty()
+    monkeypatch.setitem(registry.datatypes_by_extension, datatype.file_ext, datatype)
+    plaintext = tmp_path / "out.dat"
+    plaintext.write_text("decrypted read")
+
+    files = create_metadata_files(datatype, str(plaintext), str(tmp_path / "metadata_files"))
+
+    assert list(files) == ["legacy_index"]
+    assert capfd.readouterr() == ("", "")
 
 
 def test_output_protector_discards_plaintext_on_failure(tmp_path, service, user, registry):

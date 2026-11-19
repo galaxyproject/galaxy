@@ -17,9 +17,15 @@ from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.datatypes.crypt4gh import Crypt4GH
+from galaxy.datatypes.binary import Bam
+from galaxy.datatypes.crypt4gh import (
+    build_crypt4gh_datatype,
+    Crypt4GH,
+    metadata_file_names,
+)
 from galaxy.datatypes.data import Data
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.protection.outputs import SIDECAR_FILE
 from galaxy.job_execution.protection.stage import CLEANUP_FAILURE_FILE
 from galaxy.managers.dataset_protection import (
@@ -145,6 +151,10 @@ class _FakeOutput:
         self.purged = False
         self.deleted = False
 
+    @property
+    def metadata_file_types(self):
+        return metadata_file_names(self.datatype)
+
 
 def _manager(walltime=None):
     manager = DatasetProtectionManager(
@@ -186,6 +196,27 @@ def _protected_output(tmp_path, name="out.dat"):
         "extra_files": {},
     }
     return output, record
+
+
+class _FakeMetadataFile:
+    def __init__(self, path):
+        self.path = path
+
+    def get_file_name(self):
+        return self.path
+
+    def purge(self):
+        os.remove(self.path)
+
+
+def _with_bam_index(tmp_path, output, record, index_content):
+    """Make ``output`` an encrypted BAM with an index holding ``index_content``, return the index path."""
+    index = tmp_path / "metadata_1.dat"
+    index.write_bytes(index_content)
+    output.extension = record["ext"] = "bam.c4gh"
+    output.datatype = build_crypt4gh_datatype(Bam())
+    output.metadata.bam_index = _FakeMetadataFile(str(index))
+    return index
 
 
 def test_finish_job_records_grants_for_protected_outputs(tmp_path):
@@ -391,6 +422,40 @@ def test_grants_flag_copied_extra_files_of_outputs_copying_an_encrypted_input(tm
     assert grant.grant_data == {"extra_files": {}, "copied_extra_files": ["copy.txt"]}
 
 
+def test_finish_job_grants_the_metadata_files_of_protected_outputs(tmp_path):
+    output, record = _protected_output(tmp_path)
+    _with_bam_index(tmp_path, output, record, _header(b"sealed") + b"encrypted index")
+    record["metadata_files"] = {"bam_index": "index compute header"}
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    manager = _manager()
+    with mock.patch("galaxy.managers.dataset_protection.DatasetProtectionGrant", Bunch):
+        assert manager.finish_job(_job(output), str(tmp_path)) is None
+    grant = manager.sa_session.add.call_args.args[0]
+    assert grant.grant_data == {
+        "compute_header": "compute",
+        "extra_files": {},
+        "metadata_files": {"bam_index": "index compute header"},
+    }
+
+
+@pytest.mark.parametrize(
+    "index_content,recorded_metadata_files",
+    [
+        (b"BAI\x01 plaintext index", {"bam_index": "index compute header"}),
+        (_header(b"sealed") + b"encrypted index", {}),
+    ],
+    ids=["plaintext", "not_protected_by_the_job"],
+)
+def test_finish_job_detects_unprotected_metadata_files(tmp_path, index_content, recorded_metadata_files):
+    output, record = _protected_output(tmp_path)
+    index = _with_bam_index(tmp_path, output, record, index_content)
+    record["metadata_files"] = recorded_metadata_files
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    assert _manager().finish_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+    assert not index.exists()
+
+
 @pytest.mark.parametrize("recorded", [True, False])
 def test_finish_job_detects_plaintext_extra_files(tmp_path, recorded):
     output, record = _protected_output(tmp_path)
@@ -428,13 +493,17 @@ def test_finish_job_fails_on_cleanup_failure_without_purging(tmp_path):
     assert not output.dataset.purged
 
 
-def test_renewing_a_grant_keeps_extra_files_of_job_outputs(tmp_path):
+def test_renewing_a_grant_keeps_extra_files_and_metadata_files_of_job_outputs(tmp_path):
     manager = _manager()
     job_expiration = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=3)
     grant = DatasetProtectionGrant(
         key_ref="cnk:job",
         expires_at=job_expiration,
-        grant_data={"compute_header": "job header", "extra_files": {"part.txt": "extra header"}},
+        grant_data={
+            "compute_header": "job header",
+            "extra_files": {"part.txt": "extra header"},
+            "metadata_files": {"bam_index": "index header"},
+        },
     )
     manager.get_grant = mock.MagicMock(return_value=grant)
     output = _FakeOutput(str(tmp_path / "output.dat"))
@@ -443,7 +512,8 @@ def test_renewing_a_grant_keeps_extra_files_of_job_outputs(tmp_path):
 
     assert grant.key_ref == "cnk:0123456789abcdef"
     assert grant.grant_data["extra_files"] == {"part.txt": "extra header"}
-    # Extra files stay encrypted to the job's compute keypair, the user only authorized the primary file again.
+    assert grant.grant_data["metadata_files"] == {"bam_index": "index header"}
+    # Extra files and metadata files stay encrypted to the job's compute keypair, the user only authorized the primary file again.
     assert grant.grant_data["extra_files_key"] == {"key_ref": "cnk:job", "expires_at": job_expiration.isoformat()}
     assert not _extra_files_expire(grant, timedelta(days=1))
     assert _extra_files_expire(grant, timedelta(days=4))
@@ -480,6 +550,15 @@ def test_failed_job_removes_plaintext_outputs_but_keeps_them_in_history(tmp_path
     _manager().fail_job(_job(output), str(tmp_path))
     assert output.dataset.purged
     assert not output.deleted
+
+
+def test_failed_job_removes_the_metadata_files_of_outputs_not_shown_to_be_encrypted(tmp_path):
+    output, record = _protected_output(tmp_path)
+    index = _with_bam_index(tmp_path, output, record, b"BAI\x01 plaintext index")
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    _manager().fail_job(_job(output), str(tmp_path))
+    assert output.dataset.purged
+    assert not index.exists()
 
 
 def test_failed_job_without_sidecar_removes_outputs(tmp_path):
@@ -563,6 +642,37 @@ def test_jobs_refuse_extra_files_whose_authorization_expires(tmp_path):
 
     with pytest.raises(RequestParameterInvalidException, match="can't be decrypted anymore"):
         manager.check_job_inputs(cast(User, Bunch(id=2)), tool, {})
+
+
+@pytest.mark.parametrize(
+    "index_key_expires_in,decrypted,created",
+    [(timedelta(days=3), ["bam_index"], []), (timedelta(hours=12), [], ["bam_index", "bam_csi_index"])],
+    ids=["usable_index", "index_key_expiring"],
+)
+def test_jobs_create_the_metadata_files_they_cant_decrypt(tmp_path, index_key_expires_in, decrypted, created):
+    output, record = _protected_output(tmp_path)
+    _with_bam_index(tmp_path, output, record, b"encrypted index")
+    # Renewed by the user, the index keeps the compute keypair of the job that created it.
+    grant = DatasetProtectionGrant(
+        key_ref="cnk:user",
+        expires_at=(datetime.now(timezone.utc) + timedelta(days=6)).replace(tzinfo=None),
+        grant_data={
+            "compute_header": "h",
+            "metadata_files": {"bam_index": "index header"},
+            "extra_files_key": {
+                "key_ref": "cnk:job",
+                "expires_at": (datetime.now(timezone.utc) + index_key_expires_in).replace(tzinfo=None).isoformat(),
+            },
+        },
+    )
+    compute_environment = Bunch(input_metadata_rewrite=lambda dataset, metadata_name, metadata_file: None)
+
+    to_decrypt, to_create = _manager()._staged_metadata_files(
+        cast(DatasetInstance, output), grant, cast(ComputeEnvironment, compute_environment), str(tmp_path / "staged")
+    )
+
+    assert list(to_decrypt) == decrypted
+    assert list(to_create) == created
 
 
 def test_many_errors_are_summarized(tmp_path):
