@@ -43,6 +43,7 @@ include src/galaxy/datatypes/converters/interval_to_bed_converter.xml
 include src/galaxy/datatypes/converters/gff_to_bed_converter.xml
 include src/galaxy/datatypes/converters/uncompressed_to_gz.xml
 include src/galaxy/datatypes/converters/fasta_to_tabular_converter.xml
+include src/galaxy/datatypes/converters/pearson_fasta_to_fasta_converter.xml
 include src/galaxy/datatypes/converters/to_qname_sorted_bam.xml
 include src/galaxy/datatypes/converters/tool_data_table_conf.xml.test
 include src/galaxy/datatypes/converters/bedgraph_to_bigwig_converter.xml
