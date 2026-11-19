@@ -13,6 +13,7 @@ from typing import (
     Optional,
     Union,
 )
+from urllib.parse import urljoin
 from uuid import uuid4
 
 import pytest
@@ -472,6 +473,13 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         response = get(workflows_url)
         response.raise_for_status()
         assert response.json()["name"] == "test_preview"
+        tool_step = response.json()["steps"][2]
+        assert tool_step["tool_id"] == "cat1"
+        assert tool_step["inputs"][0] == {
+            "label": "Concatenate Dataset",
+            "type": "data",
+            "value": "Output 'output' from Step 1.",
+        }
 
     @skip_without_tool("export_remote")
     def test_download_workflow_with_missing_file_source(self):
@@ -11508,12 +11516,21 @@ outer_input:
         assert [i["name"] for i in owner_views["editor"]["inputs"]] == ["input"]
         assert [o["name"] for o in owner_views["editor"]["outputs"]] == ["output"]
         assert owner_views["export"]["tool_representation"]["shell_command"] == TOOL_WITH_SHELL_COMMAND["shell_command"]
+        assert owner_views["preview"]["label"] == "Base command tool"
         with self._different_user(), self.dataset_populator.user_tool_execute_permissions():
             assert self._user_defined_tool_step_views(workflow_id, step="1") == owner_views
         with self._different_user("udt_viewer_without_role@bx.psu.edu"):
             assert self._user_defined_tool_step_views(workflow_id, step="1") == owner_views
         with self._different_user(anon=True):
             assert self._user_defined_tool_step_views(workflow_id, step="1") == owner_views
+        # These pages are served outside the API, to browser sessions.
+        workflow = self._get(f"workflows/{workflow_id}").json()
+        with self._browser_session("udt_browser_viewer@bx.psu.edu") as session:
+            display_response = session.get(urljoin(self.url, f"u/{workflow['owner']}/w/{workflow['slug']}"))
+            self._assert_status_code_is(display_response, 200)
+            image_response = session.get(urljoin(self.url, f"workflow/gen_image?id={workflow_id}"))
+            self._assert_status_code_is(image_response, 200)
+            assert "Base command tool" in image_response.text
 
     def test_user_defined_tool_in_published_subworkflow_viewable_by_other_users(self):
         with self.dataset_populator.user_tool_execute_permissions():
@@ -11535,6 +11552,7 @@ outer_input:
         assert owner_views["editor"]["errors"] is None
         assert [o["name"] for o in owner_views["editor"]["outputs"]] == ["udt_output"]
         assert owner_views["export"]["subworkflow"]["steps"]["1"]["tool_representation"]["id"] == "basecommand"
+        assert owner_views["preview"]["inputs"][1]["label"] == "Base command tool"
         with self._different_user(), self.dataset_populator.user_tool_execute_permissions():
             assert self._user_defined_tool_step_views(workflow_id, step="1") == owner_views
             with self.dataset_populator.test_history() as history_id:
@@ -11553,7 +11571,8 @@ outer_input:
                 run_form_response = self.workflow_populator.download_workflow_raw(
                     workflow_id, style="run", history_id=history_id
                 )
-                self._assert_status_code_is(run_form_response, 404)
+                self._assert_status_code_is(run_form_response, 403)
+                assert "Import the workflow to run it" in run_form_response.json()["err_msg"]
                 run_response = self.dataset_populator.run_tool_raw(
                     None, {"input": {"src": "hda", "id": hda["id"]}}, history_id, tool_uuid=tool_uuid
                 )
@@ -11575,7 +11594,8 @@ outer_input:
             workflow_id,
             {"history_id": history_id, "inputs": {"0": self._ds_entry(hda)}, "inputs_by": "step_index"},
         )
-        self._assert_status_code_is(invocation_response, 404)
+        self._assert_status_code_is(invocation_response, 403)
+        assert "user-defined tools owned by another user (basecommand)" in invocation_response.json()["err_msg"]
         assert self._get("invocations", data={"history_id": history_id}).json() == []
         assert self.dataset_populator.history_jobs_for_tool(history_id, "basecommand") == []
         return hda
@@ -11592,7 +11612,8 @@ outer_input:
         """The step as the workflow editor, the published page and the download show it."""
         editor_step = self.workflow_populator.download_workflow(workflow_id, style="editor")["steps"][step]
         export_step = self.workflow_populator.download_workflow(workflow_id, style="export")["steps"][step]
-        return {"editor": editor_step, "export": export_step}
+        preview_step = self.workflow_populator.download_workflow(workflow_id, style="preview")["steps"][int(step)]
+        return {"editor": editor_step, "export": export_step, "preview": preview_step}
 
     def test_refactor_upgrade_all_steps_keeps_user_defined_tool_step(self):
         with self.dataset_populator.user_tool_execute_permissions():

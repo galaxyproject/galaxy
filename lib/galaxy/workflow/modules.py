@@ -3380,6 +3380,7 @@ class WorkflowModuleInjector:
                 subworkflow,
                 param_map=unjsonified_subworkflow_param_map,
                 allow_tool_state_corrections=allow_tool_state_corrections,
+                view_only=kwargs.get("view_only", False),
             )
 
     def inject_all(self, workflow: Workflow, param_map=None, ignore_tool_missing_exception=False, **kwargs):
@@ -3404,14 +3405,19 @@ class WorkflowModuleInjector:
 
 
 def populate_module_and_state(
-    trans, workflow: Workflow, param_map, allow_tool_state_corrections=False, module_injector=None
+    trans,
+    workflow: Workflow,
+    param_map,
+    allow_tool_state_corrections=False,
+    module_injector=None,
+    view_only: bool = False,
 ):
     """Used by API but not web controller, walks through a workflow's steps
     and populates transient module and state attributes on each.
     """
     if module_injector is None:
         module_injector = WorkflowModuleInjector(trans, allow_tool_state_corrections)
-    module_injector.inject_all(workflow, param_map=param_map)
+    module_injector.inject_all(workflow, param_map=param_map, view_only=view_only)
     for step in workflow.steps:
         step_args = param_map.get(step.id, {})
         step_errors = module_injector.compute_runtime_state(step, step_args=step_args)

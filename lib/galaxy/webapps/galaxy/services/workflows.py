@@ -164,6 +164,7 @@ class WorkflowsService(ServiceBase):
             raise exceptions.RequestParameterInvalidException(
                 f"Unknown workflow scheduler '{workflow_scheduler_id}' specified."
             )
+        self._workflows_manager.ensure_owns_user_defined_tools(trans.user, workflow)
         run_configs = build_workflow_run_configs(trans, workflow, payload.model_dump(exclude_unset=True))
         is_batch = payload.batch
         if not is_batch and len(run_configs) != 1:
