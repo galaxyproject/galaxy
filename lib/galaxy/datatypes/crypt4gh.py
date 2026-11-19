@@ -9,6 +9,9 @@ Design principles
 * The datatype **never** decrypts or inspects plaintext payload data.
 * ``set_meta`` reads only the public Crypt4GH header and stores it
   Base64-encoded, along with the inferred inner extension.
+* Typed wrappers keep the metadata files of their inner format (e.g. BAM
+  indexes), encrypted: jobs decrypting the data create them. Other metadata
+  derived from the content is never stored.
 * Typed wrappers (``<inner_ext>.c4gh``) match tool inputs accepting the
   inner format; decryption for such inputs happens on the compute side.
 * Authorization to compute on the data is *not* datatype metadata. It is
@@ -26,7 +29,10 @@ from typing import (
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Data
-from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.metadata import (
+    FileParameter,
+    MetadataElement,
+)
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util.crypt4gh import (
@@ -231,12 +237,18 @@ def keeps_encryption(current_datatype: Any, target_datatype: Any) -> bool:
     return isinstance(current_datatype, Crypt4GH) == isinstance(target_datatype, Crypt4GH)
 
 
+def metadata_file_names(datatype: Data) -> list[str]:
+    """Names of the metadata elements of ``datatype`` holding files, e.g. ``bam_index``."""
+    return [name for name, spec in datatype.metadata_spec.items() if isinstance(spec.param, FileParameter)]
+
+
 def build_crypt4gh_datatype(inner_datatype: Data) -> Crypt4GH:
     """Create a typed Crypt4GH wrapper datatype instance for *inner_datatype*.
 
     The resulting class inherits from :class:`Crypt4GH` and carries the
     inner datatype instance as ``crypt4gh_inner_datatype`` so that
-    ``matches_any`` can delegate to it.
+    ``matches_any`` can delegate to it. It also has the metadata files of
+    the inner datatype, which tools read from decrypted inputs.
     """
     datatype_class = type(
         f"{inner_datatype.__class__.__name__}Crypt4gh",
@@ -249,4 +261,7 @@ def build_crypt4gh_datatype(inner_datatype: Data) -> Crypt4GH:
         },
     )
     wrapper: Crypt4GH = datatype_class()
+    # Each class has its own spec, this doesn't change the other wrappers.
+    for name in metadata_file_names(inner_datatype):
+        wrapper.metadata_spec.append(inner_datatype.metadata_spec[name])
     return wrapper

@@ -4,7 +4,10 @@ from xml.etree import ElementTree
 
 import pytest
 
-from galaxy.datatypes.crypt4gh import Crypt4GH
+from galaxy.datatypes.crypt4gh import (
+    Crypt4GH,
+    metadata_file_names,
+)
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.datatypes.sniff import (
     FilePrefix,
@@ -149,6 +152,14 @@ def test_typed_wrapper_matches_wrapped_supertype(enabled_registry):
     assert fastqsanger_wrapped.matches_any([type(fastq_wrapped)])
     assert not fastq_wrapped.matches_any([fastqsanger_wrapped])
     assert not fastqsanger_wrapped.matches_any([fasta_wrapped])
+
+
+@pytest.mark.parametrize(
+    "ext,names",
+    [("bam.c4gh", ["bam_index", "bam_csi_index"]), ("fastqsanger.c4gh", []), ("c4gh", [])],
+)
+def test_typed_wrappers_have_the_metadata_files_of_their_inner_format(enabled_registry, ext, names):
+    assert metadata_file_names(enabled_registry.get_datatype_by_extension(ext)) == names
 
 
 def test_only_wrapped_composite_formats_download_as_archives(enabled_registry):

@@ -11778,6 +11778,16 @@ class MetadataFile(Base, StorableObject, Serializable):
                 alt_name=alt_name,
             )
 
+    def purge(self) -> None:
+        """Remove the file from the object store and mark the metadata file purged."""
+        object_store, alt_name = self._object_store_and_alt_name()
+        try:
+            object_store.delete(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name)
+        except galaxy.exceptions.ObjectNotFound:
+            pass
+        self.deleted = True
+        self.purged = True
+
     def _object_store_and_alt_name(self) -> tuple["BaseObjectStore", str]:
         da = self.history_dataset or self.library_dataset
         assert da is not None

@@ -71,6 +71,7 @@ from galaxy.job_execution.output_collect import (
     PermissionProvider,
 )
 from galaxy.job_execution.protection import (
+    DATATYPES_CONFIG_FILENAME,
     PLAN_FILENAME,
     ProtectionDestination,
     ProtectionError,
@@ -1496,7 +1497,7 @@ class MinimalJobWrapper(HasResourceParameters):
             self.interactivetools,
         ) = tool_evaluator.build()
         if protection_plan:
-            self.extra_filenames.append(self._write_protection_plan(protection_plan))
+            self.extra_filenames.extend(self._write_protection_plan(protection_plan))
         if (
             tool_evaluator.use_cached_job
             and job.user
@@ -1663,10 +1664,18 @@ class MinimalJobWrapper(HasResourceParameters):
             self.job_io.protection_plan_path = os.path.join(compute_environment.config_directory(), PLAN_FILENAME)
         return plan
 
-    def _write_protection_plan(self, plan: ProtectionPlan) -> str:
-        path = os.path.join(ensure_configs_directory(self.working_directory), PLAN_FILENAME)
+    def _write_protection_plan(self, plan: ProtectionPlan) -> list[str]:
+        """Write the plan and the files it needs into the configs directory, return their paths."""
+        configs_directory = ensure_configs_directory(self.working_directory)
+        path = os.path.join(configs_directory, PLAN_FILENAME)
         plan.write(path)
-        return path
+        paths = [path]
+        if plan.datatypes_config:
+            # The compute host creates the metadata files of inputs with the datatypes of this Galaxy.
+            datatypes_config = os.path.join(configs_directory, DATATYPES_CONFIG_FILENAME)
+            self.app.datatypes_registry.to_xml_file(path=datatypes_config)
+            paths.append(datatypes_config)
+        return paths
 
     def _protection_destination(self) -> ProtectionDestination:
         dispatcher = getattr(self.app.job_manager.job_handler, "dispatcher", None)

@@ -1474,6 +1474,23 @@ def test_metadata_file_wrap_with_duplicate_uuid_rows():
     assert d1.metadata.bam_index == bam_index
 
 
+def test_purging_a_metadata_file_removes_its_file():
+    app = _mock_app(store_by="uuid")
+    u = model.User(email="collection@example.com", password="password")
+    h = model.History(name="Test History", user=u)
+    d1 = _create_datasets(app.model.context, h, 1, extension="bam")[0]
+    bam_index = model.MetadataFile(dataset=d1, name="bam_index")
+    app.add_and_commit(h, d1, bam_index)
+    index_path = bam_index.get_file_name()
+    with open(index_path, "w") as f:
+        f.write("index")
+
+    bam_index.purge()
+
+    assert not os.path.exists(index_path)
+    assert bam_index.purged
+
+
 def test_sessionless_import_edit_datasets():
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
     # Create a model store without a session and import it.

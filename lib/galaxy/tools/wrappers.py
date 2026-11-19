@@ -336,7 +336,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
                 rval = metadata_param.to_safe_string(rval)
                 if isinstance(metadata_param, FileParameter) and self.compute_environment:
-                    rewrite = self.compute_environment.input_metadata_rewrite(self.dataset, rval)
+                    rewrite = self.compute_environment.input_metadata_file_rewrite(self.dataset, name, rval)
                     if rewrite is not None:
                         rval = rewrite
 

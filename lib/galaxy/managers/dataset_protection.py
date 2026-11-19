@@ -35,13 +35,16 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.datatypes.crypt4gh import Crypt4GH
+from galaxy.datatypes.crypt4gh import (
+    Crypt4GH,
+)
 from galaxy.exceptions import (
     ConfigDoesNotAllowException,
     RequestParameterInvalidException,
 )
 from galaxy.job_execution.protection import (
     CRYPT4GH_SCHEME,
+    DATATYPES_CONFIG_FILENAME,
     protected_inputs_directory,
     ProtectedFile,
     ProtectedInput,
@@ -109,7 +112,7 @@ MAX_GRANT_LIFETIME = timedelta(days=31)
 
 
 class ExtraFilesKey(BaseModel):
-    """The compute keypair of extra files kept from the job that created them."""
+    """The compute keypair of the extra files and metadata files kept from the job that created them."""
 
     key_ref: str
     expires_at: datetime
@@ -127,10 +130,18 @@ class Crypt4GHGrantData(BaseModel):
     extra_files_key: ExtraFilesKey | None = None
     # Extra files copying encrypted inputs of the job that created them, they can't be decrypted.
     copied_extra_files: list[str] = Field(default_factory=list)
+    # Headers of the metadata files (e.g. BAM indexes) by metadata name, from the job that created the dataset.
+    # Like its extra files, they keep the job's compute keypair.
+    metadata_files: dict[str, str] = Field(default_factory=dict)
 
 
 def _grant_data(grant: DatasetProtectionGrant) -> Crypt4GHGrantData:
     return Crypt4GHGrantData.model_validate(grant.grant_data or {})
+
+
+def _job_files_key(grant: DatasetProtectionGrant) -> ExtraFilesKey:
+    """The compute keypair of the extra files and metadata files of the dataset of ``grant``."""
+    return _grant_data(grant).extra_files_key or ExtraFilesKey(key_ref=grant.key_ref, expires_at=grant.expires_at)
 
 
 def _set_grant_data(grant: DatasetProtectionGrant, grant_data: Crypt4GHGrantData) -> None:
@@ -275,12 +286,21 @@ def _has_content(dataset_instance: DatasetInstance) -> bool:
 
 
 def _purge(dataset_instance: DatasetInstance) -> None:
-    dataset = dataset_instance.dataset
-    assert dataset
     dataset_instance.state = Dataset.states.ERROR
     dataset_instance.purged = True
     dataset_instance.deleted = True
+    _remove_stored_data(dataset_instance)
+
+
+def _remove_stored_data(dataset_instance: DatasetInstance) -> None:
+    """Remove everything stored for an output that may not be encrypted, its metadata files too."""
+    dataset = dataset_instance.dataset
+    assert dataset
     dataset.full_delete()
+    # Purging the dataset leaves them.
+    for name in dataset_instance.metadata_file_types:
+        if metadata_file := dataset_instance.metadata.get(name):
+            metadata_file.purge()
 
 
 def _dataset_instances(value: Any) -> list[DatasetInstance]:
@@ -470,13 +490,14 @@ class DatasetProtectionManager:
         grant_data = record.grant_data.model_copy()
         if previous.copied_extra_files:
             grant_data.copied_extra_files = previous.copied_extra_files
-        if previous.extra_files:
-            # Users only authorize the primary file again: keep the extra files of protected job outputs,
-            # with the compute keypair they are encrypted to, until it expires.
-            grant_data.extra_files = previous.extra_files
-            grant_data.extra_files_key = previous.extra_files_key or ExtraFilesKey(
-                key_ref=grant.key_ref, expires_at=grant.expires_at
-            )
+        if previous.extra_files or previous.metadata_files:
+            # Users only authorize the primary file again: keep the extra files and metadata files of protected
+            # job outputs, with the compute keypair they are encrypted to, until it expires.
+            if previous.extra_files:
+                grant_data.extra_files = previous.extra_files
+            if previous.metadata_files:
+                grant_data.metadata_files = previous.metadata_files
+            grant_data.extra_files_key = _job_files_key(grant)
         grant.key_ref = record.key_ref
         grant.expires_at = record.expires_at
         _set_grant_data(grant, grant_data)
@@ -588,11 +609,17 @@ class DatasetProtectionManager:
             )
 
         job.protection_scheme = CRYPT4GH_SCHEME
+        creates_metadata_files = any(protected_input.created_metadata_files for protected_input in protected_inputs)
         return ProtectionPlan(
             job_directory=job_directory,
             output_key_ref=max(grants, key=lambda grant: grant.expires_at).key_ref,
             recryptor=destination.recryptor,
             inputs=protected_inputs,
+            datatypes_config=(
+                os.path.join(compute_environment.config_directory(), DATATYPES_CONFIG_FILENAME)
+                if creates_metadata_files
+                else None
+            ),
             encrypted_inputs=[
                 compute_environment.input_path_rewrite(dataset_instance) for dataset_instance in passed_encrypted
             ],
@@ -627,6 +654,9 @@ class DatasetProtectionManager:
                 )
                 for relpath, compute_header in grant_data.extra_files.items()
             }
+        metadata_files, created_metadata_files = self._staged_metadata_files(
+            dataset_instance, grant, compute_environment, os.path.join(staged_directory, "metadata_files")
+        )
         return ProtectedInput(
             dataset_id=dataset.id,
             key_ref=grant.key_ref,
@@ -638,7 +668,41 @@ class DatasetProtectionManager:
             staged_extra_files_path=staged_extra_files_path,
             source_extra_files_path=source_extra_files_path,
             extra_files=extra_files,
+            metadata_files=metadata_files,
+            created_metadata_files=created_metadata_files,
+            ext=inner_ext,
         )
+
+    def _staged_metadata_files(
+        self,
+        dataset_instance: DatasetInstance,
+        grant: DatasetProtectionGrant,
+        compute_environment: "ComputeEnvironment",
+        staged_directory: str,
+    ) -> tuple[dict[str, ProtectedFile], dict[str, str]]:
+        """The metadata files (e.g. BAM indexes) of a protected input to decrypt, and those to create instead.
+
+        Stored metadata files can be decrypted by the user of the job that created them, until that job's
+        compute keypair expires. Otherwise the job creates them from the decrypted file, and can only tell
+        then which ones the datatype creates: the tool sees a path for every metadata file of the format.
+        """
+        names = dataset_instance.metadata_file_types
+        key = _job_files_key(grant)
+        stored: dict[str, ProtectedFile] = {}
+        if key.expires_at > now() + self.job_margin:
+            for name, compute_header in _grant_data(grant).metadata_files.items():
+                if name in names and (metadata_file := dataset_instance.metadata.get(name)):
+                    path = metadata_file.get_file_name()
+                    stored[name] = ProtectedFile(
+                        # Runners staging inputs (Pulsar) stage the metadata files they rewrite.
+                        source_path=compute_environment.input_metadata_rewrite(dataset_instance, path) or path,
+                        staged_path=os.path.join(staged_directory, name),
+                        compute_header=compute_header,
+                        key_ref=key.key_ref,
+                    )
+        if stored:
+            return stored, {}
+        return {}, {name: os.path.join(staged_directory, name) for name in names}
 
     def setup_failure(self, job_directory: str) -> str | None:
         """Why decrypting the inputs of a protected job failed, if it did: the tool never ran."""
@@ -716,7 +780,7 @@ class DatasetProtectionManager:
             if not dataset.purged and not (
                 isinstance(record, ProtectedOutput) and self._is_verified(dataset_instance, record)
             ):
-                dataset.full_delete()
+                _remove_stored_data(dataset_instance)
         return _summarize(sidecar.errors) if sidecar.errors else None
 
     def _is_verified(self, dataset_instance: DatasetInstance, record: ProtectedOutput) -> bool:
@@ -747,6 +811,12 @@ class DatasetProtectionManager:
             for relpath in iter_relpaths(extra_files_path):
                 if relpath not in record.extra_files or not check_crypt4gh(os.path.join(extra_files_path, relpath)):
                     return False
+        for name in dataset_instance.metadata_file_types:
+            metadata_file = dataset_instance.metadata.get(name)
+            if metadata_file and (
+                name not in record.metadata_files or not check_crypt4gh(metadata_file.get_file_name())
+            ):
+                return False
         return True
 
     def _record_output_grants(
@@ -774,6 +844,8 @@ class DatasetProtectionManager:
             if copied := sorted(relpath for relpath, header in record.extra_files.items() if not header):
                 # Copies of encrypted inputs, their headers were never sealed to a compute key.
                 grant_data.copied_extra_files = copied
+            if record.metadata_files:
+                grant_data.metadata_files = record.metadata_files
             _set_grant_data(grant, grant_data)
             grant.source = f"job:{job.id}"
 
