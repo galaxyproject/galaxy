@@ -175,29 +175,40 @@ export function dirtySections(
 }
 
 /**
- * Whether a required input is empty in a section the user edited: a required secret that is not stored and has
- * no value typed in, or any other required input left empty. Untouched sections never block saving.
+ * The keys of the required inputs that are empty in a section the user edited: a required secret that is not
+ * stored and has no value typed in, or any other required input left empty. Untouched sections are never listed.
  */
+export function missingRequiredInputs(
+    definition: ExtraPreferenceSection[],
+    values: ExtraPreferenceValues,
+    formData: FormData,
+): string[] {
+    const dirty = dirtySections(definition, values, formData);
+    return definition
+        .filter((section) => dirty.has(section.name))
+        .flatMap((section) =>
+            (section.inputs ?? [])
+                .filter((input) => {
+                    const raw = formData[formKey(section.name, input.name)];
+                    if (!input.required || raw === undefined) {
+                        return false;
+                    }
+                    if (isSensitive(input)) {
+                        return !isStored(values, section.name, input) && !raw;
+                    }
+                    return normalize(input, raw) === null;
+                })
+                .map((input) => formKey(section.name, input.name)),
+        );
+}
+
+/** Whether a required input of an edited section is empty, which blocks saving. */
 export function isRequiredMissing(
     definition: ExtraPreferenceSection[],
     values: ExtraPreferenceValues,
     formData: FormData,
 ): boolean {
-    const dirty = dirtySections(definition, values, formData);
-    return definition.some(
-        (section) =>
-            dirty.has(section.name) &&
-            (section.inputs ?? []).some((input) => {
-                const raw = formData[formKey(section.name, input.name)];
-                if (!input.required || raw === undefined) {
-                    return false;
-                }
-                if (isSensitive(input)) {
-                    return !isStored(values, section.name, input) && !raw;
-                }
-                return normalize(input, raw) === null;
-            }),
-    );
+    return missingRequiredInputs(definition, values, formData).length > 0;
 }
 
 /**

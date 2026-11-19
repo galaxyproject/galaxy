@@ -20,7 +20,7 @@ import {
     type ExtraPreferenceSection,
     type ExtraPreferencesPayload,
     type ExtraPreferenceValues,
-    isRequiredMissing,
+    missingRequiredInputs,
 } from "./extraPreferencesForm";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -31,6 +31,8 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 // The app reads these sections at startup, so a change only shows after a reload.
 const STARTUP_SECTIONS = ["localization", "sentry_replay"];
+
+const MISSING_MESSAGE = "Please provide a value for this option.";
 
 const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "Extra Configurations" }];
 
@@ -54,9 +56,10 @@ const saved = ref(false);
 const inputs = computed(() => buildInputs(definition.value, values.value));
 const payload = computed(() => buildPayload(definition.value, values.value, formData.value));
 const secrets = computed(() => clearableSecrets(definition.value, values.value));
-const canSave = computed(
-    () => hasChanges.value && !isRequiredMissing(definition.value, values.value, formData.value) && !saving.value,
-);
+const missing = computed(() => missingRequiredInputs(definition.value, values.value, formData.value));
+// Marks the inputs that block Save; FormDisplay clears a mark when its input changes.
+const errors = computed(() => Object.fromEntries(missing.value.map((key) => [key, MISSING_MESSAGE])));
+const canSave = computed(() => hasChanges.value && !missing.value.length && !saving.value);
 
 const hasChanges = computed(() => Object.keys(payload.value).length > 0);
 // A removal reloads the form, which would drop what the user typed and has not saved.
@@ -150,7 +153,7 @@ watch(
                 Extra configurations saved.
             </GAlert>
 
-            <FormDisplay :id="String(formId)" :inputs="inputs" reject-empty-required-inputs @on-change="onChange" />
+            <FormDisplay :id="String(formId)" :inputs="inputs" :errors="errors" @on-change="onChange" />
 
             <div v-if="secrets.length" class="extra-preferences-actions" data-description="stored secrets">
                 <GButton

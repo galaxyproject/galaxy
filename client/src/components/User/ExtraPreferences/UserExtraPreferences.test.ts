@@ -368,6 +368,37 @@ describe("UserExtraPreferences with every input type", () => {
         expect(saveDisabled(wrapper)).toBe(true);
     });
 
+    it("marks the missing required inputs of the edited section only, never an untouched section", async () => {
+        const two: Definition = [
+            {
+                name: "untouched",
+                description: "Untouched section",
+                inputs: [{ name: "needed", label: "Needed", type: "text", required: true, multiple: false }],
+            },
+            {
+                name: "edited",
+                description: "Edited section",
+                inputs: [
+                    { name: "name", label: "Name", type: "text", required: false, multiple: false },
+                    { name: "url", label: "Url", type: "text", required: true, multiple: false },
+                ],
+            },
+        ];
+        serve(two, { untouched: { needed: null }, edited: { name: null, url: null } });
+        const wrapper = await mountPage();
+        const marker = "Please provide a value for this option";
+        expect(wrapper.text()).not.toContain(marker);
+        await wrapper.find("[id='edited|name']").setValue("x");
+        await flushPromises();
+        expect(saveDisabled(wrapper)).toBe(true);
+        expect(wrapper.find("[id='form-element-edited|url']").text()).toContain(marker);
+        expect(wrapper.find("[id='form-element-untouched|needed']").text()).not.toContain(marker);
+        await wrapper.find("[id='edited|url']").setValue("https://example.org");
+        await flushPromises();
+        expect(wrapper.text()).not.toContain(marker);
+        expect(saveDisabled(wrapper)).toBe(false);
+    });
+
     it("lets Save through when the unset required input or secret is in a section that was not edited", async () => {
         const two: Definition = [
             ...DEFINITION,

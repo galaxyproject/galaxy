@@ -12,6 +12,7 @@ import {
     type ExtraPreferenceValues,
     formKey,
     isRequiredMissing,
+    missingRequiredInputs,
 } from "./extraPreferencesForm";
 
 const definition: ExtraPreferenceSection[] = [
@@ -359,6 +360,15 @@ describe("secrets", () => {
         const data = { ...edit, [formKey("cloud", "api_key")]: "x" };
         expect(isRequiredMissing(definition, values, data)).toBe(false);
         expect(isRequiredMissing(definition, values, { ...data, [formKey("cloud", "endpoint")]: "" })).toBe(true);
+    });
+
+    it("names the missing required inputs of edited sections only", () => {
+        const data = { ...edit, [formKey("cloud", "endpoint")]: "", [formKey("cloud", "api_key")]: "" };
+        expect(missingRequiredInputs(definition, values, data)).toEqual([
+            formKey("cloud", "endpoint"),
+            formKey("cloud", "api_key"),
+        ]);
+        expect(missingRequiredInputs(definition, values, untouched())).toEqual([]);
     });
 
     it("never flags a section the user did not edit", () => {
