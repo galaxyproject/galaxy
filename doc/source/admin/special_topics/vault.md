@@ -120,8 +120,7 @@ preferences:
               required: False
 ```
 
-Note the `store: vault` property, which results in the property being stored in the vault. Note also that if you use `type: password`, the secret is sent to the client front-end,
-but specifying `type: secret` would mean that the values cannot be retrieved by the client, only written to, providing an extra layer of security.
+Note the `store: vault` property, which results in the property being stored in the vault. Values of `type: password` and `type: secret` inputs are never sent to the client: the Extra Configurations page only shows whether a value is stored, and a new value can be written or the stored one removed.
 
 ## Configuring file sources to use (user) secrets stored in a vault
 
