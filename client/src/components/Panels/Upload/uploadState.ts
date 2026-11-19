@@ -398,6 +398,20 @@ export function useUploadState() {
     }
 
     /**
+     * Marks an import that Galaxy runs as a background task as started, and keeps the task ID
+     * so the task can still be followed after a reload.
+     */
+    function markTaskStarted(id: string, taskId: string) {
+        transitionItem(id, (item) => {
+            if (item.uploadMode === "galaxy-link") {
+                item.status = "processing";
+                item.progress = 100;
+                item.taskId = taskId;
+            }
+        });
+    }
+
+    /**
      * Marks an upload as completed after its dataset(s) reach a terminal-ok state.
      */
     function markDatasetsResolved(id: string) {
@@ -631,6 +645,7 @@ export function useUploadState() {
         dismissUpload,
         dismissBatch,
         markProcessing,
+        markTaskStarted,
         markDatasetsResolved,
         markDatasetsFailed,
         markBatchResolved,
