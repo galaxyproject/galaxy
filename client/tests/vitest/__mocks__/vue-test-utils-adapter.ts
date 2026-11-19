@@ -49,12 +49,19 @@ const KNOWN_MOUNT_OPTIONS = new Set([
     "stubs",
 ]);
 
+// v1 keys whose v2 replacement is not `global.<key>`.
+const RENAMED_MOUNT_OPTIONS: Record<string, string> = {
+    attachToDocument: "`attachTo`",
+    listeners: "`attrs` (as `onEvent` handlers)",
+    scopedSlots: "`slots`",
+};
+
 function adaptMountOptions(options: Record<string, any> = {}): Record<string, any> {
     const unknown = Object.keys(options).filter((key) => !KNOWN_MOUNT_OPTIONS.has(key));
     if (unknown.length > 0) {
+        const hints = unknown.map((key) => `\`${key}\` → ${RENAMED_MOUNT_OPTIONS[key] ?? `\`global.${key}\``}`);
         throw new Error(
-            `Unsupported top-level mount option(s): ${unknown.join(", ")}. ` +
-                `Vue Test Utils v2 ignores them; move them under \`global\` (e.g. \`global.${unknown[0]}\`).`,
+            `Unsupported top-level mount option(s), which Vue Test Utils v2 ignores. Use instead: ${hints.join(", ")}.`,
         );
     }
     const normalized = { ...options };
