@@ -5227,15 +5227,19 @@
 
 :Description:
     Time in seconds between workflow and tool completion monitor
-    iterations. Workflow handlers check their assigned invocations and
-    trigger completion hooks, such as exports. When notifications or
-    SMTP are configured, one elected web process checks tool and
-    workflow runs that requested notifications, reporting when
-    attention is needed and when they finish. With SMTP configured,
-    that process also dispatches queued completion emails in a
-    separate thread at this interval. Each monitor checks up to 100
-    requests per iteration, so large queues can take several
-    iterations to revisit a request. Float values are allowed.
+    iterations. Workflow handlers check up to 100 of their assigned
+    invocations per iteration and trigger completion hooks, such as
+    exports. When notifications or SMTP are configured, one elected
+    web process checks tool and workflow runs that requested
+    notifications, reporting when attention is needed and when they
+    finish. It checks an unfinished run again after this interval or a
+    tenth of the time the run has been pending, whichever is longer,
+    and at least every 5 minutes. Once the user has been told that a
+    run has paused jobs, its checks back off the same way from that
+    moment, but up to once an hour. Runs in deleted histories are not
+    reported. With SMTP configured, that process also dispatches
+    queued completion emails in a separate thread at this interval.
+    Float values are allowed.
 :Default: ``5.0``
 :Type: float
 

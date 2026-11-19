@@ -23,6 +23,7 @@ from galaxy import (
     util,
 )
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
+from galaxy.managers import run_notifications
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.run_notifications import (
     RunNotificationManager,
@@ -103,11 +104,6 @@ def request_notification(history, states, mapped=False, populated="ok"):
     return request, jobs
 
 
-def notify_if_eligible(manager, request_id):
-    pending = manager.poll_pending_notifications(after_id=request_id - 1, limit=1)
-    return pending == [request_id] and manager.check_and_notify(request_id)
-
-
 def test_map_over_loads_only_one_representative_job_after_completion(app, manager, history):
     request, jobs = request_notification(history, ["ok"] * 999 + ["running"], mapped=True)
     request_id, last_job_id = request.id, jobs[-1].id
@@ -121,11 +117,11 @@ def test_map_over_loads_only_one_representative_job_after_completion(app, manage
 
     event.listen(session(), "loaded_as_persistent", record_job_load)
     try:
-        assert not notify_if_eligible(manager, request_id)
+        assert not manager.check_and_notify(request_id)
         assert loaded_jobs == []
         session.execute(update(model.Job).where(model.Job.id == last_job_id).values(state="error"))
         session.commit()
-        assert notify_if_eligible(manager, request_id)
+        assert manager.check_and_notify(request_id)
         assert len(loaded_jobs) == 1
         [notification] = session.scalars(select(model.Notification)).all()
         assert "999 ok" in notification.content["message"]
@@ -139,10 +135,10 @@ def test_empty_map_waits_for_population_and_links_to_the_requested_history(app, 
     request, _ = request_notification(history, [], mapped=True, populated="new")
     request_id = request.id
     history_id = app.security.encode_id(history.id)
-    assert not notify_if_eligible(manager, request_id)
+    assert not manager.check_and_notify(request_id)
     request.implicit_collection_jobs.populated_state = population
     app.model.context.commit()
-    assert notify_if_eligible(manager, request_id)
+    assert manager.check_and_notify(request_id)
     [notification] = app.model.context.scalars(select(model.Notification)).all()
     assert notification.content["implicit_collection_jobs_id"] == app.security.encode_id(
         request.implicit_collection_jobs_id
@@ -222,8 +218,10 @@ def test_concurrent_monitors_create_one_notification(app, history, tmp_path, not
         event.remove(app.model.engine, "before_cursor_execute", synchronize_claims)
 
 
-def test_paused_workflow_backlog_does_not_delay_completion_or_lose_resumed_runs(app, manager, history):
-    # More abandoned runs than fit in one polling batch.
+def test_monitor_backs_off_unfinished_runs_without_delaying_new_ones(app, manager, history, monkeypatch):
+    clock = [1000.0]
+    monkeypatch.setattr(run_notifications, "monotonic", lambda: clock[0])
+    app.config.workflow_completion_monitor_sleep = 1
     for index in range(101):
         request, jobs, root, child = request_workflow_notification(history, ["error", "paused"])
         root.state = child.state = "scheduled"
@@ -231,24 +229,87 @@ def test_paused_workflow_backlog_does_not_delay_completion_or_lose_resumed_runs(
         if index == 0:
             first_id, paused_job_id = request.id, jobs[1].id
     app.model.context.commit()
+    # Reserve an id that commits only after the monitor has seen a later one.
+    late = model.RunNotificationRequest(user=history.user, history=history, job=model.Job())
+    app.model.context.add(late)
+    app.model.context.commit()
+    late_id = late.id
+    app.model.context.delete(late)
     ready, _ = request_notification(history, ["ok"])
     ready_id = ready.id
     session = app.model.context
     session.expunge_all()
-    assert manager.poll_pending_notifications() == [ready_id]
     manager.monitor()
     assert session.get(model.RunNotificationRequest, ready_id).completed
-    assert not manager.poll_pending_notifications()
 
     job = session.get(model.Job, paused_job_id)
     assert job is not None
     job.resume()
     job.state = "ok"
+    history = job.history
+    newer, _ = request_notification(history, ["ok"])
+    running, running_jobs = request_notification(history, ["running"])
+    newer_id, running_id, running_job_id = newer.id, running.id, running_jobs[0].id
+    late_job = model.Job()
+    late_job.state = "ok"
+    session.add(model.RunNotificationRequest(id=late_id, user=history.user, history=history, job=late_job))
     session.commit()
-    manager.monitor()  # Wrap the cursor to include the older request.
+    manager.monitor()
+    assert session.get(model.RunNotificationRequest, newer_id).completed
+    assert not session.get(model.RunNotificationRequest, running_id).completed
+
+    session.execute(update(model.Job).where(model.Job.id == running_job_id).values(state="ok"))
+    session.commit()
+    clock[0] += 1
+    manager.monitor()
+    # Runs requested since the election are checked again soon; the backlog found at the election waits longer.
+    assert session.get(model.RunNotificationRequest, running_id).completed
+    assert not session.get(model.RunNotificationRequest, first_id).completed
+    assert not session.get(model.RunNotificationRequest, late_id).completed
+    clock[0] += run_notifications.MAX_CHECK_INTERVAL
+    manager.monitor()
+    assert session.get(model.RunNotificationRequest, late_id).completed
+    # The user was told about the paused jobs, so the resumed run is noticed only at the hourly check.
+    assert not session.get(model.RunNotificationRequest, first_id).completed
+    clock[0] += run_notifications.WAITING_CHECK_INTERVAL - run_notifications.MAX_CHECK_INTERVAL
     manager.monitor()
     assert session.get(model.RunNotificationRequest, first_id).completed
-    assert len(session.scalars(select(model.Notification)).all()) == 2
+    assert len(session.scalars(select(model.Notification)).all()) == 5
+
+
+def test_monitor_checks_soon_after_asking_user_to_resume_a_long_run(app, manager, history, monkeypatch):
+    clock = [1000.0]
+    monkeypatch.setattr(run_notifications, "monotonic", lambda: clock[0])
+    app.config.workflow_completion_monitor_sleep = 1
+    # Found at the election, so it may have been running for days and is checked at the longest interval.
+    request, jobs = request_notification(history, ["running"])
+    request_id, job_id = request.id, jobs[0].id
+    session = app.model.context
+    manager.monitor()
+    session.execute(update(model.Job).where(model.Job.id == job_id).values(state="paused"))
+    session.commit()
+    clock[0] += run_notifications.MAX_CHECK_INTERVAL
+    manager.monitor()
+    assert session.get(model.RunNotificationRequest, request_id).attention_sent
+    # The backoff starts again from the attention notification, so a quick resume is noticed quickly.
+    session.execute(update(model.Job).where(model.Job.id == job_id).values(state="ok"))
+    session.commit()
+    clock[0] += 1
+    manager.monitor()
+    assert session.get(model.RunNotificationRequest, request_id).completed
+
+
+@pytest.mark.parametrize("state", ["paused", "ok"])
+def test_deleted_history_closes_request_without_notification(app, manager, history, state):
+    request, _ = request_notification(history, [state])
+    request_id = request.id
+    history.deleted = True
+    app.model.context.commit()
+    app.model.context.expunge_all()
+    app.config.workflow_completion_monitor_sleep = 1
+    manager.monitor()
+    assert app.model.context.get(model.RunNotificationRequest, request_id).completed
+    assert app.model.context.scalars(select(model.Notification)).all() == []
 
 
 def test_only_elected_monitor_polls_and_failover_resumes_empty_map(app, app_factory, history):
@@ -404,35 +465,35 @@ def test_pause_resume_cycles_send_one_attention_and_one_completion(app, app_fact
         history, ["running", "paused"] if mapped else ["paused"], mapped=mapped, populated="new" if mapped else "ok"
     )
     request_id = request.id
-    assert notify_if_eligible(manager, request_id)
+    assert manager.check_and_notify(request_id)
     [attention] = app.model.context.scalars(select(model.Notification)).all()
     assert attention.content["event"] == "needs_attention"
     assert attention.variant == "warning"
     assert not request.completed
     assert request.attention_sent
-    assert not notify_if_eligible(manager, request_id)
+    assert not manager.check_and_notify(request_id)
 
     # Actual resume paths require no notification writes or resets.
     paused_job = jobs[-1]
     paused_job.resume()
-    assert not notify_if_eligible(manager, request_id)
+    assert not manager.check_and_notify(request_id)
     paused_job.state = "paused"
     app.model.context.commit()
-    assert not notify_if_eligible(manager, request_id)
+    assert not manager.check_and_notify(request_id)
     paused_job.resume()
     for job in jobs:
         job.state = "ok"
     app.model.context.commit()
     if mapped:
-        assert not notify_if_eligible(manager, request_id)  # Population still owns the map.
+        assert not manager.check_and_notify(request_id)  # Population still owns the map.
         request.implicit_collection_jobs.populated_state = "ok"
         app.model.context.commit()
     app.model.context.remove()
     # A replacement process retains the attention marker and sends only the final event.
     replacement = app_factory()
     replacement_manager = replacement[RunNotificationManager]
-    assert notify_if_eligible(replacement_manager, request_id)
-    assert not notify_if_eligible(replacement_manager, request_id)
+    assert replacement_manager.check_and_notify(request_id)
+    assert not replacement_manager.check_and_notify(request_id)
     notifications = replacement.model.context.scalars(select(model.Notification).order_by(model.Notification.id)).all()
     assert [notification.content["event"] for notification in notifications] == ["needs_attention", "completed"]
     assert f"{len(jobs)} ok" in notifications[-1].content["message"]
@@ -475,10 +536,10 @@ def test_terminated_workflow_waits_for_created_jobs_but_not_unscheduled_descenda
     root.state = state
     child.state = "new"
     app.model.context.commit()
-    assert not notify_if_eligible(manager, request_id)
+    assert not manager.check_and_notify(request_id)
     jobs[0].state = "error"
     app.model.context.commit()
-    assert notify_if_eligible(manager, request_id)
+    assert manager.check_and_notify(request_id)
     [notification] = app.model.context.scalars(select(model.Notification)).all()
     assert notification.content["event"] == "completed"
     assert state in notification.content["subject"]
@@ -496,8 +557,8 @@ def test_nested_workflow_watch_outlives_completion_record_without_loading_mapped
 
     event.listen(session(), "loaded_as_persistent", reject_job_load)
     try:
-        assert notify_if_eligible(manager, request_id)  # Scheduling has not finished yet.
-        assert not notify_if_eligible(manager, request_id)
+        assert manager.check_and_notify(request_id)  # Scheduling has not finished yet.
+        assert not manager.check_and_notify(request_id)
         session.execute(
             update(model.Job)
             .where(model.Job.history_id == history_id, model.Job.id != paused_job_id)
@@ -517,18 +578,18 @@ def test_nested_workflow_watch_outlives_completion_record_without_loading_mapped
         session.commit()
         completion_id = completion.id
         assert completion.job_state_summary == {"ok": 999, "paused": 1}
-        assert not notify_if_eligible(manager, request_id)
+        assert not manager.check_and_notify(request_id)
 
         session.execute(update(model.Job).where(model.Job.id == paused_job_id).values(state="running"))
         session.commit()
-        assert not notify_if_eligible(manager, request_id)
+        assert not manager.check_and_notify(request_id)
         session.execute(update(model.Job).where(model.Job.id == paused_job_id).values(state="paused"))
         session.commit()
-        assert not notify_if_eligible(manager, request_id)
+        assert not manager.check_and_notify(request_id)
         session.execute(update(model.Job).where(model.Job.id == paused_job_id).values(state="ok"))
         session.commit()
-        assert notify_if_eligible(manager, request_id)
-        assert not notify_if_eligible(manager, request_id)
+        assert manager.check_and_notify(request_id)
+        assert not manager.check_and_notify(request_id)
         notifications = session.scalars(select(model.Notification).order_by(model.Notification.id)).all()
         assert [n.content["event"] for n in notifications] == ["needs_attention", "completed"]
         assert "ok: 1000" in notifications[-1].content["message"]
