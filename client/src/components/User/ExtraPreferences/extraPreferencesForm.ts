@@ -86,10 +86,8 @@ function buildInput(values: ExtraPreferenceValues, section: string, input: Extra
         value: initialValue(values, section, input),
     };
     if (isSensitive(input)) {
-        // A stored secret is kept when the field is left empty, so only an unset required one is required.
         const stored = isStored(values, section, input);
         node.value = "";
-        node.optional = !input.required || stored;
         node.help = [input.help, stored ? STORED_SECRET_HINT : ""].filter(Boolean).join(" ");
     }
     return node;

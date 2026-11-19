@@ -210,6 +210,13 @@ describe("UserExtraPreferences", () => {
         expect(putBodies).toEqual([{ cloud: { endpoint: "https://other.example.org" } }]);
     });
 
+    it("keeps a stored required secret labelled as required", async () => {
+        serve(DEFINITION, { cloud: { ...VALUES.cloud!, api_key: { is_set: true } } });
+        const wrapper = await mountPage();
+        expect(wrapper.find("[id='form-element-cloud|api_key']").text()).not.toContain("optional");
+        expect(wrapper.find("[id='form-element-cloud|token']").text()).toContain("optional");
+    });
+
     it("removes a stored optional secret after confirmation, and offers no removal for required ones", async () => {
         serve(DEFINITION, { cloud: { ...VALUES.cloud!, api_key: { is_set: true } } });
         confirm.mockResolvedValue(true);

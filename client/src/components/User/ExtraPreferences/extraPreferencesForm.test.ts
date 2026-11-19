@@ -130,11 +130,11 @@ describe("buildInputs", () => {
         expect(section?.inputs?.[0]?.help).toMatch(/^From the console\. .*A value is stored/);
     });
 
-    it("marks only unset required secrets and empty-able required inputs as required", () => {
+    it("marks every required input as required, a stored required secret included", () => {
         expect(leaf("token").optional).toBe(true);
-        // a stored required secret is kept when left empty
+        // a stored required secret is not missing when left empty, but it is still required
         const stored = { cloud: { ...values.cloud, api_key: { is_set: true } } };
-        expect(leaf("api_key", stored).optional).toBe(true);
+        expect(leaf("api_key", stored).optional).toBe(false);
         expect(leaf("api_key").optional).toBe(false);
         expect(leaf("endpoint").optional).toBe(false);
         expect(leaf("port").optional).toBe(true);
