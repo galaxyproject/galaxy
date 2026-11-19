@@ -219,6 +219,7 @@ class ProtectionDestination:
     rewrite_parameters: bool
     recryptor: RecryptorSettings | None
     live_tool_output_reporting: bool = False
+    runs_job_script_in_container: bool = False
 
     @classmethod
     def from_params(
@@ -228,6 +229,7 @@ class ProtectionDestination:
         metadata_strategy: str,
         has_tasks: bool,
         is_pulsar: bool,
+        runs_job_script_in_container: bool,
     ) -> "ProtectionDestination":
         """Read the parameters of a job destination, along with what Galaxy decided for the job."""
         return cls(
@@ -238,6 +240,7 @@ class ProtectionDestination:
             rewrite_parameters=asbool(params.get("rewrite_parameters", False)),
             recryptor=RecryptorSettings.from_params(params),
             live_tool_output_reporting=asbool(params.get("live_tool_output_reporting", False)),
+            runs_job_script_in_container=runs_job_script_in_container,
         )
 
     def check(self, outputs_in_job_directory: bool) -> None:
@@ -260,6 +263,9 @@ class ProtectionDestination:
         if self.live_tool_output_reporting:
             # The API would serve the tool's live output, which may contain decrypted data.
             problems.append("live_tool_output_reporting must be disabled")
+        if self.runs_job_script_in_container:
+            # The inputs are decrypted by the job script, outside of the tool's container.
+            problems.append("its runner runs the whole job script in the tool's container")
         if self.recryptor is None:
             problems.append("it has no Crypt4GH recryptor service (crypt4gh_recryptor_url) configured")
         if problems:

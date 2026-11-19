@@ -242,6 +242,9 @@ destinations must also use:
   `embed_metadata_in_job: false`, and runners that always collect metadata after
   the job (Kubernetes, AWS Batch, GCP Batch, Chronos, GoDocker), can't run them.
 - No task splitting.
+- Runners that run the whole job script in the tool's container, such as the
+  Pulsar Kubernetes, TES and GCP Batch runners, can't run them: the inputs would
+  be decrypted inside the tool's container.
 - No `live_tool_output_reporting`, which would serve the tool's output, possibly
   decrypted data, to everyone who can see the job while it runs.
 - `remote_metadata: true` and `rewrite_parameters: true` on Pulsar destinations.
