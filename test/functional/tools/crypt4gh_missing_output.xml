@@ -1,0 +1,15 @@
+<!-- Test tool for Crypt4GH support: jobs reading encrypted data fail if an output file is missing after the job. -->
+<tool id="crypt4gh_missing_output" name="crypt4gh_missing_output" version="1.0.0">
+    <description>copies its input to one output and removes the file of the other</description>
+    <command><![CDATA[
+cat '$input1' > '$written' &&
+rm -f '$missing'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" format="txt" label="Input"/>
+    </inputs>
+    <outputs>
+        <data name="written" format="txt"/>
+        <data name="missing" format="txt"/>
+    </outputs>
+</tool>

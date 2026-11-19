@@ -456,7 +456,9 @@ Protected jobs fail closed:
 - **Output encryption:** if an output can't be encrypted, metadata collection
   fails and the job fails. Outputs Galaxy can't verify as encrypted are purged.
   An invalid expiration date for the compute key, for example one without a
-  timezone, also fails the job.
+  timezone, also fails the job. So does an output missing on the compute host
+  after the job, for example one the tool removed, unless it was purged in Galaxy
+  while the job ran.
 - **Jobs failed while running** (for example by job limits or the cluster): what
   the tool wrote is never stored. Outputs stay in the history in error state, and
   their data is removed unless Galaxy verifies it is encrypted.

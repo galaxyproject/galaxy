@@ -502,6 +502,15 @@ steps:
         assert "could not be protected" in output["misc_info"], output["misc_info"]
         assert self.service.routes_called()[-1] == "recrypt_header_to_user_key"
 
+    def test_outputs_missing_after_the_job_fail_the_job(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        response = self.dataset_populator.run_tool_raw(
+            "crypt4gh_missing_output", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id
+        )
+        job, output = self._wait_for_job(history_id, response)
+        assert job["state"] == "error"
+        assert "were not found after the job ran." in output["misc_info"], output["misc_info"]
+
     def test_tool_output_is_kept_out_of_dataset_info(self, history_id):
         dataset = self._upload_authorized(history_id, PLAINTEXT_1)
         response = self.dataset_populator.run_tool_raw(

@@ -2575,6 +2575,8 @@ class MinimalJobWrapper(HasResourceParameters):
 
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
         assert self.tool is not None
+        # Importing the compute host's report may purge outputs too, protected jobs check its claims against these.
+        purged_outputs = self.app.dataset_protection.purged_outputs(job) if job.protection_scheme else set()
         if extended_metadata:
             # Commit the tool's streams and messages first, so that a refused or failed import can roll back
             # everything it imported.
@@ -2735,7 +2737,7 @@ class MinimalJobWrapper(HasResourceParameters):
             ):
                 job.job_messages = [*job_messages, message]
         if job.protection_scheme and (
-            protection_error := self.app.dataset_protection.finish_job(job, self.working_directory)
+            protection_error := self.app.dataset_protection.finish_job(job, self.working_directory, purged_outputs)
         ):
             log.warning("(%s) Protected job failed: %s", self.get_id_tag(), protection_error)
             final_job_state = job.states.ERROR
