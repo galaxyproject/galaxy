@@ -16,6 +16,7 @@ import {
     buildPayload,
     type ClearableSecret,
     clearableSecrets,
+    dirtySections,
     type ExtraPreferenceSection,
     type ExtraPreferencesPayload,
     type ExtraPreferenceValues,
@@ -63,8 +64,9 @@ const canSave = computed(
 );
 
 const hasChanges = computed(() => Object.keys(payload.value).length > 0);
-// A removal reloads the form, which would drop unsaved edits.
-const removeDisabledTitle = computed(() => (hasChanges.value ? "Save your changes first." : "Working..."));
+// A removal reloads the form, which would drop what the user typed and has not saved.
+const hasEdits = computed(() => dirtySections(definition.value, values.value, formData.value).size > 0);
+const removeDisabledTitle = computed(() => (hasEdits.value ? "Save your changes first." : "Working..."));
 
 async function load(id: string) {
     loading.value = true;
@@ -164,7 +166,7 @@ watch(
                 <GButton
                     v-for="secret in secrets"
                     :key="`${secret.section}|${secret.name}`"
-                    :disabled="saving || hasChanges"
+                    :disabled="saving || hasEdits"
                     :disabled-title="removeDisabledTitle"
                     :data-description="`clear ${secret.section}|${secret.name}`"
                     @click="clearSecret(secret)">

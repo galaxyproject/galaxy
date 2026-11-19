@@ -387,3 +387,58 @@ describe("UserExtraPreferences with every input type", () => {
         ]);
     });
 });
+
+describe("UserExtraPreferences with defaults in two sections", () => {
+    const DEFAULTS: Definition = [
+        {
+            name: "first",
+            description: "First section",
+            inputs: [
+                { name: "a", label: "A", type: "text", required: false, multiple: false, value: "def-a" },
+                { name: "b", label: "B", type: "text", required: false, multiple: false, value: "def-b" },
+                { name: "key", label: "Key", type: "secret", required: false, store: "vault", multiple: false },
+            ],
+        },
+        {
+            name: "second",
+            description: "Second section",
+            inputs: [{ name: "c", label: "C", type: "text", required: false, multiple: false, value: "def-c" }],
+        },
+    ];
+    const UNSET_DEFAULTS: Values = { first: { a: null, b: null, key: { is_set: true } }, second: { c: null } };
+    const input = (wrapper: VueWrapper, id: string) => wrapper.find(`[id='${id}']`);
+    const remove = (wrapper: VueWrapper) => wrapper.find("[data-description='clear first|key']");
+
+    beforeEach(() => {
+        confirm.mockReset();
+    });
+
+    it("sends nothing and keeps removal enabled when nothing was edited", async () => {
+        serve(DEFAULTS, UNSET_DEFAULTS);
+        const wrapper = await mountPage();
+        expect(saveDisabled(wrapper)).toBe(true);
+        expect(remove(wrapper).attributes("aria-disabled")).not.toBe("true");
+        expect(putBodies).toEqual([]);
+    });
+
+    it("sends only the edited section, with its defaults", async () => {
+        serve(DEFAULTS, UNSET_DEFAULTS);
+        const wrapper = await mountPage();
+        await input(wrapper, "first|a").setValue("mine");
+        await flushPromises();
+        expect(remove(wrapper).attributes("aria-disabled")).toBe("true");
+        await save(wrapper);
+        expect(putBodies).toEqual([{ first: { a: "mine", b: "def-b" } }]);
+    });
+
+    it("is clean again when the edit is reverted", async () => {
+        serve(DEFAULTS, UNSET_DEFAULTS);
+        const wrapper = await mountPage();
+        await input(wrapper, "first|a").setValue("mine");
+        await flushPromises();
+        await input(wrapper, "first|a").setValue("def-a");
+        await flushPromises();
+        expect(saveDisabled(wrapper)).toBe(true);
+        expect(remove(wrapper).attributes("aria-disabled")).not.toBe("true");
+    });
+});
