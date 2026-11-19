@@ -106,7 +106,7 @@ present or the data will no longer be decryptable.
 
 ## Configuring user preferences to use the vault
 
-The `user_preferences_extra_conf.yml` can be used to automatically route secrets to a vault. An example configuration follows:
+The `user_preferences_extra_conf.yml` can be used to automatically route secrets to a vault. Users enter these values under User > Preferences > Extra Configurations. An example configuration follows:
 
 ```yaml
 preferences:
