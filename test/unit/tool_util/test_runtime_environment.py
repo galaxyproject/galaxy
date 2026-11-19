@@ -320,6 +320,6 @@ def test_singularity_forwarding_does_not_reach_later_commands(tmp_path):
     # A later metadata container must not inherit the tool's forwarding exports.
     command += "\n" + shlex.quote(str(tmp_path / "singularity"))
     result = subprocess.run(["bash", "-c", command], env=HOST_ENVIRONMENT, check=True, capture_output=True, text=True)
-    tool, metadata = [json.loads(line) for line in result.stdout.splitlines()]
+    tool, metadata = (json.loads(line) for line in result.stdout.splitlines())
     assert tool["container"]["DECLARED"] == TRICKY_VALUE
     assert metadata["container"] == {}

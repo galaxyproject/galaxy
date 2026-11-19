@@ -26,7 +26,7 @@ from dataclasses import (
     dataclass,
     field,
 )
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
 )
@@ -66,13 +66,13 @@ MAX_VERSION_CANDIDATES = 8
 MAX_VERSION_COMBOS = 256
 
 
-class RecommendationSource(str, Enum):
+class RecommendationSource(StrEnum):
     QUAY_SINGLE = "quay_single"
     QUAY_MULLED_V2 = "quay_mulled_v2"
     NONE = "none"
 
 
-class MatchQuality(str, Enum):
+class MatchQuality(StrEnum):
     EXACT_VERSION = "exact_version"
     NAME_ONLY = "name_only"
     NOT_FOUND = "not_found"

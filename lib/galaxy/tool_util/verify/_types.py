@@ -3,10 +3,10 @@
 from typing import (
     Any,
     Literal,
+    NotRequired,
 )
 
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 

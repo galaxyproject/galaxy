@@ -2,7 +2,6 @@
 Modules used in building workflows
 """
 
-import enum
 import json
 import logging
 import math
@@ -12,18 +11,19 @@ from collections.abc import (
     Callable,
     Iterable,
 )
+from enum import StrEnum
 from typing import (
     Any,
     cast,
     get_args,
     NamedTuple,
+    NotRequired,
     Protocol,
     TYPE_CHECKING,
     TypeAlias,
 )
 
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 
@@ -2518,7 +2518,7 @@ class PickValueModule(WorkflowModule):
         )
 
 
-class WorkflowToolRequestState(str, enum.Enum):
+class WorkflowToolRequestState(StrEnum):
     """Validity of the request_internal captured for a tool step.
 
     Persisted on ``ToolRequest.request_state``. Distinct from

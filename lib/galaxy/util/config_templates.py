@@ -15,6 +15,7 @@ from typing import (
     Any,
     cast,
     Literal,
+    NotRequired,
     Optional,
     TypeVar,
 )
@@ -31,7 +32,6 @@ from pydantic import (
 )
 from pydantic.fields import FieldInfo
 from typing_extensions import (
-    NotRequired,
     Protocol,
     TypedDict,
 )

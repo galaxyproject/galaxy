@@ -12,7 +12,7 @@ from collections.abc import (
     Iterable,
     Sequence,
 )
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
     Concatenate,
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class HANDLER_ASSIGNMENT_METHODS(str, Enum):
+class HANDLER_ASSIGNMENT_METHODS(StrEnum):
     MEM_SELF = "mem-self"
     DB_SELF = "db-self"
     DB_PREASSIGN = "db-preassign"

@@ -202,9 +202,18 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
             sections = {section["name"]: section for section in form["inputs"] if section.get("type") == "section"}
             vault_inputs = {input["name"]: input for input in sections["vaulttestsection"]["inputs"]}
             assert vault_inputs["client_id"]["value"] == "legacy_client_id"
-            for sensitive in ("client_secret", "refresh_token"):
-                assert vault_inputs[sensitive]["value"] == "__SECRET_PLACEHOLDER__"
+            assert vault_inputs["client_secret"]["value"] == "__SECRET_PLACEHOLDER__"
+            # unset secrets get no placeholder, so the form shows them as empty
+            for unset in ("access_token", "refresh_token"):
+                assert "value" not in vault_inputs[unset]
+            for sensitive in ("client_secret", "access_token", "refresh_token"):
                 assert vault_inputs[sensitive]["type"] == "password"
+            non_vault_inputs = {input["name"]: input for input in sections["non_vault_test_section"]["inputs"]}
+            assert non_vault_inputs["pass"]["value"] == "__SECRET_PLACEHOLDER__"
+            typed_inputs = {input["name"]: input for input in sections["typed_section"]["inputs"]}
+            # neither an unset secret nor a default from the definition is served
+            assert "value" not in typed_inputs["optional_token"]
+            assert "value" not in typed_inputs["plain_password"]
 
             # the form sends the placeholder back for secrets the user did not edit
             response = self._put(

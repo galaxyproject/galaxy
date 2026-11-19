@@ -1,5 +1,5 @@
 import json
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Annotated,
     Any,
@@ -36,7 +36,7 @@ class FetchBaseModel(Model):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class ElementsFromType(str, Enum):
+class ElementsFromType(StrEnum):
     archive = "archive"
     bagit = "bagit"
     bagit_archive = "bagit_archive"
@@ -50,7 +50,7 @@ class BaseFetchDataTarget(FetchBaseModel):
     auto_decompress: bool = AutoDecompressField
 
 
-class ItemsFromSrc(str, Enum):
+class ItemsFromSrc(StrEnum):
     url = "url"
     files = "files"
     path = "path"
@@ -58,7 +58,7 @@ class ItemsFromSrc(str, Enum):
     server_dir = "server_dir"
 
 
-class Src(str, Enum):
+class Src(StrEnum):
     url = "url"
     pasted = "pasted"
     files = "files"
@@ -68,7 +68,7 @@ class Src(str, Enum):
     server_dir = "server_dir"
 
 
-class DestinationType(str, Enum):
+class DestinationType(StrEnum):
     library = "library"
     library_folder = "library_folder"
     hdcas = "hdcas"

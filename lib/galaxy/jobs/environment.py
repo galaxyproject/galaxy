@@ -9,11 +9,11 @@ from collections.abc import Mapping
 from typing import (
     cast,
     Literal,
+    NotRequired,
     TypeGuard,
 )
 
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 

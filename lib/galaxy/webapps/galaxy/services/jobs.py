@@ -1,5 +1,5 @@
 import logging
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -108,7 +108,7 @@ class JobCreateResponse(BaseModel):
     task_result: AsyncTaskResultSummary
 
 
-class JobIndexViewEnum(str, Enum):
+class JobIndexViewEnum(StrEnum):
     collection = "collection"
     admin_job_list = "admin_job_list"
 

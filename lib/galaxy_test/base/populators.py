@@ -64,6 +64,7 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
+    Self,
     Union,
 )
 from uuid import UUID
@@ -81,7 +82,6 @@ from pydantic import (
 from requests import Response
 from rocrate.rocrate import ROCrate
 from typing_extensions import (
-    Self,
     TypedDict,
 )
 
@@ -3036,8 +3036,7 @@ steps: []
             history_id = request.get("history_id")
         if history_id is None and request:
             history_id = request["history"]
-            if history_id.startswith("hist_id="):
-                history_id = history_id[len("hist_id=") :]
+            history_id = history_id.removeprefix("hist_id=")
         assert history_id
         self.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
         return invoke_return
@@ -5230,8 +5229,7 @@ class GiHttpMixin:
         return requests.delete(self._url(route), data=data, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def _url(self, route):
-        if route.startswith("/api/"):
-            route = route[len("/api/") :]
+        route = route.removeprefix("/api/")
 
         return f"{self._api_url()}/{route}"
 

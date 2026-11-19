@@ -9,7 +9,7 @@ import tempfile
 from dataclasses import dataclass
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 from pathlib import Path
 
@@ -215,7 +215,7 @@ def build_manifest(store_name: str, index: ToolIndex, *, built_at: datetime | No
         ),
         tool_index_schema_hash=INDEX_SCHEMA_HASH,
         capabilities=sorted(TOOL_SOURCE_STORE_CAPABILITIES),
-        built_at=built_at or datetime.now(timezone.utc),
+        built_at=built_at or datetime.now(UTC),
         tool_snapshot=tool_snapshot(index),
     )
 

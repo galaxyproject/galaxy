@@ -213,14 +213,14 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 log.debug(f"Orchestrator: Agent '{agent_name}' completed. Response length: {len(response.content)}")
                 log.debug(f"Orchestrator: Agent '{agent_name}' response preview: {response.content[:500]}...")
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 log.error(f"Agent {agent_name} timed out after {timeout}s")
                 responses[agent_name] = _create_error_response(
                     agent_name,
                     f"Agent {agent_name} timed out after {timeout} seconds",
                     is_timeout=True,
                 )
-            except (ValueError, ConnectionError, TimeoutError) as e:
+            except (ValueError, ConnectionError) as e:
                 log.error(f"Error executing agent {agent_name}: {e}")
                 responses[agent_name] = _create_error_response(agent_name, f"Agent {agent_name} encountered an error")
 
@@ -238,14 +238,14 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 agent = await anyio.to_thread.run_sync(partial(self.deps.get_agent, agent_name, self.deps))
                 response = await asyncio.wait_for(agent.process(query, context or {}), timeout=timeout)
                 return agent_name, response
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 log.error(f"Agent {agent_name} timed out after {timeout}s")
                 return agent_name, _create_error_response(
                     agent_name,
                     f"Agent {agent_name} timed out after {timeout} seconds",
                     is_timeout=True,
                 )
-            except (ValueError, ConnectionError, TimeoutError) as e:
+            except (ValueError, ConnectionError) as e:
                 log.error(f"Error executing agent {agent_name}: {e}")
                 return agent_name, _create_error_response(agent_name, f"Agent {agent_name} encountered an error")
 

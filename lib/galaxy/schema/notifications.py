@@ -1,7 +1,7 @@
 import re
 import unicodedata
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Annotated,
     Any,
@@ -35,7 +35,7 @@ from galaxy.schema.types import (
 )
 
 
-class NotificationVariant(str, Enum):
+class NotificationVariant(StrEnum):
     """The notification variant communicates the intent or relevance of the notification."""
 
     info = "info"
@@ -49,7 +49,7 @@ class NotificationVariant(str, Enum):
 # Then register the content model further down below.
 
 
-class MandatoryNotificationCategory(str, Enum):
+class MandatoryNotificationCategory(StrEnum):
     """These notification categories cannot be opt-out by the user.
 
     The user will always receive notifications from these categories.
@@ -58,7 +58,7 @@ class MandatoryNotificationCategory(str, Enum):
     broadcast = "broadcast"
 
 
-class PersonalNotificationCategory(str, Enum):
+class PersonalNotificationCategory(StrEnum):
     """These notification categories can be opt-out by the user and will be
     displayed in the notification preferences.
     """

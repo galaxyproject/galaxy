@@ -59,6 +59,7 @@ from typing import (
     cast,
     Generic,
     Literal,
+    NotRequired,
     TypeVar,
 )
 from urllib.parse import (
@@ -70,7 +71,6 @@ from urllib.parse import (
 import aiohttp
 from requests import Session as RequestsSession
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 

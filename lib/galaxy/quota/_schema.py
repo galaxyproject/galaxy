@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Literal,
 )
@@ -25,20 +25,20 @@ GROUP_QUOTA_ASSOCIATION = Literal["GroupQuotaAssociation"]
 DEFAULT_QUOTA_ASSOCIATION = Literal["DefaultQuotaAssociation"]
 
 
-class QuotaOperation(str, Enum):
+class QuotaOperation(StrEnum):
     EXACT = "="
     ADD = "+"
     SUBTRACT = "-"
 
 
 class DefaultQuotaTypes(
-    str, Enum
+    StrEnum
 ):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation.types at some point?
     UNREGISTERED = "unregistered"
     REGISTERED = "registered"
 
 
-class DefaultQuotaValues(str, Enum):
+class DefaultQuotaValues(StrEnum):
     UNREGISTERED = "unregistered"
     REGISTERED = "registered"
     NO = "no"
