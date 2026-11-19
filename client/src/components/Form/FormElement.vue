@@ -477,6 +477,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     :flavor="attrs.flavor"
                     :multiple="attrs.multiple"
                     :optional="attrs.optional"
+                    :default-location="attrs.default_location"
                     :options="attrs.options"
                     :pinned="attrs.pinned"
                     :options-meta="attrs.options_meta"

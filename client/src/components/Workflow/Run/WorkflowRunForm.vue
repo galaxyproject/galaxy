@@ -272,7 +272,11 @@ function getValidationScrollTo(stepId: string): ValidationScrollTo {
 }
 
 function onDefaultStepInputs(stepId: string, data: FormData) {
-    inputs[stepId] = data.input;
+    if (data.input == null) {
+        delete inputs[stepId];
+    } else {
+        inputs[stepId] = data.input;
+    }
 }
 
 function onToolStepInputs(stepId: string, data: FormData) {

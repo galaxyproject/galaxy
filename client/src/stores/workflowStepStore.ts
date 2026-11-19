@@ -104,6 +104,7 @@ export interface NewStep {
     id?: number;
     errors?: string[] | null;
     input_connections: StepInputConnection;
+    in?: Record<string, { default?: unknown }>;
     inputs: Array<InputTerminalSource>;
     label?: string | null;
     name: string;

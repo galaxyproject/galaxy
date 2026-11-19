@@ -37,6 +37,13 @@
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @update:model-value="onAnnotation" />
+            <FormElement
+                v-if="type === 'data_input'"
+                id="__default_location"
+                :model-value="defaultLocation"
+                title="Default file location"
+                help="Optional URL or Galaxy file source URI to use when no dataset is selected at run time."
+                @update:model-value="onDefaultLocation" />
             <FormConditional
                 v-if="isSubworkflow"
                 :step="step"
@@ -125,6 +132,33 @@ const stepTitle = computed(() => {
 const nodeIcon = computed(() => WorkflowIcons[type.value]);
 const formDisplayId = computed(() => stepId.value.toString());
 const isSubworkflow = computed(() => type.value === "subworkflow");
+const defaultLocation = computed(() => {
+    const value = props.step.in?.input?.default;
+    return value && typeof value === "object" && "location" in value && typeof value.location === "string"
+        ? value.location
+        : "";
+});
+
+function onDefaultLocation(value: unknown) {
+    const inputs = { ...props.step.in };
+    const location = typeof value === "string" ? value.trim() : "";
+    if (location) {
+        const previous = inputs.input?.default;
+        const file =
+            previous && typeof previous === "object" && "class" in previous && previous.class === "File"
+                ? previous
+                : {};
+        inputs.input = { ...inputs.input, default: { ...file, class: "File", location } };
+    } else if (inputs.input) {
+        const { default: _default, ...rest } = inputs.input;
+        if (Object.keys(rest).length) {
+            inputs.input = rest;
+        } else {
+            delete inputs.input;
+        }
+    }
+    emit("onUpdateStep", stepId.value, { in: inputs });
+}
 
 function onAnnotation(newAnnotation: string) {
     emit("onAnnotation", stepId.value, newAnnotation);
