@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import (
     Any,
     Literal,
@@ -99,6 +100,7 @@ class JobInfo:
         output_paths: set[str],
         job_type: Literal["tool", "prolog", "epilog"] = "tool",
         tool_environment_sets_home: bool = False,
+        extra_job_subdirectories: Sequence[str] = (),
     ):
         self.working_directory = working_directory
         # Tool files may be remote staged - so this is unintuitively a property
@@ -113,6 +115,8 @@ class JobInfo:
         self.job_directory_type = job_directory_type
         self.job_type = job_type
         self.output_paths = output_paths
+        # Job directory subdirectories (relative) the tool reads, mounted read-only besides the default ones.
+        self.extra_job_subdirectories = tuple(extra_job_subdirectories)
 
 
 class DependenciesDescription:

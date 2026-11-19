@@ -338,8 +338,8 @@ def _job_directory_subdirectories(job_info: "JobInfo") -> list[str]:
     if job_info.job_directory_type == "pulsar":
         # Pulsar stages inputs, config files and unstructured files (e.g. referenced
         # by .loc files) into these.
-        return [*JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES, "unstructured"]
-    return list(JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES)
+        return [*JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES, "unstructured", *job_info.extra_job_subdirectories]
+    return [*JOB_DIRECTORY_CONTAINER_SUBDIRECTORIES, *job_info.extra_job_subdirectories]
 
 
 def _job_directory_volumes(job_info: "JobInfo", tool_info: "ToolInfo") -> str:

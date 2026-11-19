@@ -35,6 +35,7 @@ def _job_wrapper(tool_type="default", require_container="False", require_contain
         guest_ports=None,
         working_directory="/jobs/000/1",
         tool_working_directory="/jobs/000/1/working",
+        protection_plan_path=None,
         tmp_directory=lambda: None,
         home_directory=lambda: None,
         job_destination=SimpleNamespace(params=destination_params, tool_env_names=[]),

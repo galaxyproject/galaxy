@@ -53,8 +53,8 @@ which runs in two modes:
    command line points at these plaintext copies. If this step fails, the tool
    does not run and the job fails with "Galaxy failed to prepare this job, so
    the tool was not run".
-5. **Tool.** The tool reads the plaintext inputs. In a container, they are
-   available through the job directory, which Galaxy mounts by default. The
+5. **Tool.** The tool reads the plaintext inputs. In a container, Galaxy mounts
+   `<job directory>/_protected/inputs/` read-only for protected jobs. The
    decrypted inputs are removed as soon as the tool exits.
 6. **Output encryption.** While collecting outputs, Galaxy's metadata step
    encrypts every output in place to the compute key, asks the compute service to
@@ -140,7 +140,7 @@ decrypts and encrypts the data. The following are **outside** the protection:
 - **Job destinations** need extended metadata and outputs written to the job
   directory. See [Job destinations](#job-destinations).
 - **Containers.** Custom `docker_volumes` or `singularity_volumes` must still
-  include `$job_directory`, where the decrypted inputs are.
+  include `$defaults`, which mounts the decrypted inputs of protected jobs.
 - **The `crypt4gh` Python package** must be installed wherever jobs run. See
   [Installation](#installation).
 - **A private object store** for encrypted data is recommended. It is not
