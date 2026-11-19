@@ -262,13 +262,22 @@ function getIconTitle(el: HTMLElement): SVGTitleElement | null {
     return el instanceof SVGElement ? el.querySelector(":scope > title") : null;
 }
 
+/**
+ * The text node of an icon's `<title>`. It is changed in place rather than through `textContent`,
+ * which would replace the node Vue keeps updating when the title changes.
+ */
+function getIconTitleText(el: HTMLElement): Text | null {
+    const textNode = getIconTitle(el)?.firstChild;
+    return textNode instanceof Text ? textNode : null;
+}
+
 function suppressNativeTooltip(el: HTMLElement) {
     if (el.hasAttribute("title")) {
         el.setAttribute("title", "");
     }
-    const iconTitle = getIconTitle(el);
-    if (iconTitle) {
-        iconTitle.textContent = "";
+    const iconTitleText = getIconTitleText(el);
+    if (iconTitleText) {
+        iconTitleText.nodeValue = "";
     }
 }
 
@@ -277,9 +286,9 @@ function restoreNativeTooltip(el: HTMLElement) {
     if (!title) {
         return;
     }
-    const iconTitle = getIconTitle(el);
-    if (iconTitle) {
-        iconTitle.textContent = title;
+    const iconTitleText = getIconTitleText(el);
+    if (iconTitleText) {
+        iconTitleText.nodeValue = title;
     } else {
         el.setAttribute("title", title);
     }

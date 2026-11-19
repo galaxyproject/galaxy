@@ -4,7 +4,7 @@ import { advanceToJustBeforeTooltipHoverDelay, advanceTooltipHoverDelay } from "
 import { mount } from "@vue/test-utils";
 import purify from "dompurify";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { defineComponent, type DirectiveBinding, type RendererNode, type VNode } from "vue";
+import { defineComponent, type DirectiveBinding, h, type RendererNode, type VNode, withDirectives } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS } from "@/utils/tooltipTiming";
 
@@ -261,6 +261,31 @@ describe("vGTooltip", () => {
         expect(wrapper.attributes("title")).toBeUndefined();
         // The <title> already names the icon through aria-labelledby.
         expect(wrapper.attributes("aria-label")).toBeUndefined();
+        wrapper.unmount();
+    });
+
+    test("keeps an icon's <title> updating after the tooltip was shown", async () => {
+        // Renders the <title> text as an array child like FontAwesomeIcon, whose CommonJS build
+        // does not re-render in Vitest, so Vue patches that text node in place.
+        const wrapper = mount(
+            defineComponent({
+                props: { title: { type: String, required: true } },
+                setup: (props) => () =>
+                    withDirectives(h("svg", [h("title", [props.title])]), [
+                        [vGTooltip, undefined, "", { hover: true }],
+                    ]),
+            }),
+            { attachTo: document.body, props: { title: "Uploading" } },
+        );
+        wrapper.element.dispatchEvent(new Event("mouseenter"));
+        wrapper.element.dispatchEvent(new Event("mouseleave"));
+
+        await wrapper.setProps({ title: "Upload failed" });
+        expect(wrapper.get("title").text()).toBe("Upload failed");
+
+        wrapper.element.dispatchEvent(new Event("mouseenter"));
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        expect(getRenderedTooltip()?.textContent).toBe("Upload failed");
         wrapper.unmount();
     });
 
