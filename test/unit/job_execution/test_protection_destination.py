@@ -7,12 +7,13 @@ from galaxy.job_execution.protection import (
 )
 
 
-def _destination(params):
+def _destination(params, runs_job_script_in_container=False):
     return ProtectionDestination.from_params(
         params,
         metadata_strategy="extended",
         has_tasks=False,
         is_pulsar=True,
+        runs_job_script_in_container=runs_job_script_in_container,
     )
 
 
@@ -41,4 +42,11 @@ def test_destinations_without_compute_service_are_refused():
     destination = _destination({"remote_metadata": True, "rewrite_parameters": True})
     assert destination.recryptor is None
     with pytest.raises(ProtectionError, match="crypt4gh_recryptor_url"):
+        destination.check(outputs_in_job_directory=True)
+
+
+def test_destinations_running_the_job_script_in_the_tool_container_are_refused():
+    params = {"remote_metadata": True, "rewrite_parameters": True, "crypt4gh_recryptor_url": "https://recryptor:61358"}
+    destination = _destination(params, runs_job_script_in_container=True)
+    with pytest.raises(ProtectionError, match="runs the whole job script in the tool's container"):
         destination.check(outputs_in_job_directory=True)
