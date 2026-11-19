@@ -56,11 +56,15 @@ const payload = computed(() => buildPayload(definition.value, values.value, form
 const secrets = computed(() => clearableSecrets(definition.value, values.value));
 const canSave = computed(
     () =>
-        Object.keys(payload.value).length > 0 &&
+        hasChanges.value &&
         !validation.value &&
         !isSecretMissing(definition.value, values.value, formData.value) &&
         !saving.value,
 );
+
+const hasChanges = computed(() => Object.keys(payload.value).length > 0);
+// A removal reloads the form, which would drop unsaved edits.
+const removeDisabledTitle = computed(() => (hasChanges.value ? "Save your changes first." : "Working..."));
 
 async function load(id: string) {
     loading.value = true;
@@ -160,7 +164,8 @@ watch(
                 <GButton
                     v-for="secret in secrets"
                     :key="`${secret.section}|${secret.name}`"
-                    :disabled="saving"
+                    :disabled="saving || hasChanges"
+                    :disabled-title="removeDisabledTitle"
                     :data-description="`clear ${secret.section}|${secret.name}`"
                     @click="clearSecret(secret)">
                     <FontAwesomeIcon :icon="faTrash" />

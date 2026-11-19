@@ -221,6 +221,22 @@ describe("UserExtraPreferences", () => {
         expect(wrapper.find("[data-description='clear cloud|token']").exists()).toBe(false);
     });
 
+    it("disables the removal buttons while there are unsaved changes, so they cannot be lost", async () => {
+        serve();
+        confirm.mockResolvedValue(true);
+        const wrapper = await mountPage();
+        const remove = () => wrapper.find("[data-description='clear cloud|token']");
+        expect(remove().attributes("aria-disabled")).not.toBe("true");
+        await field(wrapper, "endpoint").setValue("https://other.example.org");
+        await flushPromises();
+        expect(remove().attributes("aria-disabled")).toBe("true");
+        expect(remove().attributes("title")).toBe("Save your changes first.");
+        await remove().trigger("click");
+        await flushPromises();
+        expect(confirm).not.toHaveBeenCalled();
+        expect(putBodies).toEqual([]);
+    });
+
     it("keeps a stored secret when the removal is not confirmed", async () => {
         serve();
         confirm.mockResolvedValue(false);
