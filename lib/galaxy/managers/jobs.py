@@ -2361,6 +2361,8 @@ class JobSubmitter:
             )
             if request.tags:
                 execution_tracker.apply_tags(request_context.tag_handler, request_context.user, request.tags)
+            if request.annotation:
+                execution_tracker.apply_annotation(sa_session, request_context.user, request.annotation)
             if request.send_notification or request.send_email_notification:
                 execution_tracker.request_completion_notification(request_context.user, target_history)
             tool_request.state = ToolRequest.states.SUBMITTED

@@ -194,6 +194,7 @@ class QueueJobs(Model):
     rerun_remap_job_id: int | None  # link to a job to rerun & remap
     preferred_object_store_id: str | None = None
     tags: list[str] | None = None
+    annotation: str | None = None
     data_manager_mode: str | None = None
     send_email_notification: bool = False
     send_notification: bool = False

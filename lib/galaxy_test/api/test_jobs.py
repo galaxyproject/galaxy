@@ -758,6 +758,90 @@ steps:
             jobs = self.galaxy_interactor.jobs_for_tool_request(tool_request_id)
             self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
 
+    @skip_without_tool("cat1")
+    def test_create_job_with_annotation(self):
+        annotation = "Check read quality before trimming"
+        with self.dataset_populator.test_history() as history_id:
+            hda = self.dataset_populator.new_dataset(history_id, content="a\n", wait=True)
+            response = self.dataset_populator.tool_request_raw(
+                tool_id="cat1", inputs=_plain_inputs(hda["id"]), history_id=history_id, annotation=annotation
+            )
+            response.raise_for_status()
+            tool_request_id = response.json()["tool_request_id"]
+            submitted = self.dataset_populator.wait_on_tool_request(tool_request_id)
+            assert submitted, self.dataset_populator.get_tool_request(tool_request_id)
+            jobs = self.galaxy_interactor.jobs_for_tool_request(tool_request_id)
+            self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
+            outputs = self.dataset_populator.get_job_details(jobs[0]["id"], full=True).json()["outputs"]
+            output = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=outputs["out_file1"]["id"]
+            )
+            assert output["annotation"] == annotation
+            # Only what the request creates is annotated.
+            assert not self.dataset_populator.get_history_dataset_details(history_id, dataset_id=hda["id"])[
+                "annotation"
+            ]
+
+    @skip_without_tool("cat1")
+    def test_create_mapped_job_with_annotation(self):
+        annotation = "QC every sample"
+        with self.dataset_populator.test_history() as history_id:
+            hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+            response = self.dataset_populator.tool_request_raw(
+                tool_id="cat1",
+                inputs={"input1": {"__class__": "Batch", "values": [{"src": "hdca", "id": hdca_id}]}},
+                history_id=history_id,
+                annotation=annotation,
+            )
+            response.raise_for_status()
+            tool_request_id = response.json()["tool_request_id"]
+            submitted = self.dataset_populator.wait_on_tool_request(tool_request_id)
+            assert submitted, self.dataset_populator.get_tool_request(tool_request_id)
+            tool_request = self.dataset_populator.get_tool_request(tool_request_id)
+            self.dataset_populator.wait_for_jobs(tool_request["jobs"], assert_ok=True)
+            implicit_collection = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=tool_request["implicit_collections"][0]["id"]
+            )
+            assert implicit_collection["annotation"] == annotation
+            output_id = implicit_collection["elements"][0]["object"]["id"]
+            output = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=output_id)
+            assert output["annotation"] == annotation
+            # Only what the request creates is annotated.
+            assert not self.dataset_populator.get_history_dataset_details(history_id, dataset_id=hda_id)["annotation"]
+            assert not self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)[
+                "annotation"
+            ]
+
+    @skip_without_tool("collection_creates_pair")
+    def test_create_job_with_annotation_on_output_collection(self):
+        annotation = "Split interleaved reads"
+        with self.dataset_populator.test_history() as history_id:
+            hda = self.dataset_populator.new_dataset(history_id, content="a\nb\n", wait=True)
+            response = self.dataset_populator.tool_request_raw(
+                tool_id="collection_creates_pair",
+                inputs=_plain_inputs(hda["id"]),
+                history_id=history_id,
+                annotation=annotation,
+            )
+            response.raise_for_status()
+            tool_request_id = response.json()["tool_request_id"]
+            submitted = self.dataset_populator.wait_on_tool_request(tool_request_id)
+            assert submitted, self.dataset_populator.get_tool_request(tool_request_id)
+            jobs = self.galaxy_interactor.jobs_for_tool_request(tool_request_id)
+            self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
+            job = self.dataset_populator.get_job_details(jobs[0]["id"], full=True).json()
+            pair = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=job["output_collections"]["paired_output"]["id"]
+            )
+            assert pair["annotation"] == annotation
+
+    def test_create_job_rejects_oversized_annotation(self):
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_populator.tool_request_raw(
+                tool_id="cat1", inputs={}, history_id=history_id, annotation="x" * 65537
+            )
+            self._assert_status_code_is(response, 400)
+
     def _hack_to_skip_test_if_state_ok(self, job_state):
         if job_state().json()["state"] == "ok":
             message = "Job state switch from running to ok too quickly - the rest of the test requires the job to be in a running state. Skipping test."

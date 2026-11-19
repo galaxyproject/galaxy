@@ -33,6 +33,7 @@ from galaxy.model.dataset_collections.structure import (
     get_structure,
     tool_output_to_structure,
 )
+from galaxy.model.item_attrs import add_item_annotation
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_util.parameters.state import (
     JobInternalToolState,
@@ -545,6 +546,15 @@ class ExecutionTracker:
             tag_handler.apply_item_tags(user=user, item=hda, tags_str=tags_str, flush=False)
         for _, hdca in self.output_collections:
             tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
+
+    def apply_annotation(self, sa_session, user, annotation: str) -> None:
+        if user is None:
+            # An annotation belongs to the user who wrote it.
+            return
+        for _, hda in self.output_datasets:
+            add_item_annotation(sa_session, user, hda, annotation)
+        for hdca in [hdca for _, hdca in self.output_collections] + list(self.implicit_collections.values()):
+            add_item_annotation(sa_session, user, hdca, annotation)
 
     def request_completion_notification(self, user, history) -> None:
         if not (self.trans.app.config.enable_notification_system or self.trans.app.config.smtp_server):
