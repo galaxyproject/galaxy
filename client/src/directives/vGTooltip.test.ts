@@ -4,7 +4,7 @@ import { advanceToJustBeforeTooltipHoverDelay, advanceTooltipHoverDelay } from "
 import { mount } from "@vue/test-utils";
 import purify from "dompurify";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { defineComponent, type DirectiveBinding, h, type RendererNode, type VNode, withDirectives } from "vue";
+import { defineComponent, type DirectiveBinding, type RendererNode, type VNode } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS } from "@/utils/tooltipTiming";
 
@@ -264,16 +264,14 @@ describe("vGTooltip", () => {
         wrapper.unmount();
     });
 
-    test("keeps an icon's <title> updating after the tooltip was shown", async () => {
-        // Renders the <title> text as an array child like FontAwesomeIcon, whose CommonJS build
-        // does not re-render in Vitest, so Vue patches that text node in place.
+    test("shows a Font Awesome icon's title after it changes", async () => {
         const wrapper = mount(
             defineComponent({
+                components: { FontAwesomeIcon },
+                directives: { "g-tooltip": vGTooltip },
                 props: { title: { type: String, required: true } },
-                setup: (props) => () =>
-                    withDirectives(h("svg", [h("title", [props.title])]), [
-                        [vGTooltip, undefined, "", { hover: true }],
-                    ]),
+                setup: () => ({ faGlobe }),
+                template: `<FontAwesomeIcon v-g-tooltip.hover :title="title" :icon="faGlobe" />`,
             }),
             { attachTo: document.body, props: { title: "Uploading" } },
         );

@@ -144,6 +144,12 @@ export default defineConfig({
             vue: path.resolve(__dirname, "node_modules/@vue/compat/dist/vue.esm-bundler.js"),
             // Use ESM version of bootstrap-vue so Vite can transform its imports
             "bootstrap-vue": path.resolve(__dirname, "node_modules/bootstrap-vue/esm/index.js"),
+            // vue-fontawesome's Node entry is CJS, whose require("vue") loads a second Vue
+            // instance, so icons never re-render. Its ESM build imports the aliased Vue.
+            "@fortawesome/vue-fontawesome": path.resolve(
+                __dirname,
+                "node_modules/@fortawesome/vue-fontawesome/index.es.js",
+            ),
             // Mock portal-vue for Vue 3 compatibility (used by bootstrap-vue)
             "portal-vue": path.resolve(__dirname, "./tests/vitest/__mocks__/portal-vue.js"),
             // Match former Jest's module name mapping
