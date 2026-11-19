@@ -16,7 +16,7 @@ from collections.abc import (
     Mapping,
 )
 from contextlib import contextmanager
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
     cast,
@@ -92,7 +92,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class MaterializationReason(str, Enum):
+class MaterializationReason(StrEnum):
     DETAIL = "detail"
     DEPENDENCY = "dependency"
     EXECUTION = "execution"
@@ -707,8 +707,7 @@ class CachedToolBox(ToolBox):
         # ``_index_panel_items`` only returns placements when the index is
         # populated, so it is non-None here.
         assert self._tool_index is not None
-        missing = self._panel_ids_missing_from_index(placements)
-        if missing:
+        if missing := self._panel_ids_missing_from_index(placements):
             log.info(
                 "CachedToolBox fast panel init found %d panel ids missing from index; running populator",
                 len(missing),
@@ -1717,6 +1716,8 @@ class CachedToolBox(ToolBox):
                     self._remove_tool_in_memory(tool_id)
                 except Exception as e:
                     log.warning("Reconciling peer-removed index entry %s raised: %s", tool_id, e)
+            # Stubs took new entries in place, bypassing register_tool; their payloads rebuild without parsing.
+            self._invalidate_tool_caches()
 
     def _register_new_index_entries_as_stubs(self) -> None:
         """For every index entry not yet in ``_tools_by_id``, build a

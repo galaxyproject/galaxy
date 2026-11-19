@@ -3347,7 +3347,7 @@ mapping:
           Python without starting a worker. When empty (the default), the worker
           runs without an OS-level jail.
 
-          Full JavaScript evaluation requires Python 3.10+ and the quickjs-ng package.
+          Full JavaScript evaluation requires the quickjs-ng package.
           Without QuickJS, expressions requiring JavaScript fail with an error;
           literals and simple parameter references continue to work without it.
 

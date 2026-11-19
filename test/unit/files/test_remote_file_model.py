@@ -2,13 +2,14 @@ from datetime import (
     datetime,
     timedelta,
     timezone,
+    UTC,
 )
 
 import pytest
 
 from galaxy.files.models import RemoteFile
 
-UTC_TIME = datetime(2024, 1, 15, 10, 20, 30, tzinfo=timezone.utc)
+UTC_TIME = datetime(2024, 1, 15, 10, 20, 30, tzinfo=UTC)
 
 
 def _remote_file(ctime) -> RemoteFile:
@@ -26,7 +27,7 @@ def _remote_file(ctime) -> RemoteFile:
         ("2024-01-15T10:20:30.000000+00:00", UTC_TIME),
         ("2024-01-15T10:20:30", UTC_TIME),
         ("2024-01-15 10:20:30", UTC_TIME),
-        ("2024-01-15", datetime(2024, 1, 15, tzinfo=timezone.utc)),
+        ("2024-01-15", datetime(2024, 1, 15, tzinfo=UTC)),
         (None, None),
         ("", None),
         ("not a timestamp", None),

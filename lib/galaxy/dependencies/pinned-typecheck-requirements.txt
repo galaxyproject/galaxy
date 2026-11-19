@@ -12,11 +12,9 @@ mypy==2.4.1
 mypy-boto3-s3==1.44.0
 mypy-extensions==1.2.0
 pathspec==1.1.1
-pycparser==3.11 ; python_full_version < '3.11' and implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
-pycparser==3.12 ; python_full_version >= '3.11' and implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
+pycparser==3.12 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
 pydantic==2.14.3
 pydantic-core==2.50.4
-tomli==2.5.0 ; python_full_version < '3.11'
 types-bleach==6.4.0.20260728
 types-boto==2.49.18.20241019
 types-cachetools==7.0.0.20260713

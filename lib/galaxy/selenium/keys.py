@@ -1,10 +1,10 @@
 """Backend-neutral keyboard vocabulary using standard KeyboardEvent.key values."""
 
 from collections.abc import Sequence
-from enum import Enum
+from enum import StrEnum
 
 
-class Key(str, Enum):
+class Key(StrEnum):
     """A named key; printable characters can be passed directly to press()."""
 
     # Modifiers

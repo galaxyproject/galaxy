@@ -15,13 +15,10 @@ from typing import (
     cast,
     Literal,
     Optional,
+    Self,
     TYPE_CHECKING,
     TypeAlias,
     Union,
-)
-
-from typing_extensions import (
-    Self,
 )
 
 from galaxy.model import (

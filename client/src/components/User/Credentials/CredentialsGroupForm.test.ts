@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import { reactive } from "vue";
 
@@ -33,6 +33,45 @@ function mountForm(name = "default", token: string | null = SECRET_PLACEHOLDER) 
         global: getLocalVue(),
     });
     return { wrapper, groupPayload };
+}
+
+const VALIDATION_DEFINITION = {
+    ...SERVICE_DEFINITION,
+    variables: [
+        { name: "token", label: "Token name", description: "Token name", optional: false },
+        { name: "port", label: "Port", description: "Server port", optional: true },
+    ],
+    secrets: [{ name: "token", label: "Token", description: "Token value", optional: false }],
+} as unknown as ServiceCredentialsDefinition;
+
+const NEUTRAL = { ariaInvalid: undefined, stateClasses: [] };
+const INVALID = { ariaInvalid: "true", stateClasses: ["g-invalid"] };
+const VALID = { ariaInvalid: undefined, stateClasses: ["g-valid"] };
+
+function mountValidationForm(value: string) {
+    return mount(CredentialsGroupForm as object, {
+        props: {
+            groupData: {
+                groupId: "g1",
+                isNewGroup: true,
+                groupPayload: reactive({
+                    name: "My Group",
+                    variables: VALIDATION_DEFINITION.variables.map(({ name }) => ({ name, value })),
+                    secrets: VALIDATION_DEFINITION.secrets.map(({ name }) => ({ name, value })),
+                }),
+            },
+            serviceDefinition: VALIDATION_DEFINITION,
+        },
+        global: getLocalVue(),
+    });
+}
+
+function validationState(wrapper: VueWrapper, name: string, type: string) {
+    const input = wrapper.get(`input#g1-${name}-${type}-input`);
+    return {
+        ariaInvalid: input.attributes("aria-invalid"),
+        stateClasses: input.classes().filter((cls) => cls === "g-invalid" || cls === "g-valid"),
+    };
 }
 
 describe("CredentialsGroupForm.vue", () => {
@@ -86,5 +125,28 @@ describe("CredentialsGroupForm.vue", () => {
         expect(token.attributes("aria-invalid")).toBeUndefined();
         await token.trigger("blur");
         expect(token.attributes("aria-invalid")).toBe("true");
+    });
+
+    it.each([
+        ["an empty required variable", "token", "variable", "", INVALID],
+        ["an empty optional variable", "port", "variable", "", NEUTRAL],
+        ["a filled required variable", "token", "variable", "my-token", VALID],
+        ["an empty required secret", "token", "secret", "", INVALID],
+    ])("validates %s once it loses focus", async (_case, name, type, value, expected) => {
+        const wrapper = mountValidationForm(value);
+
+        expect(validationState(wrapper, name, type)).toEqual(NEUTRAL);
+
+        await wrapper.get(`input#g1-${name}-${type}-input`).trigger("blur");
+
+        expect(validationState(wrapper, name, type)).toEqual(expected);
+    });
+
+    it("tracks a variable and a secret of the same name separately", async () => {
+        const wrapper = mountValidationForm("");
+
+        await wrapper.get("input#g1-token-secret-input").trigger("blur");
+
+        expect(validationState(wrapper, "token", "variable")).toEqual(NEUTRAL);
     });
 });

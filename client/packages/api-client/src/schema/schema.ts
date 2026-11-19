@@ -18336,7 +18336,7 @@ export interface components {
          * InvocationSortByEnum
          * @enum {string}
          */
-        InvocationSortByEnum: "create_time" | "update_time" | "None";
+        InvocationSortByEnum: "create_time" | "update_time";
         /**
          * InvocationState
          * @enum {string}

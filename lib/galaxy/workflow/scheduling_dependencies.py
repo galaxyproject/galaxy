@@ -5,7 +5,7 @@ from collections.abc import (
     Iterable,
 )
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Any,
     TypeAlias,
@@ -26,7 +26,7 @@ from galaxy.model.dataset_collections.readiness import (
 )
 
 
-class DependencyType(str, Enum):
+class DependencyType(StrEnum):
     JOB = "job"
     HDA = "hda"
     DATASET_COLLECTION = "dataset_collection"

@@ -32,7 +32,7 @@ from collections.abc import (
 )
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 from decimal import Decimal
 from email.message import EmailMessage
@@ -45,6 +45,7 @@ from typing import (
     cast,
     Literal,
     overload,
+    Self,
     TYPE_CHECKING,
     TypeVar,
     Union,
@@ -62,16 +63,13 @@ from boltons.iterutils import (
     default_enter,
     remap,
 )
-from typing_extensions import (
-    Self,
-)
 
 
 def now() -> datetime:
     """
     Return the current time in UTC without any timezone information.
     """
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 try:
@@ -2136,7 +2134,7 @@ def check_github_api_response_rate_limit(response):
         message = "GitHub API rate limit exceeded."
         rate_limit_reset_UTC_timestamp = response.headers.get("X-RateLimit-Reset")
         if rate_limit_reset_UTC_timestamp:
-            rate_limit_reset_datetime = datetime.fromtimestamp(int(rate_limit_reset_UTC_timestamp), tz=timezone.utc)
+            rate_limit_reset_datetime = datetime.fromtimestamp(int(rate_limit_reset_UTC_timestamp), tz=UTC)
             message += f" The rate limit window will reset at {rate_limit_reset_datetime.isoformat()}."
         raise Exception(message)
 

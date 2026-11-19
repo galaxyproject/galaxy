@@ -11,6 +11,7 @@ from typing import (
     Any,
     cast,
     Literal,
+    NotRequired,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -18,7 +19,6 @@ from typing import (
 
 import packaging.version
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 

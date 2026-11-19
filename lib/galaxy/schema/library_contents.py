@@ -1,5 +1,5 @@
 import json
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Annotated,
     Any,
@@ -26,19 +26,19 @@ from galaxy.schema.schema import (
 )
 
 
-class UploadOption(str, Enum):
+class UploadOption(StrEnum):
     upload_file = "upload_file"
     upload_paths = "upload_paths"
     upload_directory = "upload_directory"
 
 
-class CreateType(str, Enum):
+class CreateType(StrEnum):
     file = "file"
     folder = "folder"
     collection = "collection"
 
 
-class LinkDataOnly(str, Enum):
+class LinkDataOnly(StrEnum):
     copy_files = "copy_files"
     link_to_files = "link_to_files"
 

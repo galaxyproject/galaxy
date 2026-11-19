@@ -2,7 +2,7 @@
 
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 
 from galaxy.tool_util.parser import get_tool_source
@@ -41,7 +41,7 @@ def _stored(path, tool_source):
         tool_version=tool_source.parse_version(),
         tool_dir=str(path.parent),
         source_path=str(path),
-        stored_at=datetime.now(timezone.utc),
+        stored_at=datetime.now(UTC),
         metadata={},
     )
 

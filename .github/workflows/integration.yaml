@@ -77,7 +77,8 @@ jobs:
         uses: astral-sh/setup-uv@v10.3.3
         with:
           version-file: galaxy cache source/.tool-versions
-          python-version: '3.10'
+          python-version: '3.11'
+          prune-cache: true
       - name: Fetch Biocontainers repository index
         id: fetch-mulled-cache
         if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
@@ -121,13 +122,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10']
+        python-version: ['3.11']
         # The host-services lane runs the tests that need minikube, the AMQP broker in it or the
         # host's Docker image cache, one test class at a time; the default lane runs the rest.
         lane: ['default']
         chunk: ['0', '1']
         include:
-          - python-version: '3.10'
+          - python-version: '3.11'
             lane: 'host-services'
     steps:
       - if: github.event_name == 'schedule'
@@ -197,6 +198,7 @@ jobs:
         with:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Install Python
         run: uv python install
       - name: Download mulled resolution cache seed

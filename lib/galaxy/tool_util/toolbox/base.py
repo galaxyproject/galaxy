@@ -15,6 +15,7 @@ from typing import (
     cast,
     Literal,
     Optional,
+    overload,
     Protocol,
     TYPE_CHECKING,
     TypeAlias,
@@ -24,9 +25,6 @@ from urllib.parse import urlparse
 from uuid import UUID
 
 from markupsafe import escape
-from typing_extensions import (
-    overload,
-)
 
 from galaxy.exceptions import (
     ConfigurationError,

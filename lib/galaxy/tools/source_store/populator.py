@@ -32,7 +32,7 @@ from collections.abc import (
 from concurrent.futures import ThreadPoolExecutor
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 from pathlib import Path
 from types import FrameType
@@ -556,7 +556,7 @@ def build_index_entry_from_source(
             is_local=discovered.guid is None,
             # The file's state at hash time: an edit after this instant leaves
             # it newer than ``indexed_at``, so a reload's re-index check sees it.
-            indexed_at=stored.stored_at or datetime.now(timezone.utc),
+            indexed_at=stored.stored_at or datetime.now(UTC),
         )
     except Exception as e:
         log.error(
@@ -860,7 +860,7 @@ def _populate_store_inline_unlocked(
         try:
             # Fast path: a byte-identical file carries its prior index entry
             # forward, skipping the macro-expanding parse below.
-            hashed_at = datetime.now(timezone.utc)
+            hashed_at = datetime.now(UTC)
             file_hash = md5_hash_file(path)
             if incremental and not prune:
                 old_entry = old_entry_by_path[store_name].get(path)

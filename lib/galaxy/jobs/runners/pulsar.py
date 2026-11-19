@@ -1151,8 +1151,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     @staticmethod
     def submitted_pulsar_version(job_metrics_directory: str, run_results) -> Version:
         """The version a job was submitted for, so finishing it makes the same decisions."""
-        target_version = PulsarPlugin.read_target_version(job_metrics_directory)
-        if target_version:
+        if target_version := PulsarPlugin.read_target_version(job_metrics_directory):
             return Version(target_version)
         # Submitted before Galaxy recorded it.
         return PulsarJobRunner.pulsar_version(run_results)

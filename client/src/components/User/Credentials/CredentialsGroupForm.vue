@@ -200,7 +200,7 @@ function isVariableOptional(name: string, type: CredentialType): boolean {
  * @returns {boolean | null} Validation state - true if valid, false if invalid, null if neutral
  */
 function getFieldState(value: string | null | undefined, name: string, type: CredentialType): boolean | null {
-    const isTouched = touchedFields.value.secrets.has(name);
+    const isTouched = touchedFields.value[type === "secret" ? "secrets" : "variables"].has(name);
     if (!isTouched) {
         return null;
     }

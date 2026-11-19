@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from datetime import (
     datetime,
     timedelta,
-    timezone,
+    UTC,
 )
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -53,7 +53,7 @@ def _parse_last_modified(header: str | None) -> datetime | None:
     except (TypeError, ValueError):
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
     return parsed
 
 
@@ -66,7 +66,7 @@ def _file_url_path(url: str) -> Path | None:
 
 
 def _mtime_utc(path: Path) -> datetime:
-    return datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+    return datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
 
 
 def _escape_like(value: str) -> str:
@@ -256,7 +256,7 @@ class GTNSearchDB:
         if target.exists():
             remote_mtime = cls._remote_last_modified(url)
             if remote_mtime is not None:
-                local_mtime = datetime.fromtimestamp(target.stat().st_mtime, tz=timezone.utc)
+                local_mtime = datetime.fromtimestamp(target.stat().st_mtime, tz=UTC)
                 # depot's Last-Modified has second resolution; the 1-second slack
                 # absorbs rounding so a successful refresh isn't immediately re-triggered.
                 if remote_mtime <= local_mtime + _ONE_SECOND:

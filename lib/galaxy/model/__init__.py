@@ -31,7 +31,7 @@ from datetime import (
     timedelta,
 )
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 from secrets import token_hex
 from string import Template
 from typing import (
@@ -41,6 +41,7 @@ from typing import (
     Generic,
     Literal,
     NamedTuple,
+    NotRequired,
     Optional,
     overload,
     TYPE_CHECKING,
@@ -151,7 +152,6 @@ from sqlalchemy.sql.expression import (
 )
 from typing_extensions import (
     deprecated,
-    NotRequired,
     Protocol,
     TypedDict,
 )
@@ -2823,7 +2823,7 @@ class Task(Base, JobLike, RepresentById):
     _numeric_metric = TaskMetricNumeric
     _text_metric = TaskMetricText
 
-    class states(str, Enum):
+    class states(StrEnum):
         NEW = "new"
         WAITING = "waiting"
         QUEUED = "queued"
@@ -3223,7 +3223,7 @@ class ImplicitCollectionJobs(Base, Serializable):
     populated_state: Mapped[str] = mapped_column(TrimmedString(64), default="new")
     jobs: Mapped[list["ImplicitCollectionJobsJobAssociation"]] = relationship(back_populates="implicit_collection_jobs")
 
-    class populated_states(str, Enum):
+    class populated_states(StrEnum):
         NEW = "new"  # New implicit jobs object, unpopulated job associations
         OK = "ok"  # Job associations are set and fixed.
         FAILED = "failed"  # There were issues populating job associations, object is in error.
@@ -4157,8 +4157,7 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
 
         Outputs of jobs that haven't finished are skipped, they are charged when the job finishes.
         """
-        user = self.user
-        if user:
+        if user := self.user:
             added = [hda for hda in hdas if isinstance(hda, HistoryDatasetAssociation) and hda.history is self]
             user.adjust_disk_usage_for_datasets(user.sole_dataset_sizes(added))
 
@@ -4802,7 +4801,7 @@ class Role(Base, Dictifiable, RepresentById):
     dict_element_visible_keys = ["id", "name", "description", "type"]
     private_id = None
 
-    class types(str, Enum):
+    class types(StrEnum):
         PRIVATE = "private"
         SYSTEM = "system"
         USER = "user"
@@ -4949,7 +4948,7 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
 
     dict_element_visible_keys = ["type"]
 
-    class types(str, Enum):
+    class types(StrEnum):
         UNREGISTERED = "unregistered"
         REGISTERED = "registered"
 
@@ -5200,7 +5199,7 @@ class Dataset(Base, StorableObject, Serializable):
         states.FAILED_METADATA,
     )
 
-    class conversion_messages(str, Enum):
+    class conversion_messages(StrEnum):
         PENDING = "pending"
         NO_DATA = "no data"
         NO_CHROMOSOME = "no chromosome"
@@ -5744,8 +5743,7 @@ class HasHashFunctionName:
 
     @property
     def hash_func_name(self) -> HashFunctionNameEnum:
-        as_str = self.hash_function
-        assert as_str
+        assert self.hash_function
         return HashFunctionNameEnum(self.hash_function)
 
 
@@ -5802,12 +5800,6 @@ class DatasetHash(Base, Dictifiable, Serializable, HasHashFunctionName):
         new_hash.hash_value = self.hash_value
         new_hash.extra_files_path = self.extra_files_path
         return new_hash
-
-    @property
-    def hash_func_name(self) -> HashFunctionNameEnum:
-        as_str = self.hash_function
-        assert as_str
-        return HashFunctionNameEnum(self.hash_function)
 
 
 DescribesHash = DatasetSourceHash | DatasetHash
@@ -11508,7 +11500,7 @@ class WorkflowRequestInputParameter(Base, Dictifiable, Serializable):
 
     dict_collection_visible_keys = ["id", "name", "value", "type"]
 
-    class types(str, Enum):
+    class types(StrEnum):
         REPLACEMENT_PARAMETERS = "replacements"
         STEP_PARAMETERS = "step"
         META_PARAMETERS = "meta"
@@ -11911,7 +11903,7 @@ class FormDefinition(Base, Dictifiable, RepresentById):
         HistoryField,
     ]
 
-    class types(str, Enum):
+    class types(StrEnum):
         USER_INFO = "User Information"
 
     dict_collection_visible_keys = ["id", "name"]

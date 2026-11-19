@@ -100,7 +100,7 @@ class TestCeleryUserConcurrencyLimitIntegration(IntegrationTestCase):
         num_tasks = 4
         sleep_seconds = 2.0
 
-        start = datetime.datetime.now(datetime.timezone.utc)
+        start = datetime.datetime.now(datetime.UTC)
         results: list[AsyncResult] = []
         for _ in range(num_tasks):
             results.append(mock_sleep_task.delay(sleep_seconds=sleep_seconds, task_user_id=user_id))
@@ -110,7 +110,7 @@ class TestCeleryUserConcurrencyLimitIntegration(IntegrationTestCase):
             val = result.get(timeout=120)
             assert val == user_id
 
-        elapsed = (datetime.datetime.now(datetime.timezone.utc) - start).total_seconds()
+        elapsed = (datetime.datetime.now(datetime.UTC) - start).total_seconds()
         # With concurrency=2, 4 tasks sleeping 2s each should take ~4s
         # (2 execute, finish, then the next 2 execute)
         expected_min = sleep_seconds * (num_tasks / self._concurrency_limit) - 1
@@ -132,7 +132,7 @@ class TestCeleryUserConcurrencyLimitIntegration(IntegrationTestCase):
         user_b = 3
         sleep_seconds = 2.0
 
-        start = datetime.datetime.now(datetime.timezone.utc)
+        start = datetime.datetime.now(datetime.UTC)
         results: list[AsyncResult] = []
         # Submit concurrency_limit tasks for each user
         for user_id in [user_a, user_b]:
@@ -143,7 +143,7 @@ class TestCeleryUserConcurrencyLimitIntegration(IntegrationTestCase):
             val = result.get(timeout=120)
             assert val in (user_a, user_b)
 
-        elapsed = (datetime.datetime.now(datetime.timezone.utc) - start).total_seconds()
+        elapsed = (datetime.datetime.now(datetime.UTC) - start).total_seconds()
         # Both users run their tasks concurrently — should take ~2s, not ~4s
         expected_max = sleep_seconds + 15  # generous overhead
         assert elapsed <= expected_max, (

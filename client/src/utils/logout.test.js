@@ -82,6 +82,20 @@ describe("userLogout", () => {
         expect(Toast.error).toHaveBeenCalledWith("Identity provider unavailable.", "Logout failed");
     });
 
+    it("sends the session token to the identity provider logout", async () => {
+        vi.mocked(getGalaxyInstance).mockReturnValue({
+            config: { post_user_logout_href: "/logged_out", enable_oidc: true },
+            session_csrf_token: "token",
+        });
+        axios.get.mockResolvedValueOnce({ data: { redirect_uri: "https://idp.example.org/logout" } });
+        userLogout();
+        await flushPromises();
+        expect(axios.get).toHaveBeenCalledOnce();
+        const url = new URL(axios.get.mock.calls[0][0]);
+        expect(url.pathname).toBe("/authnz/logout");
+        expect(url.searchParams.get("session_csrf_token")).toBe("token");
+    });
+
     it("falls back to the Galaxy logout when the identity provider logout has nothing to do", async () => {
         vi.mocked(getGalaxyInstance).mockReturnValue({
             config: { post_user_logout_href: "/logged_out", enable_oidc: true },

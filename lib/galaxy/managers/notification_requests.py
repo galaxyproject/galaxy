@@ -301,8 +301,7 @@ class NotificationRequestManager:
 
         # Optional submitter confirmation copy. The handler returns None when no
         # copy is appropriate (e.g. the submitter already receives the request).
-        confirmation = handler.build_confirmation(ctx, admin_request)
-        if confirmation is not None:
+        if (confirmation := handler.build_confirmation(ctx, admin_request)) is not None:
             requests.append(confirmation)
 
         return requests

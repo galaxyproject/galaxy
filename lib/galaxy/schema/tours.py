@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import (
     BaseModel,
@@ -8,7 +8,7 @@ from pydantic import (
 )
 
 
-class Requirement(str, Enum):
+class Requirement(StrEnum):
     """Available types of job sources (model classes) that produce dataset collections."""
 
     LOGGED_IN = "logged_in"

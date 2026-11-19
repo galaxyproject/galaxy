@@ -4504,10 +4504,10 @@
     parent-side JSON decoding also adds overhead. Simple parameter
     references resolve in Python without starting a worker. When empty
     (the default), the worker runs without an OS-level jail.
-    Full JavaScript evaluation requires Python 3.10+ and the
-    quickjs-ng package. Without QuickJS, expressions requiring
-    JavaScript fail with an error; literals and simple parameter
-    references continue to work without it.
+    Full JavaScript evaluation requires the quickjs-ng package.
+    Without QuickJS, expressions requiring JavaScript fail with an
+    error; literals and simple parameter references continue to work
+    without it.
     Set this to ``bubblewrap`` to use a built-in bubblewrap jail. It
     clears the environment, unshares the PID/IPC/UTS namespaces, and
     read-only-binds only what the worker needs to run: the Python

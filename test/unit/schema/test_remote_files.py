@@ -1,6 +1,6 @@
 from datetime import (
     datetime,
-    timezone,
+    UTC,
 )
 
 import pytest
@@ -12,9 +12,7 @@ REMOTE_FILE = {"class": "File", "name": "a", "uri": "gxfiles://test1/a", "path":
 
 
 def test_list_uri_response_serializes_ctime_as_utc():
-    response = ListUriResponse.model_validate(
-        [{**REMOTE_FILE, "ctime": datetime(2024, 1, 15, 10, 20, 30, tzinfo=timezone.utc)}]
-    )
+    response = ListUriResponse.model_validate([{**REMOTE_FILE, "ctime": datetime(2024, 1, 15, 10, 20, 30, tzinfo=UTC)}])
     assert '"ctime":"2024-01-15T10:20:30Z"' in response.model_dump_json()
 
 

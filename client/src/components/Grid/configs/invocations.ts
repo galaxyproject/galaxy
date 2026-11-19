@@ -21,7 +21,7 @@ const { emit } = useEventBus<string>("grid-router-push");
 /**
  * Local types
  */
-type SortKeyLiteral = "create_time" | "update_time" | "None" | null | undefined;
+type SortKeyLiteral = "create_time" | "update_time" | null | undefined;
 
 /**
  * Request and return invocations from server

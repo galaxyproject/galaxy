@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import (
     Literal,
 )
@@ -144,7 +144,7 @@ class PurgeHistoryDatasetsTaskRequest(Model):
     preserve_owner_update_time: bool = False
 
 
-class TaskState(str, Enum):
+class TaskState(StrEnum):
     """Enum representing the possible states of a task."""
 
     PENDING = "PENDING"

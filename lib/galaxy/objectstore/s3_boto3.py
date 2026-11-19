@@ -8,11 +8,11 @@ from typing import (
     Any,
     ClassVar,
     Literal,
+    NotRequired,
     TYPE_CHECKING,
 )
 
 from typing_extensions import (
-    NotRequired,
     TypedDict,
 )
 
