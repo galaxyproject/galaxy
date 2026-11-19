@@ -843,6 +843,29 @@ class TestHistoryContentsApi(ApiTestCase):
         show_response = self.__show(history_id, hdca)
         assert str(show_response.json()["name"]) == "newnameforpair"
 
+    def test_update_dataset_collection_annotation(self, history_id):
+        hdca = self._create_pair_collection(history_id)
+        assert self.__show(history_id, hdca).json()["annotation"] is None
+        update_response = self._put(
+            f"histories/{history_id}/contents/dataset_collections/{hdca['id']}",
+            data=dict(annotation="Paired reads for sample A"),
+            json=True,
+        )
+        self._assert_status_code_is(update_response, 200)
+        assert update_response.json()["annotation"] == "Paired reads for sample A"
+        assert self.__show(history_id, hdca).json()["annotation"] == "Paired reads for sample A"
+        assert self._get(f"dataset_collections/{hdca['id']}").json()["annotation"] == "Paired reads for sample A"
+        detailed = self._get(
+            f"histories/{history_id}/contents?v=dev&view=detailed&q=history_content_type-eq&qv=dataset_collection"
+        ).json()
+        assert [item["annotation"] for item in detailed] == ["Paired reads for sample A"]
+        # An annotation is only shown to the user who wrote it.
+        with self._different_user():
+            assert self._get(f"dataset_collections/{hdca['id']}").status_code == 403
+        self._put(f"histories/{history_id}", data=dict(published=True), json=True).raise_for_status()
+        with self._different_user():
+            assert self._get(f"dataset_collections/{hdca['id']}").json()["annotation"] is None
+
     def test_update_batch_dataset_collection(self, history_id):
         hdca = self._create_pair_collection(history_id)
         body = {"items": [{"history_content_type": "dataset_collection", "id": hdca["id"]}], "name": "newnameforpair"}

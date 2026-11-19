@@ -15,6 +15,7 @@ import {
     type SubCollection,
     userOwnsHistory,
 } from "@/api";
+import { fetchCollectionAnnotation } from "@/api/datasetCollections";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
@@ -83,6 +84,25 @@ const isRoot = computed(() => dsc.value == rootCollection.value);
 const canEdit = computed(
     () => isRoot.value && canMutateHistory(props.history) && userOwnsHistory(currentUser.value, props.history),
 );
+// History items are listed without their annotation, so it is loaded when a collection is opened.
+const annotation = ref<string>();
+watch(
+    () => rootCollection.value.id,
+    async (hdcaId) => {
+        annotation.value = undefined;
+        try {
+            const loaded = await fetchCollectionAnnotation({ hdca_id: hdcaId });
+            if (hdcaId === rootCollection.value.id) {
+                annotation.value = loaded ?? undefined;
+            }
+        } catch (e) {
+            // The annotation is optional detail; the panel works without it.
+            console.debug("Could not load the collection annotation", e);
+        }
+    },
+    { immediate: true },
+);
+
 async function updateDsc(collection: CollectionEntry, fields: Object | undefined) {
     if (!isHDCA(collection)) {
         return;
@@ -91,6 +111,9 @@ async function updateDsc(collection: CollectionEntry, fields: Object | undefined
     // Update only editable fields
     collection.name = updatedCollection.name || collection.name;
     collection.tags = updatedCollection.tags || collection.tags;
+    if (fields && "annotation" in fields) {
+        annotation.value = (fields.annotation as string | null) ?? undefined;
+    }
 }
 
 function getItemKey(item: DCESummary) {
@@ -152,7 +175,12 @@ watch(rootCollectionStates, refreshCollectionElements);
                     @update:selected-collections="
                         (collections: CollectionEntry[]) => emit('update:selected-collections', collections)
                     " />
-                <CollectionDetails :dsc="dsc" :writeable="canEdit" @update:dsc="updateDsc(dsc, $event)" />
+                <CollectionDetails
+                    :dsc="dsc"
+                    :writeable="canEdit"
+                    :annotation="isRoot ? annotation : undefined"
+                    :show-annotation="isRoot"
+                    @update:dsc="updateDsc(dsc, $event)" />
                 <CollectionOperations v-if="canEdit && showControls" :dsc="dsc" />
             </section>
             <section class="position-relative flex-grow-1 scroller">

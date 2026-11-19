@@ -1450,6 +1450,11 @@ class HDCADetailed(HDCASummary):
         None,
         description="Encoded ID for the ICJ object describing the collection of jobs corresponding to this collection",
     )
+    annotation: str | None = Field(
+        None,
+        title="Annotation",
+        description="The requesting user's annotation of this collection.",
+    )
     column_definitions: SampleSheetColumnDefinitions | None = Field(
         None,
         description="Column data associated with each element of this collection.",
