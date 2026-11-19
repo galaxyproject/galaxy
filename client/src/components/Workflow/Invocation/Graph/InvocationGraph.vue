@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-    faArrowCircleLeft,
-    faArrowCircleRight,
-    faArrowDown,
-    faExpand,
-    faEye,
-    faTimes,
-} from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown, faExpand, faEye, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
 import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
@@ -20,10 +13,10 @@ import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
+import InvocationStepNavigation from "./InvocationStepNavigation.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GBadge from "@/components/BaseComponents/GBadge.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
-import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
@@ -75,6 +68,7 @@ const showSideOverlay = ref(false);
 const stepCard = ref<BCard | null>(null);
 const stepExpanded = ref(false);
 const stepModalTargetId = useUid("invocation-step-modal-");
+const stepCardTargetId = useUid("invocation-step-card-");
 const detailedViewEnabled = ref(false);
 const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
 
@@ -123,20 +117,24 @@ watch(
 const stateStore = useWorkflowStateStore(storeId.value);
 const { activeNodeId } = storeToRefs(stateStore);
 
-// A newly active step opens in the modal with `stepModal`, and otherwise closes it
+/** Whether the step details show in the modal, instead of the card below the graph */
+const stepInModal = computed(() => props.stepModal || stepExpanded.value);
+
+// Hiding the step closes its modal, so the next step picked opens in the card
 watch(
     () => activeNodeId.value,
-    () => {
-        stepExpanded.value = props.stepModal && activeNodeId.value !== null;
+    (nodeId) => {
+        if (nodeId === null) {
+            stepExpanded.value = false;
+        }
     },
 );
 
-/** With `stepModal` the modal is the step's only view, so closing it deselects the step */
 function closeStepModal() {
+    stepExpanded.value = false;
+    // with `stepModal` there is no card, so closing the modal deselects the step
     if (props.stepModal) {
         activeNodeId.value = null;
-    } else {
-        stepExpanded.value = false;
     }
 }
 
@@ -150,6 +148,8 @@ const initialPosition = computed(() => ({
     x: -props.initialX * props.zoom,
     y: -props.initialY * props.zoom,
 }));
+
+const stepCount = computed(() => Object.keys(props.workflow.steps).length);
 
 const activeStep = computed(() => (activeNodeId.value !== null ? props.workflow.steps[activeNodeId.value] : undefined));
 
@@ -173,19 +173,6 @@ async function loadGraph() {
         loadingGraph.value = false;
         if (initialLoading.value) {
             initialLoading.value = false;
-        }
-    }
-}
-
-/** Moves to the next or previous step in the workflow (if possible) */
-function navigateStep(direction: "previous" | "next") {
-    const totalSteps = Object.keys(props.workflow.steps).length;
-
-    if (activeNodeId.value !== null && totalSteps > 1) {
-        if (direction === "next" && activeNodeId.value < totalSteps - 1) {
-            activeNodeId.value += 1;
-        } else if (direction === "previous" && activeNodeId.value > 0) {
-            activeNodeId.value -= 1;
         }
     }
 }
@@ -275,8 +262,7 @@ function toggleDetailedView() {
                 </div>
             </div>
             <template v-if="activeNodeId !== null && activeStep">
-                <!-- hidden with `stepModal`, where its step details always show in the modal below -->
-                <BCard v-show="!props.stepModal" ref="stepCard" class="invocation-step-card mt-2" no-body>
+                <BCard v-if="!props.stepModal" ref="stepCard" class="invocation-step-card mt-2" no-body>
                     <BCardHeader class="invocation-step-header" :class="steps[activeNodeId]?.headerClass">
                         <WorkflowInvocationStepHeader
                             class="mr-2"
@@ -301,28 +287,10 @@ function toggleDetailedView() {
                                 @click="stepExpanded = true">
                                 <FontAwesomeIcon :icon="faExpand" />
                             </GButton>
-                            <GButtonGroup>
-                                <GButton
-                                    title="Previous Step"
-                                    data-description="invocation graph previous step button"
-                                    :disabled="activeNodeId === 0"
-                                    disabled-title="No Previous Step"
-                                    transparent
-                                    @click="navigateStep('previous')">
-                                    <FontAwesomeIcon :icon="faArrowCircleLeft" />
-                                    Prev
-                                </GButton>
-                                <GButton
-                                    title="Next Step"
-                                    data-description="invocation graph next step button"
-                                    :disabled="activeNodeId === Object.keys(props.workflow.steps).length - 1"
-                                    disabled-title="No More Steps"
-                                    transparent
-                                    @click="navigateStep('next')">
-                                    <FontAwesomeIcon :icon="faArrowCircleRight" />
-                                    Next
-                                </GButton>
-                            </GButtonGroup>
+                            <InvocationStepNavigation
+                                :step-index="activeNodeId"
+                                :step-count="stepCount"
+                                @select="activeNodeId = $event" />
                             <GButton
                                 title="Hide Step"
                                 data-description="invocation graph hide step button"
@@ -334,20 +302,12 @@ function toggleDetailedView() {
                         </div>
                     </BCardHeader>
                     <BCardBody body-class="p-2">
-                        <Teleport :to="`#${stepModalTargetId}`" :disabled="!stepExpanded" defer>
-                            <WorkflowInvocationStep
-                                :key="activeNodeId"
-                                :invocation="props.invocation"
-                                :workflow-step="activeStep"
-                                in-graph-view
-                                :graph-step="steps[activeNodeId]"
-                                expanded />
-                        </Teleport>
+                        <div :id="stepCardTargetId" />
                         <GAlert v-if="stepExpanded"> The step details are currently being shown in a modal. </GAlert>
                     </BCardBody>
                 </BCard>
                 <GModal
-                    :show="stepExpanded"
+                    :show="stepInModal"
                     fixed-height
                     size="medium"
                     data-description="invocation graph expanded step modal"
@@ -358,9 +318,24 @@ function toggleDetailedView() {
                             :workflow-step="activeStep"
                             :graph-step="steps[activeNodeId]"
                             :invocation-step="props.invocation.steps[activeNodeId]" />
+                        <InvocationStepNavigation
+                            class="ml-auto"
+                            :step-index="activeNodeId"
+                            :step-count="stepCount"
+                            @select="activeNodeId = $event" />
                     </template>
                     <div :id="stepModalTargetId" />
                 </GModal>
+                <!-- the step details render once, moving between the card and the modal -->
+                <Teleport :to="`#${stepInModal ? stepModalTargetId : stepCardTargetId}`" defer>
+                    <WorkflowInvocationStep
+                        :key="activeNodeId"
+                        :invocation="props.invocation"
+                        :workflow-step="activeStep"
+                        in-graph-view
+                        :graph-step="steps[activeNodeId]"
+                        expanded />
+                </Teleport>
             </template>
             <GAlert v-else-if="!props.stepModal" class="mt-2" show>
                 Click on a step in the workflow graph above to view its details.
