@@ -21,6 +21,7 @@ from galaxy.exceptions import (
     MessageException,
     RequestParameterInvalidException,
 )
+from galaxy.managers.base import ModelValidator
 from galaxy.managers.collections_util import validate_input_element_identifiers
 from galaxy.managers.context import (
     ProvidesAppContext,
@@ -609,6 +610,8 @@ class DatasetCollectionManager:
                 validated_payload[key] = validation.validate_boolean(key, val)
             elif key == "tags":
                 validated_payload[key] = validation.validate_and_sanitize_basestring_list(key, val)
+            elif key == "annotation":
+                validated_payload[key] = ModelValidator.basestring(key, val)
         return validated_payload
 
     def __persist(

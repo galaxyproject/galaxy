@@ -15611,6 +15611,11 @@ export interface components {
          */
         HDCACustom: {
             /**
+             * Annotation
+             * @description The requesting user's annotation of this collection.
+             */
+            annotation?: string | null;
+            /**
              * Dataset Collection ID
              * @example 0123456789ABCDEF
              */
@@ -15782,6 +15787,11 @@ export interface components {
          * @description History Dataset Collection Association detailed information.
          */
         HDCADetailed: {
+            /**
+             * Annotation
+             * @description The requesting user's annotation of this collection.
+             */
+            annotation?: string | null;
             /**
              * Dataset Collection ID
              * @example 0123456789ABCDEF
