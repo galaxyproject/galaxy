@@ -98,23 +98,6 @@ export function buildInputs(definition: ExtraPreferenceSection[], values: ExtraP
     }));
 }
 
-/** A required secret that is not stored and has no value typed in, which cannot be saved. */
-export function isSecretMissing(
-    definition: ExtraPreferenceSection[],
-    values: ExtraPreferenceValues,
-    formData: FormData,
-): boolean {
-    return definition.some((section) =>
-        (section.inputs ?? []).some(
-            (input) =>
-                isSensitive(input) &&
-                input.required &&
-                !isStored(values, section.name, input) &&
-                !formData[formKey(section.name, input.name)],
-        ),
-    );
-}
-
 /** The form widgets hand back strings for numbers, so values are put into the type the server checks. */
 function normalize(input: ExtraPreferenceInput, raw: unknown): FormData[string] {
     if (raw === null || raw === undefined || raw === "" || (Array.isArray(raw) && raw.length === 0)) {
@@ -181,6 +164,32 @@ export function dirtySections(
         }
     }
     return dirty;
+}
+
+/**
+ * Whether a required input is empty in a section the user edited: a required secret that is not stored and has
+ * no value typed in, or any other required input left empty. Untouched sections never block saving.
+ */
+export function isRequiredMissing(
+    definition: ExtraPreferenceSection[],
+    values: ExtraPreferenceValues,
+    formData: FormData,
+): boolean {
+    const dirty = dirtySections(definition, values, formData);
+    return definition.some(
+        (section) =>
+            dirty.has(section.name) &&
+            (section.inputs ?? []).some((input) => {
+                const raw = formData[formKey(section.name, input.name)];
+                if (!input.required || raw === undefined) {
+                    return false;
+                }
+                if (isSensitive(input)) {
+                    return !isStored(values, section.name, input) && !raw;
+                }
+                return normalize(input, raw) === null;
+            }),
+    );
 }
 
 /**

@@ -20,7 +20,7 @@ import {
     type ExtraPreferenceSection,
     type ExtraPreferencesPayload,
     type ExtraPreferenceValues,
-    isSecretMissing,
+    isRequiredMissing,
 } from "./extraPreferencesForm";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -44,7 +44,6 @@ const values = ref<ExtraPreferenceValues>({});
 const formData = ref<FormData>({});
 // FormDisplay only resets its values when its id changes.
 const formId = ref(0);
-const validation = ref<[string, string] | null>(null);
 
 const loading = ref(true);
 const saving = ref(false);
@@ -56,11 +55,7 @@ const inputs = computed(() => buildInputs(definition.value, values.value));
 const payload = computed(() => buildPayload(definition.value, values.value, formData.value));
 const secrets = computed(() => clearableSecrets(definition.value, values.value));
 const canSave = computed(
-    () =>
-        hasChanges.value &&
-        !validation.value &&
-        !isSecretMissing(definition.value, values.value, formData.value) &&
-        !saving.value,
+    () => hasChanges.value && !isRequiredMissing(definition.value, values.value, formData.value) && !saving.value,
 );
 
 const hasChanges = computed(() => Object.keys(payload.value).length > 0);
@@ -155,12 +150,7 @@ watch(
                 Extra configurations saved.
             </GAlert>
 
-            <FormDisplay
-                :id="String(formId)"
-                :inputs="inputs"
-                reject-empty-required-inputs
-                @on-change="onChange"
-                @on-validation="validation = $event" />
+            <FormDisplay :id="String(formId)" :inputs="inputs" reject-empty-required-inputs @on-change="onChange" />
 
             <div v-if="secrets.length" class="extra-preferences-actions" data-description="stored secrets">
                 <GButton

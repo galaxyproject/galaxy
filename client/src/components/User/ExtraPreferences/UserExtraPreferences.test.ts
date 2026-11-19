@@ -360,12 +360,37 @@ describe("UserExtraPreferences with every input type", () => {
         expect(putBodies).toEqual([]);
     });
 
-    it("blocks Save while a required input that was never set is empty, in any section", async () => {
+    it("blocks Save while a required input that was never set is empty in the edited section", async () => {
         serve(TYPED, UNSET);
         const wrapper = await mountPage();
         await wrapper.find("[id='form-element-typed|verify'] input").setValue(true);
         await flushPromises();
         expect(saveDisabled(wrapper)).toBe(true);
+    });
+
+    it("lets Save through when the unset required input or secret is in a section that was not edited", async () => {
+        const two: Definition = [
+            ...DEFINITION,
+            {
+                name: "other",
+                description: "Other section",
+                inputs: [
+                    { name: "needed", label: "Needed", type: "text", required: true, multiple: false },
+                    { name: "secret", label: "Secret", type: "secret", required: true, multiple: false },
+                ],
+            },
+        ];
+        const values: Values = {
+            cloud: { ...VALUES.cloud!, api_key: { is_set: true } },
+            other: { needed: null, secret: { is_set: false } },
+        };
+        serve(two, values);
+        const wrapper = await mountPage();
+        await field(wrapper, "endpoint").setValue("https://other.example.org");
+        await flushPromises();
+        expect(saveDisabled(wrapper)).toBe(false);
+        await save(wrapper);
+        expect(putBodies).toEqual([{ cloud: { endpoint: "https://other.example.org" } }]);
     });
 
     it("sends select, multi-select and boolean values once the required inputs are filled", async () => {

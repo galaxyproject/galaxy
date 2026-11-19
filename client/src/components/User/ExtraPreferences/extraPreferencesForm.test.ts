@@ -11,7 +11,7 @@ import {
     type ExtraPreferenceSection,
     type ExtraPreferenceValues,
     formKey,
-    isSecretMissing,
+    isRequiredMissing,
 } from "./extraPreferencesForm";
 
 const definition: ExtraPreferenceSection[] = [
@@ -327,14 +327,27 @@ describe("sections with defaults", () => {
 });
 
 describe("secrets", () => {
-    it("flags a required secret that is unset and left empty", () => {
-        expect(isSecretMissing(definition, values, { [formKey("cloud", "api_key")]: "" })).toBe(true);
-        expect(isSecretMissing(definition, values, { [formKey("cloud", "api_key")]: "x" })).toBe(false);
+    const edit = { [formKey("cloud", "endpoint")]: "https://other.example.org" };
+
+    it("flags a required secret that is unset and left empty, in an edited section", () => {
+        expect(isRequiredMissing(definition, values, { ...edit, [formKey("cloud", "api_key")]: "" })).toBe(true);
+        expect(isRequiredMissing(definition, values, { ...edit, [formKey("cloud", "api_key")]: "x" })).toBe(false);
     });
 
     it("does not flag a stored required secret", () => {
         const stored = { cloud: { ...values.cloud!, api_key: { is_set: true } } };
-        expect(isSecretMissing(definition, stored, { [formKey("cloud", "api_key")]: "" })).toBe(false);
+        expect(isRequiredMissing(definition, stored, { ...edit, [formKey("cloud", "api_key")]: "" })).toBe(false);
+    });
+
+    it("flags any other required input that is left empty in an edited section", () => {
+        const data = { ...edit, [formKey("cloud", "api_key")]: "x" };
+        expect(isRequiredMissing(definition, values, data)).toBe(false);
+        expect(isRequiredMissing(definition, values, { ...data, [formKey("cloud", "endpoint")]: "" })).toBe(true);
+    });
+
+    it("never flags a section the user did not edit", () => {
+        expect(isRequiredMissing(definition, values, untouched())).toBe(false);
+        expect(isRequiredMissing(definition, values, { [formKey("cloud", "api_key")]: "" })).toBe(false);
     });
 
     it("lists stored optional secrets as clearable, never required ones", () => {
