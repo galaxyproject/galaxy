@@ -1439,7 +1439,7 @@ class WorkflowContentsManager(UsesAnnotations):
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step, exact_tools=False)
+            module = module_factory.from_workflow_step(trans, step, exact_tools=False, view_only=True)
             if not module:
                 raise exceptions.MessageException(f"Unrecognized step type: {step.type}")
             # Load label from state of data input modules, necessary for backward compatibility
@@ -1707,7 +1707,9 @@ class WorkflowContentsManager(UsesAnnotations):
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step)
+            # An internal export is rebuilt into a workflow (refactoring), so it resolves tools
+            # as saving does.
+            module = module_factory.from_workflow_step(trans, step, view_only=not internal)
             if not module:
                 raise exceptions.MessageException(f"Unrecognized step type: {step.type}")
             # Get user annotation if it exists, otherwise get owner annotation.

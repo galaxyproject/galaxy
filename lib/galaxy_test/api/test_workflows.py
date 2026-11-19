@@ -11500,6 +11500,100 @@ outer_input:
             import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(import_response, 403)
 
+    def test_user_defined_tool_published_workflow_viewable_by_other_users(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            workflow_id, unprivileged_tool = self._publish_user_defined_tool_workflow()
+            owner_views = self._user_defined_tool_step_views(workflow_id, step="1")
+        assert owner_views["editor"]["errors"] is None
+        assert [i["name"] for i in owner_views["editor"]["inputs"]] == ["input"]
+        assert [o["name"] for o in owner_views["editor"]["outputs"]] == ["output"]
+        assert owner_views["export"]["tool_representation"]["shell_command"] == TOOL_WITH_SHELL_COMMAND["shell_command"]
+        with self._different_user(), self.dataset_populator.user_tool_execute_permissions():
+            assert self._user_defined_tool_step_views(workflow_id, step="1") == owner_views
+        with self._different_user("udt_viewer_without_role@bx.psu.edu"):
+            assert self._user_defined_tool_step_views(workflow_id, step="1") == owner_views
+        with self._different_user(anon=True):
+            assert self._user_defined_tool_step_views(workflow_id, step="1") == owner_views
+
+    def test_user_defined_tool_in_published_subworkflow_viewable_by_other_users(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            subworkflow = self._build_user_defined_tool_run_workflow_dict("basecommand", unprivileged_tool["uuid"])
+            workflow = self._build_user_defined_tool_run_workflow_dict("basecommand", unprivileged_tool["uuid"])
+            workflow["steps"]["1"] = {
+                "id": 1,
+                "type": "subworkflow",
+                "subworkflow": subworkflow,
+                "input_connections": {"input": {"id": 0, "output_name": "output", "input_subworkflow_step_id": 0}},
+                "workflow_outputs": [{"output_name": "udt_output", "label": "outer_output"}],
+                "uuid": str(uuid4()),
+            }
+            workflow_id = self.workflow_populator.create_workflow(workflow, publish=True)
+            owner_views = self._user_defined_tool_step_views(workflow_id, step="1")
+        assert owner_views["editor"]["errors"] is None
+        assert [o["name"] for o in owner_views["editor"]["outputs"]] == ["udt_output"]
+        assert owner_views["export"]["subworkflow"]["steps"]["1"]["tool_representation"]["id"] == "basecommand"
+        with self._different_user(), self.dataset_populator.user_tool_execute_permissions():
+            assert self._user_defined_tool_step_views(workflow_id, step="1") == owner_views
+            with self.dataset_populator.test_history() as history_id:
+                self._assert_user_defined_tool_workflow_not_invocable(workflow_id, history_id)
+
+    def test_user_defined_tool_published_workflow_not_runnable_by_other_users(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            workflow_id, unprivileged_tool = self._publish_user_defined_tool_workflow()
+        tool_uuid = unprivileged_tool["uuid"]
+        # The role is not enough: every way to run the tool requires owning it.
+        with self._different_user(), self.dataset_populator.user_tool_execute_permissions():
+            # Viewing the workflow first must not make its tool usable.
+            self._user_defined_tool_step_views(workflow_id, step="1")
+            with self.dataset_populator.test_history() as history_id:
+                hda = self._assert_user_defined_tool_workflow_not_invocable(workflow_id, history_id)
+                run_form_response = self.workflow_populator.download_workflow_raw(
+                    workflow_id, style="run", history_id=history_id
+                )
+                self._assert_status_code_is(run_form_response, 404)
+                run_response = self.dataset_populator.run_tool_raw(
+                    None, {"input": {"src": "hda", "id": hda["id"]}}, history_id, tool_uuid=tool_uuid
+                )
+                self._assert_status_code_is(run_response, 404)
+                request_response = self.dataset_populator.tool_request_raw(
+                    None, {"input": {"src": "hda", "id": hda["id"]}}, history_id, tool_uuid=tool_uuid
+                )
+                self._assert_status_code_is(request_response, 404)
+                create_response = self._post(
+                    "workflows",
+                    data={"workflow": json.dumps(self._build_user_defined_workflow_dict(tool_uuid=tool_uuid))},
+                )
+                self._assert_status_code_is(create_response, 404)
+                assert self.dataset_populator.history_jobs_for_tool(history_id, "basecommand") == []
+
+    def _assert_user_defined_tool_workflow_not_invocable(self, workflow_id: str, history_id: str) -> dict[str, Any]:
+        hda = self.dataset_populator.new_dataset(history_id, content="abc", wait=True)
+        invocation_response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"history_id": history_id, "inputs": {"0": self._ds_entry(hda)}, "inputs_by": "step_index"},
+        )
+        self._assert_status_code_is(invocation_response, 404)
+        assert self._get("invocations", data={"history_id": history_id}).json() == []
+        assert self.dataset_populator.history_jobs_for_tool(history_id, "basecommand") == []
+        return hda
+
+    def _publish_user_defined_tool_workflow(self) -> tuple[str, dict[str, Any]]:
+        unprivileged_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
+        workflow_id = self.workflow_populator.create_workflow(
+            self._build_user_defined_tool_run_workflow_dict("basecommand", unprivileged_tool["uuid"]),
+            publish=True,
+        )
+        return workflow_id, unprivileged_tool
+
+    def _user_defined_tool_step_views(self, workflow_id: str, step: str) -> dict[str, Any]:
+        """The step as the workflow editor, the published page and the download show it."""
+        editor_step = self.workflow_populator.download_workflow(workflow_id, style="editor")["steps"][step]
+        export_step = self.workflow_populator.download_workflow(workflow_id, style="export")["steps"][step]
+        return {"editor": editor_step, "export": export_step}
+
     def test_refactor_upgrade_all_steps_keeps_user_defined_tool_step(self):
         with self.dataset_populator.user_tool_execute_permissions():
             unprivileged_tool = self.dataset_populator.create_unprivileged_tool(

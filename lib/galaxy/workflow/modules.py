@@ -450,9 +450,11 @@ class WorkflowModule:
     type: str
     name: str
 
-    def __init__(self, trans, content_id=None, **kwds):
+    def __init__(self, trans, content_id=None, view_only: bool = False, **kwds):
         self.trans = trans
         self.content_id = content_id
+        # Built to describe a step, never to run it, see ``ToolModule``.
+        self.view_only = view_only
         self.state = DefaultToolState()
 
     # ---- Creating modules from various representations ---------------------
@@ -883,7 +885,7 @@ class SubWorkflowModule(WorkflowModule):
             for step in self.subworkflow.input_steps:
                 name = step.label
                 if not name:
-                    step_module = module_factory.from_workflow_step(self.trans, step)
+                    step_module = module_factory.from_workflow_step(self.trans, step, view_only=self.view_only)
                     name = f"{step.order_index}:{step_module.get_name()}"
                 input = dict(
                     input_subworkflow_step_id=step.order_index,
@@ -904,7 +906,10 @@ class SubWorkflowModule(WorkflowModule):
 
     def get_modules(self):
         if self._modules is None:
-            self._modules = [module_factory.from_workflow_step(self.trans, step) for step in self.subworkflow.steps]
+            self._modules = [
+                module_factory.from_workflow_step(self.trans, step, view_only=self.view_only)
+                for step in self.subworkflow.steps
+            ]
         return self._modules
 
     @property
@@ -2424,7 +2429,14 @@ class ToolModule(WorkflowModule):
     name = "Tool"
 
     def __init__(
-        self, trans: "ProvidesUserContext", tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds
+        self,
+        trans: "ProvidesUserContext",
+        tool_id,
+        tool_version=None,
+        exact_tools=True,
+        tool_uuid=None,
+        step_user_defined_tool: Optional[DynamicTool] = None,
+        **kwds,
     ):
         super().__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
@@ -2434,7 +2446,13 @@ class ToolModule(WorkflowModule):
         if getattr(trans.app, "toolbox", None):
             if trans.user and tool_uuid:
                 self.tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
-            if not self.tool:
+            if not self.tool and self.view_only and step_user_defined_tool is not None:
+                # Whoever can view a workflow can view its steps, but only the owner of a
+                # user-defined tool can look it up. Describe the step with the tool it stores.
+                # This grants nothing: ``execute`` refuses view-only modules, and the tool
+                # still denies ``allow_user_access`` to everyone but its owner.
+                self.tool = trans.app.toolbox.dynamic_tool_to_tool(step_user_defined_tool)
+            elif not self.tool:
                 self.tool = trans.app.toolbox.get_tool(
                     tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
                 )
@@ -2532,6 +2550,8 @@ class ToolModule(WorkflowModule):
         tool_version = step.tool_version
         tool_uuid = step.tool_uuid
         kwds["exact_tools"] = False
+        if kwds.get("view_only"):
+            kwds["step_user_defined_tool"] = step.user_defined_tool
         module = super().from_workflow_step(
             trans, step, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds
         )
@@ -2902,6 +2922,9 @@ class ToolModule(WorkflowModule):
         invocation_step: "WorkflowInvocationStep",
         use_cached_job: bool = False,
     ) -> Optional[bool]:
+        if self.view_only:
+            # ``self.tool`` may be a user-defined tool the user doesn't own.
+            raise exceptions.InternalServerError("A workflow module built for viewing cannot execute its step.")
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         tool_id = step.effective_tool_id
