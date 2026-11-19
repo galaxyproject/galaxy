@@ -29,6 +29,7 @@ from .checkers import (
     is_bz2,
     is_gzip,
     is_xz,
+    is_zip,
     iter_zip,
 )
 
@@ -77,7 +78,7 @@ def get_fileobj(filename: str, mode: str = "r", compressed_formats: list[str] | 
 
 
 def _open_first_zip_member(filename: str) -> IO[bytes] | None:
-    if not zipfile.is_zipfile(filename):
+    if not is_zip(filename):
         return None
     members = iter_zip(filename)
     try:
@@ -188,11 +189,11 @@ class CompressedFile:
 
     @staticmethod
     def can_decompress(file_path: StrPath) -> bool:
-        return tarfile.is_tarfile(file_path) or zipfile.is_zipfile(file_path)
+        return tarfile.is_tarfile(file_path) or is_zip(str(file_path))
 
     def __init__(self, file_path: StrPath, mode: Literal["a", "r", "w", "x"] = "r") -> None:
         file_path_str = str(file_path)
-        if zipfile.is_zipfile(file_path) and not file_path_str.endswith(".jar"):
+        if is_zip(file_path_str) and not file_path_str.endswith(".jar"):
             self.file_type = "zip"
         elif tarfile.is_tarfile(file_path):
             self.file_type = "tar"
