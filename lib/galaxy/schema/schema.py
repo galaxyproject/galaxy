@@ -2063,6 +2063,12 @@ class CreateHistoryPayload(Model):
         title="Name",
         description="The new history name.",
     )
+    annotation: str | None = Field(
+        default=None,
+        max_length=MAX_ANNOTATION_SIZE,
+        title="Annotation",
+        description="An annotation for the new history; replaces the copied one when copying a history. Not applied when importing from an archive.",
+    )
     history_id: DecodedDatabaseIdField | None = Field(
         default=None,
         title="History ID",

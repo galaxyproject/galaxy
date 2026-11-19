@@ -46,6 +46,7 @@ from galaxy.schema.jobs import (
 from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     JobIndexQueryPayload,
+    MAX_ANNOTATION_SIZE,
 )
 from galaxy.schema.tasks import (
     QueueJobs,
@@ -99,6 +100,12 @@ class JobRequest(BaseModel):
     )
     preferred_object_store_id: str | None = Field(default=None, title="Preferred Object Store ID")
     tags: list[str] | None = Field(default=None, title="Tags")
+    annotation: str | None = Field(
+        default=None,
+        max_length=MAX_ANNOTATION_SIZE,
+        title="Annotation",
+        description="An annotation to add to each output dataset and collection this request creates. Ignored for anonymous users.",
+    )
     data_manager_mode: str | None = Field(default=None, title="Data Manager Mode")
     credentials_context: list[dict[str, Any]] | None = Field(default=None, title="Credentials Context")
 
@@ -305,6 +312,7 @@ class JobsService(ServiceBase):
             rerun_remap_job_id=job_request.rerun_remap_job_id,
             preferred_object_store_id=job_request.preferred_object_store_id,
             tags=job_request.tags,
+            annotation=job_request.annotation,
             data_manager_mode=job_request.data_manager_mode,
             send_email_notification=job_request.send_email_notification,
             send_notification=job_request.send_notification,

@@ -8702,6 +8702,8 @@ export interface components {
              * @default true
              */
             all_datasets: unknown;
+            /** Annotation */
+            annotation?: unknown;
             /** Archive File */
             archive_file?: unknown;
             /** Archive Source */
@@ -19227,6 +19229,11 @@ export interface components {
         };
         /** JobRequest */
         JobRequest: {
+            /**
+             * Annotation
+             * @description An annotation to add to each output dataset and collection this request creates. Ignored for anonymous users.
+             */
+            annotation?: string | null;
             /** Credentials Context */
             credentials_context?:
                 | {
