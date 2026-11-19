@@ -1231,8 +1231,22 @@ steps:
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_edit_menu")
 
-        self.components.workflow_editor.save_as_activity.wait_for_and_click()
-        self.components.workflow_editor.save_as_modal_close.wait_for_and_click()
+        editor = self.components.workflow_editor
+        editor.save_as_activity.wait_for_and_click()
+        editor.save_as_modal_close.wait_for_and_click()
+
+        # Enter must save in-page; a native form submit reloads the page and saves nothing.
+        new_name = self._get_random_name(prefix="saved_as_")
+        editor.save_as_activity.wait_for_and_click()
+        editor.save_as_name_input.wait_for_and_send_keys(new_name)
+        editor.save_as_name_input.wait_for_and_send_enter()
+        self.components.toast.message_with_text(text=f"Created new workflow '{new_name}'").wait_for_visible()
+        editor.save_as_name_input.wait_for_absent_or_hidden()
+
+        workflows = self.workflow_populator._get("workflows").json()
+        new_ids = [w["id"] for w in workflows if w["name"] == new_name]
+        assert len(new_ids) == 1, f"Expected one workflow named '{new_name}', found {len(new_ids)}"
+        assert f"id={new_ids[0]}" in self.current_url
 
     @selenium_test
     def test_editor_tool_upgrade(self):

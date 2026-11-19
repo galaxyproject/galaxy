@@ -1432,6 +1432,7 @@ workflow_editor:
     state_upgrade_modal_ok: '[data-description="workflow state upgrade modal ok"]'
     state_upgrade_filled_defaults_toggle: '[data-description="workflow state upgrade filled defaults toggle"]'
     save_as_modal_close: '[data-description="save-as-modal"] .g-modal-close-button'
+    save_as_name_input: '[data-description="save-as name input"]'
     workflow_activity: '#activity-workflow-editor-workflows'
     workflow_activity_panel: ".activity-panel[data-description='Workflows']"
     workflow_activity_search: ".activity-panel[data-description='Workflows'] input"
