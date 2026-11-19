@@ -10,6 +10,7 @@ import type { components } from "@/api/schema";
 import { useUserStore } from "@/stores/userStore";
 
 import UserExtraPreferences from "./UserExtraPreferences.vue";
+import FormSelection from "@/components/Form/Elements/FormSelection.vue";
 
 const confirm = vi.fn();
 vi.mock("@/composables/confirmDialog", () => ({
@@ -238,5 +239,135 @@ describe("UserExtraPreferences", () => {
         await save(wrapper);
         expect(wrapper.text()).toContain("is required.");
         expect((field(wrapper, "endpoint").element as HTMLInputElement).value).toBe("https://other.example.org");
+    });
+
+    it("names the section on the removal button", async () => {
+        serve();
+        const wrapper = await mountPage();
+        expect(wrapper.find("[data-description='clear cloud|token']").text()).toContain("Cloud storage");
+    });
+
+    it("reloads the page after saving a section the app reads at startup", async () => {
+        const reload = vi.fn();
+        vi.stubGlobal("location", { ...window.location, reload });
+        try {
+            serve(
+                [
+                    {
+                        name: "localization",
+                        description: "Language",
+                        inputs: [{ name: "locale", label: "Locale", type: "text", required: false, multiple: false }],
+                    },
+                ],
+                { localization: { locale: null } },
+            );
+            const wrapper = await mountPage();
+            await wrapper.find("[id='localization|locale']").setValue("de");
+            await flushPromises();
+            await save(wrapper);
+            expect(putBodies).toEqual([{ localization: { locale: "de" } }]);
+            expect(reload).toHaveBeenCalledOnce();
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
+    it("does not reload after saving another section", async () => {
+        const reload = vi.fn();
+        vi.stubGlobal("location", { ...window.location, reload });
+        try {
+            serve(DEFINITION, { cloud: { ...VALUES.cloud!, api_key: { is_set: true } } });
+            const wrapper = await mountPage();
+            await field(wrapper, "endpoint").setValue("https://other.example.org");
+            await flushPromises();
+            await save(wrapper);
+            expect(reload).not.toHaveBeenCalled();
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+});
+
+describe("UserExtraPreferences with every input type", () => {
+    const TYPED: Definition = [
+        {
+            name: "typed",
+            description: "Typed section",
+            inputs: [
+                {
+                    name: "needed",
+                    label: "Needed",
+                    type: "select",
+                    required: true,
+                    multiple: false,
+                    options: [
+                        ["First", "first"],
+                        ["Second", "second"],
+                    ],
+                },
+                {
+                    name: "region",
+                    label: "Region",
+                    required: false,
+                    multiple: false,
+                    options: [
+                        ["EU", "eu"],
+                        ["US", "us"],
+                    ],
+                },
+                {
+                    name: "zones",
+                    label: "Zones",
+                    type: "select",
+                    required: false,
+                    multiple: true,
+                    options: [
+                        ["A", "a"],
+                        ["B", "b"],
+                    ],
+                },
+                { name: "verify", label: "Verify", type: "boolean", required: false, multiple: false },
+                { name: "title", label: "Title", type: "text", required: true, multiple: false },
+            ],
+        },
+    ];
+    const UNSET: Values = { typed: { needed: null, region: null, zones: null, verify: null, title: null } };
+
+    beforeEach(() => {
+        confirm.mockReset();
+    });
+
+    it("does not pick or send anything on its own", async () => {
+        serve(TYPED, UNSET);
+        const wrapper = await mountPage();
+        expect(saveDisabled(wrapper)).toBe(true);
+        expect(putBodies).toEqual([]);
+    });
+
+    it("blocks Save while a required input that was never set is empty, in any section", async () => {
+        serve(TYPED, UNSET);
+        const wrapper = await mountPage();
+        await wrapper.find("[id='form-element-typed|verify'] input").setValue(true);
+        await flushPromises();
+        expect(saveDisabled(wrapper)).toBe(true);
+    });
+
+    it("sends select, multi-select and boolean values once the required inputs are filled", async () => {
+        serve(TYPED, UNSET);
+        const wrapper = await mountPage();
+        await wrapper.find("[id='typed|title']").setValue("A title");
+        await wrapper.find("[id='form-element-typed|verify'] input").setValue(true);
+        const selections = wrapper.findAllComponents(FormSelection);
+        expect(selections).toHaveLength(3);
+        // the widgets are given their value the way their own change handler does
+        selections[0]!.vm.$emit("update:modelValue", "second");
+        selections[1]!.vm.$emit("update:modelValue", "us");
+        selections[2]!.vm.$emit("update:modelValue", ["a", "b"]);
+        await flushPromises();
+        expect(saveDisabled(wrapper)).toBe(false);
+        await save(wrapper);
+        expect(putBodies).toEqual([
+            { typed: { needed: "second", region: "us", zones: ["a", "b"], verify: true, title: "A title" } },
+        ]);
     });
 });

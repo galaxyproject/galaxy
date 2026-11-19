@@ -28,6 +28,9 @@ import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+// The app reads these sections at startup, so a change only shows after a reload.
+const STARTUP_SECTIONS = ["localization", "sentry_replay"];
+
 const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "Extra Configurations" }];
 
 const { confirm } = useConfirmDialog();
@@ -94,12 +97,15 @@ async function send(update: ExtraPreferencesPayload) {
         values.value = data;
         formId.value++;
         saved.value = true;
+        if (Object.keys(update).some((section) => STARTUP_SECTIONS.includes(section))) {
+            window.location.reload();
+        }
     }
     saving.value = false;
 }
 
 async function clearSecret(secret: ClearableSecret) {
-    const confirmed = await confirm(`Remove the stored value of "${secret.label}"?`, {
+    const confirmed = await confirm(`Remove the stored value of "${secret.label}" in "${secret.sectionLabel}"?`, {
         title: "Remove stored value",
         okText: "Remove",
         okColor: "red",
@@ -150,20 +156,19 @@ watch(
                 @on-change="onChange"
                 @on-validation="validation = $event" />
 
-            <div v-if="secrets.length" class="mt-3" data-description="stored secrets">
+            <div v-if="secrets.length" class="extra-preferences-actions" data-description="stored secrets">
                 <GButton
                     v-for="secret in secrets"
                     :key="`${secret.section}|${secret.name}`"
-                    class="mr-1"
                     :disabled="saving"
                     :data-description="`clear ${secret.section}|${secret.name}`"
                     @click="clearSecret(secret)">
                     <FontAwesomeIcon :icon="faTrash" />
-                    Remove stored {{ secret.label }}
+                    Remove stored {{ secret.label }} ({{ secret.sectionLabel }})
                 </GButton>
             </div>
 
-            <div class="mt-3">
+            <div class="extra-preferences-actions">
                 <GButton id="save-extra-preferences" color="blue" :disabled="!canSave" @click="send(payload)">
                     <FontAwesomeIcon :icon="faSave" />
                     Save
@@ -172,3 +177,12 @@ watch(
         </template>
     </div>
 </template>
+
+<style scoped>
+.extra-preferences-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+</style>

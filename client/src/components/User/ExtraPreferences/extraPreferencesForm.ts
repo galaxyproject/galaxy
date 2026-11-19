@@ -171,6 +171,7 @@ export function buildPayload(
 
 export interface ClearableSecret {
     section: string;
+    sectionLabel: string;
     name: string;
     label: string;
 }
@@ -183,7 +184,12 @@ export function clearableSecrets(
     return definition.flatMap((section) =>
         (section.inputs ?? [])
             .filter((input) => isSensitive(input) && !input.required && isStored(values, section.name, input))
-            .map((input) => ({ section: section.name, name: input.name, label: input.label || input.name })),
+            .map((input) => ({
+                section: section.name,
+                sectionLabel: section.description,
+                name: input.name,
+                label: input.label || input.name,
+            })),
     );
 }
 

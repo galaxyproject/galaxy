@@ -261,7 +261,9 @@ describe("secrets", () => {
     });
 
     it("lists stored optional secrets as clearable, never required ones", () => {
-        expect(clearableSecrets(definition, values)).toEqual([{ section: "cloud", name: "token", label: "Token" }]);
+        expect(clearableSecrets(definition, values)).toEqual([
+            { section: "cloud", sectionLabel: "Cloud storage", name: "token", label: "Token" },
+        ]);
         const stored = { cloud: { ...values.cloud!, api_key: { is_set: true } } };
         expect(clearableSecrets(definition, stored).map((s) => s.name)).toEqual(["token"]);
     });
