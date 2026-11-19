@@ -15,7 +15,10 @@ import hashlib
 import io
 import logging
 import os
-from collections.abc import Callable
+from collections.abc import (
+    Callable,
+    Collection,
+)
 from datetime import (
     datetime,
     timedelta,
@@ -54,6 +57,7 @@ from galaxy.job_execution.protection import (
 )
 from galaxy.job_execution.protection.outputs import (
     CONTENTLESS_OUTCOMES,
+    OUTCOME_PURGED,
     ProtectedOutput,
     ProtectionSidecar,
 )
@@ -710,11 +714,23 @@ class DatasetProtectionManager:
             job_directory, PROTECTION_SETUP_FAILURE_FILE, "Could not decrypt the protected inputs of this job."
         )
 
-    def finish_job(self, job: Job, job_directory: str) -> str | None:
+    def purged_outputs(self, job: Job) -> set[str]:
+        """UUIDs of the outputs of a job that Galaxy purged, e.g. users while it ran.
+
+        Read before importing what the compute host reports, which may purge outputs too.
+        """
+        return {
+            str(dataset_instance.dataset.uuid)
+            for dataset_instance in _job_outputs(job)
+            if dataset_instance.dataset and dataset_instance.dataset.purged
+        }
+
+    def finish_job(self, job: Job, job_directory: str, purged_outputs: Collection[str] = ()) -> str | None:
         """Verify every output of a finished protected job was protected, record the grants to reuse them.
 
         Returns why the job must fail, if it must. Outputs that can't be shown to be encrypted are purged.
         Grants are added to the current session, to be committed together with the job's final state.
+        The compute host may only report the ``purged_outputs`` (see :meth:`purged_outputs`) as purged.
         """
         errors: list[str] = []
         if cleanup_failure := _read_report(
@@ -736,15 +752,25 @@ class DatasetProtectionManager:
 
         protected: list[tuple[DatasetInstance, ProtectedOutput]] = []
         unprotected: list[DatasetInstance] = []
+        missing: list[DatasetInstance] = []
         for dataset_instance in _job_outputs(job):
             assert dataset_instance.dataset
-            record = sidecar.datasets.get(str(dataset_instance.dataset.uuid))
+            uuid = str(dataset_instance.dataset.uuid)
+            record = sidecar.datasets.get(uuid)
             if isinstance(record, ProtectedOutput) and self._is_verified(dataset_instance, record):
                 protected.append((dataset_instance, record))
             elif record and record.outcome in CONTENTLESS_OUTCOMES and not _has_content(dataset_instance):
-                continue
+                if record.outcome == OUTCOME_PURGED and uuid not in purged_outputs:
+                    # Not written by the tool, or looked for in the wrong place: the job would end ok without it.
+                    missing.append(dataset_instance)
             else:
                 unprotected.append(dataset_instance)
+
+        if missing:
+            names = ", ".join(f"'{dataset_instance.name}'" for dataset_instance in missing)
+            errors.append(f"Output(s) {names} were not found after the job ran.")
+            for dataset_instance in missing:
+                _purge(dataset_instance)
 
         if unprotected:
             names = ", ".join(f"'{dataset_instance.name}'" for dataset_instance in unprotected)

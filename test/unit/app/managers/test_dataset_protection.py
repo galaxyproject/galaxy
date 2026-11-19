@@ -480,7 +480,23 @@ def test_finish_job_accepts_outputs_without_content(tmp_path):
     output = _FakeOutput(str(tmp_path / "missing.dat"))
     output.dataset.purged = True
     _write_sidecar(str(tmp_path), {str(output.dataset.uuid): {"outcome": "purged"}})
-    assert _manager().finish_job(_job(output), str(tmp_path)) is None
+    manager = _manager()
+    purged_outputs = manager.purged_outputs(_job(output))
+    assert manager.finish_job(_job(output), str(tmp_path), purged_outputs) is None
+
+
+def test_finish_job_fails_on_outputs_reported_purged_that_galaxy_didnt_purge(tmp_path):
+    # E.g. the destination looked for the output in the wrong place: the job would end ok without it.
+    output = _FakeOutput(str(tmp_path / "missing.dat"))
+    manager = _manager()
+    purged_outputs = manager.purged_outputs(_job(output))
+    # Purged by the import of the compute host's report.
+    output.dataset.purged = True
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): {"outcome": "purged"}})
+
+    error = manager.finish_job(_job(output), str(tmp_path), purged_outputs)
+
+    assert error == "Output(s) 'output' were not found after the job ran."
 
 
 def test_finish_job_fails_on_cleanup_failure_without_purging(tmp_path):

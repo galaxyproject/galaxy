@@ -124,3 +124,29 @@ class TestCrypt4GHPulsarUnsafeDestinationIntegration(test_crypt4gh_execution.Bas
         assert "tools must write outputs into the job directory" in output["misc_info"]
         assert "Pulsar destinations must use rewrite_parameters" in output["misc_info"]
         assert self.service.requests == []
+
+
+class TestCrypt4GHPulsarOutputsToWorkingDirectoryIntegration(
+    test_crypt4gh_execution.BaseCrypt4GHExecutionIntegrationTestCase
+):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        _configure_pulsar(config)
+        # Remote metadata then looks for from_work_dir outputs at Galaxy's working directory paths.
+        config["outputs_to_working_directory"] = True
+        config["job_config"] = _pulsar_job_config(
+            cls.service.url,
+            {"default_file_action": "copy"},
+            {"load": "galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner"},
+        )
+
+    def test_outputs_the_compute_host_didnt_find_fail_the_job(self, history_id):
+        dataset = self._upload_authorized(history_id, test_crypt4gh_execution.PLAINTEXT_1)
+        response = self.dataset_populator.run_tool_raw(
+            "crypt4gh_output_kinds", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id
+        )
+        job, output = self._wait_for_job(history_id, response)
+        assert job["state"] == "error"
+        # Among others, the from_work_dir output.
+        assert "were not found after the job ran." in output["misc_info"]
