@@ -26,8 +26,6 @@ const push = vi.spyOn(router, "push").mockResolvedValue(undefined);
 const { confirm } = vi.hoisted(() => ({ confirm: vi.fn() }));
 vi.mock("@/composables/toast");
 vi.mock("@/composables/confirmDialog", () => ({ useConfirmDialog: () => ({ confirm }) }));
-// the list remembers an expanded invocation in local storage across visits
-vi.unmock("@/composables/userLocalStorage");
 
 vi.mock("@/components/Workflow/Invocation/invocationsIndex", () => ({
     fetchInvocations: vi.fn(),
@@ -113,8 +111,8 @@ describe("InvocationList", () => {
         vi.clearAllMocks();
         vi.mocked(fetchInvocations).mockReset();
         vi.mocked(fetchInvocations).mockResolvedValue([INVOCATIONS, 2] as unknown as InvocationsPage);
-        // the expanded invocation acted on is remembered in local storage
-        localStorage.clear();
+        // expanded invocations are kept in session storage
+        sessionStorage.clear();
     });
 
     it("lists the user's invocations, newest first", async () => {
@@ -389,18 +387,10 @@ describe("InvocationList", () => {
         expect(wrapper.find("[data-description='grid expanded row']").exists()).toBe(true);
     });
 
-    it.each([
-        ["its View invocation button", "[data-description='view invocation button']"],
-        ["its workflow name", ".invocation-workflow-name"],
-        ["its graph", "[data-description='invocation state stub']"],
-    ])("expands again only the expanded invocation opened from %s when the list opens again", async (_, opener) => {
+    it("expands again the invocations expanded when the list opens again", async () => {
         const wrapper = mountTarget();
         await flushPromises();
-        for (const toggle of wrapper.findAll("[data-description='toggle row details']")) {
-            await toggle.trigger("click");
-        }
-        await flushPromises();
-        await wrapper.findAll(opener)[1]!.trigger("click");
+        await wrapper.findAll("[data-description='toggle row details']")[1]!.trigger("click");
         wrapper.unmount();
 
         const reopened = mountTarget();

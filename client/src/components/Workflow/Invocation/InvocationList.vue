@@ -10,7 +10,7 @@ import {
     faStopCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useElementSize } from "@vueuse/core";
+import { useElementSize, useSessionStorage } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
@@ -37,7 +37,6 @@ import {
 import { useInvocationListItemActions } from "@/components/Workflow/Invocation/useInvocationListItemActions";
 import { useFilterTextValidation } from "@/composables/filterTextValidation";
 import { Toast } from "@/composables/toast";
-import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -155,19 +154,8 @@ const errorMessage = ref("");
 const initDataLoading = ref(true);
 const resultsLoading = ref(false);
 
-/** The invocations expanded in this visit */
-const expandedIds = ref<string[]>([]);
-/** The expanded invocation the user last acted on, expanded again when they come back; empty for none */
-const rememberedExpandedId = useUserLocalStorage("invocation-list-remembered-expanded-id", "");
-watch(
-    rememberedExpandedId,
-    (id) => {
-        if (id && !expandedIds.value.includes(id)) {
-            expandedIds.value = [...expandedIds.value, id];
-        }
-    },
-    { immediate: true },
-);
+/** The expanded invocations, kept for the browser tab's session so they show expanded again on coming back */
+const expandedIds = useSessionStorage<string[]>("invocation-list-expanded-ids", []);
 
 const filterText = ref("");
 const showAdvanced = ref(false);
@@ -318,34 +306,25 @@ const anyListedExpanded = computed(() =>
     listedInvocations.value.some((invocation) => expandedIds.value.includes(invocation.id)),
 );
 
-/** Expands or collapses the invocation's row, collapsing the earliest expanded one past `MAX_EXPANDED` */
+/**
+ * Expands or collapses the invocation's row, collapsing the earliest expanded one past `MAX_EXPANDED`.
+ * Only listed rows count, so expanding a row forgets expanded invocations that aren't listed.
+ */
 function onShowDetails(invocation: WorkflowInvocation) {
-    const others = expandedIds.value.filter((id) => id !== invocation.id);
-    if (others.length === expandedIds.value.length) {
-        const kept = others.slice(-(MAX_EXPANDED - 1));
-        if (kept.length < others.length) {
-            if (!kept.includes(rememberedExpandedId.value)) {
-                rememberedExpandedId.value = "";
-            }
-            Toast.info(`Only ${MAX_EXPANDED} invocations can be expanded at once, so the earliest one was collapsed.`);
-        }
-        expandedIds.value = [...kept, invocation.id];
-    } else {
-        expandedIds.value = others;
-        if (rememberedExpandedId.value === invocation.id) {
-            rememberedExpandedId.value = "";
-        }
+    if (expandedIds.value.includes(invocation.id)) {
+        expandedIds.value = expandedIds.value.filter((id) => id !== invocation.id);
+        return;
     }
+    const listed = expandedIds.value.filter((id) => listedInvocations.value.some((row) => row.id === id));
+    const kept = listed.slice(-(MAX_EXPANDED - 1));
+    if (kept.length < listed.length) {
+        Toast.info(`Only ${MAX_EXPANDED} invocations can be expanded at once, so the earliest one was collapsed.`);
+    }
+    expandedIds.value = [...kept, invocation.id];
 }
 
 function collapseAll() {
     expandedIds.value = [];
-    rememberedExpandedId.value = "";
-}
-
-/** Remembers the invocation acted on if its row is expanded, and otherwise forgets the remembered one */
-function rememberActedOn(invocation: WorkflowInvocation) {
-    rememberedExpandedId.value = expandedIds.value.includes(invocation.id) ? invocation.id : "";
 }
 
 /** The invocation's workflow version as the editor numbers it (from 1), once its workflow has loaded */
@@ -378,17 +357,6 @@ const {
     refreshList: load,
     admin: props.admin,
 });
-
-/** The row menu's actions, each also counting as acting on its invocation */
-const rowActions = invocationListItemActions.map((action) => ({
-    ...action,
-    handler:
-        action.handler &&
-        ((invocation: WorkflowInvocation, index: number) => {
-            rememberActedOn(invocation);
-            action.handler!(invocation, index);
-        }),
-}));
 
 /** Ids of the selected invocations; cleared whenever the list's rows change */
 const selectedIds = ref<string[]>([]);
@@ -552,7 +520,7 @@ watch([currentPage, filterText, sortBy, sortDesc], ([page], [oldPage]) => {
                 :sort-desc="sortDesc"
                 :local-sorting="false"
                 :overlay-loading="resultsLoading"
-                :actions="rowActions"
+                :actions="invocationListItemActions"
                 :row-details-shown="(item) => expandedIds.includes(item.id)"
                 selectable
                 no-select-on-click
@@ -604,8 +572,7 @@ watch([currentPage, filterText, sortBy, sortDesc], ([page], [oldPage]) => {
                         <GLink
                             class="invocation-workflow-name"
                             :to="`/workflows/invocations/${item.id}`"
-                            :title="localize('View this invocation')"
-                            @click="rememberActedOn(item)">
+                            :title="localize('View this invocation')">
                             {{ workflowStore.getStoredWorkflowNameByInstanceId(item.workflow_id) }}
                         </GLink>
                         <GBadge
@@ -632,12 +599,7 @@ watch([currentPage, filterText, sortBy, sortDesc], ([page], [oldPage]) => {
                 </template>
 
                 <template v-slot:row-details="{ item }">
-                    <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-                    <div
-                        :key="item.id"
-                        class="card p-2 invocation-row-details"
-                        data-description="grid expanded row"
-                        @click.capture="rememberActedOn(item)">
+                    <div :key="item.id" class="card p-2 invocation-row-details" data-description="grid expanded row">
                         <div class="invocation-row-layout">
                             <InvocationRowSummary :invocation="item">
                                 <template v-slot:actions>
