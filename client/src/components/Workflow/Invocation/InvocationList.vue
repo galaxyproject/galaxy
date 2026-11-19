@@ -539,9 +539,7 @@ watch([currentPage, filterText, sortBy, sortDesc], ([page], [oldPage]) => {
                             : {{ value }}
                         </li>
                     </ul>
-                    <a href="javascript:void(0)" class="ui-link" @click="filterText = validatedFilterText()">
-                        Remove invalid filters from query
-                    </a>
+                    <GLink @click="filterText = validatedFilterText()">Remove invalid filters from query</GLink>
                 </GAlert>
             </span>
 
