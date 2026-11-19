@@ -118,6 +118,14 @@ describe("UserExtraPreferences", () => {
         expect(wrapper.html()).not.toContain("__SECRET_PLACEHOLDER__");
     });
 
+    it("keeps browsers from autofilling the secret fields", async () => {
+        serve();
+        const wrapper = await mountPage();
+        expect(field(wrapper, "token").attributes("autocomplete")).toBe("new-password");
+        expect(field(wrapper, "api_key").attributes("autocomplete")).toBe("new-password");
+        expect(field(wrapper, "endpoint").attributes("autocomplete")).toBeUndefined();
+    });
+
     it("says so when no extra configurations are defined", async () => {
         serve([], {});
         const wrapper = await mountPage();

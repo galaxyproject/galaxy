@@ -88,6 +88,8 @@ function buildInput(values: ExtraPreferenceValues, section: string, input: Extra
     if (isSensitive(input)) {
         const stored = isStored(values, section, input);
         node.value = "";
+        // an autofilled password would count as a typed secret and replace the stored one
+        node.autocomplete = "new-password";
         node.help = [input.help, stored ? STORED_SECRET_HINT : ""].filter(Boolean).join(" ");
     }
     return node;
