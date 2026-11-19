@@ -61,6 +61,14 @@ function initialValue(values: ExtraPreferenceValues, section: string, input: Ext
     if (stored !== undefined && stored !== null && !isSecretState(stored)) {
         return clone(stored);
     }
+    if (input.value === undefined || input.value === null) {
+        // FormSelect picks the first option of a required single select on mount, so it is the value shown
+        const first =
+            inputKind(input) === "select" && input.required && !input.multiple ? input.options?.[0] : undefined;
+        if (first) {
+            return clone(first[1]) as FormData[string];
+        }
+    }
     return clone(input.value ?? emptyValue(input));
 }
 

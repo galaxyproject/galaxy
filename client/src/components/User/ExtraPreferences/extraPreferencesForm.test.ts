@@ -170,6 +170,22 @@ describe("buildInputs", () => {
         });
     });
 
+    it("starts an unset required single select on its first option, as the select widget does", () => {
+        const picked: ExtraPreferenceSection[] = [
+            {
+                name: "s",
+                description: "S",
+                inputs: [
+                    { name: "a", type: "select", options: [["One", "1"]], required: true, multiple: false },
+                    { name: "b", type: "select", options: [["One", "1"]], required: false, multiple: false },
+                    { name: "c", type: "select", options: [["One", "1"]], required: true, multiple: true },
+                ],
+            },
+        ];
+        const [section] = buildInputs(picked, { s: { a: null, b: null, c: null } });
+        expect(section?.inputs?.map((node) => node.value)).toEqual(["1", null, []]);
+    });
+
     it("builds nodes that do not share state with the definition", () => {
         const node = leaf("zones");
         (node.value as string[]).push("b");

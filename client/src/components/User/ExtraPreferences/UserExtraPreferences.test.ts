@@ -413,6 +413,41 @@ describe("UserExtraPreferences with every input type", () => {
     });
 });
 
+describe("UserExtraPreferences with a required select only", () => {
+    const ONLY_SELECT: Definition = [
+        {
+            name: "pick",
+            description: "Pick section",
+            inputs: [
+                {
+                    name: "mode",
+                    label: "Mode",
+                    type: "select",
+                    required: true,
+                    multiple: false,
+                    options: [
+                        ["First", "first"],
+                        ["Second", "second"],
+                    ],
+                },
+                { name: "key", label: "Key", type: "secret", required: false, store: "vault", multiple: false },
+            ],
+        },
+    ];
+
+    beforeEach(() => {
+        confirm.mockReset();
+    });
+
+    it("is clean at load: the first option shown is the value held, so Save is off and Remove is on", async () => {
+        serve(ONLY_SELECT, { pick: { mode: null, key: { is_set: true } } });
+        const wrapper = await mountPage();
+        expect(saveDisabled(wrapper)).toBe(true);
+        expect(wrapper.find("[data-description='clear pick|key']").attributes("aria-disabled")).not.toBe("true");
+        expect(putBodies).toEqual([]);
+    });
+});
+
 describe("UserExtraPreferences with defaults in two sections", () => {
     const DEFAULTS: Definition = [
         {
