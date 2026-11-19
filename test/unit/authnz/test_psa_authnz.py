@@ -53,6 +53,7 @@ from galaxy.authnz.psa_authnz import (
     create_user_and_activate,
     decode_access_token,
     PSAAuthnz,
+    Redirect,
     Strategy,
     sync_user_profile,
 )
@@ -766,7 +767,7 @@ def test_authenticate_does_not_mutate_backend_default_scope(psa_authnz):
 
     def fake_do_auth(backend):
         observed_scopes.append(backend.get_scope())
-        return MagicMock()
+        return Redirect("https://idp.example.org/authorize?state=test_state")
 
     with (
         patch("galaxy.authnz.psa_authnz.on_the_fly_config"),
@@ -774,6 +775,7 @@ def test_authenticate_does_not_mutate_backend_default_scope(psa_authnz):
         patch("galaxy.authnz.psa_authnz.do_auth", side_effect=fake_do_auth),
         patch("galaxy.authnz.psa_authnz.FlowState"),
         patch("galaxy.authnz.psa_authnz.authentication_id"),
+        patch("galaxy.authnz.psa_authnz._transaction_state"),
     ):
         psa_authnz.authenticate(make_mock_trans())
         psa_authnz.authenticate(make_mock_trans())
@@ -838,7 +840,7 @@ def test_authenticate_with_real_backend_does_not_accumulate_extra_scopes(psa_aut
 
     def fake_do_auth(backend):
         observed_scopes.append(backend.get_scope())
-        return MagicMock()
+        return Redirect("https://idp.example.org/authorize?state=test_state")
 
     try:
         with (
@@ -847,6 +849,7 @@ def test_authenticate_with_real_backend_does_not_accumulate_extra_scopes(psa_aut
             patch("galaxy.authnz.psa_authnz.do_auth", side_effect=fake_do_auth),
             patch("galaxy.authnz.psa_authnz.FlowState"),
             patch("galaxy.authnz.psa_authnz.authentication_id"),
+            patch("galaxy.authnz.psa_authnz._transaction_state"),
         ):
             psa_authnz.authenticate(make_mock_trans())
             psa_authnz.authenticate(make_mock_trans())

@@ -2913,7 +2913,7 @@ requires-dist = [
     { name = "python-magic" },
     { name = "roc-validator", marker = "extra == 'test'" },
     { name = "rocrate", specifier = "<0.15.0" },
-    { name = "social-auth-core", specifier = ">=4.5.0,<6" },
+    { name = "social-auth-core", specifier = ">=6.2.0,<7" },
     { name = "sqlalchemy", specifier = ">=2.0.37,!=2.0.41,<2.1" },
     { name = "tifffile" },
     { name = "typing-extensions" },
@@ -4119,7 +4119,7 @@ requires-dist = [
     { name = "s3fs", specifier = ">=2023.1.0" },
     { name = "schema-salad", specifier = ">=8.7.20240905150001" },
     { name = "slowapi" },
-    { name = "social-auth-core", specifier = ">=4.5.0,<6" },
+    { name = "social-auth-core", specifier = ">=6.2.0,<7" },
     { name = "sortedcontainers" },
     { name = "sqlalchemy", specifier = ">=2.0.37,!=2.0.41,<2.1" },
     { name = "starlette", specifier = ">=1.0.1" },
@@ -9969,7 +9969,7 @@ wheels = [
 
 [[package]]
 name = "social-auth-core"
-version = "5.2.0"
+version = "6.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
@@ -9980,9 +9980,9 @@ dependencies = [
     { name = "requests" },
     { name = "requests-oauthlib" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/31/0b/8d5137b3a020719702e1d159a68c6c4dd863e1ae57fd4875a4a68b2855fe/social_auth_core-5.2.0.tar.gz", hash = "sha256:72d3c52fe87d07c0db8421fee5f5ec33b3dacce449975b8a572cd0691e3de315", size = 292820, upload-time = "2026-09-30T15:55:58.723Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/fc/c0545b9a6a8bed1fec5eb1195999b278f5345c7f1b09ef835b0886092ea0/social_auth_core-6.2.0.tar.gz", hash = "sha256:93daa49e5cb11e7ac06838690679fc6e2901d9add2ba8316651ee19aca26a340", size = 474536, upload-time = "2026-10-20T13:15:02.045Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/31/245e19405808689b60810ec8ebd0a4d6be51d73e69c810e686fb7aede33a/social_auth_core-5.2.0-py3-none-any.whl", hash = "sha256:e7b9990450291488deffce8d92d14d4396021b8d3c4a0ac5c32ec03bfaccc496", size = 492771, upload-time = "2026-09-30T15:55:57.372Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/0c/413127509bc8fbe5dace05ebc09c692096f152ecde65210152b680d8ffd7/social_auth_core-6.2.0-py3-none-any.whl", hash = "sha256:385771345372b9e87b448fe23b1ca4909fcbb0b752d1206600ab3c18342cd321", size = 308148, upload-time = "2026-10-20T13:15:00.267Z" },
 ]
 
 [[package]]

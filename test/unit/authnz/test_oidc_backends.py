@@ -11,6 +11,7 @@ This test suite covers additional functionality such as:
 import secrets
 import string
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import (
     Mock,
     patch,
@@ -29,6 +30,7 @@ from galaxy.authnz.keycloak import KeycloakOpenIdConnect
 from galaxy.authnz.psa_authnz import (
     associate_by_email_if_logged_in,
     check_user_creation_confirmation,
+    Strategy,
 )
 
 
@@ -117,7 +119,7 @@ class TestKeycloakPKCE:
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
         # Get auth params - now handled by GalaxyOpenIdConnect base class
-        params = backend.auth_params(state="test_state")
+        params = backend.auth_params(state=backend.get_or_create_state())
 
         assert "code_challenge" in params
         assert params["code_challenge"] == "challenge456"
@@ -160,7 +162,7 @@ class TestKeycloakIDPHint:
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
         # Get auth params - IDP hint is added by GalaxyOpenIdConnect base class
-        params = backend.auth_params()
+        params = backend.auth_params(state=backend.get_or_create_state())
 
         assert "kc_idp_hint" in params
         assert params["kc_idp_hint"] == "oidc"
@@ -177,7 +179,7 @@ class TestKeycloakIDPHint:
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
         # Get auth params - IDP hint is added by GalaxyOpenIdConnect base class
-        params = backend.auth_params()
+        params = backend.auth_params(state=backend.get_or_create_state())
 
         assert params["kc_idp_hint"] == "custom_idp"
 
@@ -263,7 +265,7 @@ class TestCILogonSpecificFeatures:
         backend = CILogonOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
         # Get auth params - IDP hint is added by GalaxyOpenIdConnect base class
-        params = backend.auth_params()
+        params = backend.auth_params(state=backend.get_or_create_state())
 
         assert params["idphint"] == "cilogon"
 
@@ -435,7 +437,7 @@ class TestPSARegressionCoverage:
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
         with patch.object(KeycloakOpenIdConnect.__bases__[0], "auth_params", return_value={"state": "test"}):
-            params = backend.auth_params(state="test_state")
+            params = backend.auth_params(state=backend.get_or_create_state())
 
             # State should be present (inherited from OpenIdConnectAuth)
             assert "state" in params or "scope" in params  # Basic check that params are returned
@@ -485,7 +487,7 @@ class TestRequireCreateConfirmation:
 
         # Call the pipeline step
         result = check_user_creation_confirmation(
-            strategy=strategy,
+            strategy=cast(Strategy, strategy),
             backend=backend,
             details=details,
             response=response,
@@ -513,7 +515,7 @@ class TestRequireCreateConfirmation:
 
         # Call the pipeline step with existing user
         result = check_user_creation_confirmation(
-            strategy=strategy,
+            strategy=cast(Strategy, strategy),
             backend=backend,
             details=details,
             response=response,
@@ -556,7 +558,7 @@ class TestRequireCreateConfirmation:
 
             # Call the pipeline step
             result = check_user_creation_confirmation(
-                strategy=strategy,
+                strategy=cast(Strategy, strategy),
                 backend=backend,
                 details=details,
                 response=response,

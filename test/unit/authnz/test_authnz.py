@@ -13,8 +13,10 @@ import pytest
 from social_core.backends.base import BaseAuth
 from social_core.exceptions import (
     AuthCanceled,
-    AuthForbidden,
-    AuthTokenError,
+    AuthCredentialError,
+    AuthPolicyError,
+    AuthProviderError,
+    AuthResponseError,
 )
 from social_core.utils import setting_name
 from webob.exc import HTTPFound
@@ -334,14 +336,16 @@ def test_refresh_expiring_oidc_tokens_returns_none_after_successful_refresh(mock
 @pytest.mark.parametrize(
     "refresh_exception",
     [
-        AuthTokenError(backend=FAKE_SOCIAL_AUTH_BACKEND),
+        AuthCredentialError(backend=FAKE_SOCIAL_AUTH_BACKEND, code="reauthentication_required", stage="refresh"),
         AuthCanceled(backend=FAKE_SOCIAL_AUTH_BACKEND),
-        AuthForbidden(backend=FAKE_SOCIAL_AUTH_BACKEND),
+        AuthPolicyError(backend=FAKE_SOCIAL_AUTH_BACKEND),
+        AuthResponseError(backend=FAKE_SOCIAL_AUTH_BACKEND, code="invalid_signature", stage="refresh"),
+        AuthResponseError(backend=FAKE_SOCIAL_AUTH_BACKEND, code="invalid_claim", stage="refresh"),
     ],
 )
 def test_refresh_expiring_oidc_tokens_returns_provider_on_required_terminal_refresh_failure(
-    mock_app, refresh_exception
-):
+    mock_app: MagicMock, refresh_exception: Exception
+) -> None:
     user = _make_user_with_social_auth()
     trans = _make_mock_trans_with_user(user)
     manager = _make_authnz_manager(trans.app, require_session_refresh="true")
@@ -359,7 +363,9 @@ def test_refresh_expiring_oidc_tokens_returns_none_on_optional_terminal_refresh_
     trans = _make_mock_trans_with_user(user)
     manager = _make_authnz_manager(trans.app, require_session_refresh="false")
     FakeRefreshBackend.refresh_result = False
-    FakeRefreshBackend.refresh_exception = AuthTokenError(backend=FAKE_SOCIAL_AUTH_BACKEND)
+    FakeRefreshBackend.refresh_exception = AuthCredentialError(
+        backend=FAKE_SOCIAL_AUTH_BACKEND, code="reauthentication_required", stage="refresh"
+    )
 
     with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
         reauth_provider = manager.refresh_expiring_oidc_tokens(cast(Any, trans))
@@ -372,7 +378,9 @@ def test_refresh_expiring_oidc_tokens_uses_unified_provider_for_refresh_config(m
     trans = _make_mock_trans_with_user(user)
     manager = _make_authnz_manager(trans.app, provider_name="google", require_session_refresh="true")
     FakeRefreshBackend.refresh_result = False
-    FakeRefreshBackend.refresh_exception = AuthTokenError(backend=FAKE_SOCIAL_AUTH_BACKEND)
+    FakeRefreshBackend.refresh_exception = AuthCredentialError(
+        backend=FAKE_SOCIAL_AUTH_BACKEND, code="reauthentication_required", stage="refresh"
+    )
 
     with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
         reauth_provider = manager.refresh_expiring_oidc_tokens(cast(Any, trans))
@@ -380,12 +388,21 @@ def test_refresh_expiring_oidc_tokens_uses_unified_provider_for_refresh_config(m
     assert reauth_provider == "google"
 
 
-def test_refresh_expiring_oidc_tokens_returns_none_on_unexpected_refresh_failure(mock_app):
+@pytest.mark.parametrize(
+    "refresh_exception",
+    [
+        RuntimeError("unexpected refresh failure"),
+        AuthProviderError(backend=FAKE_SOCIAL_AUTH_BACKEND, code="unavailable", stage="refresh"),
+    ],
+)
+def test_refresh_expiring_oidc_tokens_returns_none_on_unexpected_or_transient_refresh_failure(
+    mock_app: MagicMock, refresh_exception: Exception
+) -> None:
     user = _make_user_with_social_auth()
     trans = _make_mock_trans_with_user(user)
     manager = _make_authnz_manager(trans.app, require_session_refresh="true")
     FakeRefreshBackend.refresh_result = False
-    FakeRefreshBackend.refresh_exception = RuntimeError("unexpected refresh failure")
+    FakeRefreshBackend.refresh_exception = refresh_exception
 
     with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
         reauth_provider = manager.refresh_expiring_oidc_tokens(cast(Any, trans))
@@ -401,7 +418,9 @@ def test_redirects_to_oidc_login_on_terminal_refresh_failure() -> None:
     environ = galaxy_mock.buildMockEnviron()
     AuthenticatedStubGalaxyWebTransaction.auth_user = _make_user_with_social_auth()
     FakeRefreshBackend.refresh_result = False
-    FakeRefreshBackend.refresh_exception = AuthTokenError(backend=FAKE_SOCIAL_AUTH_BACKEND)
+    FakeRefreshBackend.refresh_exception = AuthCredentialError(
+        backend=FAKE_SOCIAL_AUTH_BACKEND, code="reauthentication_required", stage="refresh"
+    )
     original_send_redirect = Response.send_redirect
     redirect_urls: list[str] = []
 
@@ -430,7 +449,9 @@ def test_returns_401_for_api_request_on_terminal_refresh_failure() -> None:
     environ = galaxy_mock.buildMockEnviron(PATH_INFO="/api/users/current", is_api_request=True)
     AuthenticatedStubGalaxyWebTransaction.auth_user = _make_user_with_social_auth()
     FakeRefreshBackend.refresh_result = False
-    FakeRefreshBackend.refresh_exception = AuthTokenError(backend=FAKE_SOCIAL_AUTH_BACKEND)
+    FakeRefreshBackend.refresh_exception = AuthCredentialError(
+        backend=FAKE_SOCIAL_AUTH_BACKEND, code="reauthentication_required", stage="refresh"
+    )
 
     with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
         trans = AuthenticatedStubGalaxyWebTransaction(environ, app, webapp, "session_cookie")

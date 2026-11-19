@@ -3,13 +3,14 @@ import logging
 import time
 from typing import (
     Any,
-    cast,
     NoReturn,
     TYPE_CHECKING,
 )
 from urllib.parse import (
+    parse_qs,
     quote,
     urlencode,
+    urlparse,
 )
 
 import jwt
@@ -78,6 +79,7 @@ from .oidc_utils import (
 )
 
 if TYPE_CHECKING:
+    from social_core.backends.base import BaseAuth
     from social_core.backends.oauth import BaseOAuth2
     from social_core.strategy import HttpResponseProtocol
 
@@ -149,6 +151,8 @@ AUTH_PIPELINE = (
     # already part of the auth response from the provider, but sometimes this
     # could hit a provider API.
     "social_core.pipeline.social_auth.social_details",
+    # Fill in missing full or component names from the provider details.
+    "social_core.pipeline.social_auth.social_names",
     # Get the social uid from whichever service we're authing thru. The uid is
     # the unique identifier of the given user in the provider.
     "social_core.pipeline.social_auth.social_uid",
@@ -377,8 +381,10 @@ class PSAAuthnz(IdentityProvider):
         # The post-login destination travels in the validated login-next cookie.
         # Do not persist social-core's own copy of ``next``.
         strategy.session.pop("next", None)
-        state = strategy.session_get(f"{backend.name}_state")
-        flow_state.save("authentication", strategy.session, identifier=authentication_id(state))
+        state = parse_qs(urlparse(redirect.url).query).get("state", [None])[0]
+        flow_state.save(
+            "authentication", strategy.session, identifier=authentication_id(_transaction_state(backend, state))
+        )
         return redirect
 
     def callback(self, state_token: str, authz_code: str, trans: "GalaxyWebTransaction", login_redirect_url: str):
@@ -392,11 +398,11 @@ class PSAAuthnz(IdentityProvider):
 
         flow_state = FlowState(trans.sa_session, trans.galaxy_session, self.config["provider"])
         session = flow_state.consume("authentication", authentication_id(state_token))
-        if session.get(f"{BACKENDS_NAME[self.config['provider']]}_state") != state_token:
-            raise InvalidFlow()
         strategy = Strategy(trans.request, session, Storage, self.config)
         strategy.flow_state = flow_state
         backend = self._load_backend(strategy, self.config["redirect_uri"])
+        if _transaction_state(backend, state_token) is None:
+            raise InvalidFlow()
         redirect = do_complete(
             backend,
             login=lambda backend, user, social_user: self._login_user(backend, user, social_user),
@@ -450,19 +456,23 @@ class PSAAuthnz(IdentityProvider):
         return redirect_url, user
 
     def disconnect(
-        self, provider, trans: "GalaxyWebTransaction", disconnect_redirect_url=None, email=None, association_id=None
-    ):
+        self,
+        provider: str,
+        trans: "GalaxyWebTransaction",
+        disconnect_redirect_url: str | None = None,
+        email: str | None = None,
+        association_id: int | None = None,
+    ) -> tuple[bool, str, str]:
         on_the_fly_config(trans.sa_session)
         self.config[setting_name("DISCONNECT_REDIRECT_URL")] = (
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
         )
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
-        response = do_disconnect(backend, trans.user, association_id)
-        response_url = response.url if hasattr(response, "url") else response
-        if isinstance(response_url, str):
-            return True, "", response_url
-        return response.get("success", False), response.get("message", ""), ""
+        response: HttpResponseProtocol | dict[str, Any] = do_disconnect(backend, trans.user, association_id)
+        if isinstance(response, dict):
+            return response.get("success", False), response.get("message", ""), ""
+        return True, "", response.url
 
     def logout(self, trans: "GalaxyWebTransaction", post_user_logout_href=None):
         """
@@ -580,6 +590,9 @@ class PSAAuthnz(IdentityProvider):
         """Create only the identity authenticated by this browser's pending flow."""
         data = self._consume_confirmation(confirmation_id, trans)
         email, username, user_id = _confirmation_identity(data)
+        id_key = data.get("id_key", "")
+        if not isinstance(id_key, str):
+            raise InvalidFlow()
         provider = BACKENDS_NAME[self.config["provider"]]
         if (
             trans.sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
@@ -594,7 +607,9 @@ class PSAAuthnz(IdentityProvider):
             username = f"{username}{count}"
 
         user = create_and_activate_oidc_user(trans, email, username, self.config["REQUIRE_USER_ACTIVATION"])
-        user_authnz_token = UserAuthnzToken(user=user, uid=user_id, provider=provider, extra_data=data["response"])
+        user_authnz_token = UserAuthnzToken(
+            user=user, uid=user_id, provider=provider, extra_data=data["response"], id_key=id_key
+        )
         trans.sa_session.add(user_authnz_token)
         try:
             trans.sa_session.commit()
@@ -611,6 +626,16 @@ class PSAAuthnz(IdentityProvider):
             raise InvalidFlow()
         flow_state = FlowState(trans.sa_session, trans.galaxy_session, self.config["provider"])
         return flow_state.consume("confirmation", confirmation_id)
+
+
+def _transaction_state(backend: "BaseOAuth2", state: str | None) -> str | None:
+    """Return ``state`` if it belongs to an authorization started in the backend's strategy session."""
+    if not state:
+        return None
+    transaction = backend.strategy.session_get(backend.transaction_key(state))
+    if not isinstance(transaction, dict) or transaction.get("state") != state:
+        return None
+    return state
 
 
 class Strategy(BaseStrategy):
@@ -644,7 +669,7 @@ class Strategy(BaseStrategy):
     def session_pop(self, name: str) -> Any:
         return self.session.pop(name, None)
 
-    def request_data(self, merge: bool = True) -> Any:
+    def get_request_data(self, merge: bool = True) -> Any:
         if not self.request:
             return {}
         post = self.request.POST
@@ -1161,18 +1186,26 @@ def _confirmation_identity(data):
 
 
 def check_user_creation_confirmation(
-    strategy=None, backend=None, details=None, response=None, is_new=False, user=None, uid=None, **kwargs
-):
+    strategy: "Strategy",
+    backend: "BaseAuth",
+    details: dict[str, Any],
+    response: dict[str, Any] | None = None,
+    is_new: bool = False,
+    user: User | None = None,
+    uid: str | None = None,
+    id_key: str = "",
+    **kwargs: Any,
+) -> str | None:
     """Defer new accounts using identity data from the authenticated pipeline."""
     if not strategy.config.get("REQUIRE_CREATE_CONFIRMATION", False) or not is_new or user:
-        return
+        return None
 
     email = details.get("email")
     sa_session = UserAuthnzToken.sa_session
     if sa_session is None:
         raise InvalidFlow()
     if email and sa_session.query(User).where(func.lower(User.email) == email.lower()).first():
-        return
+        return None
     if strategy.flow_state is None or strategy.flow_state.galaxy_session.user_id is not None:
         raise InvalidFlow()
 
@@ -1181,9 +1214,9 @@ def check_user_creation_confirmation(
     if is_oidc_backend(backend):
         # social-core verifies this token during the code exchange, including the
         # nonce. Revalidating it here would try to consume that nonce twice.
-        claims = cast("dict[str, Any] | None", backend.id_token)
+        claims = backend.id_token
         # Bind UserInfo to the ID token's subject, independently of the backend's
-        # UID convention (Google uses email by default).
+        # UID convention (e.g. an ``ID_KEY`` overridden in the OIDC configuration).
         if (
             not isinstance(claims, dict)
             or not isinstance(claims.get("sub"), str)
@@ -1197,7 +1230,7 @@ def check_user_creation_confirmation(
             raise InvalidFlow()
         username = claims.get("preferred_username") or username
 
-    data = {"email": email, "username": username, "uid": uid, "response": response}
+    data = {"email": email, "username": username, "uid": uid, "id_key": id_key, "response": response}
     _confirmation_identity(data)
     confirmation_id = strategy.flow_state.save("confirmation", data, expires_at=expires_at)
     return strategy.config["GALAXY_TRANS"].url_builder(
