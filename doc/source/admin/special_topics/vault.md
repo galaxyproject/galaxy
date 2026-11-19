@@ -1,7 +1,7 @@
 # Storing secrets in the vault
 
 Galaxy can be configured to store secrets in an external vault, which is useful for secure handling and centralization of secrets management.
-In particular, information fields in the "Manage information" section of the user profile, such as AWS credentials, can be configured to be stored
+In particular, extra configuration fields under User > Preferences > Extra Configurations, such as AWS credentials, can be configured to be stored
 in an encrypted vault instead of the database. Vault keys are generally stored as key-value pairs in a hierarchical fashion, for example:
 `/galaxy/user/2/preferences/aws/client_secret`.
 
