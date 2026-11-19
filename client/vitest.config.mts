@@ -114,9 +114,9 @@ export default defineConfig({
                 __dirname,
                 "node_modules/@fortawesome/vue-fontawesome/index.es.js",
             ),
-            // portal-vue (bootstrap-vue's modals, toasts, popovers and tooltips) resolves to its
-            // UMD build here, which reads `Vue.extend` off the `vue` module namespace. Its ESM
-            // build, which the app uses, imports compat's default export instead.
+            // portal-vue (bootstrap-vue's toasts) resolves to its UMD build here, which reads
+            // `Vue.extend` off the `vue` module namespace. Its ESM build, which the app uses,
+            // imports compat's default export instead.
             "portal-vue": "portal-vue/dist/portal-vue.esm.js",
             // Match former Jest's module name mapping
             "@": path.resolve(__dirname, "./src"),
