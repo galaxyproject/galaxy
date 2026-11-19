@@ -30,17 +30,12 @@ window.addEventListener("load", async () => {
 
     // Build router
     const router = getRouter(Galaxy);
-    // Keep router available on the global app object for legacy integrations
-    // such as webhooks that are injected outside of Vue component context.
+    // Expose the router on the Galaxy object for code outside Vue components,
+    // such as webhooks (e.g. the GTN webhook).
     Galaxy.router = router;
 
     // Initialize globals
     await initWebhooks(Galaxy);
-
-    // When initializing the primary app we bind the routing back to Galaxy for
-    // external use (e.g. gtn webhook) -- longer term we discussed plans to
-    // parameterize webhooks and initialize them explicitly with state.
-    Galaxy.router = router;
 
     // Mount application with Vue 3 createApp
     const app = createApp(App);

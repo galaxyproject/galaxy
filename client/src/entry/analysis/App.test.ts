@@ -91,12 +91,12 @@ it("applies the user's theme, falling back to the first configured theme", async
     user.currentTheme = "red";
     const wrapper = shallowMount(App, { localVue, router, pinia });
     await flushPromises();
-    expect(wrapper.find("#app").attributes("style")).toContain("--masthead-color: red");
+    expect(wrapper.attributes("style")).toContain("--masthead-color: red");
 
     // @ts-expect-error -- createTestingPinia makes getters writable
     user.currentTheme = "missing";
     await flushPromises();
-    expect(wrapper.find("#app").attributes("style")).toContain("--masthead-color: blue");
+    expect(wrapper.attributes("style")).toContain("--masthead-color: blue");
     wrapper.unmount();
 });
 

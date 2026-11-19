@@ -301,18 +301,12 @@ importers:
       vue-demi:
         specifier: ^0.14.10
         version: 0.14.10(vue@3.5.43(typescript@5.8.3))
-      vue-infinite-scroll:
-        specifier: ^2.0.2
-        version: 2.0.2
       vue-json-pretty:
         specifier: ^1.9.5
         version: 1.9.5
       vue-multiselect:
         specifier: ^3.3
         version: 3.5.0(patch_hash=5a705b04177227e6cd45209b2333d41993de5178f0841ed61b490a7939a06394)
-      vue-observe-visibility:
-        specifier: ^1.0.0
-        version: 1.0.0
       vue-router:
         specifier: ^5.3.1
         version: 5.3.1(@vue/compiler-sfc@3.5.43)(esbuild@0.28.1)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))(rolldown@1.2.15)(rollup@4.60.1)(vite@8.3.3(@types/node@26.6.6)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0))(vue@3.5.43(typescript@5.8.3))
@@ -5561,9 +5555,6 @@ packages:
   vue-functional-data-merge@3.1.0:
     resolution: {integrity: sha512-leT4kdJVQyeZNY1kmnS1xiUlQ9z1B/kdBFCILIjYYQDqZgLqCLa0UhjSSeRX6c3mUe6U5qYeM8LrEqkHJ1B4LA==}
 
-  vue-infinite-scroll@2.0.2:
-    resolution: {integrity: sha512-n+YghR059YmciANGJh9SsNWRi1YZEBVlODtmnb/12zI+4R72QZSWd+EuZ5mW6auEo/yaJXgxzwsuhvALVnm73A==}
-
   vue-json-pretty@1.9.5:
     resolution: {integrity: sha512-fwbiH/ky/raX1D4MXRZZLFeKm157e9AkumMD7Y+djdLU1Sb0Tp5q2iOPvCnkWNzRpUfxx/zUjONUG+MIWsqx/w==}
     engines: {node: '>= 10.0.0', npm: '>= 5.0.0'}
@@ -5571,9 +5562,6 @@ packages:
   vue-multiselect@3.5.0:
     resolution: {integrity: sha512-i758SEqWFcFshL1eAg0F3EFeFQ1mOCmh2mgnGCZv1XpHFVIAv8fxo8bQQ4ZnMoaPhMp8KI1A6gPBVHh3YzRg/Q==}
     engines: {node: '>= 14.18.1', npm: '>= 6.14.15'}
-
-  vue-observe-visibility@1.0.0:
-    resolution: {integrity: sha512-s5TFh3s3h3Mhd3jaz3zGzkVHKHnc/0C/gNr30olO99+yw2hl3WBhK3ng3/f9OF+qkW4+l7GkmwfAzDAcY3lCFg==}
 
   vue-router@5.3.1:
     resolution: {integrity: sha512-GDBZzgmILxA/kFnkFbJjQZdZ2QQbngnIMMuoUcjhZIfH1RGMaPjPwX5ASnV38qamuA9uhO0RDjSBHTDNG2uXyQ==}
@@ -11036,13 +11024,9 @@ snapshots:
 
   vue-functional-data-merge@3.1.0: {}
 
-  vue-infinite-scroll@2.0.2: {}
-
   vue-json-pretty@1.9.5: {}
 
   vue-multiselect@3.5.0(patch_hash=5a705b04177227e6cd45209b2333d41993de5178f0841ed61b490a7939a06394): {}
-
-  vue-observe-visibility@1.0.0: {}
 
   vue-router@5.3.1(@vue/compiler-sfc@3.5.43)(esbuild@0.28.1)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.8.3)(vue@3.5.43(typescript@5.8.3)))(rolldown@1.2.15)(rollup@4.60.1)(vite@8.3.3(@types/node@26.6.6)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0))(vue@3.5.43(typescript@5.8.3)):
     dependencies:

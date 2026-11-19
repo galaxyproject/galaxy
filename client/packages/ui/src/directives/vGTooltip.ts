@@ -11,7 +11,7 @@
  *   Menus:     hidden while a menu toggle (aria-haspopup) owned by the element is expanded
  *
  * Value forms:
- *   v-g-tooltip                           → reads element's title attribute
+ *   v-g-tooltip                           → reads element's title attribute, or an icon's own <title> element
  *   v-g-tooltip="'text'"                  → string content
  *   v-g-tooltip="{ title, placement }"    → object config (title optional, falls back to :title)
  *   v-g-tooltip="{ title, show }"         → also shows/hides whenever `show` changes (like b-tooltip :show)
@@ -27,7 +27,7 @@ import {
     shift,
 } from "@floating-ui/dom";
 import purify from "dompurify";
-import type { DirectiveBinding, ObjectDirective, VNode } from "vue";
+import type { DirectiveBinding, ObjectDirective } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, useDelayedAction } from "../utils/tooltipTiming";
 
@@ -146,19 +146,17 @@ function getShow(bindingValue: unknown): boolean | undefined {
     return undefined;
 }
 
-function getContent(el: HTMLElement, bindingValue: unknown, vnode?: VNode): string {
+function getContent(el: HTMLElement, bindingValue: unknown): string {
     if (typeof bindingValue === "string" && bindingValue) {
         return bindingValue;
     }
     if (typeof bindingValue === "object" && bindingValue !== null && "title" in bindingValue) {
         return String((bindingValue as { title: string }).title || "");
     }
-    // Fall back to element's title attribute.
-    // Also check the vnode's props for components with inheritAttrs: false (e.g. BFormCheckbox)
-    // where :title doesn't land on the root DOM element.
-    const title = el.getAttribute("title") || vnode?.props?.title || null;
+    // Fall back to the element's title, cached because the native tooltip is suppressed while shown.
+    const title = el.getAttribute("title") || getIconTitle(el)?.textContent;
     if (title) {
-        el.dataset.gTooltipTitle = String(title);
+        el.dataset.gTooltipTitle = title;
     }
     return el.dataset.gTooltipTitle || "";
 }
@@ -259,15 +257,40 @@ function showTooltip(el: HTMLElement) {
     state.cleanupAutoUpdate = autoUpdate(el, state.tooltipEl, () => updatePosition(el, state));
 }
 
+/** The `<title>` element of an icon, which Font Awesome renders instead of a title attribute. */
+function getIconTitle(el: HTMLElement): SVGTitleElement | null {
+    return el instanceof SVGElement ? el.querySelector(":scope > title") : null;
+}
+
+/**
+ * The text node of an icon's `<title>`. It is changed in place rather than through `textContent`,
+ * which would replace the node Vue keeps updating when the title changes.
+ */
+function getIconTitleText(el: HTMLElement): Text | null {
+    const textNode = getIconTitle(el)?.firstChild;
+    return textNode instanceof Text ? textNode : null;
+}
+
 function suppressNativeTooltip(el: HTMLElement) {
     if (el.hasAttribute("title")) {
         el.setAttribute("title", "");
     }
+    const iconTitleText = getIconTitleText(el);
+    if (iconTitleText) {
+        iconTitleText.nodeValue = "";
+    }
 }
 
 function restoreNativeTooltip(el: HTMLElement) {
-    if (el.dataset.gTooltipTitle) {
-        el.setAttribute("title", el.dataset.gTooltipTitle);
+    const title = el.dataset.gTooltipTitle;
+    if (!title) {
+        return;
+    }
+    const iconTitleText = getIconTitleText(el);
+    if (iconTitleText) {
+        iconTitleText.nodeValue = title;
+    } else {
+        el.setAttribute("title", title);
     }
 }
 
@@ -376,8 +399,8 @@ function getHtmlLabel(contentEl: HTMLElement): string {
     return (copy.textContent || "").replace(/\s+/g, " ").trim();
 }
 
-function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipState, vnode?: VNode) {
-    const content = getContent(el, bindingValue, vnode);
+function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipState) {
+    const content = getContent(el, bindingValue);
     if (state.isHtml) {
         state.contentEl.innerHTML = purify.sanitize(content);
     } else {
@@ -410,7 +433,7 @@ function getLabelTarget(el: HTMLElement) {
 }
 
 export const vGTooltip: ObjectDirective<HTMLElement> = {
-    mounted(el, binding, vnode) {
+    mounted(el, binding) {
         const modifiers = binding.modifiers || {};
         const isDanger = !!modifiers["v-danger"];
         const isHtml = !!modifiers.html;
@@ -452,18 +475,18 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
         };
 
         stateMap.set(el, state);
-        updateContent(el, binding.value, state, vnode);
+        updateContent(el, binding.value, state);
         if (getShow(binding.value)) {
             showTooltip(el);
         }
     },
 
-    updated(el, binding, vnode) {
+    updated(el, binding) {
         const state = stateMap.get(el);
         if (!state) {
             return;
         }
-        updateContent(el, binding.value, state, vnode);
+        updateContent(el, binding.value, state);
         state.placement = getPlacement(binding.modifiers || {}, binding.value);
 
         // Only act on a change, so re-renders don't close a tooltip the user opened by hovering

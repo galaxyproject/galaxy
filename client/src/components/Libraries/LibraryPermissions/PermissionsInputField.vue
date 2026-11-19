@@ -47,7 +47,7 @@ import { Services } from "@/components/Libraries/LibraryPermissions/services";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 
-// vue-observe-visibility 1.x reaches for `vnode.context`, which Vue 3 doesn't have.
+// Calls the bound handler with whether the element is in the viewport.
 const observeVisibility = {
     mounted(el, binding) {
         el._visibilityObserver = new IntersectionObserver(([entry]) => binding.value(entry.isIntersecting));

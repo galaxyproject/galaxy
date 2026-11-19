@@ -1,3 +1,5 @@
+import { faGlobe } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { advanceToJustBeforeTooltipHoverDelay, advanceTooltipHoverDelay } from "@tests/vitest/tooltipTestUtils";
 import { mount } from "@vue/test-utils";
 import purify from "dompurify";
@@ -233,6 +235,55 @@ describe("vGTooltip", () => {
         expect(wrapper.get("button[aria-label]").attributes("aria-label")).toBe("Run");
         expect(wrapper.get("button[aria-labelledby]").attributes("aria-label")).toBeUndefined();
         expect(wrapper.get("span[title]").attributes("aria-label")).toBeUndefined();
+        wrapper.unmount();
+    });
+
+    test("shows the title of a Font Awesome icon and hides its native tooltip meanwhile", async () => {
+        // Font Awesome renders the title prop as the icon's <title> element, not as a title attribute.
+        const wrapper = mount(
+            defineComponent({
+                components: { FontAwesomeIcon },
+                directives: { "g-tooltip": vGTooltip },
+                setup: () => ({ faGlobe }),
+                template: `<FontAwesomeIcon v-g-tooltip.hover title="Published workflow" :icon="faGlobe" />`,
+            }),
+            { attachTo: document.body },
+        );
+        const iconTitle = wrapper.get("title");
+
+        wrapper.element.dispatchEvent(new Event("mouseenter"));
+        expect(iconTitle.text()).toBe("");
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        expect(getRenderedTooltip()?.textContent).toBe("Published workflow");
+
+        wrapper.element.dispatchEvent(new Event("mouseleave"));
+        expect(iconTitle.text()).toBe("Published workflow");
+        expect(wrapper.attributes("title")).toBeUndefined();
+        // The <title> already names the icon through aria-labelledby.
+        expect(wrapper.attributes("aria-label")).toBeUndefined();
+        wrapper.unmount();
+    });
+
+    test("shows a Font Awesome icon's title after it changes", async () => {
+        const wrapper = mount(
+            defineComponent({
+                components: { FontAwesomeIcon },
+                directives: { "g-tooltip": vGTooltip },
+                props: { title: { type: String, required: true } },
+                setup: () => ({ faGlobe }),
+                template: `<FontAwesomeIcon v-g-tooltip.hover :title="title" :icon="faGlobe" />`,
+            }),
+            { attachTo: document.body, props: { title: "Uploading" } },
+        );
+        wrapper.element.dispatchEvent(new Event("mouseenter"));
+        wrapper.element.dispatchEvent(new Event("mouseleave"));
+
+        await wrapper.setProps({ title: "Upload failed" });
+        expect(wrapper.get("title").text()).toBe("Upload failed");
+
+        wrapper.element.dispatchEvent(new Event("mouseenter"));
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        expect(getRenderedTooltip()?.textContent).toBe("Upload failed");
         wrapper.unmount();
     });
 
