@@ -1000,7 +1000,8 @@ def get_mcp_app(gx_app: StructuredApp):
         (importing the workflow automatically creates the tool for the
         importing user).
 
-        Requires the USER_TOOL_EXECUTE role on the calling user and
+        Requires the USER_TOOL_EXECUTE role on the calling user (or
+        allow_user_defined_tools_for_all_users=true) and
         enable_beta_tool_formats=true in the Galaxy config; both are enforced
         by the underlying manager and surface as permission/config errors here.
 
