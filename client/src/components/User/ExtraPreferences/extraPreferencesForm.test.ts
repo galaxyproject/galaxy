@@ -60,7 +60,7 @@ const values: ExtraPreferenceValues = {
         verify: true,
         region: "eu",
         zones: ["a"],
-        note: null,
+        note: "none",
     },
 };
 
@@ -181,8 +181,22 @@ describe("buildPayload", () => {
         expect(buildPayload(definition, values, untouched())).toEqual({});
     });
 
-    it("does not store a displayed default until it is edited", () => {
-        expect(buildPayload(definition, values, untouched())).not.toHaveProperty("cloud.note");
+    it("stores a displayed default that was never stored, left as it is or typed back in", () => {
+        const unset: ExtraPreferenceValues = { cloud: { ...values.cloud!, note: null } };
+        expect(buildPayload(definition, unset, untouched(unset))).toEqual({ cloud: { note: "none" } });
+        const typed = { ...untouched(unset), [formKey("cloud", "note")]: "none" };
+        expect(buildPayload(definition, unset, typed)).toEqual({ cloud: { note: "none" } });
+    });
+
+    it("does not send a default that is already stored, and clears a stored value that was emptied", () => {
+        expect(buildPayload(definition, values, untouched())).toEqual({});
+        const emptied = { ...untouched(), [formKey("cloud", "note")]: "" };
+        expect(buildPayload(definition, values, emptied)).toEqual({ cloud: { note: null } });
+    });
+
+    it("does not send an unset boolean without a default that was not touched", () => {
+        const unset: ExtraPreferenceValues = { cloud: { ...values.cloud!, verify: null } };
+        expect(buildPayload(definition, unset, untouched(unset))).toEqual({});
     });
 
     it("sends only the changed inputs, grouped by section", () => {
@@ -212,7 +226,7 @@ describe("buildPayload", () => {
     });
 
     it("does not send an unset optional input that stays empty", () => {
-        const unset: ExtraPreferenceValues = { cloud: { ...values.cloud!, ratio: null, note: null, region: null } };
+        const unset: ExtraPreferenceValues = { cloud: { ...values.cloud!, ratio: null, region: null } };
         const data = { ...untouched(unset), [formKey("cloud", "ratio")]: "", [formKey("cloud", "region")]: null };
         expect(buildPayload(definition, unset, data)).toEqual({});
     });

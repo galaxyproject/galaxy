@@ -134,7 +134,19 @@ function normalize(input: ExtraPreferenceInput, raw: unknown): FormData[string] 
     }
 }
 
-/** The values to PUT: only inputs the user changed, so everything else keeps its stored value. */
+/**
+ * What the server holds for an input. An unset input with a definition default is null, not the default,
+ * so saving the displayed default stores it; one without a default is compared with its empty form value.
+ */
+function storedValue(values: ExtraPreferenceValues, section: string, input: ExtraPreferenceInput): FormData[string] {
+    const stored = values[section]?.[input.name];
+    if (stored !== undefined && stored !== null && !isSecretState(stored)) {
+        return normalize(input, stored);
+    }
+    return input.value === undefined || input.value === null ? normalize(input, emptyValue(input)) : null;
+}
+
+/** The values to PUT: only inputs that differ from what is stored, so everything else keeps its stored value. */
 export function buildPayload(
     definition: ExtraPreferenceSection[],
     values: ExtraPreferenceValues,
@@ -156,10 +168,7 @@ export function buildPayload(
                 value = raw;
             } else {
                 value = normalize(input, raw);
-                if (
-                    JSON.stringify(value) ===
-                    JSON.stringify(normalize(input, initialValue(values, section.name, input)))
-                ) {
+                if (JSON.stringify(value) === JSON.stringify(storedValue(values, section.name, input))) {
                     continue;
                 }
             }
