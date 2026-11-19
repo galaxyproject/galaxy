@@ -7,6 +7,7 @@ import {
     buildInputs,
     buildPayload,
     clearableSecrets,
+    dirtySections,
     type ExtraPreferenceSection,
     type ExtraPreferenceValues,
     formKey,
@@ -181,15 +182,26 @@ describe("buildPayload", () => {
         expect(buildPayload(definition, values, untouched())).toEqual({});
     });
 
-    it("stores a displayed default that was never stored, left as it is or typed back in", () => {
+    it("sends the defaults of an edited section, left as they are or typed back in", () => {
         const unset: ExtraPreferenceValues = { cloud: { ...values.cloud!, note: null } };
-        expect(buildPayload(definition, unset, untouched(unset))).toEqual({ cloud: { note: "none" } });
+        const edited = { ...untouched(unset), [formKey("cloud", "endpoint")]: "https://other.example.org" };
+        expect(buildPayload(definition, unset, edited)).toEqual({
+            cloud: { endpoint: "https://other.example.org", note: "none" },
+        });
+        const typed = { ...edited, [formKey("cloud", "note")]: "none" };
+        expect(buildPayload(definition, unset, typed)).toEqual({
+            cloud: { endpoint: "https://other.example.org", note: "none" },
+        });
+    });
+
+    it("sends nothing for an untouched default, or one typed back without another edit", () => {
+        const unset: ExtraPreferenceValues = { cloud: { ...values.cloud!, note: null } };
+        expect(buildPayload(definition, unset, untouched(unset))).toEqual({});
         const typed = { ...untouched(unset), [formKey("cloud", "note")]: "none" };
-        expect(buildPayload(definition, unset, typed)).toEqual({ cloud: { note: "none" } });
+        expect(buildPayload(definition, unset, typed)).toEqual({});
     });
 
     it("does not send a default that is already stored, and clears a stored value that was emptied", () => {
-        expect(buildPayload(definition, values, untouched())).toEqual({});
         const emptied = { ...untouched(), [formKey("cloud", "note")]: "" };
         expect(buildPayload(definition, values, emptied)).toEqual({ cloud: { note: null } });
     });
@@ -260,6 +272,57 @@ describe("buildPayload", () => {
 
     it("ignores inputs the form did not emit", () => {
         expect(buildPayload(definition, values, {})).toEqual({});
+    });
+});
+
+describe("sections with defaults", () => {
+    const two: ExtraPreferenceSection[] = [
+        {
+            name: "first",
+            description: "First",
+            inputs: [
+                { name: "a", label: "A", type: "text", required: false, multiple: false, value: "def-a" },
+                { name: "b", label: "B", type: "text", required: false, multiple: false, value: "def-b" },
+            ],
+        },
+        {
+            name: "second",
+            description: "Second",
+            inputs: [{ name: "c", label: "C", type: "text", required: false, multiple: false, value: "def-c" }],
+        },
+    ];
+    const unset: ExtraPreferenceValues = { first: { a: null, b: null }, second: { c: null } };
+
+    function form(edits: Record<string, unknown> = {}) {
+        const data: Record<string, unknown> = {};
+        for (const section of buildInputs(two, unset)) {
+            for (const node of section.inputs ?? []) {
+                data[formKey(section.name, node.name)] = node.value;
+            }
+        }
+        return { ...data, ...edits } as Parameters<typeof buildPayload>[2];
+    }
+
+    it("is clean and sends nothing when no input was edited", () => {
+        expect(dirtySections(two, unset, form()).size).toBe(0);
+        expect(buildPayload(two, unset, form())).toEqual({});
+    });
+
+    it("sends only the edited section, including its defaults", () => {
+        const data = form({ [formKey("first", "a")]: "mine" });
+        expect([...dirtySections(two, unset, data)]).toEqual(["first"]);
+        expect(buildPayload(two, unset, data)).toEqual({ first: { a: "mine", b: "def-b" } });
+    });
+
+    it("is clean again when an edit is reverted", () => {
+        const data = form({ [formKey("first", "a")]: "def-a" });
+        expect(dirtySections(two, unset, data).size).toBe(0);
+        expect(buildPayload(two, unset, data)).toEqual({});
+    });
+
+    it("counts a typed secret as an edit and an empty one as none", () => {
+        expect(dirtySections(definition, values, { [formKey("cloud", "token")]: "x" }).has("cloud")).toBe(true);
+        expect(dirtySections(definition, values, { [formKey("cloud", "token")]: "" }).size).toBe(0);
     });
 });
 
