@@ -133,7 +133,7 @@ function onDisplay($event: MouseEvent) {
             transparent
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
-            <ScanEye absolute-stroke-width :size="16" />
+            <ScanEye non-scaling-stroke :size="16" />
         </GButton>
         <GButton
             v-if="writable && isHistoryItem"

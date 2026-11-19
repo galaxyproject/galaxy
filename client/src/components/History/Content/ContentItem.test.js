@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { emittedArg, getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
@@ -51,8 +51,6 @@ describe("ContentItem", () => {
     let wrapper;
 
     beforeEach(() => {
-        suppressLucideVue2Deprecation();
-
         server.use(
             http.get("/api/object_stores", ({ response }) => {
                 return response(200).json([]);
