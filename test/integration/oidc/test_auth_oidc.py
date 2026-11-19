@@ -536,8 +536,18 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         # get the user
         response = session.get(self._api_url("users/current"))
         self._assert_status_code_is(response, 200)
-        # now logout
+        # logout without the session token is refused and keeps the session
         response = session.get(self._api_url("../authnz/logout"))
+        self._assert_status_code_is(response, 403)
+        response = session.get(self._api_url("users/current"))
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"]
+        # now logout
+        response = session.get(f"{self.url}login/start")
+        matches = self.REGEX_GALAXY_CSRF_TOKEN.search(response.text)
+        assert matches
+        response = session.get(self._api_url("../authnz/logout"), params={"session_csrf_token": matches.group(1)})
+        self._assert_status_code_is(response, 200)
         response = session.get(response.json()["redirect_uri"], verify=False)
         # make sure we can no longer request the user
         response = session.get(self._api_url("users/current"))
