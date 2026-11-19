@@ -38,9 +38,9 @@ log = logging.getLogger(__name__)
 
 EXTRA_PREFERENCES_KEY = "extra_user_preferences"
 
-# Sent in place of a sensitive value by the form of the deprecated
-# ``information/inputs`` endpoint, and sent back unchanged when the user did not
-# edit the field.
+# Clients holding a form from before the deprecated ``information/inputs`` endpoint
+# stopped serving extra preferences send this back for an untouched secret; it must
+# not overwrite the stored value.
 LEGACY_SECRET_PLACEHOLDER = "__SECRET_PLACEHOLDER__"
 
 _Change = tuple[ExtraPreferenceSectionDefinition, ExtraPreferenceInputDefinition, Any]
@@ -140,39 +140,6 @@ class ExtraPreferencesManager:
         self._apply(user, changes)
         if commit:
             required_object_session(user).commit()
-
-    def legacy_form_inputs(self, user: User) -> list[dict[str, Any]]:
-        """Form-builder sections for the deprecated ``information/inputs`` endpoint."""
-        values = self.values(user).root
-        form_sections = []
-        for section in self.definition():
-            form_inputs = []
-            for field in section.inputs:
-                form_input = field.model_dump(exclude_none=True)
-                required = "Required" if field.required else ""
-                form_input["help"] = f"{field.help} {required}" if field.help else required
-                value = values[section.name][field.name]
-                if field.sensitive:
-                    # Never send a sensitive value, not even one from the definition. Only a
-                    # stored secret gets the placeholder, so an unset one shows as empty.
-                    form_input.pop("value", None)
-                    if isinstance(value, ExtraPreferenceSecretState) and value.is_set:
-                        form_input["value"] = LEGACY_SECRET_PLACEHOLDER
-                    # the generic form masks password inputs
-                    form_input["type"] = "password"
-                elif value is not None:
-                    form_input["value"] = value
-                form_inputs.append(form_input)
-            form_sections.append(
-                {
-                    "type": "section",
-                    "title": section.description,
-                    "name": section.name,
-                    "expanded": True,
-                    "inputs": form_inputs,
-                }
-            )
-        return form_sections
 
     def update_from_legacy_form(self, user: User, payload: dict[str, Any], *, commit: bool = True) -> None:
         """Store the extra preferences of a flat ``<section>|<input>`` form submission.
