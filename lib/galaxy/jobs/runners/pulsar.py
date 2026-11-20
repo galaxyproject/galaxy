@@ -9,12 +9,14 @@ import logging
 import os
 import re
 import subprocess
+import threading
 from dataclasses import dataclass
 from time import sleep
 from typing import (
     Any,
     Optional,
     TYPE_CHECKING,
+    TypeGuard,
 )
 
 import pulsar.core
@@ -314,6 +316,10 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if galaxy_url:
             galaxy_url = galaxy_url.rstrip("/")
         self.galaxy_url = galaxy_url
+        # Galaxy job ids with a staged failure queued or running, a repeated failed status
+        # (e.g. a redelivered message) must not stage and fail them again.
+        self._staged_failures: set[int] = set()
+        self._staged_failures_lock = threading.Lock()
 
     def _monitor(self):
         if self.use_mq:
@@ -454,7 +460,10 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             else:
                 message = LOST_REMOTE_ERROR
             if not job_state.job_wrapper.get_job().finished:
-                self.fail_job(job_state, message=message, full_status=full_status)
+                if pulsar_status == "failed" and _reports_job_files(full_status):
+                    self._queue_staged_failure(job_state, message, full_status)
+                else:
+                    self.fail_job(job_state, message=message, full_status=full_status)
             return None
         if pulsar_status == "running" and not job_state.running:
             job_state.running = True
@@ -926,6 +935,70 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             handle_metadata_externally=not PulsarJobRunner.__remote_metadata(client),
         )
 
+    def _fail_job_metrics_directory(self, job_wrapper: "MinimalJobWrapper") -> str | None:
+        return _job_metrics_directory(job_wrapper)
+
+    def _queue_staged_failure(self, job_state: AsynchronousJobState, message: str, full_status: dict[str, Any]) -> None:
+        """Fail a job the Pulsar server kept files for, on a worker thread since staging them back can take a while."""
+        job_id = job_state.job_wrapper.job_id
+        with self._staged_failures_lock:
+            if job_id in self._staged_failures:
+                log.debug("(%s) Failure of Pulsar job already queued", job_state.job_id)
+                return
+            self._staged_failures.add(job_id)
+        # fail_job uses this message too, if staging raises and the worker falls back to it.
+        job_state.fail_message = message
+        # Pulsar reported the job as over, there is nothing left to kill.
+        job_state.stop_job = False
+
+        def fail_staged_job(job_state: AsynchronousJobState) -> None:
+            self._fail_staged_job(job_state, full_status)
+
+        self.work_queue.put((fail_staged_job, job_state))
+
+    def _fail_staged_job(self, job_state: AsynchronousJobState, full_status: dict[str, Any]) -> None:
+        job_wrapper = job_state.job_wrapper
+        try:
+            state = job_wrapper.get_state()
+            if state == model.Job.states.STOPPED:
+                # Stopped while queued, finish it as stopped like the monitor does.
+                self.mark_as_finished(job_state)
+                return
+            if state in model.Job.finished_states or state == model.Job.states.RESUBMITTED:
+                return
+            self.__stage_failed_job(job_state, full_status)
+            self.fail_job(job_state, message=job_state.fail_message, full_status=full_status)
+        finally:
+            with self._staged_failures_lock:
+                self._staged_failures.discard(job_wrapper.job_id)
+
+    def __stage_failed_job(self, job_state: AsynchronousJobState, full_status: dict[str, Any]) -> None:
+        """Stage back what the Pulsar server kept of a failed job, so its outputs and metrics files reach Galaxy."""
+        job_wrapper = job_state.job_wrapper
+        try:
+            client = self.get_client_from_state(job_state)
+            submitted_pulsar_version = PulsarJobRunner.submitted_pulsar_version(
+                _job_metrics_directory(job_wrapper), full_status
+            )
+            collection_failures = pulsar_finish_job(
+                client=client,
+                job_completed_normally=True,
+                # A failed job is not a success, keep it around unless told to always clean up.
+                cleanup_job="always" if job_wrapper.cleanup_job == "always" else "never",
+                client_outputs=self.__client_outputs(client, job_wrapper, submitted_pulsar_version),
+                pulsar_outputs=PulsarOutputs.from_status_response(full_status),
+            )
+            if full_status.get("pulsar_version"):
+                PulsarPlugin.write_version_status(_job_metrics_directory(job_wrapper), full_status["pulsar_version"])
+        except Exception:
+            log.exception("(%s) Failed to stage back files of failed Pulsar job", job_state.job_id)
+            return
+        if collection_failures:
+            # Expected, a failed job may not have written all of its outputs.
+            log.debug(
+                "(%s) Could not stage back all files of failed Pulsar job: %s", job_state.job_id, collection_failures
+            )
+
     def _complete_staged_job(
         self,
         job_state: AsynchronousJobState,
@@ -1363,6 +1436,11 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             log.exception(f"Failed to update Pulsar job status for job_id ({galaxy_job_id}/{remote_job_id})")
             raise
             # Nothing else to do? - Attempt to fail the job?
+
+
+def _reports_job_files(full_status: dict[str, Any] | None) -> TypeGuard[dict[str, Any]]:
+    """Whether the Pulsar server listed the job's files, which it does not if it could not read its job directory."""
+    return full_status is not None and full_status.get("metadata_directory_contents") is not None
 
 
 def _apply_remote_runner_state(job_state: AsynchronousJobState, full_status: dict[str, Any] | None) -> str | None:
