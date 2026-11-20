@@ -10382,7 +10382,7 @@ def record_invocation_change(session: Session, invocation: "WorkflowInvocation",
     if pending is None:
         return
     history = invocation.history
-    pending.invocations[invocation.id] = (history.user_id if history else None, str(state))
+    pending.invocations[invocation.id] = (history.user_id if history else None, invocation.history_id, str(state))
 
 
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
@@ -10649,10 +10649,10 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             sa_session.execute(statement)
             return
         # The bulk UPDATE bypasses the unit of work, so it records the changed jobs itself.
-        for job_id, user_id, galaxy_session_id in sa_session.execute(
-            statement.returning(Job.id, Job.user_id, Job.session_id)
+        for job_id, user_id, galaxy_session_id, history_id in sa_session.execute(
+            statement.returning(Job.id, Job.user_id, Job.session_id, Job.history_id)
         ):
-            record_job_change(sa_session, job_id, user_id, galaxy_session_id, Job.states.DELETING)
+            record_job_change(sa_session, job_id, user_id, galaxy_session_id, history_id, Job.states.DELETING)
 
     def mark_cancelled(self):
         self.state = WorkflowInvocation.states.CANCELLED

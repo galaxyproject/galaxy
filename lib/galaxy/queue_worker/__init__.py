@@ -11,6 +11,7 @@ import socket
 import sys
 import threading
 import time
+from collections import defaultdict
 from inspect import ismodule
 from typing import (
     Any,
@@ -85,9 +86,13 @@ class EntryPointUpdatePayload(TypedDict, total=False):
 
 
 class InvocationUpdate(TypedDict):
-    """A committed change to a workflow invocation's state, steps or messages, routed to its owner."""
+    """A committed change to a workflow invocation's state, steps or messages.
 
-    user_id: int
+    Routed to the owner of the invocation's history and to that history's viewers.
+    """
+
+    user_id: int | None
+    history_id: int | None
     invocation_id: int
     state: str
 
@@ -103,12 +108,16 @@ class InvocationUpdatePayload(TypedDict, total=False):
 
 
 class JobUpdate(TypedDict):
-    """A committed job state change, routed to the job's user or, for anonymous jobs, its session."""
+    """A committed job state change.
+
+    Routed to the job's user or, for anonymous jobs, its session, and to the viewers of its history.
+    """
 
     job_id: int
     state: str
     user_id: int | None
     session_id: int | None
+    history_id: int | None
 
 
 class JobUpdatePayload(TypedDict, total=False):
@@ -116,12 +125,13 @@ class JobUpdatePayload(TypedDict, total=False):
 
     ``job_id`` values are unencoded; the consuming worker encodes them. Recipients listed in
     ``resync_user_ids`` / ``resync_session_ids`` had too many changes for one event and get a
-    resync event instead.
+    resync event instead, as do the viewers of the histories in ``resync_history_ids``.
     """
 
     updates: list[JobUpdate]
     resync_user_ids: list[int]
     resync_session_ids: list[int]
+    resync_history_ids: list[int]
     event_id: str | None
 
 
@@ -617,55 +627,85 @@ def entry_point_update(app: "MinimalManagerApp", **kwargs) -> None:
 
 
 def invocation_update(app: "MinimalManagerApp", **kwargs) -> None:
-    """Push one ``invocation_update`` SSE event per owning user connected to this worker.
+    """Push ``invocation_update`` SSE events to the owners and history viewers connected to this worker.
 
     The event data is ``{"invocations": [{"id": <encoded id>, "state": <state>}, ...]}``. An entry
-    means the invocation's state, steps or messages changed; ``state`` is its current state.
+    means the invocation's state, steps or messages changed; ``state`` is its current state. Viewers
+    of a history receive only the entries for that history.
     """
     payload = cast(InvocationUpdatePayload, kwargs)
     sse_manager = app[SSEConnectionManager]
     encode = app.security.encode_id
-    invocations_by_user: dict[int, list[dict[str, str]]] = {}
+    event_id = payload.get("event_id")
+
+    def event_for(invocations: list[dict[str, str]]) -> SSEEvent:
+        return SSEEvent(event="invocation_update", data=json.dumps({"invocations": invocations}), id=event_id)
+
+    by_user: dict[int, list[dict[str, str]]] = defaultdict(list)
+    by_history: dict[int, list[dict[str, str]]] = defaultdict(list)
+    owners_by_history: dict[int, set[int]] = defaultdict(set)
     for update in payload["updates"]:
-        invocations_by_user.setdefault(int(update["user_id"]), []).append(
-            {"id": encode(update["invocation_id"]), "state": update["state"]}
+        invocation = {"id": encode(update["invocation_id"]), "state": update["state"]}
+        user_id, history_id = update["user_id"], update["history_id"]
+        if user_id is not None:
+            by_user[user_id].append(invocation)
+        if history_id is not None:
+            by_history[history_id].append(invocation)
+            if user_id is not None:
+                owners_by_history[history_id].add(user_id)
+    for user_id, invocations in by_user.items():
+        sse_manager.push_to_user(user_id, event_for(invocations))
+    for history_id, invocations in by_history.items():
+        sse_manager.push_to_history_viewers(
+            encode(history_id), event_for(invocations), exclude_user_ids=owners_by_history[history_id]
         )
-    for user_id, invocations in invocations_by_user.items():
-        event = SSEEvent(
-            event="invocation_update", data=json.dumps({"invocations": invocations}), id=payload.get("event_id")
-        )
-        sse_manager.push_to_user(user_id, event)
 
 
 def job_update(app: "MinimalManagerApp", **kwargs) -> None:
-    """Push ``job_update`` SSE events to the users and sessions connected to this worker.
+    """Push ``job_update`` SSE events to the users, sessions and history viewers connected to this worker.
 
     The event data is ``{"jobs": [{"id": <encoded id>, "state": <state>}, ...]}``, or
-    ``{"resync": true}`` for a recipient whose changes did not fit one event.
+    ``{"resync": true}`` for a recipient whose changes did not fit one event. Viewers of a history
+    receive only the entries for that history.
     """
     payload = cast(JobUpdatePayload, kwargs)
     sse_manager = app[SSEConnectionManager]
     encode = app.security.encode_id
     event_id = payload.get("event_id")
-    jobs_by_user: dict[int, list[dict[str, str]]] = {}
-    jobs_by_session: dict[int, list[dict[str, str]]] = {}
+
+    def event_for(jobs: list[dict[str, str]]) -> SSEEvent:
+        return SSEEvent(event="job_update", data=json.dumps({"jobs": jobs}), id=event_id)
+
+    by_user: dict[int, list[dict[str, str]]] = defaultdict(list)
+    by_session: dict[int, list[dict[str, str]]] = defaultdict(list)
+    by_history: dict[int, list[dict[str, str]]] = defaultdict(list)
+    owners_by_history: dict[int, set[int]] = defaultdict(set)
     for update in payload["updates"]:
         job = {"id": encode(update["job_id"]), "state": update["state"]}
-        if update["user_id"] is not None:
-            jobs_by_user.setdefault(int(update["user_id"]), []).append(job)
+        user_id, history_id = update["user_id"], update["history_id"]
+        if user_id is not None:
+            by_user[user_id].append(job)
         elif update["session_id"] is not None:
-            jobs_by_session.setdefault(int(update["session_id"]), []).append(job)
+            by_session[update["session_id"]].append(job)
+        if history_id is not None:
+            by_history[history_id].append(job)
+            if user_id is not None:
+                owners_by_history[history_id].add(user_id)
     resync = SSEEvent(event="job_update", data=json.dumps({"resync": True}), id=event_id)
-    for user_id, jobs in jobs_by_user.items():
-        sse_manager.push_to_user(user_id, SSEEvent(event="job_update", data=json.dumps({"jobs": jobs}), id=event_id))
+    for user_id, jobs in by_user.items():
+        sse_manager.push_to_user(user_id, event_for(jobs))
     for user_id in payload.get("resync_user_ids", []):
-        sse_manager.push_to_user(int(user_id), resync)
-    for galaxy_session_id, jobs in jobs_by_session.items():
-        sse_manager.push_to_session(
-            galaxy_session_id, SSEEvent(event="job_update", data=json.dumps({"jobs": jobs}), id=event_id)
-        )
+        sse_manager.push_to_user(user_id, resync)
+    for galaxy_session_id, jobs in by_session.items():
+        sse_manager.push_to_session(galaxy_session_id, event_for(jobs))
     for galaxy_session_id in payload.get("resync_session_ids", []):
-        sse_manager.push_to_session(int(galaxy_session_id), resync)
+        sse_manager.push_to_session(galaxy_session_id, resync)
+    for history_id, jobs in by_history.items():
+        sse_manager.push_to_history_viewers(
+            encode(history_id), event_for(jobs), exclude_user_ids=owners_by_history[history_id]
+        )
+    for history_id in payload.get("resync_history_ids", []):
+        sse_manager.push_to_history_viewers(encode(history_id), resync)
 
 
 control_message_to_task = {

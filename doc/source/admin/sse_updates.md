@@ -77,6 +77,11 @@ Concretely:
      commits, from whichever process committed it. A transaction that
      changes more than 500 jobs of one user, such as mapping a tool over a
      large collection, sends that user a single resync event instead.
+   - History, invocation and job updates also reach the viewers of a
+     history: users or sessions that subscribed to it through
+     `POST /api/events/history-subscriptions`, such as a page showing a
+     history someone else owns. Only histories the requester can access are
+     subscribed.
    - Notifications dispatch SSE events from `NotificationManager` whenever
      a notification or broadcast is created.
 4. **Cross-process fan-out.** Producers don't know which worker holds the

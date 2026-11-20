@@ -16,10 +16,10 @@ PENDING_CHANGES = "galaxy.pending_changes"
 
 @dataclass
 class PendingChanges:
-    # {invocation_id: (owner_user_id, state)}
-    invocations: dict[int, tuple[int | None, str]] = field(default_factory=dict)
-    # {job_id: (user_id, galaxy_session_id, state)}
-    jobs: dict[int, tuple[int | None, int | None, str]] = field(default_factory=dict)
+    # {invocation_id: (owner_user_id, history_id, state)}
+    invocations: dict[int, tuple[int | None, int | None, str]] = field(default_factory=dict)
+    # {job_id: (user_id, galaxy_session_id, history_id, state)}
+    jobs: dict[int, tuple[int | None, int | None, int | None, str]] = field(default_factory=dict)
 
     def copy(self) -> "PendingChanges":
         return PendingChanges(invocations=dict(self.invocations), jobs=dict(self.jobs))
@@ -30,8 +30,13 @@ def pending_changes(session: Session) -> PendingChanges | None:
 
 
 def record_job_change(
-    session: Session, job_id: int, user_id: int | None, galaxy_session_id: int | None, state: str
+    session: Session,
+    job_id: int,
+    user_id: int | None,
+    galaxy_session_id: int | None,
+    history_id: int | None,
+    state: str,
 ) -> None:
     pending = pending_changes(session)
     if pending is not None:
-        pending.jobs[job_id] = (user_id, galaxy_session_id, str(state))
+        pending.jobs[job_id] = (user_id, galaxy_session_id, history_id, str(state))

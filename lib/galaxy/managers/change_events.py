@@ -66,8 +66,9 @@ log = logging.getLogger(__name__)
 SAVEPOINT_SNAPSHOTS = "galaxy.pending_changes_savepoint_snapshots"
 
 # A recipient with more job changes than this in one transaction gets a single resync event
-# instead, which makes the client refetch the jobs it shows. Mapping a tool over a large
-# collection creates that many jobs in one transaction.
+# instead, which makes the client refetch the jobs it shows; so do the viewers of the histories
+# those jobs belong to. Mapping a tool over a large collection creates that many jobs in one
+# transaction.
 MAX_JOBS_PER_EVENT = 500
 
 
@@ -136,11 +137,10 @@ class ChangeEventPublisher:
             self._send_job_updates(pending)
 
     def _send_invocation_updates(self, pending: PendingChanges) -> None:
-        # Invocations of anonymous users have no SSE route; their clients poll.
         updates = [
-            InvocationUpdate(user_id=user_id, invocation_id=invocation_id, state=state)
-            for invocation_id, (user_id, state) in pending.invocations.items()
-            if user_id is not None
+            InvocationUpdate(user_id=user_id, history_id=history_id, invocation_id=invocation_id, state=state)
+            for invocation_id, (user_id, history_id, state) in pending.invocations.items()
+            if user_id is not None or history_id is not None
         ]
         if not updates:
             return
@@ -153,34 +153,45 @@ class ChangeEventPublisher:
             )
 
     def _send_job_updates(self, pending: PendingChanges) -> None:
-        by_user: dict[int, list[JobUpdate]] = defaultdict(list)
-        by_session: dict[int, list[JobUpdate]] = defaultdict(list)
-        for job_id, (user_id, galaxy_session_id, state) in pending.jobs.items():
-            update = JobUpdate(job_id=job_id, state=state, user_id=user_id, session_id=galaxy_session_id)
+        # Jobs grouped by the user, or for anonymous jobs the session, they are routed to.
+        by_owner: dict[tuple[str, int] | None, list[JobUpdate]] = defaultdict(list)
+        for job_id, (user_id, galaxy_session_id, history_id, state) in pending.jobs.items():
+            update = JobUpdate(
+                job_id=job_id, state=state, user_id=user_id, session_id=galaxy_session_id, history_id=history_id
+            )
             if user_id is not None:
-                by_user[user_id].append(update)
+                by_owner[("user", user_id)].append(update)
             elif galaxy_session_id is not None:
-                by_session[galaxy_session_id].append(update)
+                by_owner[("session", galaxy_session_id)].append(update)
+            else:
+                by_owner[None].append(update)
         updates: list[JobUpdate] = []
         resync_user_ids: list[int] = []
         resync_session_ids: list[int] = []
-        for recipients, resync in ((by_user, resync_user_ids), (by_session, resync_session_ids)):
-            for recipient, recipient_updates in recipients.items():
-                if len(recipient_updates) > MAX_JOBS_PER_EVENT:
-                    resync.append(recipient)
-                else:
-                    updates.extend(recipient_updates)
+        resync_history_ids: set[int] = set()
+        for owner, owner_updates in by_owner.items():
+            if owner is None or len(owner_updates) <= MAX_JOBS_PER_EVENT:
+                updates.extend(owner_updates)
+                continue
+            kind, owner_id = owner
+            (resync_user_ids if kind == "user" else resync_session_ids).append(owner_id)
+            resync_history_ids.update(u["history_id"] for u in owner_updates if u["history_id"] is not None)
         if not (updates or resync_user_ids or resync_session_ids):
             return
         try:
-            self._dispatcher.job_update(updates, resync_user_ids=resync_user_ids, resync_session_ids=resync_session_ids)
+            self._dispatcher.job_update(
+                updates,
+                resync_user_ids=resync_user_ids,
+                resync_session_ids=resync_session_ids,
+                resync_history_ids=sorted(resync_history_ids),
+            )
         except Exception:
             log.exception("Failed to dispatch job_update SSE event for %d jobs", len(pending.jobs))
 
 
 def _record_job(session: Session, job: Job) -> None:
     if job.state is not None:
-        record_job_change(session, job.id, job.user_id, job.session_id, job.state)
+        record_job_change(session, job.id, job.user_id, job.session_id, job.history_id, job.state)
 
 
 def _record_current_state(session: Session, invocation: WorkflowInvocation) -> None:

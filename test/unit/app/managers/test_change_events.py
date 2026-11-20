@@ -16,20 +16,24 @@ States = model.WorkflowInvocation.states
 class RecordingDispatcher:
     def __init__(self) -> None:
         self.calls: list[list[InvocationUpdate]] = []
-        self.job_calls: list[tuple[list[JobUpdate], list[int] | None, list[int] | None]] = []
+        self.job_calls: list[tuple[list[JobUpdate], list[int] | None, list[int] | None, list[int] | None]] = []
 
     def invocation_update(self, updates: list[InvocationUpdate], event_id: str | None = None) -> None:
         self.calls.append(updates)
 
-    def job_update(self, updates, resync_user_ids=None, resync_session_ids=None, event_id=None) -> None:
-        self.job_calls.append((updates, resync_user_ids, resync_session_ids))
+    def job_update(
+        self, updates, resync_user_ids=None, resync_session_ids=None, resync_history_ids=None, event_id=None
+    ) -> None:
+        self.job_calls.append((updates, resync_user_ids, resync_session_ids, resync_history_ids))
 
 
 class BrokenDispatcher:
     def invocation_update(self, updates, event_id=None):
         raise RuntimeError("broker down")
 
-    def job_update(self, updates, resync_user_ids=None, resync_session_ids=None, event_id=None):
+    def job_update(
+        self, updates, resync_user_ids=None, resync_session_ids=None, resync_history_ids=None, event_id=None
+    ):
         raise RuntimeError("broker down")
 
 
@@ -80,7 +84,16 @@ def test_set_state_is_published_only_once_committed(session, dispatcher):
     invocation.set_state(States.SCHEDULED)
     assert dispatcher.calls == []
     session.commit()
-    assert dispatcher.calls == [[{"user_id": user.id, "invocation_id": invocation.id, "state": "scheduled"}]]
+    assert dispatcher.calls == [
+        [
+            {
+                "user_id": user.id,
+                "history_id": invocation.history_id,
+                "invocation_id": invocation.id,
+                "state": "scheduled",
+            }
+        ]
+    ]
 
 
 def test_rolled_back_change_is_not_published(session, dispatcher):
@@ -123,8 +136,8 @@ def test_changes_of_one_transaction_are_sent_together(session, dispatcher):
     session.commit()
     assert len(dispatcher.calls) == 1
     assert sorted(dispatcher.calls[0], key=lambda u: u["invocation_id"]) == [
-        {"user_id": user.id, "invocation_id": parent.id, "state": "scheduled"},
-        {"user_id": user.id, "invocation_id": child.id, "state": "scheduled"},
+        {"user_id": user.id, "history_id": parent.history_id, "invocation_id": parent.id, "state": "scheduled"},
+        {"user_id": user.id, "history_id": child.history_id, "invocation_id": child.id, "state": "scheduled"},
     ]
 
 
@@ -139,7 +152,16 @@ def test_released_savepoint_is_published_with_the_root_transaction(session, disp
     assert dispatcher.calls == []
     invocation.set_state(States.SCHEDULED)
     session.commit()
-    assert dispatcher.calls == [[{"user_id": user.id, "invocation_id": invocation.id, "state": "scheduled"}]]
+    assert dispatcher.calls == [
+        [
+            {
+                "user_id": user.id,
+                "history_id": invocation.history_id,
+                "invocation_id": invocation.id,
+                "state": "scheduled",
+            }
+        ]
+    ]
 
 
 def test_rolled_back_savepoint_is_not_published(session, dispatcher):
@@ -153,7 +175,9 @@ def test_rolled_back_savepoint_is_not_published(session, dispatcher):
     rolled_back.set_state(States.SCHEDULED)
     savepoint.rollback()
     session.commit()
-    assert dispatcher.calls == [[{"user_id": user.id, "invocation_id": published.id, "state": "scheduled"}]]
+    assert dispatcher.calls == [
+        [{"user_id": user.id, "history_id": published.history_id, "invocation_id": published.id, "state": "scheduled"}]
+    ]
 
 
 def test_message_is_published_with_the_current_state(session, dispatcher):
@@ -163,14 +187,19 @@ def test_message_is_published_with_the_current_state(session, dispatcher):
 
     invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
     session.commit()
-    assert dispatcher.calls == [[{"user_id": user.id, "invocation_id": invocation.id, "state": "ready"}]]
+    assert dispatcher.calls == [
+        [{"user_id": user.id, "history_id": invocation.history_id, "invocation_id": invocation.id, "state": "ready"}]
+    ]
 
 
-def test_anonymous_invocation_is_not_published(session, dispatcher):
+def test_invocation_in_an_ownerless_history_is_published_for_its_viewers(session, dispatcher):
     invocation = _invocation(session, None, workflow_owner=_user(session))
+    dispatcher.calls.clear()
     invocation.set_state(States.SCHEDULED)
     session.commit()
-    assert dispatcher.calls == []
+    assert dispatcher.calls == [
+        [{"user_id": None, "history_id": invocation.history_id, "invocation_id": invocation.id, "state": "scheduled"}]
+    ]
 
 
 def test_dispatch_failure_does_not_fail_commit(galaxy_model):
@@ -183,11 +212,17 @@ def test_dispatch_failure_does_not_fail_commit(galaxy_model):
     assert invocation.state == States.SCHEDULED
 
 
-def _job(session, user: model.User | None = None, galaxy_session: model.GalaxySession | None = None) -> model.Job:
+def _job(
+    session,
+    user: model.User | None = None,
+    galaxy_session: model.GalaxySession | None = None,
+    history: model.History | None = None,
+) -> model.Job:
     job = model.Job()
     job.tool_id = "cat1"
     job.user = user
     job.galaxy_session = galaxy_session
+    job.history = history
     job.set_state(model.Job.states.QUEUED)
     session.add(job)
     return job
@@ -200,14 +235,24 @@ def test_job_state_change_is_published_only_once_committed(session, dispatcher):
     assert dispatcher.job_calls == []
     session.commit()
     assert dispatcher.job_calls == [
-        ([{"job_id": job.id, "state": "queued", "user_id": user.id, "session_id": None}], [], [])
+        (
+            [{"job_id": job.id, "state": "queued", "user_id": user.id, "session_id": None, "history_id": None}],
+            [],
+            [],
+            [],
+        )
     ]
 
     dispatcher.job_calls.clear()
     job.set_state(model.Job.states.RUNNING)
     session.commit()
     assert dispatcher.job_calls == [
-        ([{"job_id": job.id, "state": "running", "user_id": user.id, "session_id": None}], [], [])
+        (
+            [{"job_id": job.id, "state": "running", "user_id": user.id, "session_id": None, "history_id": None}],
+            [],
+            [],
+            [],
+        )
     ]
 
 
@@ -221,7 +266,12 @@ def test_job_state_assignment_is_published_with_the_state_at_commit(session, dis
     job.mark_deleted()
     session.commit()
     assert dispatcher.job_calls == [
-        ([{"job_id": job.id, "state": "deleted", "user_id": user.id, "session_id": None}], [], [])
+        (
+            [{"job_id": job.id, "state": "deleted", "user_id": user.id, "session_id": None, "history_id": None}],
+            [],
+            [],
+            [],
+        )
     ]
 
     dispatcher.job_calls.clear()
@@ -229,7 +279,12 @@ def test_job_state_assignment_is_published_with_the_state_at_commit(session, dis
     skipped.state = model.Job.states.SKIPPED
     session.commit()
     assert dispatcher.job_calls == [
-        ([{"job_id": skipped.id, "state": "skipped", "user_id": user.id, "session_id": None}], [], [])
+        (
+            [{"job_id": skipped.id, "state": "skipped", "user_id": user.id, "session_id": None, "history_id": None}],
+            [],
+            [],
+            [],
+        )
     ]
 
 
@@ -240,22 +295,45 @@ def test_anonymous_job_is_routed_to_its_session(session, dispatcher):
     job = _job(session, galaxy_session=galaxy_session)
     session.commit()
     assert dispatcher.job_calls == [
-        ([{"job_id": job.id, "state": "queued", "user_id": None, "session_id": galaxy_session.id}], [], [])
+        (
+            [
+                {
+                    "job_id": job.id,
+                    "state": "queued",
+                    "user_id": None,
+                    "session_id": galaxy_session.id,
+                    "history_id": None,
+                }
+            ],
+            [],
+            [],
+            [],
+        )
     ]
 
 
 def test_too_many_job_changes_for_one_recipient_become_a_resync(session, dispatcher, monkeypatch):
     monkeypatch.setattr(change_events, "MAX_JOBS_PER_EVENT", 2)
     busy_user = _user(session)
+    busy_history = model.History(user=busy_user)
     other_user = _user(session, email="other@example.org")
     for _ in range(3):
-        _job(session, busy_user)
+        _job(session, busy_user, history=busy_history)
     other_job = _job(session, other_user)
     session.commit()
     assert dispatcher.job_calls == [
         (
-            [{"job_id": other_job.id, "state": "queued", "user_id": other_user.id, "session_id": None}],
+            [
+                {
+                    "job_id": other_job.id,
+                    "state": "queued",
+                    "user_id": other_user.id,
+                    "session_id": None,
+                    "history_id": None,
+                }
+            ],
             [busy_user.id],
             [],
+            [busy_history.id],
         )
     ]
