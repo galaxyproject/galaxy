@@ -12,7 +12,10 @@ import tarfile
 import tempfile
 import urllib.parse
 from collections import namedtuple
-from collections.abc import Callable
+from collections.abc import (
+    Callable,
+    Set,
+)
 from typing import (
     Any,
     BinaryIO,
@@ -148,6 +151,7 @@ def galactic_job_json(
     collection_create_func: CollectionCreateFunc,
     tool_or_workflow: Literal["tool", "workflow"] = "workflow",
     resolve_data: Callable[[str], str | None] | None = None,
+    parameter_input_keys: Set[str] | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Adapt a CWL job object to the Galaxy API.
 
@@ -156,6 +160,9 @@ def galactic_job_json(
     and records and arrays with collection references. This function will
     stage files and modify the job description to adapt to these changes
     for Galaxy.
+
+    Values of ``parameter_input_keys`` (parameter inputs, e.g. a multiple-value
+    text input taking a list) are left as given instead of being staged.
     """
 
     datasets: list[dict[str, Any]] = []
@@ -397,6 +404,8 @@ def galactic_job_json(
 
     replace_keys = {}
     for key, value in job.items():
+        if parameter_input_keys and key in parameter_input_keys:
+            continue
         replace_keys[key] = replacement_item(value)
 
     job.update(replace_keys)

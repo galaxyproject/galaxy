@@ -98,6 +98,33 @@ def test_galactic_job_json_file_literal_no_filetype():
     assert target.properties.get("filetype") is None
 
 
+@pytest.mark.parametrize("tool_or_workflow", ["tool", "workflow"])
+def test_galactic_job_json_leaves_parameter_inputs_unstaged(tool_or_workflow):
+    job = {
+        "texts": ["a", "b"],
+        "ints": [1, 2],
+        "empty": [],
+        "text": "c",
+        "files": [{"class": "File", "contents": "d"}],
+    }
+    result_job, datasets = galactic_job_json(
+        job,
+        ".",
+        _mock_upload_func,
+        _mock_collection_create_func,
+        tool_or_workflow=tool_or_workflow,
+        parameter_input_keys={"texts", "ints", "empty", "text"},
+    )
+    assert result_job == {
+        "texts": ["a", "b"],
+        "ints": [1, 2],
+        "empty": [],
+        "text": "c",
+        "files": {"src": "hdca", "id": "collection_list"},
+    }
+    assert len(datasets) == 1
+
+
 def test_galactic_job_json_file_literal_tags_and_dbkey():
     """FileLiteralTarget receives tags and dbkey."""
     captured_targets = []
