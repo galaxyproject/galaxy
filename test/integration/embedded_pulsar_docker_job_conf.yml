@@ -20,6 +20,9 @@ execution:
       docker_required: true
       container_monitor_result: callback
       remote_metadata: true
+      # The metadata container mounts Pulsar's staging directory only. Extended metadata
+      # writes to Galaxy's object store, so these jobs need directory metadata.
+      metadata_strategy: directory
       metadata_config:
         containerize: True
         engine: docker
