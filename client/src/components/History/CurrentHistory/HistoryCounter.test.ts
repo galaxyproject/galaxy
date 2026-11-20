@@ -78,10 +78,17 @@ function setEnableSse(enabled: boolean): void {
 // adapter lets an explicit `pinia` option win over `localVue`'s default.
 let pinia: ReturnType<typeof createPinia>;
 
-function mountCounter(props: Partial<{ lastChecked: Date; isWatching: boolean }> = {}, deep = false) {
+function mountCounter(
+    props: Partial<{
+        history: typeof baseHistory & { paused_jobs_count?: number };
+        lastChecked: Date;
+        isWatching: boolean;
+    }> = {},
+    deep = false,
+) {
     const options = {
         propsData: {
-            history: baseHistory,
+            history: props.history ?? baseHistory,
             lastChecked: props.lastChecked ?? new Date(),
             isWatching: props.isWatching ?? true,
         },
@@ -249,5 +256,31 @@ describe("HistoryCounter — refresh button", () => {
 
         expect(wrapper.emitted("reloadContents")).toBeTruthy();
         expect(wrapper.emitted("reloadContents")?.length).toBe(1);
+    });
+});
+
+describe("HistoryCounter — paused jobs", () => {
+    beforeEach(() => {
+        pinia = createPinia();
+        setActivePinia(pinia);
+        setEnableSse(false);
+    });
+
+    afterEach(() => {
+        document.body.innerHTML = "";
+    });
+
+    it("shows all the paused items, hidden ones too, from the paused jobs button", async () => {
+        const wrapper = mountCounter({ history: { ...baseHistory, paused_jobs_count: 2 } }, true);
+        await flushPromises();
+
+        await wrapper.get("[data-description='paused jobs button']").trigger("click");
+        // The popover moves out of the wrapper into the document
+        const showPaused = document.body.querySelector<HTMLElement>("[data-description='show paused jobs']");
+        expect(showPaused).not.toBeNull();
+        showPaused!.click();
+        await flushPromises();
+
+        expect(wrapper.emitted("update:filter-text")).toEqual([["deleted:false visible:any state:paused"]]);
     });
 });

@@ -6,6 +6,7 @@ import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { HistorySummary, RegisteredUser } from "@/api";
+import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -14,6 +15,7 @@ import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
 const localVue = getLocalVue();
+const { server, http } = useServerMock();
 
 // all options
 const expectedOptions = [
@@ -220,5 +222,25 @@ describe("History Navigation", () => {
 
         await flushPromises();
         expect(historyStore.deleteHistory).toHaveBeenCalledWith("history_b", true);
+    });
+
+    it("resumes the paused jobs of the history it is shown for", async () => {
+        const resumed: string[] = [];
+        server.use(
+            http.put("/api/histories/{history_id}/resume_paused_jobs", ({ params, response }) => {
+                resumed.push(params.history_id);
+                return response(204).empty();
+            }),
+        );
+        const { wrapper } = await createWrapper({ history: { id: "history_a" } }, getFakeRegisteredUser());
+
+        const resumeOption = wrapper
+            .findAllComponents(GDropdownItem)
+            .find((item) => item.attributes("data-description") === "resume paused jobs");
+        expect(resumeOption).toBeDefined();
+        resumeOption?.vm.$emit("click");
+        await flushPromises();
+
+        expect(resumed).toEqual(["history_a"]);
     });
 });

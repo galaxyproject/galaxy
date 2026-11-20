@@ -426,6 +426,12 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         stmt = select(Job).where(Job.history == history).where(Job.state.in_(Job.non_ready_states))
         return self.session().scalars(stmt)
 
+    def paused_jobs_count(self, history: model.History) -> int:
+        """Return the number of paused jobs in this history, whether their outputs are visible or not."""
+        # No ORDER BY or LIMIT: either makes Postgres scan the whole job table by update_time for large histories
+        stmt = select(func.count()).select_from(Job).where(Job.history_id == history.id, Job.state == Job.states.PAUSED)
+        return self.session().scalar(stmt) or 0
+
     def queue_history_import(self, trans: ProvidesHistoryContext, archive_type, archive_source, target_history=None):
         # Run job to do import.
         history_imp_tool = trans.app.toolbox.get_tool("__IMPORT_HISTORY__")
@@ -993,6 +999,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 # 'contents_states',
                 "contents_active",
                 "hid_counter",
+                "paused_jobs_count",
             ],
             include_keys_from="summary",
         )
@@ -1024,6 +1031,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             ],
             "contents_states": self.serialize_contents_states,
             "contents_active": self.serialize_contents_active,
+            "paused_jobs_count": lambda item, key, **context: self.manager.paused_jobs_count(item),
             #  TODO: Use base manager's serialize_id for user_id (and others)
             #  after refactoring hierarchy here?
             "user_id": lambda item, key, encode_id=True, **context: (
