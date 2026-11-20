@@ -16,6 +16,8 @@ class Locators:
     toolbar_login = ".toolbar-login"
     toolbar_logout = ".toolbar-logout"
     login_submit_button = '[name="login_button"]'
+    login_input = ".login-form input[name='login']"
+    login_password_input = ".login-form input[name='password']"
     register_link = ".register-link"
     forgot_password_link = ".forgot-password-link"
     reset_password_sent = ".reset-password-sent"

@@ -3,7 +3,9 @@ import { faCircleQuestion, faRightFromBracket, faRightToBracket } from "@fortawe
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { GButton, GDropdown, GDropdownGroup, GDropdownItem } from "@galaxyproject/galaxy-ui"
 import { computed } from "vue"
+import { useRoute } from "vue-router"
 import { useAuthStore } from "@/stores"
+import { withRedirect } from "@/util"
 
 defineProps({
     title: {
@@ -16,6 +18,11 @@ const authStore = useAuthStore()
 void authStore.setup()
 
 const admin = computed(() => authStore.user && authStore.user.is_admin)
+
+// Come back here after logging in, unless "here" is already an auth or post-auth page
+const NO_RETURN_PATHS = ["/", "/login", "/register", "/login_success", "/logout_success", "/registration_success"]
+const route = useRoute()
+const loginTo = computed(() => withRedirect("/login", NO_RETURN_PATHS.includes(route.path) ? null : route.fullPath))
 </script>
 <template>
     <nav class="shed-masthead" aria-label="Main navigation">
@@ -89,7 +96,7 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
             class="masthead-icon toolbar-login"
             icon-only
             transparent
-            to="/login"
+            :to="loginTo"
             title="Login"
             aria-label="Login"
         >

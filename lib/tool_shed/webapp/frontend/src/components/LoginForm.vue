@@ -7,10 +7,12 @@ import ErrorBanner from "@/components/ErrorBanner.vue"
 
 interface LoginFormProps {
     initialLogin?: string | null
+    returnTo?: string | null
 }
 
 const props = withDefaults(defineProps<LoginFormProps>(), {
     initialLogin: null,
+    returnTo: null,
 })
 
 const login = ref(props.initialLogin || "")
@@ -21,7 +23,7 @@ async function onLogin() {
     errorMessage.value = null
     const authStore = useAuthStore()
     try {
-        await authStore.login(login.value, password.value)
+        await authStore.login(login.value, password.value, props.returnTo)
     } catch (e) {
         errorMessage.value = errorMessageAsString(e)
     }

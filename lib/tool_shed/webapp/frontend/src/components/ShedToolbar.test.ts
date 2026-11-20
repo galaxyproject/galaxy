@@ -5,7 +5,7 @@ import { createMemoryHistory, createRouter } from "vue-router"
 import { useAuthStore } from "@/stores"
 import ShedToolbar from "./ShedToolbar.vue"
 
-function mountToolbar(user: Record<string, unknown> | null) {
+async function mountToolbar(user: Record<string, unknown> | null, path = "/") {
     const authStore = useAuthStore()
     vi.spyOn(authStore, "setup").mockResolvedValue(undefined)
     const logout = vi.spyOn(authStore, "logout").mockResolvedValue(undefined)
@@ -14,6 +14,7 @@ function mountToolbar(user: Record<string, unknown> | null) {
         history: createMemoryHistory(),
         routes: [{ path: "/:any(.*)*", component: { template: "<div />" } }],
     })
+    await router.push(path)
     const wrapper = mount(ShedToolbar, {
         props: { title: "Tool Shed" },
         global: { plugins: [router] },
@@ -22,7 +23,7 @@ function mountToolbar(user: Record<string, unknown> | null) {
     return { wrapper, logout }
 }
 
-function menuLinks(wrapper: ReturnType<typeof mountToolbar>["wrapper"], toggleText: string) {
+function menuLinks(wrapper: Awaited<ReturnType<typeof mountToolbar>>["wrapper"], toggleText: string) {
     const toggle = wrapper.findAll(".masthead-toggle").find((button) => button.text() === toggleText)
     if (!toggle) {
         throw new Error(`no "${toggleText}" menu`)
@@ -36,8 +37,8 @@ describe("ShedToolbar", () => {
         setActivePinia(createPinia())
     })
 
-    it("offers the repository browsing routes under Explore", () => {
-        const { wrapper } = mountToolbar(null)
+    it("offers the repository browsing routes under Explore", async () => {
+        const { wrapper } = await mountToolbar(null)
 
         expect(menuLinks(wrapper, "Explore")).toEqual([
             "/repositories_by_category",
@@ -46,8 +47,8 @@ describe("ShedToolbar", () => {
         ])
     })
 
-    it("shows a login link and no user or admin menu when logged out", () => {
-        const { wrapper } = mountToolbar(null)
+    it("shows a login link and no user or admin menu when logged out", async () => {
+        const { wrapper } = await mountToolbar(null)
 
         expect(wrapper.get(".toolbar-login").attributes("href")).toBe("/login")
         expect(wrapper.get(".toolbar-login").attributes("aria-label")).toBe("Login")
@@ -55,8 +56,25 @@ describe("ShedToolbar", () => {
         expect(wrapper.findAll(".masthead-toggle").map((button) => button.text())).toEqual(["Explore"])
     })
 
+    it("returns to the current page after logging in from the toolbar", async () => {
+        const { wrapper } = await mountToolbar(null, "/repositories_by_search?search=bismark")
+
+        expect(wrapper.get(".toolbar-login").attributes("href")).toBe(
+            "/login?redirect=%2Frepositories_by_search%3Fsearch%3Dbismark",
+        )
+    })
+
+    it("does not redirect back to the auth pages", async () => {
+        for (const path of ["/login?redirect=%2Fhelp", "/register", "/login_success"]) {
+            const { wrapper } = await mountToolbar(null, path)
+
+            expect(wrapper.get(".toolbar-login").attributes("href")).toBe("/login")
+            wrapper.unmount()
+        }
+    })
+
     it("shows the user's menu and logs out from the toolbar", async () => {
-        const { wrapper, logout } = mountToolbar({ username: "bob", is_admin: false })
+        const { wrapper, logout } = await mountToolbar({ username: "bob", is_admin: false })
 
         expect(menuLinks(wrapper, "bob")).toEqual(["/user/api_key", "/user/change_password"])
         expect(wrapper.find(".toolbar-login").exists()).toBe(false)
@@ -67,8 +85,8 @@ describe("ShedToolbar", () => {
         expect(logout).toHaveBeenCalledTimes(1)
     })
 
-    it("adds the admin menu only for admins", () => {
-        const { wrapper } = mountToolbar({ username: "alice", is_admin: true })
+    it("adds the admin menu only for admins", async () => {
+        const { wrapper } = await mountToolbar({ username: "alice", is_admin: true })
 
         expect(menuLinks(wrapper, "Admin")).toEqual(["/admin", "/_component_showcase"])
     })
