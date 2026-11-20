@@ -868,8 +868,12 @@ class Sam(Tabular, _BamOrSam):
         shutil.move(split_files[0], output_file)
 
         if len(split_files) > 1:
-            cmd = ["egrep", "-v", "-h", "^@"] + split_files[1:] + [">>", output_file]
-            subprocess.check_call(cmd, shell=True)
+            with open(output_file, "ab") as out:
+                for split_file in split_files[1:]:
+                    with open(split_file, "rb") as fh:
+                        for line in fh:
+                            if not line.startswith(b"@"):
+                                out.write(line)
 
     # Dataproviders
     # sam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
