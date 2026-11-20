@@ -273,6 +273,22 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         assertJobsSummaryFetched(3);
     });
 
+    it("doesn't poll jobs again after unmounting during a job poll's fetch", async () => {
+        vi.useFakeTimers();
+        const wrapper = await mountWorkflowInvocationState("non-terminal-jobs");
+        let finishFetch = () => {};
+        mockFetchInvocationJobsSummaryForId.mockImplementationOnce(
+            () => new Promise<void>((resolve) => (finishFetch = resolve)),
+        );
+        await vi.advanceTimersByTimeAsync(3000);
+        wrapper.unmount();
+        finishFetch();
+        await vi.advanceTimersByTimeAsync(9000);
+
+        // the job polls at 0s and 3s, and none after unmounting
+        assertJobsSummaryFetched(2);
+    });
+
     it("doesn't carry over having seen the previous invocation running when switching to another", async () => {
         vi.useFakeTimers();
         const wrapper = await mountWorkflowInvocationState("finishing-jobs");

@@ -84,6 +84,8 @@ let sawRunning = false;
 /** Completion checks left before giving up on the server marking the invocation `completed` */
 let completionChecksLeft = 0;
 const completionWatcher = useResourceWatcher(checkCompleted);
+/** Set on unmount, so a poll whose fetch was in flight doesn't schedule another */
+let unmounted = false;
 
 const tabContent = ref<HTMLElement | null>(null);
 const { height: tabContentHeight } = useElementSize(tabContent);
@@ -262,6 +264,9 @@ watch(
 
         try {
             await invocationStore.fetchInvocationById({ id });
+            if (unmounted) {
+                return;
+            }
             invocationLoaded.value = true;
             // Only start polling if there is a valid invocation
             if (invocation.value) {
@@ -309,6 +314,7 @@ watch(
 );
 
 onUnmounted(() => {
+    unmounted = true;
     clearTimeout(stepStatesInterval.value);
     clearTimeout(jobStatesInterval.value);
     completionWatcher.dispose();
@@ -318,6 +324,9 @@ async function pollStepStatesUntilTerminal() {
     if (!invocationSchedulingTerminal.value) {
         sawRunning = true;
         await invocationStore.fetchInvocationById({ id: props.invocationId });
+        if (unmounted) {
+            return;
+        }
         stepStatesInterval.value = setTimeout(pollStepStatesUntilTerminal, 3000);
     }
 }
@@ -326,7 +335,13 @@ async function pollJobStatesUntilTerminal() {
     if (!invocationAndJobTerminal.value && invocation.value) {
         isPolling.value = true;
         await invocationStore.fetchInvocationJobsSummaryForId({ id: props.invocationId });
+        if (unmounted) {
+            return;
+        }
         await invocationStore.fetchInvocationStepJobsSummaryForId({ id: props.invocationId });
+        if (unmounted) {
+            return;
+        }
         if (!jobStatesTerminal.value) {
             sawRunning = true;
         }
