@@ -7738,7 +7738,7 @@ wheels = [
 
 [[package]]
 name = "pulsar-galaxy-lib"
-version = "0.16.0"
+version = "0.16.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-cloud-batch" },
@@ -7749,13 +7749,12 @@ dependencies = [
     { name = "pyjwt" },
     { name = "pyyaml" },
     { name = "requests" },
-    { name = "tuspy" },
     { name = "typing-extensions" },
     { name = "webob" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/42/15/063a2c2b4ad4f7d7c98840e541e01e7695bfcaeb7b892922d2b1ccad7e37/pulsar_galaxy_lib-0.16.0.tar.gz", hash = "sha256:f777b2e6e711bda76c38149c70ad259b9f0fc4d61738c9509483494ce77f3773", size = 251789, upload-time = "2026-10-11T22:01:30.42Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/14/4d/4d9cc56b66fb85d9c377e56657183e33834116e5a34c1f723db39afc1ae7/pulsar_galaxy_lib-0.16.1.tar.gz", hash = "sha256:43d7b7b24e636fd5235be411f4aa50d703ded99339557e8c3ff66fb7737010ef", size = 268739, upload-time = "2026-11-20T15:51:16.593Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/70/2380d13709a220d948278472c7ccc57a135a821c8f47643ea9f71e3a0f0e/pulsar_galaxy_lib-0.16.0-py3-none-any.whl", hash = "sha256:6488d4eb0fd8ad59e922296a30e20e91c79e644356c2d308dd3a1e9cd8a98a32", size = 265054, upload-time = "2026-10-11T22:01:26.693Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/8b/821ba27cdc19b8889dc218db14a28903dab4cd6028445eb12d99a88d62d7/pulsar_galaxy_lib-0.16.1-py3-none-any.whl", hash = "sha256:225cecb3006feb38d96f1c3610f3430635af42dc63c050eef0b0a28c619b6a2f", size = 281337, upload-time = "2026-11-20T15:51:13.286Z" },
 ]
 
 [[package]]
