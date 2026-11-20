@@ -8,6 +8,7 @@ from galaxy.util import galaxy_directory
 
 CONVERTER = os.path.join(galaxy_directory(), "lib/galaxy/datatypes/converters/interval_to_bedstrict_converter.py")
 
+
 def convert(tmp_path, content, extension, force_num_columns=None):
     input_file = tmp_path / f"input.{extension}"
     input_file.write_text(content)
@@ -31,3 +32,14 @@ def test_unstranded_bed12_keeps_strand_and_blocks(tmp_path, extension, force_num
 def test_unstranded_bed6(tmp_path):
     bed6 = "chr1\t100\t500\tpeak1\t10\t.\nchr2\t5\t50\tpeak2\t20\t+\n"
     assert convert(tmp_path, bed6, "bed6", 6) == bed6
+
+
+@pytest.mark.parametrize(
+    "extension,force_num_columns,expected",
+    [
+        ("bed", 6, "chr1\t100\t500\tp1\t10\t.\n"),
+        ("bed", 12, "chr1\t100\t500\tp1\t10\t.\t100\t500\t0\t0\t,\t,\n"),
+    ],
+)
+def test_padding_does_not_invent_a_strand(tmp_path, extension, force_num_columns, expected):
+    assert convert(tmp_path, "chr1\t100\t500\tp1\t10\n", extension, force_num_columns) == expected

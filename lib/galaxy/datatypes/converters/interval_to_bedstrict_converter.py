@@ -12,7 +12,7 @@ def force_bed_field_count(fields, region_count: int, force_num_columns: int):
     if force_num_columns >= 5 and len(fields) < 5:
         fields.append("0")
     if force_num_columns >= 6 and len(fields) < 6:
-        fields.append("+")
+        fields.append(".")
     if force_num_columns >= 7 and len(fields) < 7:
         fields.append(fields[1])
     if force_num_columns >= 8 and len(fields) < 8:
