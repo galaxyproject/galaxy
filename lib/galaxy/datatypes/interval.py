@@ -1750,6 +1750,7 @@ class IntervalTabix(Interval):
     edam_format = "format_3616"
     compressed = True
     compressed_format = "gzip"
+    secondary_file_suffixes = {"tabix_index": ".tbi"}
 
     # The MetadataElements are readonly so the user cannot change them (as the index is generated only once)
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter, readonly=True)

@@ -1178,6 +1178,7 @@ class UserToolEvaluator(ToolEvaluator):
         # Map-over hands each job an HDA; its element identifier is only kept in the job parameters.
         element_identifiers = ElementIdentifierMapper(input_datasets).identifiers_by_dataset(incoming)
         adapt_reference_data = setup_for_reference_data(self.app, compute_environment, self.tool.tool_source.trusted)
+        secondary_file_datasets = self._datasets_with_secondary_files(incoming, input_datasets)
         hda_references: list[model.HistoryDatasetAssociation]
         if validated_tool_state is not None:
             from galaxy.tool_util.parameters.convert import runtimeify
@@ -1198,6 +1199,7 @@ class UserToolEvaluator(ToolEvaluator):
                 input_dataset_collections,
                 shell_quotable=shell_quotable,
                 element_identifiers=element_identifiers,
+                secondary_file_datasets=secondary_file_datasets,
             )
             if self.tool.parameters is None:
                 raise RequestParameterInvalidException(f"Tool {self.tool.id} has no parameters defined")
@@ -1234,8 +1236,34 @@ class UserToolEvaluator(ToolEvaluator):
                 compute_environment=compute_environment,
                 shell_quotable=shell_quotable,
                 element_identifiers=element_identifiers,
+                secondary_file_datasets=secondary_file_datasets,
             )
         return {"inputs": cwl_style_inputs, "outdir": job_working_directory}
+
+    def _datasets_with_secondary_files(
+        self, incoming: dict, input_datasets: InpDataDictT
+    ) -> set[model.DatasetInstance]:
+        """Return the datasets given to inputs that set ``secondary_files``."""
+        datasets: set[model.DatasetInstance] = set()
+
+        def collect(input, value, **kwargs):
+            if not getattr(input, "secondary_files", False):
+                return
+            for item in value if isinstance(value, list) else [value]:
+                if isinstance(item, model.DatasetInstance):
+                    datasets.add(item)
+                elif isinstance(item, (model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement)):
+                    datasets.update(item.dataset_instances)
+
+        visit_input_values(self.tool.inputs, incoming, collect)
+        # The job may have received an implicit conversion of the dataset the user picked.
+        converted = {
+            dataset
+            for dataset in input_datasets.values()
+            if dataset is not None
+            and any(assoc.parent_hda in datasets for assoc in dataset.implicitly_converted_parent_datasets)
+        }
+        return datasets | converted
 
     def _build_command_line(self):
         if self.tool.base_command:
