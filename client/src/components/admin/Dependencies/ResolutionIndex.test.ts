@@ -149,5 +149,14 @@ describe("ResolutionIndex", () => {
             await rows[0]!.setValue(false);
             expect(headerBox(wrapper).checked).toBe(false);
         });
+
+        it("disables the header while there are no requirements", async () => {
+            vi.mocked(getToolboxDependencies).mockResolvedValue([]);
+            const wrapper = await mountIndex();
+            expect(headerBox(wrapper).disabled).toBe(true);
+
+            await wrapper.setData({ requirements: REQUIREMENTS });
+            expect(headerBox(wrapper).disabled).toBe(false);
+        });
     });
 });

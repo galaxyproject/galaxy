@@ -52,6 +52,7 @@
                     <GCheckbox
                         v-model="toggleState"
                         aria-label="Select all requirements"
+                        :disabled="!items.length"
                         @update:model-value="toggleSelectAll" />
                 </template>
 
