@@ -4,6 +4,7 @@ import pytest
 
 from galaxy.datatypes.tabular import (
     MAX_DATA_LINES,
+    Sam,
     Tabular,
 )
 from galaxy.exceptions import RequestParameterInvalidException
@@ -138,3 +139,16 @@ def test_tabular_comment_lines_unwrap_rejects_non_integer(value):
 @pytest.mark.parametrize("stored, expected", [("3", 3), (3, 3), (["7"], 7), (None, None), ("abc", "abc")])
 def test_tabular_comment_lines_wrap_converts_stored_strings(stored, expected):
     assert Tabular.metadata_spec["comment_lines"].wrap(stored, None) == expected
+
+
+def test_sam_merge_keeps_first_header_and_all_reads(tmp_path):
+    header = "@HD\tVN:1.6\n@SQ\tSN:ref\tLN:100\n"
+    reads = [f"read{i}\t0\tref\t{i}\t60\t4M\t*\t0\t0\tACGT\tIIII\n" for i in range(1, 4)]
+    split_files = []
+    for i, read in enumerate(reads):
+        split_file = tmp_path / f"part{i}.sam"
+        split_file.write_text(header + read)
+        split_files.append(str(split_file))
+    output_file = tmp_path / "merged.sam"
+    Sam.merge(split_files, str(output_file))
+    assert output_file.read_text() == header + "".join(reads)
