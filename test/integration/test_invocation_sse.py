@@ -114,6 +114,12 @@ class TestInvocationSSEIntegration(BaseInvocationSSEIntegrationTestCase):
                     if step["subworkflow_invocation_id"]
                 )
                 self.workflow_populator.wait_for_invocation_and_completion(subworkflow_invocation_id)
+                # The waits can see committed states before their events reach this listener.
+                for completed_id in (invocation_id, subworkflow_invocation_id):
+                    owner_listener.wait_for_event_where(
+                        "invocation_update",
+                        lambda e: "completed" in _states_for([e], completed_id),  # noqa: B023
+                    )
         finally:
             owner_listener.stop()
             other_listener.stop()
@@ -149,6 +155,9 @@ class TestInvocationSSEIntegration(BaseInvocationSSEIntegrationTestCase):
             try:
                 self.workflow_populator.cancel_invocation(invocation_id)
                 state = self.workflow_populator.wait_for_invocation(None, invocation_id, assert_ok=False)
+                listener.wait_for_event_where(
+                    "invocation_update", lambda e: "cancelled" in _states_for([e], invocation_id)
+                )
             finally:
                 listener.stop()
 
@@ -174,6 +183,9 @@ class TestInvocationSSEStepChangesIntegration(BaseInvocationSSEIntegrationTestCa
                 )
                 invocation_id = summary.invocation_id
                 self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
+                listener.wait_for_event_where(
+                    "invocation_update", lambda e: "completed" in _states_for([e], invocation_id)
+                )
         finally:
             listener.stop()
 

@@ -8,6 +8,7 @@ thread instead of silently swallowing them.
 """
 
 import queue
+import socket
 import threading
 import time
 from collections.abc import Callable
@@ -75,6 +76,9 @@ class SSELineListener:
         self.headers = headers or {}
         self.timeout = timeout
         self._collected: list[str] = []
+        # Notified whenever a chunk arrives or the reading thread ends.
+        self._received = threading.Condition()
+        self._response: requests.Response | None = None
         self._stop = threading.Event()
         self._ready = threading.Event()
         self._errors: queue.Queue[BaseException] = queue.Queue()
@@ -82,15 +86,20 @@ class SSELineListener:
 
     def start(self) -> None:
         self._thread.start()
-        wait_on(
-            lambda: True if self._ready.is_set() else None,
-            "SSE `ready` event",
-            timeout=CONNECT_TIMEOUT,
-        )
+        if not self._ready.wait(CONNECT_TIMEOUT):
+            raise TimeoutAssertionError(f"Timed out after {CONNECT_TIMEOUT} seconds waiting on SSE `ready` event")
         self._raise_if_errored()
 
     def stop(self) -> None:
         self._stop.set()
+        # The reading thread blocks until the next chunk, which may be a keepalive 30 seconds away;
+        # shutting the socket down ends that read now.
+        connection = self._response.raw.connection if self._response is not None else None
+        if connection is not None and connection.sock is not None:
+            try:
+                connection.sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
         self._thread.join(timeout=5)
 
     def wait_for_event(self, event_type: str, timeout: int = DEFAULT_WAIT_TIMEOUT) -> list[dict]:
@@ -128,6 +137,19 @@ class SSELineListener:
         self._raise_if_errored()
         return sum(1 for event in self.get_events(event_type) if predicate(event))
 
+    def wait_for_matching_event_count_above(
+        self, event_type: str, predicate: Callable[[dict], bool], count: int, timeout: timeout_type
+    ) -> bool:
+        """Block until more than ``count`` matching events arrived; return ``False`` on timeout."""
+        deadline = time.monotonic() + timeout
+        with self._received:
+            while self.matching_event_count(event_type, predicate) <= count:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return False
+                self._received.wait(remaining)
+        return True
+
     def get_events(self, event_type: str | None = None) -> list[dict]:
         """Return all collected events so far, optionally filtered by type."""
         all_events = parse_sse_events("".join(self._collected))
@@ -151,20 +173,27 @@ class SSELineListener:
                 stream=True,
                 timeout=self.timeout,
             )
+            self._response = resp
             if resp.status_code != 200:
                 raise RuntimeError(f"SSE connect returned HTTP {resp.status_code}: {resp.text[:200]}")
             for chunk in resp.iter_content(chunk_size=None, decode_unicode=True):
                 if chunk:
-                    self._collected.append(chunk)
+                    with self._received:
+                        self._collected.append(chunk)
+                        self._received.notify_all()
                     if not self._ready.is_set() and "event: ready" in "".join(self._collected):
                         self._ready.set()
                 if self._stop.is_set():
                     break
             resp.close()
         except Exception as exc:
-            self._errors.put(exc)
+            if not self._stop.is_set():
+                self._errors.put(exc)
             # Ensure start() doesn't hang forever on connection failure.
             self._ready.set()
+        finally:
+            with self._received:
+                self._received.notify_all()
 
 
 def wait_on_events(
@@ -188,12 +217,7 @@ def wait_on_events(
         if result is not None:
             return result
         remaining = deadline - time.monotonic()
-        if remaining <= 0:
+        if remaining <= 0 or not listener.wait_for_matching_event_count_above(event_type, predicate, seen, remaining):
             raise TimeoutAssertionError(
                 f"Timed out after {timeout} seconds waiting on {desc} (woken by SSE {event_type} events)."
             )
-        wait_on(
-            lambda: True if listener.matching_event_count(event_type, predicate) > seen else None,  # noqa: B023
-            f"SSE {event_type} event while waiting on {desc}",
-            timeout=remaining,
-        )

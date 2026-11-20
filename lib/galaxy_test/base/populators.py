@@ -483,6 +483,50 @@ class BasePopulator(metaclass=ABCMeta):
         """A started listener on the server's event stream for the current user, or ``None`` to poll."""
         return None
 
+    def wait_on_sse(
+        self,
+        event_type: str,
+        predicate: Callable[[dict], bool],
+        function: Callable[[], T | None],
+        desc: str,
+        timeout: timeout_type,
+    ) -> T:
+        """Wait for ``function`` to return a value, re-running it on matching SSE events.
+
+        With SSE updates enabled on the server, ``function`` re-runs only when an ``event_type``
+        event matching ``predicate`` arrives, so a missing event fails the wait. Events go to the
+        owner of the changed object, which must be the current user. Otherwise this polls.
+        """
+        listener = self._sse_listener()
+        if listener is None:
+            return wait_on(function, desc, timeout=timeout)
+        try:
+            return wait_on_events(listener, event_type, predicate, function, desc, timeout)
+        finally:
+            listener.stop()
+
+    def wait_on_job_update(
+        self, job_id: str | None, function: Callable[[], T | None], desc: str, timeout: timeout_type
+    ) -> T:
+        """Re-run ``function`` on ``job_update`` events for ``job_id``, or for any job if it is ``None``."""
+
+        def matches(event: dict) -> bool:
+            data = json.loads(event["data"])
+            return "resync" in data or job_id is None or any(job["id"] == job_id for job in data["jobs"])
+
+        return self.wait_on_sse("job_update", matches, function, desc, timeout)
+
+    def wait_on_history_update(
+        self, history_id: str, function: Callable[[], T | None], desc: str, timeout: timeout_type
+    ) -> T:
+        return self.wait_on_sse(
+            "history_update",
+            lambda event: history_id in json.loads(event["data"])["history_ids"],
+            function,
+            desc,
+            timeout,
+        )
+
     def _get_to_tempfile(self, route, suffix=None, **kwd) -> str:
         """Perform a _get and store the result in a tempfile."""
         get_response = self._get(route, **kwd)
@@ -797,7 +841,11 @@ class BaseDatasetPopulator(BasePopulator):
     ) -> str:
         try:
             return wait_on_state(
-                lambda: self.get_history_raw(history_id), desc="history state", assert_ok=assert_ok, timeout=timeout
+                lambda: self.get_history_raw(history_id),
+                desc="history state",
+                assert_ok=assert_ok,
+                timeout=timeout,
+                wait=partial(self.wait_on_history_update, history_id),
             )
         except AssertionError:
             self._summarize_history(history_id)
@@ -812,7 +860,8 @@ class BaseDatasetPopulator(BasePopulator):
                 return None
 
         try:
-            wait_on(has_active_jobs, "active jobs", timeout=timeout)
+            # Job events do not name the history, so any change to the user's jobs re-checks it.
+            self.wait_on_job_update(None, has_active_jobs, "active jobs", timeout)
         except TimeoutAssertionError as e:
             jobs = self.history_jobs(history_id)
             message = f"Failed waiting on active jobs to complete, current jobs are [{jobs}]. {e}"
@@ -845,6 +894,7 @@ class BaseDatasetPopulator(BasePopulator):
             assert_ok=assert_ok,
             timeout=timeout,
             ok_states=ok_states,
+            wait=partial(self.wait_on_job_update, job_id),
         )
 
     def get_job_details(self, job_id: str, full: bool = False) -> Response:
@@ -2890,26 +2940,13 @@ class BaseWorkflowPopulator(BasePopulator):
     def wait_on_invocation(
         self, invocation_id: str, function: Callable[[], T | None], desc: str, timeout: timeout_type
     ) -> T:
-        """Wait for ``function`` to return a value, re-running it on the invocation's changes.
-
-        With SSE updates enabled on the server the waiter re-runs ``function`` only when an
-        ``invocation_update`` event for the invocation arrives, so a missing event fails the wait.
-        Events go to the owner of the invocation's history, which must be the current user.
-        """
-        listener = self._sse_listener()
-        if listener is None:
-            return wait_on(function, desc, timeout=timeout)
-        try:
-            return wait_on_events(
-                listener,
-                "invocation_update",
-                lambda event: any(item["id"] == invocation_id for item in json.loads(event["data"])["invocations"]),
-                function,
-                desc,
-                timeout,
-            )
-        finally:
-            listener.stop()
+        return self.wait_on_sse(
+            "invocation_update",
+            lambda event: any(item["id"] == invocation_id for item in json.loads(event["data"])["invocations"]),
+            function,
+            desc,
+            timeout,
+        )
 
     def workflow_invocations(self, workflow_id: str, include_nested_invocations=True) -> list[dict[str, Any]]:
         response = self._get(f"workflows/{workflow_id}/invocations")
