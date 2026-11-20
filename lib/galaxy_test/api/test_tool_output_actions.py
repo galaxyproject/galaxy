@@ -1,5 +1,6 @@
 """Changes requested for the outputs of a tool run (``output_actions``): rename, tags and hide."""
 
+import json
 from typing import Any
 
 from galaxy_test.base.populators import (
@@ -108,6 +109,54 @@ class TestToolOutputActionsApi(ApiTestCase):
     @skip_without_tool("output_format")
     def test_unknown_output_name_is_rejected(self):
         response = self._tool_request_raw("output_format", self._output_format_inputs(), {"no_such_output": {}})
+
+        self._assert_status_code_is(response, 400)
+
+    @skip_without_tool("output_format")
+    def test_legacy_tool_api_changes_the_named_output(self):
+        inputs = self._output_format_inputs()
+
+        response = self.dataset_populator.run_tool_raw(
+            "output_format",
+            inputs,
+            self.history.id,
+            input_format="21.01",
+            output_actions=json.dumps(TRIM_DIRECT_OUTPUT),
+        )
+
+        self._assert_status_code_is_ok(response)
+        job_id = response.json()["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        outputs = self.dataset_populator.get_job_details(job_id).json()["outputs"]
+        assert self._summary(outputs["direct_output"]) == ("reads.fa trimmed", ["group:run1"], False)
+
+    @skip_without_tool("output_format")
+    def test_legacy_tool_api_takes_a_json_body(self):
+        payload = {
+            "tool_id": "output_format",
+            "history_id": self.history.id,
+            "inputs": self._output_format_inputs(),
+            "input_format": "21.01",
+            "output_actions": TRIM_DIRECT_OUTPUT,
+        }
+
+        response = self._post("tools", payload, json=True)
+
+        self._assert_status_code_is_ok(response)
+        job_id = response.json()["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        outputs = self.dataset_populator.get_job_details(job_id).json()["outputs"]
+        assert self._summary(outputs["direct_output"]) == ("reads.fa trimmed", ["group:run1"], False)
+
+    @skip_without_tool("output_format")
+    def test_legacy_tool_api_rejects_unknown_output_name(self):
+        response = self.dataset_populator.run_tool_raw(
+            "output_format",
+            self._output_format_inputs(),
+            self.history.id,
+            input_format="21.01",
+            output_actions=json.dumps({"no_such_output": {"hide": True}}),
+        )
 
         self._assert_status_code_is(response, 400)
 

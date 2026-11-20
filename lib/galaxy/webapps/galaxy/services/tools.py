@@ -14,6 +14,10 @@ from typing import (
 )
 from uuid import UUID
 
+from pydantic import (
+    TypeAdapter,
+    ValidationError,
+)
 from starlette.datastructures import UploadFile
 
 from galaxy import (
@@ -54,6 +58,7 @@ from galaxy.schema.fetch_data import (
 )
 from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.schema.tool_outputs import (
+    ToolOutputActionsByName,
     ToolOutputPreview,
     ToolOutputsPreview,
     ToolOutputsPreviewRequest,
@@ -509,6 +514,16 @@ class ToolsService(ServiceBase):
         if "data_manager_mode" in payload:
             incoming[DATA_MANAGER_MODE] = payload["data_manager_mode"]
         tags = payload.get("__tags")
+        raw_output_actions = payload.get("output_actions") or {}
+        output_actions_adapter = TypeAdapter(ToolOutputActionsByName)
+        try:
+            # A JSON string when posted as a form, like inputs
+            if isinstance(raw_output_actions, str):
+                output_actions = output_actions_adapter.validate_json(raw_output_actions)
+            else:
+                output_actions = output_actions_adapter.validate_python(raw_output_actions)
+        except ValidationError as e:
+            raise exceptions.RequestParameterInvalidException(f"output_actions invalid: {e}")
         vars = tool.handle_input(
             trans,
             incoming,
@@ -520,6 +535,7 @@ class ToolsService(ServiceBase):
             tags=tags,
             send_email_notification=inputs.get("send_email_notification", False),
             send_notification=inputs.get("send_notification", False),
+            output_actions=output_actions,
         )
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 
